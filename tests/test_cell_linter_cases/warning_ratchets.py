@@ -31,12 +31,15 @@ def ceiling_breach(count, ceiling=None, kind=NEAR):
 
 
 class WarningCeilingTest(unittest.TestCase):
-    # One clause packs/orch-code-pack/references/craft.md's `## Slicing`
-    # already owns, restated in a third pack's same-named section with a
-    # single noun changed. This is what a regression here looks like: not
-    # a new kind of finding, one more copy of a clause that has an owner.
-    # The clause carries no span MANDATED_FORM_RES strips, so the plant is
-    # the pack's own content and the ratio is measured over all of it.
+    # One clause packs/orch-code-pack/references/craft.md's `## Lens`
+    # already owns -- its `### cut` entry -- restated in a third pack's
+    # same-named section with a single noun changed. This is what a
+    # regression here looks like: not a new kind of finding, one more copy
+    # of a clause that has an owner. The clause carries no span
+    # MANDATED_FORM_RES strips, so the plant is the pack's own content and
+    # the ratio is measured over all of it. The linter compares `##`
+    # sections, so the plant goes under the `##` heading the owner's entry
+    # sits beneath, not under the `###` key.
     REGRESSION = "\n- Dependency edges only where one lane's seam is another's input.\n"
 
     def _clone_beside_the_tree(self):
@@ -92,9 +95,9 @@ class WarningCeilingTest(unittest.TestCase):
         clone = self._clone_beside_the_tree()
         planted = clone / "packs" / "orch-research-pack" / "references" / "craft.md"
         text = planted.read_text(encoding="utf-8")
-        self.assertIn("## Slicing\n", text)
+        self.assertIn("## Lens\n", text)
         planted.write_text(
-            text.replace("## Slicing\n", "## Slicing\n" + self.REGRESSION, 1),
+            text.replace("## Lens\n", "## Lens\n" + self.REGRESSION, 1),
             encoding="utf-8",
         )
         clone_report = run_validate(clone).stdout

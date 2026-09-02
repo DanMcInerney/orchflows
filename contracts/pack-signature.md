@@ -25,20 +25,29 @@ sections its skill names.
 
 ## Craft sections
 
-Every craft document carries these `##` sections, each a stable anchor:
+A craft document's `##` sections, each a stable anchor:
 
-| section | binding |
-| --- | --- |
-| Vocabulary | the domain's terms, defined once for intake, execution, and checking alike |
-| Workspace | identities, isolation, candidate diffs, and conflict handling in this domain; the adapter key is declared separately |
-| Spec fields | fields a spec must carry for decomposition to accept it, read at intake as the checklist a root must satisfy before seal |
-| Outline | the domain's taste for a frozen root: what a well-formed one carries, which intake questions are worth asking, and its exemplar policy |
-| Slicing | how a spec cuts into work items and the item extensions the domain adds |
-| Evidence | artifact-appropriate evidence methods and identities a checker may challenge |
-| Lens | the domain's review criteria |
+| section | binding | mandatory |
+| --- | --- | --- |
+| Vocabulary | the domain's terms, defined once for intake, execution, and checking alike | yes |
+| Workspace | identities, isolation, candidate diffs, and conflict handling in this domain; the adapter key is declared separately | yes |
+| Spec fields | fields a spec must carry for decomposition to accept it, read at intake as the checklist a root must satisfy before seal | yes |
+| Lens | one `###` entry per artifact kind the domain produces: what a well-formed artifact of that kind carries, what proves it, and which findings block | yes |
+| Stages | the narrative behind the `stages` cell | no |
 
-Optional sections: `Shape` for the domain's shape taste beyond the shared
-principles, and `Stages` for the narrative behind the `stages` cell.
+`Lens` carries exactly these `###` entries, in this order: `### root`, then
+`### cut`, then one entry per artifact kind the pack's adapter produces —
+neither a missing kind nor a kind the adapter never emits. `root` is a frozen
+goal and `cut` a set of work items under one; both are library-owned, and the
+ticket already spells their identities `root:<id>:<n>:sha256:<digest>` and
+`cut:<id>:<n>:sha256:<digest>`. A making verb makes toward the entry its
+artifact kind names; a checking verb reads the same entry as its criteria.
+
+One fact, one owner: the retired `Outline`, `Slicing`, `Evidence` and `Shape`
+sections are those entries' content, not sections beside them — a root's
+taste under `### root`, a cut's under `### cut`, and the deliverable's
+criteria, evidence and domain shape taste under its adapter kind's entry. A
+craft carrying any of the four as a `##` section declares one fact twice.
 
 Sharing constraints, checked at pack review:
 
@@ -110,3 +119,9 @@ the pack folds to four typed cells plus one craft document. The slicing,
 workspace, required_spec_fields, evidence, and outline cells become mandatory
 craft sections; the three consumer lanes retire — every verb reads the whole
 document, and the section heading does what the lane projection did.
+
+T0 supersession record sha256:3aeff4f44fa00dab683f120b7ef47767b07e218fc272d1497b709d8cc7e0c9ee:
+the craft's mandatory sections fall to four, keyed by artifact kind. Outline,
+Slicing, Evidence and Shape retire into `## Lens`'s `###` entries — `root`,
+`cut`, and the pack's adapter kinds — so making and checking read one entry
+from opposite directions instead of four sections one verb at a time.

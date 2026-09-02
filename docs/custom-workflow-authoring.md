@@ -167,8 +167,8 @@ the composition, which no member could see from its own seat.
    [composition](../rules/composition.md) §§5, 10–11. For a pack, follow
    [pack authoring](pack-authoring.md) and the
    [pack signature](../contracts/pack-signature.md), which owns the four
-   cells and every craft section — `## Outline` included, so a custom pack a
-   planner freezes a root against fills it like any other. A T0 shape change is a
+   cells and every craft section — `## Lens`'s `### root` entry included, so
+   a custom pack a planner freezes a root against fills it like any other. A T0 shape change is a
    supersession change and follows its contract's pinning procedure.
 4. For a workflow, start from the nearest body under `example-workflows/` and
    pin its open decisions. Its `Return:` is what `frame-close` records, and

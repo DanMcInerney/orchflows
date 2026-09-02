@@ -322,9 +322,11 @@ class PackResolutionTests(unittest.TestCase):
         self.assertNotIn("for", projected)
         self.assertIn("references/craft.md", projected["cells"]["craft"])
 
-    def test_every_pack_resolves_a_distinct_outline_section(self):
+    def test_every_pack_resolves_a_distinct_root_lens_entry(self):
         """Prose earns a section only when its content differs between packs
-        (contracts/pack-signature.md, Admission)."""
+        (contracts/pack-signature.md, Admission). The root taste that was
+        `## Outline` is now `## Lens`'s `### root` entry, and the same
+        admission applies to it one level down."""
 
         import re
 
@@ -333,10 +335,13 @@ class PackResolutionTests(unittest.TestCase):
             resolved = packs.resolve_pack(name, canonical_root=PACKS)
             self.assertIn("references/craft.md", resolved["cells"]["craft"])
             text = (PACKS / name / "references" / "craft.md").read_text(encoding="utf-8")
-            match = re.search(r"(?ms)^## Outline\s*$(.*?)(?=^## |\Z)", text)
-            self.assertIsNotNone(match, f"{name} craft carries no ## Outline section")
+            self.assertNotIn("\n## Outline", text)
+            lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", text)
+            self.assertIsNotNone(lens, f"{name} craft carries no ## Lens section")
+            match = re.search(r"(?ms)^### root\s*$(.*?)(?=^### |\Z)", lens.group(1))
+            self.assertIsNotNone(match, f"{name} craft carries no `### root` entry")
             bodies[name] = match.group(1).strip()
-            self.assertTrue(bodies[name], f"{name} ## Outline section is empty")
+            self.assertTrue(bodies[name], f"{name} `### root` entry is empty")
         self.assertEqual(5, len(bodies))
         self.assertEqual(len(bodies), len(set(bodies.values())))
 

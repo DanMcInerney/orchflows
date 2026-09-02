@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2121,
+  "count": 2126,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -679,7 +679,7 @@
    "test_packs.PackResolutionTests.test_an_untrusted_project_bundle_refuses_with_the_two_step_remedy",
    "test_packs.PackResolutionTests.test_cells_returns_every_cell_of_the_resolved_digest",
    "test_packs.PackResolutionTests.test_cli_emits_json_for_resolve_and_cells",
-   "test_packs.PackResolutionTests.test_every_pack_resolves_a_distinct_outline_section",
+   "test_packs.PackResolutionTests.test_every_pack_resolves_a_distinct_root_lens_entry",
    "test_packs.PackResolutionTests.test_project_ring_is_discovered_from_the_current_directory",
    "test_packs.PackResolutionTests.test_project_ring_with_identical_bytes_has_the_same_digest",
    "test_packs.PackResolutionTests.test_public_facade_does_not_reexport_private_support_names",
@@ -1962,6 +1962,11 @@
    "tests.test_validator_cases.contracts_and_names.TestNameResolution.test_the_two_role_names_are_allowed",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_craft_with_every_mandatory_heading_is_clean",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_craft_without_a_mandatory_heading_is_an_error",
+   "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_lens_key_the_adapter_never_produces_is_an_error",
+   "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_lens_missing_a_library_kind_is_an_error",
+   "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_lens_missing_the_adapter_kind_is_an_error",
+   "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_retired_heading_is_an_error",
+   "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_the_adapter_decides_which_kind_the_lens_must_carry",
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_a_doc_restating_a_rule_is_reported",
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_a_template_stub_restating_a_rule_is_reported",
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_two_skills_carrying_one_clause_are_reported_against_each_other",
@@ -2124,7 +2129,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e6a6dcfc7b91d335405cb30c27d2af14e424291ed60cf58ea291970056cda716"
+  "sha256": "aa5e9a8a8b4d3b0bb1772dde7a75c83a5654adb82645d74c183c2ae22897a13f"
  },
  "mutation_owners": [
   {

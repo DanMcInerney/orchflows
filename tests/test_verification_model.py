@@ -43,16 +43,27 @@ class GoalEvidenceContractTest(unittest.TestCase):
         self.assertIn("do not change the semantic assignment digest", result_contract)
 
     def test_non_code_packs_define_artifact_evidence_without_code_tests(self):
+        """What proves a deliverable is stated under the Lens entry keyed by
+        the kind the pack's adapter emits, not in a section beside it: the
+        checking verb reads one entry, so evidence outside it is evidence
+        no verb is pointed at."""
+
         expected = {
-            "content": ("audience", "lint"),
-            "design": ("interaction", "accessibility"),
-            "research": ("sources", "uncertainty"),
+            "content": ("doc", ("audience", "lint")),
+            "design": ("git", ("interaction", "accessibility")),
+            "research": ("evidence", ("sources", "uncertainty")),
         }
-        for pack, anchors in expected.items():
+        for pack, (kind, anchors) in expected.items():
             with self.subTest(pack=pack):
                 craft = read(f"packs/orch-{pack}-pack/references/craft.md")
-                match = re.search(r"(?ms)^## Evidence\s*$(.*?)(?=^## |\Z)", craft)
-                self.assertIsNotNone(match, f"{pack} craft has no ## Evidence section")
+                lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", craft)
+                self.assertIsNotNone(lens, f"{pack} craft has no ## Lens section")
+                match = re.search(
+                    r"(?ms)^### %s\s*$(.*?)(?=^###? |\Z)" % kind, lens.group(1)
+                )
+                self.assertIsNotNone(
+                    match, f"{pack} craft has no ## Lens `### {kind}` entry"
+                )
                 body = match.group(1)
                 self.assertTrue(all(anchor in body for anchor in anchors))
                 self.assertNotIn("code tests are required", body.lower())
