@@ -198,6 +198,20 @@ def _outcome_content(args: list):
     return {"_note": note}, None
 
 
+def _reserved_line(evidence: str):
+    """`(1-based number, line)` for the first line the ticket grammar owns.
+
+    Named rather than counted: two children of one run had to read this
+    module's source to learn which of their note's lines the bare "contains
+    a reserved heading" refusal meant, and what the rule was.
+    """
+
+    for number, line in enumerate(evidence.splitlines(), 1):
+        if line.startswith("## ") or line.startswith(RESULT_ATTRIBUTION_PREFIX):
+            return number, line
+    return None
+
+
 def _outcome_failure(run: str, ticket_id: str, content):
     required = set(DISPATCH_OUTCOME_REQUIRED)
     if not isinstance(content, dict) or set(content) != required:
@@ -222,8 +236,16 @@ def _outcome_failure(run: str, ticket_id: str, content):
         return _classification("outcome-invalid", "outcome evidence must be one closing note")
     if not evidence.strip():
         return _classification("outcome-invalid", "closing outcome evidence is empty")
-    if any(line.startswith("## ") or line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in evidence.splitlines()):
-        return _classification("outcome-invalid", "outcome evidence contains a reserved heading or attribution")
+    reserved = _reserved_line(evidence)
+    if reserved is not None:
+        number, line = reserved
+        return _classification(
+            "outcome-invalid",
+            "outcome evidence contains a reserved heading or attribution: "
+            f"line {number} begins {line[:60]!r}. A closing note's lines may "
+            f"not begin with '## ' or with '{RESULT_ATTRIBUTION_PREFIX}', the "
+            "attribution this write adds itself; '###' and deeper are fine",
+        )
     return None
 
 

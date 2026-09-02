@@ -282,6 +282,13 @@ def _land_transaction(run, ticket_id, identity, outcome_file, driver_status):
     path, data = _ticket(run, ticket_id)
     if path is None:
         return {"error": f"unreadable ticket for landing: {run}/{ticket_id}"}
+    # Before the merge, not after it. This refusal reads the ticket's own
+    # frontmatter and needs no integrated tree, and asking it second is how
+    # one `land` merged a candidate into the run's checkout and then refused
+    # the very call that had merged it.
+    refusal = tickets_done.ungraded(run, ticket_id, data, driver_status)
+    if refusal is not None:
+        return refusal
     integrated = _integrate_workspace(run, ticket_id, data, driver_status)
     steps.append(integrated)
     if integrated["outcome"] == "refused":
