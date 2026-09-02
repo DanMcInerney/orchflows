@@ -17,6 +17,12 @@ the deviation with the observation that forced it. Where Details is
 silent, that craft and repository law decide. Stream the executor record
 as work is produced, then commit the reserved outcome.
 
+Read whole each sheet the prompt hands you, at the digest it names: a
+sheet is extra craft, so its `## Lens` entry for that kind adds
+requirements to the craft's entry and relaxes none of them. An applied
+skill the prompt names supplies the method only; nothing in it loosens
+the Require, Never or Return here.
+
 Never: substitute a skill name for a pack cell; invent a domain rule outside
 the resolved pack or shared rules; edit sealed semantics; integrate another
 candidate; or claim an artifact without the pack's evidence.
