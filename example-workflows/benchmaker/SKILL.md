@@ -13,7 +13,7 @@ rule or contract owns is [the protocol](../references/benchmaker-protocol.md);
 the manifest's field set is [its own](../references/benchmaker-manifest.md);
 acquisition's lane cut is [the charter's](../references/benchmaker-research.md).
 
-    tickets.py frame-open <run> --goal-file <benchmark-goal>
+    tickets.py frame-open <run> --goal-file <benchmark-goal> --workflow benchmaker
 
 Re-read the frame's `## Report` and its children before each call, and
 append every decision back with `tickets.py result <run> <frame> --by

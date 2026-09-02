@@ -38,6 +38,9 @@ that must exist for it
 
 - One question rather than a topic, plus the sub-questions its answer has to
   reach before coverage can be claimed.
+- Those sub-questions sit under a heading whose text carries `sub-questions`,
+  as a numbered list with one item per sub-question — the form a `do` is
+  counted against, since each item is a lane.
 - Source policy and rigor bar together; the bar is the evidence a load-bearing
   claim must have, never an adjective.
 - The recency window that policy admits, and the store its packets land in.

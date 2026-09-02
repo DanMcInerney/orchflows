@@ -43,8 +43,20 @@ from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonica
 
 CODE_PACK = "orch-code-pack"
 DOC_PACK = "orch-content-pack"
+RESEARCH_PACK = "orch-research-pack"
 GOAL = "Deliver the widget and prove it runs.\n"
 DETAILS = "Read the craft first; report every exit code.\n"
+# The marker the research craft's root entry owns, written the way a real
+# goal writes it: one heading carrying `sub-questions`, one numbered item
+# per lane. Fixtures, not the craft's prose -- the door counts goal text.
+ONE_LANE_GOAL = (
+    "Map the workflow surface hosts install.\n"
+    "\n"
+    "### Sub-questions coverage must reach\n"
+    "\n"
+    "1. Which hosts install the adapter?\n"
+)
+TWO_LANE_GOAL = ONE_LANE_GOAL + "2. Which of them regenerate it on sync?\n"
 
 
 class CallableSinkTest(unittest.TestCase):
@@ -446,7 +458,9 @@ class RepairRoundAdmissionTest(CallableSinkTest):
         ).isoformat().replace("+00:00", "Z")
 
     def test_a_runtime_callables_repair_round_admits_and_dispatches(self):
-        frame_id = self.callable("frame-open")["frame_open"]["id"]
+        frame_id = self.callable(
+            "frame-open", "--shape", "do > judge",
+        )["frame_open"]["id"]
         command = f'"{sys.executable}" -c "raise SystemExit(3)"'
         done = json.dumps({"form": "command", "value": command}, sort_keys=True)
 
@@ -668,6 +682,79 @@ class GenerationArtifactTest(CallableSinkTest):
 
         for kind in ("cut", "doc", "evidence", "git", "root"):
             self.assertIn(f"{kind}:<identity>", refused["error"])
+
+
+class ResearchLaneDoorTest(CallableSinkTest):
+    """A worker-lane research `do` carries one lane, and the door counts them.
+
+    Run 20260902T140000Z-hn-workflows minted one research `do` whose goal
+    carried five numbered sub-questions; the child answered from one source
+    and called its own packet single-lane. The research craft's cut rule
+    already said a lane is one independently answerable sub-question, so
+    what was missing was a door, not a rule.
+    """
+
+    def research(self, goal_text, *arguments, expect_error=False):
+        """One `do` on the research pack, driven against a goal fixture."""
+
+        self.goal_file.write_text(goal_text, encoding="utf-8")
+        return self.callable(
+            "do", "--pack", RESEARCH_PACK, *arguments, expect_error=expect_error,
+        )
+
+    def test_two_sub_questions_are_refused_before_the_run_exists(self):
+        refused = self.research(TWO_LANE_GOAL, expect_error=True)
+
+        self.assertIn("2 sub-questions are 2 lanes", refused["error"])
+        self.assertIn("--shape", refused["error"])
+        self.assertFalse(self.run_dir().exists(), "a refusal left a run directory")
+
+    def test_one_sub_question_is_minted_unchanged(self):
+        answer = self.research(ONE_LANE_GOAL, "--isolation", "required")
+
+        self.assertEqual("B1", answer["do"]["id"])
+        self.assertEqual(
+            ONE_LANE_GOAL.strip(), _sections(self.ticket_text("B1"))["Goal"].strip(),
+        )
+
+    def test_a_goal_declaring_no_sub_questions_is_minted_unchanged(self):
+        answer = self.research(GOAL, "--isolation", "required")
+
+        self.assertEqual("B1", answer["do"]["id"])
+
+    def test_the_same_goal_under_a_parent_is_minted_unchanged(self):
+        self.research(ONE_LANE_GOAL, "--isolation", "required")
+
+        answer = self.research(
+            TWO_LANE_GOAL, "--parent", "B1", "--isolation", "required",
+        )
+
+        self.assertEqual("B1.1", answer["do"]["id"])
+
+    def test_another_packs_parentless_do_takes_the_same_goal_unchanged(self):
+        self.goal_file.write_text(TWO_LANE_GOAL, encoding="utf-8")
+
+        answer = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+
+        self.assertEqual("B1", answer["do"]["id"])
+
+    def test_the_count_moves_with_the_marker_and_with_the_items(self):
+        """The can-fail direction: copies beside the tree, never the tree.
+
+        Four of the cases above are absence assertions, and an absence
+        assertion is worth exactly what the counter's sensitivity is worth.
+        One item added to the passing goal lifts it over the door's line,
+        and a heading that drops the marker word drops the count to zero.
+        """
+
+        self.assertEqual(1, tickets_mint.subquestion_count(ONE_LANE_GOAL))
+        self.assertEqual(2, tickets_mint.subquestion_count(TWO_LANE_GOAL))
+        self.assertEqual(
+            0,
+            tickets_mint.subquestion_count(
+                TWO_LANE_GOAL.replace("Sub-questions", "Coverage")
+            ),
+        )
 
 
 class TypedArtifactGrammarTest(unittest.TestCase):

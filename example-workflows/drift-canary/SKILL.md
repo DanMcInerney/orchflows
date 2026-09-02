@@ -10,7 +10,7 @@ reads against. There is no scheduler: a profiles change or an announced
 model update is a person invoking this by name, which is why it never
 model-invokes.
 
-    tickets.py frame-open <run> --goal-file <drift-goal>
+    tickets.py frame-open <run> --goal-file <drift-goal> --workflow drift-canary
 
 Re-read the frame's `## Report` and its children before each wave, and
 append the wave's decision with `tickets.py result <run> <frame> --by

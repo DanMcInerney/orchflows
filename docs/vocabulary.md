@@ -216,6 +216,24 @@ invented for this library.
   below, and the lane took `worker` and `team` instead. `brick` is retired
   outright, noun and all: see **callable**, above.
   Small, medium and large are explanatory mappings, never ticket fields.
+  A **shape line** is how a `team` frame states its wave plan before its
+  first dispatch, and this entry is its whole grammar: names are free
+  identifiers; `>` separates waves in order; `[a, b]` is one wave run in
+  parallel; `name[*]` is a count an `outline` decides; `do`, `outline` and
+  `judge` are the reserved names, binding the kernel verbs of those names.
+  `tickets.py frame-open --shape "<line>"` parses it, files it as the
+  frame's first journal record, and `frame-close` prints it beside the
+  census it actually minted — printed for a reader, never refused on, since
+  a plan the work outgrew is the ordinary case. A line that is exactly `do`
+  is refused to the `worker` lane and one that is `direct` opens no frame
+  at all. `--workflow NAME` stands in for a line when a saved workflow's
+  body is the plan, and a `--parent` frame states none: it is already one
+  wave of its caller's. Before writing the line, a root asks in order: one
+  independent unit is `do`; two or more — sub-questions, files, features
+  needing no result of each other's — are one `[...]` wave. A goal whose
+  done predicate cannot be written yet opens with the lanes that would
+  settle it and an `outline` over what they find. A wrong result dearer
+  than one more child ends the line `> judge`.
 - **tracker** — the state sink's `tickets/` directory; there is no external
   tracker.
 - **executor** — the named skill a work item's frontmatter binds to do the

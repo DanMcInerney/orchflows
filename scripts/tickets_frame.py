@@ -50,7 +50,13 @@ if __package__:
     from .tickets_lifecycle import _cmd_ready
     from .tickets_outcome import _cmd_dispatch_outcome
     from .tickets_project import recorded_project
-    from .tickets_result import _append_event
+    from .tickets_result import (
+        RESULT_ATTRIBUTION_PREFIX, _append_event, _cmd_result,
+    )
+    from .tickets_shape_line import (
+        SHAPE_PREFIX, SHAPE_RECORD_ID, SHAPE_USAGE, journal_shape,
+        shape_for, shape_record,
+    )
     from .tickets_store import (
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _same_project, _segment_error,
         _tickets_root, _writer_identity, segment_refusal,
@@ -74,7 +80,13 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_lifecycle import _cmd_ready
     from tickets_outcome import _cmd_dispatch_outcome
     from tickets_project import recorded_project
-    from tickets_result import _append_event
+    from tickets_result import (
+        RESULT_ATTRIBUTION_PREFIX, _append_event, _cmd_result,
+    )
+    from tickets_shape_line import (
+        SHAPE_PREFIX, SHAPE_RECORD_ID, SHAPE_USAGE, journal_shape,
+        shape_for, shape_record,
+    )
     from tickets_store import (
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _same_project, _segment_error,
         _tickets_root, _writer_identity, segment_refusal,
@@ -82,7 +94,8 @@ else:  # pragma: no cover - direct/installed flat script path
 
 FRAME_OPEN_USAGE = (
     "frame-open <run> --goal-file F [--details-file D] [--parent ID] "
-    "[--done <canonical-json>] [--bound B] [--workflow NAME]"
+    "[--done <canonical-json>] [--bound B] [--workflow NAME] "
+    f"[{SHAPE_USAGE}]"
 )
 FRAME_CLOSE_USAGE = (
     "frame-close <run> <id> [--status S] [--done <canonical-json>]"
@@ -126,6 +139,7 @@ def _cmd_frame_open(rest):
     done = _extract_flag(args, "--done")
     bound = _extract_flag(args, "--bound") or NEW_DEFAULT_BOUND
     workflow = _extract_flag(args, "--workflow")
+    shape = _extract_flag(args, "--shape")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"frame-open does not accept {stray}. usage: {FRAME_OPEN_USAGE}"}
@@ -137,6 +151,9 @@ def _cmd_frame_open(rest):
         if invalid is not None:
             return invalid
     refusal = _done_refusal(done)
+    if refusal is not None:
+        return refusal
+    plan, refusal = shape_for(shape, workflow, parent)
     if refusal is not None:
         return refusal
     goal, failure = _read_utf8(goal_file, "goal file")
@@ -170,17 +187,29 @@ def _cmd_frame_open(rest):
     opened = _opened(run, frame_id, bound)
     if "error" in opened:
         return {**opened, "id": frame_id}
+    if plan is not None:
+        filed = _cmd_result([
+            run, frame_id,
+            "--assignment-seal", opened["assignment_seal"],
+            "--dispatch-id", opened["dispatch_id"],
+            "--record-id", SHAPE_RECORD_ID, "--by", frame_id,
+            "--text", shape_record(plan),
+        ])
+        if "error" in filed:
+            return {**filed, "id": frame_id}
     goal_lines = goal.strip().splitlines()
     _append_event(run, frame_id, "frame-open", {
-        "workflow": workflow, "goal_head": (goal_lines[0].strip() if goal_lines else "")[:200],
+        "workflow": workflow, "shape": plan,
+        "goal_head": (goal_lines[0].strip() if goal_lines else "")[:200],
     })
     return {"frame_open": {
         "run": run, "id": frame_id, "parent": parent,
         "path": str(run_dir / f"{frame_id}.md"),
         "assignment_seal": opened["assignment_seal"],
         "dispatch_id": opened["dispatch_id"],
-        "journal_by": frame_id,
+        "journal_by": frame_id, "shape": plan,
     }}
+
 
 
 def _opened(run: str, frame_id: str, bound: str) -> dict:
@@ -288,8 +317,16 @@ def _judgement_refusal(run: str, frame_id: str, census: dict, reason: str):
     )}
 
 
-def _closing_note(census: dict, reason: str, status: str) -> str:
-    """The evidence the close appends: what it closed over, and who read it."""
+def _closing_note(census: dict, reason: str, status: str, shape: str) -> str:
+    """The evidence the close appends: the plan, the census, and who read it.
+
+    The shape prints and never refuses. A wave plan is a statement of
+    intent written before the work, and work that finds a reason to differ
+    is the ordinary case, not a defect -- so the close puts the plan beside
+    what was actually minted and leaves the reading to the person who has
+    both. A refusal here would only teach drivers to write a shape they
+    already know they will satisfy.
+    """
 
     if not census["do"]:
         read = "no do-children"
@@ -300,7 +337,9 @@ def _closing_note(census: dict, reason: str, status: str) -> str:
     else:
         read = "one do-child, read by its own close"
     return (
-        f"frame closed {status} over {len(census['do'])} do-children; {read}."
+        f"shape {shape or 'not recorded'}; frame closed {status} over "
+        f"{len(census['do'])} do and {len(census['judge'])} judge children; "
+        f"{read}."
     )
 
 
@@ -386,13 +425,15 @@ def _cmd_frame_close(rest):
             "already, or never opened through `tickets.py frame-open`"
         )}
     census = _census(frame_id, _children(run_dir, frame_id))
-    reason = unjudged_reason(_section_body(text, REPORT_SECTION))
+    journal = _section_body(text, REPORT_SECTION)
+    reason = unjudged_reason(journal)
     refusal = _judgement_refusal(run, frame_id, census, reason)
     if refusal is not None:
         return refusal
     with _run_lock(run):
         closed = _closed_under_run_lock(
             run, frame_id, path, attempt, census, reason,
+            shape=journal_shape(journal),
             status=status, done=done or sealed or None,
         )
     if "frame_close" in closed:
@@ -409,7 +450,7 @@ def _cmd_frame_close(rest):
 
 
 def _closed_under_run_lock(run, frame_id, path, attempt, census, reason,
-                           *, status, done):
+                           *, shape, status, done):
     """Evaluate the gate, file the close, and join -- in that order.
 
     The gate runs before anything is written, which is the one place this
@@ -441,7 +482,7 @@ def _closed_under_run_lock(run, frame_id, path, attempt, census, reason,
         if refusal is not None:
             return refusal
     filed = _cmd_dispatch_outcome([
-        run, frame_id, "--note", _closing_note(census, reason, status),
+        run, frame_id, "--note", _closing_note(census, reason, status, shape),
     ], _lock_held=True)
     if "error" in filed:
         return filed
@@ -456,6 +497,7 @@ def _closed_under_run_lock(run, frame_id, path, attempt, census, reason,
         return joined
     return {"frame_close": {
         "run": run, "id": frame_id, "status": joined["join"]["status"],
+        "shape": shape or None,
         "do_children": census["do"], "judges": census["judge"],
         "unjudged": reason or None, "done": reading,
     }}
@@ -525,6 +567,26 @@ def resume_now(text):
     return datetime.now(timezone.utc) if text is None else _parse_iso(text)
 
 
+def _journalled(journal: str) -> bool:
+    """Whether this frame's driver has written a wave down yet.
+
+    Not "is the journal non-empty": `frame-open` files the shape record
+    before any wave exists, so that reading would answer `yes` for every
+    open frame and tell a person scanning `resume` nothing. The shape line
+    and the attributions `result` adds are skipped; anything else is a
+    driver's own writing.
+    """
+
+    for line in str(journal or "").splitlines():
+        text = line.strip()
+        if not text or text.startswith(RESULT_ATTRIBUTION_PREFIX):
+            continue
+        if text.startswith(SHAPE_PREFIX):
+            continue
+        return True
+    return False
+
+
 def open_frames(now=None) -> list:
     """Every open frame of the invoking project, newest first.
 
@@ -557,7 +619,7 @@ def open_frames(now=None) -> list:
             rows.append({
                 "run": run_dir.name, "id": path.stem, "opened_at": opened,
                 "age": _age(opened, now),
-                "journal": bool(_section_body(text, REPORT_SECTION).strip()),
+                "journal": _journalled(_section_body(text, REPORT_SECTION)),
                 "children": children_open, "leases": leased,
                 "goal": goal[0].strip() if goal else "",
             })

@@ -14,6 +14,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -22,16 +23,23 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from scripts import orchflows, state_root, tickets
+from tests._repo_root import ROOT
+from scripts import orchflows, orchflows_scaffold, state_root, tickets
 from scripts.tickets_mint import DO_EXECUTOR
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, ticket_defects,
 )
 from scripts.tickets_store import UTC_STAMP
+from scripts.tickets_shape_line import (
+    GRAMMAR_TOKENS, RESERVED_NAMES, SHAPE_GRAMMAR,
+)
 
 DOC_PACK = "orch-content-pack"
 GOAL = "Deliver the migration wave.\nAnd say what it cost.\n"
 FIXED_NOW = "2026-08-31T12:00:00Z"
+# Every root frame states its wave plan at open, so every fixture that opens
+# one carries a lawful line.
+SHAPE = "outline > [do, do] > judge"
 
 
 class FrameSinkTest(unittest.TestCase):
@@ -94,6 +102,8 @@ class FrameSinkTest(unittest.TestCase):
         return answer
 
     def frame(self, *arguments, run=None) -> dict:
+        if not {"--shape", "--workflow", "--parent"} & set(arguments):
+            arguments = ("--shape", SHAPE, *arguments)
         opened = self.call(
             "frame-open", run or self.RUN, "--goal-file", str(self.goal_file),
             *arguments,
@@ -181,6 +191,165 @@ class FrameShapeTest(FrameSinkTest):
         )
 
 
+class FrameShapeLineTest(FrameSinkTest):
+    """The wave plan a root frame states before its first dispatch.
+
+    A shape is worth a command's refusal only where writing none is the
+    cheap path: an unplanned root is exactly the frame nobody can audit
+    later, so it never gets minted. Everything after the open is printed,
+    not enforced -- the plan is intent, and work that outgrows it is the
+    ordinary case, not a defect.
+    """
+
+    def open_shapeless(self, *arguments, run=None):
+        """`frame-open` with no default line injected, for the refusals."""
+
+        return self.call(
+            "frame-open", run or self.RUN, "--goal-file", str(self.goal_file),
+            *arguments, expect_error=True,
+        )
+
+    def test_a_root_frame_with_no_plan_is_refused_before_anything_is_minted(self):
+        refused = self.open_shapeless()
+
+        self.assertIn('--shape "<line>"', refused["error"])
+        self.assertIn("--workflow NAME", refused["error"])
+        # The grammar, in the one line the refusal prints.
+        for notation in ("`a > b`", "`[a, b]`", "`a[*]`", "`do`, `outline`, `judge`"):
+            self.assertIn(notation, refused["error"])
+        self.assertFalse(self.run_dir().exists())
+
+    def test_one_ticket_is_the_worker_lane_and_the_refusal_says_which_command(self):
+        refused = self.open_shapeless("--shape", "do")
+
+        self.assertEqual(
+            "one ticket is the worker lane: run tickets.py do", refused["error"],
+        )
+        self.assertFalse(self.run_dir().exists())
+
+    def test_the_direct_lane_opens_no_frame_at_all(self):
+        refused = self.open_shapeless("--shape", "direct")
+
+        self.assertIn("direct opens no frame", refused["error"])
+        self.assertFalse(self.run_dir().exists())
+
+    def test_an_unparseable_line_names_the_first_token_that_does_not_belong(self):
+        """Where, not merely that: a hand-written line's author cannot
+        derive the position of the mistake from a bare rejection."""
+
+        for line, token in (
+            ("draft judge", "judge"),
+            ("draft > > judge", ">"),
+            ("draft >", ">"),
+            ("draft, judge", ","),
+            ("draft[3]", "3"),
+            ("[draft, [judge]]", "["),
+            ("draft > judge!", "!"),
+        ):
+            with self.subTest(shape=line):
+                refused = self.open_shapeless("--shape", line)
+                self.assertIn(f"does not parse at `{token}`", refused["error"])
+                self.assertFalse(self.run_dir().exists())
+
+    def test_a_lawful_line_of_every_construct_opens_the_frame(self):
+        """Waves, a parallel wave, an outline-decided count, and a free name
+        -- `do` is lawful inside a line and refused only as the whole of it."""
+
+        for index, line in enumerate((
+            "outline > [do, do] > judge",
+            "draft[*] > judge",
+            "[draft, review] > assemble",
+            "one-off_pass.2",
+            "do > judge",
+        )):
+            with self.subTest(shape=line):
+                frame = self.frame("--shape", line, run=f"shaperun{index}")
+                self.assertEqual(line, frame["shape"])
+
+    def test_a_saved_workflows_name_stands_in_for_the_line(self):
+        frame = self.frame("--workflow", "self-improve")
+
+        self.assertEqual("workflow:self-improve", frame["shape"])
+        self.assertIn(
+            "shape: workflow:self-improve",
+            _sections(self.ticket_text("B1"))["Report"],
+        )
+
+    def test_an_explicit_line_outranks_the_workflow_it_was_written_beside(self):
+        frame = self.frame("--shape", SHAPE, "--workflow", "self-improve")
+
+        self.assertEqual(SHAPE, frame["shape"])
+
+    def test_a_called_frame_is_already_a_wave_of_its_callers_plan(self):
+        parent = self.frame()
+
+        child = self.frame("--parent", parent["id"])
+
+        self.assertIsNone(child["shape"])
+        self.assertEqual("", _sections(self.ticket_text("B1.1"))["Report"].strip())
+
+    def test_the_shape_is_the_frames_first_record_on_the_result_channel(self):
+        frame = self.frame()
+
+        self.journal(frame, "wave 1: two drafts out", "wave-1")
+
+        journal = _sections(self.ticket_text("B1"))["Report"]
+        # Written through `result`, so it carries that channel's attribution
+        # rather than a hand-placed line, and it is there before wave one.
+        self.assertIn("### Written by `B1`", journal)
+        self.assertIn(f"shape: {SHAPE}", journal)
+        self.assertLess(
+            journal.index(f"shape: {SHAPE}"),
+            journal.index("wave 1: two drafts out"),
+        )
+
+    def test_a_second_record_may_not_reuse_the_shape_record_id(self):
+        """The record id is `shape`, and `result` fences one per id."""
+
+        frame = self.frame()
+
+        answer = self.call(
+            "result", self.RUN, frame["id"],
+            "--assignment-seal", frame["assignment_seal"],
+            "--dispatch-id", frame["dispatch_id"],
+            "--record-id", "shape", "--by", frame["journal_by"],
+            "--text", "shape: something else", expect_error=True,
+        )
+        self.assertIn("error", answer)
+
+    def test_the_close_prints_the_plan_beside_what_was_actually_minted(self):
+        frame = self.frame()
+        self.callable("do", frame["id"])
+
+        closed = self.call(
+            "frame-close", self.RUN, frame["id"], "--status", "complete",
+        )["frame_close"]
+
+        self.assertEqual(SHAPE, closed["shape"])
+        self.assertIn(
+            f"shape {SHAPE}; frame closed complete over 1 do and 0 judge "
+            "children;",
+            _sections(self.ticket_text("B1"))["Report"],
+        )
+
+    def test_a_plan_the_work_outgrew_prints_and_never_refuses(self):
+        """Drift is reported to the person holding both, not blocked."""
+
+        frame = self.frame("--shape", "draft > judge")
+        self.journal(frame, "unjudged: the user reads the draft", "wave-1")
+
+        closed = self.call(
+            "frame-close", self.RUN, frame["id"], "--status", "limited",
+        )["frame_close"]
+
+        self.assertEqual("limited", closed["status"])
+        self.assertEqual("draft > judge", closed["shape"])
+        self.assertIn(
+            "shape draft > judge; frame closed limited over 0 do and 0 judge",
+            _sections(self.ticket_text("B1"))["Report"],
+        )
+
+
 class FrameJournalTest(FrameSinkTest):
     """The journal is the driver's working memory, and it rides `result`."""
 
@@ -265,8 +434,10 @@ class FrameCloseTest(FrameSinkTest):
         self.assertEqual(
             "complete", _parse_frontmatter(self.ticket_text("B1"))["status"],
         )
+        self.assertEqual(SHAPE, closed["shape"])
         self.assertIn(
-            "frame closed complete over 2 do-children; judged by B1.3.",
+            f"shape {SHAPE}; frame closed complete over 2 do and 1 judge "
+            "children; judged by B1.3.",
             _sections(self.ticket_text("B1"))["Report"],
         )
 
@@ -414,6 +585,19 @@ class ResumeTest(FrameSinkTest):
         self.assertEqual(1, len(remaining))
         self.assertTrue(remaining[0].startswith("B1 "), remaining)
 
+    def test_the_shape_record_alone_is_not_a_wave_anybody_wrote(self):
+        """`resume`'s journal column answers "has this driver written a wave
+        down". `frame-open` files the shape before any wave exists, so a
+        column that counted it would read `yes` for every open frame."""
+
+        frame = self.frame()
+        self._hold_open_at("B1", "2026-08-31T11:30:00Z")
+        self.assertIn("no ", self._resume("--now", FIXED_NOW).splitlines()[1])
+
+        self.journal(frame, "wave 1: one draft out", "wave-1")
+
+        self.assertIn("yes ", self._resume("--now", FIXED_NOW).splitlines()[1])
+
     def test_another_projects_run_is_not_this_projects_to_resume(self):
         self.frame()
         identity = Path(self.temporary.name) / "runs" / self.RUN / "run.json"
@@ -427,6 +611,133 @@ class ResumeTest(FrameSinkTest):
         self.assertEqual(
             "no open frames for this project\n", self._resume(),
         )
+
+
+class SavedWorkflowShapeTest(unittest.TestCase):
+    """Every shipped workflow's root `frame-open` states a plan.
+
+    These bodies are the worked examples a driver copies, so one that
+    opened a planless root would be a refusal in the wild the first time
+    anybody ran it -- and worse, a reader would learn the wrong command.
+    A saved workflow names `--workflow`: its body *is* the plan.
+    """
+
+    def setUp(self):
+        self.bodies = {
+            path.parent.name: path.read_text(encoding="utf-8")
+            for path in sorted(
+                (ROOT / "example-workflows").glob("*/SKILL.md")
+            )
+        }
+        self.assertTrue(self.bodies)
+
+    def test_every_root_frame_open_line_states_a_plan(self):
+        self.assertEqual([], sorted(_planless(self.bodies)))
+
+    def test_dropping_the_flag_from_a_copy_fails_the_check(self):
+        """The can-fail direction (rules/verification.md §8) on copies built
+        beside the tree: one workflow's text at a time, mutated in memory."""
+
+        for name, body in self.bodies.items():
+            if name not in _planless({name: body}, flag=""):
+                continue  # this body opens no root frame to strip
+            with self.subTest(workflow=name):
+                stripped = dict(self.bodies)
+                stripped[name] = body.replace(" --workflow " + name, "")
+                self.assertIn(name, _planless(stripped))
+
+    def test_the_scaffolded_workflow_states_a_plan(self):
+        """`orchflows new workflow` writes a body the door would accept.
+
+        The skeleton is the first `frame-open` line most authors ever run,
+        and it is generated, not shipped -- so the glob above cannot see
+        it. Same check, same set: a scaffold that regressed to a planless
+        line would hand every new author a command this tree refuses.
+        """
+
+        name = "scaffolded-flow"
+        body = dict(orchflows_scaffold.files_for("workflow", name))["SKILL.md"]
+        self.assertEqual(set(), _planless({name: body}))
+        self.assertEqual(
+            {name},
+            _planless({name: body.replace(" --workflow " + name, "")}),
+        )
+
+
+class ShapeGrammarOwnerTest(unittest.TestCase):
+    """One grammar, stated as prose and echoed as notation.
+
+    `docs/vocabulary.md`'s shape-line paragraph defines it; `SHAPE_GRAMMAR`
+    is the line a refusal prints, and it points at that owner rather than
+    redefining it. Nothing but agreement holds the two together, so this
+    reads the anchors each must carry -- the parser's own tokens and its
+    reserved names, backticked, never a sentence -- and a construct one
+    side grows or loses alone lands here.
+    """
+
+    def test_the_prose_and_the_printed_notation_carry_the_same_anchors(self):
+        self.assertEqual([], _adrift(_shape_line_prose(), SHAPE_GRAMMAR))
+
+    def test_a_construct_dropped_from_either_side_is_caught(self):
+        """The can-fail direction, on copies: neither file is touched."""
+
+        prose = _shape_line_prose()
+        self.assertEqual(
+            ["notation:*"],
+            _adrift(prose, SHAPE_GRAMMAR.replace("`a[*]`", "`a`")),
+        )
+        self.assertEqual(
+            ["prose:judge"],
+            _adrift(prose.replace("`judge` are", "judge are"), SHAPE_GRAMMAR),
+        )
+
+
+def _planless(bodies: dict, flag: str = "--workflow") -> set:
+    """The workflows whose root `frame-open` line names no plan.
+
+    A `--parent` frame is a wave of its caller's shape and owes none, so it
+    is not one of these; `flag=""` asks the weaker question "does this body
+    open a root frame at all", which is what the can-fail case needs to
+    know before it strips anything.
+    """
+
+    named = set()
+    for name, body in bodies.items():
+        for line in body.splitlines():
+            if "tickets.py frame-open" not in line or "--parent" in line:
+                continue
+            if not flag or (flag not in line and "--shape" not in line):
+                named.add(name)
+    return named
+
+
+def _shape_line_prose() -> str:
+    """The vocabulary's shape-line paragraph: the grammar's owner.
+
+    Sliced on the bolded term and the next term's bullet, so the anchor
+    the check leans on is a heading-grade one; a paragraph that moved
+    reddens here rather than quietly matching nothing.
+    """
+
+    text = (ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    start = text.index("A **shape line**")
+    return text[start:text.index("\n- **", start)]
+
+
+def _adrift(prose: str, notation: str) -> list:
+    """`['<side>:<anchor>']` for every anchor a side fails to carry.
+
+    Tokens are looked for inside the backticked spans, names as whole
+    spans: `> judge` carries the token but is not the reserved name.
+    """
+
+    missing = []
+    for side, text in (("prose", prose), ("notation", notation)):
+        spans = re.findall(r"`([^`]+)`", " ".join(text.split()))
+        joined = " ".join(spans)
+        missing.extend(f"{side}:{t}" for t in GRAMMAR_TOKENS if t not in joined)
+        missing.extend(f"{side}:{n}" for n in RESERVED_NAMES if n not in spans)
+    return sorted(missing)
 
 
 def _ticket(extra: str) -> str:

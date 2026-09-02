@@ -11,7 +11,7 @@ identity — mode, criteria, promotion rule, margin and search policy — or
 is written through; `bound`, the campaign's budget; and `mutation_scope`,
 the candidate workspace, which is the campaign call's alone.
 
-    tickets.py frame-open <run> --goal-file <campaign-goal> --bound <bound>
+    tickets.py frame-open <run> --goal-file <campaign-goal> --bound <bound> --workflow evolve
 
 The frame's `## Report` is the campaign ledger. Re-read it and every child's
 state from the sink before each generation, then append that generation's

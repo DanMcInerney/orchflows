@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2156,
+  "count": 2182,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -231,6 +231,8 @@
    "test_events.FrameCloseEventTest.test_a_refused_close_writes_no_event",
    "test_events.FrameCloseEventTest.test_an_unjudged_close_names_the_journals_reason",
    "test_events.FrameOpenEventTest.test_a_long_goal_first_line_is_truncated_to_200_chars",
+   "test_events.FrameOpenEventTest.test_a_workflow_frames_shape_names_the_body_that_is_its_plan",
+   "test_events.FrameOpenEventTest.test_frame_open_carries_the_shape_it_opened_under",
    "test_events.FrameOpenEventTest.test_frame_open_names_its_workflow_and_goal_head",
    "test_events.FrameOpenEventTest.test_frame_open_without_workflow_names_none",
    "test_events.LandEventFailureIsSwallowedTest.test_a_broken_append_does_not_fail_the_land",
@@ -1013,6 +1015,12 @@
    "test_ticket_callables.GenerationArtifactTest.test_the_three_adapter_kinds_are_admitted_unchanged",
    "test_ticket_callables.GenerationArtifactTest.test_the_untyped_refusal_expects_all_five_kinds",
    "test_ticket_callables.RepairRoundAdmissionTest.test_a_runtime_callables_repair_round_admits_and_dispatches",
+   "test_ticket_callables.ResearchLaneDoorTest.test_a_goal_declaring_no_sub_questions_is_minted_unchanged",
+   "test_ticket_callables.ResearchLaneDoorTest.test_another_packs_parentless_do_takes_the_same_goal_unchanged",
+   "test_ticket_callables.ResearchLaneDoorTest.test_one_sub_question_is_minted_unchanged",
+   "test_ticket_callables.ResearchLaneDoorTest.test_the_count_moves_with_the_marker_and_with_the_items",
+   "test_ticket_callables.ResearchLaneDoorTest.test_the_same_goal_under_a_parent_is_minted_unchanged",
+   "test_ticket_callables.ResearchLaneDoorTest.test_two_sub_questions_are_refused_before_the_run_exists",
    "test_ticket_callables.TypedArtifactGrammarTest.test_each_registered_adapter_names_one_line_kind",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_loops_done_and_a_tickets_done_are_graded_by_one_owner",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_predicate_is_part_of_the_sealed_assignment",
@@ -1038,6 +1046,18 @@
    "test_ticket_frames.FrameCloseTest.test_land_stays_the_callable_command_and_frame_close_says_so",
    "test_ticket_frames.FrameJournalTest.test_a_journal_append_outlives_the_frames_nominal_expiry",
    "test_ticket_frames.FrameJournalTest.test_a_wave_appends_through_the_result_channel_under_the_frames_identity",
+   "test_ticket_frames.FrameShapeLineTest.test_a_called_frame_is_already_a_wave_of_its_callers_plan",
+   "test_ticket_frames.FrameShapeLineTest.test_a_lawful_line_of_every_construct_opens_the_frame",
+   "test_ticket_frames.FrameShapeLineTest.test_a_plan_the_work_outgrew_prints_and_never_refuses",
+   "test_ticket_frames.FrameShapeLineTest.test_a_root_frame_with_no_plan_is_refused_before_anything_is_minted",
+   "test_ticket_frames.FrameShapeLineTest.test_a_saved_workflows_name_stands_in_for_the_line",
+   "test_ticket_frames.FrameShapeLineTest.test_a_second_record_may_not_reuse_the_shape_record_id",
+   "test_ticket_frames.FrameShapeLineTest.test_an_explicit_line_outranks_the_workflow_it_was_written_beside",
+   "test_ticket_frames.FrameShapeLineTest.test_an_unparseable_line_names_the_first_token_that_does_not_belong",
+   "test_ticket_frames.FrameShapeLineTest.test_one_ticket_is_the_worker_lane_and_the_refusal_says_which_command",
+   "test_ticket_frames.FrameShapeLineTest.test_the_close_prints_the_plan_beside_what_was_actually_minted",
+   "test_ticket_frames.FrameShapeLineTest.test_the_direct_lane_opens_no_frame_at_all",
+   "test_ticket_frames.FrameShapeLineTest.test_the_shape_is_the_frames_first_record_on_the_result_channel",
    "test_ticket_frames.FrameShapeTest.test_a_called_frame_hangs_under_its_caller_and_seals_through_it",
    "test_ticket_frames.FrameShapeTest.test_a_frame_carrying_a_craft_binding_is_off_contract",
    "test_ticket_frames.FrameShapeTest.test_an_ordinary_ticket_still_owes_its_executor",
@@ -1046,6 +1066,12 @@
    "test_ticket_frames.ResumeTest.test_an_empty_sink_says_so_rather_than_printing_a_header",
    "test_ticket_frames.ResumeTest.test_another_projects_run_is_not_this_projects_to_resume",
    "test_ticket_frames.ResumeTest.test_one_open_frame_is_listed_with_its_goal_age_and_children",
+   "test_ticket_frames.ResumeTest.test_the_shape_record_alone_is_not_a_wave_anybody_wrote",
+   "test_ticket_frames.SavedWorkflowShapeTest.test_dropping_the_flag_from_a_copy_fails_the_check",
+   "test_ticket_frames.SavedWorkflowShapeTest.test_every_root_frame_open_line_states_a_plan",
+   "test_ticket_frames.SavedWorkflowShapeTest.test_the_scaffolded_workflow_states_a_plan",
+   "test_ticket_frames.ShapeGrammarOwnerTest.test_a_construct_dropped_from_either_side_is_caught",
+   "test_ticket_frames.ShapeGrammarOwnerTest.test_the_prose_and_the_printed_notation_carry_the_same_anchors",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_launch",
@@ -2159,7 +2185,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "1df1feba4fa51188f5f8071c13285c729fa894ef7c76d93cf350630b8e927cc5"
+  "sha256": "b8356cbc5f3c6dcd44024d433a24e76ff05095fcf434e3d6b2e698a9fa27cc8d"
  },
  "mutation_owners": [
   {
