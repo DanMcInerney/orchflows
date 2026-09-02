@@ -85,6 +85,16 @@ MINT_INDEPENDENCE = "gate"
 ARTIFACT_KINDS = frozenset(
     adapter.artifact_kind for adapter in ADAPTER_REGISTRY.values()
 )
+# The two library-owned artifact kinds, and the frontmatter field each one
+# names. A domain's kinds are the adapter's and carry their identity inside
+# the line; these two are the ticket machinery's own, and their identity is
+# a generation value it already stamped -- `root:<id>:<n>:sha256:<digest>`
+# and `cut:<id>:<n>:sha256:<digest>` -- so the whole line is the value and
+# the run itself is what says whether it is real.
+GENERATION_KINDS = {"root": "root_generation", "cut": "cut_generation"}
+# What a judge's `--artifacts` may name. Kept apart from `ARTIFACT_KINDS`,
+# which is the adapters' set and is read as such by the launch's line forms.
+JUDGE_KINDS = ARTIFACT_KINDS | frozenset(GENERATION_KINDS)
 # The `parent` clause on the child's own Context: the one line that says
 # whose call this ticket is, in the section a reader of the ticket alone
 # would otherwise have to infer it from the id.
@@ -132,12 +142,38 @@ def _issued_ids(run_dir) -> list:
     )
 
 
-def _artifact_lines(values) -> tuple:
+def _generation_values(run_dir, field: str) -> list:
+    """Every value of one generation field carried by a ticket in the run.
+
+    Read off the tickets rather than recomputed: the value spells the id and
+    ordinal of the stamp that minted it, so the run's own files are the only
+    place it exists, and a caller that re-derived one would be authoring a
+    generation instead of naming one.
+    """
+
+    values = set()
+    if run_dir is not None and run_dir.is_dir():
+        for path in sorted(run_dir.glob("*.md")):
+            text, failure = _read_utf8(path, "ticket")
+            if failure is not None:
+                continue
+            value = str(_parse_frontmatter(text).get(field) or "").strip()
+            if value:
+                values.add(value)
+    return sorted(values)
+
+
+def _artifact_lines(values, run_dir=None) -> tuple:
     """`(lines, refusal)` for the typed artifact identities a judge reads.
 
     One flag repeated, or one value carrying several lines: a caller relaying
     two children's returned lines has them as two lines already, and asking
     it to re-join them into one flag value is where a paraphrase gets made.
+
+    A `root:` or `cut:` line is checked against `run_dir` as well as typed:
+    those two identities live in the run's own frontmatter, so an unknown one
+    is refused with the run's real values rather than accepted and handed to
+    a judge that has nothing to open.
     """
 
     lines = []
@@ -145,12 +181,24 @@ def _artifact_lines(values) -> tuple:
         lines.extend(part.strip() for part in str(value).splitlines() if part.strip())
     if not lines:
         return None, {"error": f"judge requires --artifacts. usage: {JUDGE_USAGE}"}
+    known = {}
     for line in lines:
         kind = line.split(":", 1)[0]
-        if kind not in ARTIFACT_KINDS or not line[len(kind) + 1:].strip():
+        if kind not in JUDGE_KINDS or not line[len(kind) + 1:].strip():
             return None, {"error": (
                 f"artifact '{line}' is not one typed identity; expected "
-                + ", ".join(sorted(f"{name}:<identity>" for name in ARTIFACT_KINDS))
+                + ", ".join(sorted(f"{name}:<identity>" for name in JUDGE_KINDS))
+            )}
+        field = GENERATION_KINDS.get(kind)
+        if field is None:
+            continue
+        if field not in known:
+            known[field] = _generation_values(run_dir, field)
+        if line not in known[field]:
+            return None, {"error": (
+                f"artifact '{line}' names no {field} carried by any ticket in "
+                "this run; its known " + kind + " identities are: "
+                + (", ".join(known[field]) or "(none)")
             )}
     return lines, None
 
@@ -329,9 +377,15 @@ def _cmd_callable(rest, *, judge: bool):
         details, failure = _read_utf8(details_file, "details file")
         if failure is not None:
             return failure
+    # The run directory is resolved ahead of the artifact check rather than
+    # after it: a `root:`/`cut:` line names a generation this run stamped,
+    # so the run's own tickets are what the check reads.
+    run_dir, failure = _run_dir(run)
+    if failure is not None:
+        return failure
     lines = []
     if judge:
-        lines, failure = _artifact_lines(artifacts)
+        lines, failure = _artifact_lines(artifacts, run_dir)
         if failure is not None:
             return failure
         # One judge, one kind: the kind selects the craft's `## Lens` entry
@@ -346,9 +400,6 @@ def _cmd_callable(rest, *, judge: bool):
             )}
     elif artifacts:
         return {"error": f"--artifacts belongs to judge. usage: {DO_USAGE}"}
-    run_dir, failure = _run_dir(run)
-    if failure is not None:
-        return failure
     # The one lock that decides anything two callers could disagree about:
     # which id this callable takes. Everything after it is per-ticket work
     # whose own command takes the lock for itself.
