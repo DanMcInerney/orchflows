@@ -21,8 +21,8 @@ from scripts import (
     orchflows, orchflows_envs, orchflows_home, orchflows_node, orchflows_tools,
     rings, rings_trust, state_root,
 )
+from tests._repo_root import ROOT
 
-ROOT = Path(__file__).resolve().parent.parent
 # A name no machine running this suite can have on PATH, so "missing" is a
 # fact here rather than a property of the developer's laptop.
 ABSENT = "orchflows-no-such-tool"
