@@ -41,9 +41,11 @@ RECEIPT_FILENAME = "receipt.json"
 GITIGNORE_START = "# BEGIN ORCHFLOWS MANAGED IGNORES"
 GITIGNORE_END = "# END ORCHFLOWS MANAGED IGNORES"
 # Regenerable or machine-local, in that order: the installed library and its
-# runtime, the browser distribution, scratch trees, the pinned clones the
-# lock restores, the trust ledger that must never travel (P2), and the state
-# trees that are heavy or per-run rather than history. `state/friction/` and
+# runtime, the per-item environments `orchflows_envs.py` rebuilds from each
+# item's committed `requirements.txt`, the browser distribution, scratch
+# trees, the pinned clones the lock restores, the trust ledger that must
+# never travel (P2), and the state trees that are heavy or per-run rather
+# than history. `state/friction/` and
 # `state/runs/` are deliberately absent: they are the sync value.
 # The six sink subdirectory names are `state_root.py`'s owners -- its
 # `tickets_root` function for the one with a root already, its five new
@@ -61,6 +63,7 @@ SINK_MANAGED_SUBPATHS = (
 MANAGED_IGNORES = (
     "lib/",
     "runtime/",
+    "envs/",
     "ui/",
     "tmp/",
     "worktrees/",

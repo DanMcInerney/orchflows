@@ -31,7 +31,9 @@ This is a user install, the only installation scope. It creates or reuses
 environment used by installed commands even when installation starts from
 an active project environment. Runtime dependencies are declared in
 `requirements-runtime.txt`, with exact hashes for the local UI server and its
-transitive closure.
+transitive closure. A custom skill, pack or workflow declares its own in a
+`requirements.txt` beside it, and `orchflows sync` builds each one its own
+environment.
 Dry runs create nothing, and user uninstall retains the private runtime for
 explicit manual cleanup.
 

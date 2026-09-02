@@ -5,8 +5,9 @@ two laws a reader has to be told, and what the package refuses.
 
 ## Layout
 
-`scripts/super_research/`, standard library only on the Python 3.9 floor, no I/O
-at import time. The module set is not the one the frozen spec's affected surfaces
+`scripts/super_research/`, on the Python 3.9 floor, importing nothing beyond the
+standard library and what a `requirements.txt` beside the item declares (none
+today), no I/O at import time. The module set is not the one the frozen spec's affected surfaces
 list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
 `probes.py` and `smoke.py` out of `cli.py`, and `routes.py` out of
 `transport.py`, after the spec froze.

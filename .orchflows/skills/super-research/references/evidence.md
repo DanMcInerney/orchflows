@@ -248,6 +248,9 @@ adapter added. Stack Exchange compressed its answer only when asked
 argues the cold X/Instagram surfaces are fingerprint-gated at the TLS layer,
 and that a browser-matched ClientHello — chosen once, never rotated on a
 block — might be a lawful persistent identity where stdlib's is flagged on
-the first packet. This delivery holds the pure-stdlib line: the identity
-stays `super-research/0.1` over urllib's own handshake, the gated origins
-stay typed losses, and the law change is the user's call, not a sweep's.
+the first packet. This delivery held the pure-stdlib line: the identity
+stays `super-research/0.1` over urllib's own handshake and the gated origins
+stay typed losses. The line itself was lifted on 2026-09-02 — a ring item
+declares its own dependencies (`docs/custom-workflow-authoring.md`,
+Dependencies) — so a browser-matched transport is now an ordinary
+dependency decision for this item, still the user's call, not a sweep's.

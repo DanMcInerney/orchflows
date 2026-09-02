@@ -79,6 +79,24 @@ drives inside a frame you spawn an agent for, unless you decide otherwise for
 that bundle. The convention costs a spawn and buys the same containment a
 sealed child prompt has.
 
+## Dependencies
+
+The standard-library floor belongs to the library, not to what you author
+on it: [ARCHITECTURE.md](../ARCHITECTURE.md)'s scripts tier states it,
+and a ring item is outside it. Use the libraries the work needs. Declare
+them in one `requirements.txt` beside the item's manifest, pip's own
+format, pinned the way you would pin anything you mean to reproduce.
+`orchflows sync` builds one environment per declaring item under
+`~/.orchflows/envs/<kind>/<name>/`, rebuilds it when the file changes, and
+skips an untrusted project item — installing its packages runs its content,
+which is exactly what trust grants. `orchflows env <kind> <name>` prints the
+interpreter the item's scripts run through: its own environment when it
+declares one, else the interpreter the library's own scripts use. Write that
+command into the item's prose, never a path — an environment is
+machine-local, regenerable, ignored by the home ring's `.gitignore`, and
+never installed under `~/.orchflows/lib/`. An item that declares nothing
+runs as it always did, and what it imports is its own suite's claim to make.
+
 ## The five flows
 
 - **Create** — `orchflows new {skill|pack|workflow} <name>` scaffolds into the

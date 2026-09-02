@@ -1,4 +1,4 @@
-"""Standard-library and host-mirror boundary checks."""
+"""Declared-dependency and host-mirror boundary checks."""
 
 import sys
 import unittest
@@ -14,13 +14,23 @@ from .support import (
     STANDARD_LIBRARY_IMPORTS,
     THIRD_PARTY_SURFACES,
     absolute_imports,
+    declared_import_names,
     imports_naming,
     outside_the_standard_library,
     package_sources,
 )
 
-class StandardLibraryOnlyTest(unittest.TestCase):
-    """Criterion 2, dependency half: nothing outside the 3.9 standard library."""
+class DeclaredDependenciesOnlyTest(unittest.TestCase):
+    """Criterion 2, dependency half: nothing undeclared, on the 3.9 floor.
+
+    The stdlib-only bar was lifted on 2026-09-02 (`docs/custom-workflow-
+    authoring.md`, Dependencies): a ring item uses the libraries it needs and
+    declares them in `requirements.txt` beside its manifest. What survives is
+    the enumeration -- every module the package takes from outside itself is
+    spelled out, and every one the interpreter does not answer from its own
+    standard library has to be one the declaration accounts for. An import
+    that is neither is a dependency nobody promised to install.
+    """
 
     def test_the_package_takes_exactly_these_modules_from_outside_itself(self):
         taken = set()
@@ -29,8 +39,14 @@ class StandardLibraryOnlyTest(unittest.TestCase):
 
         self.assertEqual(tuple(sorted(taken)), STANDARD_LIBRARY_IMPORTS)
 
-    def test_every_one_of_them_resolves_inside_this_interpreters_own_stdlib(self):
-        self.assertEqual(outside_the_standard_library(STANDARD_LIBRARY_IMPORTS), [])
+    def test_every_one_outside_the_stdlib_is_declared_beside_the_manifest(self):
+        undeclared = [
+            (name, origin)
+            for name, origin in outside_the_standard_library(STANDARD_LIBRARY_IMPORTS)
+            if name not in declared_import_names()
+        ]
+
+        self.assertEqual(undeclared, [])
 
     def test_the_floor_this_was_resolved_against_is_the_declared_one(self):
         # The resolution above is a fact about the interpreter that ran it, so
