@@ -14,7 +14,15 @@ from pathlib import Path
 # test modules that import tools.validate_support.* directly -- already
 # has the repository root on sys.path, so this leaf import needs no walk
 # of its own; it is a plain downstream read of the one repo-root fact.
-from scripts._bootstrap import ROOT
+#
+# An install ships this package under `lib/` so `orchflows check` can run
+# these checks over a ring, and the scripts it reads sit flat in `bin/`
+# with no `scripts` package above them. The paired import is the tree's
+# own idiom for that layout: one module, reached under either name.
+try:
+    from scripts._bootstrap import ROOT
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    from _bootstrap import ROOT
 
 # What a check says when the tree it grades is not here. One wording, so a
 # reader can grep the report for every check that did not run.

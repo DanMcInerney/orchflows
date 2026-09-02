@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
-from tools.validate_support import common as _common
-from scripts import browser_game_validate as _instance_validator
+from . import common as _common
+# An install ships this package under `lib/` so `orchflows check` can run
+# these checks over a ring, and the scripts it reads sit flat in `bin/`
+# with no `scripts` package above them. The paired import is the tree's
+# own idiom for that layout: one module, reached under either name.
+try:
+    from scripts import browser_game_validate as _instance_validator
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    import browser_game_validate as _instance_validator
 
 
 Path = _common.Path
