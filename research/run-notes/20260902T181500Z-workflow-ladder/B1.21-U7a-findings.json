@@ -1,0 +1,86 @@
+{
+  "ticket": "B1.21",
+  "run": "20260902T181500Z-workflow-ladder",
+  "unit": "U7a",
+  "judge": "orch-judge / orch-code-pack / Lens `### git`",
+  "artifact": "git:777205ee1829968e6e5337edf8f975b597bdad62",
+  "judged_tree": "575c729cf39a (run_required's tree id at 777205ee; matches the executor's reading)",
+  "verdict": "holds; no blocking finding",
+  "blocking_grounds_checked": {
+    "run_required_at_commit": "exit 0 in a detached scratch worktree at 777205ee (removed after): validate 0, run_tests 0 (94 modules, 2274 tests, 0 failures, 0 errors, 14 skipped), run_serial_compat 0 (14 sentinels, revision 777205ee, worktree_clean true), install --dry-run 0, git diff --check 0; wall 2m38s, watched to completion",
+    "section_2_names": "none differ: lib dir sheets/, manifest SHEET.md, frontmatter exactly name/description/packs, name == folder, sections ## Craft + ## Lens only, Lens keys are kinds the named packs' adapters emit (validator resolves market-brief ['evidence'], html-dossier ['doc','git'], sheet-craft ['doc']), no scripts/ requirements.txt tools.txt, by-name/<name>/SHEET.md minted by install --dry-run for all three",
+    "budgets": "validator body counts 42/48/46 of SHEET_BUDGET 100 (whole-file non-empty counts 47/53/51 include the 5 frontmatter lines); descriptions 109/111/92 of 140",
+    "files_outside_details": "one: tests/test_installer_cases/planning/scoped_hosts.py, docstring only, reason reported (the sibling test's sentence 'this repository carries no sheet yet' became false); no assertion changed; diff read whole"
+  },
+  "readings": [
+    {"command": "tools/validate.py (workspace HEAD b41faeda, contains 777205ee)", "exit": 0, "note": "0 ERROR lines; 3 pre-existing WARN near-duplicates between orch-do and orch-judge, none touching sheets"},
+    {"command": "install.py --dry-run (workspace HEAD)", "exit": 0, "note": "copies lib/sheets/{html-dossier,market-brief,sheet-craft}/SHEET.md and lib/contracts/sheet.md; writes lib/by-name/{html-dossier,market-brief,sheet-craft}/SHEET.md; also copies lib/sheets/.gitkeep"},
+    {"command": "tools/run_required.py --no-cache at 777205ee (scratch worktree)", "exit": 0, "note": "all five rows 0; tree 575c729cf39a"},
+    {"command": "can-fail reading through tools/validate_support/sheets.py functions over in-memory mutants (tree never written)", "exit": 0, "note": "each shipped sheet: 0 errors across frontmatter/sections/lens/budget/contents; 7 mutants per sheet (## Workspace appended, first ### key renamed, +120 filler lines, name mismatch, 141-char description, unknown pack, ## Lens removed) each produced >=1 error, 21/21"},
+    {"command": "scripts/tickets_pins.pin_fields over the three sheets with lib=this checkout", "exit": 0, "note": "each resolves in ring lib with a digest; pinned beside every pack it names (html-dossier beside orch-design-pack alone included); refused beside orch-code-pack with the stamp_refusal sentence"},
+    {"command": "git merge-base --is-ancestor 777205ee HEAD", "exit": 0},
+    {"command": "git worktree add --detach <scratch> 777205ee / git worktree remove --force", "exit": "0 / 0"}
+  ],
+  "tighten_only_reading": "no clause in any of the three sheets permits what its named crafts forbid; market-brief narrows research `### evidence` (dated -> dropped outside the window; quantify -> magnitude, unit, two dates; coverage -> gaps per section), html-dossier narrows content `### doc` (claims -> in-file links; a sources section) and is consistent with design `### git` (themes, meaning without colour), sheet-craft narrows content `### doc` Claims into per-clause traceability. No sheet-defect finding.",
+  "spec_acceptance_reading": "every Craft and Lens clause the U7a Goal lists is present in the named sheet, read clause by clause; the one partial is sheet-craft's 'cited' (F3)",
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": false,
+      "file": "sheets/html-dossier/SHEET.md",
+      "evidence": "packs: [orch-content-pack, orch-design-pack]; orch-design-pack's adapter emits only `git` (validator kinds ['doc','git']; packs/orch-design-pack/references/craft.md Lens has root/cut/git). The sheet's only Lens entry is `### doc`. pin_fields accepts the stamp beside orch-design-pack alone, so a design-pack judge reading this sheet at `### git` finds no entry: the stamp is accepted and silent.",
+      "reading": "the spec (U7a Goal) fixed `Lens ### doc` for this sheet, so the executor followed it and said so; the gap is in the fixed shape, not the execution",
+      "smallest_change": "add a `### git` entry to html-dossier carrying the render-facing criteria (offline, both themes, tabular numerals, captions) keyed for the design pack, or drop orch-design-pack from `packs:`; either is a one-file change under sheets/ but touches a shape section 2 fixed, so successor scope"
+    },
+    {
+      "id": "F2",
+      "blocking": false,
+      "file": "sheets/html-dossier/SHEET.md",
+      "evidence": "Lens `### doc` Offline clause ends 'One external reference is a blocking finding.' rules/verification.md §10 fixes `blocking` on two grounds only and says how findings weigh stays the craft's; orch-judge SKILL.md says the Lens entry only weighs findings against one another. An external reference does falsify a frozen 'opens offline' criterion, so §10 already makes it blocking whenever that criterion is frozen; the sentence claims a power the sheet does not own rather than adding a rule.",
+      "smallest_change": "rephrase to 'one external reference fails this entry' and let §10 decide blocking"
+    },
+    {
+      "id": "F3",
+      "blocking": false,
+      "file": "sheets/sheet-craft/SHEET.md",
+      "evidence": "Its own Lens says 'every `## Craft` claim traces to a named source in `references/` or to a fact the ticket's Context carries; an untraceable clause is a finding whatever its merit.' The sheet ships no references/ and one link (contracts/sheet.md), which covers what a sheet is, tighten-only, knowledge-only and the budget. The clauses 'Every claim traceable' and 'Every criterion provable' (and the 'opinion wearing a pin' reasoning) trace only to research/workflow-ladder-spec-2026-09-02.md, which is never installed. The U7a Goal lists 'cited' among sheet-craft's Craft properties; it is met for four of six clauses.",
+      "reading": "sheet-craft was not stamped on the ticket that made it, so its Lens is not a criterion in force here; this is a self-consistency finding against the spec's 'cited'",
+      "smallest_change": "cite the two clauses to an installed owner (rules/verification.md §10 for provability; contracts/sheet.md Additive-and-tighten-only plus Identity for why an untraceable pin binds every later run) or add a references/ note; one file under sheets/"
+    },
+    {
+      "id": "F4",
+      "blocking": false,
+      "file": "sheets/html-dossier/SHEET.md; ticket B1.14 `## Report`",
+      "evidence": "The Details say the super-research report rules are absorbed by html-dossier. .orchflows/skills/super-research/SKILL.md names five: own locator (absorbed: 'Carry the source's own string'), verbatim community quote with author and count (absorbed), every typed loss stated (absorbed), in-window contradictions shown not picked (absorbed), and a market's own price string after dropping already-resolved markets (its first half absorbed as 'a number re-rounded is a second number'; the resolved-market exclusion is not in the sheet). The executor's report does not record that omission as deliberate.",
+      "reading": "the placement is defensible -- the resolved-market rule is a prediction-market acquisition fact, not a dossier-rendering fact, and a domain-general sheet cannot name Polymarket -- but the ticket asked that deliberate omissions be reported",
+      "smallest_change": "carry the resolved-market exclusion in U7d's converted super-research prose (its report step is where html-dossier would be stamped) and say so in that unit's report; nothing to change in this sheet"
+    },
+    {
+      "id": "F5",
+      "blocking": false,
+      "file": "tools/validate_support/lint.py:189 LINKED_MD_ROOTS; tools/validate_support/duplication.py cross_tier_documents",
+      "evidence": "Both executor observations confirmed by reading: `sheets` is absent from LINKED_MD_ROOTS, so no markdown link inside a sheet is resolved by tools/validate.py; and the duplication corpus reads packs, skills, rules, contracts, docs, example-workflows, never sheets, so a sheet restating a craft clause verbatim is invisible to the check whose purpose is that class. The one shipped link, sheets/sheet-craft/SHEET.md -> ../../contracts/sheet.md, resolves in the repo (contracts/sheet.md exists) and in the installed tree (install --dry-run copies lib/contracts/sheet.md).",
+      "smallest_change": "add `sheets` to LINKED_MD_ROOTS and to cross_tier_documents' corpus; two lines in files U1 owns, outside U7a's surface"
+    },
+    {
+      "id": "F6",
+      "blocking": false,
+      "file": "sheets/.gitkeep",
+      "evidence": "U1's placeholder is now vestigial and install --dry-run copies it to lib/sheets/.gitkeep; discover_sheets skips non-directories so it is harmless",
+      "smallest_change": "delete it; cosmetic"
+    }
+  ],
+  "causes": [
+    {"id": "C1", "findings": ["F1"], "cause": "the spec fixed html-dossier's Lens to one kind while naming a pack that emits another, so the sheet is stampable beside the design pack yet adds nothing there", "smallest_change": "a `### git` entry in html-dossier, or dropping orch-design-pack from its packs; a shape decision for the spec owner, successor scope"},
+    {"id": "C2", "findings": ["F2", "F3"], "cause": "two sheets state something an installed owner already states or nothing installed states -- one claims §10's power to mint `blocking`, the other carries two clauses whose only source is the uninstalled spec", "smallest_change": "one prose pass over sheets/html-dossier and sheets/sheet-craft: drop the blocking claim, cite the two clauses to installed law; under SHEET_BUDGET either way"},
+    {"id": "C3", "findings": ["F4"], "cause": "one report rule is domain-specific and could not be generalised into the sheet, and the omission went unreported", "smallest_change": "U7d's super-research prose carries the resolved-market exclusion and its report says so"},
+    {"id": "C4", "findings": ["F5", "F6"], "cause": "U1 built the sheet kind without adding it to the two repo-wide lint corpora, and left its placeholder", "smallest_change": "`sheets` in LINKED_MD_ROOTS and the duplication corpus; delete sheets/.gitkeep; U1-owned files, successor scope"}
+  ],
+  "successor_scope": ["C1", "C2", "C3", "C4"],
+  "not_done": [
+    "no judged file edited",
+    "no repair; every finding is blocking:false and goes to successor scope per §10",
+    "the exhaustive unittest discover lane not run: the five checks decide, and run_required covered all 94 modules at the commit",
+    "run_required not re-run at workspace HEAD b41faeda: the Goal names the commit, which is an ancestor of HEAD; B1's own record already carries the integrated-tree run"
+  ]
+}
