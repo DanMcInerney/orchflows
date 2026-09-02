@@ -118,16 +118,15 @@ _NUMBERED_ITEM = re.compile(r"^\s*\d+[.)]\s+\S")
 def subquestion_count(goal: str) -> int:
     """How many sub-questions one goal declares.
 
-    The marker is the research craft's: a heading at any depth whose text
-    carries `sub-questions`, and under it a numbered list with one item per
-    sub-question. Every such section's items are counted, because a goal
-    that declares its coverage twice declares both halves of it.
-
-    Flat by choice: any numbered line inside the section counts, nesting
-    included. The craft states the one-item-per-sub-question form, so a
-    nested list is a goal off that form rather than a shape this has to
-    disambiguate -- and over-counting there refuses, which is the safe
-    direction.
+    The form counted is stated once, in the `### root` entry of the craft
+    belonging to the pack whose adapter is `LANE_ADAPTER`, and nowhere
+    here: a reader who needs it resolves that craft through `packs.py
+    cells <digest>`. What is this module's own is how the count is taken
+    over a goal that departs from that form -- every marked section's
+    items, because a goal declaring its coverage twice declares both
+    halves of it, and any numbered line inside one, nesting included, so
+    an off-form goal over-counts and refuses rather than being
+    disambiguated here.
     """
 
     count, inside = 0, False

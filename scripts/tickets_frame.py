@@ -53,7 +53,7 @@ if __package__:
     from .tickets_result import (
         RESULT_ATTRIBUTION_PREFIX, _append_event, _cmd_result,
     )
-    from .tickets_shape import (
+    from .tickets_shape_line import (
         SHAPE_PREFIX, SHAPE_RECORD_ID, SHAPE_USAGE, journal_shape,
         shape_for, shape_record,
     )
@@ -83,7 +83,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_result import (
         RESULT_ATTRIBUTION_PREFIX, _append_event, _cmd_result,
     )
-    from tickets_shape import (
+    from tickets_shape_line import (
         SHAPE_PREFIX, SHAPE_RECORD_ID, SHAPE_USAGE, journal_shape,
         shape_for, shape_record,
     )

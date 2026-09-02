@@ -28,6 +28,11 @@ import re
 # own labels for a wave; these three name kernel verbs, so a reader knows
 # a wave called `judge` is a judge without asking.
 RESERVED_NAMES = ("do", "outline", "judge")
+# The notation the parser recognises as structure rather than as a name.
+# Public because it is half the anchor set a check reads to hold the owner
+# prose and the echo below to one grammar; `_parse_item` reads it as the
+# "not a name" test.
+GRAMMAR_TOKENS = (">", "[", "]", ",", "*")
 SHAPE_RECORD_ID = "shape"
 SHAPE_PREFIX = "shape:"
 SHAPE_USAGE = '--shape "<line>"'
@@ -42,7 +47,6 @@ SHAPE_GRAMMAR = (
 )
 
 _NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*")
-_PUNCTUATION = (">", "[", "]", ",", "*")
 _END = "<end of line>"
 
 
@@ -160,7 +164,7 @@ def _tokens(line: str):
         if character.isspace():
             index += 1
             continue
-        if character in _PUNCTUATION:
+        if character in GRAMMAR_TOKENS:
             tokens.append(character)
             index += 1
             continue
@@ -215,7 +219,7 @@ def _parse_item(tokens, position):
 
     if position >= len(tokens):
         return position, _END
-    if tokens[position] in _PUNCTUATION:
+    if tokens[position] in GRAMMAR_TOKENS:
         return position, tokens[position]
     position += 1
     if position >= len(tokens) or tokens[position] != "[":
@@ -227,8 +231,8 @@ def _parse_item(tokens, position):
 
 
 __all__ = (
-    "RESERVED_NAMES", "SHAPE_GRAMMAR", "SHAPE_PREFIX", "SHAPE_RECORD_ID",
-    "SHAPE_USAGE", "WORKFLOW_SHAPE_PREFIX", "journal_shape",
+    "GRAMMAR_TOKENS", "RESERVED_NAMES", "SHAPE_GRAMMAR", "SHAPE_PREFIX",
+    "SHAPE_RECORD_ID", "SHAPE_USAGE", "WORKFLOW_SHAPE_PREFIX", "journal_shape",
     "missing_shape_refusal", "parse_shape", "shape_for", "shape_record",
     "workflow_shape",
 )
