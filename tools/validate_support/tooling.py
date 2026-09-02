@@ -18,16 +18,26 @@ ffmpeg is on this machine is a question about the machine, and `sync` and
 
 from __future__ import annotations
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 ROOT = __dep_common.ROOT
 SKIPPED = __dep_common.SKIPPED
 
-from tools.validate_support.packages import rel
+from .packages import rel
 
-# The library's own directory table and manifest names, imported rather than
-# respelled: a kind that gains a home in `rings.py` gains it here at once.
-from scripts.orchflows_tools import TOOLS_NAME, declarations
-from scripts.rings import LIB_DIRS, MANIFESTS
+# The grammar's owner, and the library's own directory table and manifest
+# names, imported rather than respelled: a kind that gains a home in
+# `rings.py` gains it here at once.
+#
+# An install ships this package under `lib/` so `orchflows check` can run
+# these checks over a ring, and the scripts it reads sit flat in `bin/`
+# with no `scripts` package above them. The paired import is the tree's own
+# idiom for that layout: one module, reached under either name.
+try:
+    from scripts.orchflows_tools import TOOLS_NAME, declarations
+    from scripts.rings import LIB_DIRS, MANIFESTS
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    from orchflows_tools import TOOLS_NAME, declarations
+    from rings import LIB_DIRS, MANIFESTS
 
 
 def discover_declarations():
@@ -49,14 +59,35 @@ def discover_declarations():
     return found
 
 
-def validate_tools_declarations(diag) -> None:
-    """Every declaration parses, or the line that does not is named."""
+def declarations_in(item_dirs):
+    """The `tools.txt` files beside the item directories a caller names."""
 
-    marker = ROOT / "packs"
-    if not marker.is_dir():
-        diag.warn(rel(marker), SKIPPED)
-        return
-    for declaration in discover_declarations():
+    found = []
+    for directory in item_dirs:
+        tools = directory / TOOLS_NAME
+        if tools.is_file():
+            found.append({"manifest": directory, "tools": tools})
+    return found
+
+
+def validate_tools_declarations(diag, item_dirs=None) -> None:
+    """Every declaration parses, or the line that does not is named.
+
+    `item_dirs` is `orchflows check`'s half: a ring keeps one flat directory
+    per kind where the library keeps tiers and two workflow homes, so the
+    caller that already walked the ring hands its item directories over and
+    the grammar reading is identical at both doors.
+    """
+
+    if item_dirs is None:
+        marker = ROOT / "packs"
+        if not marker.is_dir():
+            diag.warn(rel(marker), SKIPPED)
+            return
+        found = discover_declarations()
+    else:
+        found = declarations_in(item_dirs)
+    for declaration in found:
         tools = declaration["tools"]
         try:
             _parsed, problems = declarations(tools)
@@ -67,4 +98,6 @@ def validate_tools_declarations(diag) -> None:
             diag.error(rel(tools), f"line {problem['line']}: {problem['problem']}")
 
 
-__all__ = ("discover_declarations", "validate_tools_declarations")
+__all__ = (
+    "declarations_in", "discover_declarations", "validate_tools_declarations",
+)

@@ -68,6 +68,15 @@ def _which(*present):
     return lambda name: f"/usr/bin/{name}" if name in found else None
 
 
+def _cli(*argv):
+    """One `orchflows` command: `(exit code, stdout, stderr)`."""
+
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = orchflows.main(list(argv))
+    return code, out.getvalue(), err.getvalue()
+
+
 def _runner(codes):
     """A probe runner reading `(exit code, output)` out of a table by argv[0]."""
 
@@ -492,6 +501,56 @@ class ValidatorTests(unittest.TestCase):
             self.assertEqual(1, len(lines), lines)
             self.assertIn("line 2", lines[0])
             self.assertTrue(diag.has_errors)
+
+
+class CheckTests(unittest.TestCase):
+    """`orchflows check` reads the same grammar `sync` does.
+
+    The ring is built by `orchflows new`, so the pass is the scaffold's own
+    claim read back through the checker; the refusal then mutates that ring
+    in exactly one place -- the declaration -- so the green reading above is
+    the can-fail one.
+    """
+
+    def _ring(self, world):
+        nowhere = world["root"] / "nowhere"
+        nowhere.mkdir(exist_ok=True)
+        with patch.object(rings.Path, "cwd", return_value=nowhere):
+            code, out, err = _cli("new", "workflow", "team-flow")
+        assert code == 0, out + err
+        return world["home"] / "workflows" / "team-flow", nowhere
+
+    def _check(self, world, nowhere):
+        with patch.object(rings.Path, "cwd", return_value=nowhere),                 patch.object(orchflows.Path, "cwd", return_value=nowhere):
+            return _cli("check", str(world["home"]))
+
+    def test_a_ring_items_declaration_passes_when_every_line_parses(self):
+        with _world() as world:
+            item, nowhere = self._ring(world)
+            (item / orchflows_tools.TOOLS_NAME).write_bytes(
+                "# the machine's\nffmpeg\n"
+                "python >= 3.11 :: python --version\nenv API_KEY\n"
+                .encode("utf-8")
+            )
+
+            code, out, err = self._check(world, nowhere)
+
+            self.assertEqual(0, code, out + err)
+            self.assertNotIn("ERROR", out)
+
+    def test_a_line_the_parser_cannot_read_refuses_the_ring(self):
+        with _world() as world:
+            item, nowhere = self._ring(world)
+            (item / orchflows_tools.TOOLS_NAME).write_bytes(
+                "ffmpeg\npython 3.11\n".encode("utf-8")
+            )
+
+            code, out, err = self._check(world, nowhere)
+
+            self.assertEqual(1, code, out + err)
+            self.assertIn(orchflows_tools.TOOLS_NAME, out)
+            self.assertIn("line 2", out)
+            self.assertIn("is not a version spec", out)
 
 
 class SyncReportTests(unittest.TestCase):

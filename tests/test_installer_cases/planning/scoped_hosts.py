@@ -575,9 +575,10 @@ class TestScopedHostConfiguration(unittest.TestCase):
         does exist in this tree, so the list membership is the copy.
 
         The pointer: `by-name/<name>/SHEET.md`, naming the installed
-        manifest. Discovery is substituted because this repository carries
-        no sheet yet; what is graded is the planning the discovery feeds,
-        which is the half that would otherwise first run in a user's home.
+        manifest. Discovery is substituted so the pointer's shape is graded
+        against one fixed sheet rather than against whichever sheets the
+        library happens to ship; the real tree's sheets reach the index
+        through `test_user_plan_writes_flat_by_name_index_for_every_package`.
         """
 
         from installer import planning as install_planning

@@ -4,25 +4,25 @@ from __future__ import annotations
 
 
 def Diagnostics(*args, **kwargs):
-    from tools.validate_support.packages import Diagnostics as diagnostics_type
+    from .packages import Diagnostics as diagnostics_type
     return diagnostics_type(*args, **kwargs)
 
 
 def build_call_graph(packages, diag):
-    from tools.validate_support.structure import build_call_graph as build
+    from .structure import build_call_graph as build
     return build(packages, diag)
 
 
 def rel(path):
-    from tools.validate_support.packages import rel as relative
+    from .packages import rel as relative
     return relative(path)
 
 
 def _read_source(path):
-    from tools.validate_support.packages import _read_source as read_source
+    from .packages import _read_source as read_source
     return read_source(path)
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 CARRIAGE_CODE_RE = __dep_common.CARRIAGE_CODE_RE
 CARRIAGE_DASH_SPLIT_RE = __dep_common.CARRIAGE_DASH_SPLIT_RE
 CARRIAGE_DEFERRED = __dep_common.CARRIAGE_DEFERRED
