@@ -80,15 +80,19 @@ verbatim and hand-adds nothing; a caller who lost it replays the same
 The prompt names, once each, what a child cannot derive: the applied skill's
 resolved file, the ticket's absolute path inside the established workspace,
 that workspace and the instruction to run from inside it, this host's
-verified interpreter, the resolved pack craft, the review lane's root ticket
+verified interpreter, the resolved pack craft, the artifact kind and its Lens
+entry, the review lane's root ticket
 path, the assigned name, the lease deadline, the filled filing and closing
 commands, the craft's verification scope, what a report is expected to carry,
 and that every check runs to completion in the turn it starts with an
 explicit timeout longer than the check and any backgrounded command killed
 once superseded. It teaches no verdict token and no filing taxonomy: a child
 files evidence into one channel, never a disposition and never a heading of
-the protocol's choosing. It names no skill for the child to invoke and no
-pack for it to resolve: it hands the paths. The
+the protocol's choosing. It names the one mechanism for entering the applied
+skill — the host's Skill tool, with the whole prompt forwarded verbatim as
+the arguments, so the skill's fork arrives holding the assignment and a
+child already running as the skill works in place — and names no pack for
+the child to resolve: it hands the craft path. The
 public command emits ASCII-escaped canonical JSON, preserving every prompt
 character independently of the subprocess code page.
 

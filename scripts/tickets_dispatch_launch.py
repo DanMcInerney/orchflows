@@ -8,13 +8,9 @@ per-role model and effort. Nothing here restates a model name, an effort
 value, or an agent identifier, and a host that adds a native field gets it
 carried without this module learning its name.
 
-The prompt below is the only child-facing instruction surface there is. There
-is no packet, so nothing else reaches the child: twelve of twelve launches
-were composed by hand because the generated surfaces named neither the ticket
-nor the workspace, and those hand-written prompts were the dominant defect
-source. Every fact it carries is one a child cannot derive from the ticket it
-is handed, each rendered exactly once, and everything the ticket or the
-child's own harness already owns is left to them.
+What the child-facing prompt may carry, and every group of lines that carries
+it, is `tickets_dispatch_launch_lines.py`'s; `launch_prompt` below is only the
+order they are rendered in.
 """
 
 from __future__ import annotations
@@ -22,25 +18,30 @@ from __future__ import annotations
 import json
 import os
 import re
-import shlex
 import sys
 from pathlib import Path
 
 if __package__:
     from . import state_root
+    from .tickets_dispatch_launch_lines import (
+        _command, _craft_lines, _friction_lines, _identity_line, _lane_lines,
+        _reading_lines, _return_lines,
+    )
     from .tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from .tickets_format import (
         REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
     )
-    from .tickets_registry import EXECUTOR_REGISTRY
     from .tickets_store import NO_SINK_ERROR, _tickets_root
 else:  # pragma: no cover - direct/installed flat script path
     import state_root
+    from tickets_dispatch_launch_lines import (
+        _command, _craft_lines, _friction_lines, _identity_line, _lane_lines,
+        _reading_lines, _return_lines,
+    )
     from tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from tickets_format import (
         REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
     )
-    from tickets_registry import EXECUTOR_REGISTRY
     from tickets_store import NO_SINK_ERROR, _tickets_root
 
 HOST_ENV_VAR = "ORCHFLOWS_HOST"
@@ -55,7 +56,6 @@ ROLE_RE = re.compile(r"^role:\s*(worker|planner|none)\s*$", re.MULTILINE)
 AGENT_FIELD_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 EFFORT_SUFFIX = "_effort"
 EFFORT_KEY = "effort"
-SHELL_SAFE_TOKEN = re.compile(r"^[A-Za-z0-9_./:\\=-]+$")
 
 
 def declared_role(executor: str):
@@ -248,193 +248,6 @@ def binding_failure(record, role):
             f"host '{host}' names no agent identity for {role}",
         )
     return None
-
-
-def _command(*arguments) -> str:
-    """One runnable command line, quoted for the shell the child is in."""
-
-    values = [str(argument) for argument in arguments]
-    if all(SHELL_SAFE_TOKEN.fullmatch(value) for value in values):
-        return " ".join(values)
-    if sys.platform == "win32":
-        return "& " + " ".join("'" + value.replace("'", "''") + "'" for value in values)
-    return shlex.join(values)
-
-
-def _identity_line(assignment: dict) -> str:
-    """The prompt's first fact: which skill, at which file, for which ticket.
-
-    S7(a): the installed by-name layout is documented in the host block a
-    forked child provably never receives (run 20260901T181410Z, B1.13's
-    first-person evidence), so the one line that already names the skill
-    and the ticket path carries the skill's own resolved file too --
-    nothing is left for the child to search the filesystem for.
-    `tickets_assignment.py` resolves it through the one ring resolver;
-    `None` only for a hand-built assignment that skips that resolution.
-    """
-
-    skill_path = assignment.get("skill_path")
-    named = (
-        f"Apply skill {assignment['executor']}, whose file is {skill_path},"
-        if skill_path else f"Apply skill {assignment['executor']}"
-    )
-    return (
-        f"{named} to ticket {assignment['ticket_path']}. Read that ticket "
-        "whole: it is your assignment, and there is no other copy of it."
-    )
-
-
-def _lane_lines(assignment: dict) -> list:
-    """What this lane asks of the child, beyond reading its ticket."""
-
-    script = assignment.get("executor_script")
-    if script is not None:
-        return [
-            f"Run the script {script} with the ticket path above, and report its "
-            "stdout and its exit status.",
-        ]
-    return [
-        "Goal is the end result you answer for, Context is the evidence behind "
-        "it, and Details is the planner's guidance: where it prescribes, follow "
-        "it and say so; where following it would break Goal, deviate and report "
-        "the deviation with its evidence.",
-    ]
-
-
-def _reading_lines(assignment: dict) -> list:
-    """The documents beyond the ticket this child has to read to be right."""
-
-    lines = []
-    dependencies = assignment.get("dependencies") or []
-    if dependencies:
-        lines.append(
-            "Dependency results are system-owned inputs. Read these completed "
-            f"tickets' `## {REPORT_SECTION}`: " + ", ".join(dependencies)
-        )
-    return lines
-
-
-def _craft_lines(assignment: dict) -> list:
-    """The pack's craft, handed as a path, and how far its checks reach.
-
-    One scope statement, whichever owns it: the craft's own quoted sentence
-    where the craft declares one, else the standing gate line -- the two said
-    the same law twice on every code dispatch until the quote was made the
-    answer.
-    """
-
-    lines = []
-    craft = assignment.get("craft")
-    scope = None
-    if craft is not None:
-        lines.append(
-            f"Read your stamped pack's craft at {craft} and run its declared "
-            "stages in order through this one role."
-        )
-        scope = assignment.get("craft_scope")
-        if scope is not None:
-            lines.append(f'That craft sets your verification scope: "{scope}"')
-    if scope is None:
-        lines.append(
-            "The full required suite is the gate's row, never a unit's: run it "
-            "here only if this ticket is the gate."
-        )
-    return lines
-
-
-def _friction_lines() -> list:
-    """The host block's always-on friction law, restated for a forked child.
-
-    U13(c), 2026-09-01: a forked child's context carries this
-    repository's AGENTS.md (a project-scope CLAUDE.md import Claude
-    Code does expand), which names the friction command, but not
-    `templates/host-block.md`'s "Friction law (always on)" paragraph
-    that states when to use it -- the user-scope CLAUDE.md import that
-    carries the installed host block is not expanded into a fork's
-    context (confirmed directly: a forked child's own transcript shows
-    the unexpanded `@`-line where that host block's text should be,
-    beside the sibling project import that did expand). Evidence run
-    20260901T155911Z's five dispatched children hit at least four
-    log-worthy walls -- two causal-order refusals, a no-commit
-    deviation, an agent-name collision -- and logged none, while the
-    root coordinator, whose interactive session does receive the
-    expansion, logged all six of the run's entries (friction entry
-    2026-09-01T17:53:59Z). This is the one line that earns its budget
-    line by naming the law those four walls never reached.
-    """
-
-    script = Path(__file__).with_name("friction.py").resolve()
-    return [
-        "After two attempts, missing input/tool/document, surprising "
-        "output, skill/rule/contract gap, or workaround: log friction, "
-        "then continue:",
-        _command(sys.executable, script, "<what happened>",
-                 "<what was expected or missing>"),
-    ]
-
-
-ARTIFACT_LINE_FORMS = {
-    "git": "artifact: git:<full-commit-id>",
-    "doc": "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>",
-    "evidence": "artifact: evidence:<store-id>",
-}
-FINDINGS_LINE = "findings: <path>"
-
-
-def _return_lines(assignment: dict) -> list:
-    """The commit or workspace line, and the machine lines a parent relays
-    without rewriting.
-
-    Two of four workers on 2026-08-31 closed without committing inside the
-    candidate, so the tree the landing merged held nothing; and the artifact
-    a parent passed to the next callable rode through paraphrase because the
-    child never printed one exact form. Both are said here, once, in the one
-    surface a child is guaranteed to read. Three of five research children
-    on 2026-09-01 skipped that same commit line for a workspace with nothing
-    to commit: an adapter whose identity carries no commit (evidence-store
-    alone) gets its own craft's `## Workspace` sentence instead, never the
-    commit clause. A document-tree child does commit -- straight onto the
-    coordinator's own branch -- so it keeps the clause, minus the sentence
-    naming a candidate branch nothing was isolated to merge (finding F4).
-    The clause's own noun follows `git_candidate` too: a document-tree
-    lane has no candidate to be "inside", so it is told to commit in the
-    tree it is standing in instead of a noun with no antecedent (A2).
-    """
-
-    kind = assignment.get("artifact_kind")
-    if assignment.get("commits_in_place"):
-        commit_lead = (
-            "Commit your work inside this candidate before you close;"
-            if assignment.get("git_candidate")
-            else "Commit your work in the tree you are standing in before you close;"
-        )
-        merge_sentence = (
-            ", and the landing merges the candidate, not your working tree."
-            if assignment.get("git_candidate") else "."
-        )
-        lines = [
-            f"{commit_lead} the closing "
-            "note names that commit. Uncommitted bytes are not evidence" + merge_sentence,
-        ]
-    else:
-        workspace_line = assignment.get("workspace_line")
-        lines = [
-            "Your stamped pack commits nothing; its workspace channel is: "
-            f'"{workspace_line}"'
-        ] if workspace_line else []
-    if kind in ARTIFACT_LINE_FORMS:
-        lines.append(
-            "Print this line verbatim in your closing note, as its own line, "
-            f"filled in and with no other text on it: {ARTIFACT_LINE_FORMS[kind]}"
-        )
-    if EXECUTOR_REGISTRY.get(
-        str(assignment.get("executor") or ""), {},
-    ).get("files_findings"):
-        lines.append(
-            "Print this second line verbatim beside it, naming the findings "
-            f"file you wrote in this workspace: {FINDINGS_LINE}"
-        )
-    return lines
 
 
 def launch_prompt(assignment: dict) -> str:

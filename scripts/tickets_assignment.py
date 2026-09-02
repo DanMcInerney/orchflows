@@ -25,9 +25,10 @@ if __package__:
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_format import (
-        REPORT_SECTION, _executor_of, lease_of,
+        ARTIFACT_CLAUSE, MAKES_FIELD, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
+    from .tickets_registry import EXECUTOR_REGISTRY
     from .tickets_transitions import CHECKABLE_STATUSES
     from .tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
@@ -41,9 +42,10 @@ else:
     from tickets_context import graded_admission, run_snapshot
     from tickets_dispatch_launch import resolved_role_profile
     from tickets_format import (
-        REPORT_SECTION, _executor_of, lease_of,
+        ARTIFACT_CLAUSE, MAKES_FIELD, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
+    from tickets_registry import EXECUTOR_REGISTRY
     from tickets_transitions import CHECKABLE_STATUSES
     from tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
@@ -280,6 +282,34 @@ def artifact_kind(pack):
         return None
 
 
+def lens_key(loaded: dict, sections: dict):
+    """The `## Lens` entry this child's work is measured against, or None.
+
+    One key, read in whichever direction the ticket runs. A judge is handed
+    finished artifacts, so the typed identities on its Context name the kind
+    it checks -- one kind per judge, which the mint enforces, so two kinds
+    here is a ticket no mint could have written and gets no key rather than
+    a guessed one. A `do` makes the stamped pack's own deliverable, whose
+    kind its adapter fixes, unless it was minted to make a planning artifact
+    no adapter names and says so on `makes`.
+    """
+
+    # Only the verb whose product is a findings file is keyed by the
+    # identities on its Context; for every other executor an artifact line
+    # is evidence it read, not the product it owes, and a planning `do`
+    # citing a predecessor would otherwise be sent to that predecessor's
+    # kind. The registry is the same one the launch prompt reads.
+    if EXECUTOR_REGISTRY.get(_executor_of(loaded), {}).get("files_findings"):
+        kinds = sorted({
+            line.strip()[len(ARTIFACT_CLAUSE):].split(":", 1)[0].strip()
+            for line in sections.get("Context", "").splitlines()
+            if line.strip().startswith(ARTIFACT_CLAUSE)
+        })
+        if kinds:
+            return kinds[0] if len(kinds) == 1 else None
+    return dequote(loaded.get(MAKES_FIELD)) or artifact_kind(loaded.get("pack"))
+
+
 def dispatch_assignment(rest, *, attempt=None):
     """Grade one ticket for dispatch and resolve every fact its launch names.
 
@@ -350,6 +380,7 @@ def dispatch_assignment(rest, *, attempt=None):
         "git_candidate": git_candidate(pack),
         "id": loaded["id"],
         "lease_expires_at": None if attempt is None else attempt["lease_expires_at"],
+        "lens_key": lens_key(loaded, sections),
         "pack": pack,
         "role": role,
         "run": str(loaded.get("run") or run),
@@ -363,5 +394,5 @@ def dispatch_assignment(rest, *, attempt=None):
 __all__ = (
     "ASSIGNMENT_SECTIONS",
     "_claim_is_stale", "artifact_kind", "commits_in_place", "dispatch_assignment",
-    "git_candidate", "workspace_establishment_finding",
+    "git_candidate", "lens_key", "workspace_establishment_finding",
 )

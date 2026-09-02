@@ -79,12 +79,14 @@ invented for this library.
   signature (below) owns the roster.
 - **craft section** — one `##` section of a pack's craft document, resolved
   whole through `packs.py cells <digest>`. The signature's craft-section
-  table names the mandatory seven; every callable reads the whole document
-  and acts under the sections its call is for. A making `orch-do` acts
-  under `## Workspace`, `## Stages`, `## Shape` and `## Evidence`; a
-  planning one under `## Outline`, `## Spec fields` and `## Slicing`;
-  `orch-judge` under `## Lens`. Those are the two entry points the four
-  retired verbs collapsed into.
+  table names the mandatory ones; every callable reads the whole document.
+  `## Lens` is keyed by artifact kind: one `###` entry per kind the domain
+  produces — the library-owned `root` and `cut`, then the pack adapter's
+  own; the signature owns what an entry states. The kind a call is for names
+  its entry: a making `orch-do` makes toward the adapter's, a planning one
+  toward `### root` or `### cut`, and `orch-judge` checks against the
+  entry its typed artifact lines name. Those are the two entry points the
+  four retired verbs collapsed into.
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
 - **adapter** — a pack-declared workspace mechanism key from a closed

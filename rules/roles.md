@@ -25,8 +25,9 @@ names the worker-or-planner authority a dispatched child files under.
    a descendant dispatch.
 6. A role-bearing skill runs only in an established child of the
    matching role — clause 4's resolved role, never a chained skill's own
-   declaration. That child executes the exact named skill directly;
-   root, `role: none`, and a mismatched child refuse it.
+   declaration. That child enters the exact named skill by name with its
+   launch prompt forwarded verbatim; the skill's fork, the same role,
+   executes it. Root, `role: none`, and a mismatched child refuse it.
 7. A child needing a user-only decision returns a `kind: user-only`
    question and resume state. Root asks its text verbatim and returns
    the answer without deciding it.

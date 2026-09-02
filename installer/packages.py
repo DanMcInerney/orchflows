@@ -163,7 +163,9 @@ FORK_ARRIVAL_CLAUSE = (
     "Arriving without a launch prompt, refuse before reading anything: your "
     "refusal is your return, reaching your invoker through the invocation "
     "itself, never the coordinator. Acquire nothing, claim no name, derive "
-    "no objective. Invoking a skill by name, forward your prompt or refuse."
+    "no objective. Invoking a skill by name, forward your prompt or refuse. "
+    "Arriving with a launch prompt as your arguments, you are that skill: "
+    "execute it here and never invoke it again."
 )
 
 

@@ -7,14 +7,18 @@ role: planner
 Require: one immutable review ledger naming the fixed artifact, Goal,
 assignment evidence, and the pack digest.
 
-Project the pack with `packs.py cells <digest>`; the craft's `## Lens` owns
-the review criteria, its `## Evidence` the methods a checker may challenge.
-Apply both to the fixed artifact and the executor record. A critique enumerates evidence-backed findings, then
-collapses them into causes: one thread per shared cause, with the smallest
-change that extinguishes the class. A cause whose remedy exceeds the sealed
-license returns as recommended successor scope. Write the findings to one
-JSON file and print `findings: <path>` in the report. Stream the review
-report and commit the reserved outcome.
+In the craft the launch prompt names, the kind on each typed artifact
+line names the `## Lens` entry you check against; that entry owns the
+criteria and the proof they demand, and you may challenge either. Apply
+it to the fixed artifact and the executor record. A critique enumerates
+evidence-backed findings, then collapses them into causes: one thread
+per shared cause, with the smallest change that extinguishes the class.
+`rules/verification.md` §10 fixes when a finding is `blocking`; that Lens
+entry only weighs findings against one another.
+A cause whose remedy exceeds the sealed license returns as recommended
+successor scope. Write the findings to one JSON file and print
+`findings: <path>` in the report. Stream the review report and commit
+the reserved outcome.
 
 Never: edit the artifact or sealed semantics; infer a verdict from effort;
 mix a review stage with another kind; or import craft outside the resolved

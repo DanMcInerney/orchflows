@@ -151,14 +151,15 @@
       "fields": [
         "id", "run", "status", "admission", "executor", "pack",
         "pack_digest", "profile", "independence", "parent", "depends_on", "isolation", "bound",
-        "frame", "done",
+        "frame", "done", "makes",
         "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "dispatch_v1"
       ],
       "required": ["id", "run", "status", "executor", "bound"],
       "values": {
         "status": ["pending", "ready", "claimed", "suspended", "complete", "blocked", "stalled", "failed", "limited"],
-        "frame": ["true"]
+        "frame": ["true"],
+        "makes": ["root", "cut"]
       }
     },
     {

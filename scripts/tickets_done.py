@@ -349,6 +349,32 @@ def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict
     return repair_id, "created", None
 
 
+def _ungraded_refusal(run: str, ticket_id: str) -> dict:
+    """The one refusal a ticket with no predicate and no `--status` meets."""
+
+    return {"error": (
+        f"{run}/{ticket_id} carries no done predicate, so the driver "
+        "grades it: pass the disposition with --status"
+    )}
+
+
+def ungraded(run: str, ticket_id: str, data: dict, driver_status):
+    """That refusal, or ``None``, asked without an integrated tree.
+
+    `resolve` runs after the candidate is merged, because the predicate's
+    claim is about the integrated tree. This one question is not about the
+    tree at all -- it reads the ticket's own frontmatter -- so `land` asks
+    it first, and a call refused for it leaves no merge commit behind. A
+    `predicate` that does not parse is deliberately not answered here: that
+    refusal keeps the ordering it had, and `resolve` raises it.
+    """
+
+    binding, refusal = predicate(data)
+    if refusal is not None or binding is not None or driver_status is not None:
+        return None
+    return _ungraded_refusal(run, ticket_id)
+
+
 def resolve(run: str, ticket_id: str, run_dir, path, data: dict, tree,
             driver_status, by: str):
     """`(decision, refusal)` -- what this landing records, and why.
@@ -362,10 +388,7 @@ def resolve(run: str, ticket_id: str, run_dir, path, data: dict, tree,
         return None, refusal
     if binding is None:
         if driver_status is None:
-            return None, {"error": (
-                f"{run}/{ticket_id} carries no done predicate, so the driver "
-                "grades it: pass the disposition with --status"
-            )}
+            return None, _ungraded_refusal(run, ticket_id)
         return {"form": None, "status": driver_status}, None
     if driver_status is not None:
         return None, {"error": (
@@ -418,6 +441,6 @@ def resolve(run: str, ticket_id: str, run_dir, path, data: dict, tree,
 __all__ = (
     "CHECK_VERIFICATION", "COMMAND_VERIFICATION", "REPAIR_MARKER",
     "STALL_WINDOW", "advance_action", "check_reading", "mint_check",
-    "predicate", "record_verification", "resolve", "rounds",
+    "predicate", "record_verification", "resolve", "rounds", "ungraded",
     "verification_line",
 )

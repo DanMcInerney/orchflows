@@ -43,7 +43,8 @@ family's five owner modules.
   `tickets_emission.py` emission grading; `tickets_issue_render.py`
   issuance markdown; `tickets_mint.py` and `tickets_frame.py` the callable
   and frame minting commands;
-  `tickets_dispatch_launch.py` resolves the host launch binding. `cutcheck.py`
+  `tickets_dispatch_launch.py` the host binding,
+  `tickets_dispatch_launch_lines.py` the prompt's lines. `cutcheck.py`
   owns structural graph validation.
   Cutcheck imports those owners directly, never the tickets facade;
   admission and cutcheck never import each other.

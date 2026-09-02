@@ -204,6 +204,12 @@ class NewTests(unittest.TestCase):
             body = craft.read_text(encoding="utf-8")
             for heading in orchflows_scaffold.sections():
                 self.assertIn(f"## {heading}", body)
+            # The Lens is keyed by artifact kind, so a skeleton carrying the
+            # heading and none of the entries is a craft no verb can read.
+            for kind in orchflows_scaffold.lens_entries():
+                self.assertIn(f"### {kind}", body)
+            for retired in ("## Outline", "## Slicing", "## Evidence", "## Shape"):
+                self.assertNotIn(retired, body)
 
     def test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one(self):
         with _home(), tempfile.TemporaryDirectory() as raw:

@@ -737,6 +737,29 @@ class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
         self.assertEqual("outcome-invalid", refused["code"])
         self.assertIn("empty", refused["error"])
 
+    def test_a_reserved_heading_is_refused_by_line_number_and_by_rule(self):
+        """Two children of one run read this module's source to learn what
+        the refusal meant; it now carries the offending line and the rule."""
+
+        self.accept()
+
+        refused = self.close(note="closed.\nevidence follows.\n## Report\n")
+
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("line 3", refused["error"])
+        self.assertIn("## ", refused["error"])
+        self.assertIn("may not begin", refused["error"])
+        # the half the two children needed: which headings ARE allowed (the
+        # join judge's surviving mutant deleted exactly this clause)
+        self.assertIn("'###' and deeper are fine", refused["error"])
+
+    def test_a_deeper_heading_is_not_reserved_and_still_closes(self):
+        self.accept()
+
+        committed = self.close(note="closed.\n\n### Evidence\n\nexit 0\n")
+
+        self.assertNotIn("error", committed, committed)
+
     def test_the_typed_evidence_flags_are_ordinary_unknown_arguments(self):
         self.accept()
         for flag in (

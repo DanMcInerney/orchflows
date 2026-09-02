@@ -11,14 +11,18 @@ import hashlib
 import re
 if __package__:
     from .tickets_admission import binding_findings
-    from .tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from .tickets_format import (MAKES_FIELD, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
 else:
     from tickets_admission import binding_findings
-    from tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from tickets_format import (MAKES_FIELD, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
+# `makes` rides here with the rest of the system-owned assignment so the
+# artifact kind a dispatch reads is the kind the mint wrote: edited past the
+# seal, it fails admission rather than silently renaming the Lens entry the
+# child works against.
 ASSIGNMENT_SYSTEM_FIELDS = (
-    "bound", "done", "independence", "isolation", "pack",
+    "bound", "done", "independence", "isolation", MAKES_FIELD, "pack",
     "pack_digest", "profile",
 )
 

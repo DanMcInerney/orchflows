@@ -19,7 +19,7 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 ### T1 workflow skills
 
 Custom-item authoring follows ordinary code routing and is not a callable workflow.
-- [orch-do](../../skills/kernel/orch-do/SKILL.md) — produce one artifact through the stamped pack's craft, or plan through its Outline and Spec fields sections.
+- [orch-do](../../skills/kernel/orch-do/SKILL.md) — produce one artifact through the stamped pack's craft, or plan a root or cut toward its `## Lens` entry for that kind.
 - [orch-judge](../../skills/kernel/orch-judge/SKILL.md) — judge a fixed artifact or verify a repair.
 
 ## Catalog projection and semantic summaries

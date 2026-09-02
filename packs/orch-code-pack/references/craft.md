@@ -12,7 +12,78 @@ The shape principles every domain shares are
 - **idiom** — the surrounding code's existing names and patterns; new
   code reconciles to them, never imports a foreign style.
 
-## Shape
+## Workspace
+
+git: identities are commits; isolation is a branch or worktree per
+candidate; changes are ordinary diffs; Git conflicts and shared derived
+artifacts resolve once at the join through the conflict owner.
+
+## Spec fields
+
+target repository; standards owner by pointer; observable result
+
+## Lens
+
+### root
+
+#### What a frozen code root carries
+
+- Observable behavior at a seam, never the modules that will carry it.
+- The failure paths the result must survive: an executor's checks answer
+  to Goal alone, so an unstated path is an unchecked one.
+- A pointer to the standards owner. The only oracle a root may freeze is its
+  own `done` command; every other check is the executor's.
+- A claim the root makes about the target tree's state — which module carries
+  a behavior, which checks read a name it retires, what a constant is — is
+  carried as the command that derives it, never as a recalled fact. The
+  intake question "What must keep working that this change could plausibly
+  break?" is answered by that command's output.
+
+#### Worth asking at intake
+
+- Which seam makes the outcome observable from outside the change?
+- What must keep working that this change could plausibly break?
+- Does a tracer slice exist that proves those seams before anything widens?
+- Is the target repository, and its baseline revision, actually settled?
+
+#### Exemplar policy
+
+Cite a module by path and revision, then list each property the imitation has
+to carry: idiom, check style, layering. "Look like that file" lists none of
+them, so it grants nothing.
+
+### cut
+
+Acceptance-first tickets: every seam whose observable result is already
+determined by the root Goal is its own item on the first frontier. Cut a
+tracer — one thin end-to-end crossing, taken first and widened after — only
+for the riskiest seam the Goal leaves unproven.
+
+- Dependency edges exist only where one unit's seam is another's input.
+- A Goal ordering growth into a named file prices that file against the
+  standards owner's bounds at cut time — a measurement command in Context,
+  never a relayed count — test modules included.
+
+### git
+
+- Correctness: does the revision satisfy the spec's acceptance,
+  including its failure paths, not only the happy path?
+- Contract fidelity: does every public seam still honor its declared
+  Require/Return shape for callers outside this revision?
+- Diff: does every changed line contribute to Goal inside the spec's
+  stated surface — nothing incidental swept in, no check weakened to
+  reach green?
+- Shape: does the revision hold the idiom and simplification bar above
+  rather than import a foreign pattern? The standards owner is a
+  citable violation class.
+
+Record the candidate revision, derived test identities with their failing and
+passing readings — a check honestly green on arrival records a can-fail reading
+instead, taken without mutating the tree under test — affected workspace-check
+readings, and uncovered behavior.
+
+Weigh in this order — a shape finding never outranks a correctness
+finding.
 
 - Locality: a module owns one concern at one-read size (~100–500 lines);
   past the band presume a second concern — split at a seam, never shave
@@ -33,77 +104,6 @@ The shape principles every domain shares are
   reads a stable anchor — a heading, a backticked name, a fenced
   command — and its wrong result drops the fact, not the anchor,
   which would only prove the grep.
-
-## Workspace
-
-git: identities are commits; isolation is a branch or worktree per
-candidate; changes are ordinary diffs; Git conflicts and shared derived
-artifacts resolve once at the join through the conflict owner.
-
-## Spec fields
-
-target repository; standards owner by pointer; observable result
-
-## Outline
-
-### What a frozen code root carries
-
-- Observable behavior at a seam, never the modules that will carry it.
-- The failure paths the result must survive: an executor's checks answer
-  to Goal alone, so an unstated path is an unchecked one.
-- A pointer to the standards owner. The only oracle a root may freeze is its
-  own `done` command; every other check is the executor's.
-
-### Worth asking at intake
-
-- Which seam makes the outcome observable from outside the change?
-- What must keep working that this change could plausibly break?
-- Does a tracer slice exist that proves those seams before anything widens?
-- Is the target repository, and its baseline revision, actually settled?
-
-### Exemplar policy
-
-Cite a module by path and revision, then list each property the imitation has
-to carry: idiom, check style, layering. "Look like that file" lists none of
-them, so it grants nothing.
-
-## Slicing
-
-Acceptance-first tickets: every seam whose observable result is already
-determined by the root Goal is its own item on the first frontier. Cut a
-tracer — one thin end-to-end crossing, taken first and widened after — only
-for the riskiest seam the Goal leaves unproven.
-
-- Dependency edges exist only where one unit's seam is another's input.
-- A Goal ordering growth into a named file prices that file against the
-  standards owner's bounds at cut time — a measurement command in Context,
-  never a relayed count — test modules included.
-
-## Evidence
-
-Record the candidate revision, derived test identities with their failing and
-passing readings — a check honestly green on arrival records a can-fail reading
-instead, taken without mutating the tree under test — affected workspace-check
-readings, and uncovered behavior.
-
-## Lens
-
-- Correctness: does the revision satisfy the spec's acceptance,
-  including its failure paths, not only the happy path?
-- Contract fidelity: does every public seam still honor its declared
-  Require/Return shape for callers outside this revision?
-- Diff: does every changed line contribute to Goal inside the spec's
-  stated surface — nothing incidental swept in, no check weakened to
-  reach green?
-- Shape: does the revision hold the idiom and simplification bar above
-  rather than import a foreign pattern? The standards owner is a
-  citable violation class.
-
-Weigh in this order — a shape finding never outranks a correctness
-finding. A finding is `blocking: true` when it shows a frozen
-completion criterion false, or is a correctness finding at the fixed
-identity; contract fidelity with no criterion failing, scope and shape
-are `blocking: false` — reported, never repaired in the same run.
 
 ## Stages
 

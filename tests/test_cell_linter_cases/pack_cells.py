@@ -94,11 +94,14 @@ CRAFT_SECTION_ORDER = (
     "Vocabulary",
     "Workspace",
     "Spec fields",
-    "Outline",
-    "Slicing",
-    "Evidence",
     "Lens",
 )
+
+# `## Lens`'s `###` entries: the two library kinds plus the one PACK_TEMPLATE's
+# `adapter | git` row emits. The linter compares `##` sections, so every entry
+# here lands in one "Lens" bucket -- which is why a test that wants two packs
+# compared under a made-up section writes into an entry, not a new heading.
+CRAFT_LENS_ORDER = ("root", "cut", "git")
 
 
 _TEMPLATE_DIR = None
@@ -161,10 +164,12 @@ class _IsolatedTree(unittest.TestCase):
         )
 
     def _write_pack(self, name, assembly=None, workspace="inline: none",
-                    sections=None, lead=""):
+                    sections=None, entries=None, lead=""):
         """One synthetic folded pack: a 4-cell SKILL.md plus a craft.md
-        carrying every mandatory section (validate_craft_sections errors on
-        a missing one). `sections` overrides a section's body by heading;
+        carrying every mandatory section and every `## Lens` entry
+        (validate_craft_sections errors on a missing one, and on a Lens key
+        the pack's adapter never emits). `sections` overrides a section's
+        body by `##` heading and `entries` a Lens entry's by artifact kind;
         `lead` is the paragraph before the first section heading."""
         pack_dir = self.tmp_path / "packs" / name
         (pack_dir / "references").mkdir(parents=True)
@@ -179,17 +184,27 @@ class _IsolatedTree(unittest.TestCase):
             "Vocabulary": "Only %s terms." % name,
             "Workspace": workspace,
             "Spec fields": "one %s field" % name,
-            "Outline": "Freeze one %s root." % name,
-            "Slicing": "Cut into %s widgets." % name,
-            "Evidence": "One %s method." % name,
-            "Lens": "criteria.",
+            "Lens": "",
         }
         bodies.update(sections or {})
+        lens = {
+            "root": "Freeze one %s root." % name,
+            "cut": "Cut into %s widgets." % name,
+            "git": "criteria; one %s method." % name,
+        }
+        lens.update(entries or {})
         craft = "# Craft\n\n"
         if lead:
             craft += lead.rstrip("\n") + "\n\n"
         for heading in CRAFT_SECTION_ORDER:
-            craft += "## %s\n\n%s\n\n" % (heading, bodies[heading].rstrip("\n"))
+            craft += "## %s\n\n" % heading
+            body = bodies[heading].rstrip("\n")
+            if body:
+                craft += "%s\n\n" % body
+            if heading != "Lens":
+                continue
+            for kind in CRAFT_LENS_ORDER:
+                craft += "### %s\n\n%s\n\n" % (kind, lens[kind].rstrip("\n"))
         (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
 
 
@@ -378,8 +393,8 @@ class TestCellDuplication(_IsolatedTree):
             "each widget batch gets its own bench cleared\n  from the bay's "
             "current stock at handoff"
         )
-        self._write_pack("wrapapack", sections={"Slicing": body % self.SHARED})
-        self._write_pack("wrapbpack", sections={"Slicing": body % wrapped})
+        self._write_pack("wrapapack", entries={"cut": body % self.SHARED})
+        self._write_pack("wrapbpack", entries={"cut": body % wrapped})
         self.assertIn(VERBATIM, self._run().stdout)
 
     def test_near_duplicate_clauses_warn_naming_both_sites(self):
@@ -404,9 +419,9 @@ class TestCellDuplication(_IsolatedTree):
             "| --- | --- | --- |\n"
             "| %s |\n"
         )
-        self._write_pack("hdrapack", sections={"Evidence": table % (
+        self._write_pack("hdrapack", entries={"git": table % (
             "code | derived tests | red and green results")})
-        self._write_pack("hdrbpack", sections={"Evidence": table % (
+        self._write_pack("hdrbpack", entries={"git": table % (
             "document | audience reading | fit observations")})
         self.assertNotIn(VERBATIM, self._run().stdout)
 
@@ -430,7 +445,7 @@ class TestCellDuplication(_IsolatedTree):
         not the same fact twice."""
         shared = "The unit is a module at roughly one-read size, understood in one sitting."
         self._write_pack("secapack", sections={"Vocabulary": shared})
-        self._write_pack("secbpack", sections={"Slicing": shared})
+        self._write_pack("secbpack", sections={"Spec fields": shared})
         out = self._run().stdout
         self.assertNotIn(VERBATIM, out)
         self.assertNotIn(NEAR, out)

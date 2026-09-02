@@ -68,17 +68,22 @@ PACK_TYPED_CELLS = ("adapter", "stages", "assembly")
 # by section, per contracts/pack-signature.md's craft-section table.
 CRAFT_CELLS_BY_POINTER = ("craft",)
 # The craft sections every pack must carry (contracts/pack-signature.md
-# `## Craft sections`), and the optional two the linter still compares.
+# `## Craft sections`), and the one optional section the linter still
+# compares. `## Lens` is keyed by artifact kind, so the four sections
+# below it absorbed are refused outright: a craft carrying one of them
+# declares one fact twice, once under a `###` entry and once beside it.
 CRAFT_MANDATORY_SECTIONS = (
     "Vocabulary",
     "Workspace",
     "Spec fields",
-    "Outline",
-    "Slicing",
-    "Evidence",
     "Lens",
 )
-CRAFT_OPTIONAL_SECTIONS = ("Shape", "Stages")
+CRAFT_OPTIONAL_SECTIONS = ("Stages",)
+CRAFT_RETIRED_SECTIONS = ("Outline", "Slicing", "Evidence", "Shape")
+# The two artifact kinds every craft's Lens keys, in their required order
+# before the adapter's own: the ticket machinery already defines and
+# identifies a frozen root and a cut, so every domain judges both.
+CRAFT_LIBRARY_LENS_KINDS = ("root", "cut")
 # The sum of the folded parts at the fold (2026-08-30); only falls.
 CRAFT_BUDGET = 130
 # Cross-pack cell linter. Both figures are normative: with `doclint`'s
@@ -231,6 +236,7 @@ __all__ = (
     'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES',
     'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
     'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
+    'CRAFT_RETIRED_SECTIONS', 'CRAFT_LIBRARY_LENS_KINDS',
     'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
     'CELL_CLAUSE_MIN_WORDS', 'CALL_TOKEN_RE', 'REQUIRE_RE', 'NEVER_RE',
     'RETURN_RE', 'PACK_TABLE_CELL_RE', 'PACK_CELL_ROW_RE', 'CRAFT_ROW_RE',
