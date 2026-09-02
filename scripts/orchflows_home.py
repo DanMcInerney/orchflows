@@ -68,12 +68,18 @@ MANAGED_IGNORES = (
     "lib/",
     "runtime/",
     "envs/",
+    "node_modules/",
     "ui/",
     "tmp/",
     "worktrees/",
     "imports/",
     "trust.json",
 ) + tuple(f"state/{name}/" for name in SINK_MANAGED_SUBPATHS)
+# The project ring's half of the same line. A project's committed content is
+# its bundle and its rendered adapters; the one regenerable tree `sync`
+# writes inside a repository is an item's `node_modules/`, restored from the
+# lockfile committed beside the manifest.
+PROJECT_IGNORES = ("node_modules/",)
 RING_DIRS = tuple(rings.RING_DIRS.values())
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$|^[0-9a-f]{64}$")
 _REF_SPLIT_RE = re.compile(r"^(?P<url>.+?)@(?P<pin>[^@/]+)$")
@@ -174,6 +180,21 @@ def ensure(home: Optional[Path] = None) -> Dict[str, object]:
         "lib_version": str(version_path),
         "gitignore": str(ignore_path),
     }
+
+
+def ensure_project_ignores(project: Path) -> Path:
+    """Upsert the managed block in one project's ``.gitignore``.
+
+    The same block, the same markers and the same upsert as the home ring's,
+    because it draws the same committed/regenerable line -- one owner, so a
+    ring whose ignores drift from a project's cannot happen. Only the lines
+    differ, and only because the two rings hold different regenerable trees.
+    """
+
+    path = Path(project) / GITIGNORE_NAME
+    before = path.read_text(encoding="utf-8-sig") if path.is_file() else ""
+    _write_lf(path, upsert_block(before, "\n".join(PROJECT_IGNORES)))
+    return path
 
 
 # --- pinned imports ----------------------------------------------------
@@ -464,9 +485,9 @@ def _restored_requirements(target: Path, known) -> List[dict]:
 __all__ = (
     "CYCLE_REQUIREMENT_REFUSAL", "GITIGNORE_END", "GITIGNORE_NAME",
     "GITIGNORE_START", "LIB_VERSION_NAME",
-    "MANAGED_IGNORES", "MUTABLE_REF_REFUSAL", "RECEIPT_FILENAME",
-    "UNPINNED_REQUIREMENT_REFUSAL",
-    "add", "bundle_name", "clone_at", "ensure", "import_closure",
-    "lib_version", "read_lock", "resolve_pin", "restore",
+    "MANAGED_IGNORES", "MUTABLE_REF_REFUSAL", "PROJECT_IGNORES",
+    "RECEIPT_FILENAME", "UNPINNED_REQUIREMENT_REFUSAL",
+    "add", "bundle_name", "clone_at", "ensure", "ensure_project_ignores",
+    "import_closure", "lib_version", "read_lock", "resolve_pin", "restore",
     "split_reference", "upsert_block", "write_lock",
 )

@@ -1,0 +1,142 @@
+{
+  "ticket": "B1.22",
+  "run": "20260902T181500Z-workflow-ladder",
+  "unit": "U10 `orchflows check`",
+  "artifact": "git:f918942cf0b84845b8b31fd219a58646988b5f68",
+  "judged_from": "wt/20260902T181500Z-workflow-ladder/B1.22 at 3d897465 (artifact is an ancestor: git merge-base --is-ancestor exit 0)",
+  "lens": "orch-code-pack craft ## Lens ### git",
+  "verdict": "holds; no blocking finding",
+  "frozen_criteria": {
+    "run_required_at_the_artifact": {
+      "command": "tools/run_required.py --no-cache, in a detached worktree at f918942c",
+      "exit": 0,
+      "rows": {"tools/validate.py": 0, "tools/run_tests.py": 0, "tools/run_serial_compat.py": 0, "install.py --dry-run": 0, "git diff --check": 0},
+      "tree": "d6695b8fb3c6",
+      "wall": "3m09s"
+    },
+    "section_2_names_and_shapes": {
+      "orchflows check [<ring-dir>]": "matches: `check` subparser, optional positional `ring` with metavar `<ring-dir>`; project ring when standing in a project, else home, else the directory given; exit 1 on any refusal (cmd_check returns `1 if diag.has_errors else 0`)",
+      "checks listed in the row": {
+        "anatomy": "run on ring packs (validate_anatomy); deliberately not on ring skills -- see finding F2",
+        "budgets": "workflow body budget via validate_templates; pack body via validate_budget; craft via validate_craft_budget; sheet via validate_sheet_budget; description via validate_frontmatter",
+        "call-edge resolution": "validate_call_graph with known=resolvable_names(ring) -- the ring's own items plus every root rings.item_roots resolves",
+        "sheet Lens keys against named packs": "validate_sheet_lens with pack_roots=_roots(ring, 'pack')",
+        "packs: resolution": "same call; a library pack named from a ring resolves (can-fail ring: orch-code-pack resolved, orch-nonesuch-pack refused)",
+        "tools.txt grammar": "absent -- see finding F1",
+        "BUNDLE.md shape": "absent -- see finding F1"
+      }
+    },
+    "body_and_block_budgets": "tools/validate.py exit 0 at the artifact and at HEAD; no body or block over budget in the diff",
+    "files_outside_details": "docs/custom-workflow-authoring.md (3 lines on the Discover bullet) and tests/serial_compat_manifest.json; both reported with a reason in the executor's ## Report; tests/test_installer_cases/planning/script_inventory.py is the installer test Details' `installer/` clause implies"
+  },
+  "details_tests_required": {
+    "a valid home-ring fixture passes": "CheckTests.test_a_scaffolded_home_ring_passes_every_item_check",
+    "a sheet with ## Workspace fails": "CheckTests.test_a_sheet_carrying_a_pack_only_section_is_refused",
+    "a workflow body over budget fails": "CheckTests.test_a_workflow_body_over_the_tier_budget_is_refused",
+    "a dangling call edge fails": "CheckTests.test_a_call_edge_that_resolves_to_nothing_is_refused and TestScriptNames.test_orchflows_check_grades_a_ring_from_the_installed_layout (the latter out of a real relocated install: the installed-layout import path the Details asked to verify)"
+  },
+  "readings": {
+    "narrow_scope_at_integrated_head": {
+      "command": "tools/run_tests.py --scope scripts/orchflows_check.py,scripts/orchflows.py,tools/validate_support,installer/planning_support.py,tests/test_orchflows_cli.py,tests/test_installer_cases/planning/script_inventory.py",
+      "exit": 0,
+      "result": "31 modules, 960 tests, 0 failures, 0 errors, 1 skipped, wall 95.9s"
+    },
+    "can_fail_reading_without_mutating_the_tree": {
+      "how": "a scratch ring under the scratchpad holding one deliberately defective item per check; `scripts/orchflows.py check <ring>` at HEAD",
+      "exit": 1,
+      "refusals_seen": [
+        "packs/thin-pack: body carries 'Require:'; frontmatter declares 'role'; pack signature cells missing; craft.md absent (WARN)",
+        "sheets/bad-sheet: section '## Workspace' is the pack's",
+        "sheets/good-sheet: packs names 'orch-nonesuch-pack' (unresolved) while orch-code-pack resolved through the library root; carries 'scripts' and 'tools.txt'",
+        "skills/odd-skill: frontmatter key 'colour' not allowed; name does not match folder",
+        "workflows/fat-flow: body 460 words exceeds the workflow-tier budget of 450",
+        "workflows/loose-flow: `orch-nonesuch` does not resolve; `orch-do` and the home ring's `super-research` resolve silently"
+      ]
+    },
+    "live_rings_at_head": {
+      "home ring C:\\Users\\danhm\\.orchflows": "exit 0; skill 1, pack 0, workflow 1, sheet 0; WARN sheets: absent; check skipped",
+      "project ring (this worktree, untrusted)": "exit 0; skill 1; grading needs no trust grant, which is right for a read-only verdict"
+    },
+    "installed_bin": "the machine's installed bin predates this commit (no `check` subcommand, no lib/validate_support); the relocated-install test is the reading for that layout, not the live install"
+  },
+  "contract_fidelity": {
+    "validate_templates(diag, roots=None)": "default reproduces the library walk; tools/validate.py:321 unchanged",
+    "build_call_graph / validate_call_graph(..., known=None)": "default is the packages' own names; tools/validate.py:313 and carriage.py's two-arg wrapper unchanged",
+    "validate_sheets(diag, pack_roots=None) / validate_sheet_lens(..., pack_roots=None)": "default is default_pack_roots() = [ROOT/'packs']; tools/validate.py:326 and tests/test_orchflows_cli.py:261 unchanged",
+    "pack_lens_kinds(pack_roots, packs)": "first positional changed from a root Path to an iterable of pack roots; no caller outside sheets.py (grep over scripts, tools, tests, installer); a Path passed by an old-style caller fails loud (TypeError on iteration), not silently",
+    "tools.validate_support importable under both names": "relative intra-package imports; `scripts.*` imports take the paired try/except idiom the tree already uses; the package ships whole (glob *.py includes __init__.py) to lib/validate_support/"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": false,
+      "kind": "correctness (spec section 2 row, cross-unit)",
+      "evidence": "spec section 2 row `orchflows check [<ring-dir>]` lists `tools.txt` grammar and `BUNDLE.md` shape among the checks; scripts/orchflows_check.py._grade calls neither. At f918942c and at the integrated HEAD 3d897465 no function exists to call: `contracts/bundle.md` is absent, no tools.txt parser exists under scripts/ (grep), U9 (B1.17) and U12 (B1.19) are unmerged. U12's Goal owns the tools.txt hook (\"`orchflows check` validates `tools.txt` grammar\"); no unit's Goal owns a BUNDLE.md-shape check -- U9's Goal makes `contracts/bundle.md` the shape owner and stops there.",
+      "why_not_blocking": "U10's frozen Goal is \"runs the validator's item checks ... the same functions tools/validate.py runs\"; the validator has no tools.txt or BUNDLE.md check at this identity, so the Goal is not shown false, and the artifact cannot call what does not exist within its license. Spec section 5 places this at the gate's seam judge over the joined tip.",
+      "cause": "C1",
+      "executor_reported": true
+    },
+    {
+      "id": "F2",
+      "blocking": false,
+      "kind": "correctness (a pass `check` gives that `--skill` will refuse)",
+      "evidence": "spec section 2 row lists `anatomy`; `_grade` runs only validate_frontmatter on a ring skill (no validate_role, validate_anatomy, validate_budget). Section 2's `--skill` row refuses \"when the skill's `role` is not the verb's\", so an applied skill must carry `role`; a ring skill without one passes `orchflows check` and is refused at dispatch. The executor's measured reason stands: scripts/orchflows_scaffold.py `_SKILL` writes no `role` key (read at HEAD), and the home ring's super-research body is 672 words against BODY_BUDGET['workflows']=450, so anatomy and budget on ring skills would refuse the scaffold's own output and the one live applied skill.",
+      "why_not_blocking": "no frozen criterion names ring-skill anatomy; the reason is measured, reported on the closed decision as section 0 asks, and the smallest fix reaches the scaffold (U1/U2 surface) outside this unit's Details.",
+      "cause": "C2",
+      "executor_reported": true
+    },
+    {
+      "id": "F3",
+      "blocking": false,
+      "kind": "shape (locality)",
+      "evidence": "tests/test_orchflows_cli.py is 507 physical lines after CheckTests (+138), past the 500-line warn-only presumption (tools/check_source_sizes.py); executor recorded it as a caveat for the judge to rule.",
+      "why_not_blocking": "warn-only presumption; the module owns one concern (the ring CLI's eight verbs) and the peers all share `_home`/`_run`; splitting CheckTests alone would fork those helpers.",
+      "cause": "C3",
+      "executor_reported": true
+    },
+    {
+      "id": "F4",
+      "blocking": false,
+      "kind": "diff (surface)",
+      "evidence": "docs/custom-workflow-authoring.md gained three lines on the Discover bullet; Details names no doc file and U4 owns that document. Reported with its reason (no bullet told a reader the verb exists; U4's only mention sits inside U12's tools.txt paragraph). Merged cleanly beside U4 (B1.6) at HEAD.",
+      "why_not_blocking": "reported deviation with a reason, three lines, no overlap at the join.",
+      "cause": "none -- accepted as reported",
+      "executor_reported": true
+    }
+  ],
+  "causes": [
+    {
+      "id": "C1",
+      "findings": ["F1"],
+      "statement": "two of the section 2 row's seven checks belong to functions other same-wave units own, and one of them (BUNDLE.md shape) is owned by no unit's Goal at all.",
+      "smallest_change": "at the joined tip, one call each in orchflows_check._grade beside `sheets.validate_sheets`: U12's tools.txt grammar function over every ring item directory; a `validate_bundle_manifest(ring, diag)` reading `contracts/bundle.md`'s shape, which needs an owner -- recommend the gate's seam judge names it (U9's contract is the shape owner).",
+      "scope": "gate / successor (exceeds this unit's license)"
+    },
+    {
+      "id": "C2",
+      "findings": ["F2"],
+      "statement": "the scaffold and the checker disagree about what an applied skill's frontmatter carries: `--skill` reads `role`, `orchflows new skill` writes none, so `check` cannot require it without refusing the scaffold.",
+      "smallest_change": "scripts/orchflows_scaffold.py `_SKILL` writes `role: worker` (the verb an applied skill defaults to), and `_grade` adds `packages.validate_role(fm, pkg, diag)` for kind `skill` beside validate_frontmatter; anatomy and the tier budget stay off ring skills, and the module docstring's sentence changes from three exclusions to two.",
+      "scope": "successor (touches U1/U2's scaffold surface)"
+    },
+    {
+      "id": "C3",
+      "findings": ["F3"],
+      "statement": "one test module carries every ring verb's cases.",
+      "smallest_change": "none now; if the presumption is enforced later, move `_home` and `_run` to a `tests/_orchflows_cli_support.py` seam and give CheckTests its own module rather than shaving cases.",
+      "scope": "successor, low weight"
+    }
+  ],
+  "held_without_finding": [
+    "Failure is loud: a ring that is not there exits 1 naming the path with `run orchflows sync` as the remedy; an absent kind directory is a WARN in the compiler's own SKIPPED wording rather than a silent pass.",
+    "Explicit over clever: `support()` tries two static import names and `check()` binds/restores the four modules' ROOT in a try/finally -- the same seam tools/validate.py already uses.",
+    "Test economy: seven CLI cases each at a seam (pass, three refusals, default resolution, directory-holding-a-ring, missing ring) plus one real-install case; the refusal cases each mutate the scaffolded ring in one place, so the pass case's green is the can-fail one.",
+    "The tests pin the compiler's own refusal sentences; that is the Goal's claim (\"a refusal reads the same in both\") read back, and the same anchors tests/test_validate.py pins.",
+    "Serial-compat manifest regenerated; five new mutation owners ruled to match their modules' peers; run_serial_compat.py exit 0 inside run_required at the artifact."
+  ],
+  "observations_not_findings": [
+    "`orchflows check <path-to-a-library-checkout>` reads the checkout itself as a ring (it has skills/, packs/, sheets/ directories) rather than its `.orchflows/` bundle; the default path (no argument) resolves the bundle through rings.project_ring(). Argument form is `<ring-dir>`, so this is the documented reading, and the `ring:` line says which was graded.",
+    "A freshly synced home ring has no `sheets/` directory (orchflows_home.ensure() mints skills, packs, workflows, imports), so `check` on it prints `WARN sheets: absent; check skipped`; executor already flagged it as a `sync` successor.",
+    "The machine's installed bin predates this commit; `orchflows check` reaches users at the next install.py."
+  ]
+}
