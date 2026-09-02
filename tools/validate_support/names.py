@@ -11,6 +11,7 @@ rel = __dep_packages.rel
 from tools.validate_support import common as __dep_common
 CRAFT_LIBRARY_LENS_KINDS = __dep_common.CRAFT_LIBRARY_LENS_KINDS
 CRAFT_MANDATORY_SECTIONS = __dep_common.CRAFT_MANDATORY_SECTIONS
+CRAFT_OPTIONAL_SECTIONS = __dep_common.CRAFT_OPTIONAL_SECTIONS
 CRAFT_RETIRED_SECTIONS = __dep_common.CRAFT_RETIRED_SECTIONS
 PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
 ROLE_PROFILES = __dep_common.ROLE_PROFILES
@@ -133,7 +134,8 @@ def _adapter_kind(pkg: dict):
 
 def validate_craft_sections(packages, diag: Diagnostics) -> None:
     """Each pack's craft carries the mandatory `##` sections, none of the
-    retired ones, and a `## Lens` keyed by artifact kind.
+    retired ones, nothing outside the table's roster, and a `## Lens`
+    keyed by artifact kind.
 
     contracts/pack-signature.md's craft-section table names the sections
     each verb reads — the heading does what the lane projection did, so a
@@ -173,6 +175,18 @@ def validate_craft_sections(packages, diag: Diagnostics) -> None:
                     "entry keyed by artifact kind; move the content there "
                     "rather than owning the fact twice",
                 )
+        # The roster closes both ways, as the Lens keys below already do:
+        # a retired heading is the loop above's finding, so this one names
+        # only sections the signature table never listed at all.
+        known = set(CRAFT_MANDATORY_SECTIONS) | set(CRAFT_OPTIONAL_SECTIONS)
+        for section in sorted(found - known - set(CRAFT_RETIRED_SECTIONS)):
+            diag.error(
+                rel(craft),
+                f"craft carries an unrecognized `## {section}` heading — "
+                "contracts/pack-signature.md's craft-section table is the "
+                f"whole roster ({', '.join(sorted(known))}), so this "
+                "section is prose no verb is pointed at",
+            )
         if "Lens" not in found:
             continue
         kind = _adapter_kind(pkg)
