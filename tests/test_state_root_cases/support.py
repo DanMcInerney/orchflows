@@ -14,7 +14,7 @@ import scripts.state_root as state_root
 import scripts.tickets as tickets_mod
 import scripts.workspace as workspace_mod
 
-ROOT = Path(__file__).resolve().parents[2]
+from tests._repo_root import ROOT
 SCRIPTS_DIR = ROOT / "scripts"
 STATE_ROOT_PY = SCRIPTS_DIR / "state_root.py"
 BOOTSTRAP_PY = SCRIPTS_DIR / "_bootstrap.py"

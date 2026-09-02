@@ -55,7 +55,7 @@ import scripts.tickets as tickets_mod
 import scripts.tickets_assignment as tickets_assignment
 import scripts.tickets_dispatch_launch as launch_module
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 __all__ = (
     "AdapterRegistryTest", "PackPinTest", "SemanticTicketContractTest",
@@ -163,6 +163,7 @@ class AdapterRegistryTest(unittest.TestCase):
             deterministic_gate=True,
             conflict_semantics="synthetic-overlap",
             workspace_strategy="git",
+            commits_in_place=True,
         )
         with mock.patch.object(tickets_assignment, "adapter_spec", return_value=adapter):
             finding = tickets_assignment.workspace_establishment_finding(

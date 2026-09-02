@@ -13,7 +13,7 @@ from installer.packages import codex_role_adapter_body
 from tools import validate
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 PROFILE_OWNER_LINK = "[role profiles](../hosts/profiles.md)"
 
 

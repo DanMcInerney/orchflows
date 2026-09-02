@@ -10,7 +10,7 @@ from reader.scripts import ui_workflows_identity as identity
 from reader.scripts import ui_workflows_skills as skills
 
 
-ROOT = Path(__file__).resolve().parents[3]
+from reader.tests._repo_root import ROOT
 
 
 class WorkflowSkillTests(unittest.TestCase):

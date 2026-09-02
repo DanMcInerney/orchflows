@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import re
 import unittest
-from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 # `SPEC_POLICY_REQUIREMENTS`/`SPEC_POLICY_INVERSIONS` and the semantic-root
 # policy tests they drove (once here) pinned `orch-outline`'s "Semantic root
@@ -62,17 +61,24 @@ class GoalEvidenceContractTest(unittest.TestCase):
 class CritiqueContractTest(unittest.TestCase):
     def test_check_owns_blockers_and_verification(self):
         check = read("skills/kernel/orch-judge/SKILL.md")
-        self.assertIn("A critique enumerates evidence-backed findings", check)
-        self.assertIn("one thread per shared cause", check)
-        self.assertIn("extinguishes the class", check)
-        self.assertIn("Write the findings to one\nJSON file", check)
-        self.assertIn("print `findings: <path>` in the report", check)
+        normalized_check = " ".join(check.split())
+        # Two anchors either side of the hyphen in "evidence-backed", not
+        # one crossing it: a real reflow (an editor, `fmt`) breaks at a
+        # hyphen by default, and a mutant that forbids doing so would grade
+        # an easier file than the one that will exist (A5).
+        self.assertIn("A critique enumerates evidence", normalized_check)
+        self.assertIn("backed findings, then", normalized_check)
+        self.assertIn("one thread per shared cause", normalized_check)
+        self.assertIn("extinguishes the class", normalized_check)
+        self.assertIn("Write the findings to one JSON file", normalized_check)
+        self.assertIn("print `findings: <path>` in the report", normalized_check)
 
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
         check = read("skills/kernel/orch-judge/SKILL.md")
-        self.assertIn("Never: edit the artifact", check)
-        self.assertIn("mix a review stage with another kind", check)
-        self.assertIn("`## Lens` owns\nthe review criteria", check)
+        normalized_check = " ".join(check.split())
+        self.assertIn("Never: edit the artifact", normalized_check)
+        self.assertIn("mix a review stage with another kind", normalized_check)
+        self.assertIn("`## Lens` owns the review criteria", normalized_check)
 
     def test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model(self):
         surfaces = (
@@ -89,7 +95,7 @@ class CritiqueContractTest(unittest.TestCase):
             "orch-repair",
             "oracle_policy",
         )
-        joined = "\n".join(read(path) for path in surfaces)
+        joined = " ".join("\n".join(read(path) for path in surfaces).split())
         for phrase in forbidden:
             with self.subTest(phrase=phrase):
                 self.assertNotIn(phrase, joined)

@@ -34,7 +34,7 @@ from scripts import tickets_dispatch_launch as launch
 from scripts import workspace_git
 from scripts.tickets_format import canonical_json, parse_canonical_json
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 HOSTS = ROOT / "hosts"
 
 
@@ -160,18 +160,28 @@ class LaunchResolutionTest(unittest.TestCase):
 
 
 class ReturnLineConditionalTest(unittest.TestCase):
-    """U2a: the commit clause is conditional on the adapter's git candidate.
+    """U2a: the commit clause answers two questions, not one (finding F4).
 
-    An adapter that establishes one (git, git-plus-render) still gets told
-    to commit; one that establishes none (evidence-store, document-tree)
-    gets its own craft's `## Workspace` sentence instead -- never both, never
-    neither.
+    `commits_in_place` decides whether the clause renders at all -- true for
+    every adapter whose identity is a commit or a document revision one
+    records (git, git-plus-render, document-tree), false only for
+    evidence-store, which alone gets its own craft's `## Workspace` sentence
+    instead. `git_candidate` decides whether the clause's branch-merge
+    sentence renders -- true only where the adapter establishes isolation
+    over git (git, git-plus-render); a document-tree child commits, onto
+    the coordinator's own branch, so it keeps the clause without that
+    sentence. Never both facts contradicted, never the clause and the
+    workspace line together.
     """
 
-    def assignment(self, *, pack: str, artifact_kind, git_candidate: bool, workspace_line):
+    def assignment(
+        self, *, pack: str, artifact_kind, commits_in_place: bool,
+        git_candidate: bool, workspace_line,
+    ):
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
-            "artifact_kind": artifact_kind, "craft": None, "craft_scope": None,
+            "artifact_kind": artifact_kind, "commits_in_place": commits_in_place,
+            "craft": None, "craft_scope": None,
             "dependencies": [], "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "git_candidate": git_candidate, "id": "T",
             "lease_expires_at": "2099-01-01T00:00:00Z", "pack": pack,
@@ -180,35 +190,67 @@ class ReturnLineConditionalTest(unittest.TestCase):
         }
 
     def test_a_research_pack_do_launch_carries_no_commit_clause(self):
-        from scripts.tickets_assignment import _workspace_line, git_candidate
+        from scripts.tickets_assignment import _workspace_line, commits_in_place
 
         craft = ROOT / "packs" / "orch-research-pack" / "references" / "craft.md"
         research_line = _workspace_line(craft)
         self.assertIsNotNone(research_line)
-        self.assertFalse(git_candidate("orch-research-pack"))
+        self.assertFalse(commits_in_place("orch-research-pack"))
 
         prompt = launch.launch_prompt(self.assignment(
             pack="orch-research-pack", artifact_kind="evidence",
-            git_candidate=False, workspace_line=research_line,
+            commits_in_place=False, git_candidate=False, workspace_line=research_line,
         ))
 
         self.assertNotIn("Commit your work inside this candidate", prompt)
         self.assertIn(research_line, prompt)
 
     def test_a_code_pack_do_launch_still_commits(self):
-        from scripts.tickets_assignment import git_candidate
+        from scripts.tickets_assignment import commits_in_place, git_candidate
 
+        self.assertTrue(commits_in_place("orch-code-pack"))
         self.assertTrue(git_candidate("orch-code-pack"))
 
         prompt = launch.launch_prompt(self.assignment(
             pack="orch-code-pack", artifact_kind="git",
-            git_candidate=True, workspace_line=None,
+            commits_in_place=True, git_candidate=True, workspace_line=None,
         ))
 
         self.assertIn(
             "Commit your work inside this candidate before you close", prompt,
         )
+        self.assertIn(
+            "the landing merges the candidate, not your working tree.", prompt,
+        )
         self.assertIn("artifact: git:<full-commit-id>", prompt)
+
+    def test_a_content_pack_do_launch_commits_without_a_merge_sentence(self):
+        """The document-tree adapter commits in place but establishes no git
+        candidate to merge: the launch keeps the commit clause and drops the
+        sentence that would claim a candidate branch nothing isolated
+        (finding F4 -- U2's original condition told this child its pack
+        commits nothing, which is false: run 20260901T181410Z's B1.1
+        committed 89b23e3d in exactly this shape under the old prompt)."""
+
+        from scripts.tickets_assignment import commits_in_place, git_candidate
+
+        self.assertTrue(commits_in_place("orch-content-pack"))
+        self.assertFalse(git_candidate("orch-content-pack"))
+
+        prompt = launch.launch_prompt(self.assignment(
+            pack="orch-content-pack", artifact_kind="doc",
+            commits_in_place=True, git_candidate=False, workspace_line=None,
+        ))
+
+        self.assertIn(
+            "Commit your work in the tree you are standing in before you close",
+            prompt,
+        )
+        self.assertNotIn("candidate", prompt)
+        self.assertNotIn("Your stamped pack commits nothing", prompt)
+        self.assertIn(
+            "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", prompt,
+        )
 
 
 class DispatchLaunchTest(unittest.TestCase):
@@ -336,6 +378,7 @@ class DispatchLaunchTest(unittest.TestCase):
         state = parse_canonical_json(attempt["dispatch_v1"])["attempts"][0]
         craft = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
         friction = ROOT / "scripts" / "friction.py"
+        skill = ROOT / "skills" / "kernel" / "orch-do" / "SKILL.md"
 
         for fact in (
             str(self.ticket_path()), str(self.candidate), sys.executable,
@@ -348,6 +391,17 @@ class DispatchLaunchTest(unittest.TestCase):
             # friction law (rules/token-economy.md's prompt-budget escape
             # hatch), so the prompt is its only carrier.
             "log friction, then continue", str(friction),
+            # S7(a), 2026-09-01: the resolved skill file, so a forked child
+            # never fires a filesystem search to find its own definition.
+            str(skill),
+            # S6, 2026-09-01: the check sentence names the mechanism the
+            # host's own auto-backgrounding disagreed with the old
+            # instruction over.
+            "with an explicit timeout longer than the check",
+            # S7(b), 2026-09-01: hygiene for a background command the child
+            # itself supersedes, reusing this same command-running sentence
+            # rather than opening a third surface.
+            "kill anything you background once it is superseded",
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, prompt)
@@ -357,6 +411,7 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(1, prompt.count(str(craft)))
         self.assertEqual(1, prompt.count(state["assignment_seal"]))
         self.assertEqual(1, prompt.count(str(friction)))
+        self.assertEqual(1, prompt.count(str(skill)))
         # the craft's quoted scope is the one scope statement: the standing
         # gate line yields to it rather than restating the same law
         self.assertNotIn("run it here only if this ticket is the gate", prompt)

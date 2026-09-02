@@ -9,6 +9,10 @@ import json
 from pathlib import Path
 
 
+# Run directly or lazily imported before the repository is necessarily
+# on sys.path; reading `scripts._bootstrap.ROOT` would need this same
+# walk to seed the import first, for no fact this file otherwise needs
+# from `scripts/`.
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOSTS_DIR = REPO_ROOT / "hosts"
 ADAPTERS_DIR = REPO_ROOT / "installer" / "host_adapters"

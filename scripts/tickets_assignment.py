@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 if __package__:
+    from . import rings
     from .tickets_adapters import (
         AdapterError, adapter_spec, craft_path, derived_isolation,
     )
@@ -33,6 +34,7 @@ if __package__:
     )
     from .workspace_git import BASELINE_KEY, BRANCH_KEY
 else:
+    import rings
     from tickets_adapters import (
         AdapterError, adapter_spec, craft_path, derived_isolation,
     )
@@ -198,21 +200,66 @@ def _craft(pack):
     return str(path), _craft_scope(path), _workspace_line(path)
 
 
+def _skill_path(executor):
+    """The applied skill's own manifest, resolved through the one ring
+    resolver -- the same guarantee `craft_path` already gives the pack.
+
+    A launch hands the child this path instead of telling it to find one:
+    `scripts/rings.py` resolves a skill name to one absolute path
+    deterministically (S7, 2026-09-01: a forked child fired an unscoped
+    filesystem search to locate its own skill file, the installed layout
+    the host block documents never reaching it). None when the executor
+    names no resolvable skill -- a launch with no working prompt is refused
+    long before this fact is read, so a caller here always holds a name
+    that either resolves or the dispatch never opens.
+    """
+
+    name = dequote(executor)
+    if not name:
+        return None
+    try:
+        return str(rings.resolve("skill", name)["path"])
+    except rings.RingError:
+        return None
+
+
 def git_candidate(pack) -> bool:
-    """Whether the stamped pack's adapter establishes a git candidate to
-    commit into.
+    """Whether the landing merges a candidate branch this pack's child
+    committed into.
 
     The same fact `workspace_establishment_finding` already checks a
     recorded workspace's branch and baseline against
-    (``workspace_strategy == "git"``): a launch with no git candidate has
-    nothing to commit, so the prompt asks this once more to decide what its
-    return line names instead.
+    (``workspace_strategy == "git"``): only there does an isolated branch
+    exist for `land` to merge. This answers a narrower question than "did
+    the child commit" -- a document-tree child commits too
+    (`commits_in_place`), straight onto the coordinator's own branch, and
+    nothing is merged for it because nothing was isolated to merge from.
     """
 
     if not str(pack or "").strip():
         return False
     try:
         return adapter_spec(pack).workspace_strategy == "git"
+    except AdapterError:
+        return False
+
+
+def commits_in_place(pack) -> bool:
+    """Whether this pack's child must commit in the tree it stands in for
+    its bytes to survive.
+
+    True for every adapter whose identity is a commit or a document
+    revision one records (git, git-plus-render, document-tree); false only
+    for evidence-store, whose identity is a lane packet with no commit
+    behind it. Kept separate from `git_candidate`: a document-tree child
+    commits but the landing merges no branch for it, so the launch's
+    return line reads both facts to decide what it renders (finding F4).
+    """
+
+    if not str(pack or "").strip():
+        return False
+    try:
+        return adapter_spec(pack).commits_in_place
     except AdapterError:
         return False
 
@@ -293,6 +340,7 @@ def dispatch_assignment(rest, *, attempt=None):
         "artifact_kind": artifact_kind(pack),
         "assigned_name": assigned_name,
         "assignment_seal": None if attempt is None else attempt["assignment_seal"],
+        "commits_in_place": commits_in_place(pack),
         "craft": craft,
         "craft_scope": scope,
         "dependencies": _dependency_paths(loaded, ticket_path),
@@ -305,6 +353,7 @@ def dispatch_assignment(rest, *, attempt=None):
         "pack": pack,
         "role": role,
         "run": str(loaded.get("run") or run),
+        "skill_path": _skill_path(executor),
         "ticket_path": str(ticket_path),
         "workspace": workspace,
         "workspace_line": workspace_line,
@@ -313,6 +362,6 @@ def dispatch_assignment(rest, *, attempt=None):
 
 __all__ = (
     "ASSIGNMENT_SECTIONS",
-    "_claim_is_stale", "artifact_kind", "dispatch_assignment",
+    "_claim_is_stale", "artifact_kind", "commits_in_place", "dispatch_assignment",
     "git_candidate", "workspace_establishment_finding",
 )

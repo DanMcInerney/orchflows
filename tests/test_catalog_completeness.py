@@ -33,7 +33,7 @@ import install
 from installer.hosts import host_item_path, load_host_adapters
 from scripts.tickets_registry import CALLABLE_EXECUTORS
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 HOSTS = ("claude", "codex", "grok")
 _SENTINEL = "SENTINELNAME"
 

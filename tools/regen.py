@@ -42,6 +42,9 @@ import tempfile
 from pathlib import Path
 from typing import NamedTuple
 
+# This is the walk that puts the repository on sys.path so the `tools.*`
+# renderers below can be imported as a package at all; it cannot itself
+# come from `scripts._bootstrap.ROOT`, which needs the same seeding first.
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

@@ -369,7 +369,11 @@ the reach question answered with evidence, not assumption.
   worktree discipline) always-on — would roughly halve every child's
   standing instruction cost, but restructures the installer's
   managed-block scheme and the eight-demand accounting. A design pass
-  of its own; user decision.
+  of its own; user decision. `validate_routing_block`
+  (`tools/validate_support/packages.py`) is the enforcement half already
+  built -- checked today against synthetic text for lack of a live
+  surface -- so whoever executes this split wires it in against
+  whichever half becomes the rendered project-scope routing block.
 
 ## Suggested execution shape
 

@@ -12,9 +12,8 @@ Section 8) mutates a copy of the text in memory, never the tree.
 
 import re
 import unittest
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 ARCHITECTURE = ROOT / "ARCHITECTURE.md"
 
 # The section an executing agent reads for cross-cutting ownership.

@@ -1,5 +1,6 @@
 """Sealed assignment identity covers semantics, not executor records."""
 import unittest
+from tests._repo_root import ROOT
 from scripts.tickets_generations import assignment_digest
 from scripts.tickets_format import _set_frontmatter_field
 from scripts.tickets_issue_render import _render_ticket
@@ -32,7 +33,7 @@ class TicketProtocolTest(unittest.TestCase):
         )
 
     def test_dispatch_v1_contract_owns_the_closed_public_seam(self):
-        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        root = ROOT
         dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         result = (root / "contracts" / "result.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
@@ -50,7 +51,7 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertIn("**dispatch attempt**", vocabulary)
 
     def test_join_contract_consumes_one_fixed_result_and_absolute_attempt_lease(self):
-        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        root = ROOT
         dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
         result = (root / "contracts" / "result.md").read_text(encoding="utf-8")
@@ -65,7 +66,7 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertIn("`lease_expires_at`", dispatch)
 
     def test_dispatch_v1_contract_owns_the_launch(self):
-        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        root = ROOT
         dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
         roles = (root / "rules" / "roles.md").read_text(encoding="utf-8")
@@ -126,7 +127,7 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertNotIn("**packet projection**", vocabulary)
 
     def test_public_documents_project_the_current_dispatch_and_gate_model(self):
-        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        root = ROOT
         readme = (root / "README.md").read_text(encoding="utf-8")
         design = (root / "DESIGN.md").read_text(encoding="utf-8")
         tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
@@ -153,7 +154,7 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertNotIn("gate-only cut", vocabulary)
 
     def test_host_skill_and_ui_project_established_non_live_suspension(self):
-        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        root = ROOT
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
         dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         land_usage = __import__(

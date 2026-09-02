@@ -9,7 +9,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from scripts import state_root
+from scripts import _bootstrap, state_root
 
 from .hosts import (
     HOST_ADAPTERS_DIR,
@@ -40,7 +40,10 @@ try:
 except ModuleNotFoundError:  # tomllib is 3.11+; MIN_PYTHON is lower.
     tomllib = None
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+# install.py, the sole entry point, has already put the repository root
+# on sys.path before importing this module, so the fact is read from the
+# leaf rather than re-walked here.
+REPO_ROOT = _bootstrap.ROOT
 READER_ROOT = REPO_ROOT / "reader"
 _HOST_ADAPTERS = load_host_adapters()
 CANONICAL_DIRS = (

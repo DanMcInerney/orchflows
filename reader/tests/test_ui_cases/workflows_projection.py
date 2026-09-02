@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import unittest
 import re
-from pathlib import Path
 
 from reader.scripts import ui_workflows_projection as workflows
 
 
-ROOT = Path(__file__).resolve().parents[3]
+from reader.tests._repo_root import ROOT
 
 
 class WorkflowProjectionTests(unittest.TestCase):

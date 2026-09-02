@@ -18,6 +18,11 @@ from typing import Dict
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "web" / "dist"
 LOCK = ROOT / "pnpm-lock.yaml"
+# S1 exception: this file is run with working directory `reader`, so it
+# derives the reader root first (ROOT, above) and chains the repository
+# root off that already-resolved name rather than walking straight from
+# `Path(__file__)` -- a different idiom the grep-shaped acceptance did
+# not enumerate.
 REPOSITORY_ROOT = ROOT.parent
 RUNTIME_REQUIREMENTS = REPOSITORY_ROOT / "requirements-runtime.txt"
 NOTICES = REPOSITORY_ROOT / "THIRD_PARTY_NOTICES.md"

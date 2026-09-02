@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2114,
+  "count": 2117,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -130,6 +130,7 @@
    "test_dispatch_launch.LaunchResolutionTest.test_the_profile_override_decides_the_role_the_skill_declared",
    "test_dispatch_launch.LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
    "test_dispatch_launch.ReturnLineConditionalTest.test_a_code_pack_do_launch_still_commits",
+   "test_dispatch_launch.ReturnLineConditionalTest.test_a_content_pack_do_launch_commits_without_a_merge_sentence",
    "test_dispatch_launch.ReturnLineConditionalTest.test_a_research_pack_do_launch_carries_no_commit_clause",
    "test_dispatch_launch_record.DispatchCarriageTest.test_dispatch_emits_codepage_independent_canonical_ascii",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_after_retirement",
@@ -985,9 +986,9 @@
    "test_ticket_callables.CallableLandingTest.test_a_git_callable_runs_its_done_predicate_at_the_landing",
    "test_ticket_callables.CallableLandingTest.test_a_judge_under_a_landed_callable_carries_both_machine_lines",
    "test_ticket_callables.CallablePromptTest.test_a_document_callable_is_told_to_print_a_doc_line",
+   "test_ticket_callables.CallablePromptTest.test_a_document_tree_adapter_commits_without_a_branch_merge_sentence",
    "test_ticket_callables.CallablePromptTest.test_a_git_callable_is_told_to_commit_and_to_print_a_git_line",
    "test_ticket_callables.CallablePromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
-   "test_ticket_callables.CallablePromptTest.test_a_non_git_adapter_carries_its_own_workspace_line_not_a_commit",
    "test_ticket_callables.CallablePromptTest.test_an_untyped_artifact_is_refused_before_anything_is_written",
    "test_ticket_callables.CallableSinkWorktreeIsolationTest.test_worktrees_root_stays_inside_the_sinks_own_tempdir",
    "test_ticket_callables.RepairRoundAdmissionTest.test_a_runtime_callables_repair_round_admits_and_dispatches",
@@ -1568,6 +1569,8 @@
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_no_cut_states_a_superseded_overlap_rule",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_reserves_the_tracer_for_the_unproven_seam",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_uses_the_current_unit_assignment_shape",
+   "tests.test_static_tree_invariants_cases.repo_root_derivation.TestRepoRootDerivationSitesAreOwnedOrExplained.test_every_site_resolving_to_the_repository_root_is_owned_or_commented",
+   "tests.test_static_tree_invariants_cases.repo_root_derivation.TestRepoRootDerivationSitesAreOwnedOrExplained.test_the_classifier_fails_on_a_synthetic_uncommented_site",
    "tests.test_static_tree_invariants_cases.repository_shape.TestEveryCaseClassIsRegistered.test_every_case_class_its_package_defines_is_collected_by_its_family",
    "tests.test_static_tree_invariants_cases.repository_shape.TestEveryCaseClassIsRegistered.test_every_exemption_still_names_a_live_base_with_no_test_of_its_own",
    "tests.test_static_tree_invariants_cases.repository_shape.TestNoTempTreeIsDeletedWhileItIsTheCwd.test_no_chdir_inside_a_temporary_directory_block_defers_its_restore",
@@ -2117,7 +2120,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "520d5e903a3aa3d152c35b37bba96345f148dbf855552d3c739d9c28162a4fcd"
+  "sha256": "6f09971687a378b9eafe8a528c31a5d4aa4889285a7af5ca050b7a3bde422394"
  },
  "mutation_owners": [
   {

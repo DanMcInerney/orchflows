@@ -25,7 +25,7 @@ from scripts.tickets_format import (
 from scripts.tickets_issue_render import _render_ticket
 from scripts import workspace
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 
 def assignment(ticket_id, executor, dependencies=(), *, root_generation=None):

@@ -25,6 +25,9 @@ import re
 import sys
 from pathlib import Path
 
+# This is the entry point that puts the repository (and `scripts/`) on
+# sys.path in the first place, so it cannot read `scripts._bootstrap.ROOT`
+# for the same fact -- nothing under `scripts/` is importable yet.
 _FACADE_ROOT = Path(__file__).resolve().parent.parent
 for _import_root in (_FACADE_ROOT, _FACADE_ROOT / "scripts", Path.cwd()):
     if str(_import_root) not in sys.path:

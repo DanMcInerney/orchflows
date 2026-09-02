@@ -9,13 +9,12 @@ what is graded here is the message, not the detection.
 
 from __future__ import annotations
 import unittest
-from pathlib import Path
 
 # No sys.path guard: this module is reached only through
 # ``tests.test_run_tests``, so the repository root is already importable.
 from tests.test_installer_cases import _collection
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+from tests._repo_root import ROOT as REPO_ROOT
 CASE = "tests/test_installer_cases/planning/runtime.py"
 
 

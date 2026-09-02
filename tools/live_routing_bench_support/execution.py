@@ -7,11 +7,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from scripts import state_root
+from scripts import _bootstrap, state_root
 from tools.live_claude_profiles import _captured_text
 from tools.live_routing_bench_support.grading import ERROR, grade_transcript
 
-INSTALLER = Path(__file__).resolve().parents[2] / "install.py"
+INSTALLER = _bootstrap.ROOT / "install.py"
 
 
 def _isolated_env(home: Path) -> dict:

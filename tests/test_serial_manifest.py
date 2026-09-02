@@ -23,7 +23,7 @@ from tools import serial_manifest
 from tools.run_serial_compat import RESTORATIONS, load_manifest
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 MANIFEST = ROOT / "tests" / "serial_compat_manifest.json"
 POLICY = ROOT / "tools" / "serial-compat-policy.md"
 RUNNER = ROOT / "tools" / "run_serial_compat.py"

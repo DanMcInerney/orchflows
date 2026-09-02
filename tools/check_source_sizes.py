@@ -18,6 +18,11 @@ import os
 import subprocess
 from pathlib import Path
 
+# Run directly (`python tools/check_source_sizes.py`, spawned by
+# tools/run_tests.py), so `scripts/` is not yet on sys.path here;
+# reading `scripts._bootstrap.ROOT` would need this same walk to seed
+# the import first, for no fact this file otherwise needs from
+# `scripts/`.
 ROOT = Path(__file__).resolve().parent.parent
 PRESUMPTION_LINES = 500
 SOURCE_SUFFIXES = frozenset({".py", ".sh", ".cmd", ".ps1", ".js", ".ts"})

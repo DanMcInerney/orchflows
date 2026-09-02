@@ -26,6 +26,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+# This is the walk that puts the repository on sys.path for the
+# `tools.*` imports below; `scripts._bootstrap.ROOT` is not reachable
+# until that insert has run.
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 

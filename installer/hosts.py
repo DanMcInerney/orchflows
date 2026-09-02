@@ -6,8 +6,13 @@ import json
 import re
 from pathlib import Path
 
+# Only reached through installer/foundation.py, itself only reached
+# through install.py's own bootstrap -- sys.path already carries the
+# repository root by the time this module loads, so the fact is read
+# from the leaf rather than re-walked here.
+from scripts import _bootstrap
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = _bootstrap.ROOT
 HOSTS_DIR = REPO_ROOT / "hosts"
 HOST_ADAPTERS_DIR = Path(__file__).resolve().parent / "host_adapters"
 HOST_IDS = ("claude", "codex", "grok")

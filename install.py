@@ -64,6 +64,10 @@ if sys.version_info < MIN_PYTHON:
         f"install.py`."
     )
 
+# S1 exception: this script sits AT the repository root, so putting the
+# root on sys.path is the fact this line establishes, not one it can
+# read back from anywhere else -- it cannot be the ROOT-derivation site
+# it is walking to reach.
 _LOCAL_ROOT = Path(__file__).resolve().parent
 if str(_LOCAL_ROOT) not in sys.path:
     sys.path.insert(0, str(_LOCAL_ROOT))

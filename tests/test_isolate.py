@@ -13,7 +13,7 @@ from pathlib import Path
 from unittest import mock
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import isolate  # noqa: E402

@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 from scripts import tickets_lifecycle  # noqa: E402
 from tools import render_lifecycle  # noqa: E402
 from tools import validate  # noqa: E402

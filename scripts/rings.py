@@ -36,8 +36,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 try:
-    from scripts import state_root
+    from scripts import _bootstrap, state_root
 except ImportError:  # pragma: no cover - direct/installed flat script path
+    import _bootstrap
     import state_root
 
 
@@ -101,7 +102,7 @@ def home_ring() -> Path:
 def lib_root() -> Path:
     """The library this checkout or install reads: a source tree, else ``lib/``."""
 
-    checkout = Path(__file__).resolve().parent.parent
+    checkout = _bootstrap.ROOT
     if (checkout / "packs").is_dir() and (checkout / "contracts").is_dir():
         return checkout
     return checkout / "lib"

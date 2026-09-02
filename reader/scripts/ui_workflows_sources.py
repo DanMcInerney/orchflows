@@ -6,14 +6,20 @@ import hashlib
 import re
 from pathlib import Path
 
+from scripts._bootstrap import ROOT
 from reader.scripts import (
     ui_workflows_identity as identity,
     ui_workflows_skills as skills,
 )
 from reader.scripts.ui_model import REDACTED_HOST_PATH
 
-
-ROOT = Path(__file__).resolve().parents[2]
+# ``ROOT`` reads the same directory ``_bootstrap.ROOT`` names in both the
+# checkout and the installed-library layout: this file ships alongside
+# ``scripts/_bootstrap.py`` at a fixed relative depth in the reader
+# payload (installer/planning_support.py's lib_copies), and the sibling
+# ``ui_workflows_skills`` import above already requires ``scripts.*`` to
+# be importable, so ``scripts`` is always available by the time this
+# module loads.
 SOURCE_SCHEMA = "orchflows.workflow-source.v1"
 SOURCE_ID_RE = re.compile(r"src_[A-Za-z0-9_-]{43}\Z")
 WINDOWS_HOST_PATH_RE = re.compile(

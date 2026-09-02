@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
 
+from tests._repo_root import ROOT
 from scripts import tickets
 from scripts import tickets_registry as registry
 from scripts.tickets_shapes import (
@@ -215,7 +215,7 @@ Deliver one result.
         self.assertTrue(any("executor-pack-required" in defect for defect in tickets.ticket_defects(judged)))
 
     def test_shipped_callable_skill_packages_are_exactly_registry(self):
-        root = Path(__file__).resolve().parents[1] / "skills"
+        root = ROOT / "skills"
         shipped = {
             path.parent.name
             for path in root.rglob("SKILL.md")
@@ -224,7 +224,7 @@ Deliver one result.
         self.assertEqual(set(tickets.CALLABLE_EXECUTORS), shipped)
 
     def test_pack_craft_carries_each_absorbed_execution_family(self):
-        root = Path(__file__).resolve().parents[1] / "packs"
+        root = ROOT / "packs"
         expected = {
             "orch-code-pack": ("checks answer to goal", "repair", "conflict"),
             "orch-content-pack": ("draft", "assembly", "cut log"),

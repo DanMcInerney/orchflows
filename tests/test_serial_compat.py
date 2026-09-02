@@ -20,7 +20,7 @@ from tools import run_serial_compat
 from tools import run_tests
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 MANIFEST = ROOT / "tests" / "serial_compat_manifest.json"
 CHECKS = ROOT / ".github" / "workflows" / "checks.yml"
 PAIRED = ROOT / ".github" / "workflows" / "serial-compat.yml"

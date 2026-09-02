@@ -30,6 +30,10 @@ try:  # imported as ``tools.run_tests`` with the repository on sys.path
 except ImportError:  # run as ``python tools/run_tests.py``, tools/ on sys.path
     import run_tests_scope
 
+# Not `scripts._bootstrap.ROOT`: this file's own root IS the fact that
+# seeds every child's sys.path (`run_child` below), including whichever
+# tree carries `scripts/_bootstrap.py`, so it must resolve without
+# importing anything from `scripts/` first.
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
