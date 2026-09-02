@@ -1,0 +1,86 @@
+{
+  "ticket": "B1.23",
+  "run": "20260902T181500Z-workflow-ladder",
+  "unit": "U9 Bundle manifest",
+  "executor_ticket": "B1.17",
+  "artifact": "git:2b5b8c4e21a7c0ba1631cb5f61a1c2703afcf0b9",
+  "artifact_parent": "fed12b053edca59f757f901b5b13447c2cbd4484",
+  "artifact_tree": "3a9471b24f5cac8fb49f6254cb9976984a0d0e79",
+  "integration_merge": "git:cfad99f355a337548176042fbf5c184977421a9d",
+  "integration_merge_tree": "d7aa77efb5fe80703d603c33ee5ed1b4bdd18cc6",
+  "judged_in": "worktree B1.23 at c422c0b12a710732c3cdb338148db8c7c8cdd764, whose tree d7aa77efb5fe equals the integration merge's (git diff cfad99f3 HEAD empty); the merge's combined diff touches only docs/custom-workflow-authoring.md, scripts/orchflows.py and tests/serial_compat_manifest.json, each a union of both parents",
+  "pack": "orch-code-pack",
+  "pack_digest": "sha256:27a9699df3c2ea7cdfaa7c3d11a099cb2de107f45ed081e4993aa9b06902996e",
+  "lens": "craft.md ## Lens ### git",
+  "verdict": "holds",
+  "blocking_count": 0,
+  "goal_criteria": [
+    {"criterion": "run_required.py passes at the commit", "reading": "uv run --no-project python tools/run_required.py --no-cache at tree d7aa77efb5fe: exit 0; rows validate 0, run_tests 0 (95 modules, 2292 tests, 0 failures, 0 errors, 14 skipped), run_serial_compat 0 (selected, ok true, discovery 2292), install.py --dry-run 0 (346 planned entries), git diff --check 0", "holds": true},
+    {"criterion": "no section-2 name or shape differs", "reading": ".orchflows/BUNDLE.md with frontmatter name / version / requires (list of <git-url>@<pin>), body free prose; add reads it after clone and pins requires transitively into imports.lock; cycle (requires-cycle) and unpinned (requires-unpinned) refuse naming the manifest; a bundle without one imports with no requirements; orchflows new bundle scaffolds; repo bundle name orchflows-contrib, version 2026-09-02, requires: []; contracts/bundle.md owns the shape. Read off the diff and re-read by tests.test_orchflows_bundle (10 OK).", "holds": true},
+    {"criterion": "no body or block exceeds its budget", "reading": "validate.py exit 0 (its budgets are the owner); tools/check_source_sizes.py exit 0 naming neither new module: orchflows_home.py 472, orchflows_bundle.py 123, orchflows_scaffold.py 277, orchflows.py 419 physical lines against the 500 presumption; the docs/custom-workflow-authoring.md edit is one sentence inside the Publish bullet and nothing else in that file", "holds": true},
+    {"criterion": "no file outside the unit's Details without a reported reason", "reading": "12 files in 2b5b8c4e. Six named by Details. Six outside it, each with its reason in B1.17 ## Report: scripts/orchflows_bundle.py (size band 567 > 500 forced a split at the format/pin-law seam), scripts/rings.py (BUNDLE_MANIFEST beside BUNDLE_DIR, one layout owner), tests/test_state_root_cases/fallback.py (flat-layout module list needs the new import), tests/pins.json (contract pin), tests/serial_compat_manifest.json (Done regenerates it), tests/test_orchflows_bundle.py (the tests Details asks for)", "holds": true}
+  ],
+  "checks": [
+    {"command": "git diff --stat cfad99f3 HEAD", "exit": 0, "note": "empty: the worktree's tree is the merge artifact's"},
+    {"command": "uv run --no-project python tools/run_required.py --no-cache", "exit": 0, "note": "five rows 0, tree d7aa77efb5fe"},
+    {"command": "python -m unittest tests.test_orchflows_bundle -v", "exit": 0, "note": "Ran 10 tests in 14.971s, OK"},
+    {"command": "python tools/check_source_sizes.py", "exit": 0, "note": "44 pre-existing WARNs, none on a U9 module"},
+    {"command": "scratch mutants.py (four in-process monkeypatch mutants over tests.test_orchflows_bundle; tree untouched, git status clean after)", "exit": 0, "note": "M1 _requirement_pin returns the branch as written: 1 red (unpinned [a branch]); M2 _clone_manifest -> None: 7 red (both closure tests, cycle, both unpinned subtests, both restore tests); M3 _restored_requirements -> []: 2 red (both restore tests); M4 scaffold version not a date: 1 red (scaffold reads back)"},
+    {"command": "scratch probe.py (four live paths the tests do not cover, real local git bundles)", "exit": 0, "note": "P1 typed re-pin after removing the clone: REFUSED requires-conflict; P2 restore with a-bundle requiring b-bundle@v1 while the lock holds b-bundle@v2: both 'cloned', detail None, lock unchanged; P3 non-UTF-8 BUNDLE.md declaring one requirement: read_manifest -> None; P4 one manifest with a good and an unpinned requirement: asking-bundle cloned with the unpinned detail, good-bundle not restored"}
+  ],
+  "test_identities": [
+    {"id": "tests.test_orchflows_bundle.ClosureTests.test_add_pins_every_bundle_the_named_one_requires", "failing_reading": "executor: errors at baseline scripts (no read_manifest); judge M2: red", "passing_reading": "OK at d7aa77ef"},
+    {"id": "tests.test_orchflows_bundle.ClosureTests.test_a_bundle_reached_twice_is_cloned_once_and_is_not_a_cycle", "failing_reading": "judge M2: red", "passing_reading": "OK"},
+    {"id": "tests.test_orchflows_bundle.ClosureTests.test_a_cycle_is_refused_naming_the_manifest_that_closes_it", "failing_reading": "judge M2: red", "passing_reading": "OK"},
+    {"id": "tests.test_orchflows_bundle.ClosureTests.test_an_unpinned_requirement_is_refused_naming_the_manifest", "failing_reading": "judge M1: [a branch] red; M2: both subtests red", "passing_reading": "OK"},
+    {"id": "tests.test_orchflows_bundle.ClosureTests.test_a_bundle_with_no_manifest_imports_as_it_always_did", "failing_reading": "executor: error at baseline scripts (CLI add lacked the required loop); no judge mutant reaches it and none should -- it pins the absence of a change", "passing_reading": "OK"},
+    {"id": "tests.test_orchflows_bundle.ClosureTests.test_sync_restores_a_closure_the_lock_names_only_the_root_of", "failing_reading": "judge M2 and M3: red", "passing_reading": "OK"},
+    {"id": "tests.test_orchflows_bundle.ClosureTests.test_restore_reports_a_requirement_it_cannot_pin_and_syncs_on", "failing_reading": "judge M2 and M3: red", "passing_reading": "OK"},
+    {"id": "tests.test_orchflows_bundle.ScaffoldTests.test_a_scaffolded_manifest_reads_back_through_the_reader", "failing_reading": "judge M4: red", "passing_reading": "OK"},
+    {"id": "tests.test_orchflows_bundle.ScaffoldTests.test_a_manifest_takes_its_rings_own_name_when_nobody_names_it", "failing_reading": "executor: error at baseline (no new bundle target)", "passing_reading": "OK"},
+    {"id": "tests.test_orchflows_bundle.ScaffoldTests.test_this_repositorys_own_bundle_is_named_and_requires_nothing", "failing_reading": "executor: error at baseline (no reader; no .orchflows/BUNDLE.md)", "passing_reading": "OK"}
+  ],
+  "findings": [
+    {
+      "id": "F1", "blocking": false, "class": "contract fidelity / add seam: a typed reference is held to a requirement's conflict rule",
+      "where": "scripts/orchflows_home.py import_closure.visit at 2b5b8c4e: held = pinned.get(name) or locked.get(name), applied with chain == []",
+      "evidence": "Before this revision add(url@v2) for a bundle the lock held at v1 and whose clone was absent replaced the lock entry (entries filtered by name, then appended). add's own already-imported refusal still says 'remove it, or edit imports.lock and run orchflows sync'. Probe P1 followed 'remove it': add v1, _discard the clone, add v2 -> RingError requires-conflict, 'team-bundle is pinned at v1 and this import needs v2 ... re-pin the bundle that asks for the older one, or drop it' -- a remedy written for a requirement author, addressed to the person who typed the reference; there is no asking bundle. No test pins either the old or the new behavior; the spec's acceptance is silent on a typed re-pin, so this is not a correctness finding against the fixed acceptance.",
+      "smallest_change": "one expression: held = pinned.get(name) or (locked.get(name) if chain else None), so the typed reference re-pins its own lock entry as before while a requirement still conflicts; plus one check (add @v1, remove the clone, add @v2, lock reads v2). If the refusal is the intended design instead, reword its text for chain == [] and drop 'remove it' from the already-imported refusal so the two messages agree."
+    },
+    {
+      "id": "F2", "blocking": false, "class": "loud failure: a manifest that cannot be decoded reads as no manifest",
+      "where": "scripts/orchflows_bundle.py read_manifest: except (OSError, UnicodeDecodeError): return None",
+      "evidence": "Probe P3: a BUNDLE.md whose frontmatter declares one requirement and whose body holds one Latin-1 byte returns None, so add pins the bundle with no requirements and prints no 'required' line; the contract says an absent manifest is a fact, but this manifest is present. A permission error is swallowed the same way.",
+      "smallest_change": "except FileNotFoundError / NotADirectoryError: return None; let UnicodeDecodeError (and any other OSError) raise rings.RingError('manifest-invalid', ...) naming the path. Three lines and one check."
+    },
+    {
+      "id": "F3", "blocking": false, "class": "loud failure: restore keeps a lock pin that a restored manifest contradicts and says nothing",
+      "where": "scripts/orchflows_home.py _restored_requirements: if name in known ...: continue",
+      "evidence": "Probe P2: lock holds a-bundle@v1 and b-bundle@v2; a-bundle's manifest requires b-bundle@v1. restore reports both 'cloned' with no detail and the lock is unchanged. The lock is the authority on a recovery path and add would have refused this at authoring time, so keeping v2 is defensible; reporting nothing is not -- the contract promises that what restore cannot honor is 'reported against the bundle that declared it', and here it is not honored and not reported.",
+      "smallest_change": "pass the lock's {name: pin} instead of the name set; when a requirement's name is known and its requested pin (as written, no remote read) differs from the lock's, attach a detail to the declaring bundle's record. Five lines and one check. Same lever would let P4 name the sibling it dropped."
+    },
+    {
+      "id": "F4", "blocking": false, "class": "spec drift outside the artifact",
+      "where": "research/workflow-ladder-spec-2026-09-02.md section 7, '.orchflows/ ... skills/research-acquire/ (has requirements.txt)'",
+      "evidence": "The tree at d7aa77ef holds .orchflows/skills/super-research/ (U11 landed first) and no requirements.txt there; .orchflows/BUNDLE.md's body names super-research. The executor reported the same in B1.17 deviation 3. The artifact describes the tree; the spec describes a plan.",
+      "smallest_change": "successor: correct section 7's line to super-research, or rename the skill if research-acquire is the intended name; not this unit's edit."
+    }
+  ],
+  "causes": [
+    {"cause": "C1 the closure walk's conflict rule does not distinguish the reference the user typed from a requirement a manifest declares", "findings": ["F1"], "remedy": "one-expression guard on chain plus a check, inside a repair round's license"},
+    {"cause": "C2 two read/restore paths return silence where the contract promises a report", "findings": ["F2", "F3"], "remedy": "narrow the except in read_manifest; carry lock pins into _restored_requirements and attach a detail; two checks"},
+    {"cause": "C3 section 7 of the spec names a skill the tree does not have", "findings": ["F4"], "remedy": "successor: spec edit"}
+  ],
+  "successor_scope": ["C3"],
+  "uncovered_behavior": [
+    "orchflows_scaffold.write_bundle's bundle-exists refusal and orchflows._bundle_name's bundle-unnamed refusal have no check.",
+    "cmd_new's 'needs a name' refusal for the item kinds is covered only by the executor's manual run (exit 1 reported), not by a test.",
+    "P4: a manifest with one pinned and one unpinned requirement restores neither sibling and reports only the unpinned one; consistent with the contract's wording, recorded so a reader knows the granularity is per manifest.",
+    "The manifest's name field is read and never compared to bundle_name(url); nothing in the spec asks for that comparison."
+  ],
+  "not_done": [
+    "Did not edit the artifact or any sealed text (judge is read-only); every can-fail reading was an in-process monkeypatch and git status stayed clean.",
+    "Did not run the exhaustive unittest discover: run_required.py is the join's mechanical done and was run uncached at the artifact tree.",
+    "Did not raise F1 to blocking: the spec's acceptance and the contract are silent on a typed re-pin, the new behavior refuses loudly, and rules/verification.md section 10 reserves blocking for a frozen criterion shown false or a correctness finding against the fixed acceptance; the join may weigh it otherwise."
+  ]
+}
