@@ -26,8 +26,8 @@ checker in ``tools/`` and a harness in ``scripts/`` that cannot import
 each other.
 
 This module is the single owner of all four facts. ``tickets.py``,
-``friction.py``, ``workspace.py``, ``isolate.py`` and
-``tools/verify_at.py`` call it; none of them reimplements it.
+``friction.py``, ``workspace.py`` and ``tools/verify_at.py`` call it;
+none of them reimplements it.
 """
 
 from __future__ import annotations
@@ -212,12 +212,10 @@ def inside_temp_root(candidate) -> bool:
     """Whether ``candidate`` lies inside this host's system temp root.
 
     A fact about a path, so it lives beside the other three, and it lives
-    at *this* end of the edge for the reason ``segment_defect`` does: two
-    callers in two layers ask it -- the checker that refuses to build a
-    worktree there (``tools/verify_at.py``) and the harness that warns when
-    it built an isolated tree there (``scripts/isolate.py``) -- and ``tools``
-    may import ``scripts`` while the reverse is forbidden, so only this end
-    is reachable from both.
+    at *this* end of the edge for the reason ``segment_defect`` does: the
+    checker that refuses to build a worktree there (``tools/verify_at.py``)
+    asks it from the ``tools`` layer, and ``tools`` may import ``scripts``
+    while the reverse is forbidden, so only this end is reachable.
 
     Why anyone asks: a checkout under the system temp root is not merely
     untidy. ``tools/run_tests.py``'s ``meaningful_sys_path`` reads paths

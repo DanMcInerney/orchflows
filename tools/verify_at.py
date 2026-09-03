@@ -57,9 +57,8 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-# Where a path lies is `scripts/state_root.py`'s fact, not this file's:
-# `scripts/isolate.py` asks the same question about the tree it builds,
-# and two copies of one rule are two rules the moment either is edited.
+# Where a path lies is `scripts/state_root.py`'s fact, not this file's;
+# two copies of one rule are two rules the moment either is edited.
 # `tools` may import `scripts`; the reverse is what is forbidden.
 from scripts.state_root import inside_temp_root  # noqa: E402
 # git's own "the harness could not run it" status, borrowed for the same

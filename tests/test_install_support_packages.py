@@ -17,7 +17,6 @@ FACADE_PREFIXES = (
     "search_plan",
     "trace",
     "workspace",
-    "migrate_state",
 )
 
 

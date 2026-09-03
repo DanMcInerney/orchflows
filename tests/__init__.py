@@ -9,9 +9,7 @@ Two of them, for two hazards a single test cannot be trusted to remember:
   evidence history. ``scripts/state_root.py`` otherwise resolves durable
   run state to ``~/.orchflows/state``. It is a guard, not a convention: a
   test that forgets to build its own sink writes into the temporary one
-  and is merely useless, never destructive. ``tools/suite_check.py``
-  watches the real sink from outside the suite process and reports any
-  run that touched it anyway. A test that needs the *unset* case clears
+  and is merely useless, never destructive. A test that needs the *unset* case clears
   the variable for the one call it wraps and restores it, never for the
   rest of the process.
 - ``_windows_semantics.install`` makes POSIX refuse the directory

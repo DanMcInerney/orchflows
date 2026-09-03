@@ -123,10 +123,7 @@ def dirty_paths(cwd, git=_git) -> list:
     Public, and the family's one reader of `--porcelain -z`: a rename or a
     copy spends two NUL-separated fields where every other status spends
     one, so a walk that steps by one field reads the new name of a rename
-    as a status line and loses the old one. `scripts/isolate.py` had its own
-    copy of the walk; it now calls this with its own git and its own
-    refusal, because those are what differ between the two callers and the
-    walk is not.
+    as a status line and loses the old one.
     """
 
     code, out, err = git(cwd, "status", "--porcelain", "-z")

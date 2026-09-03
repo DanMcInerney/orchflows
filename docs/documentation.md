@@ -135,5 +135,5 @@ lands. It is proposed and evolves under §5, never from symmetry.
 
 The test suite is not a factory: its conventions are owned by the code
 that enforces them in the checkout (tests/__init__.py,
-tools/run_tests.py, tools/suite_check.py), and the shape law every
+tools/run_tests.py), and the shape law every
 project's tests share is the code pack's craft.
