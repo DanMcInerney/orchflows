@@ -1,9 +1,8 @@
 """The established workspace's one owner: the dispatch attempt.
 
 `contracts/dispatch.md` gives the tree an isolated item runs in to the
-attempt that dispatched it, and nothing else records it. The ticket
-frontmatter used to carry a projection of the same path, and a second home
-is how a launch came to name a tree the establishment had not created.
+attempt that dispatched it, and nothing else records it: a second home for
+that path is how a launch comes to name a tree no establishment created.
 
 Both directions live here, in one module both families import: the
 workspace family writes the path when it establishes the tree, and the

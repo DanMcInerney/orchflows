@@ -1,14 +1,7 @@
 """Open the generation lifecycle on one root and its declared cut.
 
-`stamp-generation` used to sit beside `instantiate` as its hand-authored
-twin: one sealed a graph it rendered, the other opened the lifecycle on a
-graph somebody wrote. `instantiate` and the template layer it read are
-gone -- callables mint their own graphs at runtime now -- so only the
-second half survives, here alone.
-
-It is dead as a public subcommand (W3a removed the command from the
-dispatch table) and alive as an internal call: `tickets_mint.py`'s
-parentless-root path calls it directly to open the one-member cut a
+Not a public subcommand: it is an internal call, and `tickets_mint.py`'s
+parentless-root path is its one caller, opening the one-member cut a
 standalone `do`/`judge` callable takes on itself.
 """
 
