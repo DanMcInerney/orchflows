@@ -5627,20 +5627,6 @@
    "module": "test_installer"
   },
   {
-   "categories": [
-    "cutcheck-corpus"
-   ],
-   "id": "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
-   "module": "test_cutcheck"
-  },
-  {
-   "categories": [
-    "cutcheck-process"
-   ],
-   "id": "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
-   "module": "test_cutcheck"
-  },
-  {
    "allowed_seams": [
     "environment"
    ],
