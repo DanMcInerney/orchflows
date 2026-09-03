@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2364,
+  "count": 2355,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -819,8 +819,10 @@
    "test_regen.TestSerialCompatManifest.test_a_manifest_the_tree_outgrew_is_named_with_its_command",
    "test_regen.TestSerialCompatManifest.test_a_reconciled_manifest_is_current",
    "test_regen.TestSerialCompatManifest.test_the_child_interpreter_and_this_one_return_the_same_verdict",
+   "test_regen.TestValidateGate.test_a_field_added_to_shapes_json_without_re_rendering_fails_validate",
    "test_regen.TestValidateGate.test_a_reconciled_tree_draws_no_error_from_the_same_gate",
    "test_regen.TestValidateGate.test_a_stale_serial_manifest_fails_validate_and_names_the_command",
+   "test_regen.TestValidateGate.test_the_same_tree_re_rendered_draws_no_error",
    "test_registry_census.CallableRegistryTests.test_a_superseded_verb_is_refused_naming_its_successor",
    "test_registry_census.CallableRegistryTests.test_callable_registry_is_exactly_the_two_callables",
    "test_registry_census.CallableRegistryTests.test_do_and_judge_require_pack_authority",
@@ -1341,7 +1343,6 @@
    "test_validator.TestStructuralAdmissionMutants.test_labels_in_a_fence_do_not_satisfy_skill_anatomy",
    "test_validator.TestStructuralAdmissionMutants.test_one_unrelated_shared_stem_does_not_carry_an_input",
    "test_validator.TestStructuralAdmissionMutants.test_pack_control_flow_is_rejected",
-   "test_validator.TestStructuralAdmissionMutants.test_pin_rewrite_requires_a_discriminating_supersession_record",
    "test_verification_model.BlockingLawOwnershipTest.test_every_deliverable_lens_entry_weighs_its_findings_once",
    "test_verification_model.BlockingLawOwnershipTest.test_the_judge_points_at_the_clause_that_carries_the_law",
    "test_verification_model.BlockingLawOwnershipTest.test_the_rule_owns_the_law_and_no_craft_restates_it",
@@ -1961,12 +1962,6 @@
    "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_close_is_per_run_and_per_tree",
    "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_close_requires_a_known_state_and_its_deciding_evidence",
    "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_write_call_count_is_not_asserted",
-   "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_a_changed_clause_still_moves_the_pin",
-   "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_crlf_and_lf_pin_the_same_contract",
-   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_a_prose_only_change_needs_no_record_after_a_first_pin",
-   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_one_record_citing_the_committed_pin_covers_both_pins",
-   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_the_requirement_still_bites_and_names_the_committed_digest",
-   "tests.test_validate_cases.pin_repin.RepinWithoutACommittedPinsFileTest.test_the_recorded_digest_stays_the_cited_one",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_each_contract_states_its_sink_path",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_no_contract_composes_a_run_state_path_from_the_repository",
    "tests.test_validate_cases.sink_contracts.TestWorkItemLocationInvariant.test_the_clause_names_the_resolver_rather_than_restating_the_root",
@@ -2214,10 +2209,6 @@
    "tests.test_validator_cases.repo_and_frontmatter.TestFrontmatterBoundaryInputs.test_malformed_line_without_colon_is_an_error_and_parsing_continues",
    "tests.test_validator_cases.repo_and_frontmatter.TestFrontmatterBoundaryInputs.test_missing_closing_fence_produces_error_not_traceback",
    "tests.test_validator_cases.repo_and_frontmatter.TestFrontmatterBoundaryInputs.test_oversized_single_line_body_does_not_crash",
-   "tests.test_validator_cases.repo_and_frontmatter.TestPinFlagRoundTrip.test_missing_or_stale_pin_fails_validation",
-   "tests.test_validator_cases.repo_and_frontmatter.TestPinFlagRoundTrip.test_pin_creates_pins_matching_contracts",
-   "tests.test_validator_cases.repo_and_frontmatter.TestPinFlagRoundTrip.test_pin_is_idempotent",
-   "tests.test_validator_cases.repo_and_frontmatter.TestPinFlagRoundTrip.test_pin_matches_committed_pins_json",
    "tests.test_validator_cases.repo_and_frontmatter.TestValidatorAgainstRepo.test_repo_passes_clean",
    "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_a_path_outside_the_worktrees_root_names_no_item",
    "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_a_realistic_identity_stays_far_under_the_windows_path_ceiling",
@@ -2367,7 +2358,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "35fe9e7b21d8dcb2a3bf406f4ec7f15aab8e1f639d691e5f541a6b531cab37fe"
+  "sha256": "cc06ff80aca4a176cfa78597c4e588b0f05114f3940bb4f0cb1ba259b3c15f6e"
  },
  "mutation_owners": [
   {
@@ -5323,22 +5314,6 @@
   },
   {
    "module": "tests.test_validate",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_validate_cases.contract_pins",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_validate_cases.pin_repin",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
    "seams": [

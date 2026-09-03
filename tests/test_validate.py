@@ -11,14 +11,6 @@ if str(_ROOT) not in sys.path:
 
 import tools.validate as validate  # noqa: E402
 
-from tests.test_validate_cases.contract_pins import (  # noqa: F401
-    ContractPinIsNewlineInsensitiveTest,
-)
-from tests.test_validate_cases.pin_repin import (  # noqa: F401
-    RepinAgainstTheCommittedPinTest,
-    RepinWithoutACommittedPinsFileTest,
-    _RepinFixture,
-)
 from tests.test_validate_cases.sink_contracts import (
     TestContractsNameTheSink,
     TestWorkItemLocationInvariant,
@@ -94,9 +86,9 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
     def test_the_test_directory_is_an_error(self):
         """`lib/tests` is the second path the friction record names."""
 
-        findings = self._findings("Canonical bytes live in `tests/pins.json`.\n")
+        findings = self._findings("The oracle is `tests/test_validate.py`.\n")
         self.assertTrue(
-            any("tests/pins.json" in line for line in findings),
+            any("tests/test_validate.py" in line for line in findings),
             f"expected a finding for the uninstalled tests path, got {findings}",
         )
 
@@ -134,22 +126,30 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
         self.assertTrue(any("contracts/nested/probe.md" in line for line in diag.lines()))
 
     def test_an_exemption_does_not_cover_a_second_occurrence(self):
-        where, token, marker = sorted(validate.DOC_PATH_EXEMPT_SITES)[0]
-        root = self._tree("No pointer here.\n")
-        source = root / where
-        source.parent.mkdir(parents=True, exist_ok=True)
-        source.write_text(
+        """The exemption is keyed by the sentence that carries the token, so
+        the same token in another sentence is still graded.
+
+        The site is synthetic rather than borrowed from the live roster: a
+        case reading `sorted(DOC_PATH_EXEMPT_SITES)[0]` graded whichever
+        entry happened to sort first, and stopped exercising the check at
+        all once the entry that sorted first stopped naming a file the path
+        check visits.
+        """
+
+        where, token, marker = "docs/probe.md", "tools/absent.py", "a roster entry"
+        root = self._tree(
             f"The roster names `{token}` and {marker}.\n"
-            + f"A new pointer names `{token}`.\n",
-            encoding="utf-8",
+            + f"A new pointer names `{token}`.\n"
         )
-        saved = validate.ROOT
+        saved_root, saved_sites = validate.ROOT, validate.DOC_PATH_EXEMPT_SITES
         try:
             validate.ROOT = root
+            validate.DOC_PATH_EXEMPT_SITES = frozenset({(where, token, marker)})
             diag = validate.Diagnostics()
             validate.validate_documented_paths(diag)
         finally:
-            validate.ROOT = saved
+            validate.ROOT = saved_root
+            validate.DOC_PATH_EXEMPT_SITES = saved_sites
         findings = [line for line in diag.lines() if token in line]
         self.assertEqual(1, len(findings), findings)
 

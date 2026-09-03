@@ -68,9 +68,3 @@ the whole sync: a requirement it cannot pin is reported against the bundle
 that declared it, and a bundle already restored is never visited twice, so a
 cycle terminates here rather than refusing. Authoring-time refusal belongs to
 `add`.
-
-## T0 supersession
-
-A named-field change to this contract is an explicit T0 supersession. There
-is one current reader and writer: no compatibility aliases, dual parsing, or
-migration mode.

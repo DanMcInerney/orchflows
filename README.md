@@ -225,7 +225,7 @@ self-improvement wired into every run.
   Control flow is not a callable: loops, branches and retries are the
   calling workflow's own prose, and a `frame` ticket is the durable stack
   frame under them.
-- **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
+- **One stud pattern.** Six contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.
 - **One return shape.** Every ticket attempt closes through the dispatch
@@ -265,7 +265,7 @@ still there for recovery; nothing needs them on a healthy path.
 
     orchflows
     │
-    ├── Layer 0 · contracts/ — the narrow waist: hash-pinned data shapes, the only
+    ├── Layer 0 · contracts/ — the narrow waist: pure data shapes, the only
     │                         interface between everything above them
     ├── Layer 1 · skills/    — everything callable: kernel/ primitives that call no
     │                         skill, workflows/ assembled from them

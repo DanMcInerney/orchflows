@@ -185,9 +185,6 @@ def _replace_section(text: str, section: str) -> str:
     )
     if pattern.search(text):
         return pattern.sub(section, text, count=1)
-    marker = "\n## T0 supersession\n"
-    if marker in text:
-        return text.replace(marker, "\n" + section + marker, 1)
     return text.rstrip() + "\n\n" + section
 
 

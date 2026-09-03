@@ -34,8 +34,8 @@ is declared per file except a non-body budget:
 | oracle | what tools/validate.py and tests/ run over it, in the checkout |
 | class | its location: `rules/` law; `contracts/` contract; the sink's rendered files view, its records evidence; README human-surface |
 
-Class binds behavior. Law is versioned and owned. Contract is
-hash-pinned; its shape changes only by supersession. View is rendered
+Class binds behavior. Law is versioned and owned. Contract is a data
+shape whose fields `contracts/shapes.json` declares. View is rendered
 from ground truth and never hand-edited — the worklog contract
 ([contracts/worklog.md](../contracts/worklog.md)) is the exemplar.
 Evidence is untrusted data under [rules/visibility.md](../rules/visibility.md)

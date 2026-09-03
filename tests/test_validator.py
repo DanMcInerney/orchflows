@@ -1,6 +1,4 @@
 """Compatibility discovery seam for validator compiler regression cases."""
-import json
-import subprocess
 import sys
 import unittest
 
@@ -27,7 +25,6 @@ from tests.test_validator_cases.corpus_and_surfaces import (
 )
 from tests.test_validator_cases.repo_and_frontmatter import (
     TestFrontmatterBoundaryInputs,
-    TestPinFlagRoundTrip,
     TestValidatorAgainstRepo,
 )
 import tools.validate as validate
@@ -254,62 +251,6 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         result = self._run()
         self.assertIn("Require item 'a distinctive telemetry beacon.", result.stdout)
         self.assertIn("not carried", result.stdout)
-
-    def test_pin_rewrite_requires_a_discriminating_supersession_record(self):
-        subprocess.run(["git", "init"], cwd=self.tmp_path, check=True, capture_output=True)
-        # Auto-gc detaches and keeps writing .git/objects after the commit
-        # returns; the tempdir teardown then races it to ENOTEMPTY.
-        subprocess.run(
-            ["git", "config", "gc.auto", "0"],
-            cwd=self.tmp_path,
-            check=True,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["git", "config", "gc.autoDetach", "false"],
-            cwd=self.tmp_path,
-            check=True,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["git", "config", "user.email", "validator@example.invalid"],
-            cwd=self.tmp_path,
-            check=True,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["git", "config", "user.name", "Validator Test"],
-            cwd=self.tmp_path,
-            check=True,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["git", "add", "."], cwd=self.tmp_path, check=True, capture_output=True
-        )
-        subprocess.run(
-            ["git", "commit", "-m", "baseline"],
-            cwd=self.tmp_path,
-            check=True,
-            capture_output=True,
-        )
-        pins = json.loads(
-            (self.tmp_path / "tests" / "pins.json").read_text(encoding="utf-8")
-        )
-        contract = self.tmp_path / "contracts" / "work-item.md"
-        with contract.open("a", encoding="utf-8") as stream:
-            stream.write("\n- `mutant_field` — an unsuperseded T0 field.\n")
-
-        rejected = self._run("--pin")
-
-        self.assertEqual(1, rejected.returncode, rejected.stdout)
-        self.assertIn("requires an explicit T0 supersession record", rejected.stdout)
-
-        with contract.open("a", encoding="utf-8") as stream:
-            stream.write(
-                f"\nT0 supersession record: sha256:{pins['work-item.md']}.\n"
-            )
-        accepted = self._run("--pin")
-        self.assertEqual(0, accepted.returncode, accepted.stdout)
 
 
 class TestCompositionProtocolAdmission(_IsolatedTree):
