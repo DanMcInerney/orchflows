@@ -31,6 +31,3 @@ discovery, whole-experience handoff, fallback navigation, and duplicate route
 switches are absent. Ticket prose is rendered only from the selected closed
 section set and remains inert. Transcript content, paths, prompts, tools,
 commands, files, and conversations remain outside the browser contract.
-
-The ownership migration and its contributor recipe are specified in
-[`modularization.md`](modularization.md).

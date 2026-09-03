@@ -292,7 +292,7 @@ class ValidateLinkCheckTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for tier in validate.LINKED_MD_ROOTS:
-                (root / tier).mkdir()
+                (root / tier).mkdir(parents=True, exist_ok=True)
             write(root / "docs" / "guide.md", "See [a link](%s).\n" % link)
             write(root / "docs" / "here.md", "# Here\n")
             original = validate.ROOT

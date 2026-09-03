@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from pathlib import Path
 
 from reader.scripts import (
@@ -10,8 +9,6 @@ from reader.scripts import (
     ui_workflows_skills as skills,
     ui_workflows_sources as sources,
 )
-from reader.scripts.ui_discovery import discover
-from reader.scripts.ui_model import ACTIVE_STATUS
 
 # Public definition routes are assembled by ui_api; this module owns projection
 # data only and has no second route assembly mechanism.
@@ -80,19 +77,3 @@ def project_workflow_source(root=LIBRARY_ROOT, workflow_id: str = "", source_id:
     """Return one contained source projection and its closed status."""
 
     return sources.project_source(root, workflow_id, source_id)
-
-
-def project_workflows(root) -> dict:
-    """Return the existing run-summary payload until Workflows Phase B."""
-
-    found = discover(root)
-    projected = []
-    for item in found["runs"]:
-        counts = Counter(ticket["status"] for ticket in item["tickets"])
-        projected.append({
-            "id": item["run"],
-            "ticket_count": len(item["tickets"]),
-            "active": bool(counts.get(ACTIVE_STATUS)),
-            "statuses": dict(sorted(counts.items())),
-        })
-    return {"api_version": "v1", "runs": projected, "empty": found["empty"]}
