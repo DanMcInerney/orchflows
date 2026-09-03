@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2334,
+  "count": 2337,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1127,6 +1127,9 @@
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_conflicted_merge_refuses_naming_the_files_and_the_remedy",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_land_refused_for_want_of_a_grade_leaves_no_merge_commit",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_the_candidates_commits_reach_the_tree_the_run_stands_in",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_cmd_shim_on_path_runs_like_any_other_first_word",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_cmd_shims_own_exit_code_is_the_verdict",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_first_word_on_no_path_entry_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_close_over_two_unjudged_do_children_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_frame_that_sealed_its_gate_at_open_evaluates_that_one",
    "test_ticket_frames.FrameCloseTest.test_a_judge_under_the_frame_lets_the_same_close_land",
@@ -2337,7 +2340,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "46268c9b8c67bc09311a9269e592527b3b1abbc900584a54c27cd3677a1a979a"
+  "sha256": "ac681721bf6fe089d5d30ecd9fc424e2c2479f3527a6bff1ab7a98960ccc2ac1"
  },
  "mutation_owners": [
   {
@@ -4983,6 +4986,15 @@
   {
    "module": "tests.test_ticket_done_predicate",
    "owner": "LandIntegratesTheCandidateTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_done_spawn",
+   "owner": "DoneCommandSpawnTest._on_path",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",
