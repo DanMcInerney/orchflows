@@ -1,0 +1,135 @@
+{
+  "ticket": "B1.22",
+  "run": "20260903T155153Z-library-cleanup",
+  "lens": "git",
+  "pack": "orch-code-pack",
+  "artifact": "git:2d9a81aecbe0b25d1373165088961101e29f0aea",
+  "criteria": "research/library-cleanup-spec-2026-09-03.md sections 0, 1, 2, 5, judged over U0-U8 at one joined tip",
+  "base": "663ab929f361d382563a611ffc3bac235bd6c8fa (main, PR #172)",
+  "measurements": {
+    "law_text_lines": 2302,
+    "law_text_threshold": 2400,
+    "law_text_method": "The reviews' method, replicated and calibrated: physical lines of every tracked rules/*.md (512 across 9) plus contracts/*.md (1019 across 8) plus, for every tracked SKILL.md/SHEET.md outside research/, the three ring copies of research-acquire and .orch/canary/, the lines after the closing '---' of its YAML frontmatter (771 across 20). Calibration: the identical script run against main 468dbdc9 returns 537 + 1573 + 784 across 20 manifests = 2894, the number both REVIEW-2026-09-03.md and REVIEW-2026-09-03-fable.md state in their headers. At the run base 663ab929 the same method gives 2904; the run's delta is -602.",
+    "install_dry_run_entries": 359,
+    "install_dry_run_entries_at_base": 361,
+    "install_entry_delta_accounted_by": "installer/inventory.py lost exactly two names, cutcheck.py and migrate_state.py (U3 and U7 deletions). The spec's U6 line 'plans the same 361 entries before and after' scoped U6 alone.",
+    "library_item_roster": "identical at base and tip: the same 20 skills/packs/sheets/example-workflows manifests, so orchflows list still names every library item it named on main",
+    "tests": {"base": 2368, "tip": 2125, "delta": -243, "in_deleted_files": 227, "net_in_surviving_files": -16},
+    "asserts": {"base": 6301, "tip": 5684},
+    "skip_sites": {"base": 43, "tip": 39},
+    "prose_share": {"scripts": "11.5 percent (2275/19853), bound under 12", "tools": "17.4 percent", "installer": "14.1 percent", "reader/scripts": "12.3 percent"}
+  },
+  "gate_section_5": [
+    {"command": "python tools/run_required.py --no-cache", "exit": 0, "detail": "five rows all 0: validate, run_tests, run_serial_compat, install.py --dry-run, git diff --check; tree 93451ebde425"},
+    {"command": "python install.py --dry-run", "exit": 0, "detail": "ran inside run_required; planned entries: 359"},
+    {"command": "git diff --check", "exit": 0},
+    {"command": "grep -r 'T0 supersession' contracts/", "exit": 1, "detail": "empty, as required"},
+    {"command": "test ! -e tests/pins.json", "exit": 0, "detail": "ls tests/pins.json returns No such file or directory"},
+    {"command": "python tools/regen.py --check", "exit": 0, "detail": "t0-shapes, lifecycle, ci-topology, host-adapters, serial-compat-manifest all current"},
+    {"command": "reinstall / orchflows sync / orchflows list", "exit": null, "detail": "NOT RUN by this judge: they write to the host's installed library, and rules/verification.md section 3 makes a checker that changes the target a repair executor. The non-mutating proxies above stand in: --dry-run plans 359 entries, and the shipped item roster is identical to the base's."}
+  ],
+  "can_fail_readings": [
+    {"id": "M0", "check": "tools/validate.py on an unmutated copy of the tip", "reading": "exit 0, 0 errors, 18 warns"},
+    {"id": "M1", "check": "documented-path check, decision 4c widening", "mutation": "append a reference to docs/no-such-file.md to README.md", "reading": "exit 1, ERROR README.md: docs/no-such-file.md names no shipped file"},
+    {"id": "M2", "check": "markdown link check, decision 4c widening", "mutation": "append a link to docs/definitely-not-here.md to ARCHITECTURE.md", "reading": "exit 1, ERROR ARCHITECTURE.md: markdown link does not resolve"},
+    {"id": "M3", "check": "vocabulary consumer test, decision 4a", "mutation": "append an entry zzunusedterm to docs/vocabulary.md", "reading": "exit 1, ERROR docs/vocabulary.md: 'zzunusedterm' has no consumer"},
+    {"id": "M4", "check": "sheet-Lens-covers-every-named-pack, decision 4b", "mutation": "strip the '### ' entries from sheets/html-dossier/SHEET.md", "reading": "exit 1, two ERRORs naming orch-content-pack's artifact kind 'doc' and the missing entry"},
+    {"id": "M5", "check": "routed-caller lifecycle rule, decision 4d", "mutation": "rename the result spec to not-a-subcommand with actor caller in scripts/tickets_transitions.py", "reading": "tools/render_lifecycle.py exit 1 UnroutedCallerEvent; tools/regen.py --check exit 1 naming docs/lifecycle.md"},
+    {"note": "Every mutation was taken against a `git archive HEAD` copy in the scratch directory, never against the tree under test; the workspace stayed clean throughout."}
+  ],
+  "second_opinion_requested": {
+    "subject": "the spec's section 2 amendment at :79 (the two link/path rosters), landed by U5's repair round",
+    "verdict": "sound; no finding",
+    "evidence": "tools/validate_support/lint.py:88 rglobs each LINKED_MD_ROOTS entry and :108 refuses one that is not is_dir(), so a file placed in that roster would have broken both consumers. The landed shape carries the four root documents through _linked_markdown_files' top-level ROOT.glob('*.md') at lint.py:84 and through DOC_PATH_CHECKED_FILES at validate.py:173. M1 and M2 are the empirical proof that README.md and ARCHITECTURE.md are actually graded by both checks at the landed shape, which is what the amendment had to preserve. The amendment is a faithful restatement of the only shape that works, not a narrowing."
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": true,
+      "unit": "U2 (wave 3), with U1 as the co-cause",
+      "cause": "A wave-3 citation written against a sentence its wave-mate deleted. docs/vocabulary.md's **gate** entry quotes rules/verification.md section 7's 'gate-deferred' independence; U1 rewrote section 7 in the same wave to 'Independence is the caller's own join', and the phrase gate-deferred now appears nowhere in the tree.",
+      "evidence": [
+        "docs/vocabulary.md:299 -- (`rules/verification.md` section 7's \"gate-deferred\" independence, run without caching by the dev-only tools/run_required.py)",
+        "git grep -n gate-deferred over the tree excluding research/ and REVIEW-* returns one hit: that line itself",
+        "rules/verification.md:26-31 is the rewritten section 7 and carries no such term"
+      ],
+      "why_blocking": "It is a false claim about the tree at the fixed identity, and it is the class the section 1 criterion exists to catch: a shipped document under docs/ naming something that does not resolve. Wave 3 ran U1 and U2 together, so nothing downstream of either could catch it.",
+      "smallest_change": "In docs/vocabulary.md:299 drop the quoted phrase, leaving (`rules/verification.md` section 7, run without caching by the dev-only tools/run_required.py)."
+    },
+    {
+      "id": "F2",
+      "blocking": true,
+      "unit": "U5",
+      "cause": "reader/docs/workflows.md was trimmed of its migration plan but kept the retirement narrative and the two-type catalog claim, so it names a command that does not resolve and a payload value the code does not emit.",
+      "evidence": [
+        "reader/docs/workflows.md:7 -- 'the `composition` type retired with `tickets.py instantiate`, its only minter'",
+        "instantiate is not routed: scripts/tickets_commands.SUBCOMMAND_USAGE has 24 entries and none is instantiate; git grep instantiate over scripts/ tools/ installer/ reader/scripts/ exits 1",
+        "reader/docs/workflows.md:39 -- 'type is composition | workflow-skill'; reader/scripts/ui_workflows_catalog.py:50 emits only \"type\": \"workflow-skill\", and the string \"composition\" appears nowhere under reader/scripts/",
+        "reader/docs/workflows.md:61 -- 'Its model discriminates T3 composition from T1 workflow skill.'",
+        "U2 deleted the **composition** entry from docs/vocabulary.md, so the doc labels a vocabulary type the vocabulary no longer carries"
+      ],
+      "why_blocking": "Decision 2 -- nothing retired is described in the present tense anywhere a reader loads -- carries no tree restriction, and U5's own scope named this file. Caveat the join should weigh: reader/docs/ is not in the section 1 enumeration of graded trees, so if that clause is read as exhaustive this drops to blocking:false and becomes successor scope.",
+      "smallest_change": "Delete the clause ', the `composition` type retired with `tickets.py instantiate`, its only minter' at :7; at :39 make type the one value the catalog emits; at :61 drop the discrimination sentence."
+    },
+    {
+      "id": "F3",
+      "blocking": false,
+      "unit": "U8",
+      "cause": "Two run-local ids survived the prose sweep. U8's own bounds were met (scripts/ at 11.5 percent against a bound under 12; no non-degenerate module over 30 percent; dated evidence at zero), so this is residue rather than a missed pass.",
+      "evidence": [
+        "installer/packages.py:140 -- '# than inside a sealed child prompt (the lego design's A5 containment), so'",
+        "tools/validate_support/duplication.py:227 -- '# (join ruling, 20260823T210000Z-trunk-slimming, checker finding F9).' -- a run-local ticket id and a dated run id in one parenthetical",
+        "scripts/browser_game_validate.py:22's PJ-* ids were correctly left alone: decision 3 names that file out of scope"
+      ],
+      "smallest_change": "Delete both parentheticals; neither carries a fact its sentence does not already carry."
+    },
+    {
+      "id": "F4",
+      "blocking": false,
+      "unit": "U3",
+      "cause": "scripts/tickets.py _sync_seams was trimmed to 17 re-points across 7 distinct names, against a spec line reading 'the five seams tests patch'. Six of the seven are genuinely patched; _cwd is not, so that line is a strict no-op.",
+      "evidence": [
+        "scripts/tickets.py:97 sets _cwd = _tickets_store_module._cwd and :135 assigns it straight back, an identity assignment unless something rebinds tickets._cwd",
+        "no test patches it: git grep _cwd over tests/ returns only tests/_windows_semantics.py helpers and serial-manifest test names",
+        "the other six are patched, e.g. tests/test_dispatch_v1.py:982 (_cmd_ready), :988 (_cmd_dispatch_open), tests/test_events.py:258 (_append_one_line), tests/test_friction_cases/storage.py:109 (_write_identity)"
+      ],
+      "smallest_change": "Delete scripts/tickets.py:135."
+    },
+    {
+      "id": "F5",
+      "blocking": false,
+      "unit": "none -- pre-existing, carried unchanged through the run",
+      "cause": "An absence assertion that cannot fail. tests/test_dispatch_standalone.py probes getattr(module, 'GENERATION_SUBCOMMANDS', {}) on tickets_dispatch -- a module that never carried the table, which lived in tickets_commands -- so the assertion was already vacuous before U3 deleted the constant and is no evidence the deletion held.",
+      "evidence": [
+        "tests/test_dispatch_standalone.py:86 table = 'GENERATION_SUBCOMMANDS', :94 sorted(getattr(module, table, {})), :145-146 assertEqual([], ...) for both derived keys",
+        "git grep GENERATION_SUBCOMMANDS over scripts/ tools/ exits 1: the constant is gone",
+        "git diff 663ab929..HEAD for that file is empty, so the run neither introduced nor weakened it"
+      ],
+      "smallest_change": "Delete the two assertions and let tests/test_command_surface.py own the absence, or re-point the probe at the module that owned the table."
+    },
+    {
+      "id": "F6",
+      "blocking": false,
+      "unit": "U5 (scope-correct; reported as a coverage gap)",
+      "cause": "The widened link check still does not reach sheets/. Section 1 grades sheets/ for unresolved names and section 2's widening list did not name it, so the unit did the right thing; the result is that one shipped tree's links are graded by no committed check.",
+      "evidence": [
+        "tools/validate_support/lint.py:75-78 LINKED_MD_ROOTS is rules, contracts, docs, skills, packs, example-workflows, templates, benchmarks, hosts, reader/docs -- no sheets",
+        "an independent sweep of every backticked path, flag, subcommand and identifier across the eight graded trees and the four root documents found no unresolved name, so nothing is broken today"
+      ],
+      "smallest_change": "Add 'sheets' to LINKED_MD_ROOTS at tools/validate_support/lint.py:76."
+    }
+  ],
+  "verified_clean": {
+    "section_1_frozen_goal": "gate passes; the T0 supersession grep is empty; tests/pins.json is absent; law text is 2302 against a 2400 bound; the item roster is unchanged; no unresolved path, flag, subcommand or identifier in the eight graded trees plus the four root documents. The only path-shaped tokens the sweep could not resolve are user-generated artifacts (a requirements.txt inside a ring item, ~/.orchflows/imports.lock) and protocol version strings such as search-policy/v1.",
+    "section_2_fixed_names": "kernel descriptions verbatim; pack-signature cells exactly adapter and craft, with ## Stages still an optional craft section; three adapters git/document-tree/evidence-store carrying the six named fields, and no identity_form, conflict_semantics or git-plus-render anywhere; independence gone from ticket_frontmatter and from VALUE_FLAGS along with the other seven flags; hosts/claude.json mode import; one doctor spelling, with --doctor and --claude-adapters surviving only as negative refusal assertions in tests; four rings named project/home/imports/lib in docs/vocabulary.md:119 and docs/custom-workflow-authoring.md:11; AGENTS.md names five checks, which is section 2's own 'five otherwise' for a kept serial lane.",
+    "decision_2": "SUPERSEDED_EXECUTORS is kept as a live refusal with its expiry policy gone; no retired executor name appears in tests/fixtures/ (decision 7); the one shipped hit for orch-outline is example-workflows/references/browser-game-program-record.schema.json, which decision 3 excludes.",
+    "decision_6": "the serial lane is kept, and AGENTS.md, tools/run_required.py and docs/vocabulary.md's sentinel/shard/seam entries are all consistent with that, matching U7's limited close. No section 0 decision was reversed anywhere in the tree.",
+    "no_weakened_checks": "skip sites fell from 43 to 39, so nothing was skipped to reach green. Of the -243 tests, 227 sat in the 25 deleted test files; the -16 net across 23 surviving files traces line by line to deleted production surface: the --pin round trips, cutcheck.graph_findings, isolate._walk_dirty_paths, the stages and assembly cells, adapter.identity_form and conflict_semantics, the installer scope parameter, the canary path bullet, and the live routing benchmark cases.",
+    "reader_oracles": "every route in reader/docs/platform.md's table exists in create_application(root).routes (nothing documented is missing; the twelve live-not-documented entries are the browser shell routes the same page describes as served separately), and view-manifest.json carries exactly the 64 views the page claims."
+  },
+  "deliberately_not_done": [
+    "Reinstall, orchflows sync and orchflows list: they write to the host's installed library, and rules/verification.md section 3 makes a checker that changes the target a repair executor rather than a judge. Static equivalents are recorded above.",
+    "example-workflows/ bodies, the shared references bucket, and the browser-game machinery: decision 3 puts them out of scope, so the two retired-name hits inside them are correct non-changes rather than findings.",
+    "No mutation was taken against the workspace tree; every can-fail reading used a git archive copy in the scratch directory."
+  ]
+}
