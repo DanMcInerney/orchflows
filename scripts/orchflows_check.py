@@ -165,21 +165,40 @@ def _package(directory: Path, manifest: Path, kind: str) -> dict:
     }
 
 
-def _untrusted(ring: Path):
-    """The ring, when it is a project bundle the trust ledger does not trust.
+def _folded(path) -> str:
+    """One spelling of a path, for comparing two a caller spelled differently.
 
-    Reading a declaration is inert and resolving a name on `PATH` runs
-    nothing, but a `::` probe is the item's own command. `scripts/rings.py`
-    holds a *project* ring alone to the ledger -- home, imports and library
-    content is inherent -- so that is the one ring whose probes wait for a
-    grant, and it waits with `orchflows sync`'s own remedy rather than a
-    second sentence.
+    `ring_at` resolves the directory it is handed and `rings.home_ring`
+    does not, and on Windows an unresolved temporary directory can still
+    carry its short name, so neither side is compared as it arrives.
     """
 
-    project = rings.project_ring()
-    if project is None or str(project).casefold() != str(ring).casefold():
+    try:
+        return str(Path(path).resolve()).casefold()
+    except OSError:  # pragma: no cover - an unreadable path
+        return str(path).casefold()
+
+
+def _untrusted(ring: Path):
+    """The ring, unless this is content its user has already accepted.
+
+    Reading a declaration is inert and resolving a name on `PATH` runs
+    nothing, but a `::` probe is the item's own command, so the question
+    here is the one `orchflows trust` exists for: has this user accepted
+    this ring's content? Two rings answer yes. The home ring is the user's
+    own directory. A project ring is the one `scripts/rings.py` holds to
+    the trust ledger, so its answer is the ledger's. Every other directory
+    waits for a grant -- `check` grades whatever directory it is handed,
+    which is any bundle at all, cloned or copied from anywhere -- and it
+    waits with `orchflows sync`'s own remedy rather than a second sentence.
+    """
+
+    if _folded(ring) == _folded(rings.home_ring()):
         return None
-    return None if rings_trust.state(ring)["trusted"] else ring
+    project = rings.project_ring()
+    if project is not None and _folded(ring) == _folded(project):
+        return None if rings_trust.state(ring)["trusted"] else ring
+    return ring
 
 
 def _tooling(ring: Path, diag, declaring, packages) -> None:
@@ -196,6 +215,8 @@ def _tooling(ring: Path, diag, declaring, packages) -> None:
 
     untrusted = _untrusted(ring)
     for kind, directory in declaring:
+        if kind == "sheet":
+            continue  # `validate_sheets` has already refused this file's existence
         tools = orchflows_tools.tools_of(directory)
         if tools is None:
             continue
