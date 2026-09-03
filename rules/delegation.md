@@ -20,7 +20,12 @@ connect this law to each authorized dispatch event and predecessor record.
    for a callable, `dispatch` for a hand-written ticket — emits the concrete
    `launch` to invoke verbatim, never a retyped model, agent, or effort; and
    `tickets.py land` is the return. Both halves are
-   [dispatch.md](../contracts/dispatch.md)'s transactions.
+   [dispatch.md](../contracts/dispatch.md)'s transactions. That prompt
+   carries, beside the ticket path and the stamped pack's craft line, one
+   line per sheet the ticket stamps, the applied skill's identity and
+   kernel-contract lines when the ticket pins one, and that skill's
+   interpreter line when it declares an environment — each rendered by
+   `scripts/tickets_dispatch_launch_lines.py`, which owns their wording.
 3. Star topology: children never communicate peer to peer; every result
    crosses exactly one join owned by the dispatching caller. There is no
    sideways handoff of control — only call/return and suspension.

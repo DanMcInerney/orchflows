@@ -53,11 +53,13 @@ from .models import (
     _is_build_artifact,
 )
 from .packages import (
+    SHEET_MANIFEST_FILE,
     WORKFLOW_SKILL_FILE,
     by_name_pointer_text,
     claude_role_adapter_text,
     codex_role_adapter_body,
     discover_packages,
+    discover_sheets,
     discover_workflow_skills,
     frontmatter_field,
     host_legal_frontmatter,
@@ -73,6 +75,7 @@ from .planning_support import (
     _frontend_plan,
     _reader_payload_files,
     _script_source,
+    _validator_support_copies,
 )
 from .hosts import host_item_path, load_host_adapters, preflight_instruction_target
 
@@ -163,6 +166,7 @@ def _build_user_plan(
     for path in _reader_payload_files():
         if path.is_file():
             lib_copies.append((path, lib_home / path.relative_to(REPO_ROOT)))
+    lib_copies.extend(_validator_support_copies(lib_home))
     frontend_home, frontend_identity, frontend_assets, frontend_action = _frontend_plan(
         _frontend_home, _frontend_manifest_identity
     )
@@ -251,9 +255,13 @@ def _build_user_plan(
 
     # Workflows are invocable by name, so they get the same name surfaces as
     # skills: a by-name pointer, a Claude adapter stub, a Codex prompt, and
-    # — for curated entry points — a Codex redirect stub. What differs from a
-    # skill is one thing: every workflow surface is manual-invocation-only,
-    # so the Claude adapter's frontmatter is forced rather than inherited.
+    # — for curated entry points — a Codex redirect stub. Two things differ
+    # from a skill, and both are about who runs the body: every workflow
+    # surface is manual-invocation-only, so the Claude adapter's frontmatter
+    # is forced rather than inherited, and no surface binds a role, because
+    # a workflow declares none -- `tools/validate_support/packages.py`'s
+    # `validate_role` refuses one in a workflow home, so there is no field
+    # here for a host's fork binding to read.
     for workflow_dir, frontmatter, body in discover_workflow_skills():
         name = workflow_dir.name
         description = frontmatter_field(frontmatter, "description") or ""
@@ -292,9 +300,30 @@ def _build_user_plan(
             grok_skills.append(
                 (
                     item_path("grok", "skill", _grok_skills_dir().parent, name=name),
-                    grok_skill_text(frontmatter, lib_workflow_dir / WORKFLOW_SKILL_FILE),
+                    grok_skill_text(
+                        frontmatter, lib_workflow_dir / WORKFLOW_SKILL_FILE
+                    ),
                 )
             )
+
+    # A sheet is stamped on a ticket and never invoked, so it gets the one
+    # surface a stamped item needs and no host surface at all: the flat
+    # pointer, so a child handed the *name* `market-brief` has one
+    # deterministic path to read it at, exactly as a pack does. The pointer
+    # is named `SHEET.md`, not `SKILL.md` -- the manifest name is what
+    # `scripts/rings.py` resolves, and a pointer under the other name would
+    # be a second spelling of where a sheet lives.
+    for sheet_dir, frontmatter, _body in discover_sheets():
+        lib_sheet_dir = (lib_home / sheet_dir.relative_to(REPO_ROOT)).resolve()
+        pointer = (
+            frontmatter
+            + f"\nRead {lib_sheet_dir / SHEET_MANIFEST_FILE} and follow it "
+            f"exactly. It is the sheet at {lib_sheet_dir}, stamped on a "
+            "ticket beside its pack and never invoked by name.\n"
+        )
+        by_name.append(
+            (lib_home / "by-name" / sheet_dir.name / SHEET_MANIFEST_FILE, pointer)
+        )
 
     claude_agents = []
     codex_agents = []

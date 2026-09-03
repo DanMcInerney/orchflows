@@ -4,10 +4,10 @@ from __future__ import annotations
 
 
 def _doclint():
-    from tools.validate_support.structure import _doclint as doclint
+    from .structure import _doclint as doclint
     return doclint()
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
 CELL_REFERENCE_LINK_RE = __dep_common.CELL_REFERENCE_LINK_RE
 CELL_SIMILARITY_THRESHOLD = __dep_common.CELL_SIMILARITY_THRESHOLD
@@ -18,11 +18,12 @@ PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
 ROOT = __dep_common.ROOT
 re = __dep_common.re
 
-from tools.validate_support import packages as __dep_packages
+from . import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
 cell_clauses = __dep_packages.cell_clauses
 rel = __dep_packages.rel
+workflow_tiers = __dep_packages.workflow_tiers
 
 CELL_DUPLICATION_ALLOWLIST = (
     {
@@ -47,7 +48,7 @@ CELL_DUPLICATION_ALLOWLIST = (
             "scripts/tickets_assignment.py's _craft_scope() reads a pack's "
             "own verification-scope sentence out of its `## Stages` (or "
             "`## Lens`) section by the literal anchor \"gate's row\", so "
-            "the one-suite law (.orchflows/routing-design-2026-08-31.md "
+            "the one-suite law (research/routing-design-2026-08-31.md "
             "\"The one-suite law\") reaches every pack the same way: "
             "children run their own narrow affected checks, and the full "
             "required suite is the closing `done`'s alone. Every pack "
@@ -220,6 +221,16 @@ def _cross_tier_prose(clause: str) -> str:
 # tier -- the one pair it could not see was the pair that mattered.
 SAME_TIER_COMPARED = frozenset({"skills"})
 
+# Both library workflow homes are one tier to this check. A reusable
+# workflow under `skills/workflows/` and a gallery one under
+# `example-workflows/` are the same kind of document -- prose that opens a
+# frame and calls the same two callables -- so the `frame-open`, `do` and
+# `judge` lines they share are the form itself, not one fact carried by two
+# owners. Reading the reusable one as a skill instead convicted its every
+# invocation line against every gallery body's, which is the tier the
+# library gave it rather than the kind of thing it is.
+WORKFLOW_TIER = "workflows"
+
 # A copy the library licensed, and the fact it copies. Each entry is
 # (owner, copy, a phrase both carry): the pair alone would exempt these
 # two files from every future duplication, and the phrase keeps the
@@ -266,10 +277,85 @@ LICENSED_COPIES = (
 )
 
 
+def _workflow_home_prefixes():
+    """Every library workflow home, as a label prefix.
+
+    ``scripts/rings.py`` owns where a workflow lives and
+    ``structure.workflow_roots`` is where this validator reads that list,
+    so a home the resolver knows is a home this pairing rule knows.
+    Imported on first use, like ``_doclint``: an isolated fixture carrying
+    no ``scripts/`` still runs every other check.
+    """
+
+    from .structure import workflow_roots
+
+    return tuple(f"{rel(root)}/".replace("\\", "/") for root in workflow_roots())
+
+
+# The one owner of an idiom's wording: composition.md 13 makes a control-flow
+# sentence that recurs across workflows this file's to word, and tells every
+# body to quote it from there rather than reword it. A quote is therefore a
+# copy the library ordered.
+IDIOM_OWNER = "docs/custom-workflow-authoring.md"
+#: How much of an idiom a shared fragment must carry before it licenses a
+#: pair -- long enough that no ordinary sentence reaches it by accident.
+IDIOM_FRAGMENT_MIN_WORDS = 6
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _idiom_fragments():
+    """Every clause of every idiom the owner words, flattened.
+
+    Read from the owner's ``## Idioms`` section rather than listed here:
+    an idiom added or reworded there is licensed by the same act that
+    words it, and a list of copies kept beside the owner would be the
+    second wording this check exists to find.
+    """
+
+    path = ROOT / IDIOM_OWNER
+    if not path.is_file():
+        return ()
+    section = _read_source(path).partition("\n## Idioms\n")[2].partition("\n## ")[0]
+    fragments = []
+    for bullet in section.split("\n- **")[1:]:
+        wording = bullet.partition("**")[2].lstrip(" —-")
+        for clause in cell_clauses(wording):
+            flat = _flat(clause)
+            if len(flat.split()) >= IDIOM_FRAGMENT_MIN_WORDS:
+                fragments.append(flat)
+    return tuple(fragments)
+
+
+def _licensed_idiom_quote(labels: set, left_clause: str, right_clause: str) -> bool:
+    """Whether this pair is a workflow body quoting an idiom at its owner.
+
+    The two sides are the owner and a workflow body, and both carry the
+    same fragment of one idiom: that is the quote composition.md 13
+    ordered, and reporting it would ask the body to reword the one
+    sentence that must never be reworded. Any other pair -- two bodies, or
+    a body against some other clause of the owner -- is still the finding.
+    """
+
+    if IDIOM_OWNER not in labels or len(labels) != 2:
+        return False
+    other = (labels - {IDIOM_OWNER}).pop()
+    if not other.startswith(_workflow_home_prefixes()):
+        return False
+    left, right = _flat(left_clause), _flat(right_clause)
+    return any(
+        fragment in left and fragment in right for fragment in _idiom_fragments()
+    )
+
+
 def _licensed(left_label: str, left_clause: str, right_label: str, right_clause: str) -> bool:
     """Whether this pair is a copy the library licensed, for this clause."""
 
     labels = {left_label.replace("\\", "/"), right_label.replace("\\", "/")}
+    if _licensed_idiom_quote(labels, left_clause, right_clause):
+        return True
     if "Never: introduce" in left_clause and "Never: introduce" in right_clause:
         return all(
             (ROOT / label).is_file()
@@ -286,8 +372,12 @@ def cross_tier_documents(packages):
     """(tier, label, text) for every file the check reads, tier being the
     directory the library gave it."""
     documents = []
+    homes = workflow_tiers()
     for pkg in packages:
-        tier = "packs" if pkg["is_pack"] else "skills"
+        if pkg["is_pack"]:
+            tier = "packs"
+        else:
+            tier = WORKFLOW_TIER if pkg["kind"] in homes else "skills"
         documents.append((tier, rel(pkg["skill_md"]), pkg.get("body") or ""))
         if pkg["is_pack"]:
             for reference in sorted((pkg["path"] / "references").glob("*.md")):
@@ -313,7 +403,7 @@ def cross_tier_documents(packages):
     compositions = ROOT / "example-workflows"
     if compositions.is_dir():
         for path in sorted(compositions.rglob("*.md")):
-            documents.append(("example-workflows", rel(path), _read_source(path)))
+            documents.append((WORKFLOW_TIER, rel(path), _read_source(path)))
     host_block = ROOT / "templates" / "host-block.md"
     if host_block.is_file():
         documents.append(("templates", rel(host_block), _read_source(host_block)))
@@ -513,6 +603,6 @@ __all__ = (
     'CELL_DUPLICATION_ALLOWLIST', '_cell_content', 'CRAFT_SECTION_RE', '_craft_sections',
     'free_content', 'validate_cell_duplication',
     'CROSS_TIER_DUPLICATE_LEVEL', 'CROSS_TIER_CITATION_RES', 'CROSS_TIER_PROSE_MIN_WORDS', '_cross_tier_prose',
-    'SAME_TIER_COMPARED', 'LICENSED_COPIES', '_licensed', 'cross_tier_documents',
+    'SAME_TIER_COMPARED', 'WORKFLOW_TIER', 'LICENSED_COPIES', '_licensed', 'cross_tier_documents',
     '_cross_tier_clauses', '_cross_tier_accept', 'validate_cross_tier_duplication',
 )

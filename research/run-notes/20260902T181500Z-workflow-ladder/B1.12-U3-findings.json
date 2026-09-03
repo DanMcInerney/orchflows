@@ -1,0 +1,151 @@
+{
+  "ticket": "B1.12",
+  "run": "20260902T181500Z-workflow-ladder",
+  "unit": "U3 The trunk prints the frame law; two lib workflow dirs; bodies drop the paragraph",
+  "judge": "B1.12",
+  "lens": "orch-code-pack craft ## Lens ### git",
+  "artifacts": [
+    "git:cb11d43137467e346f4a01331f69debc438820cc",
+    "git:79a797fe9d2fb49273d94c81fd6a629d4806ce34"
+  ],
+  "judged_tree": "0e3592381578326bfbd2582cde25118ecedc4c38 (workspace baseline, clean; `git diff --stat 79a797fe 0e359238` is exactly one file, B1.10's findings JSON, so this tree is 79a797fe's plus that file). cb11d431's diff against its parent 53c42969 is the unit: 20 files, +534/-111",
+  "verdict": "holds",
+  "blocking_count": 0,
+  "goal_criteria": {
+    "run_required_at_the_commit": {
+      "reading": "the five legs of tools/run_required.py, each run to completion and watched, each exit 0 at the judged tree: tools/validate.py 0 (zero ERROR lines; the WARN lines are the pre-existing kernel near-duplicates); tools/run_tests.py --shard 1-of-2 0 (47 modules, 1279 tests, 0 failures, 0 errors, 12 skipped) and --shard 2-of-2 0 (47 modules, 1106 tests, 0 failures, 0 errors, 11 skipped); tools/run_serial_compat.py 0 (ok true, 14 sentinels, mode selected, revision 0e359238, worktree_clean true); install.py --dry-run 0; git diff --check 0. Not run as the single run_required.py process: its unit-test leg alone measured 599.8s for the executor, which is the tool's 600s hard cap, so the leg was split into two shards of the same runner rather than backgrounded. B1's own record in this ticket's ## Report also reads run_required exit 0 at the integrated tree",
+      "blocking": false
+    },
+    "section_2_names_and_shapes": {
+      "reading": "frame-open payload carries `workflow_path` (resolved SKILL.md for a named workflow, None for an improvised frame, refusal naming every ring root searched when the name resolves nowhere, minted before the run exists) and `law` (a list of exactly three lines, byte-equal to U3 Goal's (1), (2), (3); FrameLawTest.test_the_open_prints_the_three_law_lines_the_driver_owes pins the sentences, and mutant M1 shows one word of drift reddens it). rings.LIB_DIRS[\"workflow\"] resolves skills/workflows then example-workflows (pinned by test_lib_workflows_search_the_skills_tier_before_the_gallery and test_a_reusable_workflow_shadows_a_gallery_name); tools/validate.py refuses a name present in both (TestWorkflowLibraryHomes.test_one_name_in_both_homes_is_refused, with its can-fail control). One spelling deviation: the value is a tuple where section 2 writes 'the ordered list' (F-2, non-blocking: no consumer compares by type, and the fixed fact -- the two entries and their order -- is what the tests pin)",
+      "blocking": false
+    },
+    "budgets": {
+      "reading": "the eight bodies measure 362 (benchmaker), 420 (browser-game), 334 (drift-canary), 398 (evolve), 269 (renovate), 431 (self-improve), 314 (skill-tournament), 420 (super-research) words, all under the 450 workflow budget; validate 0 confirms every mechanical budget. No `Never:` line changed (the unit diff on example-workflows/ has zero +/- Never lines) and every body keeps its `Return: tickets.py frame-close ...` line (FrameLawOwnerTest.test_every_body_still_returns_the_close_it_owes, 8 subtests). scripts/tickets_frame.py is 677 lines, over the 500-line warn-only presumption (F-4)",
+      "blocking": false
+    },
+    "files_outside_details": {
+      "reading": "tools/validate_support/structure.py carries the dual-dir refusal Details assigns to tools/validate.py (validate.py delegates to it; reported). installer/packages.py is what Details' 'confirm skills/workflows/* gets adapters ... add the test if none exists' required, and WorkflowHomeDiscoveryTests is that test. tests/serial_compat_manifest.json regenerated per AGENTS.md. Three fixtures gain `disable-model-invocation: true` (tests/test_validate_cases/validator_ownership.py SKILL_MD, two TestSyntheticPackageBoundaryInputs bodies) because skills/workflows now answers to the workflow checks too; each is named in ## Report with that reason. Nothing else outside the unit's files",
+      "blocking": false
+    }
+  },
+  "test_identities": {
+    "added": [
+      "tests.test_ticket_frames.FrameLawTest (5)",
+      "tests.test_ticket_frames.FrameLawOwnerTest (3)",
+      "tests.test_rings.RingOrderTests.test_lib_workflows_search_the_skills_tier_before_the_gallery",
+      "tests.test_rings.RingOrderTests.test_a_reusable_workflow_shadows_a_gallery_name",
+      "tests.test_catalog_completeness.WorkflowHomeDiscoveryTests (2)",
+      "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes (3)"
+    ],
+    "passing_reading": "tools/run_tests.py tests/test_ticket_frames.py tests/test_rings.py tests/test_ticket_pins.py tests/test_catalog_completeness.py tests/test_validator.py tests/test_validate.py tests/test_static_tree_invariants.py -> 7 modules, 271 tests, 0 failures, exit 0 at the judged tree",
+    "failing_reading": "taken on a `git archive 0e359238` export in the scratchpad, never on the tree under test; the four affected classes (18 tests) run green on the export first, then once per mutant with the mutated file restored between runs, green again after: M1 one word changed in FRAME_LAW line 1 -> FAILED (1: test_the_open_prints_the_three_law_lines_the_driver_owes); M2 LIB_DIRS[\"workflow\"] reduced to (\"example-workflows\",) -> FAILED (7: both ring-order tests, both discovery tests, two of the three validator home tests, the unresolvable-refusal test); M3 the dual-home refusal disabled in structure.py -> FAILED (1: test_one_name_in_both_homes_is_refused); M4 the package loop's workflow-home skip disabled in packages.py -> FAILED (1: test_the_package_loop_leaves_the_workflow_home_alone); M5 _workflow_path made to never resolve -> FAILED (2: the resolves-to-body test and the unresolvable-refusal test)",
+    "executor_readings": "B1.5 recorded its failing readings by stashing the four source files and the eight bodies out of its working tree and back; the readings above are the judge's own, taken without touching the candidate"
+  },
+  "findings": [
+    {
+      "id": "F-1",
+      "blocking": false,
+      "cause": "C-1",
+      "kind": "shape / diff hygiene",
+      "file": "example-workflows/{benchmaker,browser-game,drift-canary,evolve,renovate,skill-tournament,super-research}/SKILL.md",
+      "evidence": "the paragraph was removed with its trailing blank line, leaving the blank line before it beside the one after the frame-open fenced line: seven bodies now carry one doubled blank line at that spot (benchmaker lines 17-18 show `$` `$` under cat -A); self-improve, whose paragraph sat inside a sentence run, is clean"
+    },
+    {
+      "id": "F-2",
+      "blocking": false,
+      "cause": "C-2",
+      "kind": "shape / section 2 spelling",
+      "file": "scripts/rings.py LIB_DIRS",
+      "evidence": "section 2 fixes `rings.LIB_DIRS[\"workflow\"]` as 'the ordered list [\"skills/workflows\", \"example-workflows\"]'; the value is the tuple (\"skills/workflows\", \"example-workflows\"). Every consumer iterates or re-wraps (installer/packages.py `tuple(LIB_DIRS[\"workflow\"])`, structure.py workflow_roots, the two test fixtures), none compares by type; the module's other constants (KINDS, RINGS) are tuples. B1.5 reported the deviation"
+    },
+    {
+      "id": "F-3",
+      "blocking": false,
+      "cause": "C-3",
+      "kind": "test economy / a pin that holds by accident",
+      "file": "tests/test_rings.py RingOrderTests.test_a_workflow_reads_workflows_in_a_ring_and_example_workflows_in_lib",
+      "evidence": "the test builds `dict((ring, path) for ...)` over item_roots, so with two lib roots `order[\"lib\"]` is whichever came last; its `== lib/example-workflows` assertion now passes because the gallery is second, and would silently flip meaning if the order were reversed. The new test_lib_workflows_search_the_skills_tier_before_the_gallery owns the lib fact with the full list"
+    },
+    {
+      "id": "F-4",
+      "blocking": false,
+      "cause": "C-4",
+      "kind": "locality",
+      "file": "scripts/tickets_frame.py",
+      "evidence": "677 lines (633 at the parent): FRAME_LAW, _workflow_path and the payload lines add 44 to a module already past the ~500-line one-read presumption (warn-only since PR #151). Splitting it is not this Goal's; the growth is the law constant and one resolver, both of which belong at the frame door"
+    },
+    {
+      "id": "F-5",
+      "blocking": false,
+      "cause": "C-5",
+      "kind": "correctness seam / cross-kind resolution (successor scope)",
+      "file": "scripts/rings.py _lib_roots, tests/test_rings.py test_lib_skills_expand_one_sublayer",
+      "evidence": "kind `skill` expands every skills/ sublayer, skills/workflows included (the pre-existing test pins [lib/skills/kernel, lib/skills/workflows] as the skill roots). Demonstrated on the export copy: a body at skills/workflows/demo-flow/SKILL.md is hit by rings.locate('workflow', 'demo-flow') AND rings.locate('skill', 'demo-flow'), both from lib skills/workflows. Once U7b/U7c ship checkpointed-build and bakeoff there, `tickets.py do --skill bakeoff` passes U1's role door (the tier requires role: planner|worker) and launches a workflow body as an applied skill. The unit taught installer/packages.py discover_packages to skip the workflow home; the resolver's skill kind was not taught the same"
+    },
+    {
+      "id": "F-6",
+      "blocking": false,
+      "cause": "C-5",
+      "kind": "shape / one directory, two check sets",
+      "file": "tools/validate_support/common.py SKILL_TIERS, tools/validate_support/structure.py validate_templates",
+      "evidence": "skills/workflows is graded by validate_role (SKILL_TIERS = (\"kernel\", \"workflows\"): `role:` required) and now by validate_templates (`disable-model-invocation: true` required), so every reusable workflow must declare both, and three fixtures had to. `role:` on a workflow has no reader: a workflow is prose the root runs (decision 0.1), never a child's role. B1.5 reported this and left the tier rule standing because no unit owns it"
+    }
+  ],
+  "causes": [
+    {
+      "id": "C-1",
+      "findings": ["F-1"],
+      "cause": "the removal took the paragraph plus one of its two surrounding blank lines",
+      "smallest_change": "delete one blank line after the frame-open fenced line in each of the seven bodies (seven one-line deletions; no words change, budgets unaffected)",
+      "within_license": true
+    },
+    {
+      "id": "C-2",
+      "findings": ["F-2"],
+      "cause": "section 2 spelled a container type where the fact it fixes is two entries and their order",
+      "smallest_change": "amend section 2's cell to 'the ordered sequence' (the module idiom is tuples for constants), or change the one line to a list -- either closes it; the first keeps the tree's idiom",
+      "within_license": true
+    },
+    {
+      "id": "C-3",
+      "findings": ["F-3"],
+      "cause": "a pre-existing pin was written for one lib root and survived two by dict last-wins",
+      "smallest_change": "drop the `order[\"lib\"]` assertion from that test (the new test owns the lib fact), keeping its project-ring assertion",
+      "within_license": true
+    },
+    {
+      "id": "C-4",
+      "findings": ["F-4"],
+      "cause": "the frame door is one module carrying open, close, resume and now the law",
+      "smallest_change": "none in this unit; a later split at the open/close seam if the module keeps growing",
+      "within_license": false
+    },
+    {
+      "id": "C-5",
+      "findings": ["F-5", "F-6"],
+      "cause": "skills/workflows is at once a skills-tier sublayer (resolver kind skill, validate_role) and a workflow home (resolver kind workflow, validate_templates, installer); only the installer's package loop was taught the difference",
+      "smallest_change": "make skills/workflows a workflow-only home: _lib_roots(\"skill\") skips a sublayer whose relative path is in LIB_DIRS[\"workflow\"] (the mirror of discover_packages' skip), and \"workflows\" leaves SKILL_TIERS so validate_role stops demanding a role there; test_lib_skills_expand_one_sublayer and the two role fixtures follow. Exceeds U3's license: it changes what U1's --skill door can name and the validator's tier law, and U7b/U7c bodies would drop `role:` -- recommended successor scope, before U7b/U7c land a real body there",
+      "within_license": false
+    }
+  ],
+  "observations": [
+    "docs/custom-workflow-authoring.md in the integrated tree already carries U4's ## Idioms section and no longer tells authors to write the journal obligation into their prose, so B1.5's 'left to U4' pointer is discharged at this tree",
+    "the eight bodies' remaining frame text is each workflow's own contract (its frame-open line with --workflow, and its Return: frame-close ... --done line); nothing else that the law now prints survives in any body (_relaying anchors on the journal command spelling, so a paraphrase without the command would pass it -- acceptable, since the command is what a body has no reason to carry)",
+    "installer/packages.py imports scripts.rings eagerly while structure.py imports it lazily 'like _doclint' for isolated fixtures; the installer always runs at the checkout root, so the asymmetry has no reader today"
+  ],
+  "commands": [
+    {"cmd": "tickets.py result ... --record-id accept-1", "exit": 0},
+    {"cmd": "tools/validate.py", "exit": 0},
+    {"cmd": "git diff --check", "exit": 0},
+    {"cmd": "install.py --dry-run", "exit": 0},
+    {"cmd": "tools/run_tests.py <7 affected modules>", "exit": 0, "note": "271 tests, 0 failures"},
+    {"cmd": "git archive 0e359238 | tar -x -C <scratch>/mut", "exit": 0},
+    {"cmd": "python -m unittest <4 classes> on the export, baseline", "exit": 0, "note": "18 tests OK"},
+    {"cmd": "mutants M1..M5 on the export, each restored after", "exit": "1,1,1,1,1", "note": "failures 1,7,1,1,2; restored run OK exit 0"},
+    {"cmd": "tools/run_tests.py --shard 1-of-2", "exit": 0, "note": "47 modules, 1279 tests, 12 skipped"},
+    {"cmd": "tools/run_tests.py --shard 2-of-2", "exit": 0, "note": "47 modules, 1106 tests, 11 skipped"},
+    {"cmd": "tools/run_serial_compat.py", "exit": 0, "note": "ok true, 14 sentinels"},
+    {"cmd": "rings.locate probe on the export with a temporary skills/workflows/demo-flow body, removed after", "exit": 0}
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "ticket": "B1.10",
+  "run": "20260902T181500Z-workflow-ladder",
+  "unit": "U4 Law and docs",
+  "judge": "B1.10",
+  "lens": "orch-code-pack craft ## Lens ### git",
+  "artifacts": [
+    "git:4e91b246ccbe6d719c90f409e62bff42cba880a3",
+    "git:4604ab5ba6889a7c3be522db2ba14b6ccbabe5a9"
+  ],
+  "judged_tree": "4e603f1b806fa3240ca9d5c8c6c40fcfc1012a27 (workspace baseline; merges 4604ab5b, whose diff against its second parent b8b05bae is exactly U4's twelve files)",
+  "verdict": "holds",
+  "blocking_count": 0,
+  "goal_criteria": {
+    "run_required_at_the_commit": {
+      "reading": "tools/run_required.py exit 0, five rows 0/0/0/0/0, executed (not a replay); each row also watched individually: validate 0 (17 WARN, all pre-existing near-duplicate warnings on the kernel bodies), run_tests --scope docs,rules,tests,tools 0 (94 modules, 2240 tests, 0 failures, 14 skipped, wall 434s), run_serial_compat 0 (14 sentinels, ok), install.py --dry-run 0 (324 entries), git diff --check 0",
+      "blocking": false
+    },
+    "section_2_names_and_shapes": {
+      "reading": "every name the unit used matches section 2: the five rungs (applied skill, sheet, reusable workflow, glue workflow, idiom; brick left retired under routing shape), sheets/, sheets/<name>/SHEET.md, SHEET_BUDGET, --skill, sheet-defect, requirements.txt, tools.txt (with env <NAME>), package.json plus a committed lockfile, skills/workflows/ as T1's reusable domain-blind workflows, the recurrence and placement rules word-for-word with section 2, the five idioms word-for-word with Details at 23/20/17/18/15 words",
+      "blocking": false
+    },
+    "budgets": {
+      "reading": "tools/validate.py exit 0 at the tip, so every mechanical budget holds; ARCHITECTURE.md measures 943 words against a self-declared ceiling the unit raised 925 -> 945 (no tool reads that number; see O-1)",
+      "blocking": false
+    },
+    "files_outside_details": {
+      "reading": "three files outside the Goal's list, each named in ## Report with the observation that forced it: sheets/.gitkeep (validate.py's documented-path check), tools/validate_support/lint.py SECTION_EXPECTATIONS rows for composition 12-14 (citations to an unregistered clause are validate errors), tests/serial_compat_manifest.json (regenerated per AGENTS.md). Host block and AGENTS.md untouched. The repair merge 4604ab5b adds nothing beyond the manifest resolution",
+      "blocking": false
+    }
+  },
+  "test_identities": {
+    "module": "tests/test_workflow_ladder_law.py",
+    "tests": 7,
+    "passing_reading": "python -m unittest tests.test_workflow_ladder_law -> OK, 7 tests, exit 0 at the fixed tree",
+    "failing_reading": "the same module copied into a throwaway detached worktree at U4's parent 53c42969 (tree under test never mutated) -> FAILED (failures=37, errors=1), exit 1; worktree removed, git status clean afterwards",
+    "in_suite_mutants": "test_dropping_any_fact_fails_the_check_with_the_anchor_standing drops each fact from an in-memory copy and asserts the anchor survives and the check fails; it also asserts each fact is spelled exactly once in its owner"
+  },
+  "findings": [
+    {
+      "id": "F-1",
+      "blocking": false,
+      "cause": "C-1",
+      "kind": "shape / one fact one owner",
+      "file": "docs/vocabulary.md",
+      "evidence": "the `idiom` entry carries 'fixed once in docs/custom-workflow-authoring.md and quoted verbatim rather than paraphrased', which is rules/composition.md 13's third clause ('a recurring sentence's wording is an idiom, worded once in custom workflow authoring and quoted from there'); Details: the recurrence rule is linked, never restated"
+    },
+    {
+      "id": "F-2",
+      "blocking": false,
+      "cause": "C-1",
+      "kind": "shape / one fact one owner",
+      "file": "docs/vocabulary.md, rules/composition.md, docs/pack-authoring.md, DESIGN.md",
+      "evidence": "the tighten-only rule, owned by contracts/sheet.md '## Additive and tighten-only', is restated in four files: vocabulary `sheet` ('It only tightens the stamped pack's craft'), composition 12 ('A sheet is extra craft that only tightens the stamped pack's'), pack-authoring step 1 ('a sheet binds one ticket and tightens only'), DESIGN.md ('a sheet only tightens: where it loosens the craft, the craft wins'). The Goal asked composition 12 for the stamping sentence only"
+    },
+    {
+      "id": "F-3",
+      "blocking": false,
+      "cause": "C-1",
+      "kind": "shape / one fact one owner",
+      "file": "docs/vocabulary.md",
+      "evidence": "the `sheet` entry restates composition 12's maker-and-judge fact ('read at that digest by that ticket's maker and its judge'); the `glue workflow` entry restates the tools.txt placement that docs/custom-workflow-authoring.md ## Dependencies owns ('a workflow that needs them present for its done probe declares the toolchain in its own tools.txt')"
+    },
+    {
+      "id": "F-4",
+      "blocking": false,
+      "cause": "C-2",
+      "kind": "shape / test economy",
+      "file": "tests/test_workflow_ladder_law.py",
+      "evidence": "IdiomsTest.test_a_padded_idiom_fails_the_ceiling_check pads a dict it builds itself and asserts the arithmetic it just performed; no seam of the tree is read. The craft: internals earn no check, and a check repeating covered behavior is deleted. The mutant reading belongs in the report, which already carries it"
+    },
+    {
+      "id": "F-5",
+      "blocking": false,
+      "cause": "C-3",
+      "kind": "spec / ticket defect, outside the unit",
+      "file": "research/workflow-ladder-spec-2026-09-02.md section 3 (every U's Done line), research/workflow-ladder-tickets/",
+      "evidence": "the Done line `python tools/run_tests.py --scope docs rules tests tools` is refused by run_tests.py ('--scope takes one comma-separated value'); the unit ran the comma form and filed friction. Every unit's Done line inherits the spelling"
+    },
+    {
+      "id": "F-6",
+      "blocking": false,
+      "cause": "C-4",
+      "kind": "forward reference, verify at the gate",
+      "file": "rules/token-economy.md 11, docs/custom-workflow-authoring.md, sheets/",
+      "evidence": "SHEET_BUDGET is named in token-economy 11 and absent from tools/validate_support/common.py at this tip (U1 owns it); `orchflows check` is named in ## Dependencies before U13 lands it; sheets/ exists in the checkout but is not in installer/foundation.py CANONICAL_DIRS (U1). All three are the spec's chosen ordering and are reported by the unit; each becomes true only at the integrated tip"
+    },
+    {
+      "id": "F-7",
+      "blocking": false,
+      "cause": "C-5",
+      "kind": "successor / tooling",
+      "file": "tests/serial_compat_manifest.json, tools/run_serial_compat.py's seam scanner",
+      "evidence": "the manifest carries a `selected-module-boundary` ruling for tests.test_workflow_ladder_law::clause as a `threads` mutation owner; the helper only calls re.Match.start() for an offset. The unit ruled it rather than rewriting around the scanner, and filed friction naming the heuristic. The inventory now asserts a seam that does not exist"
+    }
+  ],
+  "causes": [
+    {
+      "id": "C-1",
+      "findings": ["F-1", "F-2", "F-3"],
+      "cause": "a term's vocabulary entry, and two neighbouring owners, carry the law sentence beside the definition instead of a link to it, so the sheet's tighten-only and maker-and-judge facts, the recurrence rule's idiom clause and the tools.txt placement each have two to four owners",
+      "smallest_change": "in docs/vocabulary.md end `idiom` after 'recurs across workflows' with a link to composition 13, end `sheet` after 'digest-pinned at issue' with a link to composition 12 and contracts/sheet.md, and drop the tools.txt sentence from `glue workflow` (link ## Dependencies); in rules/composition.md 12 replace 'is extra craft that only tightens the stamped pack's ([contracts/sheet.md])' with 'is extra craft under [contracts/sheet.md]'; in docs/pack-authoring.md step 1 drop 'a sheet binds one ticket and tightens only, where a pack binds every call that stamps it' in favour of the existing contracts/sheet.md link. DESIGN.md is rationale and may say why; leave it. Re-run tests.test_workflow_ladder_law: the `sheet`-entry fact list in CASES is unaffected",
+      "within_license": true,
+      "disposition": "successor scope per verification 10: reported, not repaired in this run"
+    },
+    {
+      "id": "C-2",
+      "findings": ["F-4"],
+      "cause": "a mutant demonstration was kept in the suite as a test of the test's own arithmetic",
+      "smallest_change": "delete IdiomsTest.test_a_padded_idiom_fails_the_ceiling_check and regenerate the serial-compat manifest (`python tools/run_serial_compat.py --write-manifest`)",
+      "within_license": true,
+      "disposition": "successor scope"
+    },
+    {
+      "id": "C-3",
+      "findings": ["F-5"],
+      "cause": "the spec's Done lines spell --scope's argument with spaces, which run_tests.py refuses",
+      "smallest_change": "in research/workflow-ladder-spec-2026-09-02.md section 3 and each sliced ticket, write `--scope docs,rules,tests,tools` (and the comma form for every other unit's scope)",
+      "within_license": false,
+      "disposition": "recommended successor scope: the spec and the ticket set are the run driver's, not this unit's"
+    },
+    {
+      "id": "C-4",
+      "findings": ["F-6"],
+      "cause": "the spec orders the docs unit before the code units that make three named things exist",
+      "smallest_change": "none in this unit; the gate verifies at the integrated tip that tools/validate_support/common.py defines SHEET_BUDGET, that `orchflows check` runs, and that `sheets` is in installer/foundation.py CANONICAL_DIRS",
+      "within_license": false,
+      "disposition": "gate row"
+    },
+    {
+      "id": "C-5",
+      "findings": ["F-7"],
+      "cause": "the serial-compat seam scanner classifies any `.start()` substring as a thread start",
+      "smallest_change": "make the scanner's thread detector require a Thread construction or a `threading` import in the same module before it names an owner; then drop the false ruling from the manifest",
+      "within_license": false,
+      "disposition": "recommended successor scope; friction already filed by B1.6"
+    }
+  ],
+  "observations": [
+    {
+      "id": "O-1",
+      "text": "ARCHITECTURE.md's self-declared ceiling moved 925 -> 945 for twenty words of Goal facts (943 measured with link targets stripped). No tool reads the number, the header already records one prior raise with its reason, and it is not one of token-economy 11's budgets, so the 'a ceiling only falls' clause is not crossed. Reported by the unit as the one number it moved; the join may prefer an 18-word trim to restore 925, which is not a defect at the fixed identity"
+    },
+    {
+      "id": "O-2",
+      "text": "the rung name `idiom` collides in spelling with orch-code-pack's craft vocabulary `idiom` (surrounding code's names and patterns); the unit wrote the library entry to name the pack's namespace explicitly and left the craft alone per section 0.11. Section 0 is closed; recorded as the unit did"
+    },
+    {
+      "id": "O-3",
+      "text": "the launch's craft line and the ticket both say the full suite is the gate's row; this judge ran tools/run_required.py anyway because the ticket Goal names its failure as the blocking criterion. It executed (no cached marks) and took under the 600s cap"
+    }
+  ],
+  "commands": [
+    {"command": "tools/validate.py", "exit": 0, "note": "17 WARN, all the pre-existing kernel-body near-duplicate warnings"},
+    {"command": "python -m unittest tests.test_workflow_ladder_law -v", "exit": 0, "note": "7 tests OK"},
+    {"command": "tools/run_tests.py --scope docs,rules,tests,tools", "exit": 0, "note": "94 modules, 2240 tests, 0 failures, 0 errors, 14 skipped, wall 433.90s"},
+    {"command": "git worktree add --detach <scratch> 53c42969; cp the module; python -m unittest tests.test_workflow_ladder_law", "exit": 1, "note": "can-fail reading: FAILED (failures=37, errors=1); worktree removed; git status clean"},
+    {"command": "tools/run_serial_compat.py", "exit": 0, "note": "selected lane ok, 14 sentinels, worktree_clean true, revision 4e603f1b"},
+    {"command": "install.py --dry-run", "exit": 0, "note": "324 planned entries"},
+    {"command": "git diff --check", "exit": 0},
+    {"command": "tools/run_required.py", "exit": 0, "note": "five rows 0, executed"},
+    {"command": "git diff --stat b8b05bae 4604ab5b", "exit": 0, "note": "twelve files, 415/37, the U4 commit's surface exactly"},
+    {"command": "sed link-strip | wc -w ARCHITECTURE.md", "exit": 0, "note": "943"}
+  ]
+}

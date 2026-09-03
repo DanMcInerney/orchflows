@@ -1,0 +1,117 @@
+{
+ "ticket": "B1.7",
+ "run": "20260902T024320Z",
+ "lens": "packs/orch-code-pack/references/craft.md `## Lens` > `### root`",
+ "fixed_artifact": "root:B1:1:sha256:1b83feba4a25a5f7ca40659e585ce5bb45d5a9fd5e1b2916802e6b18a24b4e61",
+ "artifact_document": "research/lens-keying-2026-09-02.md at b4affffd on claude/orchestrator-subagent-analysis-758331",
+ "root_goal_document": "C:\\Users\\danhm\\.orchflows\\state\\tickets\\20260902T024320Z\\B1.md",
+ "judged_from": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260902T024320Z\\B1.7 at b7a5f5924de09cca004ec2ec88a6318ce740677c",
+ "scope": "The review-the-outline step of outline > review > slice > review > build > review, run after the fact. The artifact judged is the frozen root as frozen -- the outline at b4affffd, not the tree's current copy, which differs only by the two-line correction 9fe4bbc6. Every fact the root asserts about the target tree was re-derived at b4affffd rather than read from the run's later commits. Nothing was edited; the only bytes this ticket adds are this file.",
+ "schema_note": "No contract names a canonical findings-record shape. The seven per-finding fields -- id, seam, blocking, summary, evidence, cause, remedy -- are kept identical to research/run-notes/reviews/20260901T181410Z-B1.14-seam-findings.json and 20260901T223620Z-B1.7-seam-findings.json so the three read side by side. `blocking` follows the code craft verbatim: true only where a frozen completion criterion is shown false or a correctness finding stands at the fixed identity; contract fidelity with no criterion failing, scope and shape are false. For a root artifact a `correctness finding at the fixed identity` reads as: the root states something untrue, or omits something `### root` names as mandatory content.",
+
+ "verdict_summary": {
+  "threads": 5,
+  "blocking": 2,
+  "advisory": 3,
+  "counts_derived_by": "python -c \"import json; d=json.load(open(...)); sum(1 for t in d['threads'] if t['blocking'])\" -- exit 0, returned 2. The first draft of this block said three blocking, recalled rather than counted; the command corrected it. That is T5's own rule biting its author inside the file that proposes it, and it is left recorded here rather than quietly fixed.",
+  "verdict": "two blocking findings against the frozen root; none against the delivery, which is not this ticket's artifact",
+  "lens_criteria_held": [
+   "A pointer to the standards owner -- contracts/pack-signature.md named as the T0 owner with its re-pin mechanism (`tools/validate.py --pin`), rules/composition.md rule 5 for body budgets, CRAFT_BUDGET for craft length.",
+   "The only oracle frozen is the root's own done command -- `python tools/run_required.py --no-cache`, which is this repository's required-checks command per AGENTS.md. validate_craft_sections is a component inside it, not a second frozen oracle; the judge-mint clause is a behavior statement at a seam, not a check command.",
+   "Intake question 4, target repository and baseline settled -- branch and revision named, both verified below."
+  ],
+  "lens_criteria_short": [
+   "Observable behavior at a seam, never the modules that will carry it -- the Acceptance section is seam-stated, but the Units section fixes private function names, and that is exactly the surface T1's falsehood lived on.",
+   "The failure paths the result must survive -- T2.",
+   "Intake question 3, does a tracer slice exist -- T3.",
+   "Exemplar policy stated by identity -- T4: path without revision, and not yet existing when its imitator reads it."
+  ]
+ },
+
+ "verified_true_at_b4affffd": {
+  "purpose": "The empty-set proof for thread T1. Every other checkable claim the root makes about the target tree was re-derived; only one was false.",
+  "checks": [
+   {"claim": "scripts/tickets_mint.py `_artifact_lines`, `ARTIFACT_KINDS`", "reading": "ARTIFACT_KINDS:82, _artifact_lines:133, kind gate at :148", "true": true},
+   {"claim": "tools/validate_support/names.py `validate_craft_sections`", "reading": "defined at :92, exported at :131", "true": true},
+   {"claim": "scripts/orchflows_scaffold.py `_CRAFT_SECTIONS`", "reading": ":45, consumed at :97 and :136", "true": true},
+   {"claim": "scripts/tickets_dispatch_launch.py `_craft_lines`", "reading": ":333, called at :489", "true": true},
+   {"claim": "rules/composition.md rule 5 governs body budgets", "reading": "rule 5 is `Anatomy: frontmatter ...`", "true": true},
+   {"claim": "`CRAFT_BUDGET` is the craft length bound that may rise", "reading": "tools/validate_support/common.py:83 CRAFT_BUDGET = 130, enforced tools/validate_support/structure.py:48", "true": true},
+   {"claim": "the Evidence anchors test_verification_model.py pins: content audience/lint, design interaction/accessibility, research sources/uncertainty", "reading": "tests/test_verification_model.py:47-49, exactly those three packs and those six strings -- the list is accurate AND complete; the data pack is genuinely unpinned there, so the omission of data from that parenthetical is correct, not a second instance of T1", "true": true},
+   {"claim": "the mandatory craft sections today are the seven the migration map reduces to four", "reading": "contracts/pack-signature.md craft-section table :32-38 (Vocabulary, Workspace, Spec fields, Outline, Slicing, Evidence, Lens) with :40-41 optional Shape and Stages; mirrored by tools/validate_support/common.py:72-80 CRAFT_MANDATORY_SECTIONS", "true": true},
+   {"claim": "baseline `revision 8e643085 or later` on claude/orchestrator-subagent-analysis-758331", "reading": "8e643085 `Launch prompt: enter the skill through the Skill tool with the prompt as arguments` exists; `git merge-base --is-ancestor 8e643085 b4affffd` exit 0", "true": true, "caveat": "`or later` makes the baseline a range rather than a revision -- adequate here because the frozen root document is itself committed on the same branch, so b4affffd pins it in practice"}
+  ]
+ },
+
+ "threads": [
+  {
+   "id": "T1",
+   "seam": "the root's own prose: `## Artifact kinds`, the adapter-kind mapping sentence",
+   "blocking": true,
+   "summary": "The frozen root states a fact about the target tree that is false. `evidence for research and data` -- the data pack's adapter is git, so its artifact kind is git and its Lens key is git, not evidence.",
+   "evidence": "At b4affffd the sentence reads ``git` for code and design (git-plus-render), `doc` for content, `evidence` for research and data`. packs/orch-data-pack/SKILL.md:10 declares `| adapter | git |`; scripts/tickets_adapters.py ADAPTER_REGISTRY entry `git` carries artifact_kind=\"git\". The registry holds exactly four adapters -- document-tree/doc, evidence-store/evidence, git/git, git-plus-render/git -- so the true mapping is git for code, data AND design; doc for content; evidence for research alone. Found in-run by B1.3 and corrected at 9fe4bbc6, a two-line diff. Had it not been found, U3 would have written a `### evidence` entry into a craft whose validator (U2's validate_craft_sections, which resolves the expected key through ADAPTER_REGISTRY rather than a second table -- see 302469e5's message) demands `### git`, and the join gate would have gone red on a wrong-by-the-root instruction.",
+   "cause": "A fact about the target tree relayed from the author's model of it rather than derived from it by a command.",
+   "remedy": "Nothing to repair -- 9fe4bbc6 fixed it. The durable remedy is T5.",
+   "would_the_root_lens_have_caught_it": {
+    "answer": "No, not by any bullet that names it; only indirectly, and only under an unusually strict reading.",
+    "why": "Walk `### root` clause by clause against this sentence. `Observable behavior at a seam, never the modules that will carry it` -- silent on whether an asserted fact is true; it only says which KIND of content belongs. `The failure paths the result must survive` -- silent. `A pointer to the standards owner` -- silent. The four intake questions ask which seam, what must keep working, is there a tracer, is the repository and baseline settled. The closest is the fourth, and it asks whether the repository is SETTLED, not whether the claims made about it were READ from it. The exemplar policy demands path-and-revision for a module held up for imitation, not for a module merely cited as evidence. So no clause of `### root` is violated by writing `evidence for research and data`.",
+    "the_indirect_route": "One bullet does reach it, at one remove. `never the modules that will carry it` condemns the whole apparatus this sentence belongs to: a root that had stated the seam (`validate_craft_sections` accepts exactly {root, cut} plus the artifact kind of the pack's own adapter) and left the per-pack mapping to the executor would have had no surface on which to be wrong. A judge who applied that bullet hard would have deleted the sentence rather than corrected it -- which is a better outcome than catching the error. But that is a judge choosing severity, not a judge following a clause, and the same bullet would have to condemn the Units section wholesale to get there. A judge who read `## Artifact kinds` as orienting background -- the ordinary reading -- passes it.",
+    "the_contrast_that_makes_this_precise": "`### cut` in the same craft DOES carry the missing rule: `A Goal ordering growth into a named file prices that file against the standards owner's bounds at cut time -- a measurement command in Context, never a relayed count`. That is the derived-fact discipline, written for one instance of it (a line count) and living under the wrong key. T1 is the same species of defect one stage earlier, and `### root` has no clause for it."
+   }
+  },
+
+  {
+   "id": "T2",
+   "seam": "the root's answer to `### root`'s second intake question, `What must keep working that this change could plausibly break?`",
+   "blocking": true,
+   "summary": "The change retires four `##` headings that live checks read by name. The root names one of the five check surfaces that read them. `an unstated path is an unchecked one` is the lens's own words, and this is the path it left unstated.",
+   "evidence": "The root's only statement of this kind is U2's ``tests/test_verification_model.py`'s per-pack `## Evidence` anchor test moves to the deliverable Lens entry`, plus U4's `keep every property tests/test_verification_model.py pins by meaning`. `git grep -nE '## (Outline|Slicing|Evidence|Shape)' b4affffd -- '*.py'` returns five modules, exit 0: tests/test_packs.py:336-339 (asserts every pack craft carries a non-empty `## Outline`), tests/test_validator_cases/corpus_and_surfaces.py:157 (asserts the validator emits `no `## Slicing` heading`), tests/test_cell_linter_cases/warning_ratchets.py:95-97 (asserts `## Slicing\\n` is present in the code craft and splices a regression after it), tests/test_cell_linter_cases/pack_cells.py:327 (a `## Shape` fixture), and tests/test_verification_model.py:54. Four of the five are unnamed. The delivery confirms the cost: U2 at 302469e5 touched 15 files against the 6 the root named for it -- the four unnamed test modules above, plus tests/test_orchflows_cli.py:211 (a new retired-heading assertion), docs/custom-workflow-authoring.md (the root named only docs/pack-authoring.md), and tools/validate_support/common.py (CRAFT_MANDATORY_SECTIONS, the tuple behind the contract table the root did name).",
+   "cause": "Same as T1 -- the regression surface was recalled rather than measured. One `git grep` over the retired headings would have produced the full list, and the root would then have been able to state it.",
+   "remedy": "Advisory for the successor root, since the run absorbed it: state the surface as the command that derives it (`git grep -nE '## (Outline|Slicing|Evidence|Shape)' -- '*.py'`) and the count it returned at freeze time, so the executor inherits a checkable list rather than a memory.",
+   "would_the_root_lens_have_caught_it": {
+    "answer": "Yes.",
+    "why": "The intake question points straight at it and the answer is one grep away. A judge asked `what must keep working that this change could plausibly break?` about a change whose whole mechanism is deleting four named headings would run exactly that search, get five modules, and see one named. This is the finding that most cleanly justifies the review-the-outline step: it is mechanically reachable from the lens, it was missed, and it cost a unit nine unbudgeted files."
+   }
+  },
+
+  {
+   "id": "T3",
+   "seam": "`## Units` preamble, `Independent seams`, against `### root`'s third intake question",
+   "blocking": false,
+   "summary": "U2 and U3 are declared independent and parallel, but each is the other's input: U2 writes the validator that decides whether U3's four crafts are well-formed, and U3 writes the four crafts U2's own checks read. No tracer proves that seam before both widen.",
+   "evidence": "The root: `Independent seams; each is one `do`` and, for U3, `Runs in parallel with U2 against this document's heading spec; the join's gate is the integration check`. The delivery states the consequence plainly -- 302469e5's message: `The four other crafts are U3's; the checks that read them are red here by design and go green at the join.` So the intermediate tip is knowingly red, and the first execution of the real seam (a migrated craft meeting a validator that resolves its expected key through ADAPTER_REGISTRY) happens at the join, after five crafts have been rewritten. That is precisely the arrangement `Does a tracer slice exist that proves those seams before anything widens?` exists to prevent. U2 IS the natural tracer -- validator plus one migrated craft, end to end -- and taking it first would have surfaced T1 as a red before U3 wrote four crafts against a false mapping.",
+   "cause": "The cut was shaped for parallelism against a shared written spec (`this document's heading spec`) rather than against a proven seam, and the root then described the arrangement with a word -- independent -- that its own next sentence contradicts.",
+   "remedy": "Report only. blocking:false because the root disclosed the real arrangement one clause later and named the join as the integration point, so nothing frozen is false; and because the run in fact reached green. The shape finding does not outrank T1 or T2.",
+   "would_the_root_lens_have_caught_it": {"answer": "Yes -- intake question 3 asks for a tracer by name, and the root's own text supplies the evidence that there is none."}
+  },
+
+  {
+   "id": "T4",
+   "seam": "U2/U3, against `### root`'s exemplar policy",
+   "blocking": false,
+   "summary": "The exemplar is cited by path without a revision, and because U3 is declared parallel to U2 the exemplar does not exist in its migrated form when its imitator reads it. The properties to carry are given, which is the half the policy cares most about.",
+   "evidence": "U2: `packs/orch-code-pack/references/craft.md` migrated per the map `as the exemplar`. No revision. U3: the other four `migrated per the map, text moved not rewritten, every existing anchor phrase preserved`, and then `Runs in parallel with U2 against this document's heading spec` -- so U3's actual exemplar is the outline's own migration table, not the code craft. Against the policy's demand to `Cite a module by path and revision, then list each property the imitation has to carry: idiom, check style, layering`: path yes, revision no, properties partly -- `text moved not rewritten` and `every existing anchor phrase preserved` are real check-style and idiom constraints and are the reason U3 could succeed without the exemplar; layering is unstated. The heading spec substituted for the exemplar and held: 302469e5 reports `every non-heading line byte-identical` for the code craft, and the current five crafts all carry `### root`, `### cut` and one adapter key.",
+   "cause": "An exemplar named inside the same run that produces it cannot be cited by revision; the root did not notice that this makes the citation a forward reference rather than an identity.",
+   "remedy": "Report only. Where an exemplar is produced by the same run, either sequence the imitators behind it (which is T3's remedy too, and one ordering fixes both) or drop the exemplar and make the written spec normative -- which is what this root did in substance without saying so."
+  },
+
+  {
+   "id": "T5",
+   "seam": "`### root` itself, in packs/orch-code-pack/references/craft.md",
+   "blocking": false,
+   "summary": "The answer to the question this ticket was cut to ask. `### root` has no clause requiring a fact the root asserts about the target tree to be derived from it. `### cut` has that clause. T1 and T2 are both instances of the missing rule, and both landed on the stage that lacks it.",
+   "evidence": "`### root` carries three what-it-carries bullets, four intake questions and an exemplar policy; none of the eight touches the provenance of an asserted fact. `### cut`, two entries down in the same section, carries `A Goal ordering growth into a named file prices that file against the standards owner's bounds at cut time -- a measurement command in Context, never a relayed count -- test modules included`. The rule exists; it is scoped to one instance (line counts) and keyed to the wrong stage. A root is where the tree is described and the cut is where it is divided, so the earlier stage is where relayed facts do the most damage: T1's false mapping would have propagated into four crafts, and T2's short surface list did propagate into one unit's file budget.",
+   "cause": "The derived-fact discipline was written as a line-count rule for slicing instead of as a provenance rule for describing a target tree, so it never reached the stage that needed it most.",
+   "remedy": "Add to `### root`, alongside `A pointer to the standards owner`: a claim the root makes about the state of the target tree -- which module carries a behavior, which checks read a name it retires, what a constant is -- is carried as the command that derives it, never as a recalled fact; and the intake question `What must keep working that this change could plausibly break?` is answered by that command's output, not by a list. Two sentences, and both T1 and T2 become catchable at the review-the-outline step. Not applied here: this ticket edits nothing, and `### root` is the criteria this ticket judges by -- amending it mid-judgment would leave no fixed lens.",
+   "note_on_ordering": "T5 is blocking:false because it is a finding about the criteria, not a defect at the fixed identity. It is nonetheless the one carried finding of this review: T1 is already repaired, T2 is already absorbed, T3 and T4 cost nothing, and only T5 changes what the next root is judged against."
+  }
+ ],
+
+ "what_this_review_deliberately_did_not_do": [
+  "Did not re-run `python tools/run_required.py --no-cache` or any suite. The craft sets a unit's scope as `the narrow affected checks; the full suite is the gate's row, never a unit's`, and this ticket's artifact is a frozen document -- no check reads it. Every command run here is a read: git log, git show, git grep, git merge-base, wc, sed, grep. All exit 0.",
+  "Did not judge the delivery. The fixed artifact is root:B1:1:sha256:1b83feba..., the outline as frozen. U1-U5's revisions are their own judges' artifacts; 302469e5 and the current tree are cited here only as evidence of what the root's omissions cost.",
+  "Did not edit the outline, the craft, or any test. The ticket says edit nothing; T5's remedy is written as a proposal for a successor and is deliberately unapplied.",
+  "Did not re-audit the run's later commits for facts the root got right by luck -- the verified_true block is scoped to claims the root actually makes.",
+  "Did not open a finding on craft length. CRAFT_BUDGET is 130 and the five migrated crafts now measure 119/108/114/123/103 lines, so the root's `CRAFT_BUDGET may rise by the added `###` lines only` held without the budget rising at all. The design pack's 123 leaves seven lines of headroom, which is worth knowing and is not a defect."
+ ]
+}

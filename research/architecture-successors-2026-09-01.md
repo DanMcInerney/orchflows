@@ -3,7 +3,7 @@
 Work order distilled from run `20260901T181410Z` (the implementation of
 [research/architecture-repair-spec-2026-09-01.md](architecture-repair-spec-2026-09-01.md)).
 Evidence base: the seam review's findings file, committed in-tree at
-`.orchflows/reviews/20260901T181410Z-B1.14-seam-findings.json` (advisory
+`research/run-notes/reviews/20260901T181410Z-B1.14-seam-findings.json` (advisory
 ids F3-F8 below are its), the run frame's journal (ticket `B1` of that
 run in the state sink), and the run's friction entries. Those records
 are evidence; this spec is the work order, and its scope is exactly the

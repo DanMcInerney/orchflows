@@ -14,7 +14,15 @@ from pathlib import Path
 # test modules that import tools.validate_support.* directly -- already
 # has the repository root on sys.path, so this leaf import needs no walk
 # of its own; it is a plain downstream read of the one repo-root fact.
-from scripts._bootstrap import ROOT
+#
+# An install ships this package under `lib/` so `orchflows check` can run
+# these checks over a ring, and the scripts it reads sit flat in `bin/`
+# with no `scripts` package above them. The paired import is the tree's
+# own idiom for that layout: one module, reached under either name.
+try:
+    from scripts._bootstrap import ROOT
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    from _bootstrap import ROOT
 
 # What a check says when the tree it grades is not here. One wording, so a
 # reader can grep the report for every check that did not run.
@@ -86,6 +94,25 @@ CRAFT_RETIRED_SECTIONS = ("Outline", "Slicing", "Evidence", "Shape")
 CRAFT_LIBRARY_LENS_KINDS = ("root", "cut")
 # The sum of the folded parts at the fold (2026-08-30); only falls.
 CRAFT_BUDGET = 130
+# A sheet is extra craft one ticket stamps beside its pack
+# (`contracts/sheet.md`). Its shape is graded here beside the craft's for
+# one reason: the two are read by the same child at the same moment, so a
+# sheet that grew a craft's worth of law would be a second, unregistered
+# pack. The ceiling therefore sits under the craft's, not level with it.
+SHEET_DIR_NAME = "sheets"
+SHEET_MANIFEST = "SHEET.md"
+SHEET_BUDGET = 100
+SHEET_REQUIRED_FRONTMATTER = ("name", "description", "packs")
+SHEET_REQUIRED_SECTIONS = ("Craft", "Lens")
+SHEET_OPTIONAL_SECTIONS = ("Vocabulary",)
+# Identities, isolation, the stage sequence and what a spec must carry are
+# facts about a domain. A sheet restating one would be a second owner of
+# it, so the three are refused rather than merged.
+SHEET_PACK_ONLY_SECTIONS = ("Workspace", "Stages", "Spec fields")
+# A sheet carries prose and nothing executable, so it declares no
+# dependencies and owns no environment: the three names that would say
+# otherwise are refused by name inside a sheet directory.
+SHEET_REFUSED_ENTRIES = ("scripts", "requirements.txt", "tools.txt")
 # Cross-pack cell linter. Both figures are normative: with `doclint`'s
 # ratio under them the reported pair set is a function of these two and of
 # `doclint.DISTINCTIVE_MAX`, so moving any of them changes what the check
@@ -238,6 +265,10 @@ __all__ = (
     'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
     'CRAFT_RETIRED_SECTIONS', 'CRAFT_LIBRARY_LENS_KINDS',
     'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
+    'SHEET_DIR_NAME', 'SHEET_MANIFEST', 'SHEET_BUDGET',
+    'SHEET_REQUIRED_FRONTMATTER', 'SHEET_REQUIRED_SECTIONS',
+    'SHEET_OPTIONAL_SECTIONS', 'SHEET_PACK_ONLY_SECTIONS',
+    'SHEET_REFUSED_ENTRIES',
     'CELL_CLAUSE_MIN_WORDS', 'CALL_TOKEN_RE', 'REQUIRE_RE', 'NEVER_RE',
     'RETURN_RE', 'PACK_TABLE_CELL_RE', 'PACK_CELL_ROW_RE', 'CRAFT_ROW_RE',
     'ASSEMBLY_SKILL_FORM_RE', 'ASSEMBLY_NONE_FORM_RE', 'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',

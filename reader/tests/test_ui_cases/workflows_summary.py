@@ -12,8 +12,10 @@ from reader.tests._repo_root import ROOT
 MANIFEST = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 
 EXPECTED_WORKFLOWS = {
+    "bakeoff",
     "benchmaker",
     "browser-game",
+    "checkpointed-build",
     "drift-canary",
     "evolve",
     "orch-do",

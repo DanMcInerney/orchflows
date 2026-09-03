@@ -44,13 +44,17 @@ from tools.validate_support import lifecycle_literals as _lifecycle_literals_mod
 from tools.validate_support import lint as _lint_module
 from tools.validate_support import names as _names_module
 from tools.validate_support import packages as _packages_module
+from tools.validate_support import sheets as _sheets_module
 from tools.validate_support import structure as _structure_module
+from tools.validate_support import tooling as _tooling_module
 from tools.validate_support.common import *
 from tools.validate_support.carriage import *
 from tools.validate_support.browser_game import *
 from tools.validate_support.friction import *
 from tools.validate_support.lifecycle_literals import *
 from tools.validate_support.packages import *
+from tools.validate_support.sheets import *
+from tools.validate_support.tooling import *
 from tools.validate_support.duplication import *
 from tools.validate_support.structure import *
 from tools.validate_support.lint import *
@@ -60,7 +64,7 @@ ROOT = _FACADE_ROOT
 _SUPPORT_MODULES = (
     _common_module, _carriage_module, _friction_module, _packages_module,
     _duplication_module, _structure_module, _lint_module, _names_module,
-    _lifecycle_literals_module,
+    _lifecycle_literals_module, _sheets_module, _tooling_module,
 )
 _ROOT_BINDINGS = (
     "ROOT", "CONTRACTS_DIR", "PINS_FILE", "FRICTION_OWNER", "NAME_CHECK_MARKER",
@@ -321,6 +325,8 @@ def _run_validation_impl() -> Diagnostics:
     validate_cross_package_links(packages, diag)
     validate_names(packages, diag)
     validate_craft_sections(packages, diag)
+    validate_sheets(diag)
+    validate_tools_declarations(diag)
     validate_markdown_links(diag)
     validate_section_citations(diag)
     validate_regenerated_artifacts(diag)

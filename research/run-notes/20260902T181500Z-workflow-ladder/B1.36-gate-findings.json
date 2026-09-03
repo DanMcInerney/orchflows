@@ -1,0 +1,151 @@
+{
+  "ticket": "B1.36",
+  "run": "20260902T181500Z-workflow-ladder",
+  "dispatch_id": "B1.36:d1",
+  "judge": "orch-judge through orch-content-pack craft, Lens ### doc (re-judge of the gate seam after B1.35's repair)",
+  "tip": "7f6b675fb98b1f492117567def70a067e5f9a361",
+  "predecessor": {
+    "gate": "B1.34 at 5a67d847 (research/run-notes/20260902T181500Z-workflow-ladder/B1.34-gate-findings.json)",
+    "repair": "B1.35, commit 0db310b1 (C1 frame-law restatements, C2 idiom paraphrases, C3 bakeoff Return/done shape)"
+  },
+  "owners_read": [
+    "rules/composition.md (clauses 1-14; 12 stamping, 13 recurrence, 14 placement as amended)",
+    "docs/custom-workflow-authoring.md (Rings, Dependencies, What a workflow is made of incl. the trunk-prints-the-frame-law paragraph, Which work earns a callable, Idioms, Procedure step 4)",
+    "docs/vocabulary.md (reusable workflow, glue workflow, idiom, sheet, applied skill)",
+    "research/workflow-ladder-spec-2026-09-02.md (sections 0, 2, U3, U7b, U7d)",
+    "scripts/tickets_frame.py FRAME_LAW and FRAME_OPEN_USAGE; scripts/tickets_shape_line.py shape_for; scripts/tickets_mint.py DO_USAGE/JUDGE_USAGE",
+    "rules/verification.md clause 10 (what makes a finding blocking)"
+  ],
+  "artifacts": [
+    {"path": "example-workflows/benchmaker/SKILL.md", "sha256": "54facd62163ef478ff516e5b71093ed5dbd5d62208d76d74f9351453e483b59a", "body_words": 362, "description_chars": 83, "idiom_quotes_verbatim": []},
+    {"path": "example-workflows/browser-game/SKILL.md", "sha256": "ace4747f196c4d03120b59a78edfbc93063bcc5f50032c4941e18c658e279412", "body_words": 420, "description_chars": 106, "idiom_quotes_verbatim": []},
+    {"path": "example-workflows/drift-canary/SKILL.md", "sha256": "db7376553881194bb86b6193aa1c123d21e12f17914349cc5fe7c86bd8f505f4", "body_words": 317, "description_chars": 112, "idiom_quotes_verbatim": []},
+    {"path": "example-workflows/evolve/SKILL.md", "sha256": "b22c38cfefd4c61230193a59647f724331fc52a479ac73a54ae6fd68a98878c6", "body_words": 410, "description_chars": 108, "idiom_quotes_verbatim": ["freeze"]},
+    {"path": "example-workflows/renovate/SKILL.md", "sha256": "805502ff08fbb60ae9cbb60f33a1abcfcac8f452d9d29534f38dcdf55515660d", "body_words": 265, "description_chars": 59, "idiom_quotes_verbatim": ["outside-close"]},
+    {"path": "example-workflows/self-improve/SKILL.md", "sha256": "3eadbaedb168af4cd88e7fed4acf92dd1df479e2779832df9662b1544914252a", "body_words": 427, "description_chars": 139, "idiom_quotes_verbatim": ["outside-close"]},
+    {"path": "example-workflows/skill-tournament/SKILL.md", "sha256": "b6e7285c3f7053888b9d1a100ca23df9f96b3fa444e88a7a6373888c2f0ae289", "body_words": 314, "description_chars": 101, "idiom_quotes_verbatim": ["freeze"]},
+    {"path": "example-workflows/super-research/SKILL.md", "sha256": "fa3ccd7247d198e75504e3ec4b75c7200e915bfd409c7e5b792b6962e2791572", "body_words": 341, "description_chars": 109, "idiom_quotes_verbatim": ["fan-out", "declare-gaps"]},
+    {"path": "skills/workflows/checkpointed-build/SKILL.md", "sha256": "80d67115379408813582c9b356f0db3e434f7cd3bcfee9f23bffb3e3afeda9a7", "body_words": 431, "description_chars": 136, "idiom_quotes_verbatim": ["fan-out", "bounded-repair", "outside-close"]},
+    {"path": "skills/workflows/bakeoff/SKILL.md", "sha256": "cd345e8b52e5a52ada1b2cab985383330235ec8b6c9fa78fc8c0a0901dbf8f9d", "body_words": 310, "description_chars": 119, "idiom_quotes_verbatim": ["fan-out", "declare-gaps"]}
+  ],
+  "verdict": "HOLDS as one composition at tip 7f6b675f: zero blocking findings. Every one of the Goal's blocking classes is checked and clear -- no retired ledger/relay paragraph, no restatement of the three FRAME_LAW lines the trunk prints, no restatement of an amended owner fact, all eleven idiom quotes byte-identical to section Idioms, every body inside 450 words and every description inside 140 characters, no domain named in checkpointed-build or bakeoff, and all ten Return: lines take one shape (`tickets.py frame-close <run> <frame> --done <x>` leading, then what the done reads). B1.35's three blocking causes are verified extinguished at this identity. Four non-blocking findings remain, collapsed into four causes; two are carried from B1.34's C4 and two are new (a nested frame-open that drops --workflow; an applied skill living one ring inside its gallery caller). validate.py exits 0; the scoped test shards exit 0.",
+  "predecessor_causes_verified": [
+    {"cause": "C1 frame-law restatements (B1.34 F1-F3)", "status": "extinguished", "evidence": "grep over the ten bodies for the law's phrases ('Re-read', 'append the decision', 'relayed verbatim', 'outside every child' outside a quoted idiom, 'unjudged: <reason>' as a trigger) finds none; super-research lines 25-26/34-35/46/50 and its Never clause, drift-canary's Never clause, self-improve's 'Frame law:' label and two-or-more trigger, checkpointed-build's Return qualifiers are all gone (commit 0db310b1 diff read whole). self-improve's remaining `unjudged: single child; ...` line is the workflow's own reason for its own single-child case, not the law's trigger."},
+    {"cause": "C2 idiom paraphrases and unquoted idiom names (B1.34 F4, F9)", "status": "extinguished", "evidence": "measure script through the verified interpreter: every `*name*: \"...\"` in the ten bodies compared whitespace-normalised to the owner's section Idioms sentence -- 11 of 11 VERBATIM (freeze x2, outside-close x3, fan-out x3, declare-gaps x2, bounded-repair x1); no backticked bare idiom name remains anywhere."},
+    {"cause": "C3 bakeoff Return/done shape (B1.34 F5)", "status": "extinguished", "evidence": "all ten Return: lines now lead with `tickets.py frame-close <run> <frame> --done <check|gate|verifier|probe>`; bakeoff's names its done (reads the journal for one unblinded winner line and the judge's findings line) and keeps its own two fields. The frame-open lines all name --workflow <name>; evolve, skill-tournament and bakeoff add --bound, which FRAME_OPEN_USAGE accepts."}
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": false,
+      "carried_from": "B1.34 F6/F7/F8 (cause C4), left standing by B1.35 as outside the Goal's blocking set",
+      "criterion": "restates a fact an owner owns instead of linking it; composition clause 2 call-edge hygiene",
+      "sites": [
+        {"body": "skills/workflows/checkpointed-build/SKILL.md", "lines": "21-23", "text": "The first wave pins the artifact's dependency set -- each library, its version and the lockfile the artifact will carry."},
+        {"body": "skills/workflows/checkpointed-build/SKILL.md", "lines": "52-54", "text": "the run's integration target is fixed by its first establishment, so a call that defaults it sends every later wave's merge at the driver's own tree"},
+        {"body": "example-workflows/drift-canary/SKILL.md", "lines": "9-11", "text": "There is no scheduler: a profiles change or an announced model update is a person invoking this by name, which is why it never model-invokes."},
+        {"body": "example-workflows/skill-tournament/SKILL.md", "lines": "16-17, 24-25, 33", "text": "Both halves are workflows, not calls: each opens its own frame under this one, and the ticket tree is the call tree. / opening its frame under this one / Invoke `evolve` under this frame the same way"},
+        {"body": "example-workflows/super-research/SKILL.md", "lines": "21-22", "text": "Time-bounding is per operation -- `research-acquire`'s `WINDOW_REACH` table decides"},
+        {"body": "example-workflows/evolve/SKILL.md", "lines": "52-53", "text": "Never: ... call `benchmaker` -- a backticked mention, which clause 2 reads as a call edge (validate.py admits it: acyclic)"}
+      ],
+      "evidence": "Re-examined independently at this identity and held non-blocking on rules/verification.md clause 10: none shows a frozen criterion false -- the Goal's 'restates a fact those two owners own' is scoped 'as amended by this run' and lists the amended parts (recurrence, placement, stamping, Idioms, the frame-law paragraph, procedure step 4); the facts restated here are owned by composition clause 1 and clause 2 (unamended), vocabulary's reusable-workflow entry, the trunk's workspace establishment, and the applied skill's own table. checkpointed-build 21-23 states the workflow's own obligation (spec U7b: 'the plan step's cut pins the artifact's dependency set in its first wave'); its overlap with section Dependencies is the one word 'lockfile', and 'library'/'lockfile' name no domain (clause 9 is about domains, not packaging words). None is a correctness finding at the fixed identity: every command the bodies write is admitted by DO_USAGE, JUDGE_USAGE and FRAME_OPEN_USAGE, and every linked reference resolves (checked: three benchmaker references, three browser-game references, rules/improvement.md; scripts/harvest.py, search_plan.py, browser_game_validate.py exist).",
+      "cause": "C1"
+    },
+    {
+      "id": "F2",
+      "blocking": false,
+      "new": true,
+      "criterion": "the shape a frame-open takes when one body invokes a reusable workflow by name (not one of the Goal's blocking classes, which name Return: and frame-close only)",
+      "sites": [
+        {"body": "example-workflows/skill-tournament/SKILL.md", "lines": "22-25", "text": "Invoke `benchmaker` ... opening its frame under this one:\n    tickets.py frame-open <run> --parent <frame> --goal-file <benchmark-goal>"},
+        {"body": "example-workflows/skill-tournament/SKILL.md", "lines": "31-33", "text": "Invoke `evolve` under this frame the same way"}
+      ],
+      "evidence": "The nested line carries --parent but not --workflow benchmaker (nor --workflow evolve). scripts/tickets_shape_line.py shape_for admits it -- 'a called frame is already a wave of its caller's shape' returns (None, None) with a parent -- so the command runs and nothing refuses. But U3's frame-open payload gains `workflow_path` only 'when --workflow is given' (spec section 2, frame-open payload row; tickets_frame._workflow_path), so the one call the resolution was built for -- a driver opening a saved workflow's frame -- is opened without it, the journal records `shape not recorded` instead of the workflow's name, and the invoked body's own line (`frame-open <run> --goal-file <benchmark-goal> --workflow benchmaker`, benchmaker line 14) and the caller's line are two different commands for the same frame-open. The owner says only what 'a saved workflow's root frame-open names' and vocabulary's reusable-workflow entry says only '(tickets.py frame-open --parent)'; neither fixes the invocation line's shape, which is why two bodies fix it two ways. Non-blocking under clause 10: the driver still reads skill-tournament's prose, which names the body to run; the loss is pin and journal fidelity, not correctness of the composition.",
+      "cause": "C2"
+    },
+    {
+      "id": "F3",
+      "blocking": false,
+      "new": true,
+      "criterion": "placement (composition clause 14): an item lives in the innermost ring that contains every caller",
+      "sites": [
+        {"body": "example-workflows/super-research/SKILL.md", "lines": "17-19", "text": "tickets.py do <run> --pack orch-research-pack --skill research-acquire ..."}
+      ],
+      "evidence": "The only ring home of research-acquire is this repository's project ring, .orchflows/skills/research-acquire/ (the .agents/ and .claude/ copies are generated adapters). example-workflows/super-research/ holds SKILL.md alone, and the owner's Rings section says 'Each example-workflows/ entry is a bundle you can copy out'; a copy-out pins an applied skill that resolves only inside this checkout, and only after a trust grant (Trust section: a project ring refuses at first resolution). By clause 14 the innermost ring containing every caller of research-acquire -- the lib gallery body is one -- is the lib, not this project. Spec U7d fixed the rename to .orchflows/skills/research-acquire/ and section 0 closes decisions, so this is reported as an observation, per section 0's instruction, and its remedy (moving or copying a ring item with its requirements.txt) exceeds the sealed license. The html-dossier sheet, by contrast, lives in lib sheets/ and declares packs: [orch-content-pack, orch-design-pack], matching the report do's --pack orch-content-pack; research-acquire's role is worker, matching do.",
+      "cause": "C3"
+    },
+    {
+      "id": "F4",
+      "blocking": false,
+      "carried_from": "B1.35's report (the one warning it kept deliberately; friction logged there)",
+      "criterion": "validator seam, not a body defect",
+      "sites": [
+        {"body": "skills/workflows/checkpointed-build/SKILL.md", "lines": "48-50", "text": "WARN ... cross-tier near-duplicate at 0.96 with docs/custom-workflow-authoring.md: 'two rounds is the bound.\"' ~ 'two rounds is the bound'"}
+      ],
+      "evidence": "validate.py at 7f6b675f exits 0 with 18 WARN lines; this is the only one naming a judged body at strength. The quote is mandated verbatim (Idioms; procedure step 4 'never reworded'); validate_support/duplication.py licenses an idiom quote only when the shared fragment carries IDIOM_FRAGMENT_MIN_WORDS = 6 words, and the owner's clause split leaves a 5-word tail. The body is right and the floor is wrong by one word; the fix is the trunk's.",
+      "cause": "C4"
+    }
+  ],
+  "non_findings": [
+    "drift-canary line 43 ('Its goal quotes the judge's `findings: <path>` line verbatim'), renovate line 26 ('handed the audit's `findings: <path>` line verbatim'), evolve line 42 ('handed the eligibility findings verbatim'): each states which call is handed which line -- the workflow's own data-flow edge -- and the owner's bounded-repair idiom uses the identical construction ('is handed the `findings:` line verbatim'); they are not FRAME_LAW line 2, which binds every driver to every returned line. Not filed.",
+    "self-improve lines 57-61 (the seam judge's three checks and the single-child `unjudged:` reason): the workflow's own content; the trigger sentence the law owns was removed by B1.35. Not filed.",
+    "checkpointed-build's `git:<tip>` artifact kind: spec U7b's own wording; a kind name is not a domain name under clause 9. B1.34's successor S4 stands.",
+    "Stamping (clause 12): checkpointed-build stamps `sheets` on the waves and the judge alike ('hand the judge a sheet the waves did not carry' is a Never); bakeoff stamps `rubric` on the judge alone and forbids it on the making. Both are lawful readings of 'stamped by the caller on one ticket and read only by that ticket's maker and its judge'; they differ as two designs, not against the owner.",
+    "Recurrence (clause 13): no step in the gallery both holds a callable and recurs unrefactored across two or more bodies except the evolve-generation / bakeoff overlap B1.34 already carries as successor S3; re-cutting a body into a by-name invocation exceeds this license."
+  ],
+  "verified_holds": [
+    "Identities: sha256sum over the ten bodies matches every artifact line on the ticket (exit 0); tree clean at 7f6b675f.",
+    "Retired ledger/relay paragraph: absent from all ten bodies (no 'Re-read', no 'append the decision', no `tickets.py result <run> <frame>` line).",
+    "FRAME_LAW restatement: none of the three printed lines is restated; every 'outside every child' occurrence is inside a verbatim outside-close quote.",
+    "Idioms: 11 quotes, 11 VERBATIM against docs/custom-workflow-authoring.md section Idioms (whitespace-normalised, wording byte-identical).",
+    "Budgets by tools/validate_support/packages.body_words: max checkpointed-build 431 and self-improve 427 of 450; descriptions max self-improve 139 and checkpointed-build 136 of 140.",
+    "Domain-blind tier: bakeoff names no domain; checkpointed-build names no domain (packaging and workspace words only; see F1).",
+    "Return: shape: all ten lead with `tickets.py frame-close <run> <frame> --done <x>`; frame-open: all ten root lines name --workflow <name>.",
+    "Every flag the bodies write exists in DO_USAGE / JUDGE_USAGE / FRAME_OPEN_USAGE (--makes cut, --workspace, --sheet, --skill, --isolation, --bound, --artifacts, --parent, --done).",
+    "U7d carriage: --skill research-acquire (role worker) on the acquisition do; --sheet html-dossier (packs include orch-content-pack) on the report do.",
+    "tools/validate.py at 7f6b675f: exit 0 (18 WARN, none a refusal). tools/run_tests.py --scope example-workflows,skills/workflows,docs/custom-workflow-authoring.md,rules/composition.md: exit 0 (40 modules, 1006 tests, 0 failures, 0 errors, 2 skipped)."
+  ],
+  "causes": [
+    {
+      "id": "C1",
+      "blocking": false,
+      "findings": ["F1"],
+      "cause": "Bodies explain why a rule holds instead of linking the owner that holds it (B1.34's C4, unchanged).",
+      "smallest_change": "B1.34 C4's deletions and one link: drop drift-canary's 'which is why it never model-invokes', skill-tournament's second and third 'under this frame', checkpointed-build's 30-word workspace explanation and super-research's WINDOW_REACH clause; replace checkpointed-build's enumeration with a link to section Dependencies; write evolve's 'call `benchmaker`' in plain text. Optional at this identity; every body has the words to spare.",
+      "within_license": true
+    },
+    {
+      "id": "C2",
+      "blocking": false,
+      "findings": ["F2"],
+      "cause": "No owner sentence fixes what a body writes when it invokes a reusable workflow by name; the authoring doc fixes the saved workflow's own root line and vocabulary gives only `--parent`, so skill-tournament wrote the invocation without the name and benchmaker's body carries it without the parent.",
+      "smallest_change": "Within license: skill-tournament's nested line becomes `tickets.py frame-open <run> --parent <frame> --goal-file <benchmark-goal> --workflow benchmaker` (+2 words, 314 -> 316), and 'the same way' then carries `--workflow evolve`. Owner half (successor S5): one sentence in the frame paragraph of docs/custom-workflow-authoring.md -- invoking a reusable workflow is its own root frame-open line plus `--parent <frame>` -- so the two lines are one.",
+      "within_license": "partly; the owner sentence is successor scope"
+    },
+    {
+      "id": "C3",
+      "blocking": false,
+      "findings": ["F3"],
+      "cause": "Spec U7d placed the applied skill in this repository's project ring while its caller is a lib gallery body meant to be copied out.",
+      "smallest_change": "Successor S6: either research-acquire (with its requirements.txt) ships in the lib beside the gallery, or example-workflows/super-research/ becomes a bundle holding it, or the body's Require names the skill as something the reader supplies. Beyond this license; section 0 closes the decision.",
+      "within_license": false
+    },
+    {
+      "id": "C4",
+      "blocking": false,
+      "findings": ["F4"],
+      "cause": "IDIOM_FRAGMENT_MIN_WORDS = 6 in validate_support/duplication.py is one word above the owner's shortest idiom tail.",
+      "smallest_change": "Successor S7 (trunk): license an idiom quote by its `*name*:` prefix rather than by fragment length, or lower the floor to 5. Already logged as friction by B1.35.",
+      "within_license": false
+    }
+  ],
+  "successors": [
+    {"id": "S1", "carried": "B1.34", "scope": "One owner for a workflow's Return: shape (procedure step 4 / composition clause 4 read it as the fields frame-close records; the ten bodies read it as the frame-close command). At this identity the bodies agree with each other; the owner-level ambiguity remains."},
+    {"id": "S2", "carried": "B1.34", "scope": "composition clause 2 gains the applied-skill case: a backticked applied-skill name at its --skill flag is not a call edge (clause 12); a second mention is plain text."},
+    {"id": "S3", "carried": "B1.34", "scope": "whether evolve's generation step invokes `bakeoff` by name with the frozen evaluation as its rubric sheet (clause 13)."},
+    {"id": "S4", "carried": "B1.34", "scope": "checkpointed-build's `git:` kind ties it to git-workspace packs; take the kind from the pack's Workspace cell or say so in the description."},
+    {"id": "S5", "new": true, "scope": "docs/custom-workflow-authoring.md fixes the invocation line for a reusable workflow: the callee's own root frame-open line plus --parent <frame>, and the trunk's workflow_path resolution then fires on it."},
+    {"id": "S6", "new": true, "scope": "research-acquire's ring placement relative to its lib gallery caller (clause 14), or the gallery entry becomes a bundle that carries it."},
+    {"id": "S7", "new": true, "scope": "validate_support/duplication.py licenses idiom quotes by their *name*: prefix, not by a 6-word fragment floor."}
+  ]
+}

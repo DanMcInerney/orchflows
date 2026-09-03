@@ -64,6 +64,12 @@ def _identity_line(assignment: dict) -> str:
     nothing left to search the filesystem for. `tickets_assignment.py`
     resolves it through the one ring resolver; `None` only for a
     hand-built assignment that skips that resolution.
+
+    U2: the skill named here is the *applied* one when the ticket pinned
+    one, because that is the skill the child is to be running -- the
+    kernel verb is its contract, not its method, and `_contract_lines`
+    below is where the verb is named. A ticket with no applied skill is
+    the case this line was written for and is unchanged, byte for byte.
     """
 
     skill_path = assignment.get("skill_path")
@@ -71,13 +77,50 @@ def _identity_line(assignment: dict) -> str:
         f"That skill's file is {skill_path}; your ticket is "
         if skill_path else "Your ticket is "
     )
+    entered = assignment.get("applied_skill") or assignment["executor"]
     return (
-        f"Call the Skill tool with skill `{assignment['executor']}` and pass "
+        f"Call the Skill tool with skill `{entered}` and pass "
         "this entire prompt, verbatim, as its arguments. Already running as "
         "that skill, do the work here and never invoke it again. "
         f"{located}{assignment['ticket_path']}. Read that ticket whole: it is "
         "your assignment, and there is no other copy of it."
     )
+
+
+def _contract_lines(assignment: dict) -> list:
+    """Which contract binds a child whose method is somebody else's skill.
+
+    Only an applied skill renders anything here. Entering that skill in
+    place of the kernel verb answers "what do I do"; it answers none of
+    what the verb owns -- the Require it may not start without, the Never
+    it may not cross, and the Return whose exact lines a parent relays --
+    and a child that read only the method would have no contract at all.
+    The path is the flat `by-name/<verb>/SKILL.md` the installer mints
+    (`installer/planning.py`), the one spelling of a canonical name that
+    holds on every host.
+
+    The environment line is the same fact `orchflows env` answers, said
+    where the child will need it: an applied skill declaring its own
+    `requirements.txt` runs in a private interpreter (PR #170), and the
+    verified interpreter this prompt already names is the *library's*, not
+    that item's. Nothing is spelled out here -- the command prints the
+    path -- so the line cannot go stale against a rebuilt environment.
+    """
+
+    applied = assignment.get("applied_skill")
+    if not applied:
+        return []
+    lines = [
+        f"Your kernel contract is `{assignment['executor']}` at "
+        f"{assignment.get('kernel_contract')}: read it; its Require, Never "
+        "and Return bind this ticket; the applied skill is the method."
+    ]
+    if assignment.get("applied_skill_environment"):
+        lines.append(
+            "Its scripts run through the interpreter `orchflows env skill "
+            f"{applied}` prints."
+        )
+    return lines
 
 
 def _lane_lines(assignment: dict) -> list:
@@ -164,6 +207,54 @@ def _craft_lines(assignment: dict) -> list:
         lines.append(
             "The full required suite is the gate's row, never a unit's: run it "
             "here only if this ticket is the gate."
+        )
+    return lines
+
+
+def _sheet_lines(assignment: dict) -> list:
+    """One line per stamped sheet: where it is, at which digest, and how far
+    it reaches into the craft the line above already handed over.
+
+    A sheet is extra craft, so it renders here, after the craft and before
+    anything else -- the child reads the pack's law and then the narrowing
+    the ticket stamped on top of it, in that order. Three facts a child
+    cannot derive from its ticket ride each line: the sheet's resolved path
+    (the ticket carries a name, and a name is a ring search), the digest the
+    assignment sealed (so a child reading different bytes than the judge
+    reads has something to compare), and the direction -- a maker's `##
+    Craft` binds what it makes, a judge's `## Lens` adds criteria it checks.
+
+    The `### <kind>` key is the craft line's own: a sheet's Lens is keyed by
+    artifact kind exactly as a craft's is, so a child with no resolved kind
+    would be sent to `### None` in both files at once. Nothing renders for
+    that assignment, for `_craft_lines`' reason.
+
+    The tighten-only rule is stated in the direction each verb needs it. A
+    maker is told the sheet never loosens the craft, because a maker
+    following a looser clause would build to the wrong bar; a judge is told
+    the craft wins and the conflict is its own `sheet-defect` finding,
+    because a judge is the one who reports it.
+    """
+
+    key = assignment.get("lens_key")
+    if not key:
+        return []
+    lines = []
+    for sheet in assignment.get("sheets") or ():
+        digest = str(sheet.get("digest") or "")
+        opening = (
+            f"Read the sheet `{sheet['name']}` at {sheet['path']} whole "
+            f"(sha256 {digest.split(':', 1)[-1]})."
+        )
+        lines.append(
+            f"{opening} Its `## Lens` `### {key}` entry adds criteria you "
+            "check beside the craft's; where it loosens the craft's, the "
+            "craft wins and you report the conflict as a `sheet-defect` "
+            "finding."
+            if _files_findings(assignment) else
+            f"{opening} Its `## Craft` binds your making; its `## Lens` "
+            f"`### {key}` entry adds to the craft's `### {key}` and never "
+            "loosens it."
         )
     return lines
 

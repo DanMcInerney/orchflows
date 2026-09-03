@@ -19,8 +19,10 @@ from scripts._bootstrap import ROOT
 DEFAULT_MANIFEST = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 SUMMARY_SCHEMA = "orchflows.workflow-summary.v1"
 CANONICAL_WORKFLOW_IDS = frozenset({
+    "bakeoff",
     "benchmaker",
     "browser-game",
+    "checkpointed-build",
     "drift-canary",
     "evolve",
     "orch-do",

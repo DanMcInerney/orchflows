@@ -12,9 +12,6 @@ model-invokes.
 
     tickets.py frame-open <run> --goal-file <drift-goal> --workflow drift-canary
 
-Re-read the frame's `## Report` and its children before each wave, and
-append the wave's decision with `tickets.py result <run> <frame> --by
-<frame>`. Keep every returned `artifact:` and `findings:` line verbatim.
 
 **Re-run the set**:
 
@@ -49,9 +46,7 @@ each citing the verdict it came from, so the delta between the new binding
 and the frozen one survives this session.
 
 Never: edit a golden result inside a canary run; add, remove or reorder a
-canary item to make the set run; treat divergence as failure; or close over
-the two making calls with neither the delta judge nor an
-`unjudged: <reason>` journal line.
+canary item to make the set run; or treat divergence as failure.
 
 Return: `tickets.py frame-close <run> <frame> --done <check>`, whose done
 reads that every canary item carries a verdict against its golden result

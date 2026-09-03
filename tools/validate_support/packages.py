@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 ALLOWED_FRONTMATTER_KEYS = __dep_common.ALLOWED_FRONTMATTER_KEYS
 ASSEMBLY_NONE_FORM_RE = __dep_common.ASSEMBLY_NONE_FORM_RE
 ASSEMBLY_SKILL_FORM_RE = __dep_common.ASSEMBLY_SKILL_FORM_RE
@@ -33,13 +33,22 @@ SKIPPED = __dep_common.SKIPPED
 SURFACE_BUDGET = __dep_common.SURFACE_BUDGET
 TABLE_DELIM_ROW_RE = __dep_common.TABLE_DELIM_ROW_RE
 re = __dep_common.re
+sys = __dep_common.sys
 
 # The de-quoting primitive is `scripts/tickets_format`'s, imported rather
 # than respelled: this validator and the runtime read the same cell values,
 # and the four inline `.strip("`")` sites here were the tools-layer half of
 # the twenty-one that graded a padded value as a different value from its
 # bare twin. `tools` may import `scripts`; the reverse is what is forbidden.
-from scripts.tickets_format import dequote
+#
+# An install ships this package under `lib/` so `orchflows check` can run
+# these checks over a ring, and the scripts it reads sit flat in `bin/`
+# with no `scripts` package above them. The paired import is the tree's
+# own idiom for that layout: one module, reached under either name.
+try:
+    from scripts.tickets_format import dequote
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    from tickets_format import dequote
 
 CONTRACTS_DIR = ROOT / "contracts"
 PINS_FILE = ROOT / "tests" / "pins.json"
@@ -77,6 +86,31 @@ class Diagnostics:
     def lines(self):
         ordered = sorted(self.items, key=lambda item: (item[1], item[0], item[2]))
         return [f"{level} {file_label}: {message}" for level, file_label, message in ordered]
+
+
+def workflow_tiers() -> frozenset:
+    """The skills tiers that are library workflow homes.
+
+    ``scripts/rings.py`` owns where a workflow lives, so the tier graded
+    here as a workflow and the tier a runtime resolves one through are one
+    fact. Imported on first use, like ``structure.workflow_roots``, and
+    under either name for the same reason ``dequote`` is: an isolated
+    fixture carrying no ``scripts/`` still has to run every other check,
+    and an install ships this package beside flat scripts in ``bin/``.
+    """
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    try:
+        from scripts.rings import LIB_DIRS
+    except ImportError:  # pragma: no cover - direct/installed flat script path
+        from rings import LIB_DIRS
+
+    return frozenset(
+        relative.split("/", 1)[1]
+        for relative in LIB_DIRS["workflow"]
+        if relative.startswith("skills/")
+    )
 
 
 def discover_packages():
@@ -188,14 +222,20 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
             diag.error(file_label, "pack frontmatter must not declare 'role'")
         return
     role = fm.get("role")
+    if pkg["kind"] in workflow_tiers():
+        if role:
+            diag.error(
+                file_label,
+                f"workflow declares role '{role}'; a workflow is invoked by "
+                "name into the driver's own context and never forked, so it "
+                "declares no role, exactly as the gallery home's do",
+            )
+        return
     if not role:
         diag.error(file_label, "frontmatter missing required key 'role'")
         return
     if role not in ROLE_VALUES:
         diag.error(file_label, f"role '{role}' is not one of {sorted(ROLE_VALUES)}")
-        return
-    if pkg["kind"] == "workflows" and role == "none":
-        diag.error(file_label, "workflows skill must declare planner or worker, got 'none'")
 
 
 def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
@@ -416,7 +456,8 @@ def cell_clauses(text: str) -> list:
 
 __all__ = (
     'CONTRACTS_DIR', 'PINS_FILE', 'PIN_MESSAGE', 'rel',
-    '_read_source', 'Diagnostics', 'discover_packages', 'parse_frontmatter',
+    '_read_source', 'Diagnostics', 'workflow_tiers', 'discover_packages',
+    'parse_frontmatter',
     'validate_frontmatter', 'validate_role', 'validate_anatomy', 'body_words',
     '_split_frontmatter', 'validate_surface_budgets', 'validate_routing_block',
     'validate_budget', 'validate_pack_signature',

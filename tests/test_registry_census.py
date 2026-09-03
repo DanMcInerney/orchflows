@@ -163,7 +163,7 @@ Deliver one result.
         in W4a together with the instantiate layer that was its only
         minter of decomposed roots. Both leave their craft behind as the
         planning `do` making a root or cut toward the pack craft's Lens
-        entry for that kind (`.orchflows/lego-design-2026-08-31.md`, then
+        entry for that kind (`research/lego-design-2026-08-31.md`, then
         `research/lens-keying-2026-09-02.md`), and both
         predecessors -- `orch-spec` and `orch-decompose` -- refuse toward
         that same living remedy rather than toward a name that itself

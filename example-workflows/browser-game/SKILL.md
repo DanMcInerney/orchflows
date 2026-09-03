@@ -27,9 +27,6 @@ neither blocks the other.
 
     tickets.py frame-open <run> --goal-file <program-goal> --workflow browser-game
 
-Re-read the frame's `## Report` and its children before each call, append
-the decision with `tickets.py result <run> <frame> --by <frame>`, and keep
-each returned `artifact:` and `findings:` line verbatim.
 
 <!-- BGW-TRACE[implementation:program-record|PJ-03,PJ-07] -->
 <!-- BGW-TRACE[implementation:question-authority|PJ-06,PJ-09,PJ-10] -->

@@ -3,6 +3,8 @@ import shutil
 import subprocess
 import sys
 
+from scripts import orchflows_scaffold
+
 from .support import ROOT, VALIDATE, _IsolatedTree, loop_lint_warnings, validate
 
 class TestASkippedCheckSaysSo(_IsolatedTree):
@@ -166,26 +168,41 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         self.assertIn("role", result.stdout)
         self.assertIn("badrolepkg", result.stdout)
 
-    def test_workflow_declaring_planner_role_is_valid(self):
+    def test_workflow_declaring_no_role_is_valid(self):
+        """A workflow's frontmatter is the gallery home's, role included.
+
+        The skills tier once held role-bearing driver skills, and the rule
+        here read the tier name. `skills/workflows/` now holds reusable
+        workflows: prose an orchestrator runs in place, invoked by name and
+        never forked into a child, which is why the installer renders its
+        host surfaces as a flat pointer and refuses to render a role-bearing
+        one without a profile row.
+        """
+
         self._write_skill(
             "someworkflowpkg",
-            b"---\nname: someworkflowpkg\ndescription: a workflow with a non-none role\nrole: planner\n---\n"
+            b"---\nname: someworkflowpkg\ndescription: a reusable workflow\n"
+            b"disable-model-invocation: true\n---\n"
             b"Require: x.\nNever: y.\nReturn: z.\n",
             tier="workflows",
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_workflow_declaring_none_role_is_error(self):
+    def test_workflow_declaring_a_role_is_error(self):
+        """`planner` is the role the tier rule used to require, so it is the
+        one whose refusal says the rule turned over rather than loosened."""
+
         self._write_skill(
             "someworkflowpkg",
-            b"---\nname: someworkflowpkg\ndescription: a glue workflow\nrole: none\n---\n"
+            b"---\nname: someworkflowpkg\ndescription: a reusable workflow\n"
+            b"role: planner\ndisable-model-invocation: true\n---\n"
             b"Require: x.\nNever: y.\nReturn: z.\n",
             tier="workflows",
         )
         result = self._run()
         self.assertEqual(1, result.returncode)
-        self.assertIn("workflows skill must declare planner or worker", result.stdout)
+        self.assertIn("never forked, so it declares no role", result.stdout)
 
     def test_pack_declaring_role_at_all_is_error(self):
         self._write_pack(
@@ -257,3 +274,242 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         found = loop_lint_warnings(result.stdout)
         self.assertTrue(found, result.stdout)
         self.assertTrue(all("boundlesspkg" in line for line in found), found)
+
+
+class TestWorkflowLibraryHomes(_IsolatedTree):
+    """Two library directories hold workflows, and one name may sit in one.
+
+    `scripts/rings.py` resolves `skills/workflows` before
+    `example-workflows`, so a name in both resolves to the first and
+    silently shadows the second -- a hiding nobody authored, in the one
+    kind whose body a driver reads rather than dispatches. The validator
+    is where that collision is a refusal instead.
+    """
+
+    # `role` as well as the flag: `skills/workflows` is a skills tier
+    # too, so a body there answers to both check sets. Everything else
+    # is the minimum a skill body owes, so the only finding a case
+    # below sees is the one it plants.
+    BODY = (
+        "---\nname: {name}\ndescription: a synthetic workflow\n"
+        "role: planner\ndisable-model-invocation: true\n---\n"
+        "Require: a goal.\nNever: improvise.\n"
+        "Return: `tickets.py frame-close <run> <frame> --done <check>`.\n"
+    )
+
+    def _write_workflow(self, name: str, home: str, body: str = None):
+        directory = self.tmp_path / home / name
+        directory.mkdir(parents=True)
+        (directory / "SKILL.md").write_text(
+            (body or self.BODY).format(name=name), encoding="utf-8"
+        )
+
+    def test_a_workflow_in_the_skills_tier_is_graded_like_a_gallery_one(self):
+        """The manual-only flag is the workflow check with no skill
+        analogue, so it is the one that says which check set ran."""
+
+        self._write_workflow(
+            "nomanualflow", "skills/workflows",
+            self.BODY.replace("disable-model-invocation: true\n", ""),
+        )
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("must declare 'disable-model-invocation: true'", result.stdout)
+        self.assertIn("nomanualflow", result.stdout)
+
+    def test_one_name_in_both_homes_is_refused(self):
+        self._write_workflow("bothflow", "skills/workflows")
+        self._write_workflow("bothflow", "example-workflows")
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn(
+            "workflow name 'bothflow' is also at skills/workflows/bothflow/SKILL.md",
+            result.stdout.replace("\\", "/"),
+        )
+
+    def test_the_same_name_in_one_home_alone_is_no_finding(self):
+        """The can-fail control: the collision, not the name, is the defect."""
+
+        self._write_workflow("bothflow", "example-workflows")
+
+        result = self._run()
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("is also at", result.stdout)
+
+
+class TestSheetAnatomy(_IsolatedTree):
+    """A sheet is graded against `contracts/sheet.md`, at the tree seam.
+
+    Every case writes one synthetic `sheets/<name>/SHEET.md` beside one
+    synthetic pack and runs the whole validator, so what is checked is the
+    ERROR/exit-code contract a run reads, not a helper called in isolation.
+    The pack is written rather than copied because two of the checks are
+    *about* the pack: which packs a sheet may be stamped beside, and which
+    `## Lens` keys its adapter makes readable.
+    """
+
+    PACK = "orch-widget-pack"
+
+    def _write_pack(self, name=None, adapter="git"):
+        """The scaffold's own pack skeleton, so the fixture pack is the pack
+        `orchflows new pack` writes -- a hand-rolled one drifts from what a
+        real pack must carry and reds these cases on its own defects."""
+
+        name = name or self.PACK
+        pack = self.tmp_path / "packs" / name
+        for relative, text in orchflows_scaffold.files_for("pack", name):
+            path = pack / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if relative == "SKILL.md" and adapter != "git":
+                text = text.replace("| adapter | git |", f"| adapter | {adapter} |")
+            path.write_bytes(text.encode("utf-8"))
+        return pack
+
+    def _write_sheet(self, name: str, text: str):
+        sheet = self.tmp_path / "sheets" / name
+        sheet.mkdir(parents=True)
+        (sheet / "SHEET.md").write_bytes(text.encode("utf-8"))
+        return sheet
+
+    def _sheet_text(self, name: str, *, packs=None, sections=None, lens=("git",)):
+        packs = self.PACK if packs is None else packs
+        body = sections if sections is not None else [
+            ("Craft", "Narrow the craft here."),
+        ]
+        lines = [
+            "---", f"name: {name}", "description: When to stamp it.",
+            f"packs: [{packs}]", "---", "", f"# {name}", "",
+        ]
+        for heading, prose in body:
+            lines.extend([f"## {heading}", "", prose, ""])
+        lines.extend(["## Lens", ""])
+        for key in lens:
+            lines.extend([f"### {key}", "", f"What a {key} artifact must satisfy.", ""])
+        return "\n".join(lines)
+
+    def _errors(self, stdout, name):
+        return [
+            line for line in stdout.splitlines()
+            if line.startswith("ERROR") and f"sheets/{name}" in line
+        ]
+
+    def test_a_well_formed_sheet_passes(self):
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text("market-brief"))
+
+        result = self._run()
+
+        self.assertEqual([], self._errors(result.stdout, "market-brief"))
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_a_pack_only_section_inside_a_sheet_is_refused(self):
+        """`## Workspace` states identities and isolation -- a fact about the
+        domain, which the pack owns. A sheet carrying it is a second owner."""
+
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief",
+            sections=[("Craft", "Narrow it."), ("Workspace", "Commits, branches.")],
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("## Workspace" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_scripts_directory_inside_a_sheet_is_refused(self):
+        """A sheet carries prose and nothing executable, so it declares no
+        dependencies and owns no environment."""
+
+        self._write_pack()
+        sheet = self._write_sheet("market-brief", self._sheet_text("market-brief"))
+        (sheet / "scripts").mkdir()
+        (sheet / "scripts" / "run.py").write_text("print(1)\n", encoding="utf-8")
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("'scripts'" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_requirements_file_inside_a_sheet_is_refused(self):
+        self._write_pack()
+        sheet = self._write_sheet("market-brief", self._sheet_text("market-brief"))
+        (sheet / "requirements.txt").write_text("requests\n", encoding="utf-8")
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("'requirements.txt'" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_packs_name_that_resolves_to_no_pack_is_refused(self):
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief", packs="orch-absent-pack",
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("orch-absent-pack" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_lens_entry_keyed_by_a_kind_the_named_pack_never_emits_is_refused(self):
+        """The key selects the entry a child is sent to. An entry under a
+        kind that pack's adapter does not emit is criteria nothing reads."""
+
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief", lens=("doc",),
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("### doc" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_sheet_over_the_budget_is_refused(self):
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief",
+            sections=[("Craft", "\n".join(f"- clause {n}" for n in range(120)))],
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("sheet budget" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_missing_mandatory_section_is_refused(self):
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief", sections=[],
+        ).replace("## Lens", "## Vocabulary"))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        errors = " ".join(self._errors(result.stdout, "market-brief"))
+        self.assertIn("## Craft", errors)
+        self.assertIn("## Lens", errors)

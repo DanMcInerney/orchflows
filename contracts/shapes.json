@@ -150,7 +150,8 @@
       "contract": "work-item.md",
       "fields": [
         "id", "run", "status", "admission", "executor", "pack",
-        "pack_digest", "profile", "independence", "parent", "depends_on", "isolation", "bound",
+        "pack_digest", "sheets", "sheet_digests", "skill", "skill_digest",
+        "profile", "independence", "parent", "depends_on", "isolation", "bound",
         "frame", "done", "makes",
         "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "dispatch_v1"
@@ -198,6 +199,18 @@
       "fields": ["adapter", "stages", "assembly", "craft"],
       "required": ["adapter", "stages", "assembly", "craft"],
       "values": {"assembly": ["none", "stage name"]}
+    },
+    {
+      "name": "sheet_frontmatter",
+      "contract": "sheet.md",
+      "fields": ["name", "description", "packs"],
+      "required": ["name", "description", "packs"]
+    },
+    {
+      "name": "sheet_sections",
+      "contract": "sheet.md",
+      "fields": ["Craft", "Lens", "Vocabulary"],
+      "required": ["Craft", "Lens"]
     }
   ]
 }

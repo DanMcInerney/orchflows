@@ -1,8 +1,8 @@
 # Architecture
 
-Ceiling: 925 whitespace-delimited words. Terms are
+Ceiling: 945 whitespace-delimited words. Terms are
 [the vocabulary](docs/vocabulary.md)'s; raised from 850 for the ring
-family's owner modules.
+family's owner modules and again for T2's second directory.
 
 ## Four tiers
 
@@ -11,14 +11,16 @@ family's owner modules.
   it even when the prose meaning holds.
   [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns the
-  two callables; `workflows/` domain-blind behavior. Control
-  flow is not a tier: it is the caller's prose. A package
+  two callables; `workflows/` the reusable domain-blind workflows.
+  Control flow is not a tier: it is the caller's prose. A package
   owns its `SKILL.md`, `references/`, `scripts/`.
 - **T2 — [`packs/`](packs/):** domain data satisfying the
   [pack signature](contracts/pack-signature.md), never control flow.
   Cells bind generic workflows to the domain concerns the signature
   lists; the signature owns term-placement constraints, `craft` domain
   vocabulary and domain-only shape.
+  `sheets/` narrows it: extra craft one ticket stamps beside a
+  pack ([sheet](contracts/sheet.md)).
 - **T3 — [`example-workflows/`](example-workflows/):** named workflows, each
   a skill body calling callables; their authoring standard is
   [custom workflow authoring](docs/custom-workflow-authoring.md).
@@ -60,8 +62,8 @@ family's owner modules.
   trust ledger. `orchflows.py` is the ring and resume command surface over
   `orchflows_home.py` (home layout, the committed/regenerable line, pins),
   `orchflows_scaffold.py` (`new` skeletons), `orchflows_adapters.py`
-  (generated inert host adapters) and `orchflows_envs.py` (per-item
-  declared environments).
+  (generated inert host adapters) and three dependency-class modules:
+  `orchflows_envs.py`, `orchflows_tools.py`, `orchflows_node.py`.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
   the warn-only executable-source size report.

@@ -1,0 +1,171 @@
+{
+  "ticket": "B1.14",
+  "run": "20260901T181410Z",
+  "fixed_artifact": "git:3c0aca333c65543f3b30b3eeb9a9c1f1d50e23cc",
+  "baseline": "git:5daaff16",
+  "scope": "Fresh-lens seam review of the integrated tip implementing all thirteen units of research/architecture-repair-spec-2026-09-01.md. 204 files changed, 2366 insertions, 2001 deletions across 33 commits (14 merges).",
+  "schema_note": "No contracts/*.md or scripts/tickets_shapes.py schema names a canonical findings-record shape; U1 of this very run deleted the orch-judge kernel body's 'seven-field findings array' claim for exactly that reason. The seven per-finding fields below (id, seam, blocking, summary, evidence, cause, remedy) are this judge's own choice, kept deliberately identical to the prior B1.14 review of this repository (research/run-notes/reviews/20260901T021739Z-B1.14-seam-findings.json) so the two are readable side by side. Blocking grade follows this ticket's Details: a blocker is a spec acceptance criterion that does not hold at the tip, or a defect the integration introduced; a style disagreement with a child's lawful choice is an advisory at most.",
+  "verdict_summary": {
+    "units_whose_acceptance_holds_at_the_tip": ["U1", "U2", "U3", "U4", "U5", "U6", "U7", "U9", "U10", "U11", "U12", "U13"],
+    "units_whose_acceptance_does_not_hold_at_the_tip": ["U8"],
+    "blockers": 2,
+    "advisories": 6,
+    "untouchables_all_verified": true
+  },
+  "untouchables": [
+    {
+      "item": "the five CRAFT_SCOPE_ANCHOR craft sentences",
+      "holds": true,
+      "evidence": "git diff --stat 5daaff16..HEAD -- '*craft.md' is EMPTY: no pack craft file changed at all, which is stronger than sentence-level identity. All five files still carry the anchor scripts/tickets_assignment.py:56 reads (CRAFT_SCOPE_ANCHOR = \"gate's row\"): packs/orch-{code,content,data,design,research}-pack/references/craft.md."
+    },
+    {
+      "item": "contracts' T0 shapes unchanged (generated blocks identical outside prose)",
+      "holds": true,
+      "evidence": "git diff 5daaff16..HEAD -- contracts/shapes.json is EMPTY. Only three contract files changed (dispatch.md 8 lines, result.md 6, work-item.md 14) and every changed line is prose above or inside supersession narrative; no '## Generated T0 shape' block line appears in the diff. tools/regen.py --check --json run live returns {\"failed\": {}, \"skipped\": {}, \"stale\": {}} (exit 0)."
+    },
+    {
+      "item": "ARCHITECTURE.md:3's ceiling number still in prose",
+      "holds": true,
+      "evidence": "ARCHITECTURE.md line 3 still reads 'Ceiling: 925 whitespace-delimited words.' tests/test_architecture_owners.py:29 CEILING_RE = re.compile(r\"Ceiling: (\\d+) whitespace-delimited words\") still reads it from the prose at test time (line 67). The ARCHITECTURE.md diff contains only U8's brick->callable and door->minting-command prose swaps."
+    },
+    {
+      "item": "frame/seal/gate identifiers unrenamed",
+      "holds": true,
+      "evidence": "Whole-tree word occurrence counts baseline->tip: frame 632->633, seal 395->396, gate 491->493; the entire growth is U9's new vocabulary entries. Python symbol counts unchanged: tickets_frame 12->12, 'frame:' 5->5, assignment_seal 204->205, cut_generation 72->72. scripts/tickets_frame.py is untouched by the rename; only scripts/tickets_brick.py -> scripts/tickets_mint.py moved."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "seam": "U8 (rename) — its own acceptance criterion",
+      "blocking": true,
+      "summary": "U8's acceptance criterion — 'repo-wide grep for the metaphor is empty outside historical/supersession text that names it as retired' — does not hold at the tip. 27 live occurrences of 'brick' and 4 of 'door'/'doorways' survive as snake_case and SCREAMING_SNAKE identifiers in seven tracked test files, plus 12 derived entries in tests/serial_compat_manifest.json. None of them is historical or supersession text; they are live test-code names.",
+      "evidence": "git grep -inI \"brick\" HEAD -- . ':!.orchflows/' ':!research/' ':!reader/web/dist/' returns, beyond the lawful-historical set: tests/test_ticket_callables.py:200,349,357,519,541,554 (six test method names, e.g. test_a_git_brick_is_told_to_commit_and_to_print_a_git_line); tests/test_ticket_frames.py:340 (test_a_judged_criterion_is_a_judge_brick_rather_than_a_frame_gate); tests/test_installer_cases/managed_text/host_block.py:292,311,315,319,323,324,336,344 (_BRICK_EXAMPLE_RE, _brick_example(), TestHostBlockBrickFlags, test_brick_example_names_exactly_the_required_flags, test_brick_example_flag_pin_can_fail); tests/test_installer_managed.py:11,24 (importing and re-moduling TestHostBlockBrickFlags); tests/test_browser_game_composition.py:60; tests/serial_compat_manifest.json:35,420,421,982,984,985,986,987,988,1010. Same grep for 'door': tests/test_registry_census.py:161 (test_the_outline_and_slice_doorways_collapse_to_one_remedy), tests/test_ticket_frames.py:187 (test_a_wave_appends_through_the_result_door_under_the_frames_identity), tests/serial_compat_manifest.json:727,1017. Confirmed present already at the post-U8 merge 8187585d, so this is U8's own residue and not a later regression: git grep -icI \"brick\\|door\" 8187585d -- tests/ returns the same seven files.",
+      "cause": "B1.8's own acceptance grep, quoted verbatim in its ## Report, was grep -rniIE \"\\b(bricks?|doors?|doorways?)\\b\". In POSIX and PCRE alike '_' is a word character, so \\b never matches at '_brick', '_BRICK', '_door' or '_doorways'. The regex is structurally blind to exactly the place most of the residue lives — identifiers — which is why B1.8 reported 'tests/ grep is now empty' in good faith. The lawful-historical carve-out the driver accepted is NOT what let this through: every carve-out site is genuinely frozen text (verified independently under 'deviations' below).",
+      "remedy": "One mechanical follow-up commit renaming the identifiers (brick -> callable, door/doorway -> command/entry point, matching U8's own published mapping), then tools/run_serial_compat.py --write-manifest to carry the twelve derived manifest entries. Re-run the acceptance grep as a substring grep, not a word-boundary one. One scope decision for the driver: tests/test_browser_game_composition.py:60 tests a workflow the spec's Deferred list names as untouched migration debt, so it is arguably out of U8's surface — decide, do not leave it undecided."
+    },
+    {
+      "id": "F2",
+      "seam": "U8 (rename) x U10 (dead-code sweep) — a cross-unit regression",
+      "blocking": true,
+      "summary": "U10 reintroduced the retired 'door' metaphor into two live module docstrings that U8 had already cleared. U8's criterion held for scripts/ at the post-rename tip and is false at the integrated tip.",
+      "evidence": "git grep -inI \"door\" 8187585d -- scripts/ (the post-U8 merge) returns NOTHING. The same grep at HEAD returns five lines in two files: scripts/tickets_context.py:3 and :6, scripts/tickets_emission.py:3, :6 and :9 — all of the form 'the retired `claim` door's replacement' / 'the retired `ready` door's replacement' / 'the next grading door then refused'. git log --oneline -S\"door\" 8187585d..HEAD -- scripts/tickets_context.py scripts/tickets_emission.py names exactly one commit: b5d69e89 'U10: dead-code sweep across tests, reader, scripts, installer, tools'.",
+      "cause": "U10's spec item required rewriting these two docstrings because they named dead commands (amend/recut/gate/instantiate) and cited a function that exists nowhere (tickets_issue._replace_and_invalidate — now gone tree-wide, verified). U10 fixed the dead-fact axis correctly and reintroduced the retired word on the vocabulary axis, because nothing enforces the retired vocabulary: U8's metaphor-test sentence landed in docs/vocabulary.md's preamble as prose with no lint behind it, and U8's own check ran two waves before U10's landing. This is the structural gap, not a lapse of care — the wave order the spec suggested puts the rename before five later units with no mechanical guard between them.",
+      "remedy": "Fold into F1's follow-up commit: 'the retired `claim` command's replacement', 'the next grading command then refused'. Then consider a retired-vocabulary lint in the tools/validate_support/lifecycle_literals.py family U6 just built — it is the same shape (a closed set of strings refused outside a declared owner) and would make the third recurrence mechanical instead of a reviewer's grep."
+    },
+    {
+      "id": "F3",
+      "seam": "U4 (bootstrap leaf) x U5 (budget owners)",
+      "blocking": false,
+      "summary": "scripts/_bootstrap.ROOT — the second of the leaf's two declared facts — has zero consumers anywhere in the tree, while 31 independent repo-root walks survive, one of them inside U5's own budget-owner module. The leaf's docstring asserts a convergence that did not happen.",
+      "evidence": "Every _bootstrap reference in the tree reads ENV_VAR only: scripts/state_root.py:40 and :42 (from scripts._bootstrap import ENV_VAR), tools/suite_check.py:55 and :236 (_bootstrap.ENV_VAR), tests/test_suite_check_cases/snapshot.py:47,70,75,81,89. No site anywhere reads _bootstrap.ROOT. Meanwhile git grep -nI \"resolve().parents\\[\" HEAD -- scripts/ tools/ installer/ returns 31 sites, including tools/validate_support/common.py:13 ROOT = Path(__file__).resolve().parents[2] — the very module U5 made the owner of every terseness number. scripts/_bootstrap.py's own docstring calls these 'the two facts a caller must know', and ROOT's inline comment calls it 'the fact every independent Path(__file__).resolve().parent... chain elsewhere re-derives'.",
+      "cause": "B1.4's accepted deviation scoped the root-walk convergence to the Details checklist and left tools/*.py alone, citing bootstrap circularity. That reasoning is not universal: tools/suite_check.py imports scripts._bootstrap successfully at :55, with an explicit sys.path insert and a reasoned comment, so the circularity is at most a per-file question. The env-var half of U4 converged exactly as specified (the literal appears in precisely three files); the root-walk half did not converge at all.",
+      "remedy": "Pick one and record it: either converge the root-walk callers using tools/suite_check.py's own pattern as the exemplar, or delete _bootstrap.ROOT and narrow the module docstring to the one fact it actually owns. Leaving it is the specific shape U10 spent this same run deleting — a module-level constant with zero consumers — and a future reader will trust the docstring's claim."
+    },
+    {
+      "id": "F4",
+      "seam": "U2 (conditional launch clauses) — a widening beyond the spec's named else-branch",
+      "blocking": false,
+      "summary": "U2's condition keys off workspace_strategy == 'git', which sweeps in the document-tree adapter the spec did not name. A content-pack child now receives no commit instruction while working uncommitted, without isolation, inside a git repository.",
+      "evidence": "scripts/tickets_assignment.py:201 git_candidate(pack) resolves True only for workspace_strategy == 'git'. scripts/tickets_adapters.py declares document-tree with establishes_isolation=False and workspace_strategy='document-tree'; :235 resolves its isolation to 'none'. Rendered live through tickets_assignment._craft: orch-content-pack -> git_candidate=False -> the prompt emits 'Your stamped pack commits nothing; its workspace channel is: \"document tree: identities are document revisions; integration compares actual candidate changes and resolves section overlap.\"' The spec's U2(a) says 'Emit the commit clause only when the adapter establishes a git candidate; for evidence-store/derived-none adapters emit the pack's own workspace channel line instead' — document-tree is neither of the two named.",
+      "cause": "The spec's governing sentence and its else-branch enumeration disagree about one adapter, and U2 followed the governing sentence. U2's own stated acceptance names only the research-pack and code-pack cases, both of which I verified hold, so nothing in the unit's checks could surface the third case.",
+      "remedy": "This run's own history is the exposure: B1.1 was a content-pack child working in the run tree under the old unconditional prompt, and it committed (89b23e3d); every wave-2 candidate was cut from 'the wave-1 tip', which carried B1.1's work only because it committed. Under the new prompt that child is told its pack commits nothing. Decide whether document-tree should render the commit clause (it edits a git tree with isolation 'none'), or whether the frame owns committing a document-tree child's bytes — and say which in the adapter table, so the next reader does not have to re-derive it."
+    },
+    {
+      "id": "F5",
+      "seam": "what the integration introduced — commit 3c0aca33",
+      "blocking": false,
+      "summary": ".orch-notes/ is the launch prompt's reserved scratch directory but is absent from .gitignore, so the integrator's cleanup will not hold. Six scratch files from four children reached the branch in this run alone.",
+      "evidence": "3c0aca33 'B1 integrator: untrack .orch-notes scratch committed by children' deletes six files, 1119 lines: .orch-notes/B1.11-outcome.md, B1.11-progress-01.md, B1.7-outcome.md, B1.7-review-findings.md, progress-01.md, progress-02.md. git ls-tree -r --name-only HEAD | grep orch-notes is now empty, so the cleanup itself is complete and correct. .gitignore covers .orch/* plus the tracked canary fixture and names .orch-notes nowhere. The prompt every child receives calls .orch-notes/ 'the reserved scratch directory the join never grades' in the same breath as telling each code-pack child to commit inside its candidate, so a child running git add -A re-commits it — which is what four children did.",
+      "cause": "The reserved-scratch convention was introduced as prompt wording (PR #158) without the one mechanical line that makes it hold in a git candidate.",
+      "remedy": "Add .orch-notes/ to .gitignore. One line, and it retires the integrator's manual sweep permanently."
+    },
+    {
+      "id": "F6",
+      "seam": "what the integration introduced — commit 645256db",
+      "blocking": false,
+      "summary": "The integrator's re-pin is sound in substance — net stronger, not weakened — but it re-pins an owner file's prose including its line wrap, which the code pack's own craft forbids. The same wording edit will break it again.",
+      "evidence": "645256db replaces one assertion with two in tests/test_verification_model.py:68: assertIn(\"Write the complete\\nseven-field findings array to one JSON file\") becomes assertIn(\"Write the findings to one\\nJSON file\") plus assertIn(\"print `findings: <path>` in the report\"). Net +1 assertion, so no check was weakened to reach green. But packs/orch-code-pack/references/craft.md's Shape section states: 'Checks pin shapes, never sentences: assert a field, a set, a count by kind, or a verdict — never an owner file's prose ... A check reading an owner file reads a stable anchor — a heading, a backticked name, a fenced command.' The new pin embeds a hard line break, so a pure re-wrap of that sentence in skills/kernel/orch-judge/SKILL.md — no semantic change at all — fails the test.",
+      "cause": "The integrator followed the surrounding idiom, which is the right instinct: every neighbouring assertion in CritiqueContractTest pins prose the same way. The frame's own wave-2 record named the symptom ('content-pack units touching test-pinned prose need a test-lane check or a code-pack stamp') but not this cause, which is that the pin reads prose rather than an anchor. Fixing the stamp does not stop the next wording edit from breaking the pin; fixing the pin does.",
+      "remedy": "Successor scope, not this run's: retarget CritiqueContractTest's assertions at anchors the craft allows — the backticked `findings: <path>` form and the fenced/backticked names — and drop the wrapped-prose fragments. Then a content-pack unit editing that body cannot break it by re-wrapping."
+    },
+    {
+      "id": "F7",
+      "seam": "U12 (ring timestamp owner)",
+      "blocking": false,
+      "summary": "Two super-research adapters still emit the output timestamp through their own upstream constant, whose value coincidentally equals schema.INSTANT_FORMAT. The spec's carve-out covers parsing upstream grammars, not emitting the output convention through them.",
+      "evidence": ".orchflows/skills/super-research/scripts/super_research/schema.py:22 INSTANT_FORMAT = \"%Y-%m-%dT%H:%M:%SZ\". adapters/_support/github_rest_records.py:47 ROUTE_INSTANT_FORMAT = \"%Y-%m-%dT%H:%M:%SZ\" — same value, independently spelled — and :93 return moment.replace(tzinfo=timezone.utc).strftime(ROUTE_INSTANT_FORMAT) is an emission path, not a parse. adapters/_support/stocktwits_records.py:46 and :95 are the identical shape. Every other adapter now reads RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT (bluesky_extract:54, hacker_news_config:226, open_page_document:77, prediction_markets_config:336, reddit_shreddit_contract:150, scholarly_records:19, and the 24-site sweep the driver recorded).",
+      "cause": "The spec ruled 'Distinct upstream wire-format grammars (X's, RFC 3339) keep their own constants; only the one output convention consolidates.' GitHub REST and StockTwits both speak RFC 3339 with Z, so their route constants are covered by the ruling for parsing — and the emission calls happen to reuse the same constant, which the ruling does not reach. This is the coinciding-values hazard the spec's own ruling 3 was written about, one level down.",
+      "remedy": "Two lines: have those two emission calls strftime through schema.INSTANT_FORMAT while their parse calls keep ROUTE_INSTANT_FORMAT. U12's stated acceptance ('the protocol.md claim is true by grep') holds on the claim's own words — references/protocol.md:103 says schema.INSTANT_FORMAT is the one definition and ordering reads it from there, and ordering.py:49 does — so this is reported, not repaired."
+    },
+    {
+      "id": "F8",
+      "seam": "U5(e) — the driver-accepted routing-block deviation, recorded for the next reader",
+      "blocking": false,
+      "summary": "validate_routing_block has no caller inside the validator; its only two call sites are its own tests. The deviation is sound and I concur with it, but the check guards no file in this tree.",
+      "evidence": "git grep -nI validate_routing_block HEAD returns the definition (tools/validate_support/packages.py:252), its __all__ export (:418), and exactly two call sites, both in tests/test_validator_cases/corpus_and_surfaces.py:246 and :255 (an oversized synthetic block and an at-budget one). tools/validate.py never calls it. ROUTING_BLOCK_BUDGET's comment at tools/validate_support/common.py:34-42 carries the verified evidence for why: install.py has one scope (user), the legacy project-scope path _codex_agents_path carries is unreachable from its CLI, and scripts/orchflows_scaffold.py scaffolds skills/packs/workflows but never a project's day-zero router.",
+      "cause": "The spec's U5(e) premise — 'add enforcement where the project routing block is rendered/synced' — named a surface that does not exist. B1.5 verified the absence, wrote the evidence into the constant's own comment, and satisfied the criterion as stated ('a deterministic check that fails an oversized block').",
+      "remedy": "None now. Recorded so a later dead-code sweep does not delete a checker that is deliberately ahead of its surface, and so whoever adds a project-scope router remembers to wire it in."
+    }
+  ],
+  "deviations_judged": [
+    {
+      "deviation": "U5(e): routing-block ceiling enforced off-surface because no render surface exists",
+      "verdict": "sound",
+      "basis": "The criterion as written is 'a deterministic check that fails an oversized block'; it exists and I confirmed its can-fail direction. The prescribed location was verified absent with citable evidence recorded at the constant. See F8 for the one caveat worth carrying forward."
+    },
+    {
+      "deviation": "U8: lawful-historical carve-out extended to the .orchflows/ archive and research/ reports",
+      "verdict": "sound",
+      "basis": "Verified independently rather than accepted from the child's report. Every remaining brick/door hit in contracts/ sits inside a 'T0 supersession record sha256:' block — dispatch.md's first record opens at :162 and the surviving hits are at :166,:263,:281,:284; work-item.md's '## T0 supersession' heading is at :247 and the surviving hits are at :253,:386,:390,:420,:422,:423,:424,:433,:447,:450. DESIGN.md:112 is a historical naming catalogue that explicitly defers current authority to docs/vocabulary.md. docs/vocabulary.md:211,214 is the word's own tombstone ('`brick` is retired outright, noun and all'). example-workflows/references/benchmaker-protocol.md:71's 'the back door' is the ordinary English idiom and sits in a file the spec's Deferred list protects. Rewriting frozen evidence reports would falsify the record they exist to hold. Important: this carve-out is NOT what let F1 and F2 through."
+    },
+    {
+      "deviation": "U12: the ring's two upstream-grammar constants kept",
+      "verdict": "sound as ruled, incomplete one level down",
+      "basis": "The spec names RFC 3339 explicitly as a grammar that keeps its own constant, so keeping ROUTE_INSTANT_FORMAT for parsing is exactly what was ruled. F7 records the narrower residue the ruling does not reach: two of those constants are also used on emission paths."
+    },
+    {
+      "deviation": "U11: prose-only expiry horizon, no mechanical enforcement",
+      "verdict": "sound",
+      "basis": "The spec itself said 'This unit writes the policy and the dates; the first deletions are a later run's call.' All nine SUPERSEDED_EXECUTORS entries are dated with a retired-on date and the short hash of the commit that added the name, sourced from git log --follow. The ninety-day horizon is stated once at scripts/tickets_registry.py:66-75, at the dict that owns the fact, and the comment is honest that ninety days is proposed rather than measured. It also correctly handles the case it cannot yet have: an entry whose retirement predates the registry says so rather than dating a commit that only re-recorded it."
+    },
+    {
+      "deviation": "U13: the friction-reach question answered as 'confirmed absent for forks', pointer line added to the launch prompt",
+      "verdict": "sound",
+      "basis": "The evidence is first-person and recorded where it will be read: scripts/tickets_dispatch_launch.py's _friction_lines docstring states that a forked child's context expands this repository's project-scope AGENTS.md import but not the user-scope import carrying templates/host-block.md's friction paragraph, and names the four unlogged walls from run 20260901T155911Z. This reviewer's own launch prompt independently corroborates the wider claim: it carries neither the new friction lines nor U2(b)'s close-after-returns sentence, because it was rendered by the installed tree rather than this candidate. That is expected and is precisely why the spec's standing constraints end with 'Reinstall after merge' — but it means none of U2's or U13(c)'s prompt changes are live for any child until that reinstall happens."
+    },
+    {
+      "deviation": "U6: DEMOTED roster left un-imported (names never registered, so no registry fact exists to import)",
+      "verdict": "sound",
+      "basis": "The roster closure that does exist is real and non-textual: tests/_retired_commands.py binds each retired subcommand name to the live function object that still implements it (RETIRED_COMMANDS at :26) and derives RETIRED_COMMAND_NAMES = frozenset(RETIRED_COMMANDS) at :37, so the set cannot drift from the functions. The executor-name rosters read scripts.tickets_registry.SUPERSEDED_EXECUTORS directly (tests/test_registry_census.py:128,132,144; tests/test_static_tree_invariants_cases/compositions.py:4,84)."
+    },
+    {
+      "deviation": "U4: root-walk convergence scoped to the Details checklist, tools/*.py left alone",
+      "verdict": "unsound as reasoned, harmless as scoped",
+      "basis": "See F3. The circularity rationale is contradicted by tools/suite_check.py, which imports scripts._bootstrap successfully in this same commit. The env-var half of the unit is exact; the root-walk half left a constant nobody imports."
+    }
+  ],
+  "integration_artifacts": {
+    "merge_commits": 14,
+    "conflict_markers_at_tip": "none — git grep -nI '^<<<<<<<|^>>>>>>>' HEAD is empty",
+    "conflict_resolving_commits_verified": [
+      "f857a267 (B1.4: union of both siblings' flat-layout fixture list + serial manifest regen)",
+      "5578ce79 (B1.10: serial manifest regen over the union tree)"
+    ],
+    "resolution_verified_live": "tools/run_serial_compat.py at 3c0aca33 returns ok:true, 14/14 sentinels, discovery count 2114 / sha256 beb26783…, worktree_clean:true, 0 failures and 0 errors — so both manifest regenerations are current for the merged tree, which is the fact a conflict resolution over a derived artifact has to earn.",
+    "integrator_commits": [
+      "645256db — sound in substance (net +1 assertion, nothing weakened); one residue recorded as F6",
+      "3c0aca33 — correct and complete cleanup; the gap it leaves open is recorded as F5"
+    ],
+    "committed_scratch_at_tip": "none"
+  },
+  "checks_run_by_this_review": [
+    {"command": "tools/validate.py", "exit": 0, "reading": "17 WARN lines, zero ERROR"},
+    {"command": "tools/regen.py --check --json", "exit": 0, "reading": "{\"failed\": {}, \"skipped\": {}, \"stale\": {}}"},
+    {"command": "tools/run_serial_compat.py", "exit": 0, "reading": "ok:true, 14/14 sentinels, 2114 discovered, worktree_clean:true, revision 3c0aca33"},
+    {"command": "git diff --check", "exit": 0, "reading": "clean"},
+    {"command": "tools/run_tests.py --scope scripts/tickets_dispatch_launch.py,scripts/tickets_assignment.py,skills/kernel/orch-judge/SKILL.md,skills/kernel/orch-do/SKILL.md,tools/validate_support/lifecycle_literals.py,tools/validate_support/lint.py", "exit": 0, "reading": "60 modules, 1660 tests: 0 failures, 0 errors, 4 skipped"},
+    {"command": "can-fail: lifecycle_literals._scan_file over synthetic source outside the tree", "exit": 0, "reading": "two ERRORs raised for 'claimed' and 'join:x' against a non-owner label; the same source under the declared owner label raises only the one it does not own — the check bites and its owner exemption is real"},
+    {"command": "can-fail: lint._citation_finding with a deliberately wrong expectation, a nonexistent section, and an undeclared pair", "exit": 0, "reading": "all three produce findings; correct citations produce None — the §N citation lint bites in all three failure directions"}
+  ]
+}

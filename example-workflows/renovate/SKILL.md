@@ -11,9 +11,6 @@ carries.
 
     tickets.py frame-open <run> --goal-file <renovation-goal> --workflow renovate
 
-Re-read the frame's `## Report` and its children before each call, then
-append the decision with `tickets.py result <run> <frame> --by <frame>`.
-Keep every returned `artifact:` and `findings:` line verbatim.
 
 **Audit**, read-only, its typed artifact line the workspace tip:
 
@@ -43,10 +40,10 @@ delivered into `workspace` with its own final verification, and every
 ready-for-human brief returned to the maintainer unanswered.
 
 Never: deliver a brief triage did not disposition ready-for-agent; answer a
-ready-for-human brief on the maintainer's behalf; investigate a finding past
-the cheap checks triage licenses; or close the frame on the delivery's own
-claim of its verification.
+ready-for-human brief on the maintainer's behalf; or investigate a finding
+past the cheap checks triage licenses.
 
 Return: `tickets.py frame-close <run> <frame> --done <check>`, whose done is
-the workspace's own required checks at the delivered revision — read
-outside the delivery, as an exit code.
+the workspace's own required checks at the delivered revision —
+*outside-close*: "Close on a command run outside every child; never on a
+child's own claim."

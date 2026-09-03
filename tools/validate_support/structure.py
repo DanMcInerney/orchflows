@@ -1,7 +1,7 @@
 """Validate call graphs, envelopes, and templates."""
 
 from __future__ import annotations
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 CALL_TOKEN_RE = __dep_common.CALL_TOKEN_RE
 CARRIAGE_SENTENCE_SPLIT_RE = __dep_common.CARRIAGE_SENTENCE_SPLIT_RE
 CRAFT_BUDGET = __dep_common.CRAFT_BUDGET
@@ -32,7 +32,7 @@ COMPOSITION_SCRIPT_SUFFIXES = frozenset({
 })
 COMPOSITION_SCHEMA_RE = re.compile(r"(?:^|[._-])schemas?(?:[._-]|$)", re.IGNORECASE)
 COMPOSITION_FIXTURE_RE = re.compile(r"(?:^|[._-])fixtures?(?:[._-]|$)", re.IGNORECASE)
-from tools.validate_support import packages as __dep_packages
+from . import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
 _split_frontmatter = __dep_packages._split_frontmatter
@@ -58,8 +58,18 @@ def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
             continue
         if not resolved.is_file():
             diag.error(file_label, f"cited reference does not exist: {target}")
-def build_call_graph(packages, diag: Diagnostics):
-    names = {pkg["path"].name for pkg in packages}
+def build_call_graph(packages, diag: Diagnostics, known=None):
+    """The call edges these packages carry, refusing one that resolves to
+    nothing.
+
+    ``known`` names every item a call may resolve to, and defaults to the
+    packages themselves -- the library grades a closed tree, where the two
+    sets are one. A ring is the open case: its items call the library by
+    name, so a caller grading one passes the wider set and an edge out of
+    the ring stays an edge rather than becoming a refusal.
+    """
+
+    names = set(known) if known is not None else {pkg["path"].name for pkg in packages}
     graph = {pkg["path"].name: set() for pkg in packages}
     for pkg in packages:
         file_label = rel(pkg["skill_md"])
@@ -103,8 +113,8 @@ def find_cycle(graph: dict):
     return None
 
 
-def validate_call_graph(packages, diag: Diagnostics) -> None:
-    graph = build_call_graph(packages, diag)
+def validate_call_graph(packages, diag: Diagnostics, known=None) -> None:
+    graph = build_call_graph(packages, diag, known)
     cycle = find_cycle(graph)
     if cycle:
         name_to_file = {pkg["path"].name: pkg["skill_md"] for pkg in packages}
@@ -292,13 +302,35 @@ def _doclint():
     """
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from scripts import doclint
+    try:
+        from scripts import doclint
+    except ImportError:  # pragma: no cover - direct/installed flat script path
+        import doclint
 
     return doclint
 
 
-def validate_templates(diag: Diagnostics) -> None:
-    """Every `example-workflows/<name>/` entry is one workflow skill.
+def workflow_roots():
+    """The library's workflow directories, in the resolver's search order.
+
+    ``scripts/rings.py`` owns where a workflow lives; reading its list here
+    keeps the tree this grades and the tree a runtime resolves through the
+    same tree. Imported on first use, like ``_doclint``: an isolated
+    fixture carrying no ``scripts/`` still has to run every other check.
+    """
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    try:
+        from scripts.rings import LIB_DIRS
+    except ImportError:  # pragma: no cover - direct/installed flat script path
+        from rings import LIB_DIRS
+
+    return [ROOT / relative for relative in LIB_DIRS["workflow"]]
+
+
+def validate_templates(diag: Diagnostics, roots=None) -> None:
+    """Every workflow directory entry is one workflow skill.
 
     A workflow is a skill whose prose calls callables, so the checks are a
     skill's: the name matches its directory, the description is present and
@@ -308,53 +340,72 @@ def validate_templates(diag: Diagnostics) -> None:
     reasoning rather than inside a sealed child prompt, so a host firing one
     on its own reading of a description opens that surface uninvited.
 
+    The library keeps workflows in two directories, and one name in both is
+    refused here rather than resolved: the resolver would answer with the
+    nearer of the two and shadow the other silently, and no author writes a
+    workflow meaning to hide one they cannot see.
+
     What a callable call is, and whether one is well formed, is `scripts/
     tickets.py`'s and is reported there; nothing in a body is graded here.
+
+    ``roots`` names the directories to walk, defaulting to the library's
+    two. A ring keeps its workflows in one directory of its own
+    (`scripts/rings.py`'s ``RING_DIRS``), and grading them is the same
+    question about the same shape, so it is this function asked about that
+    directory rather than a second one written beside it.
     """
-    comps_dir = ROOT / "example-workflows"
-    if not comps_dir.is_dir():
-        diag.warn("example-workflows", SKIPPED)  # no tree, so no workflow
-        return
     budget = BODY_BUDGET["workflows"]
-    for directory in sorted(d for d in comps_dir.iterdir() if d.is_dir()):
-        manifest = directory / "SKILL.md"
-        if not manifest.is_file():
-            continue  # shared references, not a name surface
-        label = rel(manifest)
-        fm, body = parse_frontmatter(_read_source(manifest), label, diag)
-        if fm is None:
+    homes = {}
+    for comps_dir in (workflow_roots() if roots is None else list(roots)):
+        if not comps_dir.is_dir():
+            diag.warn(rel(comps_dir), SKIPPED)  # no tree, so no workflow
             continue
-        name = fm.get("name")
-        if not name:
-            diag.error(label, "workflow frontmatter missing required key 'name'")
-        elif name != directory.name:
-            diag.error(
-                label,
-                f"workflow name '{name}' does not match directory name "
-                f"'{directory.name}'",
-            )
-        description = fm.get("description")
-        if not description:
-            diag.error(label, "workflow frontmatter missing required key 'description'")
-        elif len(description) > DESCRIPTION_BUDGET:
-            diag.error(
-                label,
-                f"description is {len(description)} chars, exceeds "
-                f"{DESCRIPTION_BUDGET}-char budget",
-            )
-        if fm.get("disable-model-invocation") != "true":
-            diag.error(
-                label,
-                "workflow frontmatter must declare 'disable-model-invocation: "
-                "true'; a workflow is invoked by name only",
-            )
-        n = body_words(body)
-        if n > budget:
-            diag.error(
-                label,
-                f"workflow body has {n} words, exceeds the workflow-tier "
-                f"budget of {budget}",
-            )
+        for directory in sorted(d for d in comps_dir.iterdir() if d.is_dir()):
+            manifest = directory / "SKILL.md"
+            if not manifest.is_file():
+                continue  # shared references, not a name surface
+            label = rel(manifest)
+            first = homes.setdefault(directory.name, label)
+            if first != label:
+                diag.error(
+                    label,
+                    f"workflow name '{directory.name}' is also at {first}; "
+                    "a workflow name lives in one library directory",
+                )
+            fm, body = parse_frontmatter(_read_source(manifest), label, diag)
+            if fm is None:
+                continue
+            name = fm.get("name")
+            if not name:
+                diag.error(label, "workflow frontmatter missing required key 'name'")
+            elif name != directory.name:
+                diag.error(
+                    label,
+                    f"workflow name '{name}' does not match directory name "
+                    f"'{directory.name}'",
+                )
+            description = fm.get("description")
+            if not description:
+                diag.error(label, "workflow frontmatter missing required key 'description'")
+            elif len(description) > DESCRIPTION_BUDGET:
+                diag.error(
+                    label,
+                    f"description is {len(description)} chars, exceeds "
+                    f"{DESCRIPTION_BUDGET}-char budget",
+                )
+            if fm.get("disable-model-invocation") != "true":
+                diag.error(
+                    label,
+                    "workflow frontmatter must declare 'disable-model-invocation: "
+                    "true'; a workflow is invoked by name only",
+                )
+            n = body_words(body)
+            if n > budget:
+                diag.error(
+                    label,
+                    f"workflow body has {n} words, exceeds the workflow-tier "
+                    f"budget of {budget}",
+                )
 
 
 # LOOP_TRIGGER_RE matches iteration verbs, not the referential nouns "loop" or
@@ -366,5 +417,5 @@ __all__ = (
     'validate_envelope', 'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
     'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE',
     '_composition_artifact_kind', '_reference_owner', '_script_owner', 'validate_composition_admission',
-    '_doclint', 'validate_templates',
+    '_doclint', 'workflow_roots', 'validate_templates',
 )

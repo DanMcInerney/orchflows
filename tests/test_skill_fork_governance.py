@@ -114,10 +114,13 @@ RESERVED_WORDINGS = {
 #: The tiers the contract sweep must span; a glob that stopped matching
 #: one would leave its contracts unswept while this module stayed green.
 #: `workflows` dropped out here when W2b (verbs-rename) retired
-#: `orch-outline`, its last skill; `skills/workflows/` still exists
-#: (kept by `.gitkeep`) for the tier itself to return to, but carries no
-#: contract to sweep until one does.
-TIERS = {"kernel"}
+#: `orch-outline`, its last skill, and returned when the reusable,
+#: domain-blind workflows took the tier over. Those bodies declare no role
+#: at all -- a workflow is driven in place and never forks, so there is no
+#: role for a host surface to bind -- and the absence sweep below is the
+#: only case that reads them, the one that would go vacuous if the glob
+#: stopped matching the tier.
+TIERS = {"kernel", "workflows"}
 
 
 def contracts():

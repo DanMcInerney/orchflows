@@ -28,8 +28,9 @@ def _world():
         for kind_dir in rings.RING_DIRS.values():
             (home / kind_dir).mkdir(parents=True, exist_ok=True)
             (project / ".orchflows" / kind_dir).mkdir(parents=True, exist_ok=True)
-        for kind_dir in rings.LIB_DIRS.values():
-            (lib / kind_dir).mkdir(parents=True, exist_ok=True)
+        for lib_dirs in rings.LIB_DIRS.values():
+            for kind_dir in lib_dirs:
+                (lib / kind_dir).mkdir(parents=True, exist_ok=True)
         with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}):
             yield {"root": root, "home": home, "project": project, "lib": lib}
 
@@ -80,10 +81,49 @@ class RingOrderTests(unittest.TestCase):
             self.assertEqual(world["project"] / ".orchflows" / "workflows", order["project"])
             self.assertEqual(world["lib"] / "example-workflows", order["lib"])
 
+    def test_lib_workflows_search_the_skills_tier_before_the_gallery(self):
+        """A reusable workflow ships in `skills/workflows`, a domain-bearing
+        one in `example-workflows`, and both are the library's."""
+
+        with _world() as world:
+            libs = [
+                path
+                for ring, path in rings.item_roots(
+                    "workflow", project=world["project"], lib=world["lib"],
+                )
+                if ring == "lib"
+            ]
+
+            self.assertEqual(
+                [
+                    world["lib"] / "skills" / "workflows",
+                    world["lib"] / "example-workflows",
+                ],
+                libs,
+            )
+
+    def test_a_reusable_workflow_shadows_a_gallery_name(self):
+        """The nearer library home wins, and the notice names what it hid --
+        the collision `tools/validate.py` refuses before it can happen."""
+
+        with _world() as world:
+            _item(world["lib"] / "skills" / "workflows", "workflow", "both-homes")
+            _item(world["lib"] / "example-workflows", "workflow", "both-homes")
+
+            record = rings.resolve(
+                "workflow", "both-homes", project=world["project"], lib=world["lib"],
+            )
+
+            self.assertEqual(
+                str(world["lib"] / "skills" / "workflows" / "both-homes" / "SKILL.md"),
+                record["path"],
+            )
+            self.assertIn("example-workflows", rings.shadow_notice(record))
+
     def test_lib_skills_expand_one_sublayer(self):
         with _world() as world:
-            (world["lib"] / "skills" / "kernel").mkdir(parents=True)
-            (world["lib"] / "skills" / "workflows").mkdir(parents=True)
+            (world["lib"] / "skills" / "kernel").mkdir(parents=True, exist_ok=True)
+            (world["lib"] / "skills" / "workflows").mkdir(parents=True, exist_ok=True)
 
             libs = [
                 path
@@ -315,21 +355,36 @@ class SuperResearchGoalTests(unittest.TestCase):
         self.assertIn("super-research", names)
 
     def test_the_skill_stays_resolvable_as_a_project_ring_skill(self):
-        """Clause 4: already true at arrival (measured in R.03's Context as
-        `rings.resolve('skill','super-research', trust=False)` -> ring
-        'project'). Pinned here as a can-fail reading taken without
-        mutating the tree under test, per the pack craft's Evidence
-        section, rather than left to have happened to keep working."""
+        """Clause 4, under U7d's rename: the acquisition skill is
+        `research-acquire`, and it still resolves from this repository's own
+        project ring. Read without mutating the tree under test, per the
+        pack craft's Evidence section, rather than left to have happened to
+        keep working."""
 
         with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
             record = rings.resolve(
-                "skill", "super-research", trust=False, start=ROOT, home=Path(empty_home),
+                "skill", "research-acquire", trust=False, start=ROOT, home=Path(empty_home),
             )
 
         self.assertEqual("project", record["ring"])
         self.assertEqual(
-            str(ROOT / ".orchflows" / "skills" / "super-research"), record["dir"],
+            str(ROOT / ".orchflows" / "skills" / "research-acquire"), record["dir"],
         )
+
+    def test_the_workflow_name_no_longer_names_a_skill_as_well(self):
+        """U7d Goal's last clause -- no two items share a name. Before the
+        rename this resolved to the project ring's own skill directory, so
+        one name meant a skill here and a workflow there and the generated
+        adapters collided by suffix."""
+
+        with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve(
+                    "skill", "super-research", trust=False, start=ROOT,
+                    home=Path(empty_home),
+                )
+
+        self.assertEqual("unresolved", raised.exception.code)
 
 
 if __name__ == "__main__":

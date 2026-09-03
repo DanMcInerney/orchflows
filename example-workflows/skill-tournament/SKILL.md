@@ -11,15 +11,13 @@ campaign's budget, which the benchmark's own allocation is never drawn from;
 and `sources`, `rigor` and `pack`, which this workflow carries down into the
 nested benchmark.
 
-One skill improves against one benchmark that was built and qualified for it
-before the first candidate existed, and that no candidate and no generation
-may touch afterwards. Both halves are workflows, not calls: each opens its
-own frame under this one, and the ticket tree is the call tree.
+One skill improves against one benchmark built and qualified for it —
+*freeze*: "Fix the identity before any candidate exists and forbid every
+later call from touching it." Both halves are workflows, not calls: each
+opens its own frame under this one, and the ticket tree is the call tree.
 
     tickets.py frame-open <run> --goal-file <tournament-goal> --bound <bound> --workflow skill-tournament
 
-Re-read this frame's `## Report` and its children before each half, and
-append the decision with `tickets.py result <run> <frame> --by <frame>`.
 
 **Build the benchmark.** Invoke `benchmaker` with `target=skill`, the
 skill's declared observable outcome as `outcome`, `sources`, `rigor`, `pack`

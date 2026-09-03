@@ -7,9 +7,19 @@ SKILL_TIERS = ("kernel", "workflows")
 
 # The frozen role census. The census is deliberately explicit: adding,
 # removing, or renaming a skill requires a role decision here.
+# A reusable workflow's `None` is a role decision like any other: its
+# prose runs in the orchestrator's own context, so nothing forks and no
+# role is declared -- `tools/validate_support/packages.py`'s
+# `validate_role` refuses one there.
 ROLE_TABLE = {
     "orch-judge": "planner",
     "orch-do": "worker",
+    # A reusable workflow's `None` is its role decision: `validate_role`
+    # refuses a role in a workflow home, because a workflow's prose is
+    # driven in the orchestrator's own context and never forks, so there
+    # is no role for a host surface to bind.
+    "bakeoff": None,
+    "checkpointed-build": None,
 }
 
 

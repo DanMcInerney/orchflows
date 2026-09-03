@@ -104,6 +104,28 @@ invented for this library.
   reader's projection type for the older manifest-and-stub shape a ring
   bundle may still ship (`reader/docs/workflows.md`). New prose says
   workflow.
+- **reusable workflow** — a workflow another workflow's prose invokes by
+  name, opening its own frame under the caller's
+  (`tickets.py frame-open --parent`). The domain-blind ones are the
+  **workflow skills** above; a domain-bearing one under `example-workflows/`
+  or a ring is reusable too. `rules/composition.md` §13 owns when a step
+  earns one.
+- **glue workflow** — the workflow written for one job, composing reusable
+  workflows, callables and plain sentences, and invoked by nothing else. It
+  is where that job's `tools.txt` requirements are declared.
+- **idiom** — a control-flow sentence whose wording recurs across workflows,
+  fixed once in `docs/custom-workflow-authoring.md` and quoted verbatim
+  rather than paraphrased; a pack's craft names its own domain's idiom in
+  that pack's namespace.
+- **sheet** — extra craft stamped on one ticket beside its pack: a ring item
+  of kind `sheet` at `sheets/<name>/SHEET.md`, digest-pinned at issue and
+  read at that digest by that ticket's maker and its judge. It only tightens
+  the stamped pack's craft; `contracts/sheet.md` owns its shape, budget and
+  the `sheet-defect` finding a loosening earns.
+- **applied skill** — a ring skill a ticket pins in its `skill` field, run as
+  the method inside the kernel contract the ticket's `executor` names:
+  `orch-do` or `orch-judge` still owns Require, Never and Return, and an
+  `orch-` name or a `role` that verb does not take is refused.
 - **dispatchable unit / envelope** — a skill a workflow's prose may call,
   and the leading `Return` fields it must carry — status, result identity,
   verification — per `contracts/result.md`.

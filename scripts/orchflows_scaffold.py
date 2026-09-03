@@ -11,8 +11,9 @@ so the first thing an author does is edit, never repair.
 
 from __future__ import annotations
 
+import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 try:
     from scripts import rings
@@ -99,6 +100,80 @@ is a command, and whose close carries a judge child or an
 """
 
 
+# A sheet is extra craft stamped beside a pack, so its skeleton is the one
+# that cannot be domain-blind the way the others are: it has to name a pack
+# that resolves in this installation and key its `## Lens` by a kind that
+# pack's adapter emits, or `write` scaffolds a sheet the validator refuses
+# and no ticket could stamp. Both facts are read from the installed packs
+# below rather than spelled here -- a pack name written into this module
+# would be a domain name inside machinery, which `tools/validate.py`
+# refuses, and would go stale the day that pack is renamed.
+_SHEET = """---
+name: {name}
+description: One sentence saying when to stamp {name} beside its pack.
+packs: [{pack}]
+---
+
+# {name}
+
+## Craft
+
+What this sheet adds to the stamped pack's craft for the maker. Additive
+and tighten-only: never loosen what the craft already requires.
+
+## Lens
+
+### {kind}
+
+What a judge checks here beside the craft's own `### {kind}` entry.
+"""
+
+
+# A bundle's manifest describes the ring it sits in, not an item inside it
+# (contracts/bundle.md), so it is the one skeleton written beside the item
+# directories rather than into a new `<name>/`. `requires: []` is written
+# out rather than omitted: an author adding a requirement edits a line that
+# is already the right shape.
+_BUNDLE = """---
+name: {name}
+version: {version}
+requires: []
+---
+
+# {name}
+
+What this bundle is for, who maintains it, and what a consumer gets by
+importing it. Each requirement above is one <git-url>@<tag-or-sha>.
+"""
+
+
+def _sheet_binding():
+    """`(pack, artifact kind)` the sheet skeleton is written against.
+
+    The first pack resolvable from here by name, and the kind its own
+    adapter emits. Deterministic, so two scaffolds in one installation
+    agree; refused rather than guessed where no pack resolves, because a
+    sheet with no pack is a sheet nothing may stamp.
+    """
+
+    if __package__:
+        from .tickets_adapters import AdapterError, adapter_spec
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_adapters import AdapterError, adapter_spec
+    for record in rings.inventory(("pack",)):
+        if record.get("reserved") and record.get("refusal"):
+            continue
+        try:
+            return str(record["name"]), adapter_spec(str(record["name"])).artifact_kind
+        except AdapterError:
+            continue
+    raise rings.RingError(
+        "no-pack-to-stamp",
+        "no pack resolves from here, so a sheet skeleton would name none; "
+        f"install the library or author the sheet by hand against {AUTHORING_DOC}",
+    )
+
+
 def _craft(name: str) -> str:
     body = [f"# {name} craft", ""]
     for heading, prompt in _CRAFT_SECTIONS:
@@ -122,7 +197,24 @@ def files_for(kind: str, name: str) -> List[Tuple[str, str]]:
             ("SKILL.md", _PACK.format(name=name)),
             ("references/craft.md", _craft(name)),
         ]
-    return [("SKILL.md", _WORKFLOW.format(name=name))]
+    if kind == "workflow":
+        return [("SKILL.md", _WORKFLOW.format(name=name))]
+    if kind == "sheet":
+        pack, artifact_kind = _sheet_binding()
+        return [(
+            rings.MANIFESTS["sheet"],
+            _SHEET.format(name=name, pack=pack, kind=artifact_kind),
+        )]
+    # Every kind is named, and an unnamed one refuses. The tail used to
+    # fall through to the workflow skeleton, so a kind added to
+    # `rings.KINDS` before its skeleton existed would have written a
+    # `SKILL.md` under a kind whose manifest is not that -- a wrong item
+    # written silently, which is the one outcome a scaffold must not have.
+    raise rings.RingError(
+        "kind-unscaffolded",
+        f"'orchflows new {kind}' has no skeleton yet; author the item by "
+        f"hand against {AUTHORING_DOC}",
+    )
 
 
 def write(directory: Path, kind: str, name: str) -> List[Path]:
@@ -141,6 +233,32 @@ def write(directory: Path, kind: str, name: str) -> List[Path]:
     return written
 
 
+def bundle_version() -> str:
+    """The version a scaffolded manifest carries: today, as a date.
+
+    A date is a version a person can write again tomorrow without a release
+    process, and `contracts/bundle.md` takes either that or a tag.
+    """
+
+    return datetime.date.today().isoformat()
+
+
+def write_bundle(ring: Path, name: str, version: Optional[str] = None) -> Path:
+    """Write one bundle manifest into ``ring``. Refuses to overwrite."""
+
+    path = Path(ring) / rings.BUNDLE_MANIFEST
+    if path.exists():
+        raise rings.RingError("bundle-exists", f"already there: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = _BUNDLE.format(
+        name=rings.item_name(name),
+        version=version if version else bundle_version(),
+    )
+    # Bytes for LF on every host, as `write` does.
+    path.write_bytes(text.encode("utf-8"))
+    return path
+
+
 def sections() -> Dict[str, str]:
     """The mandatory craft anchors this scaffold writes, as data for a test."""
 
@@ -153,4 +271,7 @@ def lens_entries() -> Dict[str, str]:
     return dict(_CRAFT_LENS_ENTRIES)
 
 
-__all__ = ("AUTHORING_DOC", "files_for", "lens_entries", "sections", "write")
+__all__ = (
+    "AUTHORING_DOC", "bundle_version", "files_for", "lens_entries",
+    "sections", "write", "write_bundle",
+)

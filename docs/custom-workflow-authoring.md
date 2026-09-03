@@ -8,19 +8,21 @@ pointer in every member whose work is governed by it.
 
 ## Rings
 
-A custom skill, pack, or workflow lives in one of three rings, and
+A custom skill, pack, sheet, or workflow lives in one of three rings, and
 `scripts/rings.py` reads them in one fixed order — nearest first:
 
 | ring | where | what it holds |
 | --- | --- | --- |
 | project | `<repo>/.orchflows/` | items this repository ships to whoever clones it |
 | home | `~/.orchflows/` | your own items, plus `imports/<name>/` for pinned external bundles |
-| lib | the installed library | `skills/`, `packs/`, and the `example-workflows/` gallery |
+| lib | the installed library | `skills/kernel/`, `skills/workflows/`, `packs/`, `sheets/`, and the `example-workflows/` gallery |
 
 One bundle shape everywhere: a directory named `.orchflows` holding the
-three item directories skills, packs, and workflows. A project ring is one, the home ring's
-custom half is one, and a published repository that *is* one — nothing else in
-it — is one too. Each `example-workflows/` entry is a bundle you can copy out.
+four item directories skills, packs, sheets, and workflows. A project ring is
+one, the home ring's custom half is one, and a published repository that *is*
+one — nothing else in it — is one too. Each `example-workflows/` entry is a bundle you can copy out.
+Which ring an item belongs in is the placement rule,
+[composition](../rules/composition.md) §14's.
 
 The home ring is meant to be your git repository. `orchflows sync` writes the
 `.gitignore` that draws its only line: the installed library, the pinned
@@ -83,19 +85,40 @@ sealed child prompt has.
 
 The standard-library floor belongs to the library, not to what you author
 on it: [ARCHITECTURE.md](../ARCHITECTURE.md)'s scripts tier states it,
-and a ring item is outside it. Use the libraries the work needs. Declare
-them in one `requirements.txt` beside the item's manifest, pip's own
-format, pinned the way you would pin anything you mean to reproduce.
-`orchflows sync` builds one environment per declaring item under
-`~/.orchflows/envs/<kind>/<name>/`, rebuilds it when the file changes, and
-skips an untrusted project item — installing its packages runs its content,
-which is exactly what trust grants. `orchflows env <kind> <name>` prints the
-interpreter the item's scripts run through: its own environment when it
+and a ring item is outside it. There are three classes of dependency, each
+with one home and one file, and they never share an environment.
+
+An item's **own Python tooling** — what its own scripts import — goes in one
+`requirements.txt` beside the item's manifest, pip's own format, pinned the
+way you would pin anything you mean to reproduce. `orchflows sync` builds one
+environment per declaring item under `~/.orchflows/envs/<kind>/<name>/`,
+rebuilds it when the file changes, prunes it when the item leaves the ring,
+and skips an untrusted project item — installing its packages runs its
+content, which is exactly what trust grants. `orchflows env <kind> <name>`
+prints the interpreter those scripts run through: its own environment when it
 declares one, else the interpreter the library's own scripts use. Write that
 command into the item's prose, never a path — an environment is
 machine-local, regenerable, ignored by the home ring's `.gitignore`, and
-never installed under `~/.orchflows/lib/`. An item that declares nothing
-runs as it always did, and what it imports is its own suite's claim to make.
+never installed under `~/.orchflows/lib/`.
+
+An item's **non-Python tooling** — ffmpeg, node, a browser, an API key — goes
+in `tools.txt` beside the manifest, one requirement per line, or `env <NAME>`
+for a variable. Nothing installs it: `orchflows sync` and `orchflows check`
+report each missing tool or variable with its line, and never print a
+variable's value. An item's **Node tooling** for its own scripts goes in
+`package.json` plus a committed lockfile beside the manifest; `orchflows
+sync` runs the lockfile install into the item's `node_modules` directory
+under the same trust rule.
+
+The **artifact's** own dependencies are none of those three. A game's
+three.js, a site's build tool and their lockfiles belong to the workspace's
+own manifest, installed by the child in its worktree as part of making the
+artifact and committed with it. Orchflows never owns them; a workflow that
+needs them present for its `done` probe declares the toolchain in its own
+`tools.txt` instead. An item that declares nothing runs as it always did, and
+what it imports is its own suite's claim to make. A sheet declares nothing at
+all: it carries knowledge, so a `scripts` directory, a `requirements.txt` and
+a `tools.txt` inside one are refused.
 
 ## The five flows
 
@@ -111,9 +134,15 @@ runs as it always did, and what it imports is its own suite's claim to make.
 - **Publish it** — make the bundle its own repository. Consumers run
   `orchflows add <git-url>@<pin>`, which refuses a branch name: only a tag or
   a full commit SHA is a pin, and `imports.lock` is what restores the clone.
+  Give it a manifest — `orchflows new bundle` scaffolds one — so the bundles
+  yours needs travel with it: `add` follows its `requires` transitively and
+  pins the whole closure, on the shape
+  [contracts/bundle.md](../contracts/bundle.md) owns.
 - **Discover** — `orchflows list` shows every item resolvable from where you
   stand, its ring, its trust state, and every shadow, through the same
-  resolver dispatch uses.
+  resolver dispatch uses. `orchflows check [<ring-dir>]` then grades those
+  items — this project's ring when you stand in a project, else the home
+  ring — with the library compiler's own checks, and exits 1 on a refusal.
 
 ## What a workflow is made of
 
@@ -139,13 +168,13 @@ restating it on the command line would be the same plan in two places. Only
 a driver improvising the waves writes the line itself
 ([vocabulary](vocabulary.md)'s **routing shape** owns its grammar).
 
-Two obligations your body has to state for its driver, both defined
-elsewhere: the **typed artifact line**
-([vocabulary](vocabulary.md)) is relayed, never summarised, and the
-**journal** ([work-item.md](../contracts/work-item.md)'s `frame` bullet) is
-read at the head of a wave, not only after a crash. Write both into the
-prose in your own words; a workflow that leaves either implicit is one whose
-first compaction loses it.
+Two obligations bind every driver — relay the **typed artifact line**
+([vocabulary](vocabulary.md)) rather than summarise it, and read the
+**journal** ([work-item.md](../contracts/work-item.md)'s `frame` bullet) at
+the head of a wave rather than only after a crash — and your body states
+neither. `tickets.py frame-open` prints the frame law with the payload it
+returns, so the driver reads it at the moment it opens the frame; a body
+that restates it is a second owner of it.
 
 ## Deterministic calls, or a planning `do`
 
@@ -178,6 +207,23 @@ a judging child or the journal states `unjudged: <reason>`
 refusal); take the refusal seriously — it is asking whether anyone looked at
 the composition, which no member could see from its own seat.
 
+## Idioms
+
+The control-flow sentences whose wording recurs across workflows. Quote one
+verbatim; a paraphrase is a second wording of one fact, and which steps earn
+one is [composition](../rules/composition.md) §13's.
+
+- **bounded-repair** — Where the judge blocks, one repair `do` is handed the
+  `findings:` line verbatim, then one re-judge; two rounds is the bound.
+- **fan-out** — One `do` per named item, launched together under the frame;
+  the shape line lists them as one wave.
+- **freeze** — Fix the identity before any candidate exists and forbid every
+  later call from touching it.
+- **declare-gaps** — A gap that remains is written as a gap, `[]` when there
+  is none; silence is a defect.
+- **outside-close** — Close on a command run outside every child; never on a
+  child's own claim.
+
 ## Procedure
 
 1. Route existing machinery first. If a stamped spec, skill, or workflow
@@ -193,10 +239,19 @@ the composition, which no member could see from its own seat.
    cells and every craft section — `## Lens`'s `### root` entry included, so
    a custom pack a planner freezes a root against fills it like any other. A T0 shape change is a
    supersession change and follows its contract's pinning procedure.
-4. For a workflow, start from the nearest body under `example-workflows/` and
-   pin its open decisions. Its `Return:` is what `frame-close` records, and
-   its `done` is a command something outside the workflow runs. A
-   multi-stage pack's stages run at one role, [roles.md](../rules/roles.md)
+4. For a workflow, write it step by step rather than from a template. For
+   each step ask the four questions in *Which work earns a callable* above:
+   none of the four and the step is a sentence in your prose, one or more
+   and it is a callable. Then the recurrence rule,
+   [composition](../rules/composition.md) §13, picks the rung — reusable
+   workflow, sentence, or idiom — and an idiom is quoted from *Idioms*
+   above, never reworded. Craft one assignment wants and no other is a
+   **sheet** stamped on that call; a method one call runs inside the kernel
+   contract is an **applied skill** pinned with `--skill`
+   ([composition](../rules/composition.md) §12). Its `Return:` is what
+   `frame-close` records, and its `done` is a command something outside the
+   workflow runs. A multi-stage pack's stages run at one role,
+   [roles.md](../rules/roles.md)
    §4's alone. Invoking the finished body against a scratch run, and reading
    the tickets it opened, is its deterministic admission.
 5. Build host integrations from the top-level [host records](../hosts/). Use

@@ -107,6 +107,8 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                 'fields': ('adapter', 'stages', 'assembly', 'craft'),
                 'required': ('adapter', 'stages', 'assembly', 'craft'),
                 'values': {'assembly': ('none', 'stage name')}},
+ 'sheet_frontmatter': {'contract': 'sheet.md', 'fields': ('name', 'description', 'packs'), 'required': ('name', 'description', 'packs'), 'values': {}},
+ 'sheet_sections': {'contract': 'sheet.md', 'fields': ('Craft', 'Lens', 'Vocabulary'), 'required': ('Craft', 'Lens'), 'values': {}},
  'ticket_assignment_sections': {'contract': 'work-item.md', 'fields': ('Goal', 'Context', 'Details'), 'required': ('Goal', 'Context'), 'values': {}},
  'ticket_frontmatter': {'contract': 'work-item.md',
                         'fields': ('id',
@@ -116,6 +118,10 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                                    'executor',
                                    'pack',
                                    'pack_digest',
+                                   'sheets',
+                                   'sheet_digests',
+                                   'skill',
+                                   'skill_digest',
                                    'profile',
                                    'independence',
                                    'parent',
@@ -247,6 +253,14 @@ WORKLOG_VIEW_VALUES = SHAPES['worklog_view']['values']
 PACK_CELLS_FIELDS = tuple(SHAPES['pack_cells']['fields'])
 PACK_CELLS_REQUIRED = frozenset(SHAPES['pack_cells']['required'])
 PACK_CELLS_VALUES = SHAPES['pack_cells']['values']
+
+SHEET_FRONTMATTER_FIELDS = tuple(SHAPES['sheet_frontmatter']['fields'])
+SHEET_FRONTMATTER_REQUIRED = frozenset(SHAPES['sheet_frontmatter']['required'])
+SHEET_FRONTMATTER_VALUES = SHAPES['sheet_frontmatter']['values']
+
+SHEET_SECTIONS_FIELDS = tuple(SHAPES['sheet_sections']['fields'])
+SHEET_SECTIONS_REQUIRED = frozenset(SHAPES['sheet_sections']['required'])
+SHEET_SECTIONS_VALUES = SHAPES['sheet_sections']['values']
 
 def fields(name: str) -> tuple:
     """Return the declared field order for one shape."""

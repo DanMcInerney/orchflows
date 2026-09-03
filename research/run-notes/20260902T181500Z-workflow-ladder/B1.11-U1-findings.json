@@ -1,0 +1,124 @@
+{
+  "schema": "orchflows.review-findings.v1",
+  "ticket": "B1.11",
+  "unit": "U1",
+  "judged_by": "B1.11",
+  "artifacts": [
+    "git:40eca14944ddadc6d359ba36df77703f41625616 (U1 itself, parent 53c42969)",
+    "git:47f893e2965c785a233d2cef62c95f21548ff09f (merge of the integrated tree into U1; four resolved overlaps)",
+    "git:246438341d13b4410f2ba861c35788e554393418 (merge of the U4 tip into U1; manifest only)"
+  ],
+  "judged_tree": "acdc6cd9b929efe44ba048ac139b87acc72cb82c (tree of 24643834; byte-identical to this workspace's HEAD caf95266, git diff --stat 24643834 HEAD empty)",
+  "lens": "orch-code-pack references/craft.md ## Lens ### git (pack_digest sha256:27a9699df3c2ea7cdfaa7c3d11a099cb2de107f45ed081e4993aa9b06902996e)",
+  "verdict": "U1 holds at the fixed artifact; no blocking finding",
+  "goal_criteria": {
+    "run_required_at_commit": {
+      "command": "uv run --no-project python tools/run_required.py, in this workspace at HEAD (tree acdc6cd9b929 = the artifact tip's tree)",
+      "exit": 0,
+      "rows": {"validate": 0, "run_tests": "0 (94 modules, 2259 tests, 0 failures, 0 errors, 14 skipped)", "run_serial_compat": "0 (selected lane, 14 sentinels, ok)", "install_dry_run": "0 (325 planned entries)", "git_diff_check": 0},
+      "cached": "no: the run_tests and run_serial_compat rows executed in this run (2259 tests counted, observation recorded_at 2026-09-02T21:45:41Z)"
+    },
+    "section2_names": {
+      "ring kind sheet / dirs / manifest / by-name pointer": "sheets/ lib dir (installer/foundation.py CANONICAL_DIRS), by-name/<name>/SHEET.md (installer/planning.py sheet loop, SHEET_MANIFEST_FILE), test_a_sheet_lands_in_the_lib_copy_and_takes_one_flat_pointer",
+      "no host adapter": "ADAPTED_KINDS unchanged, test_a_sheet_gets_no_adapter",
+      "refused entries scripts/, requirements.txt, tools.txt": "SHEET_REFUSED_ENTRIES in common.py; probes P2/P3 refuse; test covers scripts/ and requirements.txt",
+      "frontmatter name/description(<=140)/packs": "SHEET_REQUIRED_FRONTMATTER, DESCRIPTION_BUDGET = 140 reused from common.py",
+      "sections Craft/Lens required, Vocabulary optional, Workspace/Stages/Spec fields refused": "SHEET_REQUIRED_SECTIONS / SHEET_OPTIONAL_SECTIONS / SHEET_PACK_ONLY_SECTIONS; probe P1 refuses ## Workspace",
+      "Lens keys against the named packs' adapter kinds": "sheets.pack_lens_kinds reads the pack's adapter cell through scripts.tickets_adapters.ADAPTER_REGISTRY (one mapping, not a second table); probe P4 refuses ### doc on orch-code-pack",
+      "SHEET_BUDGET = 100": "common.py SHEET_BUDGET = 100; see F1 for the counting base",
+      "packs: refusal": "tickets_pins.pin_fields(pack=) via tickets_issue.pinned_items via tickets_mint._minted; both verbs share _minted; two refusal sentences (excluded / undeclared)",
+      "launch prompt sheet line (do)": "verbatim against the section 2 row, character for character: Read the sheet `<name>` at <path> whole (sha256 <digest>). Its `## Craft` binds your making; its `## Lens` `### <kind>` entry adds to the craft's `### <kind>` and never loosens it.",
+      "launch prompt sheet line (judge)": "verbatim against the section 2 row: ... Its `## Lens` `### <kind>` entry adds criteria you check beside the craft's; where it loosens the craft's, the craft wins and you report the conflict as a `sheet-defect` finding.",
+      "_sheet_lines placed after _craft_lines": "tickets_dispatch_launch.launch_prompt renders *_craft_lines then *_sheet_lines",
+      "pack_digest not migrated": "tickets_issue.pinned_pack_digest untouched"
+    },
+    "budgets": "validate.py exit 0 at the judged tree, no ERROR; SHEET_BUDGET/CRAFT_BUDGET untouched in value; new module tools/validate_support/sheets.py 238 lines; locality note in F4",
+    "files_outside_details": "every touched file outside the Details list carries a reported reason in the executor's ## Report: tools/validate_support/sheets.py (D2, sideways at the item-kind seam; packages.py at 424), scripts/tickets_pins.py (D4, one resolver one read), sheets/.gitkeep (D3, forced by test_the_library_itself_skips_nothing), scripts/tickets_assignment.py and scripts/tickets_dispatch_launch.py (assignment carries sheets; launch renders them), scripts/tickets_issue.py (passes pack through), tools/validate.py (wiring), install.py/installer/* (Details' 'installer/'). Two Details files untouched with reasons given: scripts/orchflows.py (list already true through rings.KINDS; new dispatches through files_for) and tools/validate_support/packages.py (D2)."
+  },
+  "merge_commits": {
+    "47f893e2": "four overlaps resolved by union: tickets_assignment keeps U2's _applied_skill/_kernel_contract and U1's _sheets; tickets_dispatch_launch imports _contract_lines and _sheet_lines; tickets_issue keeps pin_fields(pack=) beside U2's _applied_skill_refusal; test_ticket_pins keeps U2's renamed frontmatter boundary case and splits U1's prompt half into test_an_unstamped_do_prompt_names_no_sheet; manifest regenerated (count 2252). No check weakened: the retired whole-prompt comparison had to go because U1 legitimately adds a line, and both halves of what it proved survive as two cases.",
+    "24643834": "manifest only (count 2259, sha b9fe7bf8...)."
+  },
+  "test_identities": {
+    "narrow_affected_run": "tools/run_tests.py tests/test_ticket_pins.py tests/test_orchflows_cli.py tests/test_ring_adapters.py tests/test_validator.py tests/test_installer_hosts.py tests/test_ticket_applied_skill.py -> exit 0, 6 modules, 209 tests, 0 failures, 0 errors, wall 60s",
+    "executor_failing_readings": "six mutants reported in B1.3's ## Report, each biting its own case, tree restored byte-identical; accepted as reported (run_required at the committed tree exit 0 corroborates the restoration)",
+    "judge_can_fail_readings": "taken without mutating the tree under test: .orch-notes/probe_sheets.py copies packs/ into a scratch root, rebinds the validator ROOT there, and grades synthetic sheets. P0 scaffold as written -> no ERROR; P1 + ## Workspace -> ERROR; P2 + scripts/run.py -> ERROR; P3 + tools.txt -> ERROR; P4 ### doc on orch-code-pack -> ERROR; P5 packs: [orch-nope-pack] -> ERROR; P6 100 body lines / 105 manifest lines -> no ERROR (F1). Scaffold binding observed: ('orch-code-pack', 'git')."
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "kind": "contract-fidelity",
+      "blocking": false,
+      "file": "tools/validate_support/sheets.py::validate_sheet_budget",
+      "evidence": "The budget counts non-empty lines of the parsed body only. contracts/sheet.md ## Budget says 'At most 100 non-empty lines in the manifest'. Probe P6: a sheet with exactly 100 non-empty body lines and 105 non-empty manifest lines (3 frontmatter fields + 2 fences) passes with no ERROR. validate_craft_budget counts the whole file; a craft has no frontmatter, so its 'body' and 'file' coincide, which is why the two look alike and differ by exactly the frontmatter.",
+      "why_not_blocking": "The frozen criterion ('tools/validate.py enforces SHEET_BUDGET') holds and spec section 2's own wording ('100 non-empty lines, enforced beside CRAFT_BUDGET') is satisfied by the body count; only the contract's word 'manifest' is missed, by a fixed five-line window, and no sheet exists yet to slip through it. Reported as fidelity, not as an acceptance false; the coordinator may weigh it otherwise under rules/verification.md 10.",
+      "cause": "C1"
+    },
+    {
+      "id": "F2",
+      "kind": "shape",
+      "blocking": false,
+      "file": "scripts/tickets_assignment.py::_sheets",
+      "evidence": "except PinError: continue drops a stamped sheet's line silently. Unreachable in practice: dispatch_assignment runs graded_admission (line 448) before building the assignment (line 491), and pinned_findings in that grade refuses an unresolvable or drifted sheet first. Still a silent fallback by the craft's 'Failure is loud and typed' clause, and the docstring is the only thing holding the two doors in step.",
+      "cause": "C2"
+    },
+    {
+      "id": "F3",
+      "kind": "test-economy",
+      "blocking": false,
+      "file": "tests/test_validator_cases/availability_and_packages.py::TestSheetAnatomy",
+      "evidence": "_write_pack(name=None, adapter='git') carries an adapter parameter no case exercises (all eight calls are _write_pack()). The Lens-key check has only its negative reading (### doc refused on a git pack); the positive it was evidently written for, a sheet naming a pack whose adapter emits another kind and keying an entry by it, is absent.",
+      "cause": "C3"
+    },
+    {
+      "id": "F4",
+      "kind": "locality",
+      "blocking": false,
+      "file": "tests/test_ticket_pins.py, scripts/tickets_assignment.py",
+      "evidence": "wc -l at the judged tree vs the parent 53c42969: tests/test_ticket_pins.py 404 -> 520 (U1 +116 of its own), scripts/tickets_assignment.py 398 -> 508 (U1 +33, U2 +77 through the merge). Both cross the craft's ~500 one-read presumption. installer/planning.py 510 -> 531 and scoped_hosts.py 665 -> 758 were already past it before U1. validate.py raised no WARN for any of them.",
+      "cause": "C4"
+    }
+  ],
+  "causes": [
+    {
+      "id": "C1",
+      "findings": ["F1"],
+      "cause": "validate_sheet_budget measures the body parse_frontmatter returns rather than the manifest bytes the contract names",
+      "smallest_change": "In tools/validate_support/sheets.py::validate_sheet_budget count `_read_source(sheet['manifest'])` instead of `body`, mirroring validate_craft_budget (one line; pass the manifest, drop the body parameter). The existing over-budget case (120 clauses) still reds; add the boundary case: 96 body lines + 5 frontmatter lines refused, 95 + 5 passes.",
+      "scope": "successor (fits U7a, which authors the first real sheets, or U10, which re-exports these checks)"
+    },
+    {
+      "id": "C2",
+      "findings": ["F2"],
+      "cause": "a second reader of the pin swallows the refusal the first reader owns",
+      "smallest_change": "Let PinError propagate out of _sheets (drop the try/except) so an unreachable state, if it is ever reached, is a loud launch refusal naming the sheet rather than a prompt missing a line; the docstring's second paragraph then goes.",
+      "scope": "successor"
+    },
+    {
+      "id": "C3",
+      "findings": ["F3"],
+      "cause": "a fixture parameter was written for a case that was never added",
+      "smallest_change": "Either delete the adapter parameter and its replace() branch, or add the one case it was for: a second synthetic pack with `| adapter | doc |` (or whichever registered adapter emits `doc`) named in packs:, a sheet keying `### git` and `### doc`, no ERROR.",
+      "scope": "successor"
+    },
+    {
+      "id": "C4",
+      "findings": ["F4"],
+      "cause": "two modules absorbed both U1's and U2's growth at the same seam",
+      "smallest_change": "Split tests/test_ticket_pins.py at its own stated seam: PinnedItemResolutionTest (the digest) stays, StampedCallableTest (the doors: packs:, prompt lines) moves to tests/test_ticket_stamped_callables.py; regenerate the serial-compat manifest. scripts/tickets_assignment.py: move _sheets, _applied_skill, _kernel_contract, _declares_environment into a tickets_assignment_items.py sibling with the same package/flat import pair. Not this unit's alone -- the merge is where the sum crossed.",
+      "scope": "successor"
+    }
+  ],
+  "observations": [
+    "Executor deviation D1 (the Done line's `--scope scripts tests tools installer` is refused by run_tests.py; comma form runs) is confirmed by run_tests.py --help: --scope takes one comma-separated value. Every unit's Done line in the spec carries the same spelling.",
+    "The executor's U10 note stands: the sheet checks read ROOT/sheets through the validator's rebindable ROOT, so `orchflows check <ring>` needs a root rebinding, not new checks. My probe used exactly that rebinding.",
+    "Sheet by-name pointer text is inlined in installer/planning.py the way the workflow pointer is (not through by_name_pointer_text, which prepends a role preamble a sheet has no role for): matches the nearer idiom.",
+    "The scaffold's pack binding is data-driven (first resolvable pack, its adapter's kind) so no domain name sits in machinery; on this host it binds ('orch-code-pack', 'git')."
+  ],
+  "not_done": [
+    "No judged file edited; no repair taken (rules/verification.md 10: non-blocking findings are reported, carried as successor scope).",
+    "No exhaustive `unittest discover` lane; run_required.py at the judged tree covered all 94 modules.",
+    "No re-take of the executor's six mutants: the restoration is corroborated by run_required exit 0 at the committed tree and by the judge-side probes above.",
+    "Nothing dispatched."
+  ]
+}

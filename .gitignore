@@ -34,3 +34,6 @@ Thumbs.db
 Desktop.ini
 .vscode/
 .idea/
+# BEGIN ORCHFLOWS MANAGED IGNORES
+node_modules/
+# END ORCHFLOWS MANAGED IGNORES

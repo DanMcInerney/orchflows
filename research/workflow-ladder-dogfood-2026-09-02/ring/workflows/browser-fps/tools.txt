@@ -1,0 +1,10 @@
+# What this workflow's calls need on the machine. Nothing here is installed
+# by orchflows: the build's own dependencies live in the workspace's
+# package.json, and these are the machine's.
+node >=20
+pnpm
+git
+# The probe drives the built site in a real browser, so playwright's browser
+# cache has to already hold one; `pnpm exec playwright install chromium`
+# fills it.
+chromium :: node -e "const f=require('fs'),o=require('os'),p=require('path');const c=process.env.PLAYWRIGHT_BROWSERS_PATH||(process.platform==='win32'?p.join(o.homedir(),'AppData','Local','ms-playwright'):process.platform==='darwin'?p.join(o.homedir(),'Library','Caches','ms-playwright'):p.join(o.homedir(),'.cache','ms-playwright'));process.exit(f.existsSync(c)&&f.readdirSync(c).some(n=>n.startsWith('chromium'))?0:1)"

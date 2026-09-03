@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import subprocess
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 BOUND_TERM_RE = __dep_common.BOUND_TERM_RE
 LOOP_TRIGGER_RE = __dep_common.LOOP_TRIGGER_RE
 MD_LINK_RE = __dep_common.MD_LINK_RE
@@ -15,7 +15,7 @@ hashlib = __dep_common.hashlib
 json = __dep_common.json
 re = __dep_common.re
 
-from tools.validate_support import packages as __dep_packages
+from . import packages as __dep_packages
 CONTRACTS_DIR = __dep_packages.CONTRACTS_DIR
 Diagnostics = __dep_packages.Diagnostics
 PINS_FILE = __dep_packages.PINS_FILE
@@ -23,10 +23,10 @@ PIN_MESSAGE = __dep_packages.PIN_MESSAGE
 _read_source = __dep_packages._read_source
 rel = __dep_packages.rel
 
-from tools.validate_support import structure as __dep_structure
+from . import structure as __dep_structure
 _doclint = __dep_structure._doclint
 
-from tools.validate_support.names import _heading_slugs
+from .names import _heading_slugs
 
 def validate_loop_lint(body: str, pkg: dict, diag: Diagnostics) -> None:
     if not LOOP_TRIGGER_RE.search(body):
@@ -290,6 +290,9 @@ SECTION_EXPECTATIONS = {
     ("rules/composition.md", 9): "Generic skills",
     ("rules/composition.md", 10): "named T0 carrier",
     ("rules/composition.md", 11): "binding contract",
+    ("rules/composition.md", 12): "stamped by the caller",
+    ("rules/composition.md", 13): "Recurrence.",
+    ("rules/composition.md", 14): "Placement.",
     ("rules/delegation.md", 2): "glue-only",
     ("rules/delegation.md", 8): "closed callable registry",
     ("rules/delegation.md", 10): "Artifact primacy",

@@ -55,11 +55,26 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 )
 
         # No skill is glue any more: the driver and the join are commands,
-        # so every callable declares planner or worker.
+        # so every callable declares planner or worker. The kernel tier is
+        # where the callables are; `skills/workflows/` is the library's
+        # other skills tier, and a body there is prose a driver reads by
+        # name rather than a callable anything dispatches -- so it answers
+        # to the same no-glue reading and to no entry in this map. That the
+        # tier actually carries one is
+        # tests/test_catalog_completeness.py's population check.
         self.assertEqual(
             set(self.WORKFLOW_ROLES),
-            {path.parent.name for path in (ROOT / "skills").rglob("SKILL.md")},
+            {path.parent.name for path in (ROOT / "skills" / "kernel").rglob("SKILL.md")},
         )
+        for path in sorted((ROOT / "skills" / "workflows").rglob("SKILL.md")):
+            with self.subTest(workflow=path.parent.name):
+                self.assertNotIn(
+                    "role",
+                    _frontmatter(path.relative_to(ROOT).as_posix()),
+                    "a workflow declares no role: its prose runs in the "
+                    "orchestrator's own context, so there is no role for a "
+                    "host surface to bind (validate_role refuses one here)",
+                )
 
         delegation = (ROOT / "rules/delegation.md").read_text(encoding="utf-8")
         roles = (ROOT / "rules/roles.md").read_text(encoding="utf-8")

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2196,
+  "count": 2328,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -78,6 +78,14 @@
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_check_fails_when_one_catalog_drops_one_name",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_name_reader_is_that_host_s_own_path_template",
+   "test_catalog_completeness.WorkflowHomeDiscoveryTests.test_both_homes_are_discovered_in_the_resolver_s_order",
+   "test_catalog_completeness.WorkflowHomeDiscoveryTests.test_the_package_loop_leaves_the_workflow_home_alone",
+   "test_catalog_completeness.WorkflowHostSurfaceTests.test_a_declared_role_is_what_would_bind_them",
+   "test_catalog_completeness.WorkflowHostSurfaceTests.test_no_host_surface_binds_a_workflow_to_a_child",
+   "test_catalog_completeness.WorkflowHostSurfaceTests.test_no_workflow_declares_a_role_to_bind",
+   "test_catalog_completeness.WorkflowHostSurfaceTests.test_the_population_is_real",
+   "test_checkpointed_build.CheckpointedBuildBodyTest.test_dropping_any_fact_fails_the_check_with_the_span_standing",
+   "test_checkpointed_build.CheckpointedBuildBodyTest.test_each_step_carries_the_facts_its_caller_needs",
    "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_help_usage_and_summary_name_one_exact_surface",
@@ -523,6 +531,8 @@
    "test_installer.TestRuntimeDirsSeedTheSink.test_the_override_redirects_what_an_install_seeds",
    "test_installer.TestRuntimeDirsSeedTheSink.test_the_sink_it_seeds_is_the_one_the_scripts_resolve",
    "test_installer.TestRuntimeDirsSeedTheSink.test_user_scope_seeds_the_sink",
+   "test_installer.TestScopedHostConfiguration.test_a_sheet_directory_is_read_as_a_sheet_and_a_bare_one_is_not",
+   "test_installer.TestScopedHostConfiguration.test_a_sheet_lands_in_the_lib_copy_and_takes_one_flat_pointer",
    "test_installer.TestScopedHostConfiguration.test_by_name_index_is_host_agnostic",
    "test_installer.TestScopedHostConfiguration.test_codex_limit_merge_handles_dotted_agent_keys",
    "test_installer.TestScopedHostConfiguration.test_codex_role_agent_names_follow_spawn_identifier_grammar",
@@ -538,6 +548,7 @@
    "test_installer.TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content",
    "test_installer.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle",
    "test_installer.TestScriptNames.test_every_bare_script_a_template_stub_names_is_shipped",
+   "test_installer.TestScriptNames.test_orchflows_check_grades_a_ring_from_the_installed_layout",
    "test_installer.TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout",
    "test_installer.TestSourceCommit.test_a_dry_run_says_why_it_could_not_resolve_a_source_commit",
    "test_installer.TestSourceCommit.test_a_mutating_install_without_an_accepted_identity_changes_nothing",
@@ -665,15 +676,34 @@
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
+   "test_orchflows_bundle.ClosureTests.test_a_bundle_reached_twice_is_cloned_once_and_is_not_a_cycle",
+   "test_orchflows_bundle.ClosureTests.test_a_bundle_with_no_manifest_imports_as_it_always_did",
+   "test_orchflows_bundle.ClosureTests.test_a_cycle_is_refused_naming_the_manifest_that_closes_it",
+   "test_orchflows_bundle.ClosureTests.test_add_pins_every_bundle_the_named_one_requires",
+   "test_orchflows_bundle.ClosureTests.test_an_unpinned_requirement_is_refused_naming_the_manifest",
+   "test_orchflows_bundle.ClosureTests.test_restore_reports_a_requirement_it_cannot_pin_and_syncs_on",
+   "test_orchflows_bundle.ClosureTests.test_sync_restores_a_closure_the_lock_names_only_the_root_of",
+   "test_orchflows_bundle.ScaffoldTests.test_a_manifest_takes_its_rings_own_name_when_nobody_names_it",
+   "test_orchflows_bundle.ScaffoldTests.test_a_scaffolded_manifest_reads_back_through_the_reader",
+   "test_orchflows_bundle.ScaffoldTests.test_this_repositorys_own_bundle_is_named_and_requires_nothing",
    "test_orchflows_cli.AddTests.test_a_branch_name_is_refused_with_the_pin_remedy",
    "test_orchflows_cli.AddTests.test_a_full_commit_sha_is_a_pin_without_asking_the_remote",
    "test_orchflows_cli.AddTests.test_a_reference_without_a_pin_is_refused",
    "test_orchflows_cli.AddTests.test_a_tag_is_a_pin_and_the_import_resolves_through_the_ring",
    "test_orchflows_cli.AddTests.test_sync_restores_a_deleted_import_from_the_lock",
+   "test_orchflows_cli.CheckTests.test_a_call_edge_that_resolves_to_nothing_is_refused",
+   "test_orchflows_cli.CheckTests.test_a_directory_holding_a_ring_is_read_as_that_ring",
+   "test_orchflows_cli.CheckTests.test_a_ring_that_is_not_there_is_named_rather_than_passed",
+   "test_orchflows_cli.CheckTests.test_a_scaffolded_home_ring_passes_every_item_check",
+   "test_orchflows_cli.CheckTests.test_a_sheet_carrying_a_pack_only_section_is_refused",
+   "test_orchflows_cli.CheckTests.test_a_workflow_body_over_the_tier_budget_is_refused",
+   "test_orchflows_cli.CheckTests.test_the_ring_defaults_to_this_project_then_the_home_ring",
+   "test_orchflows_cli.ListTests.test_a_sheet_is_listed_like_every_other_ring_item",
    "test_orchflows_cli.ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
    "test_orchflows_cli.ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
    "test_orchflows_cli.NewTests.test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one",
    "test_orchflows_cli.NewTests.test_a_new_pack_is_a_valid_pack_the_day_it_is_written",
+   "test_orchflows_cli.NewTests.test_a_new_sheet_is_a_valid_sheet_the_day_it_is_written",
    "test_orchflows_cli.NewTests.test_a_reserved_name_is_refused_before_anything_is_written",
    "test_orchflows_cli.SyncTests.test_lib_version_guesses_nothing_when_no_receipt_is_readable",
    "test_orchflows_cli.SyncTests.test_lib_version_records_the_installed_identity_or_nulls",
@@ -697,6 +727,35 @@
    "test_orchflows_envs.SyncTests.test_an_untrusted_project_item_is_named_with_its_remedy_and_never_built",
    "test_orchflows_envs.SyncTests.test_sync_builds_declaring_items_and_passes_the_silent_ones",
    "test_orchflows_envs.SyncTests.test_the_home_gitignore_covers_the_environments",
+   "test_orchflows_tooling.CheckTests.test_a_line_the_parser_cannot_read_refuses_the_ring",
+   "test_orchflows_tooling.CheckTests.test_a_ring_items_declaration_passes_when_every_line_parses",
+   "test_orchflows_tooling.GrammarTests.test_every_malformed_line_is_a_problem_carrying_its_line_number",
+   "test_orchflows_tooling.GrammarTests.test_the_two_forms_parse_with_their_version_spec_and_probe",
+   "test_orchflows_tooling.IgnoreTests.test_the_home_ring_block_carries_the_node_modules_line",
+   "test_orchflows_tooling.IgnoreTests.test_the_project_block_carries_it_and_keeps_the_repositorys_own_lines",
+   "test_orchflows_tooling.InventoryTests.test_an_untrusted_project_items_probes_are_never_run",
+   "test_orchflows_tooling.InventoryTests.test_every_declaring_item_is_checked_and_nothing_is_installed",
+   "test_orchflows_tooling.NodeTests.test_a_failed_install_leaves_no_stamp_to_reuse",
+   "test_orchflows_tooling.NodeTests.test_a_manager_that_cannot_start_is_raised_as_the_install_failure",
+   "test_orchflows_tooling.NodeTests.test_a_pnpm_lockfile_takes_pnpms_frozen_install",
+   "test_orchflows_tooling.NodeTests.test_an_untrusted_project_item_is_named_with_its_remedy_and_never_installed",
+   "test_orchflows_tooling.NodeTests.test_no_node_no_lockfile_and_no_manager_are_skipped_with_their_remedy",
+   "test_orchflows_tooling.NodeTests.test_the_install_spawns_the_file_path_resolves_not_the_bare_name",
+   "test_orchflows_tooling.NodeTests.test_the_lockfile_install_runs_in_the_item_directory_and_reuses_after",
+   "test_orchflows_tooling.PruneTests.test_a_project_items_environment_survives_a_prune_from_elsewhere",
+   "test_orchflows_tooling.PruneTests.test_an_environment_whose_declaration_left_the_machine_is_pruned",
+   "test_orchflows_tooling.PruneTests.test_prune_removes_exactly_the_environment_no_item_claims",
+   "test_orchflows_tooling.PruneTests.test_prune_says_nothing_when_there_is_no_environments_tree_at_all",
+   "test_orchflows_tooling.ResolutionTests.test_a_missing_tool_is_reported_and_a_present_one_is_silent",
+   "test_orchflows_tooling.ResolutionTests.test_a_missing_variable_is_reported_by_name_and_never_by_value",
+   "test_orchflows_tooling.ResolutionTests.test_a_probe_that_cannot_run_at_all_is_reported_not_swallowed",
+   "test_orchflows_tooling.ResolutionTests.test_a_probes_exit_code_decides_and_no_path_lookup_is_made",
+   "test_orchflows_tooling.ResolutionTests.test_a_version_spec_is_not_read_when_the_line_carries_a_probe",
+   "test_orchflows_tooling.ResolutionTests.test_a_version_spec_is_read_off_version_output_only_when_it_parses",
+   "test_orchflows_tooling.ResolutionTests.test_an_unparsable_line_is_reported_beside_the_missing_tools",
+   "test_orchflows_tooling.ResolutionTests.test_the_spawn_takes_the_file_path_resolves_not_the_bare_name",
+   "test_orchflows_tooling.SyncReportTests.test_sync_reports_each_missing_tool_with_its_line_and_prunes_the_orphan",
+   "test_orchflows_tooling.ValidatorTests.test_the_library_validator_names_the_line_a_reader_cannot_parse",
    "test_packs.PackResolutionTests.test_a_bundle_edit_invalidates_the_remembered_grant",
    "test_packs.PackResolutionTests.test_a_pack_relative_signature_contract_feeds_no_digest",
    "test_packs.PackResolutionTests.test_a_referenced_byte_changes_the_digest",
@@ -765,11 +824,12 @@
    "test_ring_adapters.CommittedProofTests.test_the_committed_claude_shim_is_what_the_machinery_renders",
    "test_ring_adapters.CommittedProofTests.test_the_committed_shim_holds_no_machine_specific_path",
    "test_ring_adapters.CommittedProofTests.test_the_committed_shim_keeps_its_manual_invocation_flag",
-   "test_ring_adapters.PortabilityTests.test_super_research_copies_out_as_a_skill_and_a_workflow_together",
+   "test_ring_adapters.PortabilityTests.test_the_acquisition_pair_copies_out_under_two_distinct_names",
    "test_ring_adapters.ScopeTests.test_a_hand_written_neighbour_is_never_removed",
    "test_ring_adapters.ScopeTests.test_a_home_ring_skill_and_workflow_of_one_name_render_to_two_destinations",
    "test_ring_adapters.ScopeTests.test_a_pack_gets_no_adapter",
    "test_ring_adapters.ScopeTests.test_a_reserved_ring_item_gets_no_adapter",
+   "test_ring_adapters.ScopeTests.test_a_sheet_gets_no_adapter",
    "test_ring_adapters.ScopeTests.test_project_adapters_point_repository_relative",
    "test_ring_adapters.ScopeTests.test_sync_removes_the_adapter_of_a_deleted_ring_item",
    "test_rings.InventoryTests.test_inventory_reports_a_reserved_ring_item_rather_than_hiding_it",
@@ -779,12 +839,15 @@
    "test_rings.ReservationAndShadowTests.test_a_reserved_ring_name_refuses_loudly_rather_than_never_running",
    "test_rings.ReservationAndShadowTests.test_the_library_keeps_its_own_reserved_names",
    "test_rings.RingOrderTests.test_a_bare_packs_ancestor_directory_is_not_a_root",
+   "test_rings.RingOrderTests.test_a_reusable_workflow_shadows_a_gallery_name",
    "test_rings.RingOrderTests.test_a_workflow_reads_workflows_in_a_ring_and_example_workflows_in_lib",
    "test_rings.RingOrderTests.test_lib_skills_expand_one_sublayer",
+   "test_rings.RingOrderTests.test_lib_workflows_search_the_skills_tier_before_the_gallery",
    "test_rings.RingOrderTests.test_missing_home_roots_do_not_break_resolution",
    "test_rings.RingOrderTests.test_the_home_ring_is_never_read_as_a_project_ring",
    "test_rings.RingOrderTests.test_the_search_order_is_project_home_imports_then_lib",
    "test_rings.SuperResearchGoalTests.test_the_skill_stays_resolvable_as_a_project_ring_skill",
+   "test_rings.SuperResearchGoalTests.test_the_workflow_name_no_longer_names_a_skill_as_well",
    "test_rings.SuperResearchGoalTests.test_the_workflow_resolves_from_the_lib_ring_by_bare_name",
    "test_rings.TrustTests.test_a_project_ring_refuses_until_the_user_grants_trust",
    "test_rings.TrustTests.test_a_repo_supplied_ledger_grants_nothing",
@@ -1007,6 +1070,21 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_plan_route_consumes_the_root_shape_it_sealed",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_team_lane_emits_the_wave_lifecycle",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_a_checkout_without_by_name_falls_back_to_the_resolved_skill",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_a_declared_environment_adds_the_interpreter_line",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_a_do_stamping_no_skill_enters_the_kernel_verb_as_before",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_no_declared_environment_leaves_the_interpreter_line_off",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_contract_path_is_the_installers_flat_by_name_file",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_identity_line_enters_the_applied_skill_and_its_file",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_judge_verb_names_its_own_contract",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_second_line_binds_the_ticket_to_the_kernel_contract",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_stamp_moves_the_first_line_and_adds_exactly_one",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_kernel_verb_is_refused_as_an_applied_skill",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_matching_role_mints_on_each_verb",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_planner_skill_is_refused_on_do",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_skill_declaring_no_role_is_refused_rather_than_assumed",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_worker_skill_is_refused_on_judge",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_an_unresolvable_skill_is_refused_by_name",
    "test_ticket_callables.CallableAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
    "test_ticket_callables.CallableAdmissionTest.test_a_child_whose_parent_the_seal_does_not_name_is_refused",
    "test_ticket_callables.CallableAdmissionTest.test_parent_and_child_both_admit_and_the_parent_owns_no_members",
@@ -1060,6 +1138,14 @@
    "test_ticket_frames.FrameCloseTest.test_land_stays_the_callable_command_and_frame_close_says_so",
    "test_ticket_frames.FrameJournalTest.test_a_journal_append_outlives_the_frames_nominal_expiry",
    "test_ticket_frames.FrameJournalTest.test_a_wave_appends_through_the_result_channel_under_the_frames_identity",
+   "test_ticket_frames.FrameLawOwnerTest.test_every_body_still_returns_the_close_it_owes",
+   "test_ticket_frames.FrameLawOwnerTest.test_no_body_restates_the_journal_command",
+   "test_ticket_frames.FrameLawOwnerTest.test_putting_the_paragraph_back_into_a_copy_fails_the_check",
+   "test_ticket_frames.FrameLawTest.test_a_called_frame_is_handed_the_law_too",
+   "test_ticket_frames.FrameLawTest.test_a_named_workflow_resolves_to_the_body_the_driver_reads",
+   "test_ticket_frames.FrameLawTest.test_an_improvised_frame_names_no_workflow_path",
+   "test_ticket_frames.FrameLawTest.test_an_unresolvable_workflow_is_refused_before_the_run_exists",
+   "test_ticket_frames.FrameLawTest.test_the_open_prints_the_three_law_lines_the_driver_owes",
    "test_ticket_frames.FrameShapeLineTest.test_a_called_frame_is_already_a_wave_of_its_callers_plan",
    "test_ticket_frames.FrameShapeLineTest.test_a_lawful_line_of_every_construct_opens_the_frame",
    "test_ticket_frames.FrameShapeLineTest.test_a_plan_the_work_outgrew_prints_and_never_refuses",
@@ -1086,6 +1172,34 @@
    "test_ticket_frames.SavedWorkflowShapeTest.test_the_scaffolded_workflow_states_a_plan",
    "test_ticket_frames.ShapeGrammarOwnerTest.test_a_construct_dropped_from_either_side_is_caught",
    "test_ticket_frames.ShapeGrammarOwnerTest.test_the_prose_and_the_printed_notation_carry_the_same_anchors",
+   "test_ticket_pins.PinnedItemDoorTest.test_a_nearer_ring_shadowing_the_stamped_sheet_is_refused",
+   "test_ticket_pins.PinnedItemDoorTest.test_a_sheet_edited_under_the_seal_is_refused_at_the_door",
+   "test_ticket_pins.PinnedItemDoorTest.test_an_applied_skill_edited_under_the_seal_is_refused",
+   "test_ticket_pins.PinnedItemDoorTest.test_an_unchanged_sheet_and_skill_pass_the_door",
+   "test_ticket_pins.PinnedItemDoorTest.test_half_a_pin_names_nothing_and_says_so",
+   "test_ticket_pins.PinnedItemFieldTest.test_a_ticket_stamping_nothing_gets_four_absent_fields",
+   "test_ticket_pins.PinnedItemFieldTest.test_one_sheet_stamped_twice_is_refused",
+   "test_ticket_pins.PinnedItemFieldTest.test_stamped_names_and_digests_are_written_as_one_sorted_pair",
+   "test_ticket_pins.PinnedItemResolutionTest.test_a_digest_ignores_the_checkouts_line_endings",
+   "test_ticket_pins.PinnedItemResolutionTest.test_a_sheet_resolves_nearest_first_across_project_home_and_lib",
+   "test_ticket_pins.PinnedItemResolutionTest.test_a_sheets_digest_covers_every_file_in_its_directory",
+   "test_ticket_pins.PinnedItemResolutionTest.test_a_skills_digest_skips_its_tests_and_installed_dependencies",
+   "test_ticket_pins.PinnedItemResolutionTest.test_an_applied_skill_resolves_nearest_first_the_same_way",
+   "test_ticket_pins.PinnedItemResolutionTest.test_an_unresolvable_item_is_refused_by_name_rather_than_pinned",
+   "test_ticket_pins.PinnedItemResolutionTest.test_the_drift_refusal_names_the_item_the_ring_and_both_digests",
+   "test_ticket_pins.PinnedItemResolutionTest.test_two_rings_holding_one_name_hash_to_two_digests",
+   "test_ticket_pins.StampedCallableTest.test_a_do_without_the_flags_carries_no_new_frontmatter_field",
+   "test_ticket_pins.StampedCallableTest.test_a_sheet_declaring_no_packs_is_refused_rather_than_stamped_anywhere",
+   "test_ticket_pins.StampedCallableTest.test_a_sheet_that_does_not_name_the_stamped_pack_refuses",
+   "test_ticket_pins.StampedCallableTest.test_a_sheet_that_moves_after_the_mint_refuses_at_admission",
+   "test_ticket_pins.StampedCallableTest.test_a_stamped_do_pins_both_kinds_and_admits",
+   "test_ticket_pins.StampedCallableTest.test_a_stamped_do_prompt_carries_the_sheet_line_verbatim",
+   "test_ticket_pins.StampedCallableTest.test_a_stamped_judge_pins_the_same_way",
+   "test_ticket_pins.StampedCallableTest.test_a_stamped_judge_prompt_carries_the_judges_sheet_line_verbatim",
+   "test_ticket_pins.StampedCallableTest.test_an_unresolvable_sheet_is_refused_before_the_run_exists",
+   "test_ticket_pins.StampedCallableTest.test_an_unstamped_do_prompt_names_no_sheet",
+   "test_ticket_pins.StampedCallableTest.test_every_stamped_sheet_gets_its_own_line",
+   "test_ticket_pins.StampedCallableTest.test_the_stamped_pins_are_sealed_with_the_rest_of_the_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_launch",
@@ -1250,6 +1364,13 @@
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_temporary_directory_cleanup_of_the_directory_it_moved_into",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
+   "test_workflow_ladder_law.IdiomsTest.test_a_padded_idiom_fails_the_ceiling_check",
+   "test_workflow_ladder_law.IdiomsTest.test_each_idiom_is_one_sentence_inside_its_ceiling",
+   "test_workflow_ladder_law.IdiomsTest.test_every_idiom_is_worded_once_under_the_heading",
+   "test_workflow_ladder_law.IdiomsTest.test_the_recurrence_rule_is_linked_rather_than_restated",
+   "test_workflow_ladder_law.LadderFactsTest.test_dropping_any_fact_fails_the_check_with_the_anchor_standing",
+   "test_workflow_ladder_law.LadderFactsTest.test_each_fact_is_carried_by_its_owner",
+   "test_workflow_ladder_law.RetiredWordingTest.test_no_owner_still_carries_the_replaced_wording",
    "test_workspace.WorkspaceTest.test_actual_mutations_include_every_changed_and_new_path",
    "test_workspace.WorkspaceTest.test_establishment_dispatches_on_the_registered_workspace_strategy",
    "test_workspace.WorkspaceTest.test_workspace_does_not_import_scope_authority",
@@ -2006,6 +2127,14 @@
    "tests.test_validator_cases.availability_and_packages.TestASkippedCheckSaysSo.test_each_absent_owner_is_named_rather_than_passed_over",
    "tests.test_validator_cases.availability_and_packages.TestASkippedCheckSaysSo.test_the_library_itself_skips_nothing",
    "tests.test_validator_cases.availability_and_packages.TestASkippedCheckSaysSo.test_the_link_check_names_every_root_that_bought_its_silence",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_lens_entry_keyed_by_a_kind_the_named_pack_never_emits_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_missing_mandatory_section_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_pack_only_section_inside_a_sheet_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_packs_name_that_resolves_to_no_pack_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_requirements_file_inside_a_sheet_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_scripts_directory_inside_a_sheet_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_sheet_over_the_budget_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_well_formed_sheet_passes",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_a_references_only_directory_is_no_package_and_no_finding",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_bom_prefixed_valid_skill_md_is_not_falsely_flagged",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_empty_skill_md_is_error_line_and_exit_1_no_traceback",
@@ -2016,8 +2145,11 @@
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_pack_declaring_role_at_all_is_error",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_role_value_outside_allowed_set_is_error",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_skill_missing_role_is_error",
-   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_none_role_is_error",
-   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_planner_role_is_valid",
+   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_a_role_is_error",
+   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_no_role_is_valid",
+   "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_a_workflow_in_the_skills_tier_is_graded_like_a_gallery_one",
+   "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_one_name_in_both_homes_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_the_same_name_in_one_home_alone_is_no_finding",
    "tests.test_validator_cases.contracts_and_names.TestEnvelopeCheck.test_bound_unit_leading_with_the_envelope_passes",
    "tests.test_validator_cases.contracts_and_names.TestEnvelopeCheck.test_bound_unit_return_riding_the_work_item_carrier_passes",
    "tests.test_validator_cases.contracts_and_names.TestEnvelopeCheck.test_bound_unit_return_without_envelope_is_error",
@@ -2199,7 +2331,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e88851b1873d3ba02195230178a4fc511bc7863bbebc181c8d03c08b083e9c71"
+  "sha256": "2394adbad1638149764e9417aafbecbe5254b913dcb51c15fe4b4130085ce25d"
  },
  "mutation_owners": [
   {
@@ -2262,6 +2394,15 @@
   {
    "module": "tests.test_catalog_completeness",
    "owner": "CatalogCompletenessTests._plan",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_catalog_completeness",
+   "owner": "WorkflowHostSurfaceTests._plan",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",
@@ -3272,6 +3413,14 @@
   },
   {
    "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_a_sheet_lands_in_the_lib_copy_and_takes_one_flat_pointer",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
    "owner": "TestScopedHostConfiguration.test_by_name_index_is_host_agnostic",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -3345,6 +3494,14 @@
   {
    "module": "tests.test_installer_cases.planning.script_inventory",
    "owner": "TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.script_inventory",
+   "owner": "TestScriptNames.test_orchflows_check_grades_a_ring_from_the_installed_layout",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
@@ -3948,6 +4105,78 @@
    ]
   },
   {
+   "module": "tests.test_orchflows_bundle",
+   "owner": "ScaffoldTests.test_a_manifest_takes_its_rings_own_name_when_nobody_names_it",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_bundle",
+   "owner": "ScaffoldTests.test_a_scaffolded_manifest_reads_back_through_the_reader",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_bundle",
+   "owner": "_git",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_bundle",
+   "owner": "_home",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "CheckTests._check",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "CheckTests._ring",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "CheckTests.test_a_ring_that_is_not_there_is_named_rather_than_passed",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "CheckTests.test_the_ring_defaults_to_this_project_then_the_home_ring",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "ListTests.test_a_sheet_is_listed_like_every_other_ring_item",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
    "module": "tests.test_orchflows_cli",
    "owner": "ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
    "restoration": "selected-module-boundary",
@@ -3974,6 +4203,14 @@
   {
    "module": "tests.test_orchflows_cli",
    "owner": "NewTests.test_a_new_pack_is_a_valid_pack_the_day_it_is_written",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "NewTests.test_a_new_sheet_is_a_valid_sheet_the_day_it_is_written",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -4013,6 +4250,38 @@
   },
   {
    "module": "tests.test_orchflows_envs",
+   "owner": "_world",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_tooling",
+   "owner": "CheckTests._check",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_tooling",
+   "owner": "CheckTests._ring",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_tooling",
+   "owner": "SyncReportTests.test_sync_reports_each_missing_tool_with_its_line_and_prunes_the_orphan",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_tooling",
    "owner": "_world",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -4069,7 +4338,7 @@
   },
   {
    "module": "tests.test_ring_adapters",
-   "owner": "PortabilityTests.test_super_research_copies_out_as_a_skill_and_a_workflow_together",
+   "owner": "PortabilityTests.test_the_acquisition_pair_copies_out_under_two_distinct_names",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -4647,6 +4916,23 @@
    ]
   },
   {
+   "module": "tests.test_ticket_applied_skill",
+   "owner": "AppliedSkillPromptTest.test_the_contract_path_is_the_installers_flat_by_name_file",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_applied_skill",
+   "owner": "AppliedSkillTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
    "module": "tests.test_ticket_callables",
    "owner": "CallableIdGrammarTest.test_two_concurrent_calls_under_one_parent_mint_distinct_ids",
    "restoration": "selected-module-boundary",
@@ -4712,6 +4998,23 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_pins",
+   "owner": "StampedCallableTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_pins",
+   "owner": "_rings",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -5182,6 +5485,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_workflow_ladder_law",
+   "owner": "clause",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
    ]
   },
   {

@@ -13,10 +13,6 @@ the candidate workspace, which is the campaign call's alone.
 
     tickets.py frame-open <run> --goal-file <campaign-goal> --bound <bound> --workflow evolve
 
-The frame's `## Report` is the campaign ledger. Re-read it and every child's
-state from the sink before each generation, then append that generation's
-decision with `tickets.py result <run> <frame> --by <frame>`. Keep every
-returned `artifact:` and `findings:` line verbatim.
 
 **Design the evaluation** only where `evaluation` is `none` — a supplied
 frozen identity is already the campaign's, and every call below reads that
@@ -25,8 +21,9 @@ instead:
     tickets.py do <run> --pack orch-code-pack --parent <frame>
       --goal-file <eval-goal> --bound "<= 40 tool calls"
 
-Its goal: one candidate-blind evaluation for `target`, frozen before any
-candidate exists — identity, mode, scoring criteria, required admission and
+Its goal: one candidate-blind evaluation for `target` — *freeze*: "Fix the
+identity before any candidate exists and forbid every later call from
+touching it." — identity, mode, scoring criteria, required admission and
 regression criteria, artifact-evidence adapter, promotion rule, margin and
 search policy — written into that call's `## Report` and nowhere inside
 `mutation_scope`. In judged mode the accepted design owns the judge brief,

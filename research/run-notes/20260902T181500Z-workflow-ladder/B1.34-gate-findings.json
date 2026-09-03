@@ -1,0 +1,189 @@
+{
+  "ticket": "B1.34",
+  "run": "20260902T181500Z-workflow-ladder",
+  "dispatch_id": "B1.34:d1",
+  "judge": "orch-judge through orch-content-pack craft, Lens ### doc",
+  "tip": "5a67d847d998d05fa75165015f4198cd9f8a8f29",
+  "owners_read": [
+    "rules/composition.md (clauses 1, 2, 4, 9, 12, 13, 14)",
+    "docs/custom-workflow-authoring.md (Rings, Dependencies, What a workflow is made of, Which work earns a callable, Idioms, Procedure step 4)",
+    "docs/vocabulary.md (reusable workflow, glue workflow, idiom, sheet, applied skill)",
+    "research/workflow-ladder-spec-2026-09-02.md (section 0, section 2, U3, U4, U7b, U7c, U7d)",
+    "scripts/tickets_frame.py FRAME_LAW (the three lines the trunk prints at frame-open)"
+  ],
+  "artifacts": [
+    {"path": "example-workflows/benchmaker/SKILL.md", "sha256": "54facd62163ef478ff516e5b71093ed5dbd5d62208d76d74f9351453e483b59a", "body_words": 362, "description_chars": 83},
+    {"path": "example-workflows/browser-game/SKILL.md", "sha256": "ace4747f196c4d03120b59a78edfbc93063bcc5f50032c4941e18c658e279412", "body_words": 420, "description_chars": 106},
+    {"path": "example-workflows/drift-canary/SKILL.md", "sha256": "084c93816b205ca9c3391e1e85fb7599ac3b337064626c916d351a7a3d946223", "body_words": 334, "description_chars": 114},
+    {"path": "example-workflows/evolve/SKILL.md", "sha256": "fa74ce1f430abbcc305070e3a5ec2589c9e2bcb6dcae21d2e78ef16c3265effd", "body_words": 398, "description_chars": 108},
+    {"path": "example-workflows/renovate/SKILL.md", "sha256": "8a01d66c8ae2132e606bddab0985951ca672bcb15a7e33490bdf2c836659c65a", "body_words": 269, "description_chars": 59},
+    {"path": "example-workflows/self-improve/SKILL.md", "sha256": "57370bfee9d1c573fe244325b1191bbaeb81c4793118266fff5b59a4c6b6ace3", "body_words": 431, "description_chars": 139},
+    {"path": "example-workflows/skill-tournament/SKILL.md", "sha256": "4a8c2ee63286de0ac1a2aa777c2e5b179e079c3c9b41c80bc73ddd8e091f5dbf", "body_words": 314, "description_chars": 101},
+    {"path": "example-workflows/super-research/SKILL.md", "sha256": "7d4ac930567a9a39ae5950a0628a15ce994d446632fe097ac1cf460571f7f776", "body_words": 390, "description_chars": 109},
+    {"path": "skills/workflows/checkpointed-build/SKILL.md", "sha256": "1cea389c9eae2ae7bd60ea86fe78850956b52acebaa512c1f7787f759a559a16", "body_words": 395, "description_chars": 138},
+    {"path": "skills/workflows/bakeoff/SKILL.md", "sha256": "2267c3cc9fe31ed7c5be8e4eddb17097ed895bba371d8499e7d51f00bd147f62", "body_words": 304, "description_chars": 119}
+  ],
+  "verdict": "does not hold as one composition: 5 blocking findings across 8 of the 10 bodies, collapsed into 3 blocking causes (C1 frame-law restatements survive the paragraph drop; C2 pre-idiom wordings of idiom facts; C3 the Return/done shape splits between bakeoff and the other nine) plus 1 non-blocking cause (C4 owner facts restated instead of linked). Budgets, descriptions, and the verbatim idiom quotes that exist all hold; validate.py exits 0.",
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": true,
+      "criterion": "restates the frame law the trunk now prints (FRAME_LAW line 2: keep every returned artifact:/findings: line verbatim and hand the line itself to the next goal file)",
+      "body": "example-workflows/super-research/SKILL.md",
+      "sites": [
+        {"lines": "25-26", "text": "Keep each returned `artifact: evidence:<store-id>` line verbatim; the next call is handed it."},
+        {"lines": "34-35", "text": "Keep the `findings: <path>` line verbatim."},
+        {"lines": "46", "text": "Its goal hands every `artifact:` and `findings:` line verbatim"},
+        {"lines": "50", "text": "Keep its `artifact: doc:` line verbatim."}
+      ],
+      "evidence": "docs/custom-workflow-authoring.md, What a workflow is made of: 'Two obligations bind every driver -- relay the typed artifact line ... and your body states neither ... a body that restates it is a second owner of it.' The relay obligation is stated four times in one body; U7d's Goal ('carries no mechanics paragraph') removed the paragraph and left the inline copies.",
+      "cause": "C1"
+    },
+    {
+      "id": "F2",
+      "blocking": true,
+      "criterion": "restates the frame law the trunk now prints (FRAME_LAW line 3: a close over two or more do children needs a judging child or an unjudged: <reason> line)",
+      "sites": [
+        {"body": "example-workflows/drift-canary/SKILL.md", "lines": "49-51", "text": "or close over the two making calls with neither the delta judge nor an `unjudged: <reason>` journal line."},
+        {"body": "example-workflows/super-research/SKILL.md", "lines": "53-55", "text": "or close over the acquisition children with neither a coverage judge nor an `unjudged: <reason>` journal line."},
+        {"body": "example-workflows/self-improve/SKILL.md", "lines": "54, 58-62", "text": "'Frame law: the first callable, mine's or deliver's, opens it.' then 'With two or more do-children the judge reads the seam ... A single-child cycle closes `unjudged: ...`' -- the trigger condition is the law's; only what the seam judge reads (delivered change equals top proposal, nothing outside scope, covered line present) is this workflow's."}
+      ],
+      "evidence": "scripts/tickets_frame.py FRAME_LAW[2] is printed with every frame-open payload; frame-close itself refuses the close (work-item.md frame bullet). A Never clause restating a refusal the trunk enforces is a second owner of it. In self-improve the label 'Frame law:' names the trunk's law for a sentence that is the workflow's own (when its frame opens).",
+      "cause": "C1"
+    },
+    {
+      "id": "F3",
+      "blocking": true,
+      "criterion": "restates the frame law the trunk now prints (FRAME_LAW lines 2 and 3) in a reusable body",
+      "body": "skills/workflows/checkpointed-build/SKILL.md",
+      "sites": [
+        {"lines": "55-58", "text": "Return: ... `probe` run over the joined tip outside every child as an exit code, beside the judge's verdict -- `artifact: git:<tip>` and the judge's `findings:` line relayed verbatim."},
+        {"lines": "33", "text": "each handed the earlier waves' `artifact:` lines (borderline: which lines a wave receives is this workflow's; that they are handed is the law's)"}
+      ],
+      "evidence": "'relayed verbatim' is FRAME_LAW[1]; 'run ... outside every child' is FRAME_LAW[2] and the outside-close idiom, which Never (line 53) already names. Spec U7b prescribes 'Return: artifact: git:<tip> and findings: relayed verbatim' -- the spec wording was carried into the body, so the fix is a wording change, not a contract change.",
+      "cause": "C1"
+    },
+    {
+      "id": "F4",
+      "blocking": true,
+      "criterion": "a ## Idioms sentence is paraphrased rather than quoted verbatim",
+      "sites": [
+        {"idiom": "freeze", "body": "example-workflows/skill-tournament/SKILL.md", "lines": "14-17", "text": "one benchmark that was built and qualified for it before the first candidate existed, and that no candidate and no generation may touch afterwards"},
+        {"idiom": "freeze", "body": "example-workflows/evolve/SKILL.md", "lines": "24-25", "text": "frozen before any candidate exists"},
+        {"idiom": "outside-close", "body": "example-workflows/renovate/SKILL.md", "lines": "44-45, 47-49", "text": "or close the frame on the delivery's own claim of its verification / read outside the delivery, as an exit code"},
+        {"idiom": "outside-close", "body": "example-workflows/self-improve/SKILL.md", "lines": "66-67, 69-71", "text": "or mark a criterion complete on the delivering child's own claim / read outside the delivery"},
+        {"idiom": "outside-close", "body": "skills/workflows/checkpointed-build/SKILL.md", "lines": "55-56", "text": "run over the joined tip outside every child as an exit code (beside Never line 53, which names `outside-close` correctly)"}
+      ],
+      "evidence": "docs/custom-workflow-authoring.md Idioms: 'Quote one verbatim; a paraphrase is a second wording of one fact.' freeze = 'Fix the identity before any candidate exists and forbid every later call from touching it.' outside-close = 'Close on a command run outside every child; never on a child's own claim.' None of the eight gallery bodies quotes or names an idiom except super-research; the wordings above predate section Idioms (U4) and U3's license was the paragraph drop only.",
+      "non_findings": "evolve line 39 'one do ... per candidate' lacks fan-out's 'launched together'; it is a different fact (per-candidate making inside a generation) and is not filed. super-research's two-round coverage loop is gap-filling, not bounded-repair, and is not filed.",
+      "cause": "C2"
+    },
+    {
+      "id": "F5",
+      "blocking": true,
+      "criterion": "the two reusable bodies and the eight gallery bodies disagree on the shape a Return: line or a frame-close takes",
+      "sites": [
+        {"body": "skills/workflows/bakeoff/SKILL.md", "lines": "44-46", "text": "Return: `winner: <typed artifact line>`, unblinded, and `findings:`, the judge's verdicts relayed verbatim, recorded by `tickets.py frame-close <run> <frame>`."},
+        {"body": "skills/workflows/bakeoff/SKILL.md", "lines": "12", "text": "tickets.py frame-open <run> --goal-file <bakeoff-goal> --bound <bound> --workflow bakeoff (no --done sealed at open either)"}
+      ],
+      "evidence": "The other nine bodies end 'Return: `tickets.py frame-close <run> <frame> --done <check|gate|verifier|probe>` ...' -- the command with its done, then what the done reads. bakeoff leads with fields and closes with a frame-close carrying no --done and a frame-open that sealed none, so bakeoff's frame has no done command at all: FRAME_LAW[2] ('Close with frame-close ... --done <command> run outside the children') and procedure step 4 ('its done is a command something outside the workflow runs') both require one. Two prescriptions produced the two shapes: U3 fixed the gallery's 'Return: tickets.py frame-close ...' line as the contract, while procedure step 4 says 'Its Return: is what frame-close records' (fields) and composition clause 4 says Return names output fields -- bakeoff followed the doc and spec U7c's 'Return: winner: ... and findings:', checkpointed-build followed U3.",
+      "cause": "C3"
+    },
+    {
+      "id": "F6",
+      "blocking": false,
+      "criterion": "restates a fact the two owners own instead of linking it; a reusable body leans on one domain's words",
+      "body": "skills/workflows/checkpointed-build/SKILL.md",
+      "sites": [
+        {"lines": "21-23", "text": "The first wave pins the artifact's dependency set -- each library, its version and the lockfile the artifact will carry."}
+      ],
+      "evidence": "docs/custom-workflow-authoring.md Dependencies owns the artifact rule ('belong to the workspace's own manifest, installed by the child in its worktree ... committed with it'). 'library', 'lockfile' are code-pack words in a body whose `pack` is a parameter (composition clause 9). Spec U7b requires the pin itself, so the obligation stays; only the restated 'where they live' goes. Not blocking: the pin obligation is spec-prescribed and the words name no pack.",
+      "cause": "C4"
+    },
+    {
+      "id": "F7",
+      "blocking": false,
+      "criterion": "restates a fact an owner owns instead of linking it",
+      "sites": [
+        {"body": "example-workflows/drift-canary/SKILL.md", "lines": "9-11", "text": "..., which is why it never model-invokes. (composition clause 1 owns why a workflow declares disable-model-invocation)"},
+        {"body": "example-workflows/skill-tournament/SKILL.md", "lines": "14-17, 24-25, 33", "text": "Both halves are workflows, not calls: each opens its own frame under this one, and the ticket tree is the call tree. / opening its frame under this one / Invoke `evolve` under this frame the same way (vocabulary's reusable-workflow entry owns the mechanism; stated three times)"},
+        {"body": "skills/workflows/checkpointed-build/SKILL.md", "lines": "48-50", "text": "the run's integration target is fixed by its first establishment, so a call that defaults it sends every later wave's merge at the driver's own tree (30 words of trunk mechanics; the Never itself -- leave workspace off no call -- is the workflow's)"},
+        {"body": "example-workflows/super-research/SKILL.md", "lines": "21-22", "text": "Time-bounding is per operation -- `research-acquire`'s `WINDOW_REACH` table decides (the applied skill's own fact, restated)"}
+      ],
+      "evidence": "Non-blocking: drift-canary's and skill-tournament's owners are composition clause 1 and vocabulary, not the two the Goal names as blocking; checkpointed-build's and super-research's owners are the trunk and the applied skill. All four are how-not-what sentences a link replaces.",
+      "cause": "C4"
+    },
+    {
+      "id": "F8",
+      "blocking": false,
+      "criterion": "composition clause 2 call-edge hygiene",
+      "sites": [
+        {"body": "example-workflows/evolve/SKILL.md", "lines": "52-53", "text": "Never: ... call `benchmaker` -- a mention, backticked; clause 2 says a skill mentioned without being called is plain text (validate.py admits it because the edge is acyclic, so it is a false edge, not a refusal)"},
+        {"body": "example-workflows/super-research/SKILL.md", "lines": "22", "text": "`research-acquire`'s `WINDOW_REACH` table -- a second backticked mention of the applied skill; clause 12 says an applied skill is not a call edge and clause 2 has no clause for applied-skill mentions"}
+      ],
+      "evidence": "Non-blocking: neither is one of the Goal's blocking classes. The applied-skill case is a gap in composition clause 2 (successor S2).",
+      "cause": "C4"
+    },
+    {
+      "id": "F9",
+      "blocking": false,
+      "criterion": "the two reusable bodies disagree on how an idiom is carried",
+      "sites": [
+        {"body": "skills/workflows/bakeoff/SKILL.md", "lines": "20-21, 35-37", "text": "*fan-out*: \"...\" / *declare-gaps*: \"...\" -- name plus verbatim quote (super-research uses the same form)"},
+        {"body": "skills/workflows/checkpointed-build/SKILL.md", "lines": "33, 46, 53", "text": "`fan-out` / `bounded-repair` / `outside-close` -- backticked name, no quote"}
+      ],
+      "evidence": "Idioms: 'Quote one verbatim'; procedure step 4: 'an idiom is quoted from Idioms above, never reworded.' Naming is neither quoting nor rewording, so it is not the Goal's paraphrase class; it is the composition's one inconsistency of form. Quoting the three in checkpointed-build costs about 50 words (395 -> about 445, inside 450); trimming F7's 30-word workspace explanation makes room.",
+      "cause": "C2"
+    }
+  ],
+  "verified_holds": [
+    "Budgets: every body inside the workflow tier's 450 words by tools/validate_support/packages.body_words (max self-improve 431, checkpointed-build 395); every description inside DESCRIPTION_BUDGET 140 (max self-improve 139, checkpointed-build 138).",
+    "Retired ledger/relay paragraph: absent from all ten bodies as a paragraph; what survives is the inline restatements F1-F3 name.",
+    "Verbatim idiom quotes: super-research (fan-out, declare-gaps) and bakeoff (fan-out, declare-gaps) match docs/custom-workflow-authoring.md Idioms byte-for-byte modulo line wrap.",
+    "Domain in the reusable tier: bakeoff names none; checkpointed-build names none beyond F6's 'library ... lockfile'. Its `git:<tip>` artifact kind is spec U7b's own wording, so it is noted (successor S4), not filed.",
+    "Stamping sentence (clause 12): checkpointed-build's 'sheets both of those stamp' and bakeoff's rubric on the judge alone are both lawful readings; they conflict with each other only as two workflows' own designs, not with the owner.",
+    "--skill / --sheet carriage (U7d): super-research reaches research-acquire by --skill on the acquisition do and stamps html-dossier by --sheet on the report do; frame-open names --workflow super-research.",
+    "frame-open shape: all ten name --workflow <name>; evolve, skill-tournament and bakeoff add --bound, which FRAME_OPEN_USAGE accepts.",
+    "tools/validate.py at tip 5a67d847: exit 0 (16 WARN lines, all pre-existing near-duplicate and browser-game allowlist warnings; one names checkpointed-build's 'deviation with the evidence that forced it' at 0.60 against orch-do -- below refusal)."
+  ],
+  "causes": [
+    {
+      "id": "C1",
+      "blocking": true,
+      "findings": ["F1", "F2", "F3"],
+      "cause": "U3's Goal was 'carry no ledger/relay paragraph', so the paragraph went and the inline sentences stating the same two obligations stayed; U7b and U7d then wrote fresh ones from the spec's own wording ('relayed verbatim', 'no mechanics paragraph'). Nothing in the run's acceptance read a body for the law's sentences, only for its paragraph.",
+      "smallest_change": "Delete the eleven sentences and clauses F1-F3 list (super-research lines 25-26, 34-35, 50, the 'hands every ... verbatim' clause at 46, and the Never clause at 53-55; drift-canary Never clause 49-51; self-improve label 'Frame law:' at 54 and the trigger sentence at 58-59, keeping the seam's three checks and the single-child unjudged line; checkpointed-build Return 55-58 reduced to '`tickets.py frame-close <run> <frame> --done <probe>` over the joined tip, `artifact: git:<tip>` beside the judge's verdict'). No owner changes; every body loses words.",
+      "within_license": true
+    },
+    {
+      "id": "C2",
+      "blocking": true,
+      "findings": ["F4", "F9"],
+      "cause": "The eight gallery bodies were written before section Idioms existed and U3 touched only the paragraph; the two reusable bodies were written against the same section in the same run by two authors who read 'quote one verbatim' two ways.",
+      "smallest_change": "At each F4 site put the idiom's name and its verbatim sentence in the form super-research and bakeoff already use (*freeze*: \"Fix the identity before any candidate exists and forbid every later call from touching it.\" at skill-tournament 14-17 and evolve 24-25; *outside-close*: \"Close on a command run outside every child; never on a child's own claim.\" once per body at renovate, self-improve, checkpointed-build, deleting the Never clause and Return qualifier that paraphrase it), and quote checkpointed-build's three named idioms the same way. Word cost is covered by C1's and C4's deletions in every body.",
+      "within_license": true
+    },
+    {
+      "id": "C3",
+      "blocking": true,
+      "findings": ["F5"],
+      "cause": "Two prescriptions of Return's shape: U3 fixed 'Return: tickets.py frame-close ... --done' as the gallery's contract; procedure step 4 and composition clause 4 read Return as the fields frame-close records, which spec U7c's 'Return: winner: ... and findings:' echoed. bakeoff followed the second, and in doing so lost its done command entirely.",
+      "smallest_change": "Within license: bakeoff's Return leads with '`tickets.py frame-close <run> <frame> --done <check>`', its done named (the command that reads the frame's journal for one unblinded winner line and the judge's findings line), recording `winner: <typed artifact line>` and `findings:` -- the nine-body shape with bakeoff's fields kept. Beyond license (successor S1): the owner picks one reading of 'Return:' for a workflow -- the frame-close command, or the fields it records -- and the other prescription is deleted.",
+      "within_license": "partly; the owner choice is successor scope"
+    },
+    {
+      "id": "C4",
+      "blocking": false,
+      "findings": ["F6", "F7", "F8"],
+      "cause": "Bodies explain why a rule holds instead of linking the owner that holds it: composition clause 1, vocabulary's reusable-workflow entry, Dependencies' artifact rule, the trunk's workspace establishment, the applied skill's WINDOW_REACH.",
+      "smallest_change": "Delete the clauses (drift-canary 'which is why it never model-invokes'; skill-tournament's second and third 'under this frame' restatements; checkpointed-build's 30-word workspace explanation; super-research's WINDOW_REACH sentence, leaving 'name a source whose operation cannot bound time in its goal'), replace checkpointed-build's 'each library, its version and the lockfile the artifact will carry' with 'the artifact's own dependencies, on [custom workflow authoring](../../../docs/custom-workflow-authoring.md)'s terms', and write evolve's 'call `benchmaker`' as plain text.",
+      "within_license": true
+    }
+  ],
+  "successors": [
+    {"id": "S1", "scope": "One owner for a workflow's Return: shape -- procedure step 4 / composition clause 4 (fields frame-close records) versus the nine bodies' 'Return: tickets.py frame-close ... --done' (U3's contract). Pick one; delete the other prescription."},
+    {"id": "S2", "scope": "composition clause 2 gains the applied-skill case: a backticked applied-skill name at its --skill flag is not a call edge (clause 12); any second mention is plain text."},
+    {"id": "S3", "scope": "Recurrence (clause 13): evolve's generation step -- one isolated do per candidate, one blind judge over incumbent plus candidates -- is bakeoff's shape; whether evolve invokes `bakeoff` by name with the frozen evaluation as its rubric sheet."},
+    {"id": "S4", "scope": "checkpointed-build's judge line and Return fix the `git:` artifact kind (spec U7b), so it is domain-blind only across git-workspace packs (code, design); either the body takes the kind from the pack's Workspace cell or the description says so."}
+  ]
+}

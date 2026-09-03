@@ -79,6 +79,58 @@ class TestScriptNames(unittest.TestCase):
         source = install.REPO_ROOT / "scripts" / "doclint.py"
         self.assertEqual(source.read_bytes(), installed.read_bytes())
 
+    def test_orchflows_check_grades_a_ring_from_the_installed_layout(self):
+        """`orchflows check` calls the library compiler's own check
+        functions, and those live under `tools/` -- the one tree
+        `install.py` ships nowhere. Copying `orchflows_check.py` into `bin/`
+        is therefore not enough on its own: the package it imports has to
+        reach `lib/` under a name the installed process can resolve, and
+        every import inside that package has to bind with no `scripts`
+        package above it. Nothing but the installed tree answers either
+        question, and what it prevents is an `ImportError` at the moment a
+        user first runs the verb.
+
+        The ring holds one library call edge and one typo beside it, so a
+        run that imported cleanly and then graded nothing is still a
+        failure here.
+        """
+
+        plan, home, _claude, _codex = relocated_user_install()
+        with tempfile.TemporaryDirectory() as tmp:
+            ring = Path(tmp).resolve() / "ring"
+            (ring / "workflows" / "team-flow").mkdir(parents=True)
+            (ring / "workflows" / "team-flow" / "SKILL.md").write_text(
+                "---\n"
+                "name: team-flow\n"
+                "description: One sentence saying what running team-flow produces.\n"
+                "disable-model-invocation: true\n"
+                "---\n"
+                "\n"
+                "Calls `orch-do` and `orch-nonesuch`.\n",
+                encoding="utf-8",
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(plan.bin_dir / "orchflows.py"),
+                    "check",
+                    str(ring),
+                ],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                cwd=tmp,
+                env=dict(
+                    os.environ,
+                    **{SINK_ENV_VAR: str(home / ".orchflows" / "state")},
+                ),
+            )
+
+        self.assertNotIn("Traceback", completed.stderr)
+        self.assertEqual(1, completed.returncode, completed.stdout + completed.stderr)
+        self.assertIn(
+            "backtick reference `orch-nonesuch` does not resolve", completed.stdout,
+        )
+        self.assertNotIn("`orch-do` does not resolve", completed.stdout)
+
     def test_every_bare_script_a_template_stub_names_is_shipped(self):
         """A stub that says `python search_plan.py advance` is telling an
         executor to run a file the installed tree has to carry. The template
