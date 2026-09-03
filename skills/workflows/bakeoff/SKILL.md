@@ -2,7 +2,6 @@
 name: bakeoff
 description: Compare named candidates made blind under one pack and return the winner's artifact line scored against a rubric sheet.
 disable-model-invocation: true
-role: planner
 ---
 
 Require: `candidates`, the named list under comparison, one line of brief

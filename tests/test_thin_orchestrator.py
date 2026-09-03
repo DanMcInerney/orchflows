@@ -68,9 +68,12 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         )
         for path in sorted((ROOT / "skills" / "workflows").rglob("SKILL.md")):
             with self.subTest(workflow=path.parent.name):
-                self.assertIn(
-                    _frontmatter(path.relative_to(ROOT).as_posix())["role"],
-                    ("planner", "worker"),
+                self.assertNotIn(
+                    "role",
+                    _frontmatter(path.relative_to(ROOT).as_posix()),
+                    "a workflow declares no role: its prose runs in the "
+                    "orchestrator's own context, so there is no role for a "
+                    "host surface to bind (validate_role refuses one here)",
                 )
 
         delegation = (ROOT / "rules/delegation.md").read_text(encoding="utf-8")

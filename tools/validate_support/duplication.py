@@ -23,6 +23,7 @@ Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
 cell_clauses = __dep_packages.cell_clauses
 rel = __dep_packages.rel
+workflow_tiers = __dep_packages.workflow_tiers
 
 CELL_DUPLICATION_ALLOWLIST = (
     {
@@ -220,6 +221,16 @@ def _cross_tier_prose(clause: str) -> str:
 # tier -- the one pair it could not see was the pair that mattered.
 SAME_TIER_COMPARED = frozenset({"skills"})
 
+# Both library workflow homes are one tier to this check. A reusable
+# workflow under `skills/workflows/` and a gallery one under
+# `example-workflows/` are the same kind of document -- prose that opens a
+# frame and calls the same two callables -- so the `frame-open`, `do` and
+# `judge` lines they share are the form itself, not one fact carried by two
+# owners. Reading the reusable one as a skill instead convicted its every
+# invocation line against every gallery body's, which is the tier the
+# library gave it rather than the kind of thing it is.
+WORKFLOW_TIER = "workflows"
+
 # A copy the library licensed, and the fact it copies. Each entry is
 # (owner, copy, a phrase both carry): the pair alone would exempt these
 # two files from every future duplication, and the phrase keeps the
@@ -279,38 +290,6 @@ def _workflow_home_prefixes():
     from .structure import workflow_roots
 
     return tuple(f"{rel(root)}/".replace("\\", "/") for root in workflow_roots())
-
-
-def _split_workflow_homes(left_label: str, right_label: str) -> bool:
-    """Whether these two labels are one kind read out of its two homes.
-
-    A domain-blind workflow ships under ``skills/workflows/`` and a
-    domain-bearing one in the gallery, and every workflow must write the
-    same ``tickets.py`` call lines and quote the same idioms verbatim to
-    say anything at all. Two gallery bodies were never compared -- the
-    gallery is not a same-tier-compared tier -- so comparing one home
-    against the other reports the split itself, convicting the
-    ``tickets.py`` call grammar as a fact with two owners in every
-    reusable workflow written from now on. What a workflow body may carry
-    is the workflow-admission check's question,
-    ``structure.validate_templates`` and
-    ``validate_composition_admission``, not this one's.
-
-    Two bodies in *one* home stay compared: that is the ordinary
-    same-tier question each home already answers its own way.
-    """
-
-    homes = []
-    for label in (left_label, right_label):
-        posix = label.replace("\\", "/")
-        home = next(
-            (prefix for prefix in _workflow_home_prefixes() if posix.startswith(prefix)),
-            None,
-        )
-        if home is None:
-            return False
-        homes.append(home)
-    return homes[0] != homes[1]
 
 
 # The one owner of an idiom's wording: composition.md 13 makes a control-flow
@@ -393,8 +372,12 @@ def cross_tier_documents(packages):
     """(tier, label, text) for every file the check reads, tier being the
     directory the library gave it."""
     documents = []
+    homes = workflow_tiers()
     for pkg in packages:
-        tier = "packs" if pkg["is_pack"] else "skills"
+        if pkg["is_pack"]:
+            tier = "packs"
+        else:
+            tier = WORKFLOW_TIER if pkg["kind"] in homes else "skills"
         documents.append((tier, rel(pkg["skill_md"]), pkg.get("body") or ""))
         if pkg["is_pack"]:
             for reference in sorted((pkg["path"] / "references").glob("*.md")):
@@ -420,7 +403,7 @@ def cross_tier_documents(packages):
     compositions = ROOT / "example-workflows"
     if compositions.is_dir():
         for path in sorted(compositions.rglob("*.md")):
-            documents.append(("example-workflows", rel(path), _read_source(path)))
+            documents.append((WORKFLOW_TIER, rel(path), _read_source(path)))
     host_block = ROOT / "templates" / "host-block.md"
     if host_block.is_file():
         documents.append(("templates", rel(host_block), _read_source(host_block)))
@@ -457,8 +440,6 @@ def _cross_tier_accept(entries):
             # and that is the pack linter's question.
             if left_tier not in SAME_TIER_COMPARED or left_label == right_label:
                 return False
-        if _split_workflow_homes(left_label, right_label):
-            return False
         return not _licensed(left_label, left_clause, right_label, right_clause)
 
     return accept
@@ -622,6 +603,6 @@ __all__ = (
     'CELL_DUPLICATION_ALLOWLIST', '_cell_content', 'CRAFT_SECTION_RE', '_craft_sections',
     'free_content', 'validate_cell_duplication',
     'CROSS_TIER_DUPLICATE_LEVEL', 'CROSS_TIER_CITATION_RES', 'CROSS_TIER_PROSE_MIN_WORDS', '_cross_tier_prose',
-    'SAME_TIER_COMPARED', 'LICENSED_COPIES', '_licensed', 'cross_tier_documents',
+    'SAME_TIER_COMPARED', 'WORKFLOW_TIER', 'LICENSED_COPIES', '_licensed', 'cross_tier_documents',
     '_cross_tier_clauses', '_cross_tier_accept', 'validate_cross_tier_duplication',
 )
