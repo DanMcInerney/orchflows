@@ -26,7 +26,9 @@ them.
 
 from __future__ import annotations
 
+import os
 import shlex
+import shutil
 import subprocess
 
 if __package__:
@@ -35,15 +37,15 @@ if __package__:
         DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
         RESULT_BEARING_STATES, TERMINAL_STATES,
         _sections, _set_frontmatter_field,
-        _write_section, dequote, done_defects, round_of, parse_done,
+        dequote, done_defects, round_of, parse_done,
         ticket_defects,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
-    from .tickets_result import RESULT_ATTRIBUTION_PREFIX
+    from .tickets_report_note import file_once
     from .tickets_store import (
         TicketWriteRefused, _create_text_exclusively, _load_ticket,
-        _write_text_atomically, locked_ticket_write,
+        locked_ticket_write,
     )
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
@@ -51,15 +53,15 @@ else:  # pragma: no cover - direct/installed flat script path
         DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
         RESULT_BEARING_STATES, TERMINAL_STATES,
         _sections, _set_frontmatter_field,
-        _write_section, dequote, done_defects, round_of, parse_done,
+        dequote, done_defects, round_of, parse_done,
         ticket_defects,
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
-    from tickets_result import RESULT_ATTRIBUTION_PREFIX
+    from tickets_report_note import file_once
     from tickets_store import (
         TicketWriteRefused, _create_text_exclusively, _load_ticket,
-        _write_text_atomically, locked_ticket_write,
+        locked_ticket_write,
     )
 
 # The evidence line `land` files. It names the three facts a reader has to
@@ -246,12 +248,45 @@ def predicate(data: dict):
     return parse_done(data), None
 
 
+def _spawnable(word: str):
+    """`(the file to spawn, refusal)` for a done command's first word.
+
+    A spawn is not a shell. ``CreateProcess`` searches ``PATH`` but appends
+    only ``.exe``, never the rest of ``PATHEXT``, so a bare ``pnpm`` cannot
+    start on Windows, where node's package managers ship as ``pnpm.CMD``
+    shims that ``PATH`` resolves perfectly well -- and the predicate died
+    with a ``[WinError 2]`` no reader could tell from a missing script.
+    Spawning what ``PATH`` already resolved starts the same file on every
+    platform. ``scripts/orchflows_tools.executable`` carries this same fact
+    for the tooling probes, under the opposite failure contract: it hands a
+    name it cannot resolve back to the spawn, because a probe's answer is
+    "absent" either way. A done predicate has no such answer, so an
+    unresolvable word is refused here, by name.
+
+    Only a bare name is resolved. A first word carrying a directory is
+    already a path, and ``PATH`` was never going to be searched for it.
+    """
+
+    if os.sep in word or (os.altsep and os.altsep in word):
+        return word, None
+    resolved = shutil.which(word)
+    if resolved is None:
+        return word, {"error": (
+            f"done command's first word `{word}` is on no PATH entry of "
+            "this machine; name a command it can run"
+        )}
+    return resolved, None
+
+
 def _command_reading(command: str, tree):
     """Run the frozen command in the integrated tree; exit 0 is the verdict."""
 
     argv = shlex.split(str(command))
     if not argv:
         return None, {"error": "done command is empty"}
+    argv[0], refusal = _spawnable(argv[0])
+    if refusal is not None:
+        return None, refusal
     try:
         completed = subprocess.run(
             argv, cwd=None if tree is None else str(tree), capture_output=True,
@@ -290,24 +325,13 @@ def record_verification(path, reading: dict, by: str):
     child ran this, and evidence whose writer is wrong is evidence a reader
     cannot weigh. Filed once -- a re-landed ticket whose predicate answers
     the same way finds its own line already in the section and leaves it
-    there rather than stacking a second copy.
+    there rather than stacking a second copy. The filing itself is
+    `tickets_report_note`'s, shared with the landing's own two notes so one
+    module answers for what a system-written note in that section looks
+    like.
     """
 
-    body = f"{RESULT_ATTRIBUTION_PREFIX}`{by}`\n\n{verification_line(reading)}"
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as error:
-        return "replayed", {"error": f"unreadable ticket for done evidence: {error}"}
-    prior = _sections(text).get(REPORT_SECTION, "")
-    if body.rstrip() and body.rstrip() in prior:
-        return "replayed", None
-    try:
-        _write_text_atomically(
-            path, _write_section(text, REPORT_SECTION, body, bool(prior.strip())),
-        )
-    except (OSError, ValueError) as error:
-        return "refused", {"error": f"unable to file done evidence: {error}"}
-    return "filed", None
+    return file_once(path, by, verification_line(reading), "done evidence")
 
 
 def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict,

@@ -64,6 +64,12 @@ DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
 ROLE_VALUES = {"planner", "worker", "none"}
+# The subset an *applied* skill may declare. `rules/roles.md` clause 6: a
+# role-bearing skill runs only in an established child of the matching role,
+# and a `role: none` declaration refuses that entry -- so a ring skill, which
+# is only ever reached through a `--skill` dispatch, cannot carry it. Derived
+# from the set above rather than respelled, so the two never drift.
+APPLIED_ROLE_VALUES = ROLE_VALUES - {"none"}
 PACK_SIGNATURE_CELLS = (
     "adapter",
     "stages",
@@ -261,6 +267,7 @@ __all__ = (
     'LINK_TARGET_RE', 'SURFACE_BUDGET', 'ROUTING_BLOCK_BUDGET', 'ROLE_AGENT_BUDGET',
     'DESCRIPTION_BUDGET',
     'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES',
+    'APPLIED_ROLE_VALUES',
     'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
     'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
     'CRAFT_RETIRED_SECTIONS', 'CRAFT_LIBRARY_LENS_KINDS',

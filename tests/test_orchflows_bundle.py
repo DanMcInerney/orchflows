@@ -18,6 +18,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import orchflows, orchflows_bundle, orchflows_home, rings, state_root
+from tools.validate_support import bundle as bundle_check
+from tools.validate_support.packages import Diagnostics
 
 from tests._repo_root import ROOT
 
@@ -267,6 +269,18 @@ class ScaffoldTests(unittest.TestCase):
         self.assertEqual("orchflows-contrib", manifest["name"])
         self.assertEqual([], manifest["requires"])
         self.assertRegex(manifest["version"], r"^\d{4}-\d{2}-\d{2}$")
+
+    def test_the_compiler_grades_this_repositorys_own_manifest(self):
+        """The shape above is a fact about the file; this is the check that
+        holds it there. `tools/validate.py` runs the same function
+        `orchflows check` runs over a ring, so a `requires` entry that lost
+        its pin fails here rather than in a consumer's `orchflows add`."""
+
+        diag = Diagnostics()
+
+        bundle_check.validate_bundle_manifest(diag)
+
+        self.assertEqual([], diag.lines())
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
 Path = __dep_common.Path
 REQUIRE_RE = __dep_common.REQUIRE_RE
 RETURN_RE = __dep_common.RETURN_RE
+APPLIED_ROLE_VALUES = __dep_common.APPLIED_ROLE_VALUES
 ROLE_VALUES = __dep_common.ROLE_VALUES
 ROOT = __dep_common.ROOT
 ROUTING_BLOCK_BUDGET = __dep_common.ROUTING_BLOCK_BUDGET
@@ -215,7 +216,17 @@ def validate_frontmatter(fm: dict, pkg: dict, diag: Diagnostics) -> None:
         )
 
 
-def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
+def validate_role(fm: dict, pkg: dict, diag: Diagnostics, allowed=None) -> None:
+    """The `role:` law, over whichever set of roles this door admits.
+
+    `allowed` is the library's three by default. `orchflows check` passes the
+    two an *applied* skill may declare, because a ring skill is only ever
+    entered through a `--skill` dispatch and `rules/roles.md` clause 6
+    refuses that entry for `role: none`. One function, so a missing key and a
+    role outside the set read the same at both doors and name the same file.
+    """
+
+    allowed = ROLE_VALUES if allowed is None else allowed
     file_label = rel(pkg["skill_md"])
     if pkg["is_pack"]:
         if "role" in fm:
@@ -234,8 +245,8 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
     if not role:
         diag.error(file_label, "frontmatter missing required key 'role'")
         return
-    if role not in ROLE_VALUES:
-        diag.error(file_label, f"role '{role}' is not one of {sorted(ROLE_VALUES)}")
+    if role not in allowed:
+        diag.error(file_label, f"role '{role}' is not one of {sorted(allowed)}")
 
 
 def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
@@ -458,6 +469,7 @@ __all__ = (
     'CONTRACTS_DIR', 'PINS_FILE', 'PIN_MESSAGE', 'rel',
     '_read_source', 'Diagnostics', 'workflow_tiers', 'discover_packages',
     'parse_frontmatter',
+    'APPLIED_ROLE_VALUES',
     'validate_frontmatter', 'validate_role', 'validate_anatomy', 'body_words',
     '_split_frontmatter', 'validate_surface_budgets', 'validate_routing_block',
     'validate_budget', 'validate_pack_signature',
