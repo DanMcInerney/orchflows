@@ -36,17 +36,10 @@ else:
 NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
     "[--details TEXT] [--depends-on a,b] "
-    "[--bound B] [--pack P] [--profile P] [--independence gate|checker] "
-    "[--isolation required|none]"
+    "[--bound B] [--pack P] [--profile P] [--isolation required|none]"
 )
 NEW_DEFAULT_BOUND = f"{DEFAULT_BOUND_MINUTES}m"
-INDEPENDENCE_VALUES = ("gate", "checker")
 ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
-
-
-def _pending_admission(data=None):
-    del data
-    return ADMISSION_PENDING
 
 
 def pinned_pack_digest(pack):
@@ -176,7 +169,6 @@ def _cmd_new(rest):
     bound = _extract_flag(args, "--bound")
     pack = _extract_flag(args, "--pack")
     profile = _extract_flag(args, "--profile")
-    independence = _extract_flag(args, "--independence")
     isolation = _extract_flag(args, "--isolation")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
@@ -191,9 +183,8 @@ def _cmd_new(rest):
     missing = [name for name, value in (("--executor", executor), ("--goal", goal), ("--context", context)) if value is None]
     if missing:
         return {"error": f"new requires {', '.join(missing)}. usage: {NEW_USAGE}"}
-    for flag, value, allowed in (("--independence", independence, INDEPENDENCE_VALUES), ("--isolation", isolation, ISOLATION_VALUES)):
-        if value is not None and value.strip() not in allowed:
-            return {"error": f"{flag} '{value}' is not one of {list(allowed)}"}
+    if isolation is not None and isolation.strip() not in ISOLATION_VALUES:
+        return {"error": f"--isolation '{isolation}' is not one of {list(ISOLATION_VALUES)}"}
     # Sorted here, at the one command that authors the list from a flag. Two
     # orderings of one edge set are two assignment digests, and the digest
     # cannot absorb the difference without invalidating every historical
@@ -205,7 +196,6 @@ def _cmd_new(rest):
         "id": ticket_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": executor,
         "pack": pack, "pack_digest": pinned,
-        "independence": independence,
         "depends_on": sorted(_split_commas(depends_on)),
         "isolation": isolation, "bound": bound or NEW_DEFAULT_BOUND,
         "profile": profile,
@@ -273,17 +263,6 @@ def _project_file_ticket(
     return (ticket_id, text), None
 
 
-def _issue_defects(text: str, *, issued: bool=False) -> list:
-    defects = ticket_defects(text)
-    data = _parse_frontmatter(text)
-    if not data:
-        return defects
-    independence = dequote(data.get("independence") or "checker")
-    if independence not in INDEPENDENCE_VALUES:
-        defects.append(f"independence '{independence}' is not one of {list(INDEPENDENCE_VALUES)}")
-    return defects
-
-
 def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = False):
     """Write one ticket into the run, graded, under the run lock.
 
@@ -293,7 +272,7 @@ def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = Fal
     and releasing it to issue would let a second minter choose the same id.
     """
 
-    defects = _issue_defects(text)
+    defects = ticket_defects(text)
     if defects:
         return {"error": f"ticket {run}/{ticket_id} is off contract: " + "; ".join(defects)}
     root = _tickets_root()
@@ -323,8 +302,8 @@ def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = Fal
 
 
 __all__ = (
-    "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
-    "_applied_skill_refusal", "_cmd_new", "_frontmatter_list", "_issue_defects",
+    "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
+    "_applied_skill_refusal", "_cmd_new", "_frontmatter_list",
     "_issue_ticket", "_project_file_ticket", "_render_ticket",
     "pinned_items", "pinned_pack_digest",
 )

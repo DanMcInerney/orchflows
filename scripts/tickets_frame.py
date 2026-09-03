@@ -37,8 +37,7 @@ if __package__:
     from .tickets_attempts import OUTCOME_RECORD_ID
     from .tickets_bound import parse_bound
     from .tickets_mint import (
-        MINT_INDEPENDENCE, DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint,
-        _run_dir, _sealed_root,
+        DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint, _run_dir, _sealed_root,
     )
     from .tickets_format import (
         FRAME_MARKER, REPORT_SECTION, TERMINAL_STATES, _executor_of,
@@ -68,8 +67,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_attempts import OUTCOME_RECORD_ID
     from tickets_bound import parse_bound
     from tickets_mint import (
-        MINT_INDEPENDENCE, DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint,
-        _run_dir, _sealed_root,
+        DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint, _run_dir, _sealed_root,
     )
     from tickets_format import (
         FRAME_MARKER, REPORT_SECTION, TERMINAL_STATES, _executor_of,
@@ -136,7 +134,6 @@ def _frame_fields(run: str, parent, done, bound: str) -> dict:
     return {
         "run": run, "status": ADMISSION_PENDING, "admission": ADMISSION_PENDING,
         "frame": FRAME_MARKER,
-        "independence": MINT_INDEPENDENCE,
         "parent": parent or None,
         "isolation": "none", "bound": bound,
         "done": done,

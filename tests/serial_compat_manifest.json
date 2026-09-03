@@ -108,8 +108,6 @@
    "test_constitution.NetLinesTest.test_the_block_stays_inside_the_near_zero_budget",
    "test_constitution.WriteTimePointerTest.test_a_copy_without_the_pointer_fails_the_check",
    "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
-   "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
-   "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
    "test_dispatch_launch.LandTest.test_a_land_with_no_predicate_and_no_status_refuses_before_integrating",
    "test_dispatch_launch.LandTest.test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in",
    "test_dispatch_launch.LandTest.test_land_imports_an_outcome_handed_to_it_on_standard_input",
@@ -590,10 +588,12 @@
    "test_lens_key.LensKeyTest.test_a_judge_over_two_kinds_gets_no_key",
    "test_lens_key.LensKeyTest.test_a_making_do_citing_a_predecessor_keeps_its_adapter_kind",
    "test_lens_key.LensKeyTest.test_a_planning_do_citing_a_predecessor_keeps_its_makes_kind",
+   "test_lifecycle_render.LifecycleTableTest.test_a_forged_caller_row_for_an_unrouted_event_is_refused",
    "test_lifecycle_render.LifecycleTableTest.test_a_hand_edit_fails_closed",
    "test_lifecycle_render.LifecycleTableTest.test_dispatch_rows_expose_attempt_and_record_state",
    "test_lifecycle_render.LifecycleTableTest.test_each_generated_row_names_its_code_identity",
    "test_lifecycle_render.LifecycleTableTest.test_every_public_lifecycle_event_has_the_owned_seven_cells",
+   "test_lifecycle_render.LifecycleTableTest.test_no_caller_row_names_an_event_nothing_routes",
    "test_lifecycle_render.LifecycleTableTest.test_the_committed_table_is_exactly_the_rendered_code",
    "test_lifecycle_render.LifecycleTableTest.test_the_repository_validator_refuses_a_hand_edit",
    "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_a_malformed_run_id_refuses_every_mutating_command",
@@ -1218,7 +1218,7 @@
    "test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model",
    "test_ticket_protocol.TicketProtocolTest.test_result_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_semantic_change_moves_assignment",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_checker_independence_dependency_no_longer_waits_on_anything",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_complete_dependency_leaves_its_downstream_waiting_on_nothing",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_assignment_is_issued_and_reaches_generation_stamping",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_ordinary_member_is_issued_like_any_other",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_malformed_first_attempt_writes_no_run_directory",
@@ -1752,7 +1752,7 @@
    "tests.test_suite_check_cases.snapshot.TestSnapshotDirection.test_an_added_entry_in_a_watched_tree_is_a_failure",
    "tests.test_suite_check_cases.subprocess.TestHarnessSubprocess.test_a_stray_write_into_the_sink_fails_the_run",
    "tests.test_suite_check_cases.subprocess.TestHarnessSubprocess.test_harness_end_to_end_against_synthetic_suite",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_checker_independence_dependency_no_longer_waits_on_anything",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_complete_dependency_leaves_its_downstream_waiting_on_nothing",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_assignment_is_issued_and_reaches_generation_stamping",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_ordinary_member_is_issued_like_any_other",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_malformed_first_attempt_writes_no_run_directory",
@@ -2273,7 +2273,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "b2fd45293992293c0bf894a4607c43ed1dbe4efd6cf0cd700afb4f38feb7d3cb"
+  "sha256": "d3d666bcfdfdb55a51f552095f4a08b13904134c491224cac9cff19a44e1e6b6"
  },
  "mutation_owners": [
   {
@@ -3785,6 +3785,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_lifecycle_render",
+   "owner": "LifecycleTableTest.test_a_forged_caller_row_for_an_unrouted_event_is_refused",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

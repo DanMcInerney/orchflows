@@ -282,7 +282,7 @@ class DispatchLaunchTest(unittest.TestCase):
         # escape hatch: it names no skill, so it declares no role.
         text = tickets._set_frontmatter_field(
             self.ticket_path().read_text(encoding="utf-8"),
-            "executor", "script:scripts/cutcheck.py",
+            "executor", "script:scripts/harvest.py",
         )
         self.ticket_path().write_text(text, encoding="utf-8")
         before = self.ticket_path().read_text(encoding="utf-8")

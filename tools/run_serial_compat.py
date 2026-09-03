@@ -38,7 +38,7 @@ ALL_SEAMS = RESTORABLE_SEAMS | {"threads"}
 # The rulings a reviewer may give a mutation owner; the policy says what each means.
 RESTORATIONS = frozenset({"selected-module-boundary", "sharded-module-guard"})
 REQUIRED_CATEGORIES = frozenset({
-    "boundary-restoration", "cutcheck-corpus", "cutcheck-process", "cwd", "discovery",
+    "boundary-restoration", "cwd", "discovery",
     "environment", "git-process", "hash-contract", "health-contract", "installer-fidelity",
     "process", "real-hashed-runtime", "receipt-state", "state-sink", "thread-server",
     "ticket-contention", "workspace-state",
