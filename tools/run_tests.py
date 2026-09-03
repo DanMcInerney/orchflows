@@ -45,7 +45,7 @@ TIMING_PATH = ROOT / ".orch" / "run_tests_record.json"
 # off the timing artifacts CI uploads; a leg with a cache never reads it.
 DEFAULT_COLD_ORDER = tuple("tests.test_" + _name for _name in (
     "installer_planning", "workspace", "serial_compat",
-    "installer_shared", "cutcheck", "tickets", "validate",
+    "installer_shared", "tickets", "validate",
     "run_required", "affected_tests", "cell_linter",
 ))
 IMPORT_BOOTSTRAP_ROOTS = frozenset(

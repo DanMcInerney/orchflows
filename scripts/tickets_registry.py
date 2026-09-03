@@ -61,17 +61,6 @@ _PLANNING_DO_REMEDY = (
 # every name below was retired after the registry already existed to
 # record it; a future entry whose retirement predates the registry says
 # so here instead of dating a commit that only re-recorded it.
-#
-# Expiry policy, stated once here because this dict is the fact's one
-# owner (unrestated in rules/ or docs/): a tombstone whose refusal has
-# not fired within ninety days of its retired-on date is deleted --
-# registry entry and the tests asserting its refusal together -- because
-# a name nobody has attempted to dispatch in that long is spending a
-# registry line, a refusal branch, and test coverage on a caller that no
-# longer exists.  Ninety days is this policy's initial value, proposed
-# rather than measured (no prior expiry history exists yet to derive one
-# from); revising the horizon, and the first deletions under it, are a
-# later run's call, not this comment's.
 SUPERSEDED_EXECUTORS = {
     "orch-execute": "orch-do",  # retired-on 2026-08-31 (34341e5d)
     "orch-check": "orch-judge",  # retired-on 2026-08-31 (34341e5d)

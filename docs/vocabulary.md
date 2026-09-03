@@ -448,10 +448,7 @@ workflow).
   `complete` — reported by `land` at each join and dispatched
   as it forms, never batched.
 - **critical path** — the longest `depends_on` chain over a run's issued
-  items; what a planning cut minimizes subject to
-  every item an atom. Read with each level's width from
-  `scripts/cutcheck.py`'s `graph` block (classes `critical-path`,
-  `level-width`).
+  items; what a planning cut minimizes subject to every item an atom.
 - **lane** — an isolated parallel candidate. Lanes may change the same path;
   actual overlap and Git conflicts are integration inputs, not cut defects.
 - **terminal state** — a closed exit: a ticket status in

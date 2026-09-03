@@ -151,7 +151,7 @@
       "fields": [
         "id", "run", "status", "admission", "executor", "pack",
         "pack_digest", "sheets", "sheet_digests", "skill", "skill_digest",
-        "profile", "independence", "parent", "depends_on", "isolation", "bound",
+        "profile", "parent", "depends_on", "isolation", "bound",
         "frame", "done", "makes",
         "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "dispatch_v1"

@@ -162,8 +162,7 @@ Three moments use readers who did not produce the fixed artifact
 
 1. **Cut check** — before any unit is dispatched, a checker reads the
    issued ticket set as data and returns blockers to the planner before a
-   replacement generation is sealed. It is
-   accepted when [scripts/cutcheck.py](scripts/cutcheck.py) exits 0.
+   replacement generation is sealed.
    Once a unit dispatch opens, cut correction is refused.
 2. **Ticket independence** — the caller's own join (`tickets.py land`) reads
    Goal and Context against the fixed artifact and evidence; that is now
