@@ -181,14 +181,30 @@ STATE_PATH_HEADS = ("tickets", "runs", "friction", "improvement", "references")
 # A path, not a command: no spaces, at least one separator. `tickets.py new`
 # and skill executors are not paths and never reach the resolver.
 DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-]+/?)*)`")
-# Non-navigation occurrences and not-yet-materialized UI design paths. Keyed
-# by the sentence that carries the token, never by its line number: an
-# insertion anywhere above an exempt site silently moved the key off it and
-# the exemption then covered whatever line had taken the number. The marker
-# is a distinctive fragment of the carrying sentence, so the same token on
-# another line is still graded and a reworded sentence fails loudly here
-# rather than quietly widening the exemption.
-DOC_PATH_EXEMPT_SITES = frozenset()
+# Non-navigation occurrences: a lone segment whose parent the carrying
+# sentence supplies rather than the resolver. ARCHITECTURE's `kernel/` hangs
+# off `skills/`, its `bin/` off a ring root, DESIGN's `imports/` off the
+# install root -- a sibling of the `lib/` tree resolved here, not a path
+# under it. Each is recorded rather than exempted as a class, so the same
+# spelling anywhere else -- including a genuinely dead pointer -- still
+# fails. Keyed by the sentence that carries the token, never by its line
+# number: an insertion anywhere above an exempt site silently moved the key
+# off it and the exemption then covered whatever line had taken the number.
+# The marker is a distinctive fragment of the carrying sentence, so the same
+# token on another line is still graded and a reworded sentence fails loudly
+# here rather than quietly widening the exemption.
+DOC_PATH_EXEMPT_SITES = frozenset({
+    ("ARCHITECTURE.md", "kernel/", "callable packages"),
+    ("ARCHITECTURE.md", "workflows/", "reusable domain-blind workflows"),
+    ("ARCHITECTURE.md", "scripts/", "owns its `SKILL.md`"),
+    ("ARCHITECTURE.md", "scripts/", "owns repository automation"),
+    ("ARCHITECTURE.md", "scripts/", "package `scripts/`"),
+    ("ARCHITECTURE.md", "tests/", "owns regression evidence"),
+    ("ARCHITECTURE.md", "installer/", "installation compatibility facade"),
+    ("ARCHITECTURE.md", "bin/", "carried in two layouts"),
+    ("ARCHITECTURE.md", "bin/", "holds legacy generated"),
+    ("DESIGN.md", "imports/", "is regenerable from it"),
+})
 
 
 def _doc_path_exempt(source_label: str, token: str, line: str) -> bool:
@@ -205,19 +221,9 @@ def _documented_path_finding(token: str, source: Path, root: Path):
 
     head = token.split("/", 1)[0]
     remainder = token[len(head) + 1:].rstrip("/")
-    # A lone segment with a trailing slash names a directory; the sentence
-    # carrying it supplies the parent, which this resolver does not have.
-    # ARCHITECTURE's `kernel/` hangs off `skills/`, README's `by-name/` off a
-    # ring root, DESIGN's `imports/` off the install root -- a sibling of the
-    # `lib/` tree resolved here, not a path under it. Grading these decides by
-    # root-name collision, passing `docs/` and refusing `kernel/` in the same
-    # sentence family, which is not the claim either one makes. A token with
-    # an interior separator still resolves below.
-    if not remainder:
-        return None
     # A path spelled relative to the file that names it -- a skill's own
     # scripts/ or references/ -- travels with that file into the install.
-    if (source.parent / token.rstrip("/")).exists():
+    if remainder and (source.parent / token.rstrip("/")).exists():
         return None
     if head in SOURCE_ONLY_DIRS:
         return (
