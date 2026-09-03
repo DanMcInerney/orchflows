@@ -30,6 +30,19 @@ from tools.validate_support.common import BODY_BUDGET, SKIPPED
 from tests.test_orchflows_cli import _home, _run
 
 
+def _probe(marker: Path) -> str:
+    """A `tools.txt` whose probe leaves a file behind when it is run.
+
+    A resolution that ran nothing and one that was never reached read the
+    same in a report, so what the cases below assert is the side effect
+    itself: the marker is there, or the probe did not run.
+    """
+
+    return 'here :: "{}" -c "open(r\'{}\', \'w\').close()"\n'.format(
+        sys.executable, marker,
+    )
+
+
 class CheckTests(unittest.TestCase):
     """`orchflows check`: the compiler's item checks over a ring.
 
@@ -239,10 +252,7 @@ class CheckTests(unittest.TestCase):
             orchflows_scaffold.write(bundle / "workflows", "workflow", "team-flow")
             marker = project / "probe-ran"
             (bundle / "workflows" / "team-flow" / "tools.txt").write_text(
-                'here :: "{}" -c "open(r\'{}\', \'w\').close()"\n'.format(
-                    sys.executable, marker,
-                ),
-                encoding="utf-8",
+                _probe(marker), encoding="utf-8",
             )
 
             with patch.object(rings.Path, "cwd", return_value=project), \
@@ -256,6 +266,57 @@ class CheckTests(unittest.TestCase):
             self.assertIn("orchflows trust", untrusted)
             self.assertEqual(0, trusted_code, trusted)
             self.assertTrue(marker.exists(), trusted)
+
+    def test_a_directory_named_on_the_command_line_runs_no_probe(self):
+        """`check <dir>` grades whatever directory it is handed, which is
+        any bundle at all -- one someone cloned to look at before deciding
+        anything. Its content is nobody's until they say so, so it takes
+        the same remedy the untrusted project ring takes, while the home
+        ring, which is the user's own directory, has its probe run."""
+
+        with _home() as home, tempfile.TemporaryDirectory() as raw:
+            (home / "nowhere").mkdir()
+            stranger = Path(raw).resolve()
+            (stranger / "workflows").mkdir()
+            orchflows_scaffold.write(stranger / "workflows", "workflow", "team-flow")
+            theirs = stranger / "probe-ran"
+            (stranger / "workflows" / "team-flow" / "tools.txt").write_text(
+                _probe(theirs), encoding="utf-8",
+            )
+            (home / "workflows").mkdir()
+            orchflows_scaffold.write(home / "workflows", "workflow", "team-flow")
+            ours = home / "probe-ran"
+            (home / "workflows" / "team-flow" / "tools.txt").write_text(
+                _probe(ours), encoding="utf-8",
+            )
+
+            code, output = self._check(home, str(stranger))
+            own_code, own = self._check(home, str(home))
+
+            self.assertEqual(0, code, output)
+            self.assertFalse(theirs.exists(), output)
+            self.assertIn("orchflows trust", output)
+            self.assertEqual(0, own_code, own)
+            self.assertTrue(ours.exists(), own)
+
+    def test_a_refused_sheets_declaration_is_never_probed(self):
+        """A sheet has no code of its own, so `validate_sheets` refuses the
+        file's existence rather than reading it. Resolving what it declares
+        anyway would run the content of an item the checker has already
+        ruled cannot carry any."""
+
+        with _home() as home:
+            self._ring(home)
+            marker = home / "probe-ran"
+            (home / rings.RING_DIRS["sheet"] / "market-brief" / "tools.txt").write_text(
+                _probe(marker), encoding="utf-8",
+            )
+
+            code, output = self._check(home, str(home))
+
+            self.assertEqual(1, code, output)
+            self.assertIn("a sheet has no code of its own", output)
+            self.assertFalse(marker.exists(), output)
 
     # --- the bundle's own manifest -------------------------------------
 

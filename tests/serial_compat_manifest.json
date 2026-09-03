@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2360,
+  "count": 2362,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -690,6 +690,8 @@
    "test_orchflows_check.CheckTests.test_a_bundle_manifest_missing_a_required_key_is_refused",
    "test_orchflows_check.CheckTests.test_a_call_edge_that_resolves_to_nothing_is_refused",
    "test_orchflows_check.CheckTests.test_a_directory_holding_a_ring_is_read_as_that_ring",
+   "test_orchflows_check.CheckTests.test_a_directory_named_on_the_command_line_runs_no_probe",
+   "test_orchflows_check.CheckTests.test_a_refused_sheets_declaration_is_never_probed",
    "test_orchflows_check.CheckTests.test_a_requires_entry_that_is_not_pinned_is_refused",
    "test_orchflows_check.CheckTests.test_a_ring_skill_declaring_role_none_is_refused",
    "test_orchflows_check.CheckTests.test_a_ring_skill_without_a_role_is_refused_by_name",
@@ -2363,7 +2365,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "151c9ca5e3611175131cb8c5126239a6df90265645fd2f376efc5107e88e025f"
+  "sha256": "fba4aba8eba7f799d409a40dc73e22a7e46f7ea9d38e2512b8a23393483dd677"
  },
  "mutation_owners": [
   {
