@@ -22,6 +22,28 @@ EXTRA = {
 }
 MECHANICAL_DONE = "uv run --no-project python tools/run_required.py"
 UNIT_HEADING = re.compile(r"\n### (U\d+[a-z]?) · ")
+# A `--scope` argument runs to the end of its command: the next `&&` or the
+# backtick closing the fenced command. Anything else inside that span is a
+# second bare token the shell would hand `run_tests.py` as a MODULE.
+SCOPE_ARGUMENT = re.compile(r"--scope\s+(.*?)(?=\s*(?:&&|`|$))")
+
+
+def split_scope(done: str):
+    """Return the space-split `--scope` values this Done would lose, if any.
+
+    `tools/run_tests_scope.refuse_positional` refuses `--scope a b c`: `a`
+    binds the option and `b c` arrive as MODULE arguments the scope
+    selection then overwrites, so the run decides on `a` alone and prints
+    OK. Every unit of the workflow-ladder run inherited that spelling from
+    this spec, so the projection refuses it at the source rather than
+    letting fourteen children each rediscover it.
+    """
+
+    for match in SCOPE_ARGUMENT.finditer(done):
+        values = match.group(1).split()
+        if len(values) > 1:
+            return values
+    return None
 
 
 def paragraphs(block: str) -> dict:
@@ -51,6 +73,13 @@ def main() -> int:
         missing = {"Goal", "Details", "Done"} - parts.keys()
         if missing:
             print(f"{uid}: missing {sorted(missing)}", file=sys.stderr)
+            return 1
+        dropped = split_scope(parts["Done"])
+        if dropped:
+            print(
+                f"{uid}: Done spells --scope with spaces. {dropped[0]} would decide "
+                f"the run alone and {' '.join(dropped[1:])} would arrive as MODULE "
+                f"arguments. Spell it: --scope {','.join(dropped)}", file=sys.stderr)
             return 1
         (HERE / f"{uid}.goal.md").write_text(parts["Goal"] + "\n", encoding="utf-8")
         reads = f"section 0 (decisions), section 2 (fixed names) and section 3 {uid}"

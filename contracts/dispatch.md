@@ -67,6 +67,12 @@ failed step surfaces its own error plus any failed cleanup; every step
 replays idempotently. A composition over these operations therefore replays
 as a whole, and reports which of its steps it found already done.
 
+A run's git integration target -- the checkout and branch `land` merges
+candidates into -- is fixed once, by the first establishment whose caller
+named the tree it cuts from and whose item does not file findings; a landing
+whose recorded target does not carry the candidate's branch names both and
+refuses, rather than merging nothing and reporting the item landed.
+
 ## Launch
 
 There is no wire object. The sealed ticket is the assignment, and `dispatch`

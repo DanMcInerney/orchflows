@@ -25,6 +25,8 @@ from scripts import state_root
 from tests import _retired_commands as retired_commands
 from scripts import tickets
 from scripts import tickets_done
+from scripts import tickets_report_note
+from scripts import tickets_store
 from scripts.tickets_format import _sections, parse_canonical_json
 
 # The interpreter every predicate below is run through: a bare `python` is a
@@ -492,6 +494,105 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
                 encoding="utf-8"
             ),
         )
+
+    def conflicted(self):
+        """A candidate and a checkout that changed one file two ways."""
+
+        path = self.stand_up()
+        for arguments in (
+            ("config", "user.email", "fixture@example.invalid"),
+            ("config", "user.name", "fixture"),
+        ):
+            self.git(*arguments, cwd=self.candidate)
+        self.commit_candidate("candidate\n")
+        (self.main / "seed.txt").write_text("main\n", encoding="utf-8")
+        self.git("commit", "--quiet", "-am", "main")
+        self.close()
+        return path
+
+    def commit_candidate(self, content: str) -> str:
+        (self.candidate / "seed.txt").write_text(content, encoding="utf-8")
+        self.git("add", "seed.txt", cwd=self.candidate)
+        self.git("commit", "--quiet", "-m", "candidate", cwd=self.candidate)
+        return self.git("rev-parse", "HEAD", cwd=self.candidate)
+
+    def report_of(self, path: Path) -> str:
+        return _sections(path.read_text(encoding="utf-8")).get("Report", "")
+
+    def test_the_refusal_and_its_resolution_are_written_onto_the_childs_ticket(self):
+        """`tickets.py result` after an outcome is refused as out of causal
+        order, so a join-overlap resolution had no durable channel and lived
+        only in the driver's journal. The join writes these itself."""
+
+        path = self.conflicted()
+        branch = state_root.candidate_paths("run", "T")["branch"]
+
+        refusal = self.land("--status", "complete")
+
+        self.assertIn("seed.txt", refusal["error"])
+        report = self.report_of(path)
+        self.assertIn(tickets_report_note.CONFLICT_PREFIX, report)
+        self.assertIn("seed.txt", report)
+        self.assertIn(branch, report)
+        self.assertIn("`root-join`", report)
+
+        # the same conflict observed a second time is the same one note
+        self.assertIn("seed.txt", self.land("--status", "complete")["error"])
+        self.assertEqual(
+            1, self.report_of(path).count(tickets_report_note.CONFLICT_PREFIX),
+        )
+
+        # resolved in the candidate, exactly as the refusal said to
+        tip = self.commit_candidate("main\n")
+        landed = self.land("--status", "complete")
+
+        self.assertNotIn("error", landed, landed)
+        self.assertEqual("complete", landed["land"]["status"])
+        resolved = self.report_of(path)
+        self.assertIn(tickets_report_note.RESOLVED_PREFIX, resolved)
+        self.assertIn(tip, resolved)
+        self.assertIn(self.git("rev-parse", "HEAD"), resolved)
+
+        # and a landing replayed over a ticket it already wrote adds nothing
+        self.assertNotIn("error", self.land("--status", "complete"))
+        replayed = self.report_of(path)
+        for prefix in (
+            tickets_report_note.CONFLICT_PREFIX, tickets_report_note.RESOLVED_PREFIX,
+        ):
+            self.assertEqual(1, replayed.count(prefix), replayed)
+
+    def test_a_candidate_the_recorded_target_does_not_carry_stops_the_landing(self):
+        """The 2026-09-02 ladder defect: `workspace-integrate` said `absent`
+        at exit 0, merged nothing, and the run read as landed."""
+
+        path = self.stand_up()
+        (self.candidate / "delivered.txt").write_text("done\n", encoding="utf-8")
+        for arguments in (
+            ("config", "user.email", "fixture@example.invalid"),
+            ("config", "user.name", "fixture"),
+            ("add", "delivered.txt"), ("commit", "--quiet", "-m", "deliver"),
+        ):
+            self.git(*arguments, cwd=self.candidate)
+        self.close()
+        elsewhere = self.repository(Path(self.temporary.name) / "elsewhere")
+        identity = state_root.runs_root() / "run" / "run.json"
+        document = json.loads(identity.read_text(encoding="utf-8"))
+        document[tickets_store.INTEGRATION_KEY] = dict(
+            document[tickets_store.INTEGRATION_KEY], root=str(elsewhere),
+        )
+        identity.write_text(json.dumps(document), encoding="utf-8")
+
+        refusal = self.land("--status", "complete")
+
+        self.assertIn(state_root.candidate_paths("run", "T")["branch"],
+                      refusal["error"])
+        self.assertIn(str(elsewhere), refusal["error"])
+        self.assertEqual(
+            "absent",
+            next(step for step in refusal["steps"]
+                 if step["step"] == "workspace-integrate")["outcome"],
+        )
+        self.assertIn("status: claimed", path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

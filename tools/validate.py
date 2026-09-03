@@ -36,6 +36,7 @@ for _import_root in (_FACADE_ROOT, _FACADE_ROOT / "scripts", Path.cwd()):
 import doclint
 from tools import regen as _regen
 
+from tools.validate_support import bundle as _bundle_module
 from tools.validate_support import carriage as _carriage_module
 from tools.validate_support import common as _common_module
 from tools.validate_support import duplication as _duplication_module
@@ -48,6 +49,7 @@ from tools.validate_support import sheets as _sheets_module
 from tools.validate_support import structure as _structure_module
 from tools.validate_support import tooling as _tooling_module
 from tools.validate_support.common import *
+from tools.validate_support.bundle import *
 from tools.validate_support.carriage import *
 from tools.validate_support.browser_game import *
 from tools.validate_support.friction import *
@@ -62,7 +64,8 @@ from tools.validate_support.names import *
 
 ROOT = _FACADE_ROOT
 _SUPPORT_MODULES = (
-    _common_module, _carriage_module, _friction_module, _packages_module,
+    _common_module, _bundle_module, _carriage_module, _friction_module,
+    _packages_module,
     _duplication_module, _structure_module, _lint_module, _names_module,
     _lifecycle_literals_module, _sheets_module, _tooling_module,
 )
@@ -327,6 +330,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_craft_sections(packages, diag)
     validate_sheets(diag)
     validate_tools_declarations(diag)
+    validate_bundle_manifest(diag)
     validate_markdown_links(diag)
     validate_section_citations(diag)
     validate_regenerated_artifacts(diag)

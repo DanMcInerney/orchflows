@@ -172,7 +172,11 @@ the executor chooses a fresh record id for each streamed write. At closing,
 every executor commits or returns the reserved
 [dispatch outcome](dispatch.md#outcome-and-join), whose evidence is one closing
 note appended here like any other filing. `land` appends its `done` predicate's
-reading to the same section, attributed to the driver that ran it.
+reading to the same section, attributed to the driver that ran it, and -- where
+a landing is refused on a merge conflict and later carried through -- the
+conflicted paths and then the candidate revision the resolution delivered
+beside the integrated revision it merged, each filed once however often it is
+observed.
 
 ## Roots, decomposition, and integration
 

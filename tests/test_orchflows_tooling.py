@@ -12,6 +12,7 @@ import contextlib
 import io
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -619,12 +620,15 @@ class ValidatorTests(unittest.TestCase):
 
 
 class CheckTests(unittest.TestCase):
-    """`orchflows check` reads the same grammar `sync` does.
+    """`orchflows check` reads the same grammar, and runs the same probe.
 
-    The ring is built by `orchflows new`, so the pass is the scaffold's own
-    claim read back through the checker; the refusal then mutates that ring
-    in exactly one place -- the declaration -- so the green reading above is
-    the can-fail one.
+    Both halves are `orchflows sync`'s, so a ring author gets one sentence
+    for a line the parser cannot take and one for a tool that is not here,
+    from the same resolver, at whichever door they came to. The ring is
+    built by `orchflows new`, so the pass is the scaffold's own claim read
+    back through the checker; each refusal then mutates that ring in exactly
+    one place -- the declaration -- so the green reading above is the
+    can-fail one.
     """
 
     def _ring(self, world):
@@ -639,19 +643,50 @@ class CheckTests(unittest.TestCase):
         with patch.object(rings.Path, "cwd", return_value=nowhere),                 patch.object(orchflows.Path, "cwd", return_value=nowhere):
             return _cli("check", str(world["home"]))
 
-    def test_a_ring_items_declaration_passes_when_every_line_parses(self):
+    def test_a_declaration_that_parses_and_is_satisfied_says_nothing(self):
+        """A probe decides by its exit code and a variable by being set, so
+        a ring this machine can actually run is silent -- which is what
+        makes each refusal below a reading about the declaration rather
+        than about the machine."""
+
         with _world() as world:
             item, nowhere = self._ring(world)
             (item / orchflows_tools.TOOLS_NAME).write_bytes(
-                "# the machine's\nffmpeg\n"
-                "python >= 3.11 :: python --version\nenv API_KEY\n"
+                "# the machine's\n"
+                f'here :: "{sys.executable}" -c pass\n'
+                "env ORCHFLOWS_TOOLING_FIXTURE_KEY\n"
+                .encode("utf-8")
+            )
+
+            with patch.dict(os.environ, {"ORCHFLOWS_TOOLING_FIXTURE_KEY": "s3cret-value"}):
+                code, out, err = self._check(world, nowhere)
+
+            self.assertEqual(0, code, out + err)
+            self.assertNotIn(orchflows_tools.TOOLS_NAME, out)
+            self.assertNotIn("s3cret-value", out + err)
+
+    def test_a_declaration_this_machine_cannot_satisfy_refuses_the_ring(self):
+        """The defect the dogfood run caught: `sync` named the missing tool
+        and its line and `check` printed nothing, so a ring could pass the
+        checker and be unrunnable. A variable is named and never printed."""
+
+        with _world() as world:
+            item, nowhere = self._ring(world)
+            (item / orchflows_tools.TOOLS_NAME).write_bytes(
+                f"# the machine's\n{ABSENT}\n"
+                "env ORCHFLOWS_TOOLING_ABSENT_KEY\n"
                 .encode("utf-8")
             )
 
             code, out, err = self._check(world, nowhere)
 
-            self.assertEqual(0, code, out + err)
-            self.assertNotIn("ERROR", out)
+            self.assertEqual(1, code, out + err)
+            self.assertIn(f"line 2: '{ABSENT}' is not on PATH", out)
+            self.assertIn(
+                "line 3: environment variable ORCHFLOWS_TOOLING_ABSENT_KEY "
+                "is not set",
+                out,
+            )
 
     def test_a_line_the_parser_cannot_read_refuses_the_ring(self):
         with _world() as world:

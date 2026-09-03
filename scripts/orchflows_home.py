@@ -288,8 +288,15 @@ def _clone_manifest(target: Path) -> Optional[dict]:
     return orchflows_bundle.read_manifest(orchflows_bundle.clone_bundle_dir(target))
 
 
-def _requirement(entry: str, manifest: Path):
-    """``(url, pin as written)`` for one ``requires`` line."""
+def requirement(entry: str, manifest: Path):
+    """``(url, pin as written)`` for one ``requires`` line.
+
+    Public because the shape half of this law is checked twice: here, where
+    an add follows the requirement, and in `tools/validate_support/bundle.py`,
+    where the author of the manifest reads the refusal. The pin half --
+    whether the remote publishes that pin -- stays `_requirement_pin`'s,
+    because it needs a network and a validator has none.
+    """
 
     try:
         return split_reference(entry)
@@ -361,7 +368,7 @@ def import_closure(root: Path, url: str, pin: str) -> List[dict]:
         pinned[name] = {"name": name, "url": url, "pin": pin}
         manifest = _clone_manifest(target)
         for entry in (manifest or {}).get("requires") or ():
-            required_url, requested = _requirement(entry, manifest["path"])
+            required_url, requested = requirement(entry, manifest["path"])
             required = bundle_name(required_url)
             if required in chain or required == name:
                 raise rings.RingError("requires-cycle", CYCLE_REQUIREMENT_REFUSAL.format(
@@ -471,7 +478,7 @@ def _restored_requirements(target: Path, known) -> List[dict]:
     manifest = _clone_manifest(target)
     found = []
     for entry in (manifest or {}).get("requires") or ():
-        url, requested = _requirement(entry, manifest["path"])
+        url, requested = requirement(entry, manifest["path"])
         name = bundle_name(url)
         if name in known or any(item["name"] == name for item in found):
             continue
@@ -488,6 +495,6 @@ __all__ = (
     "MANAGED_IGNORES", "MUTABLE_REF_REFUSAL", "PROJECT_IGNORES",
     "RECEIPT_FILENAME", "UNPINNED_REQUIREMENT_REFUSAL",
     "add", "bundle_name", "clone_at", "ensure", "ensure_project_ignores",
-    "import_closure", "lib_version", "read_lock", "resolve_pin", "restore",
-    "split_reference", "upsert_block", "write_lock",
+    "import_closure", "lib_version", "read_lock", "requirement", "resolve_pin",
+    "restore", "split_reference", "upsert_block", "write_lock",
 )

@@ -41,6 +41,7 @@ from pathlib import Path
 try:
     from . import state_root, tickets_adapters, tickets_format, tickets_store
     from . import workspace_git, workspace_prepare, workspace_record
+    from .tickets_registry import EXECUTOR_REGISTRY
 except ImportError:  # a flat ``bin`` layout, where these are top-level modules
     import state_root
     import tickets_adapters
@@ -49,6 +50,7 @@ except ImportError:  # a flat ``bin`` layout, where these are top-level modules
     import workspace_git
     import workspace_prepare
     import workspace_record
+    from tickets_registry import EXECUTOR_REGISTRY
 
 Refused = workspace_git.Refused
 ISOLATION_KEY = workspace_git.ISOLATION_KEY
@@ -253,16 +255,46 @@ def _create(source, target: Path, branch: str, baseline: str, claimed: bool) -> 
         )
 
 
-def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
+def _fixes_integration_target(data: dict, named: bool) -> bool:
+    """Whether this establishment may fix where the run's work is integrated.
+
+    The target is write-once and run-wide, so its first writer decides every
+    landing after it, and the 2026-09-02 ladder dogfood is what a wrong
+    first writer costs: a call that named no tree established its candidate
+    in whatever directory the driver happened to be standing in, the run's
+    target was fixed there, and every wave after it -- all cut from the
+    repository the run was actually building -- landed `absent` at exit 0
+    and merged nothing.
+
+    Two conditions, both about whether this call is a declaration. The
+    caller has to have named the tree: a source defaulted to the process's
+    own directory is a guess, and a guess is not a run saying where its work
+    belongs. And the item has to be one that delivers into it: a judging
+    item's candidate carries a findings file, read at whatever tree the
+    judge was pointed at, and where a run's *work* belongs is not its to
+    say.
+    """
+
+    if not named:
+        return False
+    return not EXECUTOR_REGISTRY.get(
+        tickets_format._executor_of(data), {}
+    ).get("files_findings")
+
+
+def _derived(run, ticket_id, path, data, prior_text, held, source, seams, named):
     """Create -- or replay -- the tree this item's identity derives.
 
-    The run's integration target is recorded here, on the first
-    establishment that reaches it: this call knows the checkout the run is
-    being driven from and the branch that checkout stands on, and by the
-    time `land` merges, that checkout may have been moved to something
-    else entirely. Reading it live is exactly how a run's commits reached
-    an unrelated branch of the user's own checkout. Write-once and never
-    corrected, for the same reason ``workspace_baseline`` is.
+    The run's integration target is recorded here, on the first establishing
+    call that ``_fixes_integration_target`` admits: this call knows the
+    checkout the run is being driven from and the branch that checkout
+    stands on, and by the time `land` merges, that checkout may have been
+    moved to something else entirely. Reading it live is exactly how a run's
+    commits reached an unrelated branch of the user's own checkout.
+    Write-once and never corrected, for the same reason
+    ``workspace_baseline`` is. An establishment that may not fix it reports
+    whatever is already recorded instead, so a driver reads one answer to
+    "what will `land` merge into" whichever call it asked.
     """
 
     candidate = state_root.candidate_paths(run, ticket_id)
@@ -301,8 +333,12 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
     )
     if "error" in outcome:
         raise Refused(outcome["error"])
-    integration = tickets_store.record_integration_target(
-        run, str(top), workspace_git._current_branch(read_source),
+    integration = (
+        tickets_store.record_integration_target(
+            run, str(top), workspace_git._current_branch(read_source),
+        )
+        if _fixes_integration_target(data, named)
+        else tickets_store.integration_target(run)
     )
     return {
         "run": run,
@@ -325,7 +361,7 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
     }, EXIT_OK
 
 
-def _establishment(run, ticket_id, key, held, seams, source, where):
+def _establishment(run, ticket_id, key, held, seams, source, where, named=False):
     path, data, prior_text = _loaded(run, ticket_id)
     adapter = _adapter(data)
     # The item's isolation before the adapter's strategy, never after. Judged
@@ -340,7 +376,9 @@ def _establishment(run, ticket_id, key, held, seams, source, where):
     if source is None or isolation != REQUIRED:
         body, code = _observed(run, ticket_id, path, data, prior_text, held, seams, where)
         return {key: body}, code
-    body, code = _derived(run, ticket_id, path, data, prior_text, held, source, seams)
+    body, code = _derived(
+        run, ticket_id, path, data, prior_text, held, source, seams, named,
+    )
     return {key: body}, code
 
 
@@ -350,10 +388,20 @@ def observe(run: str, ticket_id: str, *, held: bool, seams: dict):
     return _establishment(run, ticket_id, START_KEY, held, seams, None, None)
 
 
-def establish(run: str, ticket_id: str, *, source, held: bool, seams: dict):
-    """``establish``: give an isolation-required item the tree it derives."""
+def establish(run: str, ticket_id: str, *, source, held: bool, seams: dict,
+              named: bool = False):
+    """``establish``: give an isolation-required item the tree it derives.
 
-    return _establishment(run, ticket_id, ESTABLISH_KEY, held, seams, source, source)
+    ``named`` is whether the caller aimed this call at ``source`` or the
+    facade filled it in from the process's own directory. It decides one
+    thing only -- whether this call may fix the run's integration target --
+    and it is passed rather than inferred here, because only the command
+    that read the arguments can tell a named tree from a defaulted one.
+    """
+
+    return _establishment(
+        run, ticket_id, ESTABLISH_KEY, held, seams, source, source, named,
+    )
 
 
 def prepare(run: str, ticket_id: str):
