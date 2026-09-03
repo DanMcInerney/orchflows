@@ -8,13 +8,14 @@ pointer in every member whose work is governed by it.
 
 ## Rings
 
-A custom skill, pack, sheet, or workflow lives in one of three rings, and
+A custom skill, pack, sheet, or workflow lives in one of four rings, and
 `scripts/rings.py` reads them in one fixed order — nearest first:
 
 | ring | where | what it holds |
 | --- | --- | --- |
 | project | `<repo>/.orchflows/` | items this repository ships to whoever clones it |
-| home | `~/.orchflows/` | your own items, plus `imports/<name>/` for pinned external bundles |
+| home | `~/.orchflows/` | your own items |
+| imports | `~/.orchflows/imports/<name>/` | pinned external bundles |
 | lib | the installed library | `skills/kernel/`, `skills/workflows/`, `packs/`, `sheets/`, and the `example-workflows/` gallery |
 
 One bundle shape everywhere: a directory named `.orchflows` holding the

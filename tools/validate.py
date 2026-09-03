@@ -48,6 +48,7 @@ from tools.validate_support import packages as _packages_module
 from tools.validate_support import sheets as _sheets_module
 from tools.validate_support import structure as _structure_module
 from tools.validate_support import tooling as _tooling_module
+from tools.validate_support import vocabulary as _vocabulary_module
 from tools.validate_support.common import *
 from tools.validate_support.bundle import *
 from tools.validate_support.carriage import *
@@ -57,6 +58,7 @@ from tools.validate_support.lifecycle_literals import *
 from tools.validate_support.packages import *
 from tools.validate_support.sheets import *
 from tools.validate_support.tooling import *
+from tools.validate_support.vocabulary import *
 from tools.validate_support.duplication import *
 from tools.validate_support.structure import *
 from tools.validate_support.lint import *
@@ -68,6 +70,7 @@ _SUPPORT_MODULES = (
     _packages_module,
     _duplication_module, _structure_module, _lint_module, _names_module,
     _lifecycle_literals_module, _sheets_module, _tooling_module,
+    _vocabulary_module,
 )
 _ROOT_BINDINGS = (
     "ROOT", "CONTRACTS_DIR", "FRICTION_OWNER", "NAME_CHECK_MARKER",
@@ -295,6 +298,17 @@ def _validate_documented_paths_impl(diag: Diagnostics) -> None:
                     diag.error(rel(source), finding)
 
 
+def validate_vocabulary_consumers(diag: Diagnostics) -> None:
+    """Grade the root currently exposed by this compatibility facade."""
+
+    state = _support_state()
+    try:
+        _bind_root(ROOT)
+        _vocabulary_module.validate_vocabulary_consumers(diag)
+    finally:
+        _restore_support(state)
+
+
 def _run_validation_impl() -> Diagnostics:
     _bind_root(ROOT)
     diag = Diagnostics()
@@ -340,6 +354,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_section_citations(diag)
     validate_regenerated_artifacts(diag)
     validate_documented_paths(diag)
+    validate_vocabulary_consumers(diag)
     validate_surface_budgets(diag)
     validate_friction_locations(diag)
     return diag

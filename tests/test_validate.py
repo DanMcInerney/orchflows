@@ -228,5 +228,126 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
         )
 
 
+class TestVocabularyTermsHaveConsumers(unittest.TestCase):
+    """Every term `docs/vocabulary.md` defines is used somewhere it ships.
+
+    The vocabulary is the library's namespace and the one file that pays
+    for a name twice: once where it is defined and once in every reader
+    that loads it. A term nothing else says is a definition with no
+    referent, which is the failure the two 2026-09-03 reviews found by
+    hand -- a retired verb, an assembly item, a decision gap and a
+    composition all still defined after the machinery they named was
+    deleted. The roster the scan skips is what cites the vocabulary
+    without consuming it: the reviews and specs, the benchmark corpus,
+    the ring bundle, and the suite -- a test naming a word proves only
+    that the test read the definition.
+    """
+
+    def _tree(self, vocabulary: str, **files: str) -> Path:
+        root = Path(tempfile.mkdtemp(prefix="worker-opus-b113-"))
+        self.addCleanup(shutil.rmtree, root, True)
+        (root / "ARCHITECTURE.md").write_text("# marker\n", encoding="utf-8")
+        (root / "docs").mkdir()
+        (root / "docs" / "vocabulary.md").write_text(vocabulary, encoding="utf-8")
+        for relative, body in files.items():
+            source = root / relative.replace("__", "/")
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text(body, encoding="utf-8")
+        return root
+
+    def _findings(self, vocabulary: str, **files: str):
+        root = self._tree(vocabulary, **files)
+        saved = validate.ROOT
+        try:
+            validate.ROOT = root
+            diag = validate.Diagnostics()
+            validate.validate_vocabulary_consumers(diag)
+        finally:
+            validate.ROOT = saved
+        return [line for line in diag.lines() if line.startswith("ERROR")]
+
+    KEPT = "- **kept name** — a name something else says.\n"
+    ORPHAN = "- **orphan name** — a name nothing else says.\n"
+
+    def test_a_term_no_shipped_file_uses_is_an_error(self):
+        findings = self._findings(
+            self.KEPT + self.ORPHAN,
+            docs__consumer="The kept name is used here.\n",
+        )
+        self.assertEqual(1, len(findings), findings)
+        self.assertIn("orphan name", findings[0])
+
+    def test_a_consumer_wrapped_across_a_line_still_counts(self):
+        """The defect this matcher was written against: prose wraps a
+        two-word name at the line, and a literal-space matcher convicted
+        two live terms whose only consumers spelled them across one."""
+
+        self.assertEqual(
+            [],
+            self._findings(
+                self.KEPT,
+                docs__consumer="A sentence ending in the kept\nname continues.\n",
+            ),
+        )
+
+    def test_a_hyphenated_consumer_still_counts(self):
+        """The same name modifying a noun is hyphenated, not renamed."""
+
+        self.assertEqual(
+            [],
+            self._findings(self.KEPT, docs__consumer="The kept-name field.\n"),
+        )
+
+    def test_each_alternative_spelling_answers_for_itself(self):
+        findings = self._findings(
+            "- **kept name / orphan name** — two spellings of one entry.\n",
+            docs__consumer="The kept name is used here.\n",
+        )
+        self.assertEqual(1, len(findings), findings)
+        self.assertIn("orphan name", findings[0])
+
+    def test_the_suite_is_not_a_consumer(self):
+        """A term only the tests say is a term only the tests read."""
+
+        findings = self._findings(
+            self.ORPHAN, tests__test_probe="The orphan name appears here.\n"
+        )
+        self.assertEqual(1, len(findings), findings)
+
+    def test_the_reserved_scratch_directory_is_not_a_consumer(self):
+        """`.orch-notes/` is where a candidate keeps its own working notes,
+        so a term it quotes is the child talking to itself."""
+
+        findings = self._findings(
+            self.ORPHAN, **{".orch-notes__notes.md": "The orphan name here.\n"}
+        )
+        self.assertEqual(1, len(findings), findings)
+
+    def test_a_tree_without_the_vocabulary_is_skipped_not_failed(self):
+        root = self._tree(self.ORPHAN)
+        (root / "docs" / "vocabulary.md").unlink()
+        saved = validate.ROOT
+        try:
+            validate.ROOT = root
+            diag = validate.Diagnostics()
+            validate.validate_vocabulary_consumers(diag)
+        finally:
+            validate.ROOT = saved
+        self.assertFalse(diag.has_errors)
+        self.assertTrue(any(line.startswith("WARN") for line in diag.lines()))
+
+    def test_the_real_library_defines_no_unconsumed_term(self):
+        diag = validate.Diagnostics()
+        saved = validate.ROOT
+        try:
+            validate.ROOT = _ROOT
+            validate.validate_vocabulary_consumers(diag)
+        finally:
+            validate.ROOT = saved
+        self.assertEqual(
+            [], [line for line in diag.lines() if line.startswith("ERROR")]
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -135,7 +135,7 @@ and keep it by default.
 Every run auto-logs its friction — retries, missing inputs,
 workarounds — under an always-on law, and `trace.py` extracts each
 session's requests, narration and tool calls into one event record.
-the improvement workflow mines those logs into proposals you accept or
+The improvement workflow mines those logs into proposals you accept or
 reject, each scoped to where the change lands: your **environment** (a
 missing interpreter, a broken tool), your **project** (code or docs
 that keep causing friction), or the **workflows** themselves. Real
@@ -221,9 +221,10 @@ self-improvement wired into every run.
   Control flow is not a callable: loops, branches and retries are the
   calling workflow's own prose, and a `frame` ticket is the durable stack
   frame under them.
-- **One stud pattern.** Six contracts — dispatch, work-item, verdict,
-  worklog, pack-signature, result — are the only interfaces. Anything
-  that emits one plugs into anything that takes one.
+- **One stud pattern.** Eight contracts — bundle, dispatch,
+  pack-signature, result, sheet, verdict, work-item, worklog — are the
+  only interfaces. Anything that emits one plugs into anything that
+  takes one.
 - **One return shape.** Every ticket attempt closes through the dispatch
   outcome envelope: `assignment_seal`, `dispatch_id`, `outcome_record_id`,
   writer, and evidence. The durable result identity then feeds any

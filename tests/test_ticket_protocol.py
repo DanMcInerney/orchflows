@@ -133,9 +133,18 @@ class TicketProtocolTest(unittest.TestCase):
         vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
         worklog = (root / "contracts" / "worklog.md").read_text(encoding="utf-8")
 
+        # The count is read off `contracts/`, never recalled: this case
+        # spelled "six" while the tree already carried eight contracts, so
+        # it convicted the projection that had started telling the truth.
+        contracts = sorted(path.stem for path in (root / "contracts").glob("*.md"))
+        spelled = (
+            "zero one two three four five six seven eight nine ten"
+        ).split()[len(contracts)]
         for projection in (readme, design):
-            self.assertIn("six", projection.lower())
+            self.assertIn(spelled, projection.lower())
             self.assertIn("dispatch", projection.lower())
+        for name in contracts:
+            self.assertIn(name, readme)
         for field in (
             "assignment_seal", "dispatch_id", "outcome_record_id", "evidence",
         ):
