@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from . import common as __dep_common
 ALLOWED_FRONTMATTER_KEYS = __dep_common.ALLOWED_FRONTMATTER_KEYS
-ASSEMBLY_NONE_FORM_RE = __dep_common.ASSEMBLY_NONE_FORM_RE
-ASSEMBLY_SKILL_FORM_RE = __dep_common.ASSEMBLY_SKILL_FORM_RE
 BODY_BUDGET = __dep_common.BODY_BUDGET
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
 CRAFT_ROW_RE = __dep_common.CRAFT_ROW_RE
@@ -18,7 +16,6 @@ PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
 PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
 PACK_TYPED_CELLS = __dep_common.PACK_TYPED_CELLS
 PACK_ADAPTER_RE = __dep_common.PACK_ADAPTER_RE
-PACK_STAGE_RE = __dep_common.PACK_STAGE_RE
 PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
 Path = __dep_common.Path
 REQUIRE_RE = __dep_common.REQUIRE_RE
@@ -350,36 +347,6 @@ def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
             file_label,
             f"adapter cell must be one registered mechanism key, got: {cells['adapter']!r}",
         )
-    stages = []
-    if "stages" in cells:
-        raw_stages = cells["stages"].strip()
-        if not (raw_stages.startswith("[") and raw_stages.endswith("]")):
-            diag.error(file_label, f"stages cell must be a bracketed list, got: {raw_stages!r}")
-        else:
-            stages = [dequote(part) for part in raw_stages[1:-1].split(",") if part.strip()]
-            if any(not PACK_STAGE_RE.fullmatch(stage) for stage in stages):
-                diag.error(file_label, f"stages cell has an invalid stage, got: {raw_stages!r}")
-            if len(stages) != len(set(stages)):
-                diag.error(file_label, "stages cell repeats a stage")
-    if "assembly" in cells:
-        raw_assembly = cells["assembly"].strip()
-        assembly = dequote(raw_assembly)
-        if raw_assembly != assembly or (
-            assembly != "none" and (
-                not PACK_STAGE_RE.fullmatch(assembly)
-                or (stages and assembly not in stages)
-            )
-        ):
-            diag.error(file_label, f"assembly cell must be none or a declared stage, got: {cells['assembly']!r}")
-
-
-def assembly_form_ok(binding: str, stages=None) -> bool:
-    """Return whether one typed assembly value is closed and stage-backed."""
-    raw = binding.strip()
-    value = dequote(raw)
-    if value == "none":
-        return raw == "none"
-    return raw == value and bool(PACK_STAGE_RE.fullmatch(value)) and (not stages or value in stages)
 
 
 def cell_clauses(text: str) -> list:
@@ -468,5 +435,5 @@ __all__ = (
     'validate_frontmatter', 'validate_role', 'validate_anatomy', 'body_words',
     '_split_frontmatter', 'validate_surface_budgets', 'validate_routing_block',
     'validate_budget', 'validate_pack_signature',
-    'assembly_form_ok', 'cell_clauses',
+    'cell_clauses',
 )

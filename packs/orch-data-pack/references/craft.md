@@ -111,7 +111,5 @@ themselves fail to reproduce.
   from pinned inputs; a number that does not come back is a finding
   about the pipeline, never a rounding matter.
 - Prefer a declared gap over an irreproducible or leaky number.
-- Run the narrow affected computation replay; the full suite is the
-  gate's row, never a unit's.
 - Close with dataset identities, pipeline commands, reproduced numbers
   with uncertainty, and unresolved caveats.

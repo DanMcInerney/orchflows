@@ -120,12 +120,15 @@ def default_pack_roots():
 
 
 def pack_lens_kinds(pack_roots, packs):
-    """``(kinds, unresolved)`` for the packs a sheet names.
+    """``(kind_by_pack, unresolved)`` for the packs a sheet names.
 
-    ``kinds`` is every artifact kind the named packs' adapters emit, which
-    is the closed set of `###` keys the sheet's `## Lens` may use; a pack
-    that does not resolve, or whose adapter is unregistered, lands in
-    ``unresolved`` instead of silently widening that set.
+    ``kind_by_pack`` maps each resolved pack name to the one artifact kind
+    its adapter emits. Their values are the closed set of `###` keys the
+    sheet's `## Lens` may use, and each key is separately owed: a pack
+    whose kind no entry carries is a stamp that would hand a verb a sheet
+    with nothing in it to read. A pack that does not resolve, or whose
+    adapter is unregistered, lands in ``unresolved`` instead of silently
+    widening that set.
 
     ``pack_roots`` is the packs directories to look in, nearest first. The
     library has one; a ring's sheet almost always names a *library* pack,
@@ -134,7 +137,7 @@ def pack_lens_kinds(pack_roots, packs):
     cannot.
     """
 
-    kinds, unresolved = set(), []
+    kind_by_pack, unresolved = {}, []
     for name in packs:
         manifest = _pack_manifest(pack_roots, name)
         if manifest is None:
@@ -145,8 +148,8 @@ def pack_lens_kinds(pack_roots, packs):
         if adapter is None:
             unresolved.append(name)
             continue
-        kinds.add(adapter.artifact_kind)
-    return kinds, unresolved
+        kind_by_pack[name] = adapter.artifact_kind
+    return kind_by_pack, unresolved
 
 
 def validate_sheet_frontmatter(fm: dict, sheet: dict, diag) -> None:
@@ -192,11 +195,18 @@ def validate_sheet_sections(body: str, sheet: dict, diag) -> None:
 
 
 def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag, pack_roots=None) -> None:
-    """Every `###` entry is keyed by a kind one named pack actually emits."""
+    """`## Lens` keys and the named packs' kinds are the same set.
+
+    Both directions, because each fails its own way: an entry under a key
+    no named pack emits is criteria no verb reads, and a named pack whose
+    kind no entry carries is a stamp that hands its verb a sheet with
+    nothing in it for the artifact it makes (contracts/sheet.md
+    `## Sections`).
+    """
 
     file_label = rel(sheet["manifest"])
     packs = declared_packs(fm.get("packs"))
-    kinds, unresolved = pack_lens_kinds(
+    kind_by_pack, unresolved = pack_lens_kinds(
         default_pack_roots() if pack_roots is None else pack_roots, packs,
     )
     for name in unresolved:
@@ -205,6 +215,7 @@ def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag, pack_roots=None)
             f"packs names '{name}', which resolves to no pack with a "
             "registered adapter in this library",
         )
+    kinds = set(kind_by_pack.values())
     entries = LENS_ENTRY_RE.findall(body)
     if packs and not unresolved and not entries:
         diag.error(file_label, "sheet '## Lens' carries no '###' artifact-kind entry")
@@ -216,6 +227,16 @@ def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag, pack_roots=None)
                 file_label,
                 f"'## Lens' entry '### {entry}' is not an artifact kind the "
                 f"packs {sorted(packs)} emit ({sorted(kinds)})",
+            )
+    if unresolved:
+        return
+    for name in sorted(kind_by_pack):
+        if kind_by_pack[name] not in entries:
+            diag.error(
+                file_label,
+                f"packs names '{name}', whose artifact kind "
+                f"'{kind_by_pack[name]}' has no '## Lens' entry "
+                f"'### {kind_by_pack[name]}'",
             )
 
 

@@ -23,15 +23,12 @@ except ImportError:
 RESOLVER_VERSION = "orchflows.pack-resolver.v2"
 PACK_CELLS = (
     "adapter",
-    "stages",
-    "assembly",
     "craft",
 )
-TYPED_CELLS = frozenset(("adapter", "stages", "assembly"))
+TYPED_CELLS = frozenset(("adapter",))
 _CELL_SET = frozenset(PACK_CELLS)
 _PACK_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ADAPTER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
-_STAGE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _CELL_ROW_RE = re.compile(r"^\s*\|\s*([^|]+?)\s*\|\s*(.*?)\s*\|\s*$")
 _LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 _FRONTMATTER_NAME_RE = re.compile(r"(?m)^name:\s*([^\r\n]+?)\s*$")
@@ -216,34 +213,6 @@ def _typed_cells(rows: Dict[str, str], path: Path) -> Dict[str, object]:
     if adapter not in ADAPTER_REGISTRY:
         raise PackError("pack-shape-invalid", f"adapter cell names an unregistered key: {adapter!r}")
     cells["adapter"] = adapter
-
-    stages_raw = rows["stages"].strip()
-    if not (stages_raw.startswith("[") and stages_raw.endswith("]")):
-        raise PackError("pack-shape-invalid", "stages cell must be a bracketed list")
-    stages: List[str] = []
-    inside = stages_raw[1:-1].strip()
-    if inside:
-        for item in inside.split(","):
-            raw_stage = item.strip()
-            if raw_stage.startswith("`") or raw_stage.endswith("`"):
-                raise PackError("pack-shape-invalid", f"stages cell must use plain stage names: {raw_stage!r}")
-            stage = raw_stage
-            if not stage or not _STAGE_RE.fullmatch(stage):
-                raise PackError("pack-shape-invalid", f"stages cell has invalid stage: {stage!r}")
-            if stage in stages:
-                raise PackError("pack-shape-invalid", f"stages cell repeats stage: {stage}")
-            stages.append(stage)
-    cells["stages"] = stages
-
-    assembly = _atom(rows["assembly"], "assembly", path)
-    if assembly != "none" and not _STAGE_RE.fullmatch(assembly):
-        raise PackError("pack-shape-invalid", f"assembly cell has invalid value: {assembly!r}")
-    # ``none`` may coexist with ordinary execution stages when no terminal
-    # assembly item exists. A named assembly is a stage name, never a skill
-    # binding.
-    if assembly != "none" and assembly not in stages:
-        raise PackError("pack-shape-invalid", f"assembly is not a declared stage: {assembly}")
-    cells["assembly"] = assembly
     return cells
 
 

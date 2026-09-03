@@ -36,15 +36,14 @@ what each step feeds the next.
 5. Cutting fifth — `## Lens`'s `### cut` entry: how a spec cuts and what
    every ticket carries.
 6. Criteria sixth — the deliverable entry's finding classes, one per
-   bullet, and which of them block. Then the three cells machinery
-   branches on: adapter from the registry, stages (with `## Stages` for
-   their narrative when it earns one), assembly.
+   bullet, and which of them block. Then the adapter from the registry
+   (with `## Stages` for the domain's narrative when it earns one).
 7. Spec fields last — `## Spec fields` fall out of the sections above.
    Then `## Lens`'s `### root` entry, written against the binding the
    craft-section table states for it. Then the description, in the packs'
    shared idiom, ending in its "Stamp when …" sentence.
 
-The finished pack is one craft document behind four cells, and the
+The finished pack is one craft document behind two cells, and the
 signature's craft-section table is the one table of what the document
 carries. Read a resolved pack with
 `uv run --no-project python scripts/packs.py cells <digest>`,

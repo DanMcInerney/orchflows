@@ -72,11 +72,9 @@ ROLE_VALUES = {"planner", "worker", "none"}
 APPLIED_ROLE_VALUES = ROLE_VALUES - {"none"}
 PACK_SIGNATURE_CELLS = (
     "adapter",
-    "stages",
-    "assembly",
     "craft",
 )
-PACK_TYPED_CELLS = ("adapter", "stages", "assembly")
+PACK_TYPED_CELLS = ("adapter",)
 # The one cell whose content is a whole reference file, so the duplication
 # linter compares what it points at rather than the pointer row — section
 # by section, per contracts/pack-signature.md's craft-section table.
@@ -134,9 +132,6 @@ PACK_TABLE_CELL_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|", re.MULTILINE)
 PACK_CELL_ROW_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|\s*(.*?)\s*\|\s*$", re.MULTILINE)
 CRAFT_ROW_RE = re.compile(r"^\|\s*craft\s*\|\s*(.+?)\s*\|", re.MULTILINE)
 PACK_ADAPTER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
-PACK_STAGE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
-ASSEMBLY_SKILL_FORM_RE = re.compile(r"^`[a-z][a-z0-9-]*`$")
-ASSEMBLY_NONE_FORM_RE = re.compile(r"^none$")
 CELL_REFERENCE_LINK_RE = re.compile(r"\]\((references/[^)]+)\)")
 TABLE_DELIM_ROW_RE = re.compile(r"^\|(?:\s*:?-{2,}:?\s*\|)+\s*$")
 LIST_MARKER_RE = re.compile(r"^(?:[-*+]|\d+[.)])\s+")
@@ -148,20 +143,6 @@ OUTSIDE_PACK_CITATION = "](../"
 # OUTSIDE_PACK_CITATION's reason -- convicting it would drive a reference
 # to stop saying which cell owns it.
 SIGNATURE_CELL_POINTER_RE = re.compile(r"per the signature's [a-z_]+ cell")
-# Spans an owner outside the pack mandates, so two packs carrying one carry
-# it by obligation and not by duplication. Stripped before the
-# near-duplicate ratio and nowhere else: the verbatim tier stays over the
-# whole clause, because free content that is identical under a mandated
-# skeleton is a real duplication and still an error.
-MANDATED_FORM_RES = (
-    # contracts/pack-signature.md: `assembly` is a backticked skill name or
-    # the bare word none, an em-dash, and a gloss naming what stands in for
-    # the assembly. validate_pack_signature errors on any third form, so
-    # both the opener and the naming are obligatory, and only the noun
-    # phrase between them is the pack's own.
-    re.compile(r"^none\s+—\s+"),
-    re.compile(r"\b(?:is|are) the assembly$"),
-)
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
 BOUND_TERM_RE = re.compile(r"bound|budget", re.IGNORECASE)
@@ -267,7 +248,7 @@ __all__ = (
     'DESCRIPTION_BUDGET',
     'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES',
     'APPLIED_ROLE_VALUES',
-    'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
+    'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE',
     'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
     'CRAFT_RETIRED_SECTIONS', 'CRAFT_LIBRARY_LENS_KINDS',
     'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
@@ -277,9 +258,9 @@ __all__ = (
     'SHEET_REFUSED_ENTRIES',
     'CELL_CLAUSE_MIN_WORDS', 'CALL_TOKEN_RE', 'REQUIRE_RE', 'NEVER_RE',
     'RETURN_RE', 'PACK_TABLE_CELL_RE', 'PACK_CELL_ROW_RE', 'CRAFT_ROW_RE',
-    'ASSEMBLY_SKILL_FORM_RE', 'ASSEMBLY_NONE_FORM_RE', 'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',
+    'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',
     'LIST_MARKER_RE', 'SENTENCE_END_RE', 'OUTSIDE_PACK_CITATION', 'SIGNATURE_CELL_POINTER_RE',
-    'MANDATED_FORM_RES', 'MD_LINK_RE', 'LOOP_TRIGGER_RE', 'BOUND_TERM_RE',
+    'MD_LINK_RE', 'LOOP_TRIGGER_RE', 'BOUND_TERM_RE',
     'TERMINAL_TERM_RE', 'ENVELOPE_UNITS', 'ENVELOPE_VOCAB_RES',
     'CARRIAGE_REQUIRE_BLOCK_RE', 'CARRIAGE_SENTENCE_SPLIT_RE', 'CARRIAGE_MD_LINK_RE', 'CARRIAGE_PAREN_RE',
     'CARRIAGE_CODE_RE', 'CARRIAGE_WORD_RE', 'CARRIAGE_DASH_SPLIT_RE', 'TICKET_FILING_RE',

@@ -18,23 +18,19 @@ class Adapter:
     """Properties machinery may branch on for one implemented mechanism."""
 
     key: str
-    identity_form: str
     # The prefix of the one verbatim artifact line a child of this adapter's
     # pack prints, and the prefix every command that binds a fixed identity
     # grades: `git:<full-commit-id>`, `doc:<path>@sha256:<digest>`,
-    # `evidence:<store-id>`. `identity_form` names the *thing*; this names
-    # how the line spells it, and the two are not the same string because a
-    # prefix is typed for a reader and a form is named for a human.
+    # `evidence:<store-id>`.
     artifact_kind: str
     establishes_isolation: bool
     deterministic_gate: bool
-    conflict_semantics: str
     workspace_strategy: str
     # Whether a child of this adapter must commit in the tree it stands in
-    # for its bytes to survive: true for git, git-plus-render and
-    # document-tree, whose identities are all commits or a document
-    # revision one records; false for evidence-store, whose identity is a
-    # lane packet no commit stands behind. Distinct from
+    # for its bytes to survive: true for git and document-tree, whose
+    # identities are a commit or a document revision one records; false
+    # for evidence-store, whose identity is a lane packet no commit stands
+    # behind. Distinct from
     # `establishes_isolation and workspace_strategy == "git"` (whether the
     # landing merges a candidate branch): a document-tree child commits
     # straight onto the coordinator's own branch, so it must commit but has
@@ -45,41 +41,25 @@ class Adapter:
 ADAPTER_REGISTRY = {
     "document-tree": Adapter(
         key="document-tree",
-        identity_form="document-revision",
         artifact_kind="doc",
         establishes_isolation=False,
         deterministic_gate=False,
-        conflict_semantics="section-overlap",
         workspace_strategy="document-tree",
         commits_in_place=True,
     ),
     "evidence-store": Adapter(
         key="evidence-store",
-        identity_form="evidence-packet",
         artifact_kind="evidence",
         establishes_isolation=True,
         deterministic_gate=False,
-        conflict_semantics="append-only-lanes",
         workspace_strategy="evidence-store",
         commits_in_place=False,
     ),
     "git": Adapter(
         key="git",
-        identity_form="git-commit",
         artifact_kind="git",
         establishes_isolation=True,
         deterministic_gate=True,
-        conflict_semantics="git-overlap",
-        workspace_strategy="git",
-        commits_in_place=True,
-    ),
-    "git-plus-render": Adapter(
-        key="git-plus-render",
-        identity_form="view-identity",
-        artifact_kind="git",
-        establishes_isolation=True,
-        deterministic_gate=True,
-        conflict_semantics="view-overlap",
         workspace_strategy="git",
         commits_in_place=True,
     ),

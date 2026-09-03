@@ -167,8 +167,7 @@ def _files_findings(assignment: dict) -> bool:
 
 
 def _craft_lines(assignment: dict) -> list:
-    """The pack's craft, handed as a path, the entry it is read at, and how
-    far its checks reach.
+    """The pack's craft, handed as a path, and the entry it is read at.
 
     A craft's `## Lens` carries one entry per artifact kind its domain
     produces, so handing the path alone left the child to pick which entry
@@ -177,20 +176,15 @@ def _craft_lines(assignment: dict) -> list:
     checks against it. Nothing renders for an assignment whose kind did not
     resolve -- a child sent to `### None` would read no entry at all.
 
-    One scope statement, whichever owns it: the craft's own quoted sentence
-    where the craft declares one, else the standing gate line -- the two said
-    the same law twice on every code dispatch until the quote was made the
-    answer.
+    The verification-scope line is `rules/verification.md` §8's, stated
+    once here for every dispatch: a craft that also stated it declared one
+    law twice, in two wordings, and the craft's copy is deleted.
     """
 
     lines = []
     craft = assignment.get("craft")
-    scope = None
     if craft is not None:
-        lines.append(
-            f"Read your stamped pack's craft at {craft} and run its declared "
-            "stages in order through this one role."
-        )
+        lines.append(f"Read your stamped pack's craft at {craft}.")
         key = assignment.get("lens_key")
         if key:
             lines.append(
@@ -200,14 +194,10 @@ def _craft_lines(assignment: dict) -> list:
                 f"You make a `{key}`: the craft's `## Lens` entry `### {key}` "
                 "is what your artifact must satisfy."
             )
-        scope = assignment.get("craft_scope")
-        if scope is not None:
-            lines.append(f'That craft sets your verification scope: "{scope}"')
-    if scope is None:
-        lines.append(
-            "The full required suite is the gate's row, never a unit's: run it "
-            "here only if this ticket is the gate."
-        )
+    lines.append(
+        "The full required suite is the gate's row, never a unit's: run it "
+        "here only if this ticket is the gate."
+    )
     return lines
 
 

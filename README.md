@@ -282,13 +282,13 @@ this README does not keep a second copy of it.
     packs/
     ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-do
     │                        workspace: git, one worktree per work item
-    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-do, assembly stage
+    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-do
     │                        workspace: document tree with outline slots
-    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-do, assembly stage
+    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-do
     │                        workspace: git, datasets pinned by digest manifest
     ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-do
-    │                        workspace: git plus render (view × breakpoint × state)
-    └── orch-research-pack — delivers answers     · source evidence       · executor orch-do, assembly stage
+    │                        workspace: git, captures per view × breakpoint × state
+    └── orch-research-pack — delivers answers     · source evidence       · executor orch-do
                              workspace: evidence store of lane packets
 
 A pack is pure data — no control flow. It supplies the domain's

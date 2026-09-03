@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2355,
+  "count": 2348,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -673,7 +673,7 @@
    "test_minimal_acceptance.MinimalAcceptanceTests.test_single_and_decomposed_runs_take_only_their_minimum_path",
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_carries_three_closed_adapters_and_distinct_workspaces",
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_dependency_edges_carry_identities_not_candidate_bytes",
-   "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
+   "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_artifact_kind",
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
    "test_orchflows_bundle.ClosureTests.test_a_bundle_reached_twice_is_cloned_once_and_is_not_a_cycle",
@@ -1442,14 +1442,6 @@
    "tests.test_cell_linter_cases.pack_cells.CurrentWorkspaceBindingTest.test_every_shipped_workspace_binds_the_current_ticket_protocol",
    "tests.test_cell_linter_cases.pack_cells.TestAllowlist.test_every_allowlisted_clause_is_in_the_form_the_matcher_compares",
    "tests.test_cell_linter_cases.pack_cells.TestAllowlist.test_the_real_tree_carries_no_unallowed_verbatim_duplication",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_backticked_none_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_bare_none_is_accepted",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_empty_cell_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_every_real_pack_row_is_accepted",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_free_prose_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_hyphen_instead_of_an_em_dash_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_the_real_tree_reports_no_assembly_form_error",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_the_two_legal_forms_are_accepted",
    "tests.test_cell_linter_cases.pack_cells.TestCellClauseSplitter.test_a_clause_citing_an_owner_outside_the_pack_is_not_content",
    "tests.test_cell_linter_cases.pack_cells.TestCellClauseSplitter.test_a_comma_does_not_cut",
    "tests.test_cell_linter_cases.pack_cells.TestCellClauseSplitter.test_a_pointer_clause_keeps_its_exemption_after_the_split",
@@ -1464,7 +1456,7 @@
    "tests.test_cell_linter_cases.pack_cells.TestCellDuplication.test_near_duplicate_clauses_warn_naming_both_sites",
    "tests.test_cell_linter_cases.pack_cells.TestCellDuplication.test_the_same_clause_under_different_sections_is_not_compared",
    "tests.test_cell_linter_cases.pack_cells.TestCellDuplication.test_unrelated_clauses_are_not_reported",
-   "tests.test_cell_linter_cases.pack_cells.TestMandatedEchoExemption.test_the_outside_citation_and_typed_atoms_are_exempt",
+   "tests.test_cell_linter_cases.pack_cells.TestOutsideCitationExemption.test_the_outside_citation_is_exempt",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_a_count_above_the_ceiling_fails",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_the_tree_holds_at_or_under_the_ceiling",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_the_tree_holds_at_or_under_the_cross_tier_ceiling",
@@ -2153,6 +2145,7 @@
    "tests.test_validator_cases.availability_and_packages.TestASkippedCheckSaysSo.test_the_link_check_names_every_root_that_bought_its_silence",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_lens_entry_keyed_by_a_kind_the_named_pack_never_emits_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_missing_mandatory_section_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_named_pack_whose_kind_no_lens_entry_carries_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_pack_only_section_inside_a_sheet_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_packs_name_that_resolves_to_no_pack_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_requirements_file_inside_a_sheet_is_refused",
@@ -2358,7 +2351,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "cc06ff80aca4a176cfa78597c4e588b0f05114f3940bb4f0cb1ba259b3c15f6e"
+  "sha256": "7881acc7466822dcaa39d06723cd0ec1d46ddfb37ab7c3506eea2b1445ca4925"
  },
  "mutation_owners": [
   {

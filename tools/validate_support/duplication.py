@@ -12,7 +12,6 @@ CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
 CELL_REFERENCE_LINK_RE = __dep_common.CELL_REFERENCE_LINK_RE
 CELL_SIMILARITY_THRESHOLD = __dep_common.CELL_SIMILARITY_THRESHOLD
 CRAFT_CELLS_BY_POINTER = __dep_common.CRAFT_CELLS_BY_POINTER
-MANDATED_FORM_RES = __dep_common.MANDATED_FORM_RES
 PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
 PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
 ROOT = __dep_common.ROOT
@@ -38,31 +37,7 @@ CELL_DUPLICATION_ALLOWLIST = (
         # Normalized clauses, matched exactly.
         "clauses": (
             "document tree: identities are document revisions",
-            "git plus render: identities are view identities",
             "evidence store: identities are evidence packets",
-        ),
-    },
-    {
-        "family": "verification-scope anchor",
-        "reason": (
-            "scripts/tickets_assignment.py's _craft_scope() reads a pack's "
-            "own verification-scope sentence out of its `## Stages` (or "
-            "`## Lens`) section by the literal anchor \"gate's row\", so "
-            "the one-suite law (research/routing-design-2026-08-31.md "
-            "\"The one-suite law\") reaches every pack the same way: "
-            "children run their own narrow affected checks, and the full "
-            "required suite is the closing `done`'s alone. Every pack "
-            "carries this sentence by that mandate, not by drift -- each "
-            "names its own check vocabulary, and the closing clause "
-            "states the shared law itself, which has exactly one wording."
-        ),
-        "clauses": (
-            "Run the narrow affected checks",
-            "Run the narrow affected document checks",
-            "Run the narrow affected computation replay",
-            "Run the narrow affected render checks",
-            "Run the narrow affected source verification",
-            "the full suite is the gate's row, never a unit's",
         ),
     },
 )
@@ -101,11 +76,9 @@ def _craft_sections(text: str) -> dict:
 
 
 def free_content(clause: str) -> str:
-    """`clause` minus every span MANDATED_FORM_RES names -- what is left
-    is the pack's own. A remainder under CELL_CLAUSE_MIN_WORDS words is
-    the floor's case exactly: a label, not content."""
-    for pattern in MANDATED_FORM_RES:
-        clause = pattern.sub(" ", clause)
+    """`clause` collapsed to the words compared. A remainder under
+    CELL_CLAUSE_MIN_WORDS words is the floor's case exactly: a label,
+    not content."""
     return re.sub(r"\s+", " ", clause).strip()
 
 

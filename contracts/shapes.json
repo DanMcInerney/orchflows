@@ -196,9 +196,8 @@
     {
       "name": "pack_cells",
       "contract": "pack-signature.md",
-      "fields": ["adapter", "stages", "assembly", "craft"],
-      "required": ["adapter", "stages", "assembly", "craft"],
-      "values": {"assembly": ["none", "stage name"]}
+      "fields": ["adapter", "craft"],
+      "required": ["adapter", "craft"]
     },
     {
       "name": "sheet_frontmatter",
