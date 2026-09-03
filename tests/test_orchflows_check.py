@@ -18,6 +18,7 @@ that module's, imported rather than forked.
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -298,6 +299,55 @@ class CheckTests(unittest.TestCase):
             self.assertIn("orchflows trust", output)
             self.assertEqual(0, own_code, own)
             self.assertTrue(ours.exists(), own)
+
+    def test_a_directory_probes_once_its_own_bundle_is_trusted(self):
+        """The sentence the case above prints is a remedy, and a remedy
+        names a command that changes the answer. The ledger keys a grant by
+        bundle path, and the path the reader was handed the sentence about
+        is the path `check` graded, so the two meet."""
+
+        with _home() as home, tempfile.TemporaryDirectory() as raw:
+            (home / "nowhere").mkdir()
+            stranger = Path(raw).resolve()
+            (stranger / "workflows").mkdir()
+            orchflows_scaffold.write(stranger / "workflows", "workflow", "team-flow")
+            marker = stranger / "probe-ran"
+            (stranger / "workflows" / "team-flow" / "tools.txt").write_text(
+                _probe(marker), encoding="utf-8",
+            )
+
+            rings_trust.grant(stranger)
+            code, output = self._check(home, str(stranger))
+
+            self.assertEqual(0, code, output)
+            self.assertTrue(marker.exists(), output)
+            self.assertNotIn("orchflows trust", output)
+
+    def test_an_imported_bundle_probes_without_a_grant(self):
+        """`orchflows sync` asks the ledger about the project ring and no
+        other: an import is pinned by `imports.lock`, which is the
+        acceptance (`rings._trust_state`'s "inherent"). One bundle cannot be
+        content the user accepted at one door and a stranger at the other."""
+
+        with _home() as home:
+            (home / "nowhere").mkdir()
+            bundle = home / rings.IMPORTS_DIR / "kit" / rings.BUNDLE_DIR
+            (bundle / "workflows").mkdir(parents=True)
+            orchflows_scaffold.write(bundle / "workflows", "workflow", "team-flow")
+            marker = bundle / "probe-ran"
+            (bundle / "workflows" / "team-flow" / "tools.txt").write_text(
+                _probe(marker), encoding="utf-8",
+            )
+            rings.imports_lock_path(home).write_text(
+                json.dumps({"imports": [{"name": "kit", "url": "", "pin": ""}]}),
+                encoding="utf-8",
+            )
+
+            code, output = self._check(home, str(bundle))
+
+            self.assertEqual(0, code, output)
+            self.assertTrue(marker.exists(), output)
+            self.assertNotIn("orchflows trust", output)
 
     def test_a_refused_sheets_declaration_is_never_probed(self):
         """A sheet has no code of its own, so `validate_sheets` refuses the
