@@ -16,13 +16,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-# Every entrypoint, plus the modules every entrypoint imports by bare name
-# from the flat installed layout and no facade owns: ``state_root.py``
-# (where a record goes), ``console.py`` (how a script prints one),
-# ``rings.py`` (which ring an item resolves from), and ``_bootstrap.py``
-# (the env-var name and this repo's root, imported by ``state_root.py``
-# itself before anything else is safe to import). All four have to land
-# in the flat layout or the import fails there and nowhere else.
+# Every entrypoint, plus the four modules every entrypoint imports by bare
+# name from the flat installed layout and no facade owns: ``state_root.py``,
+# ``console.py``, ``rings.py``, and ``_bootstrap.py`` (imported by
+# ``state_root.py`` before anything else is safe to import). All four have to
+# land in the flat layout or the import fails there and nowhere else.
 SCRIPT_NAMES = (
     "_bootstrap.py",
     "browser_game_validate.py",

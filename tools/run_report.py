@@ -24,9 +24,8 @@ import json
 import sys
 from pathlib import Path
 
-# This is the entry point that puts the repository on sys.path for the
-# imports below, so it cannot read `scripts._bootstrap.ROOT` for the same
-# fact -- nothing is importable yet.
+# This entry point puts the repository on sys.path for the imports below,
+# so it cannot read `scripts._bootstrap.ROOT` for the same fact.
 _REPORT_ROOT = Path(__file__).resolve().parent.parent
 for _import_root in (_REPORT_ROOT, _REPORT_ROOT / "scripts"):
     if str(_import_root) not in sys.path:
