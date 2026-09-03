@@ -96,10 +96,9 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   child declares none: prose order in the calling workflow is what sequences
   callables, and the parent relays each result forward.
 - `bound` — operational effort bound.
-- `independence`, `isolation` — checker/gate mechanics, and the rare
-  explicit workspace override; an absent `isolation` derives its effective
-  value from the stamped pack's adapter (`establishes_isolation`), read
-  through one derivation everywhere.
+- `isolation` — the rare explicit workspace override; an absent
+  `isolation` derives its effective value from the stamped pack's adapter
+  (`establishes_isolation`), read through one derivation everywhere.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
 - `workspace_branch`, and `workspace_baseline` — lifecycle observations written
@@ -142,22 +141,6 @@ The [dispatch contract](dispatch.md) owns the launch and its generated prompt.
 This ticket is the assignment that prompt points at, and nothing copies it, so
 there is no second ticket truth.
 
-## Review-stage ledger
-
-`review_v1`, its `GatePlan`/`CritiqueAdjudication`/`RepairOutcome` record
-chain, the `checked_by` and `review_stage` frontmatter fields, and
-`tickets.py check --stage <id>.check` -- the one surviving reader the
-composite-gate deletion left standing -- are retired together. That
-deletion removed the mechanical minting and adjudication that used to
-build the chain and left the reader in place pending its own census: no
-live command ever constructs a `GatePlan`-then-`CritiqueAdjudication` chain,
-so a `<id>.check` ticket could carry the ledger `check` required only by
-hand-edited state, which the host block forbids -- test-only reachability
-is not liveness. A critique is a `judge` ticket and the repair answering it
-a `do` ticket, sequenced by the calling workflow's prose, and either
-reaches its caller the ordinary way: the executor's `## Report` and the
-joined disposition `land` records, never a distinct adjudication carrier.
-
 ## Executor records
 
 After the semantic sections, a ticket carries one executor-owned `## Report`.
@@ -181,10 +164,8 @@ observed.
 ## Roots, decomposition, and integration
 
 A root is the ticket named by a `root_generation` and may bind any lawful
-registered executor; it owns the whole artifact. Decomposition retired with
-orch-slice, its only minter (W4a): every root is direct now, and a runtime
-child declares its `parent` and binds through that parent's seal rather than
-through a cut a decomposer wrote.
+registered executor; it owns the whole artifact. A runtime child declares
+its `parent` and binds through that parent's seal.
 
 Each physical run has one root identity. Its `root_generation` uses ordinal
 `1`; only cut drafts can advance before seal. A semantic change after seal is
@@ -203,14 +184,8 @@ never by itself a rejection: Goal is the acceptance boundary.
 
 ## Template and executor form
 
-A workflow is a skill whose prose opens a frame and calls callables
-([vocabulary.md](../docs/vocabulary.md#structure)); `tickets.py instantiate`
-and the `template.md`-plus-stubs shape it used to substitute and seal
-retired with the decomposed-root concept they served (W4a).
-
 `executor` names one registered callable verb or `script:<repo-relative path>`.
-A multi-stage pack runs its declared `stages` in order through that one
-child and one role ([roles.md](../rules/roles.md) §4); `orch-do` and
+`orch-do` and
 `orch-judge` read the stamped pack's craft and may not import a superseded
 skill body or invent a second pack parser. Anything needing a fresh role or
 independent verdict is a new ticket and child. Domains may add facts to

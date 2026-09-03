@@ -157,6 +157,7 @@ SECTION_EXPECTATIONS = {
     ("rules/verification.md", 6): "contradict the claim",
     ("rules/verification.md", 7): "caller's own join",
     ("rules/verification.md", 8): "artifact and dependencies it covers",
+    ("rules/roles.md", 3): "Concrete model and effort bindings",
     ("rules/roles.md", 4): "Resolve role at each dispatch",
     ("rules/topology.md", 3): "Goal, Context, and optional Details",
     ("rules/topology.md", 5): "mechanically observable shape",

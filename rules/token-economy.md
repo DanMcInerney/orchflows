@@ -74,7 +74,4 @@
     falls on evidence — a tournament in which the shorter candidate
     holds its benchmark within margin, or a review whose deletions land
     — never on taste, and never rises for a new model: a stronger model
-    needs less how, not more. On 2026-08-16 the host block's ceiling fell
-    by 60 words with the deletions that landed, the demand cap staying
-    eight, on the evidence that adherence answers to the count of
-    standing demands and their conflict, not to length at a fixed count.
+    needs less how, not more.
