@@ -184,7 +184,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), patch.object(
                 install.shutil, "which", return_value="claude"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
         adapters = {dest.parent.name: content for dest, content in plan.claude_adapters}
         for skill_md in install.discover_packages():
@@ -252,7 +252,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), patch.object(
                 install.shutil, "which", return_value="codex"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
         prompts = {dest.stem: content for dest, content in plan.codex_prompts}
         redirects = {dest.parent.name: content for dest, content in plan.codex_skills}

@@ -51,23 +51,3 @@ def read_asset(root: Path, relative: str):
         guessed = "text/javascript"
     tag = '"{0}"'.format(hashlib.sha256(body).hexdigest())
     return body, guessed, tag
-
-
-def manifest_paths(root: Path) -> tuple:
-    """Every byte in the immutable distribution, named root-relative."""
-
-    base = Path(root).resolve()
-    try:
-        files = sorted(path for path in base.rglob("*") if path.is_file())
-    except OSError:
-        return ()
-    return tuple(path.relative_to(base).as_posix() for path in files)
-
-
-def valid_host_headers(headers) -> bool:
-    """Exactly one unambiguous loopback authority."""
-
-    values = headers.get_all("Host", []) if hasattr(headers, "get_all") else [headers.get("Host", "")]
-    if len(values) != 1:
-        return False
-    return values[0].split(":", 1)[0].lower() in ("127.0.0.1", "localhost")

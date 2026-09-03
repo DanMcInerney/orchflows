@@ -45,17 +45,11 @@ class ScriptSupportDistributionTest(unittest.TestCase):
         with patch.object(install.Path, "home", return_value=Path(tempfile.gettempdir())), patch.object(
             install.shutil, "which", return_value="mock-host"
         ):
-            plan = install.build_plan("user", None)
+            plan = install.build_plan()
 
         self.assertEqual(tuple(src.name for src, _ in plan.scripts), expected_names)
         self.assertEqual(tuple(dest.name for _, dest in plan.scripts), expected_names)
         self.assertTrue(all(dest.parent == plan.bin_dir for _, dest in plan.scripts))
-
-    def test_project_plan_is_rejected(self):
-        with tempfile.TemporaryDirectory() as raw:
-            project_root = Path(raw)
-            with self.assertRaisesRegex(ValueError, "user scope only"):
-                install.build_plan("project", project_root)
 
 
 if __name__ == "__main__":

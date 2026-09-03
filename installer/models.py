@@ -37,15 +37,11 @@ class ConfigPlan:
 class ImportPlan:
     dest: Path
     import_target: Path
-    legacy_start_marker: str
-    legacy_end_marker: str
     label: str
 
 
 @dataclass
 class Plan:
-    scope: str
-    project_root: Path | None
     lib_home: Path
     scope_home: Path
     bin_dir: Path
@@ -67,22 +63,22 @@ class Plan:
     grok_agents: list = field(default_factory=list)      # (dest, content)
     configs: list = field(default_factory=list)          # ConfigPlan
     blocks: list = field(default_factory=list)           # BlockPlan — inline marker blocks
-    host_block: ConfigPlan | None = None                 # ~/.orchflows/host-block.md, user scope only
-    claude_import: ImportPlan | None = None              # CLAUDE.md import line, user scope only
+    host_block: ConfigPlan | None = None                 # ~/.orchflows/host-block.md
+    claude_import: ImportPlan | None = None              # CLAUDE.md import line
     # $GROK_HOME/rules/orchflows.md: the host block as a whole managed file,
     # markers retained. Its own field beside `host_block` rather than a
     # `blocks` entry, because Grok's instruction root is a directory the
     # installer owns a file in, not a file the user owns a block in.
-    grok_rules: ConfigPlan | None = None                 # user scope only
-    # The user's own ring root, user scope only. Not installed content:
+    grok_rules: ConfigPlan | None = None
+    # The user's own ring root. Not installed content:
     # `scripts/orchflows_home.py` owns what goes in it, the receipt records
     # none of it, and an uninstall never reaches it.
     home_ring: Path | None = None
     warnings: list = field(default_factory=list)         # preflight, informational only
     manage_host_surfaces: bool = True
-    claude_enabled: bool = True                          # user scope: a Claude CLI was detected
-    codex_enabled: bool = True                           # user scope: a Codex CLI was detected
-    grok_enabled: bool = True                            # user scope: a Grok CLI was detected
+    claude_enabled: bool = True                          # a Claude CLI was detected
+    codex_enabled: bool = True                           # a Codex CLI was detected
+    grok_enabled: bool = True                            # a Grok CLI was detected
     runtime_action: str | None = None                    # create, reuse, repair or refuse
 
 
@@ -119,10 +115,10 @@ def _frontend_manifest_identity(root: Path) -> str | None:
 
 
 def _host_block_content() -> tuple[str, str, str]:
-    """Render the instruction block against the user installation."""
+    """Render the instruction block against the installation."""
 
-    lib_home = _lib_home("user", None)
-    bin_dir = _bin_dir("user", None)
+    lib_home = _lib_home()
+    bin_dir = _bin_dir()
     template_text = HOST_BLOCK_TEMPLATE.read_text(encoding="utf-8")
     host_markers = marker("codex", "host_instructions", load_host_adapters())
     start_marker, end_marker = host_markers["start"], host_markers["end"]

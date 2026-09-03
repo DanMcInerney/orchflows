@@ -28,7 +28,6 @@ PROJECTION_MODULES = tuple(
         "ui_api.py",
         "ui_artifacts_projection.py",
         "ui_experience.py",
-        "ui_now_projection.py",
         "ui_runs_projection.py",
         "ui_workflows_projection.py",
         "ui_sessions_projection.py",

@@ -25,7 +25,6 @@ from starlette.routing import Route
 from reader.scripts import (
     ui_artifacts_projection,
     ui_friction_projection,
-    ui_now_projection,
     ui_runs_projection,
     ui_sessions_projection,
     ui_workflows_projection,
@@ -50,7 +49,6 @@ SECURITY_HEADERS = {
 }
 PROJECTOR_MODULES = (
     ui_artifacts_projection,
-    ui_now_projection,
     ui_runs_projection,
     ui_workflows_projection,
     ui_sessions_projection,

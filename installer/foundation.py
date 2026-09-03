@@ -1,4 +1,4 @@
-"""Installer constants and scope-derived paths."""
+"""Installer constants and the installed-path helpers every plan reads."""
 
 from __future__ import annotations
 
@@ -66,10 +66,6 @@ CODEX_LIMITS_START = marker("codex", "agent_limits", _HOST_ADAPTERS)["start"]
 CODEX_LIMITS_END = marker("codex", "agent_limits", _HOST_ADAPTERS)["end"]
 GROK_LIMITS_START = marker("grok", "subagent_limits", _HOST_ADAPTERS)["start"]
 GROK_LIMITS_END = marker("grok", "subagent_limits", _HOST_ADAPTERS)["end"]
-# The routed names exposed by Claude's bounded adapter-set benchmark. Named
-# skills outside this set remain explicit by-name invocations.
-SHARED_ADAPTER_NAMES = ("orch-do", "orch-judge")
-CLAUDE_ADAPTER_SETS = ("all", "four")
 # Every Grok surface the installer writes, removable by receipt alone. Three
 # are whole installer-owned files under ``$GROK_HOME``; ``grok-config`` is
 # not a file to delete but a marked block to lift back out, which is why
@@ -115,40 +111,25 @@ _AGENTS_TABLE_RE = re.compile(r"^\s*\[agents\]\s*(?:#.*)?$")
 _AGENTS_DOTTED_LIMIT_RE = re.compile(r"^\s*agents\.(?:max_threads|max_depth)\s*=")
 _AGENTS_LIMIT_RE = re.compile(r"^\s*(?:max_threads|max_depth)\s*=")
 
-# --- scope-derived paths -----------------------------------------------
+# --- installed paths ---------------------------------------------------
 
 
-def _require_project_root(project_root: Path | None) -> Path:
-    """Narrow ``Path | None`` to ``Path`` at the one invariant every scope-derived
-    path helper relies on: project scope always carries a resolved project root
-    (enforced by ``_resolve_scope`` and checked again in ``main``)."""
-
-    assert project_root is not None, "project scope requires a project root"
-    return project_root
+def _lib_home() -> Path:
+    return Path.home() / ".orchflows" / "lib"
 
 
-def _lib_home(scope: str, project_root: Path | None) -> Path:
-    if scope == "user":
-        return Path.home() / ".orchflows" / "lib"
-    return _require_project_root(project_root) / ".orchflows" / "lib"
-
-
-def _scope_home(scope: str, project_root: Path | None) -> Path:
-    if scope == "user":
-        return Path.home() / ".orchflows"
-    return _require_project_root(project_root) / ".orchflows"
+def _scope_home() -> Path:
+    return Path.home() / ".orchflows"
 
 
 def _frontend_home() -> Path:
-    """The user-owned immutable browser distribution borrowed by projects."""
+    """The user-owned immutable browser distribution."""
 
-    return _scope_home("user", None) / "ui"
+    return _scope_home() / "ui"
 
 
-def _bin_dir(scope: str, project_root: Path | None) -> Path:
-    if scope == "user":
-        return Path.home() / ".orchflows" / "bin"
-    return _require_project_root(project_root) / ".orch" / "bin"
+def _bin_dir() -> Path:
+    return Path.home() / ".orchflows" / "bin"
 
 
 # ``scripts/state_root.py`` owns this pair; the installer runs from the same
@@ -174,11 +155,9 @@ def _state_sink() -> Path:
     return Path.home().joinpath(*STATE_SINK_SUBPATH)
 
 
-def _runtime_dirs(scope: str, project_root: Path | None) -> list[Path]:
-    """The durable state directories the user install seeds."""
+def _runtime_dirs() -> list[Path]:
+    """The durable state directories the install seeds."""
 
-    if scope != "user":
-        raise ValueError("installation supports user scope only")
     sink = _state_sink()
     return [
         sink / "tickets",
@@ -190,77 +169,54 @@ def _runtime_dirs(scope: str, project_root: Path | None) -> list[Path]:
 
 def _claude_user_home() -> Path:
     """Claude Code's user config directory. ``CLAUDE_CONFIG_DIR`` overrides the
-    ``~/.claude`` default, and the CLI reads only that env var — a relocated
-    config directory has no project-local equivalent, so project scope is
-    unaffected."""
+    ``~/.claude`` default, and the CLI reads only that env var."""
 
     home = _HOST_ADAPTERS["claude"]["home"]
     override = os.environ.get(home["environment"], "").strip()
     return Path(override).expanduser() if override else Path.home() / home["default"]
 
 
-def _claude_scope_home(scope: str, project_root: Path | None) -> Path:
-    if scope == "user":
-        return _claude_user_home()
-    return _require_project_root(project_root) / ".claude"
+def _claude_md_path() -> Path:
+    return host_item_path("claude", "instructions", _claude_user_home(), _HOST_ADAPTERS)
 
 
-def _claude_md_path(scope: str, project_root: Path | None) -> Path:
-    if scope == "user":
-        return host_item_path("claude", "instructions", _claude_user_home(), _HOST_ADAPTERS)
-    return host_item_path("claude", "instructions", _require_project_root(project_root), _HOST_ADAPTERS)
+def _claude_settings_path() -> Path:
+    return host_item_path("claude", "settings", _claude_user_home(), _HOST_ADAPTERS)
 
 
-def _claude_settings_path(scope: str, project_root: Path | None) -> Path:
-    return host_item_path("claude", "settings", _claude_scope_home(scope, project_root), _HOST_ADAPTERS)
-
-
-def _claude_agents_dir(scope: str, project_root: Path | None) -> Path:
+def _claude_agents_dir() -> Path:
     return host_item_path(
-        "claude", "role_agent", _claude_scope_home(scope, project_root), _HOST_ADAPTERS,
+        "claude", "role_agent", _claude_user_home(), _HOST_ADAPTERS,
         profile="{profile}",
     ).parent
 
 
 def _codex_user_home() -> Path:
-    # Codex prompts have no project-local equivalent. Native role agents and
-    # config use ``_codex_scope_home`` and therefore follow the selected scope.
     # ``CODEX_HOME`` overrides the ``~/.codex`` default, as the Codex CLI reads it.
     home = _HOST_ADAPTERS["codex"]["home"]
     override = os.environ.get(home["environment"], "").strip()
     return Path(override).expanduser() if override else Path.home() / home["default"]
 
 
-def _codex_scope_home(scope: str, project_root: Path | None) -> Path:
-    if scope == "user":
-        return _codex_user_home()
-    return _require_project_root(project_root) / ".codex"
+def _codex_config_path() -> Path:
+    return host_item_path("codex", "settings", _codex_user_home(), _HOST_ADAPTERS)
 
 
-def _codex_config_path(scope: str, project_root: Path | None) -> Path:
-    return host_item_path("codex", "settings", _codex_scope_home(scope, project_root), _HOST_ADAPTERS)
-
-
-def _codex_agents_dir(scope: str, project_root: Path | None) -> Path:
+def _codex_agents_dir() -> Path:
     return host_item_path(
-        "codex", "role_agent", _codex_scope_home(scope, project_root), _HOST_ADAPTERS,
+        "codex", "role_agent", _codex_user_home(), _HOST_ADAPTERS,
         agent_type="{agent_type}",
     ).parent
 
 
-def _codex_agents_path(scope: str, project_root: Path | None) -> Path:
-    if scope == "user":
-        return host_item_path("codex", "instructions", _codex_user_home(), _HOST_ADAPTERS)
-    return host_item_path("codex", "instructions", _require_project_root(project_root), _HOST_ADAPTERS)
+def _codex_agents_path() -> Path:
+    return host_item_path("codex", "instructions", _codex_user_home(), _HOST_ADAPTERS)
 
 
 def _grok_user_home() -> Path:
     """Grok Build's user config directory, the root of every Grok surface.
 
     ``GROK_HOME`` overrides the ``~/.grok`` default, as the grok CLI reads it.
-    User scope is the whole story here: a project ``.grok/config.toml`` honours
-    only ``mcp_servers``, ``plugins``, ``permission`` and ``mcp.max_output_bytes``,
-    so nothing this installer writes has a project-local equivalent.
     """
 
     home = _HOST_ADAPTERS["grok"]["home"]

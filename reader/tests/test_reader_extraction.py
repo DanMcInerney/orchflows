@@ -17,7 +17,6 @@ class ReaderExtractionTest(unittest.TestCase):
         "pnpm-lock.yaml",
         "vite.config.ts",
         "tsconfig.json",
-        "eslint.config.js",
     ):
         self.assertTrue((READER / name).is_file(), name)
     self.assertTrue((READER / "web").is_dir())
@@ -32,7 +31,6 @@ class ReaderExtractionTest(unittest.TestCase):
         "pnpm-lock.yaml",
         "vite.config.ts",
         "tsconfig.json",
-        "eslint.config.js",
         "web",
         "scripts/ui.py",
         "scripts/ui_api.py",

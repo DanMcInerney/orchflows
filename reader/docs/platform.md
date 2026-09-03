@@ -10,7 +10,7 @@ of truth, and its records remain untrusted data under
 
 From a source checkout, run:
 
-    uv run --no-project python scripts/ui.py
+    uv run --no-project python reader/scripts/ui.py
 
 After a user install, run the same installed facade with the private runtime:
 
@@ -68,32 +68,42 @@ offline: it serves the installed immutable assets and reads local state only.
 
 `reader/scripts/ui.py` is the public CLI. Its Starlette application is served by
 Uvicorn from a socket pre-bound to `127.0.0.1`. It accepts only `GET` and `HEAD`, rejects
-non-loopback host headers, enable no CORS middleware, and attach restrictive
-CSP, frame, origin, referrer, and content-type headers to every response.
+non-loopback host headers, enables no CORS middleware, and attaches
+restrictive CSP, frame, origin, referrer, and content-type headers to every
+response.
 
 The same-origin routes are:
 
 | route | projection |
 |---|---|
-| `/` and `/assets/*` | immutable browser distribution |
+| `/api/v1/runs/{run}/tickets/{ticket}/artifacts` | canonical structured result identities available to the ticket |
+| `/api/v1/runs/{run}/tickets/{ticket}/artifacts/{artifact_id}` | one contained, redacted artifact selected by opaque ID |
 | `/api/v1/runs` | run summaries and lifecycle-status counts |
 | `/api/v1/runs/{run}` | one canonical dependency graph and run diagnostics |
 | `/api/v1/runs/{run}/tickets/{ticket}` | one closed ticket summary plus linked-friction count |
-| `/api/v1/runs/{run}/tickets/{ticket}/artifacts` | canonical structured result identities available to the ticket |
-| `/api/v1/runs/{run}/tickets/{ticket}/artifacts/{artifact_id}` | one contained, redacted artifact selected by opaque ID |
-| `/api/v1/friction` | aggregate friction health |
 | `/api/v1/sessions` | session metadata summaries |
 | `/api/v1/sessions/{session}` | session and subagent structure metadata |
+| `/api/v1/friction` | aggregate friction health |
+| `/api/v1/workflows` | closed `orchflows.workflow-catalog.v1` definition catalog |
+| `/api/v1/workflows/{workflow_id}` | one exact `orchflows.workflow-detail.v1` definition graph |
+| `/api/v1/workflows/{workflow_id}/sources/{source_id}` | one contained, redacted definition source selected by opaque ID |
+| `/api/v1/workflows/{workflow_id:path}` | the same detail projection, so an escaped or nested ID answers `404` rather than falling through to the shell |
+| `/api/v1/views/{view}` | one named view's closed payload and its query fields |
 | `/api/v1/experience` | closed `orchflows.experience.v1` shell, selection, readiness, and safe view projection |
+| `/assets/{asset:path}` | immutable browser distribution |
+
+The application shell is served at `/` and at every browser route below.
 
 Successful JSON and asset responses carry content-derived ETags. The browser
 uses `If-None-Match`; unchanged resources return `304`, while hashed assets
 also carry immutable caching. The reader exposes no unversioned endpoint
 aliases.
 
-The browser owns semantic, refresh-safe application routes at `/now`,
-`/runs/{run}`, `/runs/{run}/tickets/{ticket}`, `/sessions`,
-`/sessions/{session}`, and `/friction`. The persistent information
+The browser owns semantic, refresh-safe application routes at `/`,
+`/observe`, `/now`, `/workflows`, `/workflows/{workflow}`,
+`/workflows/{workflow}/sources/{source}`, `/runs`, `/runs/{run}`,
+`/runs/{run}/tickets/{ticket}`, `/sessions`, `/sessions/{session}`, and
+`/friction`. The persistent information
 architecture is exactly **Now / Workflows / Create / Sessions / Friction**.
 Execution run and ticket descendants keep Now active in the rail. Definition
 detail and contained source descendants remain Workflows-owned. Create is
@@ -135,7 +145,7 @@ invent a second phase taxonomy.
 ## Rendered-experience admission
 
 `view-manifest.json` is the canonical `orchflows.view-manifest.v1`
-inventory. It declares 62 deterministic identities across Now execution run
+inventory. It declares 64 deterministic identities across Now execution run
 maps and ticket details, the Workflows definition catalog, definition detail
 and contained source states, Sessions, session graphs, and Friction at
 1440×1024 and 1024×768. Its `navigationParents` map makes each view kind's

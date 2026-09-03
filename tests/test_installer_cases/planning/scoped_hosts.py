@@ -264,7 +264,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 with self.assertRaisesRegex(
                     ValueError, "duplicate managed block markers"
                 ):
-                    install.build_plan("user", None)
+                    install.build_plan()
 
             self.assertFalse(home.joinpath(".orchflows").exists())
 
@@ -288,7 +288,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             home = Path(tmp)
             (home / ".codex").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             parsed_agents = [
                 (dest, install.tomllib.loads(content)) for dest, content in plan.codex_agents
@@ -320,7 +320,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis(
                 "claude", "codex"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             configs = {config.kind: config for config in plan.configs}
             claude = json.loads(configs["claude-config"].content)
@@ -358,7 +358,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis(
                 "claude", "codex"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             # Workflows are invocable by name and get an adapter stub like
             # skills. What differs is the body: a skill's is an `@`-include
@@ -476,7 +476,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis(
                 "claude", "codex"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             templates = install.discover_workflow_skills()
             if not templates:
@@ -515,7 +515,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis(
                 "claude", "codex"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             by_name_root = (home / ".orchflows" / "lib" / "by-name").resolve()
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
@@ -601,7 +601,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                         install_planning, "discover_sheets",
                         return_value=[(sheet_dir, frontmatter, "body")],
                     ), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             lib_home = (home / ".orchflows" / "lib").resolve()
             pointer = next(
@@ -641,7 +641,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             home = Path(tmp)
             (home / ".codex").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
             self.assertEqual([], plan.claude_adapters)
             self.assertEqual(
                 len(install.discover_packages())
@@ -658,7 +658,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis(
                 "claude", "codex"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             self.assertEqual(
                 {home / ".claude" / "settings.json", home / ".codex" / "config.toml"},
@@ -710,7 +710,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with isolated_grok_home(Path(tmp)) as grok_home, patch.object(
                 install.Path, "home", return_value=home
             ), mock_host_clis("grok"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             packages = install.discover_packages()
             bodies = {dest.parent.name: content for dest, content in plan.grok_skills}
