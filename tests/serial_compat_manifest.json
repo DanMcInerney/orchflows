@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2333,
+  "count": 2342,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1132,6 +1132,9 @@
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_conflicted_merge_refuses_naming_the_files_and_the_remedy",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_land_refused_for_want_of_a_grade_leaves_no_merge_commit",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_the_candidates_commits_reach_the_tree_the_run_stands_in",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_cmd_shim_on_path_runs_like_any_other_first_word",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_cmd_shims_own_exit_code_is_the_verdict",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_first_word_on_no_path_entry_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_close_over_two_unjudged_do_children_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_frame_that_sealed_its_gate_at_open_evaluates_that_one",
    "test_ticket_frames.FrameCloseTest.test_a_judge_under_the_frame_lets_the_same_close_land",
@@ -1369,6 +1372,12 @@
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_temporary_directory_cleanup_of_the_directory_it_moved_into",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_a_space_separated_scope_is_refused_before_any_ticket_is_written",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_prose_after_the_command_is_not_read_as_a_second_scope_token",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_the_comma_spelling_generates_the_unit",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_the_refusal_names_the_unit_and_the_spelling_to_use",
+   "test_workflow_ladder_generator.TestShippedSpec.test_every_generated_details_file_carries_its_spec_done_line",
+   "test_workflow_ladder_generator.TestShippedSpec.test_every_spec_done_line_spells_scope_with_commas",
    "test_workflow_ladder_law.IdiomsTest.test_a_padded_idiom_fails_the_ceiling_check",
    "test_workflow_ladder_law.IdiomsTest.test_each_idiom_is_one_sentence_inside_its_ceiling",
    "test_workflow_ladder_law.IdiomsTest.test_every_idiom_is_worded_once_under_the_heading",
@@ -2336,7 +2345,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "8c6a702701de7815549043b33555f55a53f9dea6174aedfb162cf44e574fc35e"
+  "sha256": "cec890ea73a4d5af6d7e3eefbc94f43a76dce0b4f89b5ce3a8d9d36f24070bda"
  },
  "mutation_owners": [
   {
@@ -4990,6 +4999,15 @@
   {
    "module": "tests.test_ticket_done_predicate",
    "owner": "LandIntegratesTheCandidateTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_done_spawn",
+   "owner": "DoneCommandSpawnTest._on_path",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",

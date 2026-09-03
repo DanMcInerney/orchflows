@@ -122,7 +122,7 @@ digest." `dispatch.md` is untouched. Tests: nearest-first resolution across
 project/home/lib for both kinds; drift refusal; a `do` without the flags emits
 today's frontmatter and prompt byte for byte.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope contracts scripts tests tools && python tools/run_serial_compat.py --write-manifest`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope contracts,scripts,tests,tools && python tools/run_serial_compat.py --write-manifest`
 
 ### U1 · Sheets: semantics, prompt, scaffold, validator, install
 
@@ -144,7 +144,7 @@ Tests: prompt lines present and verbatim for both verbs; `packs:` refusal;
 scaffold validates; validator refuses a sheet with `## Workspace` and one with
 `scripts/`.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts tests tools installer && python tools/run_serial_compat.py --write-manifest && python install.py --dry-run`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts,tests,tools,installer && python tools/run_serial_compat.py --write-manifest && python install.py --dry-run`
 
 ### U2 · Applied skills: role check, identity line, environment line
 
@@ -160,7 +160,7 @@ and adds the environment line when the skill declares `requirements.txt`;
 role mismatch (`--skill` naming a `role: planner` skill on `do`); `orch-`
 refusal; identity line verbatim with and without a declared environment.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts tests && python tools/run_serial_compat.py --write-manifest`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts,tests && python tools/run_serial_compat.py --write-manifest`
 
 ### U3 · The trunk prints the frame law; two lib workflow dirs; bodies drop the paragraph
 
@@ -185,7 +185,7 @@ tickets.py frame-close …` line: it is the contract. The `installer` already
 copies `skills/` wholesale; confirm `skills/workflows/*` gets adapters like
 `example-workflows/*` and add the test if none exists.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts tests example-workflows installer && git diff --check`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts,tests,example-workflows,installer && git diff --check`
 
 ### U4 · Law and docs
 
@@ -219,7 +219,7 @@ candidate exists and forbid every later call from touching it."
 none; silence is a defect." `outside-close`: "Close on a command run outside
 every child; never on a child's own claim." Host block and `AGENTS.md` unchanged.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope docs rules tests tools`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope docs,rules,tests,tools`
 
 ### U5 · Kernel sentences
 
@@ -232,7 +232,7 @@ applied skill is the method; Require, Never and Return still bind), each under
 
 **Details.** No new section, no domain, no pack name, `role` lines unchanged.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope skills tests`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope skills,tests`
 
 ### U7a · Sheets `market-brief`, `html-dossier`, `sheet-craft`
 
@@ -252,7 +252,7 @@ what proves it, no step, no command, no dependency).
 **Details.** Files under `sheets/`. Knowledge only. The super-research report
 rules are absorbed by `html-dossier`.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope sheets tests && python install.py --dry-run`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope sheets,tests && python install.py --dry-run`
 
 ### U7b · `checkpointed-build`
 
@@ -269,7 +269,7 @@ set in its first wave and later waves add none without reporting a deviation.
 `C:\Users\danhm\.orchflows\workflows\tiktok-video\SKILL.md` and the vampire-fps
 build run `20260902T150541Z-vampire-fps-build`. `rules/topology.md` §5, §8.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope skills tests`, plus one scratch run on a fixture (a two-file repository with a failing test and a probe that runs it) whose frame closes `complete`.
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope skills,tests`, plus one scratch run on a fixture (a two-file repository with a failing test and a probe that runs it) whose frame closes `complete`.
 
 ### U7c · `bakeoff`
 
@@ -283,7 +283,7 @@ candidates serially.
 **Details.** Nearest body: `example-workflows/evolve/SKILL.md` (blind scoring).
 One judge, one artifact kind.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope skills tests`, plus one scratch run with two trivial candidates whose frame closes `complete`.
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope skills,tests`, plus one scratch run with two trivial candidates whose frame closes `complete`.
 
 ### U7d · Convert `super-research`
 
@@ -299,7 +299,7 @@ regenerates the project adapters so no two items share a name.
 research-acquire --goal-file <f> --parent <frame>` with the per-source goal files
 unchanged. Depends on U11 having cleared `.orchflows/` of non-bundle files first.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope example-workflows .orchflows tests && python install.py --dry-run`, plus one scratch run of the converted workflow on a one-source question whose frame closes `complete`.
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope example-workflows,.orchflows,tests && python install.py --dry-run`, plus one scratch run of the converted workflow on a one-source question whose frame closes `complete`.
 
 ### U8 · Dogfood: `browser-fps`
 
@@ -353,7 +353,7 @@ exists with `name: orchflows-contrib`, this revision's date as `version`, and
 that section). Tests: transitive closure of two fixture bundles; cycle refusal;
 unpinned refusal; a bundle without a manifest imports as before.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts tests contracts && python tools/run_serial_compat.py --write-manifest`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts,tests,contracts && python tools/run_serial_compat.py --write-manifest`
 
 ### U10 · `orchflows check`
 
@@ -370,7 +370,7 @@ if the validator support has to ship. Tests: a valid home-ring fixture passes; a
 sheet with `## Workspace` fails; a workflow body over budget fails; a dangling
 call edge fails.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts tests tools installer && python install.py --dry-run`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts,tests,tools,installer && python install.py --dry-run`
 
 ### U11 · The repo's own bundle is only a bundle
 
@@ -387,7 +387,7 @@ changes.
 links the lego design by path is outside the repo; note the new path in the
 `## Report` so the user can update it.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope .orchflows tests && git diff --check`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope .orchflows,tests && git diff --check`
 
 ### U12 · Tools, Node tooling, environment pruning
 
@@ -410,7 +410,7 @@ version-shaped token parses. Tests: missing tool reported, present tool silent,
 `env NAME` reported without printing a value, node install skipped when
 untrusted, prune removes exactly the orphan.
 
-**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts tests && python tools/run_serial_compat.py --write-manifest`
+**Done.** `python tools/validate.py && python tools/run_tests.py --scope scripts,tests && python tools/run_serial_compat.py --write-manifest`
 
 ## 4. Order
 
