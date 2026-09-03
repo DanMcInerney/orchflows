@@ -1,8 +1,7 @@
 # Architecture
 
 Ceiling: 945 whitespace-delimited words. Terms are
-[the vocabulary](docs/vocabulary.md)'s; raised from 850 for the ring
-family's owner modules and again for T2's second directory.
+[the vocabulary](docs/vocabulary.md)'s.
 
 ## Four tiers
 
@@ -40,17 +39,13 @@ family's owner modules and again for T2's second directory.
   `tickets_markdown.py` semantic payload parsing and byte preservation;
   `tickets_admission.py` receipt lifecycle; `tickets_generations.py` immutable
   generation and seal identities; `tickets_project.py` run-project binding;
-  `tickets_dispatch_schema.py` dispatch-grammar validation; `tickets_attempts.py`
-  mutates atomically;
-  `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
-  `tickets_emission.py` emission grading; `tickets_issue_render.py`
-  issuance markdown; `tickets_mint.py` and `tickets_frame.py` the callable
-  and frame minting commands; `tickets_shape_line.py` shape-line grammar;
-  `tickets_dispatch_launch.py` the host binding,
-  `tickets_dispatch_launch_lines.py` the prompt's lines. `cutcheck.py`
-  owns structural graph validation.
-  Cutcheck imports those owners directly, never the tickets facade;
-  admission and cutcheck never import each other.
+  `tickets_dispatch_schema.py` dispatch-grammar validation;
+  `tickets_attempts.py` mutates atomically; `tickets_join.py` reserved outcome
+  import and outcome-fenced lifecycle joins; `tickets_emission.py` emission
+  grading; `tickets_issue_render.py` issuance markdown; `tickets_mint.py` and
+  `tickets_frame.py` the callable and frame minting commands;
+  `tickets_shape_line.py` shape-line grammar; `tickets_dispatch_launch.py` the
+  host binding, `tickets_dispatch_launch_lines.py` the prompt's lines.
 - [`scripts/workspace.py`](scripts/workspace.py) owns a candidate worktree's
   whole life: `establish` creates and records it, `prepare` installs what it
   declares, `retire` removes it. [`scripts/state_root.py`](scripts/state_root.py)
@@ -102,6 +97,10 @@ family's owner modules and again for T2's second directory.
   shared`, with one named reuse edge: the Now view renders the Workflows-owned
   [`SummaryFlow`](reader/web/src/features/workflows/view/SummaryFlow.tsx)
   flowchart and stylesheet.
+- [`hosts/`](hosts/) owns host records and the role bindings
+  [roles.md](rules/roles.md) §3 resolves against.
+- [`benchmarks/`](benchmarks/) owns evidence corpora, not library machinery.
+- [`.orchflows/`](.orchflows/) owns this repository's own project ring.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale; [`README.md`](README.md)
   is the human entry surface, not an owner of agent law.
 

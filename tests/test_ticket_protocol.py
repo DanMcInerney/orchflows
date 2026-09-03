@@ -117,7 +117,7 @@ class TicketProtocolTest(unittest.TestCase):
         ):
             self.assertNotIn(obsolete, tickets)
         for current in (
-            "absolute lease", "`dispatch-join`", "outside-independence path",
+            "absolute lease", "`dispatch-join`", "`tickets.py land`",
         ):
             self.assertIn(current, tickets)
         self.assertIn("committed launch", delegation)

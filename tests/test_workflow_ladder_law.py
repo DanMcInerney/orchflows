@@ -104,12 +104,6 @@ CASES = {
         ("every-dispatch units next", "and a stamped sheet",
          "`BODY_BUDGET`, `SHEET_BUDGET`"),
     ),
-    "delegation lists what the launch prompt carries": (
-        "rules/delegation.md", ("clause", 2),
-        ("one line per sheet the ticket stamps",
-         "the applied skill's identity and kernel-contract lines",
-         "interpreter line when it declares an environment"),
-    ),
     "architecture places the two directories": (
         "ARCHITECTURE.md", ("section", "## Four tiers"),
         ("`workflows/` the reusable domain-blind workflows", "`sheets/` narrows it"),

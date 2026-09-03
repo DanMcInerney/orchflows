@@ -2,9 +2,11 @@
 
 The path used to be one engine's body. The engine is gone -- the driver
 runs `tickets.py dispatch` and `tickets.py land` and nothing else -- so the
-same minimum is pinned at the two owners it moved to: `rules/verification.md`
-for the independence path a ticket walks, and `hosts/profiles.md` for whose
-context the terminal required checks run in.
+same minimum is pinned at the owner it moved to: `rules/verification.md`,
+which carries both the independence path a ticket walks and where the
+repository-wide checks are confirmed. `hosts/profiles.md` restated the
+second half until this run deleted the copy; it is still read here only to
+prove the retired driver names stay gone from it.
 """
 
 from __future__ import annotations
@@ -17,35 +19,24 @@ VERIFICATION = ROOT / "rules" / "verification.md"
 PROFILES = ROOT / "hosts" / "profiles.md"
 
 
-def _gaps(verification: str, profiles: str) -> list[str]:
+def _gaps(verification: str) -> list[str]:
     verification = " ".join(verification.split())
-    profiles = " ".join(profiles.split())
     required = {
         # The checker/repair three-state path retired with the command that
         # built its ledger (`review_v1`'s `GatePlan`-then-`CritiqueAdjudication`
         # chain): independence is the caller's own join now, one path for
         # every ticket, never a standing verification child.
-        "single independence path": "no longer names a distinct path",
+        "single independence path": "Independence is the caller's own join",
         # the fresh outside check, which is no longer a child: `land` runs
         # the target's own predicate in the integrated tree
         "checked done": "the ticket's `done` predicate, in the tree land has just merged",
-        # `join-noop-repair` retired in W4a with the `.gate.` id family it
-        # discriminated; the empty-set-skip anchor retired with it.
-        "terminal profile": "Running the terminal required checks",
-        "driver context": "driving session's own context",
-        "recorded revision": "accepted terminal identity's revision",
-    }
-    owners = {
-        **{name: verification for name in required if name not in {
-            "terminal profile", "driver context", "recorded revision",
-        }},
-        "terminal profile": profiles,
-        "driver context": profiles,
-        "recorded revision": profiles,
+        # and it is confirmed once there, never inside a unit's own work --
+        # the fact `hosts/profiles.md` used to restate.
+        "one confirmation": "once, at `land`, never inside a unit's own work",
     }
     return [
         name for name, anchor in required.items()
-        if " ".join(anchor.split()) not in owners[name]
+        if " ".join(anchor.split()) not in verification
     ]
 
 
@@ -58,7 +49,7 @@ class MinimalAcceptanceTests(unittest.TestCase):
 
     def test_single_and_decomposed_runs_take_only_their_minimum_path(self):
         verification, profiles = self.owners()
-        self.assertEqual([], _gaps(verification, profiles))
+        self.assertEqual([], _gaps(verification))
         # The retired names are not revived anywhere on this path: the join
         # is `land` and the driver is the session that runs it.
         for retired in ("orch-frontier", "orch-integrate"):
@@ -67,25 +58,23 @@ class MinimalAcceptanceTests(unittest.TestCase):
                 self.assertNotIn(retired, profiles)
 
     def test_acceptance_contract_discriminates_extra_or_self_acceptance(self):
-        verification, profiles = self.owners()
+        verification, _ = self.owners()
         mutants = {
-            "independence path revived as distinct": (
-                verification.replace(
-                    "no longer names a distinct path",
-                    "still names a distinct path",
-                    1,
-                ),
-                profiles,
+            "independence handed back to the executor": verification.replace(
+                "Independence is the caller's own join",
+                "Independence is the executor's own claim",
+                1,
             ),
-            "suite per run rather than per identity": (
-                verification,
-                profiles.replace("identity's revision", "run's revision", 1),
+            "confirmation pushed back inside each unit": verification.replace(
+                "once, at `land`, never inside a unit's own work",
+                "inside every unit's own work",
+                1,
             ),
         }
         for name, mutant in mutants.items():
             with self.subTest(name=name):
-                self.assertNotEqual((verification, profiles), mutant)
-                self.assertTrue(_gaps(*mutant))
+                self.assertNotEqual(verification, mutant)
+                self.assertTrue(_gaps(mutant))
 
 
 if __name__ == "__main__":

@@ -28,9 +28,3 @@ orchestrator; only children carry profiles.
 - Notifications do not decide lane progress. The caller rechecks durable run
   state against the lane bound and holds any launched external process until its
   outcome lands in durable state or is recorded at launch.
-
-## Running the terminal required checks
-
-Terminal required checks run once in the driving session's own context against
-the accepted terminal identity, and their verdict records the accepted terminal
-identity's revision.
