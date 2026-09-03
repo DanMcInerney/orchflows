@@ -356,22 +356,6 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
             with self.subTest(user_anchor=name):
                 self.assertRegex(texts[name].lower(), r"\buser(?:-level|-scope)? install")
 
-    def test_live_routing_cases_teach_user_install_and_keep_project_custom_authoring(self):
-        cases = json.loads((ROOT / "benchmarks" / "routing" / "cases.json").read_text())
-        by_id = {case["id"]: case for case in cases}
-        self.assertNotIn("answer-project-scope", by_id)
-        self.assertIn("user install", by_id["answer-install-scope"]["prompt"].lower())
-        self.assertEqual("answer", by_id["answer-install-scope"]["expected"])
-
-        project_build = by_id["author-project-custom-skill"]
-        self.assertIn("project-scope custom skill", project_build["prompt"])
-        self.assertEqual("single", project_build["expected"])
-        project_composition = by_id["author-project-custom-composition"]
-        self.assertIn(
-            "project-scope custom composition", project_composition["prompt"]
-        )
-        self.assertEqual("single", project_composition["expected"])
-
     def test_project_authoring_scope_remains_a_distinct_custom_item_landing_zone(self):
         scopes = (ROOT / "docs" / "custom-workflow-authoring.md").read_text(encoding="utf-8")
         self.assertIn("## Scope and landing", scopes)

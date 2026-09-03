@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2355,
+  "count": 2270,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -73,7 +73,6 @@
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_repository_validator_runs_the_browser_game_audit",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_test_or_help_identity_disagreement_is_rejected",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_unlisted_implementation_marker_is_rejected",
-   "test_catalog_completeness.CatalogCompletenessTests.test_curated_name_tuples_name_only_shipped_packages",
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_name_reaches_every_host_catalog",
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_check_fails_when_one_catalog_drops_one_name",
@@ -223,7 +222,6 @@
    "test_doclint.FixtureRootTest.test_the_near_duplicate_names_both_sites",
    "test_doclint.FixtureRootTest.test_the_threshold_is_the_reported_sets_parameter",
    "test_doclint.InstallationScopeDocumentationTest.test_custom_authoring_standard_preserves_admission_and_user_scope_boundaries",
-   "test_doclint.InstallationScopeDocumentationTest.test_live_routing_cases_teach_user_install_and_keep_project_custom_authoring",
    "test_doclint.InstallationScopeDocumentationTest.test_maintained_installation_docs_name_user_scope_and_no_project_install",
    "test_doclint.InstallationScopeDocumentationTest.test_project_authoring_scope_remains_a_distinct_custom_item_landing_zone",
    "test_doclint.LibraryTreeTest.test_no_tier_carries_a_dangling_link",
@@ -301,7 +299,6 @@
    "test_harvest.TestWindowsPathHandling.test_sink_directories_resolve_under_a_windows_style_state_home",
    "test_harvest.TestWriterReaderSeam.test_real_writer_and_reader_agree_on_workflow_and_goal",
    "test_install_doctor.TestInstallDoctor.test_an_uninstalled_grok_leaves_the_report_exactly_as_it_was",
-   "test_install_doctor.TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
    "test_install_doctor.TestInstallDoctor.test_coherent_installation_is_deterministic_and_read_only",
    "test_install_doctor.TestInstallDoctor.test_desired_plan_and_receipt_drift_have_stable_findings",
    "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
@@ -309,6 +306,7 @@
    "test_install_doctor.TestInstallDoctor.test_owned_runtime_mismatch_is_a_read_only_failure",
    "test_install_doctor.TestInstallDoctor.test_runtime_receipt_paths_must_match_the_runtime_under_inspection",
    "test_install_doctor.TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "test_install_doctor.TestInstallDoctor.test_the_one_cli_form_prints_the_report_and_exits_by_status",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_kind_the_receipt_carries_is_a_kind_the_doctor_knows",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_receipt_entry_the_installer_writes_is_one_the_doctor_inspects",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_the_maximal_plan_exercises_every_field_a_plan_can_carry",
@@ -323,7 +321,6 @@
    "test_install_doctor_quick.TestQuickDoctor.test_the_cli_exits_by_verdict_without_building_the_plan_or_writing",
    "test_install_doctor_quick.TestQuickDoctor.test_the_quick_flag_alone_still_means_doctor",
    "test_install_support_packages.ScriptSupportDistributionTest.test_inventory_adds_only_flat_support_modules_for_cut_facades",
-   "test_install_support_packages.ScriptSupportDistributionTest.test_project_plan_is_rejected",
    "test_install_support_packages.ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
    "test_installer.DryRunOracleTest.test_a_dry_run_with_no_host_enabled_is_distinguishable",
    "test_installer.DryRunOracleTest.test_dry_run_writes_nothing",
@@ -334,9 +331,10 @@
    "test_installer.HostAdapterRenderingTest.test_installer_profiles_and_markers_come_from_rendered_adapters",
    "test_installer.HostAdapterRenderingTest.test_repository_adapters_are_a_deterministic_render_of_host_data",
    "test_installer.HostAdapterRenderingTest.test_same_target_marker_collision_is_refused_before_render",
-   "test_installer.ProjectInstallBoundaryTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
-   "test_installer.ProjectInstallBoundaryTest.test_legacy_project_uninstall_normalizes_in_boundary_receipt_paths",
-   "test_installer.ProjectInstallBoundaryTest.test_public_facade_rejects_project_plans_before_planning_or_application",
+   "test_installer.LegacyProjectCleanupTest.test_an_applied_plan_records_the_one_scope_in_its_receipt",
+   "test_installer.LegacyProjectCleanupTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
+   "test_installer.LegacyProjectCleanupTest.test_legacy_project_uninstall_normalizes_in_boundary_receipt_paths",
+   "test_installer.LegacyProjectCleanupTest.test_planning_takes_no_scope_argument",
    "test_installer.RoleProfileRefusalTest.test_a_canonical_profile_name_must_match_its_declared_role",
    "test_installer.RoleProfileRefusalTest.test_a_missing_codex_fork_binding_is_refused_and_the_row_is_named",
    "test_installer.RoleProfileRefusalTest.test_a_missing_role_row_is_refused_and_the_role_is_named",
@@ -363,25 +361,17 @@
    "test_installer.TestBootstrapWrappers.test_install_cmd_is_windows_wrapper_resolving_interpreters",
    "test_installer.TestBootstrapWrappers.test_install_sh_is_posix_wrapper_resolving_interpreters",
    "test_installer.TestBootstrapWrappers.test_wrapper_comments_credit_the_uv_first_order_not_a_path_check",
-   "test_installer.TestClaudeAdapterSet.test_all_is_the_default_and_mints_every_package_and_template",
-   "test_installer.TestClaudeAdapterSet.test_four_changes_nothing_but_the_claude_adapter_list",
-   "test_installer.TestClaudeAdapterSet.test_four_mints_exactly_the_shared_adapters",
-   "test_installer.TestClaudeAdapterSet.test_help_names_the_hosts_the_module_docstring_names",
-   "test_installer.TestClaudeAdapterSet.test_installer_description_says_codex_redirects_every_canonical_name",
-   "test_installer.TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan",
-   "test_installer.TestClaudeAdapterSet.test_the_four_adapters_carry_the_same_content_they_carry_under_all",
-   "test_installer.TestClaudeAdapterSet.test_the_parser_accepts_the_two_sets_and_refuses_any_other",
-   "test_installer.TestClaudeAdapterSet.test_the_plan_count_and_printout_follow_the_adapter_set",
-   "test_installer.TestClaudeAdapterSet.test_the_receipt_records_only_the_minted_adapters",
-   "test_installer.TestClaudeAdapterSet.test_the_shared_names_remain_the_reduced_claude_set",
-   "test_installer.TestClaudeAdapterSet.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
-   "test_installer.TestClaudeAlwaysOnImport.test_apply_migrates_legacy_inline_block_in_claude_md",
+   "test_installer.TestClaudeAdapters.test_every_package_and_workflow_gets_one_claude_adapter",
+   "test_installer.TestClaudeAdapters.test_help_names_the_hosts_the_module_docstring_names",
+   "test_installer.TestClaudeAdapters.test_installer_description_says_codex_redirects_every_canonical_name",
+   "test_installer.TestClaudeAdapters.test_no_flag_selects_a_smaller_adapter_set",
+   "test_installer.TestClaudeAdapters.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
    "test_installer.TestClaudeAlwaysOnImport.test_apply_writes_host_block_file_and_appends_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_reapply_does_not_duplicate_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_uninstall_reports_manual_cleanup_for_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_upsert_import_line_appends_to_existing_file_without_block",
    "test_installer.TestClaudeAlwaysOnImport.test_upsert_import_line_is_idempotent",
-   "test_installer.TestClaudeAlwaysOnImport.test_upsert_import_line_migrates_legacy_inline_block",
+   "test_installer.TestClaudeAlwaysOnImport.test_upsert_import_line_leaves_a_marker_block_it_finds_alone",
    "test_installer.TestClaudeAlwaysOnImport.test_user_plan_renders_host_block_file_and_claude_import",
    "test_installer.TestClaudeConfigDir.test_blank_claude_config_dir_falls_back_to_home",
    "test_installer.TestClaudeConfigDir.test_uninstall_removes_adapter_installed_under_claude_config_dir",
@@ -480,11 +470,6 @@
    "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_enumeration_names_both_shapes_the_two_broken_sessions_had",
    "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_opening_sentence_keeps_every_host_at_every_rewrap",
    "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_stdlib_claim_stays_absent_at_every_rewrap",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_duplicate_legacy_begin_raises",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_begin_without_end_raises",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_end_without_begin_raises",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_out_of_order_raises",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_out_of_order_raises_with_crlf",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_begin_without_end_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_duplicate_begin_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_duplicate_begin_raises_with_crlf",
@@ -493,13 +478,13 @@
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_out_of_order_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_out_of_order_raises_with_crlf",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_unbalanced_raises_with_crlf",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_absent_markers_is_a_no_op",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_begin_without_end_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_duplicate_begin_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_duplicate_end_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_end_without_begin_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_out_of_order_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_out_of_order_raises_with_crlf",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_absent_markers_is_a_no_op",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_begin_without_end_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_duplicate_begin_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_duplicate_end_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_end_without_begin_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_out_of_order_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_out_of_order_raises_with_crlf",
    "test_installer.TestPartialApplyAfterRmtree.test_crash_mid_copy_leaves_lib_home_partially_repopulated_and_no_receipt",
    "test_installer.TestPluginSubsystemRemoved.test_install_py_source_has_no_plugin_subsystem_reference",
    "test_installer.TestPluginSubsystemRemoved.test_plugin_subsystem_paths_are_absent",
@@ -1558,76 +1543,6 @@
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_v2_surface_does_not_mask_missing_sentinel",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_v2_surface_reports_explicit_unavailable_marker",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_v2_unavailable_marker_with_command_use_fails",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_case_missing_a_field_is_refused",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_named_route_without_a_name_is_refused",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_non_list_is_refused",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_role_and_skill_requirement_must_be_paired",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_an_off_enum_expected_route_is_refused",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_custom_authoring_uses_the_ordinary_single_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_catalog_counterfactual_uses_answer_then_one_single_ticket",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_shipped_case_file_loads",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_at_least_four_distractors_borrow_a_lure_word",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_case_ids_are_unique",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_every_case_has_exactly_the_documented_shape",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_every_class_carries_enough_cases_to_read_a_rate_from",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_every_expected_route_is_in_the_enum",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_no_routed_case_reads_as_an_instruction_to_the_grader",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_readme_states_the_command_and_the_decision_rule",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_route_enum_matches_both_consumers",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_set_carries_at_least_twenty_four_cases",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_by_name_read_is_the_route_the_four_adapter_set_takes",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_final_text_with_no_tool_use_grades_as_answer",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_route_answer_line_grades_as_answer",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_slash_command_is_read_by_its_first_token",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_text_answer_after_a_skill_never_overrides_the_skill",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_transcript_with_nothing_route_bearing_is_unrouted",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_windows_rendered_removed_fix_path_stays_named",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_empty_transcript_is_unrouted",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_unauthenticated_session_grades_error_not_answer",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_any_other_skill_grades_as_that_name",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_doctor_command_grades_as_its_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_instantiating_a_template_grades_as_that_template",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_issuing_a_ticket_from_bash_grades_as_single",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_matching_role_child_requires_exact_skill",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_non_dict_stream_entries_are_tolerated",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_parent_only_skill_fails_without_matching_role_child",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_planner_helper_edges_preserve_primary_skill_single_execution",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_reading_before_routing_does_not_change_the_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_reading_the_library_and_then_answering_grades_as_answer",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_root_primary_skill_fails_even_with_matching_child_execution",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_routing_skills_grade_as_their_graph_shapes",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_subagent_events_never_decide_the_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_cost_is_taken_from_the_stream_when_it_reports_one",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_deciding_event_is_reported",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_first_route_bearing_event_decides_it",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_removed_fix_name_is_only_a_named_invocation",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_a_failing_install_is_reported_rather_than_measured",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_a_timed_out_case_is_recorded_as_an_error_not_a_misroute",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_case_requires_role_and_exact_skill",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_each_adapter_set_is_installed_into_its_own_temp_home",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_each_record_carries_the_grade_and_what_decided_it",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_no_budget_launches_every_case",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_no_call_reaches_a_real_claude_or_codex_binary",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_one_graded_launch_per_case_per_adapter_set_per_repeat",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_budget_stops_launching_once_the_spend_passes_it",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_install_env_overrides_every_root_an_install_could_write",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_launch_command_carries_the_prompt_stream_and_turn_bound",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_real_home_is_untouched",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_session_runs_in_a_plain_repository_with_no_agents_file",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_both_is_the_default_and_names_the_two_sets",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_it_loads_the_shipped_case_set_by_default",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_it_measures_and_exits_zero_even_when_everything_misroutes",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_no_budget_is_the_default",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_the_budget_flag_reaches_the_run_and_the_written_payload",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_the_repeat_and_turn_bounds_reach_the_run",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_the_written_json_carries_the_records_and_the_summary",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_a_set_that_only_errored_reports_no_rate_rather_than_a_perfect_one",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_an_empty_record_set_summarizes_to_nothing_rather_than_dividing_by_zero",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_an_error_leaves_the_misroute_rate_and_never_enters_it",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_the_by_class_breakdown_buckets_by_the_expected_class",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_the_summary_counts_matches_misroutes_and_unrouted_per_set",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_the_summary_records_the_spend_and_the_budget",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_the_table_names_every_set_and_its_rate",
    "tests.test_live_harnesses_cases.sweep_cases.TestCleanup.test_falls_back_to_byte_identical_restore_on_divergence",
    "tests.test_live_harnesses_cases.sweep_cases.TestCleanup.test_missing_log_path_is_not_an_error",
    "tests.test_live_harnesses_cases.sweep_cases.TestCleanupFriction.test_deletes_file_it_created_when_nothing_preexisted",
@@ -2358,7 +2273,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "cc06ff80aca4a176cfa78597c4e588b0f05114f3940bb4f0cb1ba259b3c15f6e"
+  "sha256": "b2fd45293992293c0bf894a4607c43ed1dbe4efd6cf0cd700afb4f38feb7d3cb"
  },
  "mutation_owners": [
   {
@@ -2942,18 +2857,18 @@
   },
   {
    "module": "tests.test_install_doctor",
-   "owner": "TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
+   "owner": "TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
    "restoration": "sharded-module-guard",
    "seams": [
+    "environment",
     "monkeypatch"
    ]
   },
   {
    "module": "tests.test_install_doctor",
-   "owner": "TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "owner": "TestInstallDoctor.test_the_one_cli_form_prints_the_report_and_exits_by_status",
    "restoration": "sharded-module-guard",
    "seams": [
-    "environment",
     "monkeypatch"
    ]
   },
@@ -2992,7 +2907,7 @@
   },
   {
    "module": "tests.test_installer",
-   "owner": "ProjectInstallBoundaryTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
+   "owner": "LegacyProjectCleanupTest.test_an_applied_plan_records_the_one_scope_in_its_receipt",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3000,7 +2915,15 @@
   },
   {
    "module": "tests.test_installer",
-   "owner": "ProjectInstallBoundaryTest.test_public_facade_rejects_project_plans_before_planning_or_application",
+   "owner": "LegacyProjectCleanupTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer",
+   "owner": "LegacyProjectCleanupTest.test_planning_takes_no_scope_argument",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3092,14 +3015,6 @@
   {
    "module": "tests.test_installer_cases.application.partial_apply",
    "owner": "TestPartialApplyAfterRmtree.test_crash_mid_copy_leaves_lib_home_partially_repopulated_and_no_receipt",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.managed_text.claude_import",
-   "owner": "TestClaudeAlwaysOnImport.test_apply_migrates_legacy_inline_block_in_claude_md",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3349,7 +3264,7 @@
   },
   {
    "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestClaudeAdapterSet._plan",
+   "owner": "TestClaudeAdapters._plan",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3357,23 +3272,7 @@
   },
   {
    "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan._dry_run",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestClaudeAdapterSet.test_the_receipt_records_only_the_minted_adapters",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestClaudeAdapterSet.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
+   "owner": "TestClaudeAdapters.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3924,62 +3823,6 @@
   {
    "module": "tests.test_live_harnesses_cases.profile_cases",
    "owner": "TestCodexLiveProfiles.test_timeout_returns_structured_surface_failure",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun._run",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun._run_with_budget",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun.test_a_failing_install_is_reported_rather_than_measured",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun.test_a_timed_out_case_is_recorded_as_an_error_not_a_misroute",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun.test_case_requires_role_and_exact_skill",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun.test_the_install_env_overrides_every_root_an_install_could_write",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_summary_cases",
-   "owner": "TestRoutingBenchMain._main",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

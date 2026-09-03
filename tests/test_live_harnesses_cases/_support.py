@@ -17,7 +17,6 @@ from unittest import mock
 from scripts import state_root
 from tools import live_claude_profiles as claude_live
 from tools import live_codex_profiles as codex_live
-from tools import live_routing_bench as routing_live
 from tools import live_sweep_e2e as sweep_live
 
 SWEEP_AGENT = "orch-sweep-e2e-42"
@@ -70,13 +69,6 @@ def _stream(events: list) -> str:
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
-ROUTING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "routing"
-ROUTING_CASES = ROUTING_DIR / "cases.json"
-ROUTE_CLASSES = (
-    "answer", "single", "graph", "spec", "doctor", "named",
-)
-CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
-LURE_WORDS = ("diagnose", "triage", "review", "worklog")
 
 def _tool_use(name: str, tool_input: dict, tool_id: str = "t1") -> dict:
     """A parent-level tool call, the only kind the router's first move can be."""
@@ -96,14 +88,6 @@ def _skill_use(skill: str, tool_id: str = "t1") -> dict:
     return _tool_use("Skill", {"skill": skill}, tool_id)
 
 
-def _bash_use(command: str, tool_id: str = "t1") -> dict:
-    return _tool_use("Bash", {"command": command}, tool_id)
-
-
-def _result_event(cost: float) -> dict:
-    return {"type": "result", "subtype": "success", "total_cost_usd": cost}
-
-
 __all__ = [
     "collections",
     "contextlib",
@@ -120,15 +104,9 @@ __all__ = [
     "state_root",
     "claude_live",
     "codex_live",
-    "routing_live",
     "sweep_live",
     "SWEEP_AGENT",
     "SWEEP_PY",
-    "ROUTING_DIR",
-    "ROUTING_CASES",
-    "ROUTE_CLASSES",
-    "CASE_KEYS",
-    "LURE_WORDS",
     "_launch",
     "_reply",
     "_parent_text",
@@ -136,6 +114,4 @@ __all__ = [
     "_sha256",
     "_tool_use",
     "_skill_use",
-    "_bash_use",
-    "_result_event",
 ]

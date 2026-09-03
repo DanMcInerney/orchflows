@@ -104,8 +104,8 @@ def _inspect_receipt(
     findings = []
     for field, expected in (
         ("version", 4),
-        ("scope", plan.scope),
-        ("project_root", str(plan.project_root) if plan.project_root is not None else None),
+        ("scope", "user"),
+        ("project_root", None),
         ("lib_home", str(plan.lib_home)),
         ("bin_dir", str(plan.bin_dir)),
     ):
@@ -303,12 +303,7 @@ def inspect_installation(
         else:
             try:
                 current = imp.dest.read_text(encoding="utf-8")
-                desired, _action = upsert_import_line(
-                    current,
-                    f"@{imp.import_target}",
-                    imp.legacy_start_marker,
-                    imp.legacy_end_marker,
-                )
+                desired, _action = upsert_import_line(current, f"@{imp.import_target}")
             except (OSError, UnicodeError, ValueError) as error:
                 findings.append(
                     _finding("configuration.import-unreadable", imp.dest, actual=type(error).__name__)
@@ -387,15 +382,10 @@ def _quick_host_block(receipt: dict, path: Path) -> list[dict]:
     return findings
 
 
-def quick_report(
-    current_source_commit: str | None = None,
-    *,
-    scope: str = "user",
-    project_root: Path | None = None,
-) -> dict:
+def quick_report(current_source_commit: str | None = None) -> dict:
     """Return the fast freshness verdict without touching the filesystem."""
 
-    scope_home = _scope_home(scope, project_root)
+    scope_home = _scope_home()
     receipt_path = scope_home / orchflows_home.RECEIPT_FILENAME
     receipt, unreadable = _read_receipt(receipt_path)
     findings = [unreadable] if unreadable is not None else []

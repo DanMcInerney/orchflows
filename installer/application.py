@@ -11,7 +11,7 @@ from pathlib import Path
 
 from .foundation import (
     _claude_agents_dir,
-    _claude_scope_home,
+    _claude_user_home,
     _codex_agents_dir,
     _codex_user_home,
     _grok_agents_dir,
@@ -266,8 +266,6 @@ def _prompt_keep_role_agents(diverged: list) -> bool:
 def apply_plan(
     plan: Plan, source_commit: str | None, keep_role_agents: bool | None = None
 ) -> dict:
-    if plan.scope != "user":
-        raise ValueError("installation supports user scope only")
     old_receipt = _load_json(plan.receipt_path)
     diverged = _diverged_role_agents(plan, old_receipt)
     # A kept agent stays in the plan so ``_remove_stale`` still counts it as
@@ -293,7 +291,7 @@ def apply_plan(
         old_entry = old_entries.get((str(path), kind), {})
         return old_entry.get("details") or details
 
-    if plan.scope == "user" and plan.runtime_action is not None:
+    if plan.runtime_action is not None:
         # This lands before the first runtime mutation. If anything below
         # fails, uninstall can still discover the retained runtime.
         _record_runtime_intent(plan, old_receipt)
@@ -331,11 +329,10 @@ def apply_plan(
         written_files.append(_installed_file(destination, "frontend-asset", action))
 
     # Everything below writes into ``.claude``/``.codex`` (adapters, prompts,
-    # redirect skills, role agents, host configs). ``build_plan`` supports
-    # user scope only (project-scope installs are refused before planning),
-    # so no plan it produces ever sets ``manage_host_surfaces`` False; a
-    # hand-built ``Plan`` still can, to isolate frontend-application testing
-    # from every write below.
+    # redirect skills, role agents, host configs). No plan ``build_plan``
+    # produces ever sets ``manage_host_surfaces`` False; a hand-built
+    # ``Plan`` still can, to isolate frontend-application testing from every
+    # write below.
     if plan.manage_host_surfaces:
         # A module dropped from ``scripts/`` (or renamed out of the flat
         # support-prefix census) stops appearing in ``plan.scripts``, but the
@@ -348,9 +345,9 @@ def apply_plan(
             shutil.copy2(src, dest)
             written_files.append(_installed_file(dest, "script", action))
 
-        claude_scope_home = _claude_scope_home(plan.scope, plan.project_root)
         _remove_stale(
-            old_receipt, "adapter", {str(dest) for dest, _ in plan.claude_adapters}, claude_scope_home / "skills"
+            old_receipt, "adapter", {str(dest) for dest, _ in plan.claude_adapters},
+            _claude_user_home() / "skills",
         )
         for dest, content in plan.claude_adapters:
             action = install_action(dest, "adapter", dest.is_file())
@@ -383,8 +380,8 @@ def apply_plan(
             written_files.append(_installed_file(dest, "grok-skill", action))
 
         for kind, files, boundary in (
-            ("claude-agent", plan.claude_agents, _claude_agents_dir(plan.scope, plan.project_root)),
-            ("codex-agent", plan.codex_agents, _codex_agents_dir(plan.scope, plan.project_root)),
+            ("claude-agent", plan.claude_agents, _claude_agents_dir()),
+            ("codex-agent", plan.codex_agents, _codex_agents_dir()),
             ("grok-agent", plan.grok_agents, _grok_agents_dir()),
         ):
             _remove_stale(old_receipt, kind, {str(dest) for dest, _ in files}, boundary)
@@ -453,7 +450,7 @@ def apply_plan(
         imp.dest.parent.mkdir(parents=True, exist_ok=True)
         current_text = imp.dest.read_text(encoding="utf-8") if imp.dest.is_file() else ""
         import_line = f"@{imp.import_target}"
-        updated, action = upsert_import_line(current_text, import_line, imp.legacy_start_marker, imp.legacy_end_marker)
+        updated, action = upsert_import_line(current_text, import_line)
         imp.dest.write_text(updated, encoding="utf-8")
         written_imports.append(
             {
@@ -469,16 +466,19 @@ def apply_plan(
     if plan.lib_copies:
         extra_dirs.append(str(plan.lib_home))
     if plan.claude_agents:
-        extra_dirs.append(str(_claude_agents_dir(plan.scope, plan.project_root)))
+        extra_dirs.append(str(_claude_agents_dir()))
     if plan.codex_agents:
-        extra_dirs.append(str(_codex_agents_dir(plan.scope, plan.project_root)))
+        extra_dirs.append(str(_codex_agents_dir()))
     if plan.grok_agents:
         extra_dirs.append(str(_grok_agents_dir()))
 
     receipt = {
         "version": 4,
-        "scope": plan.scope,
-        "project_root": str(plan.project_root) if plan.project_root is not None else None,
+        # The one scope this installs. Recorded because an uninstall reads
+        # the receipt it finds, including one an older version wrote from a
+        # project tree.
+        "scope": "user",
+        "project_root": None,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source_commit": source_commit,
         "lib_home": str(plan.lib_home),
@@ -487,21 +487,17 @@ def apply_plan(
         "blocks": written_blocks,
         "imports": written_imports,
         "dirs": list(dict.fromkeys([str(d) for d in plan.runtime_dirs] + extra_dirs)),
-        "runtime": (
-            {
-                "home": str(private_runtime_home()),
-                "python": str(private_runtime_python()),
-                "uninstall": "retained",
-            }
-            if plan.scope == "user"
-            else None
-        ),
+        "runtime": {
+            "home": str(private_runtime_home()),
+            "python": str(private_runtime_python()),
+            "uninstall": "retained",
+        },
         "frontend": (
             {
                 "home": str(plan.frontend_home),
                 "manifest_sha256": plan.frontend_manifest_sha256,
                 "action": plan.frontend_action,
-                "uninstall": "borrowed" if plan.scope == "project" else "receipt-guarded",
+                "uninstall": "receipt-guarded",
             }
             if plan.frontend_home is not None
             else None

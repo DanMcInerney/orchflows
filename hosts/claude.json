@@ -7,7 +7,7 @@
   "managed_markers": {
     "host_instructions": {
       "target": "CLAUDE.md",
-      "mode": "import-legacy",
+      "mode": "import",
       "start": "<!-- BEGIN ORCHFLOWS (managed block — do not edit inside; reinstall to update) -->",
       "end": "<!-- END ORCHFLOWS -->"
     }

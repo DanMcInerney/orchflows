@@ -126,7 +126,7 @@ class CatalogCompletenessTests(unittest.TestCase):
         with patch.object(install.Path, "home", return_value=self.home), patch.object(
             install.shutil, "which", side_effect=which
         ), patch.dict(os.environ, {"GROK_HOME": str(self.home / ".grok")}):
-            return install.build_plan("user", None)
+            return install.build_plan()
 
     def test_every_registered_verb_ships_as_a_discoverable_package(self):
         """The registry and the skill tree name each other or neither runs.
@@ -181,19 +181,6 @@ class CatalogCompletenessTests(unittest.TestCase):
                 self.assertEqual(
                     {label: ["orch-do"]}, omissions(expected, planted)
                 )
-
-    def test_curated_name_tuples_name_only_shipped_packages(self):
-        """``SHARED_ADAPTER_NAMES`` is the last hand-written name list in the
-        installer. A name it spells that the tree no longer carries silently
-        mints nothing, which is how a rename hides here."""
-
-        discovered = {path.parent.name for path in install.discover_packages()}
-        discovered |= {d.name for d, _f, _b in install.discover_workflow_skills()}
-        self.assertEqual(
-            set(),
-            set(install.SHARED_ADAPTER_NAMES) - discovered,
-            "SHARED_ADAPTER_NAMES spells a name no package or template carries",
-        )
 
     def test_the_name_reader_is_that_host_s_own_path_template(self):
         """The extractor is derived, not assumed: it must read back the name
@@ -314,7 +301,7 @@ class WorkflowHostSurfaceTests(unittest.TestCase):
         with patch.object(install.Path, "home", return_value=self.home), patch.object(
             install.shutil, "which", side_effect=which
         ), patch.dict(os.environ, {"GROK_HOME": str(self.home / ".grok")}):
-            return install.build_plan("user", None)
+            return install.build_plan()
 
     def _workflows(self):
         return {

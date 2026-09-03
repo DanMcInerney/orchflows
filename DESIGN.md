@@ -131,8 +131,7 @@ request. The replacement:
   one return shape, one name).
 
 Its open decisions closed as: ticket sets drained by orch-frontier,
-proven on the `fix` fixture; Claude keeps all skill adapters — measured
-2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
+proven on the `fix` fixture; Claude keeps all skill adapters;
 the delegation contract merged into `work-item.md`; orch-delegate (the
 skill) deleted; the domain instances and the loop engine kept (the
 engine since absorbed into the driver as the ticket `loop` field, 2026-08-30).
