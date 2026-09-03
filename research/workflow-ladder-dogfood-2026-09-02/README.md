@@ -119,7 +119,8 @@ friction.
 this run -- and the installed trunk has no sheet kind, no `--sheet`, no
 `orchflows check` and no `tools.txt`. Installing this candidate over it
 mid-run would have swapped the trunk under the run's own sibling agents.
-`ORCHFLOWS_STATE_HOME` moves the sink and the home ring together
+The sink environment variable [`rules/visibility.md`](../../rules/visibility.md)
+section 6 names moves the sink and the home ring together
 (`state_root.orchflows_home()` is `state_root().parent`), so
 `C:\Users\danhm\.orchflows\b132h` is a home ring by every code path the
 library has.
