@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2124,
+  "count": 2125,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1237,6 +1237,7 @@
    "test_trace.TestTraceV2.test_system_reminder_text_is_never_a_request",
    "test_trace.TestTraceV2.test_text_clip_sets_truncated_flag",
    "test_trace.TestTraceV2.test_thinking_blocks_are_not_narration",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_lone_dead_segment_is_an_error",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_path_the_installer_never_produces_is_an_error",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_script_resolves_through_the_installers_bin_mapping",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_tree_without_the_marker_is_skipped_not_failed",
@@ -2127,7 +2128,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "2cdeaef307643abfdedaf7c4b1a4ef932b9b1a6f950e06d9dc3bf8e369b87ec9"
+  "sha256": "6e44d208d14f12f55dc55be5c9aecab776c991ef7e63f2a596c7b60d28cc8d69"
  },
  "mutation_owners": [
   {

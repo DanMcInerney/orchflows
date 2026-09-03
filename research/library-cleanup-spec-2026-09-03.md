@@ -76,9 +76,13 @@ reinstalls and `orchflows list` names every library item it named on
 - Rings: four — project, home, imports, lib — in every owner.
 - Required checks in `AGENTS.md`: four (validate, run_tests, dry-run,
   diff --check) if U7 lands the lane deletion; five otherwise.
-- Line widening: `LINKED_MD_ROOTS` and `DOC_PATH_CHECKED_TREES` include
-  `README.md`, `TICKETS.md`, `ARCHITECTURE.md`, `DESIGN.md`, `reader/docs`,
-  `hosts`.
+- Line widening: the link check and the documented-path check both grade
+  `README.md`, `TICKETS.md`, `ARCHITECTURE.md`, `DESIGN.md`, `reader/docs`
+  and `hosts`. The two trees join the directory rosters — `LINKED_MD_ROOTS`
+  and `DOC_PATH_CHECKED_TREES`; the four root documents are files, so they
+  arrive through `_linked_markdown_files`'s top-level glob and through
+  `DOC_PATH_CHECKED_FILES` rather than through a roster whose consumers
+  `rglob` and `is_dir`.
 
 ## 3. Units
 

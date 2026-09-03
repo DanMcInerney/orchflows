@@ -107,6 +107,23 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
 
         self.assertEqual([], self._findings("The oracle is tools/validate.py itself.\n"))
 
+    def test_a_lone_dead_segment_is_an_error(self):
+        """A one-segment token is graded like any other.
+
+        The class is easy to switch off wholesale -- an early return on a
+        token with no remainder passes `bogus/` and `kernel/` alike -- and
+        nothing else here notices, because the shipped sentences that spell
+        a lone segment are all recorded in DOC_PATH_EXEMPT_SITES and stay
+        silent either way. This case is what fails when the class stops
+        being graded.
+        """
+
+        findings = self._findings("See `bogus/` for the rest.\n")
+        self.assertTrue(
+            any("bogus" in line for line in findings),
+            f"expected a finding for the lone dead segment, got {findings}",
+        )
+
     def test_an_unknown_dead_path_head_is_an_error(self):
         findings = self._findings("See `unknown/tree/missing.md`.\n")
         self.assertTrue(any("unknown/tree/missing.md" in line for line in findings))
