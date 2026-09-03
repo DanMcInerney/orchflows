@@ -16,23 +16,20 @@ from scripts.tickets_bound import OTHER_BOUND_KIND, parse_bound  # noqa: E402
 from scripts.tickets_format import _parse_iso  # noqa: E402
 
 # Every directory the reader reads, named once, sink-relative -- the layout
-# ``scripts/state_root.py`` owns, in the same relative shape it had inside a
-# repository's own state directory. The conditional request's digest and the
-# readers that render these have to agree about what is observed: where they
-# disagree the page moves and the validator does not, and a poll is answered
-# 304 against state that already changed. The root itself is observed for its
-# presence alone.
+# ``scripts/state_root.py`` owns. The conditional request's digest and the
+# readers that render these have to agree about what is observed, or a poll
+# is answered 304 against state that already changed. The root itself is
+# observed for its presence alone.
 TICKETS_DIR = ("tickets",)
 FRICTION_DIR = ("friction",)
 EVENTS_DIR = ("events",)
 TICKET_SUFFIX = ".md"
 JSONL_SUFFIX = ".jsonl"
 
-# Named empty states. Absent data is normal in a live sink -- a run can be
-# cut before any ticket lands, a ticket can predate a section -- so every
-# absence renders as one of these rather than raising or vanishing. None of
-# them carries a character ``escape`` rewrites: a test asserting one of these
-# is in a page compares against the page, which is escaped.
+# Named empty states. Absent data is normal in a live sink, so every absence
+# renders as one of these rather than raising or vanishing. None of them
+# carries a character ``escape`` rewrites: a test asserting one of these is
+# in a page compares against the page, which is escaped.
 EMPTY_NO_SINK = "no state sink at this root"
 EMPTY_NO_RUNS = "no runs under this sink"
 EMPTY_NO_TICKETS = "no tickets in this run"
@@ -53,26 +50,21 @@ EMPTY_NO_DESCRIPTION = "no description recorded"
 EMPTY_NO_DEPTH = "no spawn depth recorded"
 
 # The one marker for the other thing: not absent, unread. Every EMPTY_ above
-# is a claim about what the sink holds, and rendering one of them because a
-# read failed states that claim on no evidence -- an empty ticket, a friction
-# month that never happened, zero events, no transcript root. This says which
-# it was, once, in the words every reader of these pages already knows the
-# shape of.
+# is a claim about what the sink holds, and rendering one because a read
+# failed states that claim on no evidence. This says which it was, once.
 DIAGNOSTIC_UNREADABLE = "could not be read"
 
 # What a host filesystem path is replaced with wherever contained content is
-# rendered. Three projections redact one, each over its own host-path
-# regexes; this is the one marker they agree on.
+# rendered: three projections redact one, and this is their shared marker.
 REDACTED_HOST_PATH = "[redacted-host-path]"
 
 # Only `claimed` has a live dispatch attempt. A suspended ticket retains its
-# claimant observations for Handoff, but join has retired the attempt, so a
+# claimant observations for Handoff with the attempt already joined, so a
 # growing elapsed-against-bound meter would be a lie.
 LIVE_CLAIM_STATUSES = ("claimed",)
 
-# The band answers "who is working right now", which `suspended` is not: it
-# retains Handoff observations with nobody at the keyboard. A wider set would read
-# as more parallelism than the run has.
+# The band answers "who is working right now", which `suspended` is not: a
+# wider set would read as more parallelism than the run has.
 ACTIVE_STATUS = "claimed"
 
 VERIFICATION_SECTION = "Verification"
@@ -91,16 +83,13 @@ UNESCAPED_PIPE_RE = re.compile(r"(?<!\\)\|")
 # Four channels per status, because colour alone excludes a colourblind or
 # monochrome reader: the glyph carries the state on its own, the word names
 # it, the border separates the states that share a hue, and hue is
-# reinforcement only. Argo Workflows' graph node is icon + label + genre for
-# the same reason (`lane-ui-patterns.md` §2.3).
+# reinforcement only.
 StatusPresentation = namedtuple("StatusPresentation", ("glyph", "word", "hue", "border"))
 
 # Hue tokens are CSS custom property *names*, never colour values: the
 # palette is the design spec's deliverable and has to pass a contrast
 # oracle. The family recorded against each token is the part this module
-# does fix, sourced to Airflow 2.10.5 `airflow/utils/state.py` via
-# `lane-ui-patterns.md` §2 -- `upstream_failed: orange` is deliberately not
-# `failed: red`, and `running: lime` is deliberately not `success: green`.
+# does fix -- `upstream_failed: orange` is deliberately not `failed: red`.
 HUE_TOKENS = {
     "--st-waiting": "slate",
     "--st-ready": "blue",
@@ -113,15 +102,14 @@ HUE_TOKENS = {
     "--st-unknown": "neutral",
 }
 
-# Eight statuses onto six hues, so exactly two pairs share one. The pairs
-# are the contract's own groupings (`contracts/work-item.md`): `pending` and
-# `suspended` are its two non-terminal waits, `blocked` and `limited` its
-# two terminal halts that are not failures. Red is reserved for `failed`
-# alone, so red anywhere on the page means one thing.
+# Eight statuses onto six hues, so exactly two pairs share one. The pairs are
+# the contract's own groupings (`contracts/work-item.md`): `pending` and
+# `suspended` are its two non-terminal waits, `blocked` and `limited` its two
+# terminal halts that are not failures. Red is reserved for `failed` alone.
 #
-# Glyphs are single text-presentation code points from the system font
-# stack -- no icon font, no SVG, and nothing from the emoji blocks, which
-# render as colour images on Windows and would smuggle in a seventh hue.
+# Glyphs are single text-presentation code points from the system font stack
+# -- nothing from the emoji blocks, which render as colour images on Windows
+# and would smuggle in a seventh hue.
 STATUS_PRESENTATION = {
     # U+25CB WHITE CIRCLE: deps unmet, not eligible.
     "pending": StatusPresentation("○", "pending", "--st-waiting", "1px dotted"),
@@ -138,34 +126,29 @@ STATUS_PRESENTATION = {
     # U+2715 MULTIPLICATION X: terminal, bad.
     "failed": StatusPresentation("✕", "failed", "--st-failed", "1px solid"),
     # U+25A4 SQUARE WITH HORIZONTAL FILL: stopped at a bound, hence the
-    # doubled border -- a wall, and the channel that separates it from
-    # `blocked` on the shared amber.
+    # doubled border that separates it from `blocked` on the shared amber.
     "limited": StatusPresentation("▤", "limited", "--st-attention", "3px double"),
     # U+21BB CLOCKWISE OPEN CIRCLE ARROW: iterating without progress and
-    # stopped for it. Amber like the other two ends that are neither a
-    # success nor a fault, and told apart from them by glyph and border.
+    # stopped for it. Amber, and told apart by glyph and border.
     "stalled": StatusPresentation("↻", "stalled", "--st-attention", "2px dotted"),
 }
 
-# The sink is untrusted data, so the status field can hold anything. It gets
-# a hue of its own: borrowing a real state's colour would render an
-# unreadable value as a state the ticket is not in.
+# The sink is untrusted data, so the status field can hold anything: it gets
+# a hue of its own rather than borrowing a real state's.
 STATUS_FALLBACK = StatusPresentation("?", "unknown", "--st-unknown", "1px dotted")
 
 
-# A subagent's activity is not a ticket status: nobody writes it down, and
-# it is read off whatever evidence the session transcript happens to carry.
-# `unknown` is the honest answer for most of a real tree and it is a state,
-# not a failure to have one, so it reuses the fallback's own presentation
-# rather than being dressed as a wait.
+# A subagent's activity is not a ticket status: nobody writes it down, and it
+# is read off whatever evidence the transcript happens to carry. `unknown` is
+# a state, not a failure to have one, so it reuses the fallback's own
+# presentation rather than being dressed as a wait.
 ACTIVITY_RUNNING = "running"
 ACTIVITY_FINISHED = "finished"
 ACTIVITY_UNKNOWN = STATUS_FALLBACK.word
 ACTIVITY_STATES = (ACTIVITY_RUNNING, ACTIVITY_FINISHED, ACTIVITY_UNKNOWN)
 
-# Four channels and the same closed set of hue tokens as above; no palette
-# is invented here. U+25D0 and cyan for in flight, U+2713 and green for
-# terminal-good -- what both families already mean elsewhere on the page.
+# Four channels and the same closed set of hue tokens as above; no palette is
+# invented here.
 ACTIVITY_PRESENTATION = {
     ACTIVITY_RUNNING: StatusPresentation(
         "◐", ACTIVITY_RUNNING, "--st-running", "2px solid"
@@ -184,8 +167,7 @@ def activity_presentation(state: str) -> StatusPresentation:
 
 
 # An SVG rect has no `border`, so the border style that separates the two
-# pairs sharing a hue is restated as a stroke pattern. Same four channels,
-# same owner: both renderings are generated from STATUS_PRESENTATION.
+# pairs sharing a hue is restated as a stroke pattern, from the same owner.
 SVG_DASH = {"solid": "none", "dashed": "5 3", "dotted": "1 3", "double": "9 2 1 2"}
 
 
@@ -211,17 +193,7 @@ def _is_separator(cells) -> bool:
 
 
 def parse_verification(body: str) -> dict:
-    """One ``## Verification`` body as ``{"state", "rows"}``.
-
-    Two shapes exist in the corpus and only one is machine-readable: the
-    five-column verdict table parses, a numbered prose list does not. The
-    unreadable shape is reported ``unparsed`` and shown verbatim, never as
-    zero rows -- "verified nothing" and "verdicts I cannot read" are
-    different facts, and a viewer must not hand a reader the wrong one. A
-    row disagreeing with the header's width makes the whole section
-    unparsed for the same reason: half a table is a wrong count of
-    verdicts, not a partial one.
-    """
+    """One ``## Verification`` body as ``{"state", "rows"}``."""
 
     lines = body.splitlines()
     for index, line in enumerate(lines):
@@ -245,15 +217,7 @@ def parse_verification(body: str) -> dict:
 
 
 def bound_minutes(bound):
-    """Minutes, or ``None`` when ``bound`` states no measurable bound.
-
-    One parser with the lease's, and one disagreement with it kept: where
-    ``_parse_bound_minutes`` substitutes ``DEFAULT_BOUND_MINUTES`` for the
-    kind it cannot read so a claim can still be aged, a viewer draws
-    nothing. The observed real value is ``one session``, and a meter
-    against an invented 60-minute denominator would report progress no
-    ticket ever stated. Every other kind carries a stated conversion.
-    """
+    """Minutes, or ``None`` when ``bound`` states no measurable bound."""
 
     minutes, kind = parse_bound(bound)
     return None if kind == OTHER_BOUND_KIND else minutes
@@ -266,13 +230,7 @@ def _now() -> datetime:
 
 
 def claim_meter(front: dict, now=None):
-    """Elapsed against bound for a live claim, or ``None``.
-
-    ``None`` in every degraded case -- no live claim, no duration bound, no
-    parsable ``claimed_at`` -- because a meter is a measurement and there is
-    nothing here to measure. ``front`` is any mapping carrying ``status``,
-    ``bound`` and ``claimed_at``: a ticket record or raw frontmatter.
-    """
+    """Elapsed against bound for a live claim, or ``None``."""
 
     if _scalar(front.get("status")) not in LIVE_CLAIM_STATUSES:
         return None
@@ -293,11 +251,10 @@ def claim_meter(front: dict, now=None):
     }
 
 
-# One path component's byte ceiling. POSIX `NAME_MAX` is 255 on every
-# filesystem this runs on and Windows caps a component at 255 characters,
-# so a longer name is one no store can hold: the path layer answers
-# `ENAMETOOLONG` rather than "no such file", and an `OSError` out of a
-# lookup is not one of the two answers these functions promise.
+# One path component's byte ceiling. POSIX `NAME_MAX` is 255 and Windows caps
+# a component at 255 characters, so a longer name is one no store can hold:
+# the path layer answers `ENAMETOOLONG` rather than "no such file", which is
+# not one of the two answers these functions promise.
 MAX_NAME_BYTES = 255
 # A control character is never part of a run name or a ticket id, and NUL
 # is the one the path layer refuses outright -- `Path.resolve` raises
@@ -308,14 +265,7 @@ UNSAFE_NAME_RE = re.compile(r"[\x00-\x1f\x7f:/\\]")
 
 
 def _safe_name(value) -> str:
-    """One path component, or ``""``.
-
-    The query string is the only untrusted input that becomes a path, so
-    this is the whole boundary between it and the filesystem. A value that
-    could climb out of the tickets tree, or that the path layer would
-    refuse to look up at all, resolves to nothing here rather than raising
-    somewhere below.
-    """
+    """One path component, or ``""``."""
 
     if not isinstance(value, str) or not value or value in (".", ".."):
         return ""
@@ -328,14 +278,7 @@ def _safe_name(value) -> str:
 
 def _in_tree(base: Path, *parts):
     """``base`` joined with ``parts`` and resolved, or ``None`` when the
-    result escapes ``base`` or the host's path layer refuses the name.
-
-    ``_safe_name`` rejects every value known to reach here badly; this is
-    the same guarantee one layer down, for the shapes a single host cannot
-    enumerate -- a total path over the platform's own limit, say. The
-    callers promise a value or ``None``, never an exception, on any string
-    a client can put in a query.
-    """
+    result escapes ``base`` or the host's path layer refuses the name."""
 
     try:
         root = base.resolve()
@@ -346,14 +289,7 @@ def _in_tree(base: Path, *parts):
 
 
 def _json_object(line: str):
-    """One JSONL line as a JSON object, or ``None`` when it is not one.
-
-    Every JSONL this module reads -- the friction log, the events seam, a
-    Claude Code transcript -- is append-only and written by a process that
-    may be killed mid-line, so a half-written tail is expected rather than
-    exceptional, and so is a line that parses to something other than a
-    record. A blank line is neither: the caller drops those before asking.
-    """
+    """One JSONL line as a JSON object, or ``None`` when it is not one."""
 
     try:
         entry = json.loads(line)

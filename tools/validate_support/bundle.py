@@ -1,21 +1,15 @@
 """Grade a bundle's own manifest against `contracts/bundle.md`.
 
 `BUNDLE.md` says what a bundle is called, which revision of it this is, and
-which other bundles it needs. It is read at exactly one moment that matters
--- `orchflows add` follows `requires` after a clone -- and by then the
-author who wrote the offending line is not the person reading the refusal.
-So the same shape is graded here, where the author is: `tools/validate.py`
-over this repository's own `.orchflows/BUNDLE.md`, and `orchflows check`
-over the ring a person is standing in.
+which other bundles it needs. It is read at one moment that matters --
+`orchflows add` follows `requires` after a clone -- and by then the author
+who wrote the offending line is not the person reading the refusal. So the
+same shape is graded here, where the author is.
 
-Its own module rather than a clause inside `packages.py` or `sheets.py`:
-this grades the *bundle*, not an item in it -- one file per ring, above
-every item directory. The seam is the file, so the growth goes sideways.
-
-Nothing here fetches. A `requires` entry is held to the written shape
-`<git-url>@<pin>`, which is `scripts/orchflows_home.py`'s pin law read
-without a network: whether a remote publishes that pin as a tag is a
-question about a remote, and `add` is where the answer means something.
+Its own module rather than a clause inside `packages.py`: this grades the
+*bundle*, not an item in it. Nothing here fetches -- a `requires` entry is
+held to the written shape `<git-url>@<pin>`, and whether a remote publishes
+that pin is a question `add` asks where the answer means something.
 """
 
 from __future__ import annotations
@@ -28,13 +22,9 @@ SKIPPED = __dep_common.SKIPPED
 from .packages import rel
 
 # The manifest's reader, its location, and the refusal a bad `requires`
-# entry earns, imported rather than respelled: a validator with its own
-# parser or its own sentence would be a second owner of both.
-#
-# An install ships this package under `lib/` so `orchflows check` can run
-# these checks over a ring, and the scripts it reads sit flat in `bin/`
-# with no `scripts` package above them. The paired import is the tree's
-# own idiom for that layout: one module, reached under either name.
+# entry earns, imported rather than respelled. An install ships this package
+# under `lib/` with the scripts flat in `bin/`, which is what the paired
+# import below is for: one module, reached under either name.
 try:
     from scripts import orchflows_bundle, orchflows_home, rings
 except ImportError:  # pragma: no cover - direct/installed flat script path
@@ -57,17 +47,7 @@ def bundle_root() -> Path:
 
 
 def validate_bundle_manifest(diag, bundle=None) -> None:
-    """One bundle's manifest: its two fields, and every `requires` entry.
-
-    `bundle` is the bundle directory the manifest sits in -- `orchflows
-    check` hands over the ring itself, because a ring *is* a bundle
-    directory. Absent, it is this tree's own `.orchflows/`.
-
-    A bundle without a manifest is a bundle with no requirements, which
-    `contracts/bundle.md` states is a fact and never a refusal; it is still
-    reported, in the compiler's own skipped wording, because finding nothing
-    to check is not the same answer as finding nothing wrong.
-    """
+    """One bundle's manifest: its two fields, and every `requires` entry."""
 
     bundle = bundle_root() if bundle is None else Path(bundle)
     path = orchflows_bundle.manifest_path(bundle)

@@ -60,7 +60,17 @@ def _cmd_help(command=None):
         return {'help': {'usage': 'tickets.py <subcommand> [options]', 'subcommands': {name: {'usage': SUBCOMMAND_USAGE[name], 'summary': SUBCOMMAND_SUMMARY[name]} for name in SUBCOMMAND_USAGE}, 'help': f"tickets.py {' | '.join(sorted(HELP_FLAGS))} | help, or <subcommand> --help", 'output': "exactly one JSON document on stdout; a payload carrying 'error' exits 1, every other payload exits 0"}}
     return {'help': {'subcommand': command, 'usage': SUBCOMMAND_USAGE[command], 'summary': SUBCOMMAND_SUMMARY[command]}}
 def _cmd_improvement(rest):
-    """Write an improvement evidence record into the one user-scope sink."""
+    """Write an improvement evidence record into the one user-scope sink.
+
+    ``_cmd_run_state``'s sibling, for the other two records the channel
+    rules/visibility.md section 6 covers: a proposal and the coverage
+    record. ``--proposal`` is whole-file, safe because the name partitions
+    it and goes through ``_segment_error``. ``--covered`` appends to a
+    stream every pass shares, so it opens in append mode and writes one
+    line in one call: a read-modify-write here loses a concurrent
+    writer's line. Neither body is read, parsed or validated -- this is a
+    channel -- and there is no fallback.
+    """
     args = list(rest)
     proposal = _extract_flag(args, '--proposal')
     covered = _extract_flag(args, '--covered')

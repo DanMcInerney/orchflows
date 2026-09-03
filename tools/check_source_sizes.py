@@ -2,9 +2,9 @@
 """Warn on tracked sources past one-read size; size never blocks.
 
 The band is the code pack's presumption -- a module owns one concern at
-one-read size, ~100-500 lines -- and the 2026-08-30 evidence pass found
-hard caps harmful: a blocking ceiling made authors compress prose and
-re-wrap statements to fit inside the headroom left. So the report warns
+one-read size, ~100-500 lines -- and a blocking ceiling is harmful: it
+makes authors compress prose and re-wrap statements to fit the headroom
+left. So the report warns
 past the band's top and always exits 0; growth past it is priced by a
 reviewer, not refused here.
 """

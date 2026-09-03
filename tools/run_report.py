@@ -1,26 +1,13 @@
 #!/usr/bin/env python3
 """Retrospective speed report over the orchflows state sink.
 
-For one UTC window, prints:
+For one UTC window, prints: runs longest first, by their recorded
+``elapsed_ms`` and by the observed opened-at to last-sink-write span where
+none was recorded; run families; ticket durations by executor as median, p90
+and max; the window's friction by category, skill, host and run; and, per
+family, wall-clock, physical runs and oracle minutes per objective.
 
-- runs, longest first, by the exact ``elapsed_ms`` their identity document
-  recorded and by the observed opened-at to last-sink-write span where it
-  recorded none, with the terminal status and ticket that closed each one,
-  its ticket counts, and whether it ever claimed a non-decompose ticket;
-- run families -- the name stem after the timestamp and any retry marker --
-  with physical-run count, span and statuses;
-- ticket durations by executor, ``claimed_at`` to the ticket file's own
-  mtime, as median, p90 and max, plus the longest tickets and every live
-  claim's elapsed-against-bound;
-- the window's friction by category, skill, host and run, and against the
-  fixed keyword-cluster table;
-- and, per family, the three metrics of
-  ``research/orchflows-speed-spec-2026-08-23.md`` §1: wall-clock per
-  objective, physical runs per objective, oracle minutes per objective.
-
-Read-only. Nothing here opens a file for writing, and
-``tests/test_run_report.py`` holds the sink byte-identical across a run of
-both formats. Stdlib only, no network, Python 3.9+, POSIX and Windows.
+Read-only. Stdlib only, no network, Python 3.9+, POSIX and Windows.
 
 Usage:
     python tools/run_report.py [--root DIR] [--since ISO] [--until ISO]
@@ -38,8 +25,8 @@ import sys
 from pathlib import Path
 
 # This is the entry point that puts the repository on sys.path for the
-# `reader.*` and `tools.*` imports below, so it cannot read
-# `scripts._bootstrap.ROOT` for the same fact -- nothing is importable yet.
+# imports below, so it cannot read `scripts._bootstrap.ROOT` for the same
+# fact -- nothing is importable yet.
 _REPORT_ROOT = Path(__file__).resolve().parent.parent
 for _import_root in (_REPORT_ROOT, _REPORT_ROOT / "scripts"):
     if str(_import_root) not in sys.path:

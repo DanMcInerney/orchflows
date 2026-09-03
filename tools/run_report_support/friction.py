@@ -8,12 +8,10 @@ from __future__ import annotations
 
 import re
 
-# `research/orchflows-speed-spec-2026-08-23.md` item 0 (d): a fixed
-# keyword-cluster table, in the specification's own order, so two reports
-# over two windows have the same rows and can be subtracted. The table is
-# a coarse instrument by construction -- it reads the words an author
-# happened to use -- which is why `unclustered` is reported beside it
-# rather than the clusters being made to add up to the total.
+# A fixed keyword-cluster table, in its own order, so two reports over two
+# windows have the same rows and can be subtracted. The table is a coarse
+# instrument by construction -- it reads the words an author happened to use
+# -- which is why `unclustered` is reported beside it.
 CLUSTERS = (
     ("powershell-quoting", r"powershell.{0,40}(quot|escap|here-string|backtick)"
                            r"|(quot|escap|here-string|backtick).{0,40}powershell"),
@@ -32,10 +30,9 @@ CLUSTERS = (
 )
 CLUSTER_RES = tuple((name, re.compile(pattern, re.IGNORECASE)) for name, pattern in CLUSTERS)
 
-# Which of a record's fields the cluster patterns read. The two the
-# friction law makes mandatory, and nothing else: a category or a skill
-# name matching `isolation` would cluster a record by its label rather
-# than by what was observed.
+# Which of a record's fields the cluster patterns read: the two the friction
+# law makes mandatory, and nothing else, so a category or skill name is
+# never what a record clusters by.
 CLUSTERED_FIELDS = ("observed", "expected")
 
 GROUPINGS = ("category", "skill", "host", "run")
@@ -80,13 +77,11 @@ def friction_section(log: dict, keeps, top: int) -> dict:
     """Section (d) for one window, from ``read_friction``'s payload.
 
     ``keeps`` decides whether one record's ``ts`` is in the window and is
-    handed in rather than imported: ``model`` owns what a window is, and
-    this module owns only the counting. ``top`` bounds the four groupings,
-    whose longest -- by run -- is one row per run in the window; it is the
-    same bound the ranked tables take and it is required, because a ``top``
-    that meant "all rows" here and "no rows" there would make one flag
-    print two different reports. The cluster table is fixed and is never
-    bounded, so two windows' tables stay subtractable.
+    handed in rather than imported: ``model`` owns what a window is. ``top``
+    bounds the four groupings and is required, because a ``top`` that meant
+    "all rows" here and "no rows" there would make one flag print two
+    different reports. The cluster table is fixed and never bounded, so two
+    windows' tables stay subtractable.
     """
 
     inside = [entry for entry in log["entries"] if keeps(entry.get("ts"))]

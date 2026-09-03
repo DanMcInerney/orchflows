@@ -4,9 +4,9 @@
 ``python scripts/search_plan.py advance`` reads one UTF-8 JSON request on
 stdin and writes one canonical ``search-advance/v1`` response. Protocol,
 archive, projection and generation-advance ownership live in static sibling
-modules; this is the installed CLI and import seam ``docs/search-plan-
-protocol.md`` governs. The ``"evaluation_identity"`` stays opaque here
-rather than selecting an evaluation mode.
+modules; this is the installed CLI and import seam that
+``docs/search-plan-protocol.md`` governs. The ``"evaluation_identity"``
+stays opaque here rather than selecting an evaluation mode.
 """
 
 import copy

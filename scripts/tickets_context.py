@@ -1,11 +1,8 @@
 """The grading context every ticket command builds the same way.
 
-Every command that grades a ticket -- `lint`, the admission guards, the
-readiness pass `dispatch`, `frame-open` and `land` run before promoting a
-pending ticket, and the emission commands `tickets_emission` fronts --
-grades it against the same two surroundings: the sibling texts of its run
-directory, and the run-state tree the sealed grader resolves its generation
-records from.
+Every command that grades a ticket grades it against the same two
+surroundings: the sibling texts of its run directory, and the run-state tree
+the sealed grader resolves its generation records from.
 
 Both are stated here once and consumed by every one of them, and
 `graded_admission` is the only route to `grade_admission` they have. A site

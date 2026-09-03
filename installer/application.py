@@ -334,10 +334,9 @@ def apply_plan(
     # ``Plan`` still can, to isolate frontend-application testing from every
     # write below.
     if plan.manage_host_surfaces:
-        # A module dropped from ``scripts/`` (or renamed out of the flat
-        # support-prefix census) stops appearing in ``plan.scripts``, but the
-        # earlier install's copy stays on disk forever without this sweep --
-        # every other kind below gets one, ``script`` alone did not.
+        # A module dropped from ``scripts/`` stops appearing in
+        # ``plan.scripts``, and without this sweep the earlier install's copy
+        # stays on disk forever.
         _remove_stale(old_receipt, "script", {str(dest) for _, dest in plan.scripts}, plan.bin_dir)
         for src, dest in plan.scripts:
             action = install_action(dest, "script", dest.is_file())
