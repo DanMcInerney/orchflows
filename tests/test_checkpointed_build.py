@@ -4,8 +4,10 @@ The validator already grades the body as a workflow -- name, description,
 manual-only flag, the 450-word tier budget, Require/Never/Return anatomy.
 None of that reads what the steps *say*, and a workflow's steps are its
 whole contract: a driver runs this prose, so a call line that lost
-`--isolation required`, or a Return that stopped relaying the judge's
-`findings:` line, would leave the body validating and the run wrong.
+`--isolation required`, or a Return that stopped naming the `probe` its
+frame closes on, would leave the body validating and the run wrong. What
+the frame law itself prints -- relaying the returned lines, closing outside
+the children -- is the trunk's to say and is pinned nowhere here.
 
 Anchors, not sentences (`packs/orch-code-pack/references/craft.md`): each
 fact is read inside a span the body's own structure marks -- the `Require:`
@@ -62,22 +64,22 @@ CASES = {
     "each wave is isolated, stamped, and fanned out": (
         "**Waves**",
         ("--isolation required", "--sheet <sheet> [--sheet ...]",
-         "--workspace <workspace>", "`fan-out`"),
+         "--workspace <workspace>", "*fan-out*"),
     ),
     "the judge reads the joined tip under the same sheets": (
         "**Judge**",
         ("--pack <judge-pack>", "--sheet <sheet> [--sheet ...]",
-         "--artifacts git:<tip>", "`bounded-repair`"),
+         "--artifacts git:<tip>", "*bounded-repair*"),
     ),
     "Never forbids the shared tree, the unstamped judge and the inside close": (
         "Never:",
         ("make in a shared tree", "hand the judge a sheet the waves did not carry",
-         "a candidate rather than the joined tip", "`outside-close`"),
+         "a candidate rather than the joined tip", "*outside-close*"),
     ),
-    "Return closes on the probe and relays both lines": (
+    "Return closes on the probe over the joined tip": (
         "Return:",
-        ("frame-close <run> <frame> --done <probe>", "outside every child",
-         "artifact: git:<tip>", "`findings:` line relayed verbatim"),
+        ("frame-close <run> <frame> --done <probe>", "joined tip",
+         "artifact: git:<tip>"),
     ),
 }
 

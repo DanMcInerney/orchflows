@@ -51,21 +51,20 @@ replayable item, `done` the owner's required gate at the landed
 revision — and, the last act, `tickets.py improvement --covered`
 with the digest-supplied line citing that revision.
 
-Frame law: the first callable, mine's or deliver's, opens it.
+The first callable, mine's or deliver's, opens the frame.
 
     tickets.py frame-open <run> --goal-file <frame-goal> --workflow self-improve
 
-With two or more do-children the judge reads the seam: the delivered
-change equals the top proposal, nothing edited outside its scope,
-the covered line present with a sane watermark. A single-child cycle
-closes `unjudged: single child; the owner's gate and the
-human-reviewed merge are the review`.
+The judge reads the seam: the delivered change equals the top
+proposal, nothing edited outside its scope, the covered line present
+with a sane watermark. A single-child cycle closes `unjudged: single
+child; the owner's gate and the human-reviewed merge are the review`.
 
 Never: land a proposal the mine did not rank first, deliver more
 than one proposal per cycle, edit a friction entry, an event, or a
-prior covered line, rank on evidence the harvest excluded, or mark
-a criterion complete on the delivering child's own claim.
+prior covered line, or rank on evidence the harvest excluded.
 
 Return: `tickets.py frame-close <run> <frame> --done <gate>`, the
-owner's required gate at the landed revision, read outside the
-delivery.
+owner's required gate at the landed revision — *outside-close*:
+"Close on a command run outside every child; never on a child's own
+claim."

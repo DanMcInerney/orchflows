@@ -30,10 +30,12 @@ one.
       --sheet <sheet> [--sheet ...] --goal-file <item-goal>
       --workspace <workspace> --bound <bound>
 
-`fan-out` over that level's items, each handed the earlier waves' `artifact:`
-lines. The next wave opens only once every call of this one has landed, and
-that landing is the checkpoint: what the level was cut to make either exists
-in `workspace` or the wave is repeated, never skipped past.
+*fan-out*: "One `do` per named item, launched together under the frame; the
+shape line lists them as one wave." Each item's goal names the earlier
+waves' artifacts as its input. The next wave opens only once every call of
+this one has landed, and that landing is the checkpoint: what the level was
+cut to make either exists in `workspace` or the wave is repeated, never
+skipped past.
 
 **Judge**, one call over the joined tip, carrying every sheet the waves
 carried:
@@ -43,16 +45,17 @@ carried:
       --goal-file <judge-goal>
 
 Its goal: `goal` against that revision, each block named with the evidence
-for it. Blocks earn `bounded-repair`.
+for it. Blocks earn *bounded-repair*: "Where the judge blocks, one repair
+`do` is handed the `findings:` line verbatim, then one re-judge; two rounds
+is the bound."
 
 Never: leave `workspace` off any call of this frame — the run's integration
 target is fixed by its first establishment, so a call that defaults it sends
 every later wave's merge at the driver's own tree; open a wave the cut did not
 place at that level; make in a shared tree; hand the judge a sheet the waves did not carry, or a candidate rather
 than the joined tip; add a dependency the first wave did not pin without
-reporting the deviation; or close on anything but `outside-close`.
+reporting the deviation; or close on anything but *outside-close*: "Close on
+a command run outside every child; never on a child's own claim."
 
-Return: `tickets.py frame-close <run> <frame> --done <probe>`, `probe` run
-over the joined tip outside every child as an exit code, beside the judge's
-verdict — `artifact: git:<tip>` and the judge's `findings:` line relayed
-verbatim.
+Return: `tickets.py frame-close <run> <frame> --done <probe>` over the
+joined tip, `artifact: git:<tip>` beside the judge's verdict.

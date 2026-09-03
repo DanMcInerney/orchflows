@@ -41,6 +41,6 @@ sentence in its goal file, not by an artifact line naming which candidate
 stands today; run the candidates serially; or stamp the rubric on a
 candidate's making, which buys rubric-fitting instead of a comparison.
 
-Return: `winner: <typed artifact line>`, unblinded, and `findings:`, the
-judge's verdicts relayed verbatim, recorded by
-`tickets.py frame-close <run> <frame>`.
+Return: `tickets.py frame-close <run> <frame> --done <check>`, whose done
+reads the frame journal for one unblinded `winner: <typed artifact line>`
+and the judge's `findings:` line.

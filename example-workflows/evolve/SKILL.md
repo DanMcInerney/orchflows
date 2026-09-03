@@ -21,8 +21,9 @@ instead:
     tickets.py do <run> --pack orch-code-pack --parent <frame>
       --goal-file <eval-goal> --bound "<= 40 tool calls"
 
-Its goal: one candidate-blind evaluation for `target`, frozen before any
-candidate exists — identity, mode, scoring criteria, required admission and
+Its goal: one candidate-blind evaluation for `target` — *freeze*: "Fix the
+identity before any candidate exists and forbid every later call from
+touching it." — identity, mode, scoring criteria, required admission and
 regression criteria, artifact-evidence adapter, promotion rule, margin and
 search policy — written into that call's `## Report` and nowhere inside
 `mutation_scope`. In judged mode the accepted design owns the judge brief,

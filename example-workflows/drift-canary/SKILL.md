@@ -46,9 +46,7 @@ each citing the verdict it came from, so the delta between the new binding
 and the frozen one survives this session.
 
 Never: edit a golden result inside a canary run; add, remove or reorder a
-canary item to make the set run; treat divergence as failure; or close over
-the two making calls with neither the delta judge nor an
-`unjudged: <reason>` journal line.
+canary item to make the set run; or treat divergence as failure.
 
 Return: `tickets.py frame-close <run> <frame> --done <check>`, whose done
 reads that every canary item carries a verdict against its golden result
