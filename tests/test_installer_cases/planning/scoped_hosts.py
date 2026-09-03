@@ -608,8 +608,13 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 (dest, text) for dest, text in plan.by_name
                 if dest.parent.name == "market-brief"
             )
+            # The pointer's destination is rendered as `Path.home()` returns
+            # it, while `plan.lib_home` and the pointer's text are resolved;
+            # a runner's temp dir may be a short name (RUNNER~1) or a
+            # symlink (/private/var), so compare resolved to resolved.
             self.assertEqual(
-                lib_home / "by-name" / "market-brief" / "SHEET.md", pointer[0],
+                lib_home / "by-name" / "market-brief" / "SHEET.md",
+                pointer[0].resolve(),
             )
             self.assertIn(
                 str(lib_home / "sheets" / "market-brief" / "SHEET.md"), pointer[1],
