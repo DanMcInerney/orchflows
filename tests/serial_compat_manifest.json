@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2328,
+  "count": 2334,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1364,6 +1364,12 @@
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_temporary_directory_cleanup_of_the_directory_it_moved_into",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_a_space_separated_scope_is_refused_before_any_ticket_is_written",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_prose_after_the_command_is_not_read_as_a_second_scope_token",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_the_comma_spelling_generates_the_unit",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_the_refusal_names_the_unit_and_the_spelling_to_use",
+   "test_workflow_ladder_generator.TestShippedSpec.test_every_generated_details_file_carries_its_spec_done_line",
+   "test_workflow_ladder_generator.TestShippedSpec.test_every_spec_done_line_spells_scope_with_commas",
    "test_workflow_ladder_law.IdiomsTest.test_a_padded_idiom_fails_the_ceiling_check",
    "test_workflow_ladder_law.IdiomsTest.test_each_idiom_is_one_sentence_inside_its_ceiling",
    "test_workflow_ladder_law.IdiomsTest.test_every_idiom_is_worded_once_under_the_heading",
@@ -2331,7 +2337,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "2394adbad1638149764e9417aafbecbe5254b913dcb51c15fe4b4130085ce25d"
+  "sha256": "46268c9b8c67bc09311a9269e592527b3b1abbc900584a54c27cd3677a1a979a"
  },
  "mutation_owners": [
   {

@@ -4,7 +4,7 @@ Spec: research/workflow-ladder-spec-2026-09-02.md. Read section 0 (decisions), s
 
 Nearest body: `example-workflows/evolve/SKILL.md` (blind scoring). One judge, one artifact kind.
 
-Done: `python tools/validate.py && python tools/run_tests.py --scope skills tests`, plus one scratch run with two trivial candidates whose frame closes `complete`.
+Done: `python tools/validate.py && python tools/run_tests.py --scope skills,tests`, plus one scratch run with two trivial candidates whose frame closes `complete`.
 
 The mechanical `done` that `land` runs in the integrated tree is `uv run --no-project python tools/run_required.py`; run it yourself before closing. Anything in Done beyond that command is what the judge reads in your `## Report`: cite the frame id, file, or command output that shows it.
 
