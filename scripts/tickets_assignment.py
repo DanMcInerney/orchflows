@@ -55,11 +55,6 @@ else:
     from workspace_git import BASELINE_KEY, BRANCH_KEY
 
 ASSIGNMENT_SECTIONS = (("goal", "Goal"), ("context", "Context"))
-# The craft owns its verification scope; this finds the sentence rather than
-# restating it. `## Stages` (or `## Lens`) is where a craft declares how far a
-# unit's checks reach, and the gate's row is the anchor that says so.
-CRAFT_SCOPE_SECTIONS = ("Stages", "Lens")
-CRAFT_SCOPE_ANCHOR = "gate's row"
 # The installer's flat name surface (`installer/planning.py`): one
 # deterministic path per canonical name, which is the spelling a launch
 # hands a child for the kernel contract its applied skill is a method of.
@@ -149,36 +144,6 @@ def _dependency_paths(loaded: dict, ticket_path: Path) -> list:
     ]
 
 
-def _craft_scope(path: Path):
-    """The craft's own verification-scope sentence, or None.
-
-    A mechanical quote: the bullet in the craft's `## Stages` (or `## Lens`)
-    that names the gate's row. A craft that declares no scope gets no quote,
-    and the prompt's standing line answers alone.
-    """
-
-    text, failure = _read_utf8(path, "pack craft")
-    if failure is not None:
-        return None
-    section = None
-    bullet = []
-    for line in [*text.splitlines(), "## "]:
-        starts = line.startswith("## ") or line.lstrip().startswith("- ") or not line.strip()
-        if starts and bullet:
-            sentence = re.sub(r"\s+", " ", " ".join(bullet)).strip()
-            if CRAFT_SCOPE_ANCHOR in sentence:
-                return sentence
-            bullet = []
-        if line.startswith("## "):
-            section = line[3:].strip()
-        elif section in CRAFT_SCOPE_SECTIONS and line.strip():
-            if line.lstrip().startswith("- "):
-                bullet = [line.strip()[2:]]
-            elif bullet:
-                bullet.append(line.strip())
-    return None
-
-
 def _workspace_line(path: Path):
     """The craft's own `## Workspace` sentence, collapsed to one line, or None.
 
@@ -196,16 +161,15 @@ def _workspace_line(path: Path):
 
 
 def _craft(pack):
-    """`(craft_path, scope_sentence, workspace_line)` for the stamped pack,
-    or `(None, None, None)`."""
+    """`(craft_path, workspace_line)` for the stamped pack, or `(None, None)`."""
 
     if not str(pack or "").strip():
-        return None, None, None
+        return None, None
     try:
         path = craft_path(pack)
     except AdapterError:
-        return None, None, None
-    return str(path), _craft_scope(path), _workspace_line(path)
+        return None, None
+    return str(path), _workspace_line(path)
 
 
 def _skill_path(executor):
@@ -354,7 +318,7 @@ def commits_in_place(pack) -> bool:
     its bytes to survive.
 
     True for every adapter whose identity is a commit or a document
-    revision one records (git, git-plus-render, document-tree); false only
+    revision one records (git, document-tree); false only
     for evidence-store, whose identity is a lane packet with no commit
     behind it. Kept separate from `git_candidate`: a document-tree child
     commits but the landing merges no branch for it, so the launch's
@@ -468,7 +432,7 @@ def dispatch_assignment(rest, *, attempt=None):
         return {"error": "dispatch requires the child identity through --by when it differs from the dispatch attempt owner"}
     role, _profile = resolved_role_profile(executor, loaded.get("profile"))
     pack = loaded.get("pack")
-    craft, scope, workspace_line = _craft(pack)
+    craft, workspace_line = _craft(pack)
     applied = _applied_skill(loaded)
     return {"assignment": {
         "applied_skill": None if applied is None else applied["name"],
@@ -478,7 +442,6 @@ def dispatch_assignment(rest, *, attempt=None):
         "assignment_seal": None if attempt is None else attempt["assignment_seal"],
         "commits_in_place": commits_in_place(pack),
         "craft": craft,
-        "craft_scope": scope,
         "dependencies": _dependency_paths(loaded, ticket_path),
         "dispatch_id": None if attempt is None else attempt["dispatch_id"],
         "executor": executor,

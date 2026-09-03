@@ -136,8 +136,6 @@ class TestCraftSections(_IsolatedTree):
             f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
             "| cell | binding |\n| --- | --- |\n"
             f"| adapter | {adapter} |\n"
-            "| stages | [stage] |\n"
-            "| assembly | none |\n"
             "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
         )

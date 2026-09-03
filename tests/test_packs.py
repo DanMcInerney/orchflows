@@ -105,14 +105,10 @@ class PackResolutionTests(unittest.TestCase):
 
         self.assertEqual("orch-code-pack", result["pack"])
         self.assertEqual("lib", result["scope"])
-        self.assertEqual(
-            {"adapter", "assembly", "craft", "stages"},
-            set(result["cells"]),
-        )
+        self.assertEqual({"adapter", "craft"}, set(result["cells"]))
         self.assertNotIn("executor", result["cells"])
         self.assertRegex(result["digest"], r"^sha256:[0-9a-f]{64}$")
         self.assertEqual("git", result["cells"]["adapter"])
-        self.assertIsInstance(result["cells"]["stages"], list)
 
     def test_a_referenced_byte_changes_the_digest(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -308,7 +304,7 @@ class PackResolutionTests(unittest.TestCase):
             )
 
     def test_cells_returns_every_cell_of_the_resolved_digest(self):
-        """One projection: every verb reads the same four cells and the
+        """One projection: every verb reads the same two cells and the
         whole craft document behind them — there is no lane to omit a
         section from."""
 
@@ -316,7 +312,7 @@ class PackResolutionTests(unittest.TestCase):
 
         projected = packs.cells_for(resolved["digest"], canonical_root=PACKS)
 
-        self.assertEqual({"adapter", "assembly", "craft", "stages"}, set(projected["cells"]))
+        self.assertEqual({"adapter", "craft"}, set(projected["cells"]))
         self.assertEqual("orch-code-pack", projected["pack"])
         self.assertEqual(resolved["digest"], projected["digest"])
         self.assertNotIn("for", projected)
@@ -365,7 +361,7 @@ class PackResolutionTests(unittest.TestCase):
         )
         self.assertEqual(0, projected.returncode, projected.stderr)
         self.assertEqual(
-            {"adapter", "assembly", "craft", "stages"},
+            {"adapter", "craft"},
             set(json.loads(projected.stdout)["cells"]),
         )
         lane = subprocess.run(

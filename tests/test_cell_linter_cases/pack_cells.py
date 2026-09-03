@@ -46,32 +46,6 @@ def validate_the_real_tree():
         )
     return _REAL_TREE_RUN
 
-# The four packs whose `assembly` cell the form has to admit. Named as
-# directories, and read out of their own signature tables below: a copy of
-# the cells here would be a second owner of every gloss, and would stop
-# grading the tree the moment a pack reworded one.
-REAL_PACKS = frozenset({
-    "orch-code-pack",
-    "orch-content-pack",
-    "orch-data-pack",
-    "orch-design-pack",
-    "orch-research-pack",
-})
-
-# The signature table's `assembly` row. The row label is the anchor; what
-# stands to the right of it is the pack's own to write.
-ASSEMBLY_ROW = re.compile(r"^\| assembly \| (.+?) \|\s*$", re.M)
-
-
-def real_assembly_cells():
-    """Every pack's `assembly` cell, keyed by pack directory."""
-
-    return {
-        skill.parent.name: ASSEMBLY_ROW.findall(skill.read_text(encoding="utf-8"))
-        for skill in sorted((ROOT / "packs").glob("*/SKILL.md"))
-    }
-
-
 PACK_TEMPLATE = """---
 name: {name}
 description: synthetic pack built beside the tree to exercise one validator branch.
@@ -82,8 +56,6 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | cell | binding |
 | --- | --- |
 | adapter | git |
-| stages | [stage] |
-| assembly | {assembly} |
 | craft | [references/craft.md](references/craft.md) |
 """
 
@@ -155,9 +127,9 @@ class _IsolatedTree(unittest.TestCase):
             text=True,
         )
 
-    def _write_pack(self, name, assembly=None, workspace="inline: none",
+    def _write_pack(self, name, workspace="inline: none",
                     sections=None, entries=None, lead=""):
-        """One synthetic folded pack: a 4-cell SKILL.md plus a craft.md
+        """One synthetic folded pack: a two-cell SKILL.md plus a craft.md
         carrying every mandatory section and every `## Lens` entry
         (validate_craft_sections errors on a missing one, and on a Lens key
         the pack's adapter never emits). `sections` overrides a section's
@@ -166,10 +138,7 @@ class _IsolatedTree(unittest.TestCase):
         pack_dir = self.tmp_path / "packs" / name
         (pack_dir / "references").mkdir(parents=True)
         (pack_dir / "SKILL.md").write_text(
-            PACK_TEMPLATE.format(
-                name=name,
-                assembly="none" if assembly is None else assembly,
-            ),
+            PACK_TEMPLATE.format(name=name),
             encoding="utf-8",
         )
         bodies = {
@@ -200,49 +169,6 @@ class _IsolatedTree(unittest.TestCase):
         (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
 
 
-class TestAssemblyForm(_IsolatedTree):
-    def test_bare_none_is_accepted(self):
-        self._write_pack("noglosspack", assembly="none")
-        result = self._run()
-        self.assertNotIn("assembly cell", result.stdout)
-
-    def test_backticked_none_is_rejected(self):
-        self._write_pack("tickednonepack", assembly="`none`")
-        self.assertIn("assembly cell", self._run().stdout)
-
-    def test_free_prose_is_rejected(self):
-        self._write_pack("prosepack", assembly="the tree is the assembly")
-        self.assertIn("assembly cell", self._run().stdout)
-
-    def test_hyphen_instead_of_an_em_dash_is_rejected(self):
-        self._write_pack("hyphenpack", assembly="none - the tree is the assembly")
-        self.assertIn("assembly cell", self._run().stdout)
-
-    def test_empty_cell_is_rejected(self):
-        self._write_pack("emptypack", assembly="")
-        self.assertIn("assembly cell", self._run().stdout)
-
-    def test_the_two_legal_forms_are_accepted(self):
-        self._write_pack("glosspack", assembly="none")
-        self._write_pack("skillpack", assembly="stage")
-        self.assertNotIn("assembly cell", self._run().stdout)
-
-    def test_every_real_pack_row_is_accepted(self):
-        cells = real_assembly_cells()
-        self.assertEqual(REAL_PACKS, set(cells))
-        for pack, rows in sorted(cells.items()):
-            with self.subTest(pack=pack):
-                self.assertEqual(1, len(rows), rows)
-                self.assertTrue(validate.assembly_form_ok(rows[0]), rows[0])
-
-    def test_the_real_tree_reports_no_assembly_form_error(self):
-        result = validate_the_real_tree()
-        # Without the returncode, a validate.py that died before printing
-        # anything satisfies the assertNotIn: no output contains no finding.
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertNotIn("assembly cell", result.stdout)
-
-
 class CurrentWorkspaceBindingTest(unittest.TestCase):
     EXPECTED = {
         "orch-code-pack": (
@@ -265,9 +191,9 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
             ),
         ),
         "orch-design-pack": (
-            "git-plus-render",
+            "git",
             (
-                "git plus render:", "identities are view identities",
+                "git:", "the pair is the view identity",
                 "fresh captures", "render conflicts",
             ),
         ),
@@ -452,10 +378,10 @@ class TestCellDuplication(_IsolatedTree):
         self.assertNotIn(NEAR, out)
 
 
-class TestMandatedEchoExemption(_IsolatedTree):
-    """Echoes an owner outside the pack mandates, so two packs carrying
-    them carry them by obligation. The pairs below have the real tree's
-    shape with the domain nouns swapped for synthetic ones."""
+class TestOutsideCitationExemption(_IsolatedTree):
+    """An echo that cites an owner outside the pack, so two packs carrying
+    it carry it by obligation. The pair below has the real tree's shape
+    with the domain noun swapped for a synthetic one."""
 
     # packs/*/references/craft.md's shared opener: a sentence citing the
     # owner outside the pack (`](../`), which every craft may carry once
@@ -465,10 +391,10 @@ class TestMandatedEchoExemption(_IsolatedTree):
         "[rules/token-economy.md](../../../rules/token-economy.md) §10's."
     )
 
-    def test_the_outside_citation_and_typed_atoms_are_exempt(self):
-        self._write_pack("openerapack", assembly="none",
+    def test_the_outside_citation_is_exempt(self):
+        self._write_pack("openerapack",
                          sections={"Vocabulary": self.CITATION % "alpha"})
-        self._write_pack("openerbpack", assembly="stage",
+        self._write_pack("openerbpack",
                          sections={"Vocabulary": self.CITATION % "beta"})
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)

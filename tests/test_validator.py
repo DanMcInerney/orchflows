@@ -70,8 +70,7 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
         (pack / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: synthetic pack\n---\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| adapter | git |\n| stages | [stage] |\n"
-            "| assembly | none |\n"
+            "| adapter | git |\n"
             "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
         )
@@ -209,8 +208,8 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         rows = (
             "| slicing | inline |\n| workspace | inline |\n"
             "| required_spec_fields | inline |\n| craft | inline |\n"
-            "| adapter | git |\n| adapter | git |\n| stages | [stage] |\n"
-            "| assembly | none |\n| evidence | inline |"
+            "| adapter | git |\n| adapter | git |\n"
+            "| evidence | inline |"
         )
         self._write_pack(
             "orch-duplicate-pack",

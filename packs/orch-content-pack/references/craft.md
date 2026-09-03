@@ -105,6 +105,4 @@ Weigh in listed order.
 - Assembly is terminal and deterministic: name every included section,
   resolve ordering and duplicate jobs, and emit one document identity.
 - Re-read the skim layer and verify the landing against the opening hook.
-- Run the narrow affected document checks; the full suite is the gate's row,
-  never a unit's.
 - Hand off the revision number, length tally, citations, and recorded cuts.

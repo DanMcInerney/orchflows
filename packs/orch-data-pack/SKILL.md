@@ -8,6 +8,4 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | cell | binding |
 | --- | --- |
 | adapter | git |
-| stages | [analyze, reproduce] |
-| assembly | reproduce |
 | craft | [references/craft.md](references/craft.md) |

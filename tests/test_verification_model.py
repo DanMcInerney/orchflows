@@ -36,8 +36,10 @@ class GoalEvidenceContractTest(unittest.TestCase):
     def test_execute_consumes_pack_craft_and_records_post_work_evidence(self):
         execute = read("skills/kernel/orch-do/SKILL.md")
         self.assertIn("whole craft document", execute)
-        self.assertRegex(execute, r"Details prescribes[\s\S]*deviate and\s+report")
-        self.assertRegex(execute, r"Stream the\s+executor record")
+        # The Details prescribe/deviate rule is contracts/work-item.md's and
+        # the launch prompt's; a third copy here was the same law thrice.
+        self.assertNotIn("Details prescribes", execute)
+        self.assertRegex(execute, r"Stream the\s+executor\s+record")
         self.assertIn("reserved outcome", execute)
         result_contract = " ".join(read("contracts/result.md").split())
         self.assertIn("do not change the semantic assignment digest", result_contract)
