@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2337,
+  "count": 2342,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -698,6 +698,7 @@
    "test_orchflows_cli.CheckTests.test_a_sheet_carrying_a_pack_only_section_is_refused",
    "test_orchflows_cli.CheckTests.test_a_workflow_body_over_the_tier_budget_is_refused",
    "test_orchflows_cli.CheckTests.test_the_ring_defaults_to_this_project_then_the_home_ring",
+   "test_orchflows_cli.ListTests.test_a_library_workflow_is_listed_once_and_only_as_a_workflow",
    "test_orchflows_cli.ListTests.test_a_sheet_is_listed_like_every_other_ring_item",
    "test_orchflows_cli.ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
    "test_orchflows_cli.ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
@@ -839,9 +840,12 @@
    "test_rings.ReservationAndShadowTests.test_a_reserved_ring_name_refuses_loudly_rather_than_never_running",
    "test_rings.ReservationAndShadowTests.test_the_library_keeps_its_own_reserved_names",
    "test_rings.RingOrderTests.test_a_bare_packs_ancestor_directory_is_not_a_root",
+   "test_rings.RingOrderTests.test_a_name_nowhere_keeps_the_plain_unresolved_refusal",
+   "test_rings.RingOrderTests.test_a_reusable_workflow_resolves_as_a_workflow_and_not_as_a_skill",
    "test_rings.RingOrderTests.test_a_reusable_workflow_shadows_a_gallery_name",
+   "test_rings.RingOrderTests.test_a_skill_sublayer_beside_the_workflow_home_still_resolves",
    "test_rings.RingOrderTests.test_a_workflow_reads_workflows_in_a_ring_and_example_workflows_in_lib",
-   "test_rings.RingOrderTests.test_lib_skills_expand_one_sublayer",
+   "test_rings.RingOrderTests.test_lib_skills_expand_every_sublayer_but_the_workflow_home",
    "test_rings.RingOrderTests.test_lib_workflows_search_the_skills_tier_before_the_gallery",
    "test_rings.RingOrderTests.test_missing_home_roots_do_not_break_resolution",
    "test_rings.RingOrderTests.test_the_home_ring_is_never_read_as_a_project_ring",
@@ -1080,6 +1084,7 @@
    "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_second_line_binds_the_ticket_to_the_kernel_contract",
    "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_stamp_moves_the_first_line_and_adds_exactly_one",
    "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_kernel_verb_is_refused_as_an_applied_skill",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_library_workflow_is_refused_as_the_workflow_it_is",
    "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_matching_role_mints_on_each_verb",
    "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_planner_skill_is_refused_on_do",
    "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_skill_declaring_no_role_is_refused_rather_than_assumed",
@@ -2340,7 +2345,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "ac681721bf6fe089d5d30ecd9fc424e2c2479f3527a6bff1ab7a98960ccc2ac1"
+  "sha256": "cec890ea73a4d5af6d7e3eefbc94f43a76dce0b4f89b5ce3a8d9d36f24070bda"
  },
  "mutation_owners": [
   {
@@ -4172,6 +4177,14 @@
   {
    "module": "tests.test_orchflows_cli",
    "owner": "CheckTests.test_the_ring_defaults_to_this_project_then_the_home_ring",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "ListTests.test_a_library_workflow_is_listed_once_and_only_as_a_workflow",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"

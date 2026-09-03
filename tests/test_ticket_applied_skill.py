@@ -36,6 +36,18 @@ ROLELESS_SKILL = "house-notes"
 STAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
 
 
+def library_workflow() -> str:
+    """One shipped reusable workflow's name, read from the home the
+    resolver owns rather than spelled here: the case is about the kind,
+    not about which workflow happens to ship today."""
+
+    home = rings.lib_root() / "skills" / "workflows"
+    for path in sorted(home.iterdir()):
+        if (path / rings.MANIFESTS["workflow"]).is_file():
+            return path.name
+    raise AssertionError(f"{home} ships no reusable workflow to apply")
+
+
 class AppliedSkillTest(CallableSinkTest):
     """A home ring holding one skill per role, and one declaring none."""
 
@@ -114,6 +126,22 @@ class AppliedSkillRefusalTest(AppliedSkillTest):
     def test_a_matching_role_mints_on_each_verb(self):
         self.assertNotIn("error", self.do("--skill", WORKER_SKILL))
         self.assertNotIn("error", self.judge("--skill", PLANNER_SKILL))
+
+    def test_a_library_workflow_is_refused_as_the_workflow_it_is(self):
+        """`skills/workflows` sits inside the skills tier, so a body there
+        used to answer to kind `skill` too and arrive at the role door --
+        which reads a workflow's deliberate silence as a missing field.
+        The kind is the refusal: a workflow is prose the driver runs in its
+        own context, never a method a child is handed."""
+
+        name = library_workflow()
+
+        answer = self.do("--skill", name, expect_error=True)
+
+        self.assertIn(name, answer["error"])
+        self.assertIn("workflow", answer["error"])
+        self.assertNotIn("declares role", answer["error"])
+        self.assertFalse(self.run_dir().exists())
 
     def test_an_unresolvable_skill_is_refused_by_name(self):
         answer = self.do("--skill", "no-such-skill", expect_error=True)
