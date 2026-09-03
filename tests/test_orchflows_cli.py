@@ -1,4 +1,10 @@
-"""The ring commands: home layout, pinned imports, scaffolds, inventory, trust."""
+"""The ring commands: home layout, pinned imports, scaffolds, inventory, trust.
+
+`check` is the one verb whose cases live in their own module beside this
+one: it grades a whole ring against the compiler rather than moving one
+ring file, and it brings its own fixture ring with it. `_home` and `_run`
+are shared from here.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +20,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import orchflows, orchflows_home, orchflows_scaffold, rings, rings_trust, state_root
-from tools.validate_support.common import BODY_BUDGET
 
 
 from tests._repo_root import ROOT
@@ -272,143 +277,6 @@ class NewTests(unittest.TestCase):
 
             self.assertEqual(1, code)
             self.assertFalse((home / "skills" / "orch-widget").exists())
-
-
-class CheckTests(unittest.TestCase):
-    """`orchflows check`: the compiler's item checks over a ring.
-
-    The valid case is built by the product's own scaffolds rather than by
-    hand, so the pass is the claim `scripts/orchflows_scaffold.py` makes --
-    what `orchflows new` writes is valid the day it is written -- read back
-    through the checker that would refuse it. Each refusal case then mutates
-    that same ring in exactly one place, so a green reading here is the
-    can-fail one: the ring goes red for the mutation and nothing else.
-    """
-
-    def _ring(self, home: Path) -> Path:
-        """A home ring holding one scaffolded item of every kind."""
-
-        (home / "nowhere").mkdir(exist_ok=True)
-        with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
-            for kind, name in (
-                ("skill", "helper"), ("pack", "widget-pack"),
-                ("workflow", "team-flow"), ("sheet", "market-brief"),
-            ):
-                code, output = _run("new", kind, name)
-                self.assertEqual(0, code, output)
-        return home
-
-    def _check(self, home: Path, *argv):
-        elsewhere = home / "nowhere"
-        with patch.object(rings.Path, "cwd", return_value=elsewhere), \
-                patch.object(orchflows.Path, "cwd", return_value=elsewhere):
-            return _run("check", *argv)
-
-    def test_a_scaffolded_home_ring_passes_every_item_check(self):
-        with _home() as home:
-            self._ring(home)
-
-            code, output = self._check(home, str(home))
-
-            self.assertEqual(0, code, output)
-            self.assertNotIn("ERROR", output)
-            self.assertIn(f"ring: {home}", output)
-            self.assertIn("skill 1, pack 1, workflow 1, sheet 1", output)
-
-    def test_a_sheet_carrying_a_pack_only_section_is_refused(self):
-        with _home() as home:
-            self._ring(home)
-            manifest = home / "sheets" / "market-brief" / "SHEET.md"
-            manifest.write_text(
-                manifest.read_text(encoding="utf-8") + "\n## Workspace\n\nMine.\n",
-                encoding="utf-8",
-            )
-
-            code, output = self._check(home, str(home))
-
-            self.assertEqual(1, code, output)
-            self.assertIn("sheets/market-brief/SHEET.md", output)
-            self.assertIn("'## Workspace' is the pack's", output)
-
-    def test_a_workflow_body_over_the_tier_budget_is_refused(self):
-        with _home() as home:
-            self._ring(home)
-            manifest = home / "workflows" / "team-flow" / "SKILL.md"
-            padding = " ".join(["padding"] * (BODY_BUDGET["workflows"] + 1))
-            manifest.write_text(
-                manifest.read_text(encoding="utf-8") + "\n" + padding + "\n",
-                encoding="utf-8",
-            )
-
-            code, output = self._check(home, str(home))
-
-            self.assertEqual(1, code, output)
-            self.assertIn("workflows/team-flow/SKILL.md", output)
-            self.assertIn(
-                f"exceeds the workflow-tier budget of {BODY_BUDGET['workflows']}",
-                output,
-            )
-
-    def test_a_call_edge_that_resolves_to_nothing_is_refused(self):
-        """A ring item's edges point out of the ring, so the checker grades
-        them against every name that resolves from here. The library verb
-        both bodies name has to pass on the same reading that refuses the
-        typo beside it, or the check would be measuring the ring alone."""
-
-        with _home() as home:
-            self._ring(home)
-            manifest = home / "workflows" / "team-flow" / "SKILL.md"
-            manifest.write_text(
-                manifest.read_text(encoding="utf-8")
-                + "\nCalls `orch-do` and `orch-nonesuch`.\n",
-                encoding="utf-8",
-            )
-
-            code, output = self._check(home, str(home))
-
-            self.assertEqual(1, code, output)
-            self.assertIn(
-                "backtick reference `orch-nonesuch` does not resolve", output,
-            )
-            self.assertNotIn("`orch-do` does not resolve", output)
-
-    def test_the_ring_defaults_to_this_project_then_the_home_ring(self):
-        with _home() as home, tempfile.TemporaryDirectory() as raw:
-            self._ring(home)
-            project = Path(raw).resolve()
-            (project / ".git").mkdir(parents=True)
-            (project / ".orchflows" / "skills").mkdir(parents=True)
-
-            code, at_home = self._check(home)
-            self.assertEqual(0, code, at_home)
-            self.assertIn(f"ring: {home}", at_home)
-
-            with patch.object(rings.Path, "cwd", return_value=project), \
-                    patch.object(orchflows.Path, "cwd", return_value=project):
-                code, in_project = _run("check")
-
-            self.assertEqual(0, code, in_project)
-            self.assertIn(f"ring: {project / '.orchflows'}", in_project)
-
-    def test_a_directory_holding_a_ring_is_read_as_that_ring(self):
-        with _home() as home, tempfile.TemporaryDirectory() as raw:
-            project = Path(raw).resolve()
-            (project / ".orchflows" / "workflows").mkdir(parents=True)
-
-            code, output = self._check(home, str(project))
-
-            self.assertEqual(0, code, output)
-            self.assertIn(f"ring: {project / '.orchflows'}", output)
-
-    def test_a_ring_that_is_not_there_is_named_rather_than_passed(self):
-        with _home() as home:
-            missing = home / "no-such-ring"
-
-            with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
-                (home / "nowhere").mkdir(exist_ok=True)
-                code = orchflows.main(["check", str(missing)])
-
-            self.assertEqual(1, code)
 
 
 class ListTests(unittest.TestCase):
