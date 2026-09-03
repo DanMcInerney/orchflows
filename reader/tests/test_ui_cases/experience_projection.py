@@ -1,13 +1,35 @@
 """Cross-layer contract for the rendered observability experience substrate."""
 
+import contextlib
 import hashlib
+import io
 import json
+import re
 
 from reader.tests.test_ui_cases._web import *  # noqa: F401,F403
 
 import reader.scripts.ui_experience as experience
 import reader.scripts.ui_readiness as readiness
+import reader.tools.ui_frontend as ui_frontend
 from reader.scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
+
+
+def frontend_subcommands() -> set:
+    """The visual harness's subcommand names, taken from its own parser.
+
+    ``main`` with an empty argv exits on the missing positional and argparse
+    prints the choice list it derived from the subparsers -- so this reads
+    the program's answer rather than its source.
+    """
+
+    usage = io.StringIO()
+    with contextlib.redirect_stderr(usage), contextlib.redirect_stdout(io.StringIO()):
+        with contextlib.suppress(SystemExit):
+            ui_frontend.main([])
+    choices = re.search(r"\{([^}]+)\}", usage.getvalue())
+    if choices is None:  # loud, not a silently empty set
+        raise AssertionError("ui_frontend usage names no subcommands: " + usage.getvalue())
+    return set(choices.group(1).split(","))
 
 
 class ExperienceFoundationContractTests(unittest.TestCase):
@@ -191,7 +213,6 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         shell = (ROOT / "reader" / "web" / "src" / "app" / "shell" / "Shell.tsx").read_text(encoding="utf-8")
         composition = (ROOT / "reader" / "web" / "src" / "app" / "shell" / "featureCatalog.ts").read_text(encoding="utf-8")
         application_catalog = (ROOT / "reader" / "web" / "src" / "app" / "catalog.ts").read_text(encoding="utf-8")
-        harness = (ROOT / "reader" / "tools" / "ui_frontend.py").read_text(encoding="utf-8")
         experience_harness = (ROOT / "reader" / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
         self.assertEqual('import { Shell } from "./app/shell/Shell";\n\nexport function ObserveApp() {\n  return <Shell />;\n}\n', app)
         self.assertIn('data-mode="observe"', shell)
@@ -218,8 +239,14 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             "/workflows/evolve/sources/src_campaign",
         ):
             self.assertTrue(experience.is_spa_path(path), path)
-        for command in ('add_parser("capture")', 'add_parser("audit")', 'add_parser("diff")'):
-            self.assertIn(command, harness)
+        # The visual harness's subcommands, read off the parser it builds
+        # rather than off its source: `main` with no command prints the
+        # choice list argparse itself derived, so a subcommand that was
+        # renamed or dropped changes this set instead of only this grep.
+        self.assertEqual(
+            {"verify-build", "audit-licenses", "smoke", "capture", "audit", "diff"},
+            frontend_subcommands(),
+        )
         for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):
             self.assertIn(scenario, experience_harness)
 

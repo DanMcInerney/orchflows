@@ -41,27 +41,13 @@ LITERAL_ROOT_TOKENS = ("~/.orchflows/state", state_root.ENV_VAR)
 # §6 a two-file change.
 SINK_ROOT_CLAUSES = ("user-scope state sink",) + LITERAL_ROOT_TOKENS
 
-# The two subdirectories a repository keeps, and nothing else (spec A15).
-REPOSITORY_ORCH_SUBDIRECTORIES = frozenset({"canary/", "bin/"})
+# The one subdirectory a repository keeps, and nothing else (spec A15).
+REPOSITORY_ORCH_SUBDIRECTORIES = frozenset({"bin/"})
 
 # Vocabulary terms whose definition names a location: each must resolve to
 # the sink, since `docs/vocabulary.md` owns every library term of art and a
 # term defined against the old place makes every correct use of it wrong.
 SINK_TERMS = ("tracker", "friction log", "run state")
-
-# The files outside this item's `write_scope` that name `.orch`
-# legitimately — the canary is a git-tracked golden fixture and `bin/` is an
-# installed script directory, neither of them state. What is pinned is how
-# many times each names it and which path each names, never the sentence
-# doing the naming: a second mention appearing in either file is the
-# regression, and the sentence around the path is its file's to reword. The
-# third file was `skills/kernel/orch-mechanize/SKILL.md`, deleted at P3: the
-# run-local `.orch/bin/` landing zone is rules/token-economy.md §4's to
-# state, and a skill body no longer restates it.
-CANARY_AND_BIN_MENTIONS = {
-    "example-workflows/drift-canary/SKILL.md": 1,
-}
-CANARY_PATH = "`.orch/canary/`"
 
 # The one file carrying the friction-law fallback: the instruction a blocked
 # agent follows when the logger cannot run. Stale, it loses evidence in
@@ -191,14 +177,14 @@ class TestTheLawNamesTheSinkRoot(unittest.TestCase):
         self.assertIn("`scripts/state_root.py`", self.section)
 
 
-class TestRepositoryKeepsTwoSubdirectories(unittest.TestCase):
-    """Spec A15: `.orch/` holds the canary and, project-scope, `bin/`."""
+class TestRepositoryKeepsOneSubdirectory(unittest.TestCase):
+    """Spec A15: `.orch/` holds, project-scope, `bin/` and nothing else."""
 
     def setUp(self):
         self.bullet = block_starting("ARCHITECTURE.md", "- `.orch/`")
         self.assertTrue(self.bullet, "ARCHITECTURE.md has no `.orch/` bullet")
 
-    def test_the_bullet_names_canary_and_bin_and_no_third_subdirectory(self):
+    def test_the_bullet_names_bin_and_no_second_subdirectory(self):
         named = {
             token for token in TOKEN.findall(self.bullet)
             if token.endswith("/") and token != ".orch/"
@@ -255,18 +241,14 @@ class TestFrictionFallbackNamesTheSink(unittest.TestCase):
 
 
 class TestOnlyCanaryAndBinMentionsSurvive(unittest.TestCase):
-    """What may still say `.orch`: a golden fixture and an install target."""
+    """What may still say `.orch`: the install target, and history.
 
-    def test_the_out_of_scope_files_name_the_canary_path_and_nothing_else(self):
-        for relpath, expected in CANARY_AND_BIN_MENTIONS.items():
-            with self.subTest(document=relpath):
-                found = [
-                    line for line in doc(relpath).splitlines()
-                    if ORCH_MENTION.search(line)
-                ]
-                self.assertEqual(expected, len(found), found)
-                for line in found:
-                    self.assertIn(CANARY_PATH, line)
+    `bin/` is the live exception -- an installed script directory, not
+    state. `canary` is the historical one: the golden-fixture tree it named
+    is deleted, and the reviews and specs that recorded the deletion still
+    spell the path. Neither sends a reader to `.orch/` for run state, which
+    is the whole of what this class refuses.
+    """
 
     def test_every_surviving_mention_names_canary_or_bin(self):
         stray = []

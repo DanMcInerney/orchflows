@@ -48,7 +48,6 @@ BASE_ONLY = frozenset({
     "test_cell_linter_cases.pack_cells._IsolatedTree",
     "test_friction_cases.common._IsolatedRepoTestCase",
     "test_friction_cases.storage._ProvenanceTestCase",
-    "test_migrate_state_cases.common.MigrationCase",
     "test_state_root_cases.support.SinkFixture",
 })
 

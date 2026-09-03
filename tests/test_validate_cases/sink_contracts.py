@@ -171,8 +171,10 @@ class TestWorklogStatesRunIdentity(unittest.TestCase):
     cannot drift in either direction."""
 
     def block(self):
-        text = (ROOT / "scripts" / "tickets.py").read_text(encoding="utf-8")
-        docstring = text.split('"""', 2)[1]
+        # The module's own docstring, not its file read back as text: the
+        # statement graded here is an attribute of the loaded writer, and
+        # reading it that way keeps this check off the `.py` bytes.
+        docstring = tickets_mod.__doc__ or ""
         self.assertIn(RUN_JSON_MARKER, docstring, "tickets.py's docstring does not state run.json's path")
         return docstring.split(RUN_JSON_MARKER, 1)[1].replace("``", "`")
 

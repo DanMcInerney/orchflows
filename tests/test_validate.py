@@ -20,7 +20,7 @@ from tests.test_validate_cases.sink_law import (
     TestFrictionFallbackNamesTheSink,
     TestOnlyCanaryAndBinMentionsSurvive,
     TestOneProseOwnerForThePath,
-    TestRepositoryKeepsTwoSubdirectories,
+    TestRepositoryKeepsOneSubdirectory,
     TestTheLawNamesTheSinkRoot,
     TestVocabularyResolvesToTheSink,
 )

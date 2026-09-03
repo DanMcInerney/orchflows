@@ -63,26 +63,74 @@ def tearDownModule():
             shutil.rmtree(root)
 
 
-def built_runtime_template() -> Path:
-    """One really-built private runtime, kept for this process to copy from.
+LIVE_PYPI = os.environ.get("ORCHFLOWS_LIVE_PYPI") == "1"
+LIVE_PYPI_ONLY = "reaches PyPI; set ORCHFLOWS_LIVE_PYPI=1 to run it"
 
-    A build is ``ensurepip`` plus a hash-locked dependency install -- 14s on
-    the author's host, 8s per test on the Windows leg -- and the lifecycle
-    cases asked for ten of them. What those cases grade is policy: reuse,
-    repair, refuse, uninstall retention, receipt state. None of it is about
-    how the runtime was made, and a copy of a real one satisfies the same
+
+def _seed_offline_runtime(template: Path) -> None:
+    """Build a runtime the health predicate accepts without reaching PyPI.
+
+    ``private_runtime_is_healthy`` asks three questions: does the interpreter
+    exist, does the metadata file match ``_runtime_metadata()``, and does the
+    interpreter report the exact direct dependency versions. The first two
+    are local facts. The third is answered here by writing the ``.dist-info``
+    directories ``importlib.metadata`` reads, rather than by installing the
+    packages -- so the predicate itself runs unpatched and unweakened, and
+    every case that copies this template grades the same predicate the
+    installer runs in production.
+    """
+
+    install.venv.EnvBuilder(symlinks=os.name != "nt", with_pip=False).create(template)
+    runtime_python = install.private_runtime_python(template)
+    purelib = Path(
+        subprocess.run(
+            [str(runtime_python), "-I", "-c",
+             "import sysconfig, sys; sys.stdout.write(sysconfig.get_paths()['purelib'])"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+    )
+    purelib.mkdir(parents=True, exist_ok=True)
+    for name, version in install._runtime._runtime_dependency_versions().items():
+        dist = purelib / "{0}-{1}.dist-info".format(name.replace("-", "_"), version)
+        dist.mkdir(parents=True, exist_ok=True)
+        (dist / "METADATA").write_text(
+            "Metadata-Version: 2.1\nName: {0}\nVersion: {1}\n".format(
+                name, version),
+            encoding="utf-8",
+        )
+    (template / install.RUNTIME_METADATA_FILENAME).write_text(
+        json.dumps(install._runtime_metadata(), sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def built_runtime_template() -> Path:
+    """One private runtime, kept for this process to copy from.
+
+    A real build is ``ensurepip`` plus a hash-locked dependency install --
+    14s on the author's host, 8s per test on the Windows leg, and a network
+    round trip that turns an offline or rate-limited PyPI into a red suite --
+    and the lifecycle cases asked for ten of them. What those cases grade is
+    policy: reuse, repair, refuse, uninstall retention, receipt state. None
+    of it is about how the runtime was made, and a copy satisfies the same
     health probe at any path, which is asserted here before any copy is made.
 
-    The builder's own output stays covered by the two cases that grade it:
+    ``ORCHFLOWS_LIVE_PYPI=1`` makes that one template a real build; without
+    it the template is seeded locally and the suite makes no network call.
+    The two cases that grade the builder's own output against a real PyPI --
     the symlinked base interpreter, and the end-to-end install run out of an
-    active project venv. Both keep calling the real builder.
+    active project venv -- carry the flag themselves. The third, the
+    hash-locked pip command, grades the command and never runs it.
     """
 
     if "runtime_template" not in _SHARED:
         root = Path(tempfile.mkdtemp(prefix="orchflows-runtime-template-"))
         _SHARED["runtime_template_root"] = root
         template = root / "runtime"
-        install._build_private_runtime(template)
+        if LIVE_PYPI:
+            install._build_private_runtime(template)
+        else:
+            _seed_offline_runtime(template)
         if not install.private_runtime_is_healthy(template):
             raise RuntimeError("runtime template is unhealthy; refusing to seed copies")
         _SHARED["runtime_template"] = template

@@ -26,6 +26,8 @@ class RuntimeVenvTests(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def test_user_install_uses_private_runtime_when_project_venv_is_active(self):
+        if not LIVE_PYPI:
+            self.skipTest(LIVE_PYPI_ONLY)
         install.venv.EnvBuilder(symlinks=os.name != "nt", with_pip=False).create(
             self.project_runtime
         )
@@ -87,6 +89,8 @@ class RuntimeVenvTests(unittest.TestCase):
         hosts where copying is fatal.
         """
 
+        if not LIVE_PYPI:
+            self.skipTest(LIVE_PYPI_ONLY)
         if os.name == "nt":
             self.skipTest("Windows venvs copy: symlinking there needs a privilege")
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):

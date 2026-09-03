@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2355,
+  "count": 2138,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -250,7 +250,6 @@
    "test_fact_registry.TestOneDequotingPrimitive.test_the_owner_is_reached_by_its_public_name",
    "test_fact_registry.TestOneDequotingPrimitive.test_the_primitive_removes_padding_inside_the_backticks_too",
    "test_fact_registry.TestOneOwnerPerEnumAndMapping.test_checkable_statuses_is_defined_once_and_imported",
-   "test_fact_registry.TestOneOwnerPerEnumAndMapping.test_the_dirty_path_walk_has_one_owner",
    "test_fact_registry.TestOneOwnerPerEnumAndMapping.test_the_record_id_namespace_mapping_has_one_owner",
    "test_fact_registry.TestTheGeneratedEnumRatchet.test_a_collection_built_from_names_is_not_a_restatement",
    "test_fact_registry.TestTheGeneratedEnumRatchet.test_a_planted_restatement_is_refused_by_name",
@@ -572,35 +571,6 @@
    "test_installer.TestUnreadableReceipt.test_install_refuses_rather_than_overwriting_a_corrupt_receipt",
    "test_installer.TestUnreadableReceipt.test_load_json_returns_none_only_for_an_absent_file",
    "test_installer.TestUnreadableReceipt.test_uninstall_refuses_a_corrupt_receipt_rather_than_finding_none",
-   "test_isolate.IsolateTest.test_a_named_directory_is_overlaid_whole",
-   "test_isolate.IsolateTest.test_a_named_modified_path_carries_the_working_tree_bytes",
-   "test_isolate.IsolateTest.test_a_non_empty_destination_is_refused_without_force",
-   "test_isolate.IsolateTest.test_a_path_escaping_the_repository_is_refused",
-   "test_isolate.IsolateTest.test_a_path_in_neither_the_working_tree_nor_the_export_is_refused",
-   "test_isolate.IsolateTest.test_a_path_set_naming_a_deleted_file_removes_it_from_the_export",
-   "test_isolate.IsolateTest.test_a_renamed_directory_leaves_no_empty_ghost_behind",
-   "test_isolate.IsolateTest.test_a_run_directory_it_cannot_copy_is_refused_by_name",
-   "test_isolate.IsolateTest.test_an_empty_path_set_exports_the_revision_and_nothing_else",
-   "test_isolate.IsolateTest.test_an_excluded_prefix_is_a_path_prefix_not_a_string_prefix",
-   "test_isolate.IsolateTest.test_an_excluded_prefix_stays_at_the_revision",
-   "test_isolate.IsolateTest.test_an_interpreter_with_the_filter_says_nothing",
-   "test_isolate.IsolateTest.test_an_interpreter_without_the_tar_filter_names_the_downgrade",
-   "test_isolate.IsolateTest.test_an_orch_run_escaping_the_run_directory_is_refused",
-   "test_isolate.IsolateTest.test_an_orch_run_that_does_not_exist_is_refused_not_skipped",
-   "test_isolate.IsolateTest.test_an_unknown_revision_is_refused",
-   "test_isolate.IsolateTest.test_baseline_ignores_the_path_set_so_both_readings_share_a_harness",
-   "test_isolate.IsolateTest.test_baseline_validates_the_path_set_it_ignores",
-   "test_isolate.IsolateTest.test_dirty_takes_every_working_tree_change_including_a_rename",
-   "test_isolate.IsolateTest.test_the_named_run_is_copied_out_of_the_sink_git_never_held_it",
-   "test_isolate.IsolateTest.test_the_silent_case_is_skipped_where_the_interpreter_has_no_filter",
-   "test_isolate.TestIsolateCopiesFromSink.test_a_run_absent_from_the_sink_is_the_named_refusal",
-   "test_isolate.TestIsolateCopiesFromSink.test_a_run_in_the_sink_alone_is_copied_into_the_tree",
-   "test_isolate.TestIsolateCopiesFromSink.test_a_run_present_only_in_the_repository_is_refused",
-   "test_isolate.TestIsolateCopiesFromSink.test_several_runs_are_copied_and_each_keeps_its_own_directory",
-   "test_isolate.TestIsolateCopiesFromSink.test_the_report_names_where_the_snapshot_landed",
-   "test_isolate.TestIsolateCopiesFromSink.test_the_sink_is_read_and_never_written",
-   "test_isolate.TestIsolateCopiesFromSink.test_the_snapshot_keeps_the_sinks_own_layout",
-   "test_isolate.TestIsolateCopiesFromSink.test_the_source_names_no_state_path_of_its_own",
    "test_lens_key.LensKeyTest.test_a_judge_is_keyed_by_the_one_kind_on_its_context",
    "test_lens_key.LensKeyTest.test_a_judge_over_two_kinds_gets_no_key",
    "test_lens_key.LensKeyTest.test_a_making_do_citing_a_predecessor_keeps_its_adapter_kind",
@@ -638,37 +608,6 @@
    "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_the_dispatch_facade_tells_its_child_the_lock_is_held",
    "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_the_facade_really_starts_a_workspace_inside_its_own_run_lock",
    "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_the_stamp_derives_from_the_text_read_under_the_lock",
-   "test_migrate_state_cases.apply.TestLegacyFriction.test_a_category_free_entry_does_not_gain_one",
-   "test_migrate_state_cases.apply.TestLegacyFriction.test_a_historical_category_value_is_preserved",
-   "test_migrate_state_cases.apply.TestLegacyFriction.test_a_line_that_is_not_json_is_carried_across_unaltered",
-   "test_migrate_state_cases.apply.TestLegacyFriction.test_a_live_cwd_is_backfilled_and_the_duplicate_lands_once",
-   "test_migrate_state_cases.apply.TestLegacyFriction.test_a_vanished_cwd_keeps_a_null_project_and_says_why",
-   "test_migrate_state_cases.apply.TestLegacyFriction.test_an_entry_that_already_names_its_convention_keeps_it",
-   "test_migrate_state_cases.apply.TestLegacyFriction.test_both_conventions_read_as_one_stream",
-   "test_migrate_state_cases.apply.TestLegacyFriction.test_every_migrated_entry_is_stamped_and_says_where_it_came_from",
-   "test_migrate_state_cases.apply.TestMigrationApply.test_a_dry_run_plans_exactly_what_a_real_run_does_and_writes_nothing",
-   "test_migrate_state_cases.apply.TestMigrationApply.test_a_record_already_at_the_destination_is_never_overwritten",
-   "test_migrate_state_cases.apply.TestMigrationApply.test_a_record_appearing_after_the_plan_is_refused_not_overwritten",
-   "test_migrate_state_cases.apply.TestMigrationApply.test_an_unrecognised_directory_is_named_and_not_copied",
-   "test_migrate_state_cases.apply.TestMigrationApply.test_canary_and_bin_stay_in_the_repository_and_are_reported",
-   "test_migrate_state_cases.apply.TestMigrationApply.test_each_coverage_line_gains_the_project_it_arose_in",
-   "test_migrate_state_cases.apply.TestMigrationApply.test_each_stream_lands_where_the_sink_layout_fixes_it",
-   "test_migrate_state_cases.apply.TestMigrationIdempotent.test_a_read_only_source_still_migrates",
-   "test_migrate_state_cases.apply.TestMigrationIdempotent.test_a_second_run_changes_nothing_and_plans_nothing",
-   "test_migrate_state_cases.apply.TestMigrationIdempotent.test_every_source_file_is_byte_unchanged_after_both_runs",
-   "test_migrate_state_cases.collision.TestMigrationCollision.test_a_run_two_projects_claim_is_refused_and_the_rest_migrates",
-   "test_migrate_state_cases.collision.TestMigrationCollision.test_two_workspaces_disagreeing_on_one_record_keep_the_first",
-   "test_migrate_state_cases.collision.TestMigrationCollision.test_two_workspaces_of_one_project_are_not_a_collision",
-   "test_migrate_state_cases.plan.TestMigrationPlan.test_a_sink_inside_a_migrating_stream_is_refused",
-   "test_migrate_state_cases.plan.TestMigrationPlan.test_a_source_inside_the_sink_is_refused",
-   "test_migrate_state_cases.plan.TestMigrationPlan.test_a_source_that_does_not_exist_is_reported_not_raised",
-   "test_migrate_state_cases.plan.TestMigrationPlan.test_a_source_that_merely_holds_the_sink_still_migrates",
-   "test_migrate_state_cases.plan.TestMigrationPlan.test_the_sink_cannot_be_migrated_into_itself",
-   "test_migrate_state_cases.plan.TestUnreadableDestination.test_an_absent_destination_is_still_the_ordinary_first_copy",
-   "test_migrate_state_cases.plan.TestUnreadableDestination.test_an_unreadable_destination_is_named_and_nothing_is_queued_for_it",
-   "test_migrate_state_cases.plan.TestUnreadableDestination.test_the_unterminated_line_question_refuses_rather_than_answers_no",
-   "test_migrate_state_cases.plan.TestUsage.test_an_unknown_flag_is_refused_rather_than_guessed",
-   "test_migrate_state_cases.plan.TestUsage.test_no_source_is_a_usage_error",
    "test_minimal_acceptance.MinimalAcceptanceTests.test_acceptance_contract_discriminates_extra_or_self_acceptance",
    "test_minimal_acceptance.MinimalAcceptanceTests.test_single_and_decomposed_runs_take_only_their_minimum_path",
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_carries_three_closed_adapters_and_distinct_workspaces",
@@ -1533,125 +1472,6 @@
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_an_unacquirable_lock_still_writes_and_never_raises",
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_concurrent_writers_lose_no_line",
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_the_unacquired_path_returns_inside_a_budget_under_one_second",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_a_host_that_lost_a_role_profile_is_refused",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_host_adapter_binds_both_roles",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_recorded_model_and_effort_is_admitted",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_way_a_grok_binding_can_fail_names_the_host",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_native_and_requested_capabilities_stay_out_of_role_bindings",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_two_roles_binding_one_subagent_type_are_refused",
-   "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_accepts_exact_registered_launches_and_forwarded_sentinels",
-   "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_builds_all_production_derived_probe_agents",
-   "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_builds_generated_role_bound_skill_adapters",
-   "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_explicit_agent_launch_cannot_substitute_for_generated_adapter",
-   "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_rejects_duplicate_launches",
-   "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_role_skill_topology_is_enforced",
-   "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_timeout_returns_structured_failure",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_exception_during_surface_run_still_cleans_up_temp_agent_file",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_file_tool_activity_fails_the_surface",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_probe_sentinel_injection_does_not_require_tomllib",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_role_skill_topology_reports_advisory_when_unsupported",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_stable_surface_accepts_all_sentinels",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_stable_surface_command_uses_native_fork_field_and_default_config",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_timeout_returns_structured_surface_failure",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_v2_surface_accepts_all_sentinels",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_v2_surface_command_ignores_stable_user_config_and_uses_native_fork_field",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_v2_surface_does_not_mask_missing_sentinel",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_v2_surface_reports_explicit_unavailable_marker",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_v2_unavailable_marker_with_command_use_fails",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_case_missing_a_field_is_refused",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_named_route_without_a_name_is_refused",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_non_list_is_refused",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_role_and_skill_requirement_must_be_paired",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_an_off_enum_expected_route_is_refused",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_custom_authoring_uses_the_ordinary_single_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_catalog_counterfactual_uses_answer_then_one_single_ticket",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_shipped_case_file_loads",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_at_least_four_distractors_borrow_a_lure_word",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_case_ids_are_unique",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_every_case_has_exactly_the_documented_shape",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_every_class_carries_enough_cases_to_read_a_rate_from",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_every_expected_route_is_in_the_enum",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_no_routed_case_reads_as_an_instruction_to_the_grader",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_readme_states_the_command_and_the_decision_rule",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_route_enum_matches_both_consumers",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_set_carries_at_least_twenty_four_cases",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_by_name_read_is_the_route_the_four_adapter_set_takes",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_final_text_with_no_tool_use_grades_as_answer",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_route_answer_line_grades_as_answer",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_slash_command_is_read_by_its_first_token",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_text_answer_after_a_skill_never_overrides_the_skill",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_transcript_with_nothing_route_bearing_is_unrouted",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_windows_rendered_removed_fix_path_stays_named",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_empty_transcript_is_unrouted",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_unauthenticated_session_grades_error_not_answer",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_any_other_skill_grades_as_that_name",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_doctor_command_grades_as_its_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_instantiating_a_template_grades_as_that_template",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_issuing_a_ticket_from_bash_grades_as_single",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_matching_role_child_requires_exact_skill",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_non_dict_stream_entries_are_tolerated",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_parent_only_skill_fails_without_matching_role_child",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_planner_helper_edges_preserve_primary_skill_single_execution",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_reading_before_routing_does_not_change_the_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_reading_the_library_and_then_answering_grades_as_answer",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_root_primary_skill_fails_even_with_matching_child_execution",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_routing_skills_grade_as_their_graph_shapes",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_subagent_events_never_decide_the_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_cost_is_taken_from_the_stream_when_it_reports_one",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_deciding_event_is_reported",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_first_route_bearing_event_decides_it",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_removed_fix_name_is_only_a_named_invocation",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_a_failing_install_is_reported_rather_than_measured",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_a_timed_out_case_is_recorded_as_an_error_not_a_misroute",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_case_requires_role_and_exact_skill",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_each_adapter_set_is_installed_into_its_own_temp_home",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_each_record_carries_the_grade_and_what_decided_it",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_no_budget_launches_every_case",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_no_call_reaches_a_real_claude_or_codex_binary",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_one_graded_launch_per_case_per_adapter_set_per_repeat",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_budget_stops_launching_once_the_spend_passes_it",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_install_env_overrides_every_root_an_install_could_write",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_launch_command_carries_the_prompt_stream_and_turn_bound",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_real_home_is_untouched",
-   "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_the_session_runs_in_a_plain_repository_with_no_agents_file",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_both_is_the_default_and_names_the_two_sets",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_it_loads_the_shipped_case_set_by_default",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_it_measures_and_exits_zero_even_when_everything_misroutes",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_no_budget_is_the_default",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_the_budget_flag_reaches_the_run_and_the_written_payload",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_the_repeat_and_turn_bounds_reach_the_run",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingBenchMain.test_the_written_json_carries_the_records_and_the_summary",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_a_set_that_only_errored_reports_no_rate_rather_than_a_perfect_one",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_an_empty_record_set_summarizes_to_nothing_rather_than_dividing_by_zero",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_an_error_leaves_the_misroute_rate_and_never_enters_it",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_the_by_class_breakdown_buckets_by_the_expected_class",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_the_summary_counts_matches_misroutes_and_unrouted_per_set",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_the_summary_records_the_spend_and_the_budget",
-   "tests.test_live_harnesses_cases.routing_summary_cases.TestRoutingSummary.test_the_table_names_every_set_and_its_rate",
-   "tests.test_live_harnesses_cases.sweep_cases.TestCleanup.test_falls_back_to_byte_identical_restore_on_divergence",
-   "tests.test_live_harnesses_cases.sweep_cases.TestCleanup.test_missing_log_path_is_not_an_error",
-   "tests.test_live_harnesses_cases.sweep_cases.TestCleanupFriction.test_deletes_file_it_created_when_nothing_preexisted",
-   "tests.test_live_harnesses_cases.sweep_cases.TestCleanupFriction.test_raises_when_untagged_prefix_diverges_from_snapshot",
-   "tests.test_live_harnesses_cases.sweep_cases.TestCleanupFriction.test_removes_only_tagged_lines_preserves_others",
-   "tests.test_live_harnesses_cases.sweep_cases.TestLogDirIsInTheSink.test_main_passes_the_sink_default_when_no_log_dir_is_named",
-   "tests.test_live_harnesses_cases.sweep_cases.TestLogDirIsInTheSink.test_no_repository_state_path_is_composed",
-   "tests.test_live_harnesses_cases.sweep_cases.TestLogDirIsInTheSink.test_resolving_the_default_creates_nothing",
-   "tests.test_live_harnesses_cases.sweep_cases.TestLogDirIsInTheSink.test_the_default_log_dir_resolves_under_the_sink",
-   "tests.test_live_harnesses_cases.sweep_cases.TestMainGuard.test_main_requires_explicit_invocation_argv",
-   "tests.test_live_harnesses_cases.sweep_cases.TestRunId.test_generate_run_id_is_unique_and_prefixed",
-   "tests.test_live_harnesses_cases.sweep_cases.TestRunLiveSweepCleanupPaths.test_failure_path_cleans_up_tagged_friction_and_log_file",
-   "tests.test_live_harnesses_cases.sweep_cases.TestRunLiveSweepCleanupPaths.test_run_id_tags_the_friction_entry_it_writes",
-   "tests.test_live_harnesses_cases.sweep_cases.TestRunLiveSweepCleanupPaths.test_success_path_cleans_up_and_leaves_friction_untouched",
-   "tests.test_live_harnesses_cases.sweep_cases.TestRunLiveSweepCleanupPaths.test_timeout_path_cleans_up_tagged_friction_and_log_file",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSnapshotPath.test_existing_file_records_hash_and_bytes",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSnapshotPath.test_missing_file_records_did_not_exist",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSweepAnalyzeRun.test_body_tool_use_fails",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSweepAnalyzeRun.test_duplicate_dispatch_fails",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSweepAnalyzeRun.test_good_stream_passes",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSweepAnalyzeRun.test_missing_dispatch_fails",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSweepAnalyzeRun.test_missing_sentinel_fails",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSweepAnalyzeRun.test_nonzero_returncode_fails",
-   "tests.test_live_harnesses_cases.sweep_cases.TestSweepAnalyzeRun.test_unexpected_agent_launch_fails",
    "tests.test_run_report_cases.cli.ReportCommandTest.test_a_malformed_identity_reaches_the_reader_rather_than_a_traceback",
    "tests.test_run_report_cases.cli.ReportCommandTest.test_a_root_that_holds_no_sink_is_an_answer_not_an_error",
    "tests.test_run_report_cases.cli.ReportCommandTest.test_a_window_after_every_record_gives_empty_tables_and_exit_zero",
@@ -1801,42 +1621,6 @@
    "tests.test_static_tree_invariants_cases.skill_packages.TestSkillAnatomyOrder.test_every_skill_body_orders_require_then_never_then_return",
    "tests.test_static_tree_invariants_cases.skill_packages.TestTierDirectoriesExist.test_every_skill_tier_directory_exists",
    "tests.test_static_tree_invariants_cases.skill_packages.TestTierDirectoriesExist.test_only_surviving_skill_tiers_are_declared",
-   "tests.test_suite_check_cases.audit.TestAuditSkips.test_expected_failure_is_not_a_skip",
-   "tests.test_suite_check_cases.audit.TestAuditSkips.test_multiple_skips_all_named",
-   "tests.test_suite_check_cases.audit.TestAuditSkips.test_no_skips_returns_empty",
-   "tests.test_suite_check_cases.audit.TestAuditSkips.test_skip_with_reason_is_clean",
-   "tests.test_suite_check_cases.audit.TestAuditSkips.test_skip_with_whitespace_only_reason_is_named",
-   "tests.test_suite_check_cases.audit.TestAuditSkips.test_skip_without_reason_is_named",
-   "tests.test_suite_check_cases.audit.TestBuildStrippedPath.test_contains_executable_directory",
-   "tests.test_suite_check_cases.audit.TestBuildStrippedPath.test_includes_scripts_sibling_when_present",
-   "tests.test_suite_check_cases.audit.TestBuildStrippedPath.test_omits_scripts_sibling_when_absent",
-   "tests.test_suite_check_cases.matrix.TestPreflightMatrix.test_a_reshaped_matrix_refuses_the_same_way",
-   "tests.test_suite_check_cases.matrix.TestPreflightMatrix.test_a_workflow_that_cannot_be_read_refuses",
-   "tests.test_suite_check_cases.matrix.TestPreflightMatrix.test_an_empty_axis_is_no_axis",
-   "tests.test_suite_check_cases.matrix.TestPreflightMatrix.test_main_refuses_before_running_anything",
-   "tests.test_suite_check_cases.matrix.TestPreflightMatrix.test_the_repositorys_own_matrix_is_read_rather_than_restated",
-   "tests.test_suite_check_cases.matrix.TestPreflightOsLine.test_a_platform_the_matrix_does_not_run_covers_no_cell",
-   "tests.test_suite_check_cases.matrix.TestPreflightOsLine.test_each_platform_covers_its_own_cell_and_no_other",
-   "tests.test_suite_check_cases.matrix.TestPreflightWhich.test_a_bare_name_is_still_found_wherever_it_is_the_whole_name",
-   "tests.test_suite_check_cases.matrix.TestPreflightWhich.test_a_name_on_no_path_entry_is_still_absent",
-   "tests.test_suite_check_cases.matrix.TestPreflightWhich.test_an_extension_the_host_appends_is_found",
-   "tests.test_suite_check_cases.snapshot.TestDiffSnapshots.test_added_only_ignores_removed_and_changed_but_flags_added",
-   "tests.test_suite_check_cases.snapshot.TestDiffSnapshots.test_every_kind_of_difference_is_named_and_sameness_is_clean",
-   "tests.test_suite_check_cases.snapshot.TestDiffSnapshots.test_full_snapshot_trees_are_added_only_but_friction_is_byte_identical",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_collect_snapshot_watches_relocated_host_config_dirs",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_hash_file_changes_with_content",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_snapshot_friction_hashes_empty_dir",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_snapshot_friction_hashes_finds_jsonl_files",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_snapshot_tree_does_not_follow_junction_out_of_root",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_snapshot_tree_does_not_follow_symlink_out_of_root",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_snapshot_tree_lists_files_and_dirs",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_snapshot_tree_missing_root_is_empty",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_the_sink_is_watched_under_its_own_name_wherever_it_points",
-   "tests.test_suite_check_cases.snapshot.TestHashAndSnapshot.test_the_sink_root_it_watches_is_the_one_the_scripts_resolve",
-   "tests.test_suite_check_cases.snapshot.TestSnapshotDirection.test_a_changed_entry_in_a_watched_tree_is_no_failure",
-   "tests.test_suite_check_cases.snapshot.TestSnapshotDirection.test_an_added_entry_in_a_watched_tree_is_a_failure",
-   "tests.test_suite_check_cases.subprocess.TestHarnessSubprocess.test_a_stray_write_into_the_sink_fails_the_run",
-   "tests.test_suite_check_cases.subprocess.TestHarnessSubprocess.test_harness_end_to_end_against_synthetic_suite",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_checker_independence_dependency_no_longer_waits_on_anything",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_assignment_is_issued_and_reaches_generation_stamping",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_ordinary_member_is_issued_like_any_other",
@@ -1972,9 +1756,8 @@
    "tests.test_validate_cases.sink_law.TestFrictionFallbackNamesTheSink.test_a_blocked_agent_is_sent_to_the_sink_not_to_a_repository",
    "tests.test_validate_cases.sink_law.TestOneProseOwnerForThePath.test_exactly_one_markdown_file_states_the_root_literally",
    "tests.test_validate_cases.sink_law.TestOnlyCanaryAndBinMentionsSurvive.test_every_surviving_mention_names_canary_or_bin",
-   "tests.test_validate_cases.sink_law.TestOnlyCanaryAndBinMentionsSurvive.test_the_out_of_scope_files_name_the_canary_path_and_nothing_else",
-   "tests.test_validate_cases.sink_law.TestRepositoryKeepsTwoSubdirectories.test_the_bullet_names_canary_and_bin_and_no_third_subdirectory",
-   "tests.test_validate_cases.sink_law.TestRepositoryKeepsTwoSubdirectories.test_the_sink_has_its_own_bullet",
+   "tests.test_validate_cases.sink_law.TestRepositoryKeepsOneSubdirectory.test_the_bullet_names_bin_and_no_second_subdirectory",
+   "tests.test_validate_cases.sink_law.TestRepositoryKeepsOneSubdirectory.test_the_sink_has_its_own_bullet",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_law_names_the_resolver_rather_than_restating_its_rule",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_law_no_longer_points_into_a_repository",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_root_the_law_names_is_the_sink",
@@ -2358,7 +2141,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "cc06ff80aca4a176cfa78597c4e588b0f05114f3940bb4f0cb1ba259b3c15f6e"
+  "sha256": "f606837472af685c9d5c09fd1123ecd5b189b90c226cca0c0857cc08ed9a4fc6"
  },
  "mutation_owners": [
   {
@@ -2664,6 +2447,14 @@
    "module": "tests.test_doclint",
    "owner": "FixtureRootTest.test_a_target_the_path_layer_refuses_is_reported_missing_not_skipped",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_events",
+   "owner": "AppendEventUsesTheLockedIdiomTest.test_append_event_calls_the_shared_locked_writer",
+   "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
    ]
@@ -3848,218 +3639,6 @@
    ]
   },
   {
-   "module": "tests.test_isolate",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_isolate",
-   "owner": "IsolateFixture.setUp",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment",
-    "threads"
-   ]
-  },
-  {
-   "module": "tests.test_isolate",
-   "owner": "IsolateTest.test_an_interpreter_without_the_tar_filter_names_the_downgrade",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_isolate",
-   "owner": "IsolateTest.test_the_silent_case_is_skipped_where_the_interpreter_has_no_filter",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_isolate",
-   "owner": "TestIsolateCopiesFromSink.test_the_snapshot_keeps_the_sinks_own_layout",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.profile_cases",
-   "owner": "TestClaudeLiveProfiles.test_timeout_returns_structured_failure",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.profile_cases",
-   "owner": "TestCodexLiveProfiles._capture_surface_command",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.profile_cases",
-   "owner": "TestCodexLiveProfiles.test_exception_during_surface_run_still_cleans_up_temp_agent_file",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment",
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.profile_cases",
-   "owner": "TestCodexLiveProfiles.test_probe_sentinel_injection_does_not_require_tomllib",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.profile_cases",
-   "owner": "TestCodexLiveProfiles.test_timeout_returns_structured_surface_failure",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun._run",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun._run_with_budget",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun.test_a_failing_install_is_reported_rather_than_measured",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun.test_a_timed_out_case_is_recorded_as_an_error_not_a_misroute",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun.test_case_requires_role_and_exact_skill",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_run_cases",
-   "owner": "TestRoutingBenchRun.test_the_install_env_overrides_every_root_an_install_could_write",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.routing_summary_cases",
-   "owner": "TestRoutingBenchMain._main",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestLogDirIsInTheSink.test_main_passes_the_sink_default_when_no_log_dir_is_named",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment",
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestLogDirIsInTheSink.test_resolving_the_default_creates_nothing",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestLogDirIsInTheSink.test_the_default_log_dir_resolves_under_the_sink",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestMainGuard.test_main_requires_explicit_invocation_argv",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestRunLiveSweepCleanupPaths.setUp",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch",
-    "threads"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestRunLiveSweepCleanupPaths.test_failure_path_cleans_up_tagged_friction_and_log_file",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestRunLiveSweepCleanupPaths.test_run_id_tags_the_friction_entry_it_writes",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestRunLiveSweepCleanupPaths.test_success_path_cleans_up_and_leaves_friction_untouched",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_live_harnesses_cases.sweep_cases",
-   "owner": "TestRunLiveSweepCleanupPaths.test_timeout_path_cleans_up_tagged_friction_and_log_file",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
    "module": "tests.test_lock_discipline",
    "owner": "TestSplitTerminalWriteIsSurfaced.test_a_failed_identity_write_alone_still_rolls_the_ticket_back",
    "restoration": "selected-module-boundary",
@@ -4089,46 +3668,6 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "threads"
-   ]
-  },
-  {
-   "module": "tests.test_migrate_state_cases.common",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_migrate_state_cases.common",
-   "owner": "MigrationCase.setUp",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_migrate_state_cases.common",
-   "owner": "MigrationCase.setUp.restore",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_migrate_state_cases.plan",
-   "owner": "TestMigrationPlan.test_a_sink_inside_a_migrating_stream_is_refused",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_migrate_state_cases.plan",
-   "owner": "TestMigrationPlan.test_a_source_that_merely_holds_the_sink_still_migrates",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
    ]
   },
   {
@@ -4870,79 +4409,6 @@
    ]
   },
   {
-   "module": "tests.test_suite_check",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_suite_check_cases.matrix",
-   "owner": "TestPreflightMatrix._workflow",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_suite_check_cases.matrix",
-   "owner": "TestPreflightMatrix.test_main_refuses_before_running_anything",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_suite_check_cases.matrix",
-   "owner": "TestPreflightOsLine._line",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_suite_check_cases.matrix",
-   "owner": "TestPreflightWhich._path",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_suite_check_cases.snapshot",
-   "owner": "TestHashAndSnapshot.test_collect_snapshot_watches_relocated_host_config_dirs",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_suite_check_cases.snapshot",
-   "owner": "TestHashAndSnapshot.test_the_sink_is_watched_under_its_own_name_wherever_it_points",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_suite_check_cases.snapshot",
-   "owner": "TestHashAndSnapshot.test_the_sink_root_it_watches_is_the_one_the_scripts_resolve",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment",
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_suite_check_cases.subprocess",
-   "owner": "TestHarnessSubprocess.test_a_stray_write_into_the_sink_fails_the_run",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
    "module": "tests.test_super_research_runner",
    "owner": "SuperResearchRunnerTests.test_delegates_to_installed_python_39",
    "restoration": "sharded-module-guard",
@@ -5391,6 +4857,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path",
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_validate_measures_cases.row",
+   "owner": "TestCheckerShape.test_checker_imports_only_the_standard_library",
+   "restoration": "selected-module-boundary",
+   "seams": [
     "module-cache"
    ]
   },

@@ -7,6 +7,7 @@ tree instead, at the path the item's own identity derives.
 """
 
 import time
+import types
 from unittest import mock
 
 from .common import *  # noqa: F401,F403
@@ -616,22 +617,38 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
 
 
 class TestOwnershipOfTheEstablishmentLanes(unittest.TestCase):
-    def test_only_state_root_derives_a_candidate_path_or_branch(self):
-        """Grep-shaped on purpose: the defect this unit exists to end was a
-        second place computing where an item's tree goes."""
+    """One owner for where an item's tree goes, and no facade edge back.
 
-        scripts = Path(workspace_candidate.__file__).resolve().parent
-        offenders = []
-        for path in sorted(scripts.glob("*.py")):
-            if path.name == "state_root.py":
-                continue
-            source = path.read_text(encoding="utf-8")
-            if '"worktrees"' in source or "'worktrees'" in source:
-                offenders.append(path.name)
-        self.assertEqual([], offenders)
+    Both facts were pinned by reading `scripts/*.py` as text. They are shape
+    facts, so they are read off the loaded modules instead: the derived path
+    and branch come out of `state_root.candidate_paths` by value, and the
+    candidate owner's namespace does not bind the facade.
+    """
+
+    def test_only_state_root_derives_a_candidate_path_or_branch(self):
+        """The defect this unit exists to end was a second place computing
+        where an item's tree goes. The owner is compared by identity and its
+        answer by value, so a private copy that drifts is a red."""
+
+        self.assertIs(
+            workspace_candidate.state_root.candidate_paths,
+            state_root.candidate_paths,
+        )
+        derived = workspace_candidate.state_root.candidate_paths("r-1", "T-1")
+        self.assertEqual(state_root.candidate_paths("r-1", "T-1"), derived)
+        self.assertEqual(
+            state_root.worktrees_root() / "r-1" / "T-1", derived["path"],
+        )
+        self.assertTrue(
+            derived["branch"].startswith(state_root.WORKTREE_BRANCH_PREFIX)
+        )
+        self.assertEqual(
+            state_root.WORKTREES_SUBPATH, state_root.worktrees_root().name,
+        )
 
     def test_the_candidate_owner_never_imports_the_workspace_facade(self):
-        source = Path(workspace_candidate.__file__).read_text(encoding="utf-8")
-        for reached in ("import workspace\n", "from workspace import",
-                        "__import__(\"workspace\")"):
-            self.assertNotIn(reached, source)
+        names = set(vars(workspace_candidate))
+        for value in vars(workspace_candidate).values():
+            if isinstance(value, types.ModuleType):
+                names.add(value.__name__.rsplit(".", 1)[-1])
+        self.assertNotIn("workspace", names)

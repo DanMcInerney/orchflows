@@ -1,7 +1,10 @@
 """Structural contract for the reader's isolation from the library tree."""
 
+import tempfile
 import unittest
+from pathlib import Path
 
+import reader.scripts.ui_api as ui_api
 
 from reader.tests._repo_root import ROOT
 READER = ROOT / "reader"
@@ -42,13 +45,26 @@ class ReaderExtractionTest(unittest.TestCase):
 
 
   def test_reader_exposes_one_versioned_public_api_without_compatibility_fallbacks(self):
-    """The public facade is v1 and does not carry legacy dispatch paths."""
+    """The public facade is v1 and does not carry legacy dispatch paths.
 
-    facade = (READER / "scripts" / "ui_api.py").read_text(encoding="utf-8")
-    self.assertIn("PUBLIC_API_VERSION = \"v1\"", facade)
-    self.assertIn("/api/v1/", facade)
-    self.assertNotIn("/api/observe", facade)
-    self.assertNotIn("FallbackReaderServer", facade)
+    Read off the built application rather than off the module's source: the
+    version is the facade's own constant, the routes are the ones the
+    application actually mounts, and a fallback server class would be a
+    name in the module. A source-text form could only prove the grep.
+    """
+
+    self.assertEqual("v1", ui_api.PUBLIC_API_VERSION)
+    self.assertNotIn("FallbackReaderServer", dir(ui_api))
+    with tempfile.TemporaryDirectory() as tmp:
+      mounted = {
+          route.path for route in ui_api.create_application(Path(tmp)).routes
+          if getattr(route, "path", "").startswith("/api")
+      }
+    self.assertTrue(mounted, "the application mounts no API routes")
+    self.assertEqual(
+        set(),
+        {path for path in mounted if not path.startswith("/api/v1/")},
+    )
 
 
   def test_frontend_ci_runs_from_the_reader_root(self):

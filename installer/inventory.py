@@ -32,7 +32,6 @@ SCRIPT_NAMES = (
     "doclint.py",
     "friction.py",
     "harvest.py",
-    "migrate_state.py",
     "orchflows.py",
     "packs.py",
     "rings.py",
@@ -54,7 +53,6 @@ SCRIPT_SUPPORT_PREFIXES = (
     "search_plan",
     "trace",
     "workspace",
-    "migrate_state",
 )
 
 
