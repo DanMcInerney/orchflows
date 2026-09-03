@@ -28,11 +28,13 @@ Invoke the emitted `launch` verbatim. When the child returns:
 
     tickets.py land <run> <id> --assignment-seal <seal> --dispatch-id <dispatch> --outcome-record-id outcome --by <frame>
 
-Then one judge over the landed line:
+No judge per unit (user ruling, 2026-09-03: "The judge and fix should
+only occur at the end of all the waves"). After wave 4 lands, one judge per
+landed unit over its `artifact:` line, all issued together:
 
     tickets.py judge <run> --pack orch-code-pack --goal-file research/library-cleanup-tickets/judge.goal.md --details-file research/library-cleanup-tickets/<unit>.details.md --artifacts "git:<sha from the artifact: line>" --parent <frame>
 
-Where the judge blocks, *bounded-repair*: "Where the judge blocks, one repair
+Where a judge blocks, *bounded-repair*: "Where the judge blocks, one repair
 `do` is handed the `findings:` line verbatim, then one re-judge; two rounds is
 the bound." Copy `repair.goal.template.md` to `.orch-notes/repair-<unit>.md`,
 paste the line, one `do` with the unit's details file, land, re-judge.
