@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2322,
+  "count": 2327,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -736,10 +736,14 @@
    "test_orchflows_tooling.InventoryTests.test_an_untrusted_project_items_probes_are_never_run",
    "test_orchflows_tooling.InventoryTests.test_every_declaring_item_is_checked_and_nothing_is_installed",
    "test_orchflows_tooling.NodeTests.test_a_failed_install_leaves_no_stamp_to_reuse",
+   "test_orchflows_tooling.NodeTests.test_a_manager_that_cannot_start_is_raised_as_the_install_failure",
    "test_orchflows_tooling.NodeTests.test_a_pnpm_lockfile_takes_pnpms_frozen_install",
    "test_orchflows_tooling.NodeTests.test_an_untrusted_project_item_is_named_with_its_remedy_and_never_installed",
    "test_orchflows_tooling.NodeTests.test_no_node_no_lockfile_and_no_manager_are_skipped_with_their_remedy",
+   "test_orchflows_tooling.NodeTests.test_the_install_spawns_the_file_path_resolves_not_the_bare_name",
    "test_orchflows_tooling.NodeTests.test_the_lockfile_install_runs_in_the_item_directory_and_reuses_after",
+   "test_orchflows_tooling.PruneTests.test_a_project_items_environment_survives_a_prune_from_elsewhere",
+   "test_orchflows_tooling.PruneTests.test_an_environment_whose_declaration_left_the_machine_is_pruned",
    "test_orchflows_tooling.PruneTests.test_prune_removes_exactly_the_environment_no_item_claims",
    "test_orchflows_tooling.PruneTests.test_prune_says_nothing_when_there_is_no_environments_tree_at_all",
    "test_orchflows_tooling.ResolutionTests.test_a_missing_tool_is_reported_and_a_present_one_is_silent",
@@ -749,6 +753,7 @@
    "test_orchflows_tooling.ResolutionTests.test_a_version_spec_is_not_read_when_the_line_carries_a_probe",
    "test_orchflows_tooling.ResolutionTests.test_a_version_spec_is_read_off_version_output_only_when_it_parses",
    "test_orchflows_tooling.ResolutionTests.test_an_unparsable_line_is_reported_beside_the_missing_tools",
+   "test_orchflows_tooling.ResolutionTests.test_the_spawn_takes_the_file_path_resolves_not_the_bare_name",
    "test_orchflows_tooling.SyncReportTests.test_sync_reports_each_missing_tool_with_its_line_and_prunes_the_orphan",
    "test_orchflows_tooling.ValidatorTests.test_the_library_validator_names_the_line_a_reader_cannot_parse",
    "test_packs.PackResolutionTests.test_a_bundle_edit_invalidates_the_remembered_grant",
@@ -2325,7 +2330,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "61849169710fc14072bc2c6472670aa3ffb218c24b105f4b0e269671742fd07e"
+  "sha256": "9f9e59f8460101c7535871a9a990c6a479eceb4dbaceaf4e83f20d7d4726d99a"
  },
  "mutation_owners": [
   {
