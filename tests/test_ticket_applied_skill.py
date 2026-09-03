@@ -158,8 +158,10 @@ class AppliedSkillPromptTest(AppliedSkillTest):
 
         self.assertIn(f"Call the Skill tool with skill `{WORKER_SKILL}`", first)
         self.assertIn("this entire prompt, verbatim, as its arguments", first)
+        # The line names the manifest resolved; a runner's temp dir may be a
+        # short name (RUNNER~1) or a symlink, so compare resolved to resolved.
         self.assertIn(
-            str(self.ring / "skills" / WORKER_SKILL / rings.MANIFESTS["skill"]),
+            str((self.ring / "skills" / WORKER_SKILL / rings.MANIFESTS["skill"]).resolve()),
             first,
         )
         self.assertNotIn("orch-do", first)
