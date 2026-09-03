@@ -31,7 +31,10 @@ from tests.test_workspace_cases.emission_cases import (  # noqa: F401
 )
 from tests.test_workspace_cases.integration_cases import (  # noqa: F401
     TestARefusedRetirementNeverPrescribesForce,
+    TestAnAbsentIntegrationNamesWhereItLooked,
     TestAnUncommittedDeliveryIsNotAReplay,
+    TestOneSystemWrittenNotePerObservation,
+    TestOnlyADeclaringEstablishmentFixesTheTarget,
     TestTheRunOwnsWhereItsWorkIsIntegrated,
 )
 from tests.test_workspace_cases.grade_cases import (  # noqa: F401

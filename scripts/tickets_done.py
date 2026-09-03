@@ -35,15 +35,15 @@ if __package__:
         DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
         RESULT_BEARING_STATES, TERMINAL_STATES,
         _sections, _set_frontmatter_field,
-        _write_section, dequote, done_defects, round_of, parse_done,
+        dequote, done_defects, round_of, parse_done,
         ticket_defects,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
-    from .tickets_result import RESULT_ATTRIBUTION_PREFIX
+    from .tickets_report_note import file_once
     from .tickets_store import (
         TicketWriteRefused, _create_text_exclusively, _load_ticket,
-        _write_text_atomically, locked_ticket_write,
+        locked_ticket_write,
     )
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
@@ -51,15 +51,15 @@ else:  # pragma: no cover - direct/installed flat script path
         DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
         RESULT_BEARING_STATES, TERMINAL_STATES,
         _sections, _set_frontmatter_field,
-        _write_section, dequote, done_defects, round_of, parse_done,
+        dequote, done_defects, round_of, parse_done,
         ticket_defects,
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
-    from tickets_result import RESULT_ATTRIBUTION_PREFIX
+    from tickets_report_note import file_once
     from tickets_store import (
         TicketWriteRefused, _create_text_exclusively, _load_ticket,
-        _write_text_atomically, locked_ticket_write,
+        locked_ticket_write,
     )
 
 # The evidence line `land` files. It names the three facts a reader has to
@@ -290,24 +290,13 @@ def record_verification(path, reading: dict, by: str):
     child ran this, and evidence whose writer is wrong is evidence a reader
     cannot weigh. Filed once -- a re-landed ticket whose predicate answers
     the same way finds its own line already in the section and leaves it
-    there rather than stacking a second copy.
+    there rather than stacking a second copy. The filing itself is
+    `tickets_report_note`'s, shared with the landing's own two notes so one
+    module answers for what a system-written note in that section looks
+    like.
     """
 
-    body = f"{RESULT_ATTRIBUTION_PREFIX}`{by}`\n\n{verification_line(reading)}"
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as error:
-        return "replayed", {"error": f"unreadable ticket for done evidence: {error}"}
-    prior = _sections(text).get(REPORT_SECTION, "")
-    if body.rstrip() and body.rstrip() in prior:
-        return "replayed", None
-    try:
-        _write_text_atomically(
-            path, _write_section(text, REPORT_SECTION, body, bool(prior.strip())),
-        )
-    except (OSError, ValueError) as error:
-        return "refused", {"error": f"unable to file done evidence: {error}"}
-    return "filed", None
+    return file_once(path, by, verification_line(reading), "done evidence")
 
 
 def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict,

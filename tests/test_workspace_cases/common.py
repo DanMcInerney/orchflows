@@ -89,7 +89,7 @@ def payload_of(completed) -> dict:
 
 def make_ticket(
     run_dir: Path, tid: str, *, scope=("scratch",), extra=(),
-    pack="orch-code-pack", isolation="required",
+    pack="orch-code-pack", isolation="required", executor="orch-do",
 ) -> Path:
     """A fixture work item, never this run's own ticket.
 
@@ -97,7 +97,9 @@ def make_ticket(
     shape, so the item carries ``isolation: required`` unless a caller is
     grading some other value through ``extra`` or ``isolation``.
     ``isolation=None`` omits the field entirely, for a fixture proving what
-    an absent declaration derives from the stamped pack.
+    an absent declaration derives from the stamped pack. ``executor`` is the
+    registered verb this item binds: a judging item establishes a candidate
+    like any other and is refused only what a judge may not decide.
     """
 
     lines = [
@@ -105,7 +107,7 @@ def make_ticket(
         f"id: {tid}",
         "run: testrun",
         "status: claimed",
-        "executor: orch-do",
+        f"executor: {executor}",
         f"pack: {pack}",
         "depends_on: []",
         "write_scope:",

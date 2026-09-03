@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2328,
+  "count": 2337,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1124,9 +1124,11 @@
    "test_ticket_done_predicate.LandDonePredicateTest.test_the_check_form_mints_one_orch_check_and_reads_its_joined_status",
    "test_ticket_done_predicate.LandDonePredicateTest.test_the_two_grade_paths_refuse_to_be_used_together_or_neither",
    "test_ticket_done_predicate.LandDonePredicateTest.test_two_rounds_with_no_delta_close_the_ticket_stalled",
+   "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_candidate_the_recorded_target_does_not_carry_stops_the_landing",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_conflicted_merge_refuses_naming_the_files_and_the_remedy",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_land_refused_for_want_of_a_grade_leaves_no_merge_commit",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_the_candidates_commits_reach_the_tree_the_run_stands_in",
+   "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_the_refusal_and_its_resolution_are_written_onto_the_childs_ticket",
    "test_ticket_frames.FrameCloseTest.test_a_close_over_two_unjudged_do_children_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_frame_that_sealed_its_gate_at_open_evaluates_that_one",
    "test_ticket_frames.FrameCloseTest.test_a_judge_under_the_frame_lets_the_same_close_land",
@@ -2260,12 +2262,19 @@
    "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_the_same_scope_entry_takes_its_own_segment",
    "tests.test_workspace_cases.integration_cases.TestARefusedRetirementNeverPrescribesForce.test_the_flag_a_caller_passes_deliberately_still_works",
    "tests.test_workspace_cases.integration_cases.TestARefusedRetirementNeverPrescribesForce.test_uncommitted_work_is_named_with_the_act_that_preserves_it",
+   "tests.test_workspace_cases.integration_cases.TestAnAbsentIntegrationNamesWhereItLooked.test_a_candidate_the_target_does_not_carry_names_the_repo_and_branch",
+   "tests.test_workspace_cases.integration_cases.TestAnAbsentIntegrationNamesWhereItLooked.test_a_retired_candidate_is_absent_with_nothing_to_name",
    "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_a_clean_candidate_carrying_no_commits_still_replays",
    "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_a_dirty_candidate_carrying_no_commits_is_refused",
    "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_a_dirty_candidate_that_does_carry_commits_still_merges",
    "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_a_replayed_landing_ignores_leftover_scratch_once_commits_are_carried",
    "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_a_zero_commit_branch_still_refuses_with_the_baseline_discriminator",
    "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_bytecode_beside_a_replay_is_emission_and_not_a_delivery",
+   "tests.test_workspace_cases.integration_cases.TestOneSystemWrittenNotePerObservation.test_a_note_observed_twice_is_filed_once_and_attributed_to_the_join",
+   "tests.test_workspace_cases.integration_cases.TestOnlyADeclaringEstablishmentFixesTheTarget.test_a_document_lane_landed_first_leaves_the_target_to_the_first_do",
+   "tests.test_workspace_cases.integration_cases.TestOnlyADeclaringEstablishmentFixesTheTarget.test_a_judging_item_establishes_a_candidate_and_fixes_no_target",
+   "tests.test_workspace_cases.integration_cases.TestOnlyADeclaringEstablishmentFixesTheTarget.test_an_establishment_that_named_no_tree_records_no_target",
+   "tests.test_workspace_cases.integration_cases.TestOnlyADeclaringEstablishmentFixesTheTarget.test_the_facade_names_a_repo_to_its_child_only_when_a_caller_did",
    "tests.test_workspace_cases.integration_cases.TestTheRunOwnsWhereItsWorkIsIntegrated.test_a_checkout_that_moved_off_the_recorded_branch_is_refused",
    "tests.test_workspace_cases.integration_cases.TestTheRunOwnsWhereItsWorkIsIntegrated.test_a_later_establishment_never_moves_the_recorded_target",
    "tests.test_workspace_cases.integration_cases.TestTheRunOwnsWhereItsWorkIsIntegrated.test_a_run_that_recorded_no_target_is_refused_with_the_establishment",
@@ -2331,7 +2340,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "2394adbad1638149764e9417aafbecbe5254b913dcb51c15fe4b4130085ce25d"
+  "sha256": "66d3ca8d6d659ffe60f29f1af23e9b56c8dfcbf60d08eccb898a7eda422daa1f"
  },
  "mutation_owners": [
   {
@@ -5638,6 +5647,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.integration_cases",
+   "owner": "TestOnlyADeclaringEstablishmentFixesTheTarget.test_the_facade_names_a_repo_to_its_child_only_when_a_caller_did",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
