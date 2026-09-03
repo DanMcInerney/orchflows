@@ -193,27 +193,6 @@ def manual_only_frontmatter(frontmatter: str, host: str = "claude") -> str:
     return "".join(lines)
 
 
-def without_role(frontmatter: str) -> str:
-    """The same frontmatter with its ``role`` line dropped.
-
-    A body under ``skills/workflows/`` declares a role because that
-    directory is a skills tier and the validator requires one there, but a
-    workflow is prose the invoking orchestrator drives in place: it never
-    arrives as a forked child. Handing its declared role to a host would
-    bind the manual-only name to that host's fork field -- ``context:
-    fork`` on Claude, the spawn gate on Grok -- and the body's own
-    callables would then run one level deeper than the workflow's caller
-    meant. The role stays orchflows-only; the host surface is the pointer
-    every workflow already gets.
-    """
-
-    return "".join(
-        line
-        for line in frontmatter.splitlines(keepends=True)
-        if line.partition(":")[0].strip() != "role"
-    )
-
-
 def workflow_adapter_body(name: str, lib_workflow_dir: Path, frontmatter: str) -> str:
     """The Claude adapter stub's body for a workflow.
 

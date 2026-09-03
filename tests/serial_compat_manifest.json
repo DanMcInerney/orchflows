@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2319,
+  "count": 2322,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -78,11 +78,14 @@
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_check_fails_when_one_catalog_drops_one_name",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_name_reader_is_that_host_s_own_path_template",
-   "test_catalog_completeness.RoleBearingWorkflowSurfaceTests.test_no_host_surface_binds_a_workflow_s_role",
-   "test_catalog_completeness.RoleBearingWorkflowSurfaceTests.test_the_population_is_real",
-   "test_catalog_completeness.RoleBearingWorkflowSurfaceTests.test_the_stripping_is_what_holds_those_surfaces_flat",
    "test_catalog_completeness.WorkflowHomeDiscoveryTests.test_both_homes_are_discovered_in_the_resolver_s_order",
    "test_catalog_completeness.WorkflowHomeDiscoveryTests.test_the_package_loop_leaves_the_workflow_home_alone",
+   "test_catalog_completeness.WorkflowHostSurfaceTests.test_a_declared_role_is_what_would_bind_them",
+   "test_catalog_completeness.WorkflowHostSurfaceTests.test_no_host_surface_binds_a_workflow_to_a_child",
+   "test_catalog_completeness.WorkflowHostSurfaceTests.test_no_workflow_declares_a_role_to_bind",
+   "test_catalog_completeness.WorkflowHostSurfaceTests.test_the_population_is_real",
+   "test_checkpointed_build.CheckpointedBuildBodyTest.test_dropping_any_fact_fails_the_check_with_the_span_standing",
+   "test_checkpointed_build.CheckpointedBuildBodyTest.test_each_step_carries_the_facts_its_caller_needs",
    "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_help_usage_and_summary_name_one_exact_surface",
@@ -2136,8 +2139,8 @@
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_pack_declaring_role_at_all_is_error",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_role_value_outside_allowed_set_is_error",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_skill_missing_role_is_error",
-   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_none_role_is_error",
-   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_planner_role_is_valid",
+   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_a_role_is_error",
+   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_no_role_is_valid",
    "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_a_workflow_in_the_skills_tier_is_graded_like_a_gallery_one",
    "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_one_name_in_both_homes_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_the_same_name_in_one_home_alone_is_no_finding",
@@ -2322,7 +2325,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "cc66e73b9a89df2e0c767ee829e9b87cfab601f8f8e023ed21e3130cf63d69c9"
+  "sha256": "61849169710fc14072bc2c6472670aa3ffb218c24b105f4b0e269671742fd07e"
  },
  "mutation_owners": [
   {
@@ -2393,7 +2396,7 @@
   },
   {
    "module": "tests.test_catalog_completeness",
-   "owner": "RoleBearingWorkflowSurfaceTests._plan",
+   "owner": "WorkflowHostSurfaceTests._plan",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",

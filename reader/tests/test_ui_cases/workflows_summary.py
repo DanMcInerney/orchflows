@@ -15,6 +15,7 @@ EXPECTED_WORKFLOWS = {
     "bakeoff",
     "benchmaker",
     "browser-game",
+    "checkpointed-build",
     "drift-canary",
     "evolve",
     "orch-do",

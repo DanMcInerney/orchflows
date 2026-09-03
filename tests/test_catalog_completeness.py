@@ -281,18 +281,23 @@ class WorkflowHomeDiscoveryTests(unittest.TestCase):
             self.assertEqual(["orch-do"], claimed)
 
 
-class RoleBearingWorkflowSurfaceTests(unittest.TestCase):
-    """A workflow that declares a role still reaches each host as a pointer.
+class WorkflowHostSurfaceTests(unittest.TestCase):
+    """No host surface binds a workflow to a forked child.
 
-    `skills/workflows/` is a skills tier, so the validator requires a
-    `role` on a body there; a workflow is prose whoever invoked it by name
-    drives in place, so no host surface may bind that role. The two rules
-    met the first time a reusable workflow landed: the Grok composer
-    raised on the declared role and planned nothing at all for that name,
-    and the Claude adapter would have carried `context: fork` -- the body
-    running inside a child, with the callables it opens one level deeper
-    than its caller meant. `installer.packages.without_role` is where the
-    workflow loop drops the field before a host composer sees it.
+    A workflow is prose whoever invoked it by name drives in place, so no
+    host surface may carry a fork binding for it. The two rules met the
+    first time a reusable workflow landed under `skills/workflows/`: the
+    tier is a skills tier, the validator then wanted a `role` there, and
+    the declared role reached the composers -- the Grok one raised on it
+    and planned nothing at all for that name, while the Claude adapter
+    would have carried `context: fork`, running the body inside a child
+    with the callables it opens one level deeper than its caller meant.
+    The rule that settled it is the absence of the field:
+    `tools/validate_support/packages.py`'s `validate_role` refuses a role
+    in a workflow home, so there is nothing for a composer to bind and
+    nothing to strip at the boundary. These cases hold the surfaces flat
+    however that is achieved, and the last one is why they are not
+    vacuous.
     """
 
     def setUp(self):
@@ -311,11 +316,10 @@ class RoleBearingWorkflowSurfaceTests(unittest.TestCase):
         ), patch.dict(os.environ, {"GROK_HOME": str(self.home / ".grok")}):
             return install.build_plan("user", None)
 
-    def _role_bearing(self):
+    def _workflows(self):
         return {
             directory.name: frontmatter
             for directory, frontmatter, _body in install.discover_workflow_skills()
-            if packages.frontmatter_field(frontmatter, "role")
         }
 
     def _texts(self, plan, attribute, host, item):
@@ -326,16 +330,29 @@ class RoleBearingWorkflowSurfaceTests(unittest.TestCase):
         """Every assertion below sweeps this set; empty, they all pass."""
 
         self.assertNotEqual(
-            {}, self._role_bearing(),
-            "no shipped workflow declares a role, so the surface checks in "
-            "this class sweep nothing",
+            {}, self._workflows(),
+            "no workflow was discovered, so the surface checks in this "
+            "class sweep nothing",
         )
 
-    def test_no_host_surface_binds_a_workflow_s_role(self):
+    def test_no_workflow_declares_a_role_to_bind(self):
+        """The property the rest of the class rests on, read off the tree."""
+
+        declared = sorted(
+            name for name, frontmatter in self._workflows().items()
+            if packages.frontmatter_field(frontmatter, "role")
+        )
+        self.assertEqual(
+            [], declared,
+            "a workflow declares a role, which a host composer will bind: "
+            + ", ".join(declared),
+        )
+
+    def test_no_host_surface_binds_a_workflow_to_a_child(self):
         plan = self._plan()
         claude = self._texts(plan, "claude_adapters", "claude", "skill")
         grok = self._texts(plan, "grok_skills", "grok", "skill")
-        for name in sorted(self._role_bearing()):
+        for name in sorted(self._workflows()):
             with self.subTest(workflow=name):
                 self.assertNotIn("context: fork", claude[name])
                 self.assertNotIn("agent: orch-", claude[name])
@@ -343,18 +360,20 @@ class RoleBearingWorkflowSurfaceTests(unittest.TestCase):
                 self.assertNotIn(packages.FORK_ARRIVAL_CLAUSE, grok[name])
                 self.assertIn("follow it exactly", grok[name])
 
-    def test_the_stripping_is_what_holds_those_surfaces_flat(self):
+    def test_a_declared_role_is_what_would_bind_them(self):
         """The can-fail reading, taken without mutating the tree: the same
-        frontmatter composed unstripped is the fork binding above, and the
-        Grok composer refuses to render at all."""
+        frontmatter with a role put back is the fork binding above, and the
+        Grok composer refuses to render at all. So the flat surfaces are
+        the missing field's doing, not the composers' good manners."""
 
-        for name, frontmatter in sorted(self._role_bearing().items()):
+        for name, frontmatter in sorted(self._workflows().items()):
             with self.subTest(workflow=name):
+                mutant = frontmatter.rstrip() + "\nrole: planner\n"
                 self.assertIn(
-                    "context: fork", packages.manual_only_frontmatter(frontmatter)
+                    "context: fork", packages.manual_only_frontmatter(mutant)
                 )
                 with self.assertRaises(ValueError):
-                    managed_text.grok_skill_text(frontmatter, Path("X") / "SKILL.md")
+                    managed_text.grok_skill_text(mutant, Path("X") / "SKILL.md")
 
 
 if __name__ == "__main__":

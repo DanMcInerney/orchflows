@@ -68,7 +68,6 @@ from .packages import (
     render_claude_agent,
     render_codex_agent,
     split_frontmatter,
-    without_role,
     workflow_adapter_body,
 )
 from .runtime import private_runtime_action
@@ -259,8 +258,10 @@ def _build_user_plan(
     # — for curated entry points — a Codex redirect stub. Two things differ
     # from a skill, and both are about who runs the body: every workflow
     # surface is manual-invocation-only, so the Claude adapter's frontmatter
-    # is forced rather than inherited, and no host surface binds the role a
-    # workflow under `skills/workflows/` declares (`without_role` owns why).
+    # is forced rather than inherited, and no surface binds a role, because
+    # a workflow declares none -- `tools/validate_support/packages.py`'s
+    # `validate_role` refuses one in a workflow home, so there is no field
+    # here for a host's fork binding to read.
     for workflow_dir, frontmatter, body in discover_workflow_skills():
         name = workflow_dir.name
         description = frontmatter_field(frontmatter, "description") or ""
@@ -276,7 +277,7 @@ def _build_user_plan(
             claude_adapters.append(
                 (
                     item_path("claude", "skill", claude_scope_home, name=name),
-                    manual_only_frontmatter(without_role(frontmatter))
+                    manual_only_frontmatter(frontmatter)
                     + workflow_adapter_body(name, lib_workflow_dir, frontmatter),
                 )
             )
@@ -300,8 +301,7 @@ def _build_user_plan(
                 (
                     item_path("grok", "skill", _grok_skills_dir().parent, name=name),
                     grok_skill_text(
-                        without_role(frontmatter),
-                        lib_workflow_dir / WORKFLOW_SKILL_FILE,
+                        frontmatter, lib_workflow_dir / WORKFLOW_SKILL_FILE
                     ),
                 )
             )
