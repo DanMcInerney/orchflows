@@ -209,21 +209,6 @@ def read_events(root, run: str):
     return {"entries": entries, "skipped": skipped, "unreadable": False}
 
 
-def active_claims(discovery: dict) -> list:
-    """Every ticket under way, paired with the run it belongs to.
-
-    Ticket ids are unique only within a run, so an id alone would not say
-    which claim it is.
-    """
-
-    return [
-        {"run": run["run"], "ticket": ticket}
-        for run in discovery["runs"]
-        for ticket in run["tickets"]
-        if ticket["status"] == ACTIVE_STATUS
-    ]
-
-
 def default_root() -> Path:
     """The sink this viewer reads when ``--root`` names none.
 

@@ -40,8 +40,8 @@ explicit manual cleanup.
 ## Observe
 
 The local UI shows the current workflow graph without changing it. From a
-checkout, start it with `uv run --no-project python scripts/ui.py`; an installed
-copy runs through the private Python environment. It binds only to
+checkout, start it with `uv run --no-project python reader/scripts/ui.py`; an
+installed copy runs through the private Python environment. It binds only to
 `127.0.0.1`, serves its prebuilt assets offline, and exposes metadata rather
 than prompts, tool output, or transcript contents. See the
 [UI platform](reader/docs/platform.md) for installed commands, routes, security

@@ -69,7 +69,13 @@ def validate_cross_package_links(packages, diag: Diagnostics) -> None:
 # Every relative markdown link in every .md the library ships resolves to
 # a file and, when present, a heading in that file. External URLs and
 # templated paths are skipped. REVIEW-*.md are dated evidence and exempt.
-LINKED_MD_ROOTS = ("rules", "contracts", "docs", "skills", "packs", "example-workflows", "templates", "benchmarks")
+# The four root orientation documents -- README, TICKETS, ARCHITECTURE,
+# DESIGN -- arrive through the top-level glob below rather than through this
+# tuple, which names directories only.
+LINKED_MD_ROOTS = (
+    "rules", "contracts", "docs", "skills", "packs", "example-workflows",
+    "templates", "benchmarks", "hosts", "reader/docs",
+)
 # Sites whose heading carries a parenthetical suffix; none currently.
 MARKDOWN_ANCHOR_EXEMPT_SITES = frozenset()
 
