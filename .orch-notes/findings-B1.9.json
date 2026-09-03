@@ -1,0 +1,78 @@
+{
+  "ticket": "B1.9",
+  "run": "20260903T155153Z-library-cleanup",
+  "judge": "orch-judge",
+  "pack": "orch-code-pack",
+  "lens": "git",
+  "artifact": "git:4f2d2121fcc8b3fc52f3d539a06d626c2a660d12",
+  "unit": "U6 Installer",
+  "base_revision": "8fa1f2a5e2d60166ae75df7ef219dcebb4b13a3e",
+  "verdict_inputs": {
+    "run_required_at_artifact": {"command": "C:/Users/danhm/.orchflows/runtime/Scripts/python.exe tools/run_required.py --no-cache", "cwd_head": "4f2d2121 (detached)", "exit": 0, "rows": {"tools/validate.py": 0, "tools/run_tests.py": 0, "tools/run_serial_compat.py": 0, "install.py --dry-run": 0, "git diff --check": 0}, "tests": "100 modules, 2270 tests: 0 failures, 0 errors, 14 skipped", "wall": "18:14:49Z-18:22:36Z"},
+    "dry_run_plan_diff": {"base_entries": 363, "artifact_entries": 363, "text_diff": "1d0\n< scope: user", "method": "git archive of 8fa1f2a5 and 4f2d2121 into scratch dirs, install.py --dry-run in each (exit 0 both), diff (exit 1: one line)"},
+    "section_2_shapes": {"hosts/claude.json mode": "import", "installer/hosts.py match": "\"import\" at :87", "upsert_import_line signature": "(text, import_line) -> created-file | added-import | already-present", "without_marked_block": "deleted", "doctor spelling": "positional doctor + --quick; --doctor absent from parser and --help", "--claude-adapters": "absent from parser and --help"},
+    "retired_names_present_tense": {"grep": "claude-adapters|CLAUDE_ADAPTER_SETS|SHARED_ADAPTER_NAMES|_mints_claude_adapter|live_routing_bench|benchmarks/routing|migrated-from-block|without_marked_block|legacy_start_marker|_claude_scope_home|--doctor over the tree minus research/ and REVIEW-*", "hits": ["tests/test_install_doctor.py (asserts absence)", "tests/test_installer_cases/planning/runtime.py (asserts absence)", ".orch/canary/single/tickets/canary/repair.md (fixture; U7 deletes .orch/canary/ whole)"]},
+    "can_fail_readings": {"method": "scratchpad/canfail.py imports the BASE revision from its git-archive export; the tree under test untouched", "readings": {"test_upsert_import_line_leaves_a_marker_block_it_finds_alone": "base action=migrated-from-block, block stripped -> fails on base", "test_no_flag_selects_a_smaller_adapter_set": "base --help mentions claude-adapters -> fails on base", "test_the_one_cli_form_prints_the_report_and_exits_by_status": "base parser accepts --doctor -> fails on base", "test_planning_takes_no_scope_argument": "base build_plan('project', root) raises ValueError, not TypeError -> fails on base"}}
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "non-blocking",
+      "kind": "spec-count",
+      "criterion": "Correctness (acceptance as stated)",
+      "evidence": "Details and spec section 3 U6 say `install.py --dry-run` plans 361 entries; the base 8fa1f2a5 plans 363 (measured, exit 0) and the artifact plans 363. The invariant the sentence fixes (same plan before and after) holds; the number was stale when written.",
+      "cause": "The spec count was recalled, not derived, when the ticket was cut.",
+      "smallest_change": "None on the artifact. The executor reported the deviation with its measurement; the join should read 363 as the number.",
+      "location": "research/library-cleanup-spec-2026-09-03.md section 3 U6; ticket B1.6 Details"
+    },
+    {
+      "id": "F2",
+      "severity": "non-blocking",
+      "kind": "reported-deviation",
+      "criterion": "Correctness (acceptance as stated)",
+      "evidence": "Details asked for an identical plan text; the artifact's diff against base is one deleted header line `scope: user`. Every planned entry is identical (363 = 363, diff shows nothing else).",
+      "cause": "`print_plan` printed `scope: {plan.scope}` and `Plan.scope` was deleted with no reader left; printing a literal would keep a retired concept on a reader's surface (decision 2).",
+      "smallest_change": "None. The deviation is reported with its evidence in the executor record and is the right call under decision 2.",
+      "location": "installer/presentation.py print_plan"
+    },
+    {
+      "id": "F3",
+      "severity": "non-blocking",
+      "kind": "diff",
+      "criterion": "Diff (stated surface)",
+      "evidence": "Details named the whole DESIGN.md:131 clause `Claude keeps all skill adapters — measured 2026-08-16, the verdict and its caveat in benchmarks/routing/README.md` for deletion; the artifact keeps `Claude keeps all skill adapters;` and deletes the measured half. The residual is true of the tree (one adapter per package and workflow, no selector) and names nothing retired.",
+      "cause": "Partial deletion of a named clause; the surviving fragment is a live decision, not a retirement.",
+      "smallest_change": "Either accept, or delete the five words in U2's DESIGN.md pass (wave 3, which owns DESIGN.md rationale). Not worth a repair round here.",
+      "location": "DESIGN.md:133-134 at 4f2d2121"
+    },
+    {
+      "id": "F4",
+      "severity": "non-blocking",
+      "kind": "cross-unit",
+      "criterion": "Correctness (deletion complete)",
+      "evidence": "`.orch/canary/single/tickets/canary/repair.md` still names `--claude-adapters`, `CLAUDE_ADAPTER_SETS`, `SHARED_ADAPTER_NAMES` and `_mints_claude_adapter` at 4f2d2121 and at workspace HEAD 23749d34 (U7 not yet landed). Spec section 3 U7 deletes `.orch/canary/` whole (decision 3); Details told U6 to delete only what names routing in its own surface.",
+      "cause": "Two units own adjacent deletions in one wave; the fixture tree is U7's.",
+      "smallest_change": "Nothing in this unit. The gate at the joined tip should run the retired-name grep once U7 lands and confirm the file is gone.",
+      "location": ".orch/canary/single/tickets/canary/repair.md"
+    },
+    {
+      "id": "F5",
+      "severity": "non-blocking",
+      "kind": "successor-scope",
+      "criterion": "Shape",
+      "evidence": "`hosts/claude.json` `host_instructions` keeps `start`/`end` markers that nothing reads under mode `import`; `tools/render_hosts.py:71` requires all four keys on every managed marker, so removing them needs a renderer schema change outside this ticket's surface.",
+      "cause": "The renderer's marker shape predates an import-only host.",
+      "smallest_change": "Successor: let `render_hosts.py` accept a marker without `start`/`end` when `mode` is `import`, then drop the pair from hosts/claude.json and the rendered adapter.",
+      "location": "hosts/claude.json:11-12; tools/render_hosts.py:71"
+    }
+  ],
+  "reviewed_without_finding": [
+    "Every `scope == \"user\"` / `!= \"user\"` branch in installer/foundation.py, planning.py, application.py, presentation.py and install.py takes the user arm; `_require_project_root` and the project halves live only in installer/uninstall.py, reachable from `--project PATH --uninstall` (verified by grep at 4f2d2121).",
+    "`Plan.scope`, `Plan.project_root`, `ImportPlan.legacy_*` deleted; the receipt still writes the literals `scope: user` / `project_root: null` and doctor compares them, so receipt version 4 keeps its shape for an uninstall reading an older receipt (contract fidelity).",
+    "Files outside the Details list all carry a reason in the executor record or are mechanical caller updates at the changed seam: tools/validate_support/common.py (comment restated), tests/test_serial_compat_manifest_regression.py (renamed identity pin), tests/serial_compat_manifest.json (regenerated, --write-manifest exit 0), tests/test_doclint.py (test read benchmarks/routing/cases.json), tests/test_catalog_completeness.py (test graded SHARED_ADAPTER_NAMES), tests/test_install_support_packages.py (project-rejection test superseded by the TypeError check), test_skill_fork_governance / test_thin_orchestrator / installer/runtime.py / installer/doctor.py (build_plan() / _scope_home() signature).",
+    "No check weakened: deleted tests graded deleted behaviour (migration, adapter set, --doctor, project-plan refusal); replacements assert the new shape and fail on the base revision (can-fail readings above).",
+    "Locality: install.py 483->446, foundation.py 332->288, planning.py 539->491, uninstall.py 384->436 (took the project half), application.py 515->511 (still over the warn-only 500 presumption, pre-existing, not this Goal's).",
+    "README.md:18 and templates/host-block.md:31 already spelled `install.py doctor`; no edit needed."
+  ],
+  "recommended_successor_scope": ["F5 renderer marker shape", "F3 DESIGN.md fragment (U2, wave 3)"]
+}
