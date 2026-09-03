@@ -190,7 +190,7 @@ def relocated_user_install():
             os.environ,
             {"CLAUDE_CONFIG_DIR": str(claude_dir), "CODEX_HOME": str(codex_dir)},
         ), mock_host_clis("claude", "codex"):
-            plan = install.build_plan("user", None)
+            plan = install.build_plan()
             install.apply_plan(plan, accepted_source=install.resolve_source_commit())
         _SHARED["value"] = (plan, home, claude_dir, codex_dir)
     return _SHARED["value"]
@@ -221,7 +221,7 @@ def relocated_user_uninstall():
             os.environ,
             {"CLAUDE_CONFIG_DIR": str(claude_dir), "CODEX_HOME": str(codex_dir)},
         ), mock_host_clis("claude", "codex"):
-            plan = install.build_plan("user", None)
+            plan = install.build_plan()
             install.apply_plan(plan, accepted_source=install.resolve_source_commit())
             report = install.run_uninstall("user", None, dry_run=False)
         _SHARED["uninstalled"] = (plan, report, claude_dir, codex_dir)

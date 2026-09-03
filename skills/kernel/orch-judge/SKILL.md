@@ -1,6 +1,6 @@
 ---
 name: orch-judge
-description: Judge one fixed artifact through the stamped pack's craft and return its durable review envelope.
+description: Invoke when a ticket judges fixed artifacts under a stamped pack.
 role: planner
 ---
 

@@ -83,10 +83,6 @@ JUDGE_USAGE = (
 )
 DO_EXECUTOR = "orch-do"
 JUDGE_EXECUTOR = "orch-judge"
-# A callable carries no standing checker lane: what checks it is the
-# caller's own `judge` ticket or its `done` predicate, both of which are
-# outside work rather than a dependent's `checked_by` anchor.
-MINT_INDEPENDENCE = "gate"
 ARTIFACT_KINDS = frozenset(
     adapter.artifact_kind for adapter in ADAPTER_REGISTRY.values()
 )
@@ -355,7 +351,6 @@ def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
         "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": executor,
         "pack": pack, "pack_digest": pinned, **stamped,
-        "independence": MINT_INDEPENDENCE,
         "parent": parent or None,
         "isolation": isolation, "bound": bound,
         "done": done, MAKES_FIELD: makes,
@@ -523,7 +518,7 @@ def _cmd_judge(rest):
 
 
 __all__ = (
-    "ARTIFACT_KINDS", "MINT_INDEPENDENCE", "DO_EXECUTOR", "DO_USAGE",
+    "ARTIFACT_KINDS", "DO_EXECUTOR", "DO_USAGE",
     "JUDGE_EXECUTOR", "JUDGE_USAGE", "LANE_ADAPTER", "_cmd_callable",
     "_cmd_do", "_cmd_judge", "_launched", "_mint", "_run_dir", "_sealed_root",
     "subquestion_count",

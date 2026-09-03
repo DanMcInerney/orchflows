@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2138,
+  "count": 2116,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -73,7 +73,6 @@
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_repository_validator_runs_the_browser_game_audit",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_test_or_help_identity_disagreement_is_rejected",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_unlisted_implementation_marker_is_rejected",
-   "test_catalog_completeness.CatalogCompletenessTests.test_curated_name_tuples_name_only_shipped_packages",
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_name_reaches_every_host_catalog",
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_check_fails_when_one_catalog_drops_one_name",
@@ -109,8 +108,6 @@
    "test_constitution.NetLinesTest.test_the_block_stays_inside_the_near_zero_budget",
    "test_constitution.WriteTimePointerTest.test_a_copy_without_the_pointer_fails_the_check",
    "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
-   "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
-   "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
    "test_dispatch_launch.LandTest.test_a_land_with_no_predicate_and_no_status_refuses_before_integrating",
    "test_dispatch_launch.LandTest.test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in",
    "test_dispatch_launch.LandTest.test_land_imports_an_outcome_handed_to_it_on_standard_input",
@@ -223,7 +220,6 @@
    "test_doclint.FixtureRootTest.test_the_near_duplicate_names_both_sites",
    "test_doclint.FixtureRootTest.test_the_threshold_is_the_reported_sets_parameter",
    "test_doclint.InstallationScopeDocumentationTest.test_custom_authoring_standard_preserves_admission_and_user_scope_boundaries",
-   "test_doclint.InstallationScopeDocumentationTest.test_live_routing_cases_teach_user_install_and_keep_project_custom_authoring",
    "test_doclint.InstallationScopeDocumentationTest.test_maintained_installation_docs_name_user_scope_and_no_project_install",
    "test_doclint.InstallationScopeDocumentationTest.test_project_authoring_scope_remains_a_distinct_custom_item_landing_zone",
    "test_doclint.LibraryTreeTest.test_no_tier_carries_a_dangling_link",
@@ -300,7 +296,6 @@
    "test_harvest.TestWindowsPathHandling.test_sink_directories_resolve_under_a_windows_style_state_home",
    "test_harvest.TestWriterReaderSeam.test_real_writer_and_reader_agree_on_workflow_and_goal",
    "test_install_doctor.TestInstallDoctor.test_an_uninstalled_grok_leaves_the_report_exactly_as_it_was",
-   "test_install_doctor.TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
    "test_install_doctor.TestInstallDoctor.test_coherent_installation_is_deterministic_and_read_only",
    "test_install_doctor.TestInstallDoctor.test_desired_plan_and_receipt_drift_have_stable_findings",
    "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
@@ -308,6 +303,7 @@
    "test_install_doctor.TestInstallDoctor.test_owned_runtime_mismatch_is_a_read_only_failure",
    "test_install_doctor.TestInstallDoctor.test_runtime_receipt_paths_must_match_the_runtime_under_inspection",
    "test_install_doctor.TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "test_install_doctor.TestInstallDoctor.test_the_one_cli_form_prints_the_report_and_exits_by_status",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_kind_the_receipt_carries_is_a_kind_the_doctor_knows",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_receipt_entry_the_installer_writes_is_one_the_doctor_inspects",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_the_maximal_plan_exercises_every_field_a_plan_can_carry",
@@ -322,7 +318,6 @@
    "test_install_doctor_quick.TestQuickDoctor.test_the_cli_exits_by_verdict_without_building_the_plan_or_writing",
    "test_install_doctor_quick.TestQuickDoctor.test_the_quick_flag_alone_still_means_doctor",
    "test_install_support_packages.ScriptSupportDistributionTest.test_inventory_adds_only_flat_support_modules_for_cut_facades",
-   "test_install_support_packages.ScriptSupportDistributionTest.test_project_plan_is_rejected",
    "test_install_support_packages.ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
    "test_installer.DryRunOracleTest.test_a_dry_run_with_no_host_enabled_is_distinguishable",
    "test_installer.DryRunOracleTest.test_dry_run_writes_nothing",
@@ -333,9 +328,10 @@
    "test_installer.HostAdapterRenderingTest.test_installer_profiles_and_markers_come_from_rendered_adapters",
    "test_installer.HostAdapterRenderingTest.test_repository_adapters_are_a_deterministic_render_of_host_data",
    "test_installer.HostAdapterRenderingTest.test_same_target_marker_collision_is_refused_before_render",
-   "test_installer.ProjectInstallBoundaryTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
-   "test_installer.ProjectInstallBoundaryTest.test_legacy_project_uninstall_normalizes_in_boundary_receipt_paths",
-   "test_installer.ProjectInstallBoundaryTest.test_public_facade_rejects_project_plans_before_planning_or_application",
+   "test_installer.LegacyProjectCleanupTest.test_an_applied_plan_records_the_one_scope_in_its_receipt",
+   "test_installer.LegacyProjectCleanupTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
+   "test_installer.LegacyProjectCleanupTest.test_legacy_project_uninstall_normalizes_in_boundary_receipt_paths",
+   "test_installer.LegacyProjectCleanupTest.test_planning_takes_no_scope_argument",
    "test_installer.RoleProfileRefusalTest.test_a_canonical_profile_name_must_match_its_declared_role",
    "test_installer.RoleProfileRefusalTest.test_a_missing_codex_fork_binding_is_refused_and_the_row_is_named",
    "test_installer.RoleProfileRefusalTest.test_a_missing_role_row_is_refused_and_the_role_is_named",
@@ -362,25 +358,17 @@
    "test_installer.TestBootstrapWrappers.test_install_cmd_is_windows_wrapper_resolving_interpreters",
    "test_installer.TestBootstrapWrappers.test_install_sh_is_posix_wrapper_resolving_interpreters",
    "test_installer.TestBootstrapWrappers.test_wrapper_comments_credit_the_uv_first_order_not_a_path_check",
-   "test_installer.TestClaudeAdapterSet.test_all_is_the_default_and_mints_every_package_and_template",
-   "test_installer.TestClaudeAdapterSet.test_four_changes_nothing_but_the_claude_adapter_list",
-   "test_installer.TestClaudeAdapterSet.test_four_mints_exactly_the_shared_adapters",
-   "test_installer.TestClaudeAdapterSet.test_help_names_the_hosts_the_module_docstring_names",
-   "test_installer.TestClaudeAdapterSet.test_installer_description_says_codex_redirects_every_canonical_name",
-   "test_installer.TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan",
-   "test_installer.TestClaudeAdapterSet.test_the_four_adapters_carry_the_same_content_they_carry_under_all",
-   "test_installer.TestClaudeAdapterSet.test_the_parser_accepts_the_two_sets_and_refuses_any_other",
-   "test_installer.TestClaudeAdapterSet.test_the_plan_count_and_printout_follow_the_adapter_set",
-   "test_installer.TestClaudeAdapterSet.test_the_receipt_records_only_the_minted_adapters",
-   "test_installer.TestClaudeAdapterSet.test_the_shared_names_remain_the_reduced_claude_set",
-   "test_installer.TestClaudeAdapterSet.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
-   "test_installer.TestClaudeAlwaysOnImport.test_apply_migrates_legacy_inline_block_in_claude_md",
+   "test_installer.TestClaudeAdapters.test_every_package_and_workflow_gets_one_claude_adapter",
+   "test_installer.TestClaudeAdapters.test_help_names_the_hosts_the_module_docstring_names",
+   "test_installer.TestClaudeAdapters.test_installer_description_says_codex_redirects_every_canonical_name",
+   "test_installer.TestClaudeAdapters.test_no_flag_selects_a_smaller_adapter_set",
+   "test_installer.TestClaudeAdapters.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
    "test_installer.TestClaudeAlwaysOnImport.test_apply_writes_host_block_file_and_appends_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_reapply_does_not_duplicate_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_uninstall_reports_manual_cleanup_for_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_upsert_import_line_appends_to_existing_file_without_block",
    "test_installer.TestClaudeAlwaysOnImport.test_upsert_import_line_is_idempotent",
-   "test_installer.TestClaudeAlwaysOnImport.test_upsert_import_line_migrates_legacy_inline_block",
+   "test_installer.TestClaudeAlwaysOnImport.test_upsert_import_line_leaves_a_marker_block_it_finds_alone",
    "test_installer.TestClaudeAlwaysOnImport.test_user_plan_renders_host_block_file_and_claude_import",
    "test_installer.TestClaudeConfigDir.test_blank_claude_config_dir_falls_back_to_home",
    "test_installer.TestClaudeConfigDir.test_uninstall_removes_adapter_installed_under_claude_config_dir",
@@ -479,11 +467,6 @@
    "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_enumeration_names_both_shapes_the_two_broken_sessions_had",
    "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_opening_sentence_keeps_every_host_at_every_rewrap",
    "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_stdlib_claim_stays_absent_at_every_rewrap",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_duplicate_legacy_begin_raises",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_begin_without_end_raises",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_end_without_begin_raises",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_out_of_order_raises",
-   "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_out_of_order_raises_with_crlf",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_begin_without_end_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_duplicate_begin_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_duplicate_begin_raises_with_crlf",
@@ -492,13 +475,13 @@
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_out_of_order_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_out_of_order_raises_with_crlf",
    "test_installer.TestMarkerEngineMisuse.test_upsert_marked_block_unbalanced_raises_with_crlf",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_absent_markers_is_a_no_op",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_begin_without_end_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_duplicate_begin_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_duplicate_end_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_end_without_begin_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_out_of_order_raises",
-   "test_installer.TestMarkerEngineMisuse.test_without_marked_block_out_of_order_raises_with_crlf",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_absent_markers_is_a_no_op",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_begin_without_end_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_duplicate_begin_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_duplicate_end_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_end_without_begin_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_out_of_order_raises",
+   "test_installer.TestMarkerEngineMisuse.test_without_owned_block_out_of_order_raises_with_crlf",
    "test_installer.TestPartialApplyAfterRmtree.test_crash_mid_copy_leaves_lib_home_partially_repopulated_and_no_receipt",
    "test_installer.TestPluginSubsystemRemoved.test_install_py_source_has_no_plugin_subsystem_reference",
    "test_installer.TestPluginSubsystemRemoved.test_plugin_subsystem_paths_are_absent",
@@ -575,10 +558,12 @@
    "test_lens_key.LensKeyTest.test_a_judge_over_two_kinds_gets_no_key",
    "test_lens_key.LensKeyTest.test_a_making_do_citing_a_predecessor_keeps_its_adapter_kind",
    "test_lens_key.LensKeyTest.test_a_planning_do_citing_a_predecessor_keeps_its_makes_kind",
+   "test_lifecycle_render.LifecycleTableTest.test_a_forged_caller_row_for_an_unrouted_event_is_refused",
    "test_lifecycle_render.LifecycleTableTest.test_a_hand_edit_fails_closed",
    "test_lifecycle_render.LifecycleTableTest.test_dispatch_rows_expose_attempt_and_record_state",
    "test_lifecycle_render.LifecycleTableTest.test_each_generated_row_names_its_code_identity",
    "test_lifecycle_render.LifecycleTableTest.test_every_public_lifecycle_event_has_the_owned_seven_cells",
+   "test_lifecycle_render.LifecycleTableTest.test_no_caller_row_names_an_event_nothing_routes",
    "test_lifecycle_render.LifecycleTableTest.test_the_committed_table_is_exactly_the_rendered_code",
    "test_lifecycle_render.LifecycleTableTest.test_the_repository_validator_refuses_a_hand_edit",
    "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_a_malformed_run_id_refuses_every_mutating_command",
@@ -612,7 +597,7 @@
    "test_minimal_acceptance.MinimalAcceptanceTests.test_single_and_decomposed_runs_take_only_their_minimum_path",
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_carries_three_closed_adapters_and_distinct_workspaces",
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_dependency_edges_carry_identities_not_candidate_bytes",
-   "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
+   "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_artifact_kind",
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
    "test_orchflows_bundle.ClosureTests.test_a_bundle_reached_twice_is_cloned_once_and_is_not_a_cycle",
@@ -1172,7 +1157,7 @@
    "test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model",
    "test_ticket_protocol.TicketProtocolTest.test_result_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_semantic_change_moves_assignment",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_checker_independence_dependency_no_longer_waits_on_anything",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_complete_dependency_leaves_its_downstream_waiting_on_nothing",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_assignment_is_issued_and_reaches_generation_stamping",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_ordinary_member_is_issued_like_any_other",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_malformed_first_attempt_writes_no_run_directory",
@@ -1381,14 +1366,6 @@
    "tests.test_cell_linter_cases.pack_cells.CurrentWorkspaceBindingTest.test_every_shipped_workspace_binds_the_current_ticket_protocol",
    "tests.test_cell_linter_cases.pack_cells.TestAllowlist.test_every_allowlisted_clause_is_in_the_form_the_matcher_compares",
    "tests.test_cell_linter_cases.pack_cells.TestAllowlist.test_the_real_tree_carries_no_unallowed_verbatim_duplication",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_backticked_none_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_bare_none_is_accepted",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_empty_cell_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_every_real_pack_row_is_accepted",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_free_prose_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_hyphen_instead_of_an_em_dash_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_the_real_tree_reports_no_assembly_form_error",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_the_two_legal_forms_are_accepted",
    "tests.test_cell_linter_cases.pack_cells.TestCellClauseSplitter.test_a_clause_citing_an_owner_outside_the_pack_is_not_content",
    "tests.test_cell_linter_cases.pack_cells.TestCellClauseSplitter.test_a_comma_does_not_cut",
    "tests.test_cell_linter_cases.pack_cells.TestCellClauseSplitter.test_a_pointer_clause_keeps_its_exemption_after_the_split",
@@ -1403,7 +1380,7 @@
    "tests.test_cell_linter_cases.pack_cells.TestCellDuplication.test_near_duplicate_clauses_warn_naming_both_sites",
    "tests.test_cell_linter_cases.pack_cells.TestCellDuplication.test_the_same_clause_under_different_sections_is_not_compared",
    "tests.test_cell_linter_cases.pack_cells.TestCellDuplication.test_unrelated_clauses_are_not_reported",
-   "tests.test_cell_linter_cases.pack_cells.TestMandatedEchoExemption.test_the_outside_citation_and_typed_atoms_are_exempt",
+   "tests.test_cell_linter_cases.pack_cells.TestOutsideCitationExemption.test_the_outside_citation_is_exempt",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_a_count_above_the_ceiling_fails",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_the_tree_holds_at_or_under_the_ceiling",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_the_tree_holds_at_or_under_the_cross_tier_ceiling",
@@ -1621,7 +1598,7 @@
    "tests.test_static_tree_invariants_cases.skill_packages.TestSkillAnatomyOrder.test_every_skill_body_orders_require_then_never_then_return",
    "tests.test_static_tree_invariants_cases.skill_packages.TestTierDirectoriesExist.test_every_skill_tier_directory_exists",
    "tests.test_static_tree_invariants_cases.skill_packages.TestTierDirectoriesExist.test_only_surviving_skill_tiers_are_declared",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_checker_independence_dependency_no_longer_waits_on_anything",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_complete_dependency_leaves_its_downstream_waiting_on_nothing",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_assignment_is_issued_and_reaches_generation_stamping",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_ordinary_member_is_issued_like_any_other",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_malformed_first_attempt_writes_no_run_directory",
@@ -1936,6 +1913,7 @@
    "tests.test_validator_cases.availability_and_packages.TestASkippedCheckSaysSo.test_the_link_check_names_every_root_that_bought_its_silence",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_lens_entry_keyed_by_a_kind_the_named_pack_never_emits_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_missing_mandatory_section_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_named_pack_whose_kind_no_lens_entry_carries_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_pack_only_section_inside_a_sheet_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_packs_name_that_resolves_to_no_pack_is_refused",
    "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_requirements_file_inside_a_sheet_is_refused",
@@ -2141,7 +2119,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "f606837472af685c9d5c09fd1123ecd5b189b90c226cca0c0857cc08ed9a4fc6"
+  "sha256": "c9fd1a3ebff5c2d3028fabaa1695c2e71e255e6f662281976cd6e6ed6b41f559"
  },
  "mutation_owners": [
   {
@@ -2733,18 +2711,18 @@
   },
   {
    "module": "tests.test_install_doctor",
-   "owner": "TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
+   "owner": "TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
    "restoration": "sharded-module-guard",
    "seams": [
+    "environment",
     "monkeypatch"
    ]
   },
   {
    "module": "tests.test_install_doctor",
-   "owner": "TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "owner": "TestInstallDoctor.test_the_one_cli_form_prints_the_report_and_exits_by_status",
    "restoration": "sharded-module-guard",
    "seams": [
-    "environment",
     "monkeypatch"
    ]
   },
@@ -2783,7 +2761,7 @@
   },
   {
    "module": "tests.test_installer",
-   "owner": "ProjectInstallBoundaryTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
+   "owner": "LegacyProjectCleanupTest.test_an_applied_plan_records_the_one_scope_in_its_receipt",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -2791,7 +2769,15 @@
   },
   {
    "module": "tests.test_installer",
-   "owner": "ProjectInstallBoundaryTest.test_public_facade_rejects_project_plans_before_planning_or_application",
+   "owner": "LegacyProjectCleanupTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer",
+   "owner": "LegacyProjectCleanupTest.test_planning_takes_no_scope_argument",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -2883,14 +2869,6 @@
   {
    "module": "tests.test_installer_cases.application.partial_apply",
    "owner": "TestPartialApplyAfterRmtree.test_crash_mid_copy_leaves_lib_home_partially_repopulated_and_no_receipt",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.managed_text.claude_import",
-   "owner": "TestClaudeAlwaysOnImport.test_apply_migrates_legacy_inline_block_in_claude_md",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3140,7 +3118,7 @@
   },
   {
    "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestClaudeAdapterSet._plan",
+   "owner": "TestClaudeAdapters._plan",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3148,23 +3126,7 @@
   },
   {
    "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan._dry_run",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestClaudeAdapterSet.test_the_receipt_records_only_the_minted_adapters",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestClaudeAdapterSet.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
+   "owner": "TestClaudeAdapters.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3636,6 +3598,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_lifecycle_render",
+   "owner": "LifecycleTableTest.test_a_forged_caller_row_for_an_unrouted_event_is_refused",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
@@ -5248,20 +5218,6 @@
    ],
    "id": "test_installer.TestInstallReceipt.test_receipt_records_actions_and_hashes",
    "module": "test_installer"
-  },
-  {
-   "categories": [
-    "cutcheck-corpus"
-   ],
-   "id": "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
-   "module": "test_cutcheck"
-  },
-  {
-   "categories": [
-    "cutcheck-process"
-   ],
-   "id": "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
-   "module": "test_cutcheck"
   },
   {
    "allowed_seams": [

@@ -107,9 +107,8 @@ family's owner modules and again for T2's second directory.
 
 ## Runtime routing pins
 
-Helper membership derives from code. Two
-non-derivable facts: `scripts/cutcheck.py` owns cut-defect
-detection over issued ticket sets; `scripts/tickets.py` owns
+Helper membership derives from code. One
+non-derivable fact: `scripts/tickets.py` owns
 the public ticket facade, the one root,
 immutable run identity (`opened_at`, installed version, source commit),
 immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).

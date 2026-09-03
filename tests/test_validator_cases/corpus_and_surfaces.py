@@ -136,8 +136,6 @@ class TestCraftSections(_IsolatedTree):
             f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
             "| cell | binding |\n| --- | --- |\n"
             f"| adapter | {adapter} |\n"
-            "| stages | [stage] |\n"
-            "| assembly | none |\n"
             "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
         )
@@ -275,7 +273,7 @@ class TestWordBudgetAndLinks(_IsolatedTree):
 
     def test_a_dangling_markdown_link_in_docs_is_an_error(self):
         for root in validate.LINKED_MD_ROOTS:
-            (self.tmp_path / root).mkdir(exist_ok=True)
+            (self.tmp_path / root).mkdir(parents=True, exist_ok=True)
         docs = self.tmp_path / "docs"
         (docs / "x.md").write_text("see [gone](gone.md) and [ok](../contracts/verdict.md)\n", encoding="utf-8")
         result = self._run()

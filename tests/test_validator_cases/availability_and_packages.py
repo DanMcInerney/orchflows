@@ -355,10 +355,16 @@ class TestSheetAnatomy(_IsolatedTree):
 
     PACK = "orch-widget-pack"
 
-    def _write_pack(self, name=None, adapter="git"):
+    def _write_pack(self, name=None, adapter="git", kind="git"):
         """The scaffold's own pack skeleton, so the fixture pack is the pack
         `orchflows new pack` writes -- a hand-rolled one drifts from what a
-        real pack must carry and reds these cases on its own defects."""
+        real pack must carry and reds these cases on its own defects.
+
+        `kind` is the artifact kind `adapter` emits: the scaffold writes a
+        `git` pack, so a fixture that changes the adapter changes its
+        craft's `## Lens` entry to match, or the craft-section check reds
+        the pack itself and hides the sheet finding under test.
+        """
 
         name = name or self.PACK
         pack = self.tmp_path / "packs" / name
@@ -367,6 +373,8 @@ class TestSheetAnatomy(_IsolatedTree):
             path.parent.mkdir(parents=True, exist_ok=True)
             if relative == "SKILL.md" and adapter != "git":
                 text = text.replace("| adapter | git |", f"| adapter | {adapter} |")
+            if relative == "references/craft.md" and kind != "git":
+                text = text.replace("### git", f"### {kind}")
             path.write_bytes(text.encode("utf-8"))
         return pack
 
@@ -485,6 +493,31 @@ class TestSheetAnatomy(_IsolatedTree):
             any("### doc" in line for line in self._errors(result.stdout, "market-brief")),
             result.stdout,
         )
+
+    def test_a_named_pack_whose_kind_no_lens_entry_carries_is_refused(self):
+        """The other direction of the same fact. A sheet stamped beside two
+        packs but keyed for one hands the other pack's verb an entry that
+        does not exist, so the stamp adds nothing it can read."""
+
+        self._write_pack()
+        self._write_pack("orch-paper-pack", adapter="document-tree", kind="doc")
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief",
+            packs="%s, orch-paper-pack" % self.PACK,
+            lens=("git",),
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        errors = self._errors(result.stdout, "market-brief")
+        self.assertTrue(
+            any("orch-paper-pack" in line and "### doc" in line for line in errors),
+            result.stdout,
+        )
+        # The pack that *is* keyed is not reported: the finding names the
+        # uncovered stamp, never every pack the sheet lists.
+        self.assertFalse(any(self.PACK in line for line in errors), result.stdout)
 
     def test_a_sheet_over_the_budget_is_refused(self):
         self._write_pack()

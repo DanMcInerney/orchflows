@@ -64,11 +64,17 @@ STAMPS = {
 # This is executable metadata beside the guards that own the transitions.
 # Sources are expanded one-per-row for the rendered view. A same-state event
 # still appears because it changes a required lifecycle record.
+#
+# `caller` as an actor means the command line, so such a row's event has
+# to be a routed subcommand; `tools/render_lifecycle.py` refuses one that
+# is not. An event folded inside another command names that command here
+# instead, which is why `issue` and `stamp` say `tickets.py do|judge` and
+# `ready` and `claim` say `tickets.py dispatch`.
 _LIFECYCLE_SPECS = (
-    LifecycleSpec("issue", ("unissued",), PENDING, "caller", "sealed ticket source", "contracts/work-item.md", "rules/topology.md"),
-    LifecycleSpec("stamp", ("unsealed draft",), PENDING, "caller", "sealed root generation", "contracts/work-item.md", "rules/topology.md"),
-    LifecycleSpec("ready", (PENDING,), READY, "caller", "admission receipt", "contracts/work-item.md", "rules/topology.md"),
-    LifecycleSpec("claim", (PENDING, READY, CLAIMED), CLAIMED, "caller", "admission receipt; stale-claim proof when already claimed", "contracts/work-item.md", "rules/delegation.md"),
+    LifecycleSpec("issue", ("unissued",), PENDING, "tickets.py do|judge", "sealed ticket source", "contracts/work-item.md", "rules/topology.md"),
+    LifecycleSpec("stamp", ("unsealed draft",), PENDING, "tickets.py do|judge", "sealed root generation", "contracts/work-item.md", "rules/topology.md"),
+    LifecycleSpec("ready", (PENDING,), READY, "tickets.py dispatch", "admission receipt", "contracts/work-item.md", "rules/topology.md"),
+    LifecycleSpec("claim", (PENDING, READY, CLAIMED), CLAIMED, "tickets.py dispatch", "admission receipt; stale-claim proof when already claimed", "contracts/work-item.md", "rules/delegation.md"),
     LifecycleSpec("dispatch-open", ("ready / no dispatch state", "ready / ended attempts", "claimed / ended attempts", "suspended / ended attempts"), "claimed / live attempt", "caller", "assignment seal and admission receipt", "contracts/dispatch.md", "rules/delegation.md"),
     LifecycleSpec("dispatch-commit", ("claimed / live attempt",), "claimed / live attempt + generic record", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
     LifecycleSpec("dispatch", ("ready / no dispatch state", "ready / ended attempts", "claimed / live attempt", "claimed / ended attempts", "suspended / ended attempts"), "claimed / launched", "caller", "assignment seal, admission receipt, and the established workspace", "contracts/dispatch.md", "rules/delegation.md"),

@@ -3,6 +3,7 @@
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 
 from tests._repo_root import ROOT
@@ -76,6 +77,40 @@ class LifecycleTableTest(unittest.TestCase):
         self.assertEqual("claimed / retired attempt", retire.result)
         joins = [row for row in rows if row.event == "dispatch-join"]
         self.assertIn("suspended / retired attempt", {row.result for row in joins})
+
+    def test_no_caller_row_names_an_event_nothing_routes(self):
+        """A `caller` row promises a command line a command to run."""
+
+        self.assertEqual(
+            [],
+            render_lifecycle.unrouted_caller_events(
+                tickets_lifecycle.lifecycle_rows()
+            ),
+        )
+
+    def test_a_forged_caller_row_for_an_unrouted_event_is_refused(self):
+        """The check above convicts only if it can.
+
+        One row, `caller` over an event no subcommand answers, is the
+        exact shape `issue`, `stamp`, `ready` and `claim` held while
+        four folded steps were still advertised as commands.
+        """
+
+        forged = tickets_lifecycle.lifecycle_rows()[0]._replace(
+            actor="caller", event="draft-validate"
+        )
+        self.assertEqual(
+            ["draft-validate"],
+            render_lifecycle.unrouted_caller_events([forged]),
+        )
+        with self.assertRaises(render_lifecycle.UnroutedCallerEvent):
+            # The renderer reaches the flat `tickets_lifecycle`, a second
+            # module object from the packaged one imported above.
+            with mock.patch.object(
+                render_lifecycle.tickets_lifecycle,
+                "lifecycle_rows", return_value=[forged],
+            ):
+                render_lifecycle.render()
 
     def test_the_repository_validator_refuses_a_hand_edit(self):
         with tempfile.TemporaryDirectory() as directory:

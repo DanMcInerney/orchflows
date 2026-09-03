@@ -38,14 +38,14 @@ class MultiPackRunFixtureTest(unittest.TestCase):
         entries = fixture["tickets"]
         self.assertEqual(3, len(entries))
         self.assertEqual(
-            {"document-tree", "evidence-store", "git-plus-render"},
+            {"document-tree", "evidence-store", "git"},
             {item["adapter"] for item in entries},
         )
         self.assertEqual(3, len({item["workspace"] for item in entries}))
         for item in entries:
             adapter = tickets.adapter_spec(item["pack"])
             self.assertEqual(adapter.key, item["adapter"])
-            self.assertEqual(adapter.identity_form, item["identity_form"])
+            self.assertEqual(adapter.artifact_kind, item["artifact_kind"])
 
     def test_fixture_dependency_edges_carry_identities_not_candidate_bytes(self):
         fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
@@ -59,16 +59,16 @@ class MultiPackRunFixtureTest(unittest.TestCase):
                 self.assertNotIn("workspace", item["context_identities"])
                 self.assertNotIn("bytes", item["context_identities"])
 
-    def test_fixture_join_uses_each_adapter_identity_form(self):
+    def test_fixture_join_uses_each_adapter_artifact_kind(self):
         fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
         by_id = {item["id"]: item for item in fixture["tickets"]}
         expected = {
-            item["id"]: item["identity_form"] for item in fixture["joins"]
+            item["id"]: item["artifact_kind"] for item in fixture["joins"]
         }
         self.assertEqual(
-            {"01-research": "evidence-packet",
-             "02-draft": "document-revision",
-             "03-render": "view-identity"},
+            {"01-research": "evidence",
+             "02-draft": "doc",
+             "03-render": "git"},
             expected,
         )
         self.assertEqual(
@@ -80,7 +80,7 @@ class MultiPackRunFixtureTest(unittest.TestCase):
                 by_id[item["id"]]["artifact_identity"], item["artifact_identity"]
             )
             self.assertTrue(
-                item["artifact_identity"].startswith(item["identity_form"] + ":"),
+                item["artifact_identity"].startswith(item["artifact_kind"] + ":"),
                 item,
             )
 

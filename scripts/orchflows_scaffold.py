@@ -76,8 +76,6 @@ description: Domain pack for <artifacts>. Stamp when the deliverable is <kind>.
 | cell | binding |
 | --- | --- |
 | adapter | git |
-| stages | [build] |
-| assembly | none |
 | craft | the domain document at [craft](references/craft.md) |
 """
 

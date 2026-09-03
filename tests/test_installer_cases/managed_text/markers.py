@@ -10,9 +10,8 @@ from installer import managed_text
 class TestMarkerEngineMisuse(unittest.TestCase):
     """Marker matching is line equality on ``rstrip("\\r\\n")``. Duplicate,
     unbalanced, and out-of-order markers must raise ``ValueError`` naming the
-    offending marker, for ``upsert_marked_block``, ``without_marked_block``,
-    and ``upsert_import_line`` (which delegates legacy-marker stripping to
-    ``without_marked_block``) alike, and for CRLF line endings too."""
+    offending marker, for ``upsert_marked_block`` and ``without_owned_block``
+    alike, and for CRLF line endings too."""
 
     # -- upsert_marked_block -------------------------------------------
 
@@ -56,69 +55,51 @@ class TestMarkerEngineMisuse(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "out of order"):
             install.upsert_marked_block(text, "new\n", "# BEGIN", "# END")
 
-    # -- without_marked_block -------------------------------------------
+    # -- without_owned_block --------------------------------------------
+    #
+    # The one surviving reader of the span. ``_owned`` claims every line, so
+    # what is graded here is the marker reading and nothing about ownership.
 
-    def test_without_marked_block_duplicate_begin_raises(self):
+    @staticmethod
+    def _owned(line):
+        return True
+
+    def test_without_owned_block_duplicate_begin_raises(self):
         text = "# BEGIN\nold\n# BEGIN\nold2\n# END\n"
         with self.assertRaisesRegex(ValueError, "invalid"):
-            install.without_marked_block(text, "# BEGIN", "# END")
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
 
-    def test_without_marked_block_duplicate_end_raises(self):
+    def test_without_owned_block_duplicate_end_raises(self):
         text = "# BEGIN\nold\n# END\nold2\n# END\n"
         with self.assertRaisesRegex(ValueError, "invalid"):
-            install.without_marked_block(text, "# BEGIN", "# END")
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
 
-    def test_without_marked_block_begin_without_end_raises(self):
+    def test_without_owned_block_begin_without_end_raises(self):
         text = "# BEGIN\nold\n"
         with self.assertRaisesRegex(ValueError, "invalid"):
-            install.without_marked_block(text, "# BEGIN", "# END")
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
 
-    def test_without_marked_block_end_without_begin_raises(self):
+    def test_without_owned_block_end_without_begin_raises(self):
         text = "old\n# END\n"
         with self.assertRaisesRegex(ValueError, "invalid"):
-            install.without_marked_block(text, "# BEGIN", "# END")
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
 
-    def test_without_marked_block_out_of_order_raises(self):
+    def test_without_owned_block_out_of_order_raises(self):
         text = "# END\nold\n# BEGIN\n"
         with self.assertRaisesRegex(ValueError, "invalid"):
-            install.without_marked_block(text, "# BEGIN", "# END")
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
 
-    def test_without_marked_block_out_of_order_raises_with_crlf(self):
+    def test_without_owned_block_out_of_order_raises_with_crlf(self):
         text = "# END\r\nold\r\n# BEGIN\r\n"
         with self.assertRaisesRegex(ValueError, "invalid"):
-            install.without_marked_block(text, "# BEGIN", "# END")
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
 
-    def test_without_marked_block_absent_markers_is_a_no_op(self):
+    def test_without_owned_block_absent_markers_is_a_no_op(self):
         # Contrast case: no markers at all is not misuse -- text passes through.
         text = "plain content\n"
-        self.assertEqual(text, install.without_marked_block(text, "# BEGIN", "# END"))
-
-    # -- upsert_import_line (delegates legacy-marker stripping) ---------
-
-    def test_upsert_import_line_duplicate_legacy_begin_raises(self):
-        text = "<!-- BEGIN -->\nold\n<!-- BEGIN -->\nold2\n<!-- END -->\n"
-        with self.assertRaisesRegex(ValueError, "invalid"):
-            install.upsert_import_line(text, "@x", "<!-- BEGIN -->", "<!-- END -->")
-
-    def test_upsert_import_line_legacy_begin_without_end_raises(self):
-        text = "<!-- BEGIN -->\nold\n"
-        with self.assertRaisesRegex(ValueError, "invalid"):
-            install.upsert_import_line(text, "@x", "<!-- BEGIN -->", "<!-- END -->")
-
-    def test_upsert_import_line_legacy_end_without_begin_raises(self):
-        text = "old\n<!-- END -->\n"
-        with self.assertRaisesRegex(ValueError, "invalid"):
-            install.upsert_import_line(text, "@x", "<!-- BEGIN -->", "<!-- END -->")
-
-    def test_upsert_import_line_legacy_out_of_order_raises(self):
-        text = "<!-- END -->\nold\n<!-- BEGIN -->\n"
-        with self.assertRaisesRegex(ValueError, "invalid"):
-            install.upsert_import_line(text, "@x", "<!-- BEGIN -->", "<!-- END -->")
-
-    def test_upsert_import_line_legacy_out_of_order_raises_with_crlf(self):
-        text = "<!-- END -->\r\nold\r\n<!-- BEGIN -->\r\n"
-        with self.assertRaisesRegex(ValueError, "invalid"):
-            install.upsert_import_line(text, "@x", "<!-- BEGIN -->", "<!-- END -->")
+        self.assertEqual(
+            text, managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
+        )
 
 
 class TestConservativeBlockRemoval(unittest.TestCase):
@@ -154,7 +135,7 @@ class TestConservativeBlockRemoval(unittest.TestCase):
         text = "before\n# BEGIN\nowned = 1\nowned = 2\n# END\nafter\n"
 
         self.assertEqual(
-            install.without_marked_block(text, "# BEGIN", "# END"),
+            "before\nafter\n",
             managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned),
         )
 

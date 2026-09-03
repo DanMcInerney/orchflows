@@ -1,7 +1,6 @@
 """Cross-layer contract for the rendered observability experience substrate."""
 
 import contextlib
-import hashlib
 import io
 import json
 import re
@@ -33,43 +32,6 @@ def frontend_subcommands() -> set:
 
 
 class ExperienceFoundationContractTests(unittest.TestCase):
-    def test_modularization_spec_is_the_accepted_content_with_locator_repairs(self):
-        path = ROOT / "reader" / "docs" / "modularization.md"
-        implemented = path.read_bytes()
-
-        self.assertNotIn(
-            b"../../web/src/features/session-graph/index.tsx)", implemented
-        )
-        self.assertEqual(
-            "A2B5BDABC873C3B376DC9A339AE0AAA441C7EDB94FFBDEA435A500AA6D5CF13E",
-            hashlib.sha256(implemented).hexdigest().upper(),
-        )
-
-    def test_workflows_spec_preserves_accepted_content_with_locator_repairs(self):
-        path = ROOT / "reader" / "docs" / "workflows.md"
-        implemented = path.read_bytes()
-
-        self.assertNotIn(b"](../../web/src/api/schema.ts)", implemented)
-        self.assertNotIn(b"](../../web/src/state/location.ts)", implemented)
-        reconstructed = implemented.replace(
-            b"`ExperienceSnapshot` schema (`web/src/api/schema.ts`)",
-            b"[`ExperienceSnapshot` schema](../../web/src/api/schema.ts)",
-        ).replace(
-            b"current routes (`web/src/state/location.ts`)",
-            b"[current routes](../../web/src/state/location.ts)",
-        ).replace(
-            b"schema (`web/src/api/schema.ts`)",
-            b"[schema](../../web/src/api/schema.ts)",
-        )
-        # Re-frozen 2026-08-31 over the workflows-convert tip's bytes: every
-        # library entry became a workflow skill, so the catalog rows name
-        # `SKILL.md` and the detail example is the prose loop rather than a
-        # stub graph. The locator repairs above still hold.
-        self.assertEqual(
-            "21BB18981ACAC7D0122E70BCF4E682CB4C81A377E9B61FD9AABB7D17844FC9FC",
-            hashlib.sha256(reconstructed).hexdigest().upper(),
-        )
-
     def test_architecture_names_live_ui_owners_and_workflow_routes(self):
         architecture = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
 

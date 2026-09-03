@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Install orchflows for Claude Code, Codex and Grok Build from a git clone.
 
-Cross-platform (Windows + POSIX), pathlib throughout, never symlinks. User
-scope is primary and auto-detects its hosts: a host's half runs only when its
-own CLI is on ``PATH``, and if none is found it warns and exits successfully
-without writing anything. ``CLAUDE_CONFIG_DIR``, ``CODEX_HOME`` and
+Cross-platform (Windows + POSIX), pathlib throughout, never symlinks. It
+installs for the current user and auto-detects its hosts: a host's half runs
+only when its own CLI is on ``PATH``, and if none is found it warns and exits
+successfully without writing anything. ``CLAUDE_CONFIG_DIR``, ``CODEX_HOME`` and
 ``GROK_HOME`` each replace their host's default home, matching that CLI.
 
 - ``~/.orchflows/`` (private Python runtime, library, scripts, receipt, the
@@ -27,9 +27,10 @@ plan is built.
 - Grok Build — rendered skills, role agents, instructions, and subagent
   limits.
 
-Installation has one scope: user. Legacy project receipts remain accepted by
-``--project PATH --uninstall`` only, so older versions' installations can
-still be cleaned up conservatively without recreating project artifacts.
+Installation writes one tree, this user's. Legacy project receipts remain
+accepted by ``--project PATH --uninstall`` only, so older versions'
+installations can still be cleaned up conservatively without recreating
+project artifacts.
 
 The receipt records ``source_commit`` (the installed-from repo's git HEAD,
 read from a clone or a worktree checkout); a rerun whose HEAD has moved prints
@@ -41,8 +42,8 @@ including whether the private runtime would be created, reused or repaired,
 without writing anything. ``--uninstall`` removes only what it generated
 and finds unchanged: entrypoints and role agents on all three hosts, plus
 the two managed TOML config blocks, lifted key by key rather than deleted.
-It prints manual cleanup for every other path in the scope's
-``receipt.json`` (gracefully, even for a receipt from an older, full
+It prints manual cleanup for every other path in the
+``receipt.json`` it read (gracefully, even for a receipt from an older, full
 project install) and retains that receipt until cleanup is complete.
 """
 
@@ -104,7 +105,6 @@ from installer.application import (
 from installer.foundation import (
     AUTO_REMOVE_KINDS,
     CANONICAL_DIRS,
-    CLAUDE_ADAPTER_SETS,
     CLAUDE_CLI_CANDIDATES, CLAUDE_MAX_TOOL_USE_CONCURRENCY,
     CLAUDE_SETTINGS_SCHEMA,
     CODEX_CLI_CANDIDATES,
@@ -118,25 +118,22 @@ from installer.foundation import (
     PROFILES_MD,
     PROFILE_ROLES,
     REPO_ROOT,
-    SHARED_ADAPTER_NAMES,
     STATE_HOME_ENV_VAR,
     STATE_SINK_SUBPATH,
     _bin_dir,
     _claude_agents_dir,
     _claude_md_path,
-    _claude_scope_home,
     _claude_settings_path,
     _claude_user_home,
     _codex_agents_dir, _codex_agents_path,
     _codex_config_path,
     _codex_hooks_warnings,
-    _codex_scope_home, _codex_user_home,
+    _codex_user_home,
     _frontend_home,
     _grok_agents_dir, _grok_config_path, _grok_rules_path,
     _grok_skills_dir, _grok_user_home,
     _iter_json_strings,
     _lib_home,
-    _require_project_root,
     _runtime_dirs,
     _scope_home,
     _state_sink,
@@ -149,7 +146,6 @@ from installer.managed_text import (
     render_host_block,
     upsert_import_line,
     upsert_marked_block,
-    without_marked_block,
 )
 from installer.models import (
     BlockPlan,
@@ -187,7 +183,7 @@ from installer.packages import (
     workflow_adapter_body,
 )
 from installer.hosts import HOSTS_DIR, HOST_ADAPTERS_DIR, load_host_adapters, marker
-from installer.planning import _mints_claude_adapter, detect_hosts, plan_entry_count
+from installer.planning import detect_hosts, plan_entry_count
 from installer.uninstall import (
     _auto_remove_path_is_safe,
     _uninstall_boundary,
@@ -261,24 +257,9 @@ def render_grok_subagent_limits(text: str) -> tuple[str, dict]:
     return _render_grok_subagent_limits(text, tomllib)
 
 
-def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
-    _sync_installer_seams()
-    return _planning._build_user_plan(
-        claude_adapter_set, render_codex_agent_limits, discover_script_names,
-        render_grok_subagent_limits,
-    )
-
-
-def build_plan(
-    scope: str, project_root: Path | None, claude_adapter_set: str = "all"
-) -> Plan:
-    if scope != "user":
-        raise ValueError("installation supports user scope only")
+def build_plan() -> Plan:
     _sync_installer_seams()
     return _planning.build_plan(
-        scope,
-        project_root,
-        claude_adapter_set,
         render_codex_agent_limits,
         discover_script_names,
         render_grok_subagent_limits,
@@ -286,14 +267,10 @@ def build_plan(
 
 
 def print_plan(plan: Plan) -> None:
-    if plan.scope != "user":
-        raise ValueError("installation supports user scope only")
     _presentation.print_plan(plan, resolve_source_commit())
 
 
 def apply_plan(plan: Plan, keep_role_agents: bool | None = None, *, accepted_source: str | None = None, source_commit: str | None = None) -> dict:
-    if plan.scope != "user":
-        raise ValueError("installation supports user scope only")
     _sync_installer_seams()
     observed = resolve_source_commit() if source_commit is None else source_commit
     accepted_source_commit(observed, accepted_source, mutating=True)
@@ -312,38 +289,23 @@ def build_arg_parser() -> argparse.ArgumentParser:
         choices=("doctor",),
         help="Inspect the user installation for bootstrap drift; write nothing.",
     )
-    parser.add_argument("--user", action="store_true", help="Install scope: user (all sessions).")
+    parser.add_argument("--user", action="store_true", help="Act on this user's installation (the default).")
     parser.add_argument(
         "--project",
         nargs="?",
         const=".",
         default=None,
         metavar="PATH",
-        help="Legacy cleanup scope, optionally at PATH; requires --uninstall.",
+        help="Clean up a legacy project install, optionally at PATH; requires --uninstall.",
     )
     parser.add_argument(
         "--yes",
         action="store_true",
-        help="Skip the prompts: user scope, and keep any role agent this machine has changed.",
+        help="Skip the prompts: keep any role agent this machine has changed.",
     )
     parser.add_argument("--accepted-source", metavar="COMMIT", help="Require this exact composite-gate source commit.")
     parser.add_argument("--dry-run", action="store_true", help="Print the full plan; write nothing.")
-    parser.add_argument(
-        "--doctor",
-        action="store_true",
-        help="Inspect the user installation for bootstrap drift; write nothing.",
-    )
     parser.add_argument("--quick", action="store_true", help="Doctor: compare only the receipt's source commit and host block, then exit; write nothing.")
-    parser.add_argument(
-        "--claude-adapters",
-        choices=CLAUDE_ADAPTER_SETS,
-        default="all",
-        help=(
-            "Claude skill adapters to mint: all canonical names (default), or the "
-            f"bounded compatibility set ({', '.join(SHARED_ADAPTER_NAMES)}). "
-            "Every other name still resolves at the flat by-name index."
-        ),
-    )
     parser.add_argument(
         "--uninstall",
         action="store_true",
@@ -352,15 +314,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _resolve_scope(args) -> tuple[str, Path | None]:
+def _resolve_cleanup_target(args) -> tuple[str, Path | None]:
+    """Which tree ``--uninstall`` cleans up: this user's install, or the
+    legacy project install an older version wrote at ``--project PATH``."""
+
     if args.user and args.project is not None:
         raise SystemExit("error: --user and --project are mutually exclusive")
     if args.project is not None and not args.uninstall:
         raise SystemExit("error: --project is only available with --uninstall for legacy cleanup")
     if args.uninstall and not args.user and args.project is None:
         raise SystemExit("error: --uninstall requires --user or --project [PATH]")
-    if args.user:
-        return "user", None
     if args.project is not None:
         return "project", Path(args.project).resolve()
     return "user", None
@@ -369,19 +332,19 @@ def _resolve_scope(args) -> tuple[str, Path | None]:
 def main(argv=None) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
-    doctor_requested = args.command == "doctor" or args.doctor or args.quick
+    doctor_requested = args.command == "doctor" or args.quick
 
     if doctor_requested and args.uninstall:
         print("error: doctor and --uninstall are mutually exclusive", file=sys.stderr)
         return 2
 
     try:
-        scope, project_root = _resolve_scope(args)
+        scope, project_root = _resolve_cleanup_target(args)
     except SystemExit as error:
         print(error, file=sys.stderr)
         return 2
 
-    if scope == "project" and not _require_project_root(project_root).is_dir():
+    if project_root is not None and not project_root.is_dir():
         print(f"error: project root does not exist: {project_root}", file=sys.stderr)
         return 1
 
@@ -420,7 +383,7 @@ def main(argv=None) -> int:
         return run_quick(source_commit)
 
     try:
-        plan = build_plan(scope, project_root, args.claude_adapters)
+        plan = build_plan()
     except Exception as error:
         print(f"error: could not build install plan: {error}", file=sys.stderr)
         return 1
@@ -457,7 +420,7 @@ def main(argv=None) -> int:
             return 1
         return 0
 
-    if scope == "user" and not (plan.claude_enabled or plan.codex_enabled or plan.grok_enabled):
+    if not (plan.claude_enabled or plan.codex_enabled or plan.grok_enabled):
         return 0
 
     try:

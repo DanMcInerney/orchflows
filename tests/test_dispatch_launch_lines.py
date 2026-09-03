@@ -32,11 +32,11 @@ class ReturnLineConditionalTest(unittest.TestCase):
 
     `commits_in_place` decides whether the clause renders at all -- true for
     every adapter whose identity is a commit or a document revision one
-    records (git, git-plus-render, document-tree), false only for
+    records (git, document-tree), false only for
     evidence-store, which alone gets its own craft's `## Workspace` sentence
     instead. `git_candidate` decides whether the clause's branch-merge
     sentence renders -- true only where the adapter establishes isolation
-    over git (git, git-plus-render); a document-tree child commits, onto
+    over git; a document-tree child commits, onto
     the coordinator's own branch, so it keeps the clause without that
     sentence. Never both facts contradicted, never the clause and the
     workspace line together.
@@ -49,7 +49,7 @@ class ReturnLineConditionalTest(unittest.TestCase):
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
             "artifact_kind": artifact_kind, "commits_in_place": commits_in_place,
-            "craft": None, "craft_scope": None,
+            "craft": None,
             "dependencies": [], "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "git_candidate": git_candidate, "id": "T",
             "lease_expires_at": "2099-01-01T00:00:00Z", "pack": pack,

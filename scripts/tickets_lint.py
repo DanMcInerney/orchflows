@@ -11,10 +11,9 @@ if __package__:
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field,
+        ticket_defects,
     )
-    from .tickets_issue import (
-        NEW_DEFAULT_BOUND, _issue_defects, _project_file_ticket,
-    )
+    from .tickets_issue import NEW_DEFAULT_BOUND, _project_file_ticket
     from .tickets_store import (
         NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root,
         _write_text_atomically,
@@ -25,10 +24,9 @@ else:
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import (
         _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field,
+        ticket_defects,
     )
-    from tickets_issue import (
-        NEW_DEFAULT_BOUND, _issue_defects, _project_file_ticket,
-    )
+    from tickets_issue import NEW_DEFAULT_BOUND, _project_file_ticket
     from tickets_store import (
         NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root,
         _write_text_atomically,
@@ -49,7 +47,7 @@ def lint_findings(text: str, *, ticket_id: str, siblings=None, tree=None, issued
     data = _parse_frontmatter(text)
     if not data:
         return [_finding("no-frontmatter", "a ticket opens with a '---' block (contracts/work-item.md)")]
-    findings = [_finding("ticket-defect", defect) for defect in _issue_defects(text, issued=issued)]
+    findings = [_finding("ticket-defect", defect) for defect in ticket_defects(text)]
     if issued:
         admission = graded_admission(
             ticket_id, text, dict(siblings or {}), data.get("run")

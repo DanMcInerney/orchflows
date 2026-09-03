@@ -39,7 +39,7 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
 
     def test_user_scope_seeds_the_sink(self):
         with patch.object(install.Path, "home", return_value=self.home):
-            user = install._runtime_dirs("user", None)
+            user = install._runtime_dirs()
 
         expected = [
             self.sink / "tickets",
@@ -60,7 +60,7 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
         with patch.object(install.Path, "home", return_value=self.home), patch.dict(
             os.environ, {SINK_ENV_VAR: str(elsewhere)}
         ):
-            seeded = install._runtime_dirs("user", None)
+            seeded = install._runtime_dirs()
         # graded before anything this item introduced is named, so a can-fail
         # run reads as wrong behavior rather than as a missing attribute
         self.assertTrue(seeded)
@@ -98,12 +98,12 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
 
         with patch.object(install.Path, "home", return_value=self.home):
             self.assertEqual(
-                self.home / ".orchflows" / "bin", install._bin_dir("user", None)
+                self.home / ".orchflows" / "bin", install._bin_dir()
             )
     def test_a_real_plan_writes_user_runtime_state_only(self):
         (self.home / ".claude").mkdir()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("claude"):
-            user_plan = install.build_plan("user", None)
+            user_plan = install.build_plan()
 
         planned = set(user_plan.runtime_dirs)
         for name in ("tickets", "runs", "friction"):
@@ -117,19 +117,15 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
 
         (self.home / ".claude").mkdir()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("claude"):
-            plan = install.build_plan("user", None)
+            plan = install.build_plan()
             printed = io.StringIO()
             with redirect_stdout(printed):
                 install.print_plan(plan)
             for line in printed.getvalue().splitlines():
                 self.assertNotIn(".orch/friction", line.replace(os.sep, "/"), line)
-class TestClaudeAdapterSet(unittest.TestCase):
-    """``--claude-adapters {all,four}``: the switch SPEC §7.2's routing
-    benchmark measures. The bounded selector ``four`` mints Claude
-    skill adapters only for the shared bounded set; every other surface -- the flat by-name index,
-    the Codex prompts and redirect skills, the role agents, the host block --
-    is the same plan either way. ``all`` is the default and is what HEAD
-    already planned."""
+class TestClaudeAdapters(unittest.TestCase):
+    """Claude gets one skill adapter per canonical name: every package and
+    every workflow, with no selector to mint fewer."""
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -140,22 +136,32 @@ class TestClaudeAdapterSet(unittest.TestCase):
     def tearDown(self):
         self._tmp.cleanup()
 
-    def _plan(self, adapter_set=None):
-        args = ("user", None) if adapter_set is None else ("user", None, adapter_set)
+    def _plan(self):
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis(
             "claude", "codex"
         ):
-            return install.build_plan(*args)
+            return install.build_plan()
 
-    @staticmethod
-    def _names(pairs):
-        return {dest.parent.name for dest, _ in pairs}
+    def test_every_package_and_workflow_gets_one_claude_adapter(self):
+        plan = self._plan()
+        expected = len(install.discover_packages()) + len(install.discover_workflow_skills())
+        self.assertEqual(expected, len(plan.claude_adapters))
+        printed = io.StringIO()
+        with redirect_stdout(printed):
+            install.print_plan(plan)
+        self.assertIn(f"Claude Code skill adapters ({expected})", printed.getvalue())
 
-    def test_the_shared_names_remain_the_reduced_claude_set(self):
-        self.assertEqual(
-            ("orch-do", "orch-judge"),
-            install.SHARED_ADAPTER_NAMES,
-        )
+    def test_no_flag_selects_a_smaller_adapter_set(self):
+        """One adapter per canonical name is the whole rule: the parser
+        offers no selector for a smaller set and refuses one."""
+
+        parser = install.build_arg_parser()
+        rendered = parser.format_help()
+        self.assertNotIn("claude-adapters", rendered)
+        self.assertNotIn("orch-do", rendered)
+        with self.assertRaises(SystemExit) as raised, redirect_stderr(io.StringIO()):
+            parser.parse_args(["--user", "--claude-adapters", "four"])
+        self.assertEqual(2, raised.exception.code)
 
     def test_installer_description_says_codex_redirects_every_canonical_name(self):
         codex_description = doc_bullet(install.__doc__, "- Codex ")
@@ -189,104 +195,6 @@ class TestClaudeAdapterSet(unittest.TestCase):
         for host in docstring_hosts:
             self.assertIn(host, rendered)
 
-    def test_four_mints_exactly_the_shared_adapters(self):
-        plan = self._plan("four")
-        self.assertEqual(set(install.SHARED_ADAPTER_NAMES), self._names(plan.claude_adapters))
-        self.assertEqual(2, len(plan.claude_adapters))
-
-    def test_all_is_the_default_and_mints_every_package_and_template(self):
-        default = self._plan()
-        explicit = self._plan("all")
-        expected = len(install.discover_packages()) + len(install.discover_workflow_skills())
-        self.assertEqual(expected, len(default.claude_adapters))
-        self.assertEqual(
-            [(dest, content) for dest, content in default.claude_adapters],
-            [(dest, content) for dest, content in explicit.claude_adapters],
-        )
-        self.assertLess(len(install.SHARED_ADAPTER_NAMES), expected)
-
-    def test_four_changes_nothing_but_the_claude_adapter_list(self):
-        every = self._plan("all")
-        four = self._plan("four")
-        self.assertEqual(every.by_name, four.by_name)
-        self.assertEqual(every.codex_prompts, four.codex_prompts)
-        self.assertEqual(every.codex_skills, four.codex_skills)
-        self.assertEqual(every.claude_agents, four.claude_agents)
-        self.assertEqual(every.codex_agents, four.codex_agents)
-        self.assertEqual(every.lib_copies, four.lib_copies)
-        self.assertEqual(every.scripts, four.scripts)
-        self.assertEqual(every.blocks, four.blocks)
-        self.assertEqual(every.host_block.content, four.host_block.content)
-
-    def test_the_four_adapters_carry_the_same_content_they_carry_under_all(self):
-        every = dict(self._plan("all").claude_adapters)
-        for dest, content in self._plan("four").claude_adapters:
-            self.assertEqual(every[dest], content)
-
-    def test_the_plan_count_and_printout_follow_the_adapter_set(self):
-        every = self._plan("all")
-        four = self._plan("four")
-        dropped = len(every.claude_adapters) - len(four.claude_adapters)
-        self.assertEqual(
-            install.plan_entry_count(every) - dropped, install.plan_entry_count(four)
-        )
-        printed = io.StringIO()
-        with redirect_stdout(printed):
-            install.print_plan(four)
-        self.assertIn("Claude Code skill adapters (2)", printed.getvalue())
-
-    def test_the_receipt_records_only_the_minted_adapters(self):
-        plan = self._plan("four")
-        # The library copy is the whole cost of an apply and nothing here
-        # reads it; the adapter writes and the receipt are what is graded.
-        plan.lib_copies = []
-        with patch.object(install.Path, "home", return_value=self.home):
-            receipt = install.apply_plan(plan, keep_role_agents=True, accepted_source=install.resolve_source_commit())
-        adapters = [
-            entry for entry in receipt["files"] if entry["kind"] == "adapter"
-        ]
-        self.assertEqual(2, len(adapters))
-        self.assertEqual(
-            set(install.SHARED_ADAPTER_NAMES),
-            {Path(entry["path"]).parent.name for entry in adapters},
-        )
-
-    def test_the_cli_defaults_to_all_and_carries_four_into_the_plan(self):
-        def _dry_run(argv):
-            with patch.object(install.Path, "home", return_value=self.home), mock_host_clis(
-                "claude", "codex"
-            ):
-                buffer = io.StringIO()
-                with redirect_stdout(buffer):
-                    code = install.main(argv)
-            self.assertEqual(0, code)
-            return buffer.getvalue()
-
-        every = len(install.discover_packages()) + len(install.discover_workflow_skills())
-        self.assertIn(
-            f"Claude Code skill adapters ({every})", _dry_run(["--user", "--dry-run"])
-        )
-        self.assertIn(
-            f"Claude Code skill adapters ({every})",
-            _dry_run(["--user", "--dry-run", "--claude-adapters", "all"]),
-        )
-        self.assertIn(
-            "Claude Code skill adapters (2)",
-            _dry_run(["--user", "--dry-run", "--claude-adapters", "four"]),
-        )
-
-    def test_the_parser_accepts_the_two_sets_and_refuses_any_other(self):
-        parser = install.build_arg_parser()
-        self.assertEqual("all", parser.parse_args(["--user"]).claude_adapters)
-        for adapter_set in ("all", "four"):
-            self.assertEqual(
-                adapter_set,
-                parser.parse_args(["--user", "--claude-adapters", adapter_set]).claude_adapters,
-            )
-        with self.assertRaises(SystemExit) as raised, redirect_stderr(io.StringIO()):
-            parser.parse_args(["--user", "--claude-adapters", "some"])
-        self.assertEqual(2, raised.exception.code)
-
     def test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves(self):
         """Detecting Grok adds Grok entries and moves nothing else.
 
@@ -299,9 +207,9 @@ class TestClaudeAdapterSet(unittest.TestCase):
             install.Path, "home", return_value=self.home
         ):
             with mock_host_clis("claude", "codex"):
-                without = install.build_plan("user", None)
+                without = install.build_plan()
             with mock_host_clis("claude", "codex", "grok"):
-                with_grok = install.build_plan("user", None)
+                with_grok = install.build_plan()
 
         self.assertEqual((False, True), (without.grok_enabled, with_grok.grok_enabled))
         self.assertEqual(

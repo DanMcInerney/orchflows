@@ -40,8 +40,8 @@ explicit manual cleanup.
 ## Observe
 
 The local UI shows the current workflow graph without changing it. From a
-checkout, start it with `uv run --no-project python scripts/ui.py`; an installed
-copy runs through the private Python environment. It binds only to
+checkout, start it with `uv run --no-project python reader/scripts/ui.py`; an
+installed copy runs through the private Python environment. It binds only to
 `127.0.0.1`, serves its prebuilt assets offline, and exposes metadata rather
 than prompts, tool output, or transcript contents. See the
 [UI platform](reader/docs/platform.md) for installed commands, routes, security
@@ -123,11 +123,7 @@ skills and workflows are ordinary repository work under
 [custom workflow authoring](docs/custom-workflow-authoring.md); they are not an installation scope. Uninstall:
 `python install.py --user --uninstall` removes only what it generated;
 `--dry-run` previews whether runtime apply will create, reuse, or repair.
-`--claude-adapters {all,four}` chooses how much of the library
-Claude gets first-class adapters for — `all` (the default) mints one per
-package and workflow, `four` mints only `orch-do` and
-`orch-judge` and leaves every other name to resolve at
-`by-name/`. Default model and effort per role, all three hosts:
+Default model and effort per role, all three hosts:
 [profiles.md](hosts/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
 and keep it by default.
@@ -282,13 +278,13 @@ this README does not keep a second copy of it.
     packs/
     ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-do
     │                        workspace: git, one worktree per work item
-    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-do, assembly stage
+    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-do
     │                        workspace: document tree with outline slots
-    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-do, assembly stage
+    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-do
     │                        workspace: git, datasets pinned by digest manifest
     ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-do
-    │                        workspace: git plus render (view × breakpoint × state)
-    └── orch-research-pack — delivers answers     · source evidence       · executor orch-do, assembly stage
+    │                        workspace: git, captures per view × breakpoint × state
+    └── orch-research-pack — delivers answers     · source evidence       · executor orch-do
                              workspace: evidence store of lane packets
 
 A pack is pure data — no control flow. It supplies the domain's

@@ -48,7 +48,7 @@ class LaunchResolutionTest(unittest.TestCase):
 
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
-            "craft": None, "craft_scope": None, "dependencies": [],
+            "craft": None, "dependencies": [],
             "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "id": "T", "lease_expires_at": "2099-01-01T00:00:00Z",
             "pack": None, "role": role,

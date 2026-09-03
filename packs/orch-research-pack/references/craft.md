@@ -103,6 +103,4 @@ Weigh in listed order, and a claim with no source at all is read first.
   preserve disagreement and declare uncovered sub-questions as gaps.
 - Reject laundering, unsupported extrapolation and stale evidence; a thin
   answer is preferable to false convergence.
-- Run the narrow affected source verification; the full suite is the
-  gate's row, never a unit's.
 - Close with the evidence ledger, source dates, confidence, and unresolved gaps.

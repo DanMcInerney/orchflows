@@ -11,8 +11,8 @@ from scripts import orchflows_home
 from .application import _load_json, _prune_empty_dirs, _sha256_file
 from .foundation import (
     AUTO_REMOVE_KINDS,
+    _HOST_ADAPTERS,
     _claude_agents_dir,
-    _claude_scope_home,
     _claude_user_home,
     _codex_agents_dir,
     _codex_user_home,
@@ -21,10 +21,62 @@ from .foundation import (
     _grok_rules_path,
     _grok_skills_dir,
     _grok_user_home,
-    _require_project_root,
     _scope_home,
 )
+from .hosts import host_item_path
 from .managed_text import without_codex_agent_limits, without_grok_subagent_limits
+
+# --- legacy project paths ----------------------------------------------
+#
+# Installation writes one scope, the user's. A receipt written by an older
+# version that installed into a project tree is still cleaned up, so the
+# project half of every path this cleanup reads lives here -- reachable from
+# ``--project PATH --uninstall`` and from nowhere else.
+
+
+def _require_project_root(project_root: Path | None) -> Path:
+    """Narrow ``Path | None`` to ``Path`` at the invariant ``--project``
+    enforces: project cleanup always carries a resolved project root."""
+
+    assert project_root is not None, "project cleanup requires a project root"
+    return project_root
+
+
+def _uninstall_home(scope: str, project_root: Path | None) -> Path:
+    if scope == "project":
+        return _require_project_root(project_root) / ".orchflows"
+    return _scope_home()
+
+
+def _claude_home(scope: str, project_root: Path | None) -> Path:
+    if scope == "project":
+        return _require_project_root(project_root) / ".claude"
+    return _claude_user_home()
+
+
+def _codex_home(scope: str, project_root: Path | None) -> Path:
+    if scope == "project":
+        return _require_project_root(project_root) / ".codex"
+    return _codex_user_home()
+
+
+def _claude_agents(scope: str, project_root: Path | None) -> Path:
+    if scope == "project":
+        return host_item_path(
+            "claude", "role_agent", _claude_home(scope, project_root),
+            _HOST_ADAPTERS, profile="{profile}",
+        ).parent
+    return _claude_agents_dir()
+
+
+def _codex_agents(scope: str, project_root: Path | None) -> Path:
+    if scope == "project":
+        return host_item_path(
+            "codex", "role_agent", _codex_home(scope, project_root),
+            _HOST_ADAPTERS, agent_type="{agent_type}",
+        ).parent
+    return _codex_agents_dir()
+
 
 # --- uninstall ---------------------------------------------------------
 
@@ -48,13 +100,13 @@ def _codex_root(scope: str, project_root: Path | None) -> Path:
 # falling through to some other host's directory.
 _AUTO_REMOVE_BOUNDARIES = {
     "adapter": lambda scope, root: (
-        _claude_scope_home(scope, root) / "skills", _claude_root(scope, root)
+        _claude_home(scope, root) / "skills", _claude_root(scope, root)
     ),
     "claude-agent": lambda scope, root: (
-        _claude_agents_dir(scope, root), _claude_root(scope, root)
+        _claude_agents(scope, root), _claude_root(scope, root)
     ),
     "codex-agent": lambda scope, root: (
-        _codex_agents_dir(scope, root), _codex_root(scope, root)
+        _codex_agents(scope, root), _codex_root(scope, root)
     ),
     "prompt": lambda scope, root: (_codex_user_home() / "prompts", _codex_user_home()),
     "codex-skill": lambda scope, root: (_codex_user_home() / "skills", _codex_user_home()),
@@ -179,7 +231,7 @@ def _auto_remove_path_is_safe(
 
 
 def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
-    scope_home = _scope_home(scope, project_root)
+    scope_home = _uninstall_home(scope, project_root)
     receipt_path = scope_home / orchflows_home.RECEIPT_FILENAME
     receipt = _load_json(receipt_path)
     if receipt is None:

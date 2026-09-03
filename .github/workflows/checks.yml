@@ -112,14 +112,7 @@ jobs:
             shard: '1-of-1'
 
     steps:
-      # Full history, not the default depth-1: tests/test_cutcheck.py grades
-      # oracles inside a scratch clone of a baseline revision, and that clone
-      # carries its history from this checkout's, which a one-commit checkout
-      # has none of. A depth-1 leg fails every cutcheck case with "cannot clone
-      # baseline" while the same suite is green on any developer clone.
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:

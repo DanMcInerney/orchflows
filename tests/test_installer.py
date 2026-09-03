@@ -17,62 +17,40 @@ import install
 from tests.test_installer_cases.support import setUpModule, tearDownModule
 
 
-class ProjectInstallBoundaryTest(unittest.TestCase):
-    def test_public_facade_rejects_project_plans_before_planning_or_application(self):
-        self.assertFalse(hasattr(install, "_build_project_plan"))
+class LegacyProjectCleanupTest(unittest.TestCase):
+    """One scope is installed. ``--project PATH --uninstall`` is the whole
+    remaining project surface: it cleans up what an older version wrote and
+    plans nothing."""
 
+    def test_planning_takes_no_scope_argument(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
-            project_plan = install.Plan(
-                scope="project",
-                project_root=root,
-                lib_home=root / ".orchflows" / "lib",
-                scope_home=root / ".orchflows",
-                bin_dir=root / ".orch" / "bin",
-                receipt_path=root / ".orchflows" / "receipt.json",
-            )
-            with patch.object(
-                install._planning,
-                "_build_user_plan",
-                side_effect=AssertionError("planning reached"),
-            ) as planner:
-                with self.assertRaisesRegex(ValueError, "user"):
-                    install.build_plan("project", root)
-            planner.assert_not_called()
-
-            with patch.object(
-                install,
-                "_apply_plan",
-                side_effect=AssertionError("application reached"),
-            ) as application:
-                with self.assertRaisesRegex(ValueError, "user"):
-                    install.apply_plan(project_plan, accepted_source=install.resolve_source_commit())
-            application.assert_not_called()
-
             home = root / "home"
             home.mkdir()
             with patch.object(install.Path, "home", return_value=home), patch.object(
                 install.shutil, "which", return_value="mock-host"
             ):
-                user_plan = install.build_plan("user", None)
-            self.assertEqual("user", user_plan.scope)
-            self.assertIsNone(user_plan.project_root)
+                user_plan = install.build_plan()
+                with self.assertRaises(TypeError):
+                    install.build_plan("project", root)
             self.assertGreater(install.plan_entry_count(user_plan), 0)
+            self.assertFalse(hasattr(install, "_build_project_plan"))
 
-            user_scope = root / "user" / ".orchflows"
-            user_application_plan = install.Plan(
-                scope="user",
-                project_root=None,
-                lib_home=user_scope / "lib",
-                scope_home=user_scope,
-                bin_dir=user_scope / "bin",
-                receipt_path=user_scope / "receipt.json",
+    def test_an_applied_plan_records_the_one_scope_in_its_receipt(self):
+        with tempfile.TemporaryDirectory() as raw:
+            scope_home = Path(raw) / "user" / ".orchflows"
+            plan = install.Plan(
+                lib_home=scope_home / "lib",
+                scope_home=scope_home,
+                bin_dir=scope_home / "bin",
+                receipt_path=scope_home / "receipt.json",
                 manage_host_surfaces=False,
             )
             with patch.object(install, "resolve_source_commit", return_value="test-commit"):
-                user_receipt = install.apply_plan(user_application_plan, accepted_source=install.resolve_source_commit())
-            self.assertEqual("user", user_receipt["scope"])
-            self.assertTrue(user_application_plan.receipt_path.is_file())
+                receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
+            self.assertEqual("user", receipt["scope"])
+            self.assertIsNone(receipt["project_root"])
+            self.assertTrue(plan.receipt_path.is_file())
 
     def test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -183,8 +161,6 @@ class TestFrontendDistribution(unittest.TestCase):
         frontend_home = scope_home / "ui"
         identity = install._frontend_manifest_identity(source)
         return install.Plan(
-            scope="user",
-            project_root=None,
             lib_home=scope_home / "lib",
             scope_home=scope_home,
             bin_dir=scope_home / "bin",
@@ -216,7 +192,7 @@ class TestFrontendDistribution(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), patch.object(
                 install.shutil, "which", return_value="mock-host"
             ):
-                user_plan = install.build_plan("user", None)
+                user_plan = install.build_plan()
 
         planned_files = {
             destination.relative_to(user_plan.frontend_home).as_posix(): hashlib.sha256(
@@ -237,7 +213,7 @@ class TestFrontendDistribution(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             plan = install.Plan(
-                scope="user", project_root=None, scope_home=root / ".orchflows",
+                scope_home=root / ".orchflows",
                 lib_home=root / ".orchflows" / "lib", bin_dir=root / ".orchflows" / "bin",
                 receipt_path=root / ".orchflows" / "receipt.json",
                 frontend_home=root / "missing-ui", frontend_manifest_sha256="expected",

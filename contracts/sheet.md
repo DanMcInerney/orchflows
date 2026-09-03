@@ -41,7 +41,9 @@ environment.
   a craft's `## Lens` entries are keyed in
   [pack-signature.md](pack-signature.md): the adapter kinds `git`, `doc` and
   `evidence`. Each entry adds criteria beside the craft's entry of the same
-  key.
+  key, and every pack `packs` names has its adapter's kind among the
+  entries — a stamp whose kind the sheet does not key adds nothing the
+  ticket's verbs read.
 - `## Vocabulary` — optional. Terms this sheet introduces, defined once.
 
 `## Workspace`, `## Stages` and `## Spec fields` are refused. Those three are
