@@ -61,9 +61,18 @@ def integrate(run: str, ticket_id: str, workspace, branch, baseline=None):
     is a lawful replay regardless of whatever scratch a worker's candidate
     is still holding: that dirt is graded by `check` at the join, not here.
 
-    Anything the records do not resolve to a linked worktree of a readable
-    repository is `absent`, never an error: an item that ran in the caller's
-    own checkout has nothing to merge into it.
+    There are two `absent` answers and they are not the same finding. A
+    candidate the records do not resolve to a linked worktree of a readable
+    repository is nothing this looked anywhere for -- an item that ran in
+    the caller's own checkout, or one whose tree a previous landing already
+    retired -- and it answers `absent` bare, which is how a second landing
+    of a retired candidate stays a replay. A candidate that does resolve,
+    against a run that recorded a target which does not carry its branch,
+    is the 2026-09-02 ladder defect: the candidate was cut from one
+    repository and the run integrates into another. That `absent` carries
+    the repository and branch it looked for and the sentence saying so, and
+    `land` stops on it rather than reporting a landed item whose commits
+    reached no checkout anybody reads.
     """
 
     target = Path(str(workspace or "")).expanduser() if workspace else None
@@ -80,7 +89,10 @@ def integrate(run: str, ticket_id: str, workspace, branch, baseline=None):
         return {"integrate": dict(body, outcome="absent")}, EXIT_OK
     root, into = _recorded_target(run, ticket_id)
     if workspace_git._branch_tip(root, branch) is None:
-        return {"integrate": dict(body, outcome="absent")}, EXIT_OK
+        return {"integrate": dict(
+            body, outcome="absent", main_root=str(root), into=into,
+            detail=_absent_detail(run, ticket_id, root, into, branch, target),
+        )}, EXIT_OK
     read_root = workspace_git._git_out(root)
     before = read_root("rev-parse", "HEAD")
     standing = workspace_git._current_branch(read_root)
@@ -105,13 +117,33 @@ def integrate(run: str, ticket_id: str, workspace, branch, baseline=None):
             f"git merge {branch} into {into!r} at {root} refused: "
             + (", ".join(paths) if paths else err.strip())
             + f". Resolve them in the candidate at {target}, commit there, then "
-            f"land {run}/{ticket_id} again"
+            f"land {run}/{ticket_id} again",
+            # carried, not re-parsed out of the sentence above: the join
+            # files these paths into the item's own `## Report`, and a
+            # reader of that record is entitled to the list git gave rather
+            # than to whatever a regex could recover from prose
+            conflicted=paths, into=into, root=str(root),
         )
     after = read_root("rev-parse", "HEAD")
     return {"integrate": dict(
         body, outcome="replayed" if after == before else "merged",
         into=into, main_root=str(root), revision=after,
+        # the candidate's own identity beside the tree's: after a conflict
+        # was resolved, which revision the resolution delivered is the half
+        # of the answer the integrated tip does not carry
+        tip=workspace_git._branch_tip(root, branch),
     )}, EXIT_OK
+
+
+def _absent_detail(run, ticket_id, root, into, branch, target) -> str:
+    """Why there was nothing to merge, naming where this looked and for what."""
+
+    return (
+        f"no branch {branch!r} in {root}, the checkout on {into!r} that run "
+        f"{run!r} recorded as its integration target: {ticket_id}'s candidate "
+        f"at {target} was cut from another repository. Establish it from the "
+        f"checkout this run integrates into, then land {run}/{ticket_id} again"
+    )
 
 
 def _recorded_target(run: str, ticket_id: str):

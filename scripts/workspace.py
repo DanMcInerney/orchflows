@@ -231,6 +231,11 @@ def _cmd_establish(rest):
     one -- an item whose isolation is not ``required`` falls through to the
     same observation ``start`` makes, and it must observe the named tree
     rather than whichever directory this process happens to have started in.
+
+    Whether the flag was passed travels on, as ``named``: the two trees are
+    the same directory in the ordinary case, but only one of them is the
+    caller declaring where this run's work belongs, and the run's
+    write-once integration target is fixed by a declaration alone.
     """
 
     global _GIT_CWD
@@ -246,7 +251,7 @@ def _cmd_establish(rest):
         raise Refused(f"--repo '{repo}' is not a directory")
     _GIT_CWD = str(named.resolve())
     return workspace_candidate.establish(
-        run, ticket_id, source=_GIT_CWD, held=held, seams=_seams()
+        run, ticket_id, source=_GIT_CWD, held=held, seams=_seams(), named=aimed,
     )
 
 def _cmd_prepare(rest):

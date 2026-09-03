@@ -35,7 +35,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 if __package__:
-    from . import tickets_done
+    from . import tickets_done, tickets_report_note
     from .tickets_format import (
         REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
@@ -53,6 +53,7 @@ if __package__:
     from .workspace_git import BASELINE_KEY, BRANCH_KEY
 else:  # pragma: no cover - direct/installed flat script path
     import tickets_done
+    import tickets_report_note
     from tickets_format import (
         REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
@@ -187,7 +188,7 @@ def _recorded_workspace(data: dict):
     return workspace_record.attempt_workspace(data)
 
 
-def _integrate_workspace(run: str, ticket_id: str, data: dict, status):
+def _integrate_workspace(run: str, ticket_id: str, data: dict, status, path, by):
     """Merge the candidate into the tree the run stands on, or say why not.
 
     This is the step `land` used to leave for hand git, and leaving it there
@@ -201,6 +202,11 @@ def _integrate_workspace(run: str, ticket_id: str, data: dict, status):
     and `stalled` have no result for the tree to carry. A ticket whose `done`
     predicate decides the disposition has no status yet, and it integrates --
     that is the tree the predicate is about to be run in.
+
+    A conflict and the landing that carries it through afterwards are both
+    written into the item's own `## Report`, because the driver's journal is
+    not the child's ticket and the ticket is where the next reader of this
+    item looks for what its artifact finally was.
     """
 
     if status is not None and status not in INTEGRABLE:
@@ -214,11 +220,52 @@ def _integrate_workspace(run: str, ticket_id: str, data: dict, status):
             data.get(BASELINE_KEY),
         )
     except Exception as error:  # `Refused`, and anything git surprised us with
+        _note_conflict(path, by, data, error)
         return {"step": "workspace-integrate", "outcome": "refused", "error": str(error)}
     body = response.get("integrate") if isinstance(response, dict) else None
     if not isinstance(body, dict):
         return {"step": "workspace-integrate", "outcome": "refused", "response": response}
+    _note_resolution(path, by, body)
     return {"step": "workspace-integrate", "outcome": body["outcome"], "response": body}
+
+
+def _note_conflict(path, by: str, data: dict, error) -> None:
+    """File the conflicted paths, for the refusal that carried them.
+
+    Only a conflict: every other refusal is about a tree or a record the
+    reader can still go and look at, while this one names bytes in a
+    candidate that is about to be resolved and landed again, and the
+    resolution below is unreadable without it. Best-effort -- a note that
+    cannot be filed never stands between the refusal and the caller who
+    has to read it.
+    """
+
+    detail = getattr(error, "detail", None) or {}
+    conflicted = detail.get("conflicted") or []
+    if not conflicted:
+        return
+    tickets_report_note.file_once(path, by, tickets_report_note.conflict_note(
+        data.get(BRANCH_KEY), detail.get("into"), detail.get("root"), conflicted,
+    ), "integration evidence")
+
+
+def _note_resolution(path, by: str, body: dict) -> None:
+    """File the identity a resolved candidate landed under, where one is owed.
+
+    Owed exactly where a refusal already stands in the section: a landing
+    that was never refused says nothing here, because the ordinary merge is
+    what the step report and the run's event line already carry, and one
+    channel narrated by every landing is a channel nobody reads.
+    """
+
+    if body.get("outcome") not in ("merged", "replayed"):
+        return
+    if not tickets_report_note.carries(path, tickets_report_note.CONFLICT_PREFIX):
+        return
+    tickets_report_note.file_once(path, by, tickets_report_note.resolution_note(
+        body.get(BRANCH_KEY), body.get("into"), body.get("tip"),
+        body.get("revision"),
+    ), "integration evidence")
 
 
 def _retire_workspace(run: str, ticket_id: str, status: str, data: dict) -> dict:
@@ -289,11 +336,24 @@ def _land_transaction(run, ticket_id, identity, outcome_file, driver_status):
     refusal = tickets_done.ungraded(run, ticket_id, data, driver_status)
     if refusal is not None:
         return refusal
-    integrated = _integrate_workspace(run, ticket_id, data, driver_status)
+    integrated = _integrate_workspace(
+        run, ticket_id, data, driver_status, path, identity["by"],
+    )
     steps.append(integrated)
-    if integrated["outcome"] == "refused":
-        return {"error": integrated.get("error") or "candidate integration refused",
-                "steps": steps}
+    # An `absent` that names where it looked is the landing that used to
+    # merge nothing at exit 0 while the run read as landed: the candidate
+    # was cut from one repository and this run integrates into another.
+    # A bare `absent` -- no candidate tree to resolve at all -- is the
+    # replay of an item whose worktree a previous landing already retired,
+    # and it goes on.
+    absent = (
+        (integrated.get("response") or {}).get("detail")
+        if integrated["outcome"] == "absent" else None
+    )
+    if integrated["outcome"] == "refused" or absent:
+        return {"error": (
+            absent or integrated.get("error") or "candidate integration refused"
+        ), "steps": steps}
     tree = (integrated.get("response") or {}).get("main_root")
     decision, refusal = tickets_done.resolve(
         run, ticket_id, path.parent, path, data, tree, driver_status,

@@ -114,11 +114,19 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
     process already holds the run lock across the whole composition: the child
     stamps inside the caller's critical section rather than waiting for a lock
     its own parent holds while waiting for the child.
+
+    ``--repo`` is passed only when the caller named a tree. Without it the
+    child stands in this process's own directory and reads the same tree
+    anyway, so nothing about the candidate changes -- but the run's
+    write-once integration target is fixed by a caller that named where its
+    work belongs, never by this default, which recorded a driver's own
+    checkout for a run whose every candidate was cut somewhere else.
     """
 
     source = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
+    aimed = ["--repo", str(source)] if workspace else []
     response, failure = _workspace(source, "establish", [
-        run, ticket_id, "--repo", str(source), "--lock-held",
+        run, ticket_id, *aimed, "--lock-held",
     ])
     if failure is not None:
         return failure
