@@ -1,13 +1,11 @@
 """The closed identity vocabulary of orchflows.dispatch.v1.
 
-One concern: what a protocol identity may be spelled as, which record ids
-the protocol reserves for itself, and the one shape a refusal takes. The
-schema module above validates whole documents against the generated shapes
-and re-exports every name here, so no caller has to learn where the
-vocabulary moved.
+What a protocol identity may be spelled as, which record ids the protocol
+reserves for itself, and the one shape a refusal takes. The schema module
+validates whole documents against the generated shapes and re-exports every
+name here.
 
-Nothing here imports the schema: this is the lower half of the split, so
-the direction is schema -> identity and never back.
+Nothing here imports the schema: the direction is schema -> identity.
 """
 
 from __future__ import annotations
@@ -30,8 +28,7 @@ LAUNCH_RECORD_ID = SHAPE_LAUNCH_RECORD_ID
 OUTCOME_RECORD_ID = SHAPE_OUTCOME_RECORD_ID
 RESERVED_RECORD_IDS = frozenset({LAUNCH_RECORD_ID, OUTCOME_RECORD_ID})
 # Named individually, not only as the pair below, so a caller that needs
-# exactly one namespace (a join record, a lifecycle record) never respells
-# it as a bare string to get there.
+# exactly one namespace never respells it as a bare string to get there.
 JOIN_RECORD_PREFIX = "join:"
 LIFECYCLE_RECORD_PREFIX = "lifecycle:"
 RESERVED_RECORD_PREFIXES = (JOIN_RECORD_PREFIX, LIFECYCLE_RECORD_PREFIX)
@@ -57,14 +54,7 @@ def record_id_is_reserved(record_id: str) -> bool:
 
 
 def record_id_namespace_ok(kind: str, record_id: str):
-    """Whether one record id sits in the namespace its kind reserves.
-
-    ``None`` for a kind that reserves none. This module owns the reserved
-    ids and prefixes, so it owns the mapping from a kind to them too: the
-    writer (`tickets_attempts`) and the reader (`tickets_dispatch_validate`)
-    each carried their own copy of this table, and a namespace added to one
-    would have been admitted by one and refused by the other.
-    """
+    """Whether one record id sits in the namespace its kind reserves."""
 
     if kind == "launch":
         return record_id == LAUNCH_RECORD_ID

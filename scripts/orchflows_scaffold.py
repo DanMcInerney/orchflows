@@ -25,9 +25,8 @@ AUTHORING_DOC = "docs/custom-workflow-authoring.md"
 
 # An applied skill is entered by a child `--skill` establishes, and
 # `rules/roles.md` clause 6 says that child is of the skill's own declared
-# role -- so a skill without one, or carrying `role: none`, is refused at
-# dispatch. `worker` is what an applied skill does unless its author says
-# otherwise: execution, the role the verb `orch-do` itself declares.
+# role -- so a skill without one is refused at dispatch. `worker` is what an
+# applied skill does unless its author says otherwise.
 _SKILL = """---
 name: {name}
 description: One sentence saying when to use {name} and what it returns.
@@ -57,8 +56,7 @@ _CRAFT_SECTIONS = (
 )
 
 # `## Lens`'s `###` entries, keyed by artifact kind. `root` and `cut` are
-# library-owned; the third is the kind the pack's adapter emits, and the
-# skeleton's `git` goes with the `adapter | git` row `_PACK` writes.
+# library-owned; the third is the kind the pack's adapter emits.
 _CRAFT_LENS_ENTRIES = (
     ("root", "What a well-formed frozen root carries in this domain."),
     ("cut", "How a spec cuts into work items here."),
@@ -105,13 +103,11 @@ is a command, and whose close carries a judge child or an
 
 
 # A sheet is extra craft stamped beside a pack, so its skeleton is the one
-# that cannot be domain-blind the way the others are: it has to name a pack
-# that resolves in this installation and key its `## Lens` by a kind that
-# pack's adapter emits, or `write` scaffolds a sheet the validator refuses
-# and no ticket could stamp. Both facts are read from the installed packs
-# below rather than spelled here -- a pack name written into this module
-# would be a domain name inside machinery, which `tools/validate.py`
-# refuses, and would go stale the day that pack is renamed.
+# that cannot be domain-blind: it has to name a pack that resolves in this
+# installation and key its `## Lens` by a kind that pack's adapter emits.
+# Both facts are read from the installed packs below rather than spelled
+# here -- a pack name written into this module would be a domain name inside
+# machinery, which `tools/validate.py` refuses.
 _SHEET = """---
 name: {name}
 description: One sentence saying when to stamp {name} beside its pack.
@@ -135,9 +131,9 @@ What a judge checks here beside the craft's own `### {kind}` entry.
 
 # A bundle's manifest describes the ring it sits in, not an item inside it
 # (contracts/bundle.md), so it is the one skeleton written beside the item
-# directories rather than into a new `<name>/`. `requires: []` is written
-# out rather than omitted: an author adding a requirement edits a line that
-# is already the right shape.
+# directories rather than into a new `<name>/`. `requires: []` is written out
+# rather than omitted: an author adding a requirement edits a line that is
+# already the right shape.
 _BUNDLE = """---
 name: {name}
 version: {version}
@@ -152,13 +148,7 @@ importing it. Each requirement above is one <git-url>@<tag-or-sha>.
 
 
 def _sheet_binding():
-    """`(pack, artifact kind)` the sheet skeleton is written against.
-
-    The first pack resolvable from here by name, and the kind its own
-    adapter emits. Deterministic, so two scaffolds in one installation
-    agree; refused rather than guessed where no pack resolves, because a
-    sheet with no pack is a sheet nothing may stamp.
-    """
+    """`(pack, artifact kind)` the sheet skeleton is written against."""
 
     if __package__:
         from .tickets_adapters import AdapterError, adapter_spec
@@ -209,11 +199,10 @@ def files_for(kind: str, name: str) -> List[Tuple[str, str]]:
             rings.MANIFESTS["sheet"],
             _SHEET.format(name=name, pack=pack, kind=artifact_kind),
         )]
-    # Every kind is named, and an unnamed one refuses. The tail used to
-    # fall through to the workflow skeleton, so a kind added to
-    # `rings.KINDS` before its skeleton existed would have written a
-    # `SKILL.md` under a kind whose manifest is not that -- a wrong item
-    # written silently, which is the one outcome a scaffold must not have.
+    # Every kind is named, and an unnamed one refuses. A tail that fell
+    # through to the workflow skeleton would write a `SKILL.md` under a kind
+    # whose manifest is not that -- a wrong item written silently, which is
+    # the one outcome a scaffold must not have.
     raise rings.RingError(
         "kind-unscaffolded",
         f"'orchflows new {kind}' has no skeleton yet; author the item by "
@@ -238,11 +227,7 @@ def write(directory: Path, kind: str, name: str) -> List[Path]:
 
 
 def bundle_version() -> str:
-    """The version a scaffolded manifest carries: today, as a date.
-
-    A date is a version a person can write again tomorrow without a release
-    process, and `contracts/bundle.md` takes either that or a tag.
-    """
+    """The version a scaffolded manifest carries: today, as a date."""
 
     return datetime.date.today().isoformat()
 

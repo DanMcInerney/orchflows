@@ -37,13 +37,7 @@ REPLACE_RETRY_SECONDS = 0.005
 
 
 def _lock_windows_byte(handle):
-    """Wait for the run's byte lock without ``LK_LOCK``'s finite retry cap.
-
-    ``msvcrt.LK_LOCK`` stops retrying after ten attempts, unlike the blocking
-    ``flock`` used on POSIX.  Polling the non-blocking operation preserves the
-    same wait-until-acquired contract on Windows while still surfacing errors
-    that are not lock contention.
-    """
+    """Wait for the run's byte lock without ``LK_LOCK``'s finite retry cap."""
 
     while True:
         try:
@@ -55,14 +49,7 @@ def _lock_windows_byte(handle):
 
 @contextmanager
 def _run_lock(run: str):
-    """Hold the one process lock protecting a physical run's mutations.
-
-    Atomic replace protects readers from partial files, but it cannot make a
-    read/check/write invariant atomic.  Every command that can move a run's
-    tickets or identity therefore holds this lock from its first state read
-    through its final write.  The lock lives outside the run payload trees so
-    a refused command does not create a ticket, worklog, or run identity.
-    """
+    """Hold the one process lock protecting a physical run's mutations."""
     try:
         sink = state_root.state_root()
         lock_dir = sink / RUN_LOCKS_DIR
@@ -99,17 +86,7 @@ def _run_lock(run: str):
 
 
 def _waiting_out_windows(action):
-    """Run ``action``, retrying only the refusal only Windows raises.
-
-    ``PermissionError`` alone, never ``OSError``: a missing file and an
-    unreachable directory are answers, and waiting two seconds for one of
-    those on every run that has yet to open would cost the ordinary path
-    to spare the rare one.
-
-    No facade import here, nor anywhere else in this family: a helper that
-    reaches back up to ``tickets.py`` closes an import cycle to re-point
-    whatever seam the facade held, and this one paid it per atomic write.
-    """
+    """Run ``action``, retrying only the refusal only Windows raises."""
     deadline = time.monotonic() + REPLACE_BUDGET_SECONDS
     while True:
         try:
@@ -126,13 +103,7 @@ def _replace_atomically(temporary: Path, target: Path) -> None:
 
 
 def _write_identity(run_dir: Path, document: dict) -> None:
-    """Whole-file, and atomically.
-
-    The run id partitions this document, but two workspaces of one project
-    still open it at once, and a reader must never meet a half-written one.
-    Written beside the target and moved over it, so the move is the only
-    thing a concurrent reader can observe.
-    """
+    """Whole-file, and atomically."""
     handle = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', newline='\n', dir=str(run_dir), prefix=RUN_IDENTITY_NAME + '.', suffix='.tmp', delete=False)
     temporary = Path(handle.name)
     try:

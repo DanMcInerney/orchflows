@@ -16,13 +16,9 @@ Eight ring verbs over ``scripts/rings.py``'s one resolution order, plus
     orchflows untrust <bundle>         withdraw both halves of that grant
     orchflows resume [--now <iso>]     this project's open workflow frames
 
-``list`` reports through the same resolver runtime resolution uses, so an
-item that appears here is an item that runs, and one shadowed here is one
-shadowed at dispatch. ``resume`` reads the state sink and nothing else: it
-is pull-based, resident in nothing, and it shows a stale frame's age rather
-than deciding for the reader that the driver is gone. Output is plain text:
-this command is read by a person, and orchflows has no interactive surface
-of its own.
+``list`` reports through the resolver runtime resolution uses, so an item
+that appears here is an item that runs. ``resume`` reads the state sink and
+nothing else. Output is plain text: orchflows has no interactive surface.
 """
 
 from __future__ import annotations
@@ -52,8 +48,7 @@ else:  # pragma: no cover - direct/installed flat script path
 
 
 # `new`'s one non-item target: a bundle is the ring itself, not something
-# in it, so it is spelled where a kind is spelled and refused everywhere a
-# ring kind is resolved.
+# in it, so it is refused everywhere a ring kind is resolved.
 BUNDLE_KIND = "bundle"
 COLUMNS = ("kind", "name", "ring", "trust", "path")
 RESUME_COLUMNS = ("frame", "run", "age", "journal", "children", "leases", "goal")
@@ -100,15 +95,7 @@ def cmd_list(args) -> int:
 
 
 def cmd_check(args) -> int:
-    """Grade one ring with the library compiler's own item checks.
-
-    The findings print in the compiler's format -- ``ERROR|WARN <file>:
-    <message>``, one per line, relative to the ring -- because they are the
-    compiler's findings; ``scripts/orchflows_check.py`` says which checks a
-    ring gets and why. The two counted lines above them answer the question
-    a clean report otherwise leaves open: which ring, and how much of it
-    was actually looked at.
-    """
+    """Grade one ring with the library compiler's own item checks."""
 
     ring = orchflows_check.ring_at(args.ring)
     if not ring.is_dir():
@@ -126,18 +113,7 @@ def cmd_check(args) -> int:
 
 
 def cmd_resume(args) -> int:
-    """Every open frame of this project, newest first, as one table.
-
-    The one question a driver asks on coming back -- its own, after a crash
-    or a compaction, or somebody else's the next morning. The row is
-    deliberately not a verdict: age says how long the frame has been open
-    and the reader decides whether that means abandoned, because a driver
-    that is merely slow and a driver that died look identical from here.
-
-    Nothing here writes, and the tickets family is reached at call time --
-    ``orchflows`` binds rings, and this one read of the sink should not put
-    the whole ticket trunk into its import graph.
-    """
+    """Every open frame of this project, newest first, as one table."""
 
     if __package__:
         from . import tickets_frame
@@ -182,12 +158,7 @@ def cmd_sync(args) -> int:
 
 
 def _sync_project() -> int:
-    """Render the project ring's committed adapters into the project.
-
-    A separate flag rather than a second guess: the home ring is what
-    ``sync`` is for, and writing into somebody's repository is a thing they
-    ask for by name.
-    """
+    """Render the project ring's committed adapters into the project."""
 
     bundle = rings.project_ring()
     if bundle is None:
@@ -209,14 +180,7 @@ def _report(result: dict) -> None:
 
 
 def _report_dependencies() -> None:
-    """Settle every declared dependency resolvable from here, and say so.
-
-    Both ``sync`` forms end here, over one inventory: the same resolver a
-    launch reads, so what is built is what can run. The three classes in
-    their order -- the Python environments this ring owns, the orphans it no
-    longer owns, the tooling it can only check, the Node trees it installs --
-    each with the item that declared it in front of the line.
-    """
+    """Settle every declared dependency resolvable from here, and say so."""
 
     records = rings.inventory()
     for outcome in orchflows_envs.sync(records):
@@ -266,12 +230,7 @@ def cmd_add(args) -> int:
 
 def _new_ring():
     """``(ring, bundle directory)`` a new item or manifest is written into:
-    the project ring when you stand in a project, else the home ring.
-
-    The write target follows the shared file rather than a local overlay:
-    an author standing in a repository means that repository's ring, and a
-    repository that has no ring yet is one this command may open.
-    """
+    the project ring when you stand in a project, else the home ring."""
 
     bundle = rings.project_ring()
     if bundle is not None:
@@ -290,13 +249,7 @@ def _new_target(kind: str):
 
 
 def _bundle_name(directory: Path) -> str:
-    """The name a manifest takes when the author names none.
-
-    The bundle directory's parent: the repository a project ring sits in,
-    or the home the home ring sits in. A name is the one field only its
-    owner can decide, so a directory whose name is not a usable one asks
-    rather than inventing.
-    """
+    """The name a manifest takes when the author names none."""
 
     try:
         return rings.item_name(Path(directory).resolve().parent.name)

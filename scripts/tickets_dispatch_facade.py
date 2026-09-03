@@ -49,16 +49,7 @@ else:
 
 
 def _workspace(source: Path, verb: str, arguments: list):
-    """``(response, failure)`` from one ``workspace.py`` verb run in ``source``.
-
-    Workspace work is intentionally kept behind its public script: it owns
-    adapter selection, the derived candidate worktree, and the host checkout
-    observation. Only the structured response is fed back, so a refusal
-    cannot be repaired here or translated into a second protocol. One reader
-    for both verbs, because every one of these failure shapes -- a launch
-    that will not start, output that will not parse, an object that is not
-    one, a non-zero status -- belongs to the protocol and not to the verb.
-    """
+    """``(response, failure)`` from one ``workspace.py`` verb run in ``source``."""
 
     script = Path(__file__).with_name("workspace.py").resolve()
     try:
@@ -87,15 +78,7 @@ def _workspace(source: Path, verb: str, arguments: list):
 
 
 def _workspace_prepare(run: str, ticket_id: str, workspace: str | None) -> dict:
-    """Install what the established tree declares, reporting either answer.
-
-    Called after the run lock is released, never inside it: a cold
-    ``pnpm install`` is minutes, and inside the critical section every
-    sibling of this run waited them out for a tree that was not theirs. Its
-    verdict is reported rather than raised, exactly as the workspace owner
-    reports it -- a tree that could not be prepared is still the workspace
-    the launch names, and the child reads the answer and plans around it.
-    """
+    """Install what the established tree declares, reporting either answer."""
 
     source = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
     response, failure = _workspace(source, "prepare", [run, ticket_id])
@@ -103,25 +86,7 @@ def _workspace_prepare(run: str, ticket_id: str, workspace: str | None) -> dict:
 
 
 def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
-    """Run the workspace owner and return its one JSON response.
-
-    ``--workspace`` names the tree the candidate is cut from, never the
-    candidate itself -- an isolation-required item's tree is derived from its
-    identity by ``workspace.py``, which is what stops two siblings of one run
-    from being dispatched into one directory.
-
-    ``--lock-held`` (``workspace_git.LOCK_HELD``, pinned by a test) says this
-    process already holds the run lock across the whole composition: the child
-    stamps inside the caller's critical section rather than waiting for a lock
-    its own parent holds while waiting for the child.
-
-    ``--repo`` is passed only when the caller named a tree. Without it the
-    child stands in this process's own directory and reads the same tree
-    anyway, so nothing about the candidate changes -- but the run's
-    write-once integration target is fixed by a caller that named where its
-    work belongs, never by this default, which recorded a driver's own
-    checkout for a run whose every candidate was cut somewhere else.
-    """
+    """Run the workspace owner and return its one JSON response."""
 
     source = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
     aimed = ["--repo", str(source)] if workspace else []
@@ -139,23 +104,7 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
 
 
 def _cmd_dispatch(rest):
-    """Compose ready, workspace, attempt, launch, and preparation.
-
-    The established public operations remain the recovery seam. This
-    caller convenience operation composes them in order, relays every
-    structured refusal unchanged, and retires a newly opened attempt if the
-    launch refuses so no live attempt is left behind.
-
-    The launch binding is resolved twice on purpose: once before anything is
-    opened, so a host or role that cannot be launched refuses while the
-    ticket is still untouched, and once from the graded assignment, which is
-    the authority on what is actually being launched. Both ask the one
-    resolver, under this one lock, so they cannot disagree.
-
-    Only the steps that decide the dispatch run under that lock. Tree
-    preparation decides nothing and costs the most, so it follows the lock
-    rather than sitting inside it.
-    """
+    """Compose ready, workspace, attempt, launch, and preparation."""
 
     args = list(rest)
     owner = _extract_flag(args, "--by")
@@ -174,11 +123,8 @@ def _cmd_dispatch(rest):
     # Before the lock, and it has to be: promotion takes the run lock for
     # itself for each ticket it admits, and `_run_lock` is not reentrant, so
     # readying a sealed-but-pending item from inside our own lock is this
-    # process waiting on itself -- which is what the ordinary first dispatch
-    # of a sealed root did. Nothing is lost by promoting first: it is a
-    # whole-run convenience, not part of this ticket's transaction, and
-    # `dispatch-open` re-grades admission under the lock below and refuses a
-    # ticket that is not ready however it got there.
+    # process waiting on itself. Nothing is lost by promoting first, and
+    # `dispatch-open` re-grades admission under the lock below.
     ready = _cmd_ready(["--run", run])
     if "error" in ready:
         return ready
@@ -191,10 +137,9 @@ def _cmd_dispatch(rest):
     if "error" in dispatched:
         return dispatched
     # Outside the lock, and last: preparing the tree is a package manager's
-    # minutes against a directory that already exists and belongs to this one
-    # item, and every second of it spent inside the critical section was a
-    # second every sibling of this run waited for a tree that was not theirs.
-    # Its verdict rides along; it never decides the dispatch.
+    # minutes against a directory that belongs to this one item, and every
+    # second of it inside the critical section is a second every sibling
+    # waits. Its verdict rides along; it never decides the dispatch.
     return {**dispatched, "prepare": _workspace_prepare(run, ticket_id, workspace)}
 
 
@@ -204,8 +149,7 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
 
     # Before the first side effect: an attempt opened for a launch that
     # cannot resolve is an attempt nobody can start. Then open before
-    # workspace establishment, because workspace.start stamps the ticket
-    # and doing it first would mutate bytes on a pre-open refusal.
+    # workspace establishment, because workspace.start stamps the ticket.
     record, failure = precheck(run, ticket_id, host)
     if failure is not None:
         return failure
@@ -300,13 +244,7 @@ def _live_attempt(attempt: dict):
 
 
 def _committed_launch(attempt: dict):
-    """The launch this attempt was already started with, or None.
-
-    The record is the authority on what the child was handed, so a replay
-    returns those bytes rather than composing them again: the prompt names
-    absolute paths and this interpreter, and a second composition from a
-    moved checkout would report a launch that never happened.
-    """
+    """The launch this attempt was already started with, or None."""
 
     record = next(
         (
@@ -332,13 +270,7 @@ def _committed_launch(attempt: dict):
 
 def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
                              workspace):
-    """Grade the assignment, resolve the launch, and commit it, once.
-
-    Every read decides what the commit writes -- stored attempt, replay
-    comparison, review state, seal -- so the caller's lock covers the reads
-    too, and `_commit_record` is told the lock is held rather than opening a
-    second one on the same run.
-    """
+    """Grade the assignment, resolve the launch, and commit it, once."""
 
     root = _tickets_root()
     if root is None:
@@ -366,8 +298,7 @@ def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
     seal = str(data.get("assignment_seal") or "")
     if seal != attempt.get("assignment_seal") or seal_findings(ticket_id, text):
         # The same fact `_commit_record` fences every write on, refused here
-        # before the launch is composed rather than after: one code for one
-        # fact, and it is the one the commit below would raise anyway.
+        # before the launch is composed rather than after.
         return _classification(
             "assignment-mismatch",
             "ticket no longer matches the attempt's sealed assignment",

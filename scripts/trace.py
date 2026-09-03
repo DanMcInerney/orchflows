@@ -1,29 +1,22 @@
 #!/usr/bin/env python3
 """Session trace extractor. Stdlib-only, read-only, cross-platform.
 
-Normalizes one Claude Code session or one Codex thread tree into a
-single ordered trace: ``request``, ``narration``, ``skill_invocation``,
-``subagent``, and ``tool_call`` events, plus durations and token counts
-where the source data carries them. ``request`` and ``narration`` carry
-``text`` (user prompt / agent's user-visible explanation), clipped at
-``TEXT_CLIP`` with a ``truncated`` flag; harness-injected text
-(system reminders, command wrappers) is never a request. The trace also
-carries top-level ``runs_touched``: run ids harvested from run-state
-paths in tool calls -- the sink's and, for a session predating the
-migration, the repository's -- the join key to run state. Never writes under
-``~/.claude`` or
-``~/.codex``. Never raises past ``main`` and always exits 0 -- host
-schemas drift, and nothing downstream may depend on this parser being
-perfectly current (see ``schema_confidence`` and ``parse_errors``
-below).
+Normalizes one Claude Code session or one Codex thread tree into a single
+ordered trace: ``request``, ``narration``, ``skill_invocation``,
+``subagent`` and ``tool_call`` events, plus durations and token counts where
+the source carries them. ``request`` and ``narration`` carry ``text``,
+clipped at ``TEXT_CLIP`` with a ``truncated`` flag; harness-injected text is
+never a request. The trace also carries top-level ``runs_touched``: run ids
+harvested from run-state paths in tool calls, the join key to run state.
 
-Degradation bar: a malformed or drifted input line is skipped and
-recorded in ``parse_errors``; it never aborts extraction. Records with
-an unrecognized-but-valid shape (harness bookkeeping, new event kinds)
-are counted as cleanly parsed but simply produce no event -- schema
-drift that adds new record kinds is not an error, only a record kind we
-fail to interpret at all (bad JSON, or a message/response_item missing
-its required shape) is.
+Never writes under ``~/.claude`` or ``~/.codex``. Never raises past ``main``
+and always exits 0 -- host schemas drift, and nothing downstream may depend
+on this parser being perfectly current.
+
+Degradation bar: a malformed or drifted input line is skipped and recorded
+in ``parse_errors``; it never aborts extraction. A record with an
+unrecognized-but-valid shape is counted as cleanly parsed and produces no
+event, so schema drift that adds record kinds is not an error.
 
 Usage:
     trace.py --claude <session.jsonl-or-dir>       -> trace JSON on stdout
@@ -32,17 +25,12 @@ Usage:
     trace.py --codex <path> --mermaid              -> Mermaid flowchart
 
 ``--claude PATH``: PATH is either the main transcript file (its sibling
-directory ``<stem>/subagents/`` is read too, matching the live
-``~/.claude/projects/<project>/<session-id>.jsonl`` +
-``<session-id>/subagents/`` layout), or a self-contained directory
-holding ``main.jsonl`` and ``subagents/``.
+``<stem>/subagents/`` is read too) or a self-contained directory holding
+``main.jsonl`` and ``subagents/``. ``--codex PATH``: one rollout file, or a
+directory of them, parent and child linked by
+``source.subagent.thread_spawn.parent_thread_id``.
 
-``--codex PATH``: PATH is one rollout file (one thread) or a directory
-of rollout files (one thread per file; parent/child linked by
-``source.subagent.thread_spawn.parent_thread_id``).
-
-Extraction only. Findings belong to the improvement composition to synthesize from
-the sink's own streams; this script mines nothing.
+Extraction only; this script mines nothing.
 """
 from __future__ import annotations
 
@@ -144,9 +132,6 @@ else:  # installed flat beside trace.py
         extract_codex,
     )
 
-# --------------------------------------------------------------------------
-# CLI
-# --------------------------------------------------------------------------
 
 _clip_impl = _clip
 _extract_claude_impl = extract_claude
@@ -182,10 +167,9 @@ def build_parser():
 def main(argv=None) -> int:
     _trace_render_module.TEXT_CLIP = TEXT_CLIP
     argv = sys.argv[1:] if argv is None else argv
-    # Windows consoles default stdout to a legacy codepage (e.g. cp1252) that
-    # cannot encode arbitrary transcript content (emoji, non-Latin text).
-    # ensure_ascii keeps JSON output byte-safe regardless; `console.harden`
-    # additionally protects the Mermaid text path.
+    # Windows consoles default stdout to a legacy codepage that cannot encode
+    # arbitrary transcript content. ensure_ascii keeps JSON output byte-safe
+    # regardless; `console.harden` additionally protects the Mermaid path.
     console.harden()
     parser = build_parser()
     args = parser.parse_args(argv)

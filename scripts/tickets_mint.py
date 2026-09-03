@@ -1,24 +1,21 @@
 """The two minting commands: one command opens, seals, and launches one child.
 
 `do` makes an artifact and `judge` reads finished ones. Both fold what a
-caller used to sequence by hand -- `new`, `stamp-generation`,
-`draft-validate`, `seal`, `ready`, `dispatch` -- into one call, because every
-one of those steps is mechanical and none of them is a decision. Four of
-those six retired as commands once this fold was the only caller walking
-them; their functions are unchanged and each step below is the same one the
-granular command called, so this is one protocol rather than a second.
+caller would otherwise sequence by hand -- new, stamp-generation,
+draft-validate, seal, ready, dispatch -- into one call, because every one of
+those steps is mechanical and none is a decision. Each step below is the
+same function the granular command called, so this is one protocol rather
+than a second.
 
 Two facts make the fold safe. The id is minted under the run lock, so two
 concurrent callers under one parent cannot choose one id. And a child is
 sealed through its parent rather than named in a sealed cut: the cut that
 sealed the parent closed before the child existed, so the child inherits the
 parent's generations, self-seals its own assignment, and admission verifies
-the parent's seal in the sealed record -- the reading a landing's repair
-round already needed, generalized here to every runtime child.
+the parent's seal in the sealed record.
 
 A parentless callable is its own root and takes the full generation
-lifecycle: it is stamped, its draft validated, and its own one-member cut
-sealed, here rather than by a caller.
+lifecycle here rather than by a caller.
 """
 
 from __future__ import annotations
@@ -89,8 +86,7 @@ ARTIFACT_KINDS = frozenset(
 # The two library-owned artifact kinds, and the frontmatter field each one
 # names. A domain's kinds are the adapter's and carry their identity inside
 # the line; these two are the ticket machinery's own, and their identity is
-# a generation value it already stamped -- `root:<id>:<n>:sha256:<digest>`
-# and `cut:<id>:<n>:sha256:<digest>` -- so the whole line is the value and
+# a generation value it already stamped, so the whole line is the value and
 # the run itself is what says whether it is real.
 GENERATION_KINDS = {"root": "root_generation", "cut": "cut_generation"}
 # What a judge's `--artifacts` may name. Kept apart from `ARTIFACT_KINDS`,
@@ -100,34 +96,20 @@ JUDGE_KINDS = ARTIFACT_KINDS | frozenset(GENERATION_KINDS)
 # whose call this ticket is, in the section a reader of the ticket alone
 # would otherwise have to infer it from the id.
 PARENT_CLAUSE = "- parent: "
-# The adapter whose workspace *is* lanes -- "isolation is a run-scoped lane
-# directory" -- and so the one whose craft prices a lane at one
-# independently answerable sub-question. Selected off the pack's own
-# declared adapter rather than off a pack name, because machinery stays
-# domain-blind (tools/validate_support/structure.py's domain-blindness
-# check); a pack that adopts this adapter inherits the door with it.
+# The adapter whose workspace *is* lanes, and so the one whose craft prices
+# a lane at one independently answerable sub-question. Selected off the
+# pack's own declared adapter rather than off a pack name, because machinery
+# stays domain-blind; a pack that adopts this adapter inherits the door.
 LANE_ADAPTER = "evidence-store"
 # The marker that adapter's craft root entry states the form of. The door
-# counts it; the craft is where the form is said, and nothing here restates
-# it.
+# counts it; the craft is where the form is said.
 _SUBQUESTION_MARKER = "sub-questions"
 _HEADING_LINE = re.compile(r"^ {0,3}#{1,6}\s")
 _NUMBERED_ITEM = re.compile(r"^\s*\d+[.)]\s+\S")
 
 
 def subquestion_count(goal: str) -> int:
-    """How many sub-questions one goal declares.
-
-    The form counted is stated once, in the `### root` entry of the craft
-    belonging to the pack whose adapter is `LANE_ADAPTER`, and nowhere
-    here: a reader who needs it resolves that craft through `packs.py
-    cells <digest>`. What is this module's own is how the count is taken
-    over a goal that departs from that form -- every marked section's
-    items, because a goal declaring its coverage twice declares both
-    halves of it, and any numbered line inside one, nesting included, so
-    an off-form goal over-counts and refuses rather than being
-    disambiguated here.
-    """
+    """How many sub-questions one goal declares."""
 
     count, inside = 0, False
     for line in goal.splitlines():
@@ -139,19 +121,7 @@ def subquestion_count(goal: str) -> int:
 
 
 def _one_lane(pack, parent, goal: str, goal_file):
-    """The refusal for a parentless lane-adapter `do` carrying several lanes.
-
-    A worker-lane `do` is one child answering one question. The research
-    craft's cut rule already priced a lane at one independently answerable
-    sub-question; run 20260902T140000Z-hn-workflows minted a single `do`
-    over five of them and got back one source called a full packet. The
-    door stands here, ahead of the run directory, so a refusal leaves the
-    sink exactly as it found it.
-
-    A pack that will not resolve passes: `pinned_pack_digest` owns that
-    refusal and names the pack, and two refusals for one cause would make
-    the caller fix the wrong thing first.
-    """
+    """The refusal for a parentless lane-adapter `do` carrying several lanes."""
 
     if parent:
         return None
@@ -196,14 +166,7 @@ def _run_dir(run: str):
 
 
 def _issued_ids(run_dir) -> list:
-    """Every id already issued in the run, read under the caller's lock.
-
-    Read inside the lock and nowhere else. Two callers that listed the run
-    before taking it both saw the same highest ordinal and both chose the id
-    after it, and the second one lost its whole callable to the exclusive
-    create -- which is the failure the lock is held to prevent, moved one
-    line earlier rather than removed.
-    """
+    """Every id already issued in the run, read under the caller's lock."""
 
     return (
         sorted(path.stem for path in run_dir.glob("*.md"))
@@ -212,13 +175,7 @@ def _issued_ids(run_dir) -> list:
 
 
 def _generation_values(run_dir, field: str) -> list:
-    """Every value of one generation field carried by a ticket in the run.
-
-    Read off the tickets rather than recomputed: the value spells the id and
-    ordinal of the stamp that minted it, so the run's own files are the only
-    place it exists, and a caller that re-derived one would be authoring a
-    generation instead of naming one.
-    """
+    """Every value of one generation field carried by a ticket in the run."""
 
     values = set()
     if run_dir is not None and run_dir.is_dir():
@@ -233,17 +190,7 @@ def _generation_values(run_dir, field: str) -> list:
 
 
 def _artifact_lines(values, run_dir=None) -> tuple:
-    """`(lines, refusal)` for the typed artifact identities a judge reads.
-
-    One flag repeated, or one value carrying several lines: a caller relaying
-    two children's returned lines has them as two lines already, and asking
-    it to re-join them into one flag value is where a paraphrase gets made.
-
-    A `root:` or `cut:` line is checked against `run_dir` as well as typed:
-    those two identities live in the run's own frontmatter, so an unknown one
-    is refused with the run's real values rather than accepted and handed to
-    a judge that has nothing to open.
-    """
+    """`(lines, refusal)` for the typed artifact identities a judge reads."""
 
     lines = []
     for value in values:
@@ -301,22 +248,7 @@ def _sealed_parent(run_dir, parent: str):
 
 
 def _mint(run: str, run_dir, parent, fields: dict, sections: list):
-    """`(ticket_id, refusal)` -- one runtime child's id, seal, and write.
-
-    All of what the runtime minting commands share, and the reason they can
-    share it: the id is read out of the run directory under the caller's
-    own hold of the run lock, and a child hangs its admission on its
-    parent's seal rather than on a cut that closed before it existed -- it
-    inherits the parent's two generations and self-seals its own bytes.
-    What each command owns is only which fields and sections its ticket
-    carries, which is why those arrive as arguments and nothing here reads
-    them.
-
-    `frame-open` is the third caller. A frame is not a callable -- it binds
-    no executor and stamps no pack -- and it is minted exactly this way,
-    because being a runtime child of a sealed parent is the one thing the
-    two kinds have wholly in common.
-    """
+    """`(ticket_id, refusal)` -- one runtime child's id, seal, and write."""
 
     ticket_id = next_mint_id(parent, _issued_ids(run_dir))
     inherit = None
@@ -459,9 +391,9 @@ def _cmd_callable(rest, *, judge: bool):
         details, failure = _read_utf8(details_file, "details file")
         if failure is not None:
             return failure
-    # The run directory is resolved ahead of the artifact check rather than
-    # after it: a `root:`/`cut:` line names a generation this run stamped,
-    # so the run's own tickets are what the check reads.
+    # The run directory is resolved ahead of the artifact check: a
+    # `root:`/`cut:` line names a generation this run stamped, so the run's
+    # own tickets are what the check reads.
     run_dir, failure = _run_dir(run)
     if failure is not None:
         return failure
@@ -471,8 +403,8 @@ def _cmd_callable(rest, *, judge: bool):
         if failure is not None:
             return failure
         # One judge, one kind: the kind selects the craft's `## Lens` entry
-        # the judge reads its criteria from, and a call handed two kinds
-        # has no one entry to be judged against. Two calls, not one.
+        # the judge reads its criteria from, and a call handed two kinds has
+        # no one entry to be judged against. Two calls, not one.
         kinds = sorted({line.split(":", 1)[0] for line in lines})
         if len(kinds) > 1:
             return {"error": (

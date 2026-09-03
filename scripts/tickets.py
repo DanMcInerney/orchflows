@@ -3,19 +3,19 @@
 
 The author-facing semantic payload is Goal, Context, and optional Suggested
 files. Every command emits one JSON document; a payload carrying ``error``
-exits 1 and every other payload exits 0. ``--help`` owns the live command list.
+exits 1 and every other payload exits 0. ``--help`` owns the live command
+list.
 
 The run identity at ``<sink>/runs/<run>/run.json`` records exactly `run`,
 `sink_convention`, `opened_at`, `orchflows`, `orchflows.receipt_version`,
 `orchflows.source_commit`, `terminal_at`, `terminal_ticket_id`,
-`terminal_status`, `elapsed_ms`, `project`, `project.root`, `project.origin`,
-`project.name`, `workspaces`, `workspaces[].path`, and
+`terminal_status`, `elapsed_ms`, `project`, `project.root`,
+`project.origin`, `project.name`, `workspaces`, `workspaces[].path`, and
 `workspaces[].first_seen`.
 
 Every name re-exported below is one something outside the family reads
-here: a helper with no other route to it, or a check that patches it at
-this one seam. A re-export nothing names is not a courtesy held in
-reserve, it is a second owner for one fact, so it is deleted instead.
+here. A re-export nothing names is a second owner for one fact, so it is
+deleted instead.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ if __package__:
     from . import tickets_registry as _tickets_registry_module
 else:
     # By name, as `tickets_generations` is reached: the family's
-    # module-level import census is pinned, and this module joined after it.
+    # module-level import census is pinned.
     import tickets_adapters as _tickets_adapters_module
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
@@ -131,11 +131,7 @@ main = _tickets_dispatch_module.main
 console = _tickets_dispatch_module.console
 
 def _sync_seams():
-    """Re-point at their owners the seams a check patches on this facade.
-
-    One line per (seam, owning module) pair some check actually patches: a
-    line for a seam nothing patches re-assigns a value nothing changed.
-    """
+    """Re-point at their owners the seams a check patches on this facade."""
     _tickets_store_module._cwd = _cwd
     _tickets_store_module._write_identity = _write_identity
     _tickets_issue_module._write_identity = _write_identity

@@ -1,10 +1,9 @@
 """The subcommand router, and the two improvement-channel writes.
 
-What is left here after the family's commands moved to their owners: the
-argv-to-handler table `--help` is read off, the usage answer that precedes
-every argument, and `improvement` -- `run-state`'s sibling on the same
-user-scope channel, kept beside the router because it writes no ticket and
-belongs to no ticket module.
+The argv-to-handler table `--help` is read off, the usage answer that
+precedes every argument, and `improvement` -- `run-state`'s sibling on the
+same user-scope channel, kept beside the router because it writes no ticket
+and belongs to no ticket module.
 """
 from __future__ import annotations
 import json
@@ -49,47 +48,19 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_dispatch_facade import _cmd_dispatch
     _cmd_land = __import__('tickets_land')._cmd_land
 # Installed by `scripts/tickets.py` at facade import, never imported back up
-# from here: the facade owns which seams it re-points, and a helper reaching
-# up for that is the import cycle `tickets_store` used to close per write.
-# `None` is a dispatcher loaded without its facade -- nothing to sync.
+# from here: the facade owns which seams it re-points. `None` is a
+# dispatcher loaded without its facade -- nothing to sync.
 _sync_seams = None
 def _help_requested(rest) -> bool:
-    """Whether a help flag in ``rest`` stands as its own token.
-    A help flag consumed as a value-taking flag's value is that value
-    (``VALUE_FLAGS``), so ``--note --help`` writes the note and never
-    answers usage: a run-state line whose text happens to be a help flag
-    must not be swallowed silently.
-    """
+    """Whether a help flag in ``rest`` stands as its own token."""
     return any((token in HELP_FLAGS and (i == 0 or rest[i - 1] not in VALUE_FLAGS) for i, token in enumerate(rest)))
 def _cmd_help(command=None):
-    """Usage, answered before any argument is resolved.
-    A request for usage is a request this script serves, never an unhandled
-    case it renders as the ordinary error path. It carries no ``error`` key
-    and so exits 0, and it touches no repository: `--help` outside a
-    checkout, or on a subcommand whose required arguments are absent, is
-    still answerable and is the case a reader most often needs it in.
-    """
+    """Usage, answered before any argument is resolved."""
     if command is None:
         return {'help': {'usage': 'tickets.py <subcommand> [options]', 'subcommands': {name: {'usage': SUBCOMMAND_USAGE[name], 'summary': SUBCOMMAND_SUMMARY[name]} for name in SUBCOMMAND_USAGE}, 'help': f"tickets.py {' | '.join(sorted(HELP_FLAGS))} | help, or <subcommand> --help", 'output': "exactly one JSON document on stdout; a payload carrying 'error' exits 1, every other payload exits 0"}}
     return {'help': {'subcommand': command, 'usage': SUBCOMMAND_USAGE[command], 'summary': SUBCOMMAND_SUMMARY[command]}}
 def _cmd_improvement(rest):
-    """Write an improvement evidence record into the one user-scope sink.
-    ``_cmd_run_state``'s sibling, for the other two records the channel
-    rules/visibility.md §6 covers: a proposal and the coverage record.
-    Same root resolution, same two shapes — one whole-file, one
-    single-call append — and the same refusal to reach for a fallback.
-    ``--proposal`` is whole-file, safe because the name partitions it, and
-    the name goes through ``_segment_error`` so nothing can climb out of
-    ``proposals/``. ``--covered`` appends to a stream every pass shares, so
-    it opens in append mode with an explicit ``newline`` and writes one
-    line in one call: a read-modify-write here loses a concurrent writer's
-    line, which is the whole reason the record is JSONL.
-    Neither body is read, parsed or validated. This is a channel; what a
-    proposal says and what a coverage line carries belong to
-    the improvement composition.
-    There is no fallback. A write that cannot reach the resolved root is
-    reported as an error and lands nowhere else.
-    """
+    """Write an improvement evidence record into the one user-scope sink."""
     args = list(rest)
     proposal = _extract_flag(args, '--proposal')
     covered = _extract_flag(args, '--covered')
@@ -149,8 +120,7 @@ def _dispatch(argv):
     if command == 'bound-check': return _cmd_bound_check(rest)
     if command == 'new': return _cmd_new(rest)
     # Named one per line, not folded into a membership test: `cli_help`
-    # reads the dispatched set off these comparisons, and a subcommand
-    # reachable only through a lookup is one whose `--help` silently errs.
+    # reads the dispatched set off these comparisons.
     if command == 'grade': return _cmd_grade(rest)
     if command == 'list':
         return _cmd_list(rest)

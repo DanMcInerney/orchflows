@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
-"""Deterministic harvest command. Stdlib-only, cross-platform (Windows + POSIX).
+"""Deterministic harvest command. Stdlib-only, cross-platform.
 
 The read sibling of ``scripts/friction.py``: read-only over the state sink
-except the one digest file it writes at ``--out``. Sink resolution goes
-through ``scripts/state_root.py`` via the same deferred, guarded import
-``friction.py`` uses, so a partial install costs this tool a clean error
-and never a traceback before argument parsing finishes. Console discipline
-is ``console.py``'s, also imported the same way.
-
-This is a file-writing tool, not a JSON-on-stdout one: on success it prints
-one summary line and writes the digest to ``--out``; on failure it prints
-one line to stderr and exits non-zero. Nothing here has ``friction.py``'s
-never-fail bar -- an ordinary error is allowed to be an ordinary error.
+except the one digest file it writes at ``--out``. Sink resolution and
+console discipline go through the same deferred, guarded imports
+``friction.py`` uses. Nothing here has that file's never-fail bar -- an
+ordinary error is allowed to be an ordinary error.
 
 Usage::
 
@@ -23,47 +17,33 @@ Usage::
     python harvest.py --list-runs [window flags]
 
 Selectors compose AND across kinds, OR within one repeated flag. Each
-``--on <date>`` is one whole UTC day; the flag repeats to union disjoint
-days. ``--since``/``--until`` bound a continuous range and compose with
-``--on`` by AND, same as any other two kinds. No selector at all means
-"everything since the newest watermark in ``improvement/covered.jsonl``"
-(no covered file: everything) -- this default applies only when literally
-no flag was given, never as a fallback for one flag with no match.
+``--on <date>`` is one whole UTC day. No selector at all means everything
+since the newest watermark in ``improvement/covered.jsonl`` -- this default
+applies only when literally no flag was given, never as a fallback for one
+flag with no match.
 
-What it does, in order (design: ``research/self-improve-design-2026-09-01.md``
-Move 1):
+What it does, in order:
 
 1. Slice ``friction/*.jsonl`` and ``events/*.jsonl`` by the window and the
-   non-time selectors. The events stream is a sibling ticket's delivery;
-   its directory may not exist yet, and an absent one reads as empty,
-   never as an error.
-2. Exclude covered: every ``covered.jsonl`` entry carries a ``matcher``
-   regex list and a ``watermark``. A friction entry at or before that
-   watermark, matching any pattern, is dropped and counted -- never one
-   after, so a matcher does not silently eat a fresh recurrence.
-3. Cluster the remaining friction entries by observed-text similarity:
-   normalize (case, paths, hashes, numbers), 3-word shingles, greedy
-   union at a fixed Jaccard threshold (``scripts/harvest_cluster.py``'s
-   ``JACCARD_THRESHOLD``). Deterministic given stream order, which is
-   file name order (``YYYY-MM`` sorts chronologically) then line order
-   within a file.
-4. Compute improvement law (``rules/improvement.md``) rule 4's recurrence
-   arithmetic per cluster and mark ``recurrence_met``.
+   non-time selectors. An absent events directory reads as empty.
+2. Exclude covered: a friction entry at or before a covered entry's
+   watermark and matching any of its patterns is dropped and counted --
+   never one after, so a matcher does not eat a fresh recurrence.
+3. Cluster the remaining friction entries by observed-text similarity
+   (``scripts/harvest_cluster.py``). Deterministic given stream order,
+   which is file-name order then line order within a file.
+4. Compute ``rules/improvement.md`` rule 4's recurrence arithmetic per
+   cluster and mark ``recurrence_met``.
 
-The digest header carries ``watermark``: the newest ``ts`` among the
-friction entries this run selected (step 1, before covered exclusion), so
-a covered line built from this digest never eats a recurrence past what
-was actually read. An empty selection has no entry to date it by, so
-``watermark`` falls back to the window's own closing edge (``--until`` or
-the latest ``--on`` day) when the window is bounded, else ``null``.
+The digest header's ``watermark`` is the newest ``ts`` among the entries
+this run selected before covered exclusion, so a covered line built from
+this digest never eats a recurrence past what was read. An empty selection
+falls back to the window's own closing edge, else ``null``.
 
 ``--list-runs`` never writes ``--out``; it prints one tab-separated line
-per run in the window (run id, workflow, goal first line, earliest and
-latest entry timestamp, friction count, event count), a missing field
-spelled literally ``null`` so a caller splitting on tabs never meets an
-empty column. It is the resolver a fuzzy window ("this last workflow")
-turns into exact flags before calling harvest again -- no fuzzy matching
-happens in this file.
+per run in the window, a missing field spelled literally ``null``. It is
+the resolver a fuzzy window turns into exact flags before calling harvest
+again -- no fuzzy matching happens in this file.
 
 Never: read anything beyond ``friction/``, ``events/`` and
 ``improvement/covered.jsonl``; write anything but the one ``--out`` file;
@@ -101,8 +81,7 @@ def _console():
 
 
 def _state_root():
-    """Deferred import of the one sink-root resolver. See ``console`` above
-    for why this sits inside a function rather than at module scope."""
+    """Deferred import of the one sink-root resolver. See ``console``."""
 
     try:
         from scripts import state_root
@@ -112,10 +91,8 @@ def _state_root():
 
 
 def _cluster():
-    """Deferred import of the clustering seam (``scripts/harvest_cluster.py``),
-    same guarded shape as ``_console``/``_state_root`` -- a partial install
-    missing that sibling costs this function's callers a clean error, never
-    a traceback before argument parsing finishes."""
+    """Deferred import of the clustering seam, same guarded shape: a
+    partial install costs a clean error, never a traceback."""
 
     try:
         from scripts import harvest_cluster
@@ -124,14 +101,11 @@ def _cluster():
     return harvest_cluster
 
 
-# ---------------------------------------------------------------------------
-# Time parsing
 
 
 def _parse_timestamp(value):
-    """Parse a friction/event ``ts``-shaped ISO string; ``None`` if malformed
-    or absent -- an entry with no readable timestamp cannot be windowed in,
-    which every caller of this treats as "outside every window"."""
+    """Parse a friction/event ``ts``-shaped ISO string; ``None`` if
+    malformed or absent, which every caller reads as outside every window."""
 
     if not value:
         return None
@@ -170,8 +144,6 @@ def _parse_on(value):
     return day, day + timedelta(days=1)
 
 
-# ---------------------------------------------------------------------------
-# Window and selectors
 
 _Window = namedtuple(
     "_Window",
@@ -209,16 +181,13 @@ def _matches_selectors(entry: dict, window: _Window, run_workflow_map: dict) -> 
     return True
 
 
-# ---------------------------------------------------------------------------
-# Stream reading
 
 
 def _iter_jsonl(root_dir: Path):
     """Every JSON object line under ``root_dir/*.jsonl``, file-name order
-    then line order -- ``YYYY-MM`` file names sort chronologically, which is
-    what makes clustering deterministic given stream order. A missing
-    directory yields nothing; a malformed line is skipped, never fatal --
-    this reads a sink other processes are actively appending to."""
+    then line order -- ``YYYY-MM`` names sort chronologically, which is what
+    makes clustering deterministic. A missing directory yields nothing; a
+    malformed line is skipped, since other processes append to this sink."""
 
     if not root_dir.is_dir():
         return
@@ -244,12 +213,7 @@ def _file_count(root_dir: Path) -> int:
 
 
 def _run_workflow_map(event_entries) -> dict:
-    """Run id -> workflow name, from the first ``frame-open`` event per run.
-
-    Read across every event regardless of window: a run's ``frame-open``
-    can sit outside the very window its later friction falls inside, and
-    ``--workflow`` has to resolve the same run either way.
-    """
+    """Run id -> workflow name, from the first ``frame-open`` event per run."""
 
     mapping = {}
     for entry in event_entries:
@@ -262,19 +226,10 @@ def _run_workflow_map(event_entries) -> dict:
     return mapping
 
 
-# ---------------------------------------------------------------------------
-# Covered exclusion
 
 
 def _read_covered(path: Path):
-    """Every parseable ``covered.jsonl`` entry as ``{watermark_dt, compiled}``.
-
-    Neither field's absence is an error: an unparseable watermark or an
-    uncompilable pattern drops that one contribution rather than the whole
-    read, since this stream is untrusted-data-law-protected but not
-    schema-checked at write time (``tickets.py improvement --covered``
-    appends the caller's line verbatim).
-    """
+    """Every parseable ``covered.jsonl`` entry as ``{watermark_dt, compiled}``."""
 
     entries = []
     if not path.is_file():
@@ -309,10 +264,7 @@ def _default_since_from_covered(covered):
 
 
 def _window_end(until_dt, on_ranges):
-    """The window's closing edge if the caller bounded one, else ``None``.
-    ``--until`` and each ``--on`` day both name a half-open upper edge; the
-    later of whichever were given stands, so an ``--on`` day past an
-    earlier ``--until`` still counts as the bound."""
+    """The window's closing edge if the caller bounded one, else ``None``."""
 
     ends = [dt for dt in [until_dt] if dt is not None]
     if on_ranges:
@@ -321,8 +273,7 @@ def _window_end(until_dt, on_ranges):
 
 
 def _newest_ts(entries):
-    """The latest parseable ``ts`` among ``entries``, or ``None`` for an
-    empty or entirely unparseable list."""
+    """The latest parseable ``ts`` among ``entries``, else ``None``."""
 
     stamps = [_parse_timestamp(e.get("ts")) for e in entries]
     stamps = [dt for dt in stamps if dt is not None]
@@ -332,8 +283,7 @@ def _newest_ts(entries):
 def _apply_covered_exclusion(entries, covered):
     """``(kept, dropped_count)``. A candidate is dropped by the first covered
     entry at or before whose watermark it falls and whose pattern matches;
-    an entry with no readable ``ts`` cannot be "at or before" anything and
-    always survives."""
+    an entry with no readable ``ts`` is never "at or before" anything."""
 
     entry_text = _cluster().entry_text
     kept = []
@@ -359,8 +309,6 @@ def _apply_covered_exclusion(entries, covered):
     return kept, dropped
 
 
-# ---------------------------------------------------------------------------
-# --list-runs
 
 
 def _list_run_rows(friction_entries, event_entries, window: _Window, run_workflow_map: dict):
@@ -418,8 +366,6 @@ def _list_runs_lines(friction_entries, event_entries, window: _Window, run_workf
     return lines
 
 
-# ---------------------------------------------------------------------------
-# CLI
 
 
 def _build_parser() -> argparse.ArgumentParser:

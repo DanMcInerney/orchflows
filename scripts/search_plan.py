@@ -2,11 +2,11 @@
 """Pure canonical search-plan transformation and compatibility facade.
 
 ``python scripts/search_plan.py advance`` reads one UTF-8 JSON request on
-stdin and writes one canonical ``search-advance/v1`` response.  Protocol,
-archive, projection, and generation-advance ownership live in static sibling
-modules; this remains the installed CLI and import seam governed by
-``docs/search-plan-protocol.md``.  The ``"evaluation_identity"`` stays opaque
-to this planner rather than selecting an evaluation mode.
+stdin and writes one canonical ``search-advance/v1`` response. Protocol,
+archive, projection and generation-advance ownership live in static sibling
+modules; this is the installed CLI and import seam ``docs/search-plan-
+protocol.md`` governs. The ``"evaluation_identity"`` stays opaque here
+rather than selecting an evaluation mode.
 """
 
 import copy

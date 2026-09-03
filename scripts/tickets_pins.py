@@ -3,19 +3,15 @@
 
 Two kinds pin here: the sheets a ticket stamps as extra craft
 (`contracts/sheet.md`) and the applied skill its executor enters as its
-method. Both are ordinary ring items, so both resolve through
-`scripts/rings.py`'s one order -- and both therefore carry the same hazard a
-pack does: a *name* resolves to whatever bytes happen to be nearest, so a
-sealed assignment that carried only the name would silently run whatever the
-nearest ring came to hold.
+method. Both are ordinary ring items resolving through `scripts/rings.py`'s
+one order, so both carry the hazard a pack does: a *name* resolves to
+whatever bytes happen to be nearest.
 
 The answer is the pack's, applied to two more kinds: take the digest at
-issue, which is the last moment the assignment is still a draft, and
-re-derive it at every later door. What is new here is that these items are
-directories of prose rather than a cell table, so their identity is a tree
-hash rather than a resolved-cell identity -- which is why `pack_digest` is
-not migrated onto this module and this module does not reach for it. One
-resolver, one hasher, one refusal sentence, for both new kinds.
+issue, the last moment the assignment is still a draft, and re-derive it at
+every later door. These items are directories of prose rather than a cell
+table, so their identity is a tree hash rather than a resolved-cell
+identity, which is why `pack_digest` is not migrated onto this module.
 """
 
 from __future__ import annotations
@@ -34,19 +30,17 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 
 
 # The kinds this module pins, and the directories inside one that its tree
-# hash skips. A sheet carries prose and nothing else -- `contracts/sheet.md`
-# refuses a `scripts/` inside one -- so nothing is skipped there. A skill may
-# carry its own tests and installed dependencies, and neither is what the
-# ticket stamped: a test edit or an `npm install` under the seal would read
-# as the skill changing.
+# hash skips. A sheet carries prose and nothing else, so nothing is skipped
+# there. A skill may carry its own tests and installed dependencies, and
+# neither is what the ticket stamped.
 PINNED_KINDS = ("sheet", "skill")
 SKIPPED_DIRS = {
     "sheet": frozenset(),
     "skill": frozenset(("tests", "__pycache__", "node_modules")),
 }
 # The one hashed-tree format version. It prefixes the digest input so a
-# change to how a tree is walked is a visibly different digest rather than
-# a silent collision with the old one.
+# change to how a tree is walked is a visibly different digest rather than a
+# silent collision with the old one.
 TREE_VERSION = b"orchflows.item-tree.v1\n"
 DIGEST_PREFIX = "sha256:"
 
@@ -61,14 +55,7 @@ class PinError(ValueError):
 
 
 def _lf(data: bytes) -> bytes:
-    """Text bytes with the checkout's line endings normalized away.
-
-    The reason is `scripts/packs_support.py`'s, which normalizes for the
-    same one before hashing a pack: the tree stores LF, so a working copy a
-    Windows tool rewrote as CRLF is the same item, and hashing its raw bytes
-    would pin a digest no other host reproduces -- green where it was
-    written, red everywhere it is read.
-    """
+    """Text bytes with the checkout's line endings normalized away."""
 
     try:
         text = data.decode("utf-8")
@@ -93,12 +80,7 @@ def _files(kind: str, directory: Path) -> List[Tuple[str, Path]]:
 
 
 def tree_digest(kind: str, directory) -> str:
-    """`sha256:<hex>` over one item directory: sorted paths, then bytes.
-
-    Both the path and the byte length enter the hash before the bytes do,
-    so no rename or concatenation of two files can produce another tree's
-    digest.
-    """
+    """`sha256:<hex>` over one item directory: sorted paths, then bytes."""
 
     if kind not in PINNED_KINDS:
         raise PinError("kind-unpinned", f"kind '{kind}' carries no ticket pin")
@@ -178,12 +160,7 @@ def digests_of(value) -> Dict[str, str]:
 
 
 def encode_digests(mapping: Dict[str, str]) -> str:
-    """One frontmatter-safe line for a `{name: digest}` mapping.
-
-    Canonical JSON on one line, the form `done` and `dispatch_v1` already
-    take, because the frontmatter reader parses scalars and lists and
-    nothing else.
-    """
+    """One frontmatter-safe line for a `{name: digest}` mapping."""
 
     return json.dumps(mapping, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
@@ -199,14 +176,7 @@ def declared_packs(record: Dict[str, object]) -> List[str]:
 
 
 def stamp_refusal(name: str, pack: str, packs: Sequence[str]) -> str:
-    """The one sentence a sheet says when it is stamped beside a wrong pack.
-
-    Two forms, because the two defects send the reader to different halves:
-    a sheet that names other packs is stamped in the wrong place, and a
-    sheet that names none is missing the field `contracts/sheet.md` makes
-    required -- reporting the second as an exclusion would name a set the
-    sheet never wrote.
-    """
+    """The one sentence a sheet says when it is stamped beside a wrong pack."""
 
     remedy = (
         f"Stamp '{name}' beside a pack it names, or add '{pack}' to its "
@@ -226,16 +196,7 @@ def stamp_refusal(name: str, pack: str, packs: Sequence[str]) -> str:
 
 
 def pin_fields(sheets: Sequence[str], skill, pack=None, **overrides):
-    """`(fields, refusal)` -- the four pin fields for one issuing ticket.
-
-    A ticket stamping neither kind gets four `None`s, which the renderer
-    drops: today's frontmatter, byte for byte.
-
-    `pack` is the name this callable stamps. It is read here rather than at
-    the mint because the resolution a `packs:` check needs is this module's
-    -- a second reader would resolve the sheet name a second time and could
-    resolve it to different bytes than the digest above pinned.
-    """
+    """`(fields, refusal)` -- the four pin fields for one issuing ticket."""
 
     fields = {
         "sheets": None, "sheet_digests": None, "skill": None, "skill_digest": None,
@@ -272,12 +233,7 @@ def pin_fields(sheets: Sequence[str], skill, pack=None, **overrides):
 
 
 def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
-    """Every pin defect one ticket's frontmatter carries, as gradeable findings.
-
-    Shape first, then drift: a `sheets` list with no digest beside it, or a
-    digest with no item beside it, names nothing to compare, and reporting
-    the comparison as the failure would send a reader to the wrong half.
-    """
+    """Every pin defect one ticket's frontmatter carries, as gradeable findings."""
 
     findings = []
     sheets = names_of(data.get("sheets"))

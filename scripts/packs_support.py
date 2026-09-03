@@ -90,14 +90,7 @@ def _roots(
     project_root: Optional[Path],
     user_root: Optional[Path],
 ) -> List[Tuple[str, Path]]:
-    """Return the ring roots for packs, nearest first.
-
-    The order and the paths are ``scripts/rings.py``'s, not this module's:
-    a pack resolver that spelled its own roots is one half of the two-
-    resolver divergence that let admission and execution read different
-    files as "the pack". The three keyword roots stay as overrides for the
-    CLI and the tests, and are handed to the one resolver as such.
-    """
+    """Return the ring roots for packs, nearest first."""
 
     return rings.item_roots(
         "pack",
@@ -118,14 +111,7 @@ def _parse_rows(
     *,
     require_all: bool = True,
 ) -> Dict[str, str]:
-    """Parse the one cell table and reject unknown/repeated cell names.
-
-    The complete resolver requires every declared cell.  A few boundary
-    validators need to inspect one typed leaf before a complete pack is
-    available (for example, a workspace adapter during admission), so they
-    may request a partial row set while still using this one parser.  Partial
-    parsing never weakens row, name, or duplicate checks.
-    """
+    """Parse the one cell table and reject unknown/repeated cell names."""
 
     rows: Dict[str, str] = {}
     saw_header = False
@@ -173,14 +159,7 @@ def _parse_rows(
 
 
 def _declared_cell(path: Path, cell: str) -> str:
-    """Read one declared cell through the resolver's sole table parser.
-
-    This is intentionally private: callers that need a content-addressed
-    pack must use :func:`resolve_pack`; the leaf seam exists only for the
-    adapter registry's early admission check, where synthetic or incomplete
-    pack fixtures are still useful.  It shares byte normalization and table
-    validation with the complete resolver, so no second pack parser can drift.
-    """
+    """Read one declared cell through the resolver's sole table parser."""
 
     if cell not in _CELL_SET:
         raise PackError("pack-cell-invalid", f"unknown pack cell: {cell}")
@@ -249,15 +228,7 @@ def _read_references(rows: Dict[str, str], pack_dir: Path) -> List[Dict[str, obj
 
 
 def _signature_digest() -> Optional[str]:
-    """Hash the library's signature contract -- never the pack's own copy.
-
-    The bytes come from lib and only lib. The pack-relative lookup this
-    used to try first (``<pack>/../../contracts/pack-signature.md``) was the
-    self-supply hole: a project ring shipping its own signature contract
-    fed its own pack's identity, so the document that decides whether a
-    pack is well-formed was readable from the pack (FM-2, mise
-    CVE-2026-35533's class). A ring that ships one now changes nothing.
-    """
+    """Hash the library's signature contract -- never the pack's own copy."""
 
     candidate = rings.lib_root() / "contracts" / "pack-signature.md"
     if candidate.is_file():

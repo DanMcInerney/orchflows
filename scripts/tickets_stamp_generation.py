@@ -40,17 +40,7 @@ STAMP_GENERATION_USAGE = "stamp-generation <run> <root-id>"
 
 
 def _cmd_stamp_generation(rest):
-    """Open the generation lifecycle on one root and its declared cut.
-
-    The identity comes from the exact snapshot, so a stamp is reproducible
-    from what it stamped. Root kind is independent of its executor: direct
-    and decomposed roots enter the same lifecycle.
-
-    Refused on a cut any member of which is already taken up -- a stamp
-    rewrites the assignment a member is graded against, and doing that
-    under a working executor is the moving target rules/verification.md §3
-    forbids.
-    """
+    """Open the generation lifecycle on one root and its declared cut."""
     args = list(rest)
     if len(args) != 2:
         return {'error': f'usage: {STAMP_GENERATION_USAGE}'}

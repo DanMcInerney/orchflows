@@ -2,16 +2,14 @@
 
 A bound is the one field that says when a claim stops protecting anything,
 and every reader of one -- the dispatch window, the viewer's meter, and the
-engine's re-check -- reads it through the one grammar here. `<= 40 tool
-calls` and `banana` both aged a claim at the same substituted 60 minutes,
-so a bound the cut had actually stated was indistinguishable from one
-nobody had; `parse_bound` names the kind beside the minutes.
+engine's re-check -- reads it through the one grammar here. `parse_bound`
+names the kind beside the minutes, so a bound the cut actually stated is
+distinguishable from one nobody stated.
 
 A claim exists only as a dispatch attempt (contracts/dispatch.md): the
 attempt's absolute lease window decides overdue, motion cannot extend it,
 and a claimed ticket with no record is over every bound. `_last_motion`
-still reports whether anything moved, so a row says not only that a claim
-is overdue but whether its holder stopped.
+still reports whether anything moved.
 
 Imported at module scope by nothing here: `_cmd_bound_check`'s siblings are
 reached inside the call, because `tickets_format` imports this module for
@@ -24,12 +22,10 @@ from pathlib import Path
 
 DEFAULT_BOUND_MINUTES = 60
 # A tool call is not a duration and never becomes one; this is the stated
-# conversion that lets a tool-call bound be aged at all, named so a reader
-# who disagrees with it can see the number they are disagreeing with.
+# conversion that lets a tool-call bound be aged at all.
 TOOL_CALL_MINUTES = 2
-# An iteration is not a duration either, and its conversion is its own fact,
-# not a reuse of the unparsed-bound substitute above -- the two happen to
-# share a value today, and nothing ties them together if one changes.
+# An iteration is not a duration either, and its conversion is its own
+# fact: the two happen to share a value today, and nothing ties them.
 ITERATION_MINUTES = 60
 DURATION_KIND = 'duration'
 TOOL_CALLS_KIND = 'tool-calls'
@@ -37,8 +33,7 @@ ITERATIONS_KIND = 'iterations'
 OTHER_BOUND_KIND = 'other'
 BOUND_KINDS = (DURATION_KIND, TOOL_CALLS_KIND, ITERATIONS_KIND, OTHER_BOUND_KIND)
 # `<= 30m` and `at most 30m` are the same bound written twice; the ceiling
-# is what a bound already means, so the prefix carries no information the
-# rest of the string does not.
+# is what a bound already means.
 AT_MOST_RE = re.compile('^(?:<=|at\\s+most)\\s*', re.IGNORECASE)
 COMPACT_RE = re.compile('^(\\d+)(m|h)$')
 WORDED_RE = re.compile('^(\\d+)\\s+(min(?:s|ute|utes)?|hours?)$')
@@ -47,14 +42,7 @@ ITERATIONS_RE = re.compile('^(\\d+)\\s+iterations?$')
 
 
 def parse_bound(bound) -> tuple:
-    """``(minutes, kind)`` for one ``bound`` field, kind in ``BOUND_KINDS``.
-
-    Every branch answers; a bound this grammar cannot read is ``other`` at
-    ``DEFAULT_BOUND_MINUTES``, which is what the lease has always
-    substituted. The kind is what is new: a caller that must not draw a
-    meter against an invented denominator can now tell the substituted
-    number from a stated one, which no minutes-only answer allowed.
-    """
+    """``(minutes, kind)`` for one ``bound`` field, kind in ``BOUND_KINDS``."""
     text = AT_MOST_RE.sub('', bound.strip(), count=1) if isinstance(bound, str) else ''
     match = COMPACT_RE.match(text) or WORDED_RE.match(text)
     if match:
@@ -116,19 +104,14 @@ def _bound_row(item: dict, now: datetime, support: dict) -> tuple:
         'elapsed_minutes': elapsed,
         # The absolute lease deadline, not the floored minutes the row
         # displays: 30m30s into a `30m` lease is past it. An unreadable
-        # claim is over every bound rather than inside one: the lease
-        # already hands such a claim to the next taker.
+        # claim is over every bound, as the lease already treats it.
         'overdue': overdue,
         'park': park,
     }, unreadable)
 
 
 def _bound_support() -> dict:
-    """The siblings this command reads, imported at call time.
-
-    ``tickets_format`` imports this module for the parser, so a sibling
-    named at module scope here would close a cycle at import time.
-    """
+    """The siblings this command reads, imported at call time."""
     if __package__:
         from .tickets_dispatch_schema import attempt_window
         from .tickets_commands import BOUND_CHECK_USAGE
@@ -148,12 +131,7 @@ def _bound_support() -> dict:
 
 
 def _cmd_bound_check(rest):
-    """Every live claim in one run, measured against its own bound.
-
-    Exit 1 when any is overdue, so the engine's re-check reads the answer
-    off the status alone; the rows say which, by how much, and whether
-    anything has moved since the bound elapsed.
-    """
+    """Every live claim in one run, measured against its own bound."""
     support = _bound_support()
     args = list(rest)
     now_text = support['_extract_flag'](args, '--now')

@@ -71,25 +71,7 @@ def unquote_filed_body(heading: str, body: str) -> str:
 
 
 def dequote(value) -> str:
-    """One frontmatter scalar, read the one way every holder reads it.
-
-    A ticket is written by hand as often as by a generator, and a hand
-    writes `` `required` `` where a generator writes ``required``: backticks
-    are ordinary punctuation in this format, never part of a value. Twenty-one
-    sites spelled that removal inline, and the ones that stopped a step early
-    graded a padded value as a different value from its bare twin --
-    a skipped establishment grade behind a green suite.
-
-    The definition sits in this leaf rather than beside the rest of the
-    syntax because the deepest holders (`tickets_registry`,
-    `tickets_adapters`, `tickets_sequence`) are imported *by* the format
-    owner and so cannot import it back; `tickets_format.dequote` is the
-    family's public name for this exact function.
-
-    ``_unquote`` is its sibling and not its twin: that one removes a matched
-    pair of YAML quote characters, this one removes backticks and the
-    whitespace on either side of them.
-    """
+    """One frontmatter scalar, read the one way every holder reads it."""
 
     return str(value or '').strip().strip('`').strip()
 

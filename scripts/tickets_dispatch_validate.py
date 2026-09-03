@@ -23,13 +23,7 @@ else:
 
 
 def validate_state(state: dict, *, run=None, ticket_id=None, frame=False):
-    """Grade one persisted attempt state whole, or classify how it is not one.
-
-    ``frame`` says this state belongs to a call-stack frame
-    (contracts/work-item.md's marker), which is the one ticket kind that has
-    no launch to precede its records: nothing is dispatched, because the
-    driver is the session that opened it.
-    """
+    """Grade one persisted attempt state whole, or classify how it is not one."""
 
     if set(state) != set(DISPATCH_STATE_REQUIRED):
         return classification("dispatch-record-invalid", "dispatch_v1 has unknown or missing top-level fields")
@@ -68,9 +62,9 @@ def validate_state(state: dict, *, run=None, ticket_id=None, frame=False):
             "replaced": {"replaced_at", "replaced_by", "replacement"},
         }
         # `workspace_path` rides with the attempt in every state, so it is
-        # excluded from the transition-field comparison exactly as `replaces`
-        # is: it says which tree the item was executed in, not where in the
-        # lifecycle the attempt stands.
+        # excluded from the transition-field comparison exactly as
+        # `replaces` is: it says which tree the item was executed in, not
+        # where in the lifecycle the attempt stands.
         present = set(attempt) - required - {"replaces", PATH_KEY}
         if present != transition_fields[state_name]:
             return classification("dispatch-record-invalid", f"attempt {ordinal} transition fields do not match state '{state_name}'")

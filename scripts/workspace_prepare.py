@@ -1,22 +1,17 @@
 """Prepare a workspace's tree, and report what it found, for ``workspace.py``.
 
 A workspace whose tree declares frontend dependencies is not yet usable: the
-item executed in it discovers that by watching its own first check fail on a
-missing module, then spends its bound installing what the host could have
-installed once. ``start`` is the one act every isolated item performs before
-any other, so the install belongs here.
+item executed in it would spend its bound installing what the host could
+have installed once. ``start`` is the one act every isolated item performs
+before any other, so the install belongs here.
 
-Two rules this module keeps, because both are the caller's to decide and not
-this script's. It installs from the lockfile the tree already carries --
-``--frozen-lockfile``, so a tree is never silently resolved to different
-versions than the ones its revision names -- and it never fetches a browser.
-A Playwright browser is a large download onto the caller's disk; whether one
-is already here is reported so the item can plan around the answer, and
-supplying one stays the caller's own call.
+Two rules are the caller's to decide and not this script's. It installs from
+the lockfile the tree already carries -- ``--frozen-lockfile``, so a tree is
+never silently resolved to different versions than its revision names -- and
+it never fetches a browser: whether one is already here is reported so the
+item can plan around the answer.
 
-Stdlib-only, Python 3.9 and up. Every subprocess call carries a ceiling: a
-package manager that never returns would otherwise hold the item at its
-first act with nothing said about why.
+Stdlib-only, Python 3.9 and up. Every subprocess call carries a ceiling.
 """
 
 from __future__ import annotations
@@ -96,13 +91,7 @@ def _cached_browser(env) -> bool:
 
 
 def _browser(top: Path, pnpm, env, run, declared: bool) -> str:
-    """``present``, ``missing``, or ``unknown`` -- never a fetch.
-
-    ``unknown`` is not ``missing``. An item told ``missing`` may reasonably
-    skip a render check as unrunnable here; an item told ``unknown`` knows
-    only that this script could not see, which is what a tree with no
-    frontend, no pnpm, or no Playwright installed under it can honestly say.
-    """
+    """``present``, ``missing``, or ``unknown`` -- never a fetch."""
 
     named = (env.get(BROWSER_ENV_VAR) or "").strip()
     if named and Path(named).exists():

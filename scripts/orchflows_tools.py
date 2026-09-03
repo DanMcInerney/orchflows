@@ -1,36 +1,30 @@
 #!/usr/bin/env python3
 """An item's non-Python tooling: declared beside the manifest, never installed.
 
-The second of the three dependency classes. An item's own Python tooling is
-``requirements.txt`` and ``orchflows_envs.py`` builds it; its Node tooling is
-``package.json`` and ``orchflows_node.py`` installs it. This class -- ffmpeg,
-node, a browser, an API key -- is the one orchflows cannot install and does
-not try to: a system package manager is the machine owner's, and a key is
-theirs alone. So the item declares what it needs in one ``tools.txt`` beside
-its manifest and ``sync`` and ``check`` report what is missing, by name and
-by the line that asked for it.
+The second of the three dependency classes. ffmpeg, node, a browser, an API
+key -- orchflows cannot install these and does not try: a system package
+manager is the machine owner's, and a key is theirs alone. The item
+declares what it needs in one ``tools.txt`` beside its manifest, and
+``sync`` and ``check`` report what is missing by name and by the line that
+asked for it.
 
 One declaration per line, comments and blanks dropped, in one of two forms::
 
     <name> [<version spec>] [:: <probe command>]
     env <NAME>
 
-A probe decides by its exit code alone, under a short timeout: it is what a
-tool with no name on ``PATH``, or one whose presence means more than a file
-existing, declares. Without a probe the name is resolved on ``PATH``, and a
-version spec is compared against the first version-shaped token of
-``<tool> --version`` -- only when that token parses, because a tool free to
-print anything for ``--version`` must not become a false missing report.
+A probe decides by its exit code alone, under a short timeout. Without one
+the name is resolved on ``PATH``, and a version spec is compared against the
+first version-shaped token of ``<tool> --version`` -- only when that token
+parses, because a tool free to print anything must not become a false
+missing report.
 
 An environment variable is reported by name and never by value: a value
 printed into a sync log is a secret in a terminal buffer.
 
 Reading a declaration is inert; running a probe is running the item's
-content. That is what trust grants, so an untrusted project ring item is
-skipped whole and named with its remedy, exactly as its Python and Node
-tooling is.
-
-Stdlib only, cross-platform, Python 3.9 and up.
+content, so an untrusted project ring item is skipped whole and named with
+its remedy. Stdlib only, cross-platform, Python 3.9 and up.
 """
 
 from __future__ import annotations
@@ -88,11 +82,7 @@ def _specs(text: str):
 
 
 def parse_line(raw: str, number: int) -> Optional[Dict[str, object]]:
-    """One line as a declaration, a problem, or ``None`` for nothing at all.
-
-    A problem carries the same ``line``/``text`` a declaration does, so a
-    caller reports a malformed line exactly where it reports a missing tool.
-    """
+    """One line as a declaration, a problem, or ``None`` for nothing at all."""
 
     text = raw.split("#", 1)[0].strip()
     if not text:
@@ -135,16 +125,10 @@ def declarations(tools: Path) -> Tuple[List[dict], List[dict]]:
     return parsed, problems
 
 
-# --- resolving one declaration ----------------------------------------
 
 
 def _argv(command: str) -> List[str]:
-    """A probe command as an argument vector.
-
-    POSIX splitting eats the backslashes in a Windows path, so the native
-    rules are used there and the quotes a caller wrote are stripped back off
-    the tokens they surround.
-    """
+    """A probe command as an argument vector."""
 
     if os.name != "nt":
         return shlex.split(command)
@@ -156,16 +140,7 @@ def _argv(command: str) -> List[str]:
 
 
 def executable(name: str, which: Optional[Callable[[str], Optional[str]]] = None) -> str:
-    """The file ``PATH`` resolves a command name to, or the name unchanged.
-
-    A spawn is not a shell. ``CreateProcess`` searches ``PATH`` but appends
-    only ``.exe``, never the rest of ``PATHEXT``, so a bare ``npm`` cannot
-    start on Windows, where node's package managers ship as ``npm.CMD``
-    shims that ``PATH`` resolves perfectly well. Spawning what ``which``
-    already found starts the same file on every platform. A name that
-    resolves to nothing is returned unchanged, so a spawn that was going to
-    fail still fails where it did.
-    """
+    """The file ``PATH`` resolves a command name to, or the name unchanged."""
 
     resolved = (shutil.which if which is None else which)(name)
     return resolved or name
@@ -177,10 +152,7 @@ def run(
     *,
     which: Optional[Callable[[str], Optional[str]]] = None,
 ) -> Tuple[Optional[int], str]:
-    """``(exit code, output)`` for one probe; ``None`` when it could not run.
-
-    The head of ``argv`` is spawned as ``executable`` resolves it.
-    """
+    """``(exit code, output)`` for one probe; ``None`` when it could not run."""
 
     argv = list(argv)
     if argv:
@@ -290,11 +262,7 @@ def check(item_dir, **overrides) -> List[Dict[str, object]]:
 
 
 def check_inventory(records: List[Dict[str, object]], **overrides) -> List[Dict[str, object]]:
-    """Every declaring item in one inventory, reported and never installed.
-
-    ``records`` is ``rings.inventory``'s output, the resolver dispatch reads,
-    so what is checked here is what a launch of that item would need.
-    """
+    """Every declaring item in one inventory, reported and never installed."""
 
     reports = []
     for record in records:

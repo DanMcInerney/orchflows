@@ -29,8 +29,8 @@ else:
 
 ADMISSION_PENDING = "pending"
 # Re-exported, never respelled: `tickets_format` owns which terminal states
-# carry a Result, because `tickets_readiness` answers the same question for
-# the reader and the two spellings had already drifted.
+# carry a Result, and `tickets_readiness` answers the same question for the
+# reader, so one spelling serves both.
 _RECEIPT_RE = re.compile(r"^([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
 
 
@@ -62,14 +62,7 @@ def adapter_resolution(pack):
 
 
 def pinned_digest_finding(pack: str, pinned: str):
-    """Refuse a stamped pack whose content is no longer what was sealed.
-
-    The seal is the lockfile: it records the pack's digest at slice time,
-    and every later command compares the resolved pack against it. Without
-    this the ticket carried the pack's *name*, and a name resolves to
-    whatever bytes happen to be nearest -- which is how a project ring
-    would have shadowed the pack a run was admitted under.
-    """
+    """Refuse a stamped pack whose content is no longer what was sealed."""
 
     try:
         current = pack_digest(pack)
@@ -129,13 +122,7 @@ def binding_findings(ticket_id: str, data: dict) -> list:
 
 
 def stamped_item_findings(data: dict) -> list:
-    """Re-verify the sheets and applied skill pinned beside the pack.
-
-    The same door, one module over: `scripts/tickets_pins.py` resolves and
-    hashes those two kinds and states the refusal, and this is the one place
-    a sealed ticket is graded against it -- `draft-validate`, `seal`, and
-    admission all reach the check through `binding_findings` above.
-    """
+    """Re-verify the sheets and applied skill pinned beside the pack."""
 
     if __package__:
         from .tickets_pins import pinned_findings
@@ -145,19 +132,7 @@ def stamped_item_findings(data: dict) -> list:
 
 
 def landing_round_parent(ticket_id: str, siblings) -> str | None:
-    """The sealed ticket whose landing machinery minted this id, or ``None``.
-
-    A landing whose `done` command refused arms `<id>.repair.NN`, and the
-    `check` done form mints `<round>.done` beside a round to judge it. Both
-    appear only after the cut that sealed the ticket they descend from, so
-    neither is ever a member of the sealed assignment set -- the reading that
-    refused the whole round lane the first time it was driven through the
-    dispatch trunk.
-
-    `tickets_format.round_parent` owns the grammar; what is added here is the
-    sibling lookup, because a round whose parent is not in the run binds
-    through nothing.
-    """
+    """The sealed ticket whose landing machinery minted this id, or ``None``."""
     parent_id = round_parent(ticket_id)
     if parent_id is None or parent_id not in dict(siblings or {}):
         return None
@@ -165,14 +140,7 @@ def landing_round_parent(ticket_id: str, siblings) -> str | None:
 
 
 def post_seal_parent(ticket_id: str, data: dict, siblings) -> str | None:
-    """The sealed ticket whose machinery minted this one after the cut, or None.
-
-    Two spellings of one fact, because the second arrived first. A callable
-    names its caller outright in `parent`; a landing's round names its parent
-    through the id grammar `round_parent` owns. Both were minted after the cut
-    that sealed the parent, so neither can be a member of it, and both bind
-    their admission through the parent instead.
-    """
+    """The sealed ticket whose machinery minted this one after the cut, or None."""
     declared = declared_parent(data)
     if declared and declared in dict(siblings or {}):
         return declared
@@ -184,36 +152,7 @@ def _canonical_json(value) -> bytes:
 
 
 def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignments=None):
-    """The sealed ticket one lawful post-seal chain binds its admission through.
-
-    The sealed cut names the assignments that existed when it was sealed, and
-    a runtime child exists only afterwards, so it can never be named there.
-    What the seal did name is the parent, and a child is lawful exactly when
-    it descends from that parent unaltered: the parent's own
-    `root_generation` and `cut_generation`, and a self-seal that still matches
-    the child's current bytes.  A child whose bytes moved after it was minted
-    fails that last reading and falls through to the sealed-set command, which
-    has never named it and refuses it.
-
-    A one-hop reading of that rule stops at whatever `post_seal_parent`
-    returns even when that parent is itself a runtime child the cut never
-    named -- a `do`/`judge` callable's own repair round, whose grammar-derived
-    parent is the callable, not the frame the callable was minted under. That
-    parent admits exactly the way the callable it repairs admitted, so the walk
-    continues past it: each hop is validated the same way (generations agree,
-    self-seal matches current bytes) and the chain keeps climbing through
-    every un-sealed ancestor until one already named in `sealed_assignments`
-    grounds it. A chain that runs out (no further parent), or loops back on
-    an ancestor it already crossed -- which lawful minting cannot produce,
-    but a hand-edited `parent:` field could claim -- never grounds, and
-    returns ``None`` exactly as a chain of one always has: the caller's
-    sealed-set command then refuses the leaf directly.
-
-    Written for a landing's repair rounds and generalized to every runtime
-    child by the minting commands: `do` and `judge` mint under a sealed parent for
-    the same reason a round does, and the parentage the id used to imply is
-    now declared.
-    """
+    """The sealed ticket one lawful post-seal chain binds its admission through."""
     sealed_assignments = dict(sealed_assignments or {})
     visited = {ticket_id}
     current_id, current_text, current_data = ticket_id, text, data
@@ -313,14 +252,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
 
 
 def dependency_order_findings(ticket_id: str, data: dict) -> list:
-    """Refuse an unsorted ``depends_on`` where it is still cheap to fix.
-
-    Two orderings of one edge set are two assignment digests, so the same
-    cut authored twice seals as two different generations. The digest is not
-    changed to absorb that -- doing so would invalidate every historical
-    seal -- the authoring command refuses it instead, while the list is still a
-    draft nobody has been dispatched against.
-    """
+    """Refuse an unsorted ``depends_on`` where it is still cheap to fix."""
 
     dependencies = [str(value) for value in (data.get("depends_on") or [])]
     if dependencies == sorted(dependencies):
@@ -334,20 +266,7 @@ def dependency_order_findings(ticket_id: str, data: dict) -> list:
 
 
 def refresh_admissions(run, run_dir, snapshot: dict, write_atomically) -> list:
-    """Re-issue the receipts one lawful mutation of this run invalidated.
-
-    A receipt names the exact state it was taken over, so a member promoted
-    under one generation holds a receipt only that generation recomputes.
-    Re-generationing the run therefore leaves every promoted member stale --
-    a lawful recut, and then the root's next dispatch refused for a staleness
-    the recut itself introduced, five times before this was written.
-
-    Only a member already carrying a real receipt is touched: a pending one
-    holds ``ADMISSION_PENDING`` and takes its receipt at promotion, and a
-    member the mutation left ungradable keeps the stale value rather than
-    being given a receipt over findings. Returns the ids rewritten, so the
-    caller reports the repair instead of leaving it silent.
-    """
+    """Re-issue the receipts one lawful mutation of this run invalidated."""
 
     if __package__:
         from .tickets_context import graded_admission
