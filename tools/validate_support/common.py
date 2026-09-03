@@ -45,10 +45,9 @@ SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 230}
 # outside managed blocks -- docs/custom-workflow-authoring.md's project-tier
 # row) is held to when it states no stricter number of its own. No renderer
 # or sync mechanism installs a project-scope routing block in this tree
-# today (install.py: "Installation has one scope: user"; the legacy
-# project-scope path `_codex_agents_path` still carries is unreachable from
-# its CLI; scripts/orchflows_scaffold.py scaffolds skills/packs/workflows,
-# never a project's day-zero router) -- this repository is itself one
+# today (install.py writes one tree, this user's; scripts/
+# orchflows_scaffold.py scaffolds skills/packs/workflows, never a project's
+# day-zero router) -- this repository is itself one
 # project instance and states its own stricter number at
 # SURFACE_BUDGET["AGENTS.md"] instead of this default.
 ROUTING_BLOCK_BUDGET = 400
