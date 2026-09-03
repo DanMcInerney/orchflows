@@ -8,7 +8,8 @@ configurable search path:
     home      ~/.orchflows/{skills,packs,workflows,sheets}/<name>
     imports   ~/.orchflows/imports/<bundle>/.orchflows/{skills,packs,workflows,sheets}/<name>,
               bundle by bundle in the order ~/.orchflows/imports.lock records
-    lib       the installed library: skills/<sublayer>/<name>, packs/<name>,
+    lib       the installed library: skills/<sublayer>/<name> -- every
+              sublayer but the workflow home named next -- packs/<name>,
               skills/workflows/<name> then example-workflows/<name>,
               sheets/<name>
 
@@ -195,6 +196,14 @@ def _lib_roots(kind: str, root: Path) -> List[Path]:
     ``root`` names the library, or -- for a caller holding one directory
     of it verbatim -- that directory itself, which is why each entry is
     compared against the root's own name before being joined to it.
+
+    A skills sublayer that is one of the library's workflow homes is not a
+    skill root.  ``skills/workflows`` ships inside the skills tier for the
+    installer's and the validator's sake, but what it holds is workflows:
+    prose the driver runs in its own context, declaring no ``role``.  Kind
+    ``workflow`` reaches it through ``LIB_DIRS["workflow"]``; kind
+    ``skill`` walks past it, so one body answers to one kind.  The mirror
+    of ``installer/packages.py``'s ``discover_packages`` skip.
     """
 
     roots: List[Path] = []
@@ -207,7 +216,13 @@ def _lib_roots(kind: str, root: Path) -> List[Path]:
             sublayers = sorted(path for path in base.iterdir() if path.is_dir())
         except OSError:
             sublayers = []
-        roots.extend(sublayers or [base])
+        if not sublayers:
+            roots.append(base)
+            continue
+        roots.extend(
+            path for path in sublayers
+            if f"{relative}/{path.name}" not in LIB_DIRS["workflow"]
+        )
     return roots
 
 
@@ -372,6 +387,29 @@ def _shadowed_record(hits: List[Dict[str, object]]) -> Dict[str, object]:
     return record
 
 
+def _unresolved_refusal(kind: str, name: str, **overrides) -> str:
+    """Why the name resolved nowhere -- naming the kind that does hold it.
+
+    ``skills/workflows`` is a workflow home and not a skill root, so a
+    reusable workflow is unresolvable as a skill by construction.  Saying
+    only "does not resolve" would send a caller hunting a missing file;
+    naming the workflow it actually is says which door takes it.
+    """
+
+    kind = kind_of(kind)
+    name = item_name(name)
+    line = f"{kind} does not resolve: {name}"
+    if kind != "skill":
+        return line
+    for hit in locate("workflow", name, **overrides):
+        return (
+            f"{line}; it is a workflow at {hit['path']}. A workflow is "
+            "invoked by name into the driver's own context and declares no "
+            "role, so it is never applied as a skill."
+        )
+    return line
+
+
 def resolve(kind: str, name: str, *, trust: bool = True, **overrides) -> Dict[str, object]:
     """Resolve one item to its nearest ring, refusing a reserved ring name.
 
@@ -389,7 +427,7 @@ def resolve(kind: str, name: str, *, trust: bool = True, **overrides) -> Dict[st
                 reserved_refusal(kind, name, str(hit["ring"]), Path(str(hit["path"]))),
             )
     if not hits:
-        raise RingError("unresolved", f"{kind_of(kind)} does not resolve: {item_name(name)}")
+        raise RingError("unresolved", _unresolved_refusal(kind, name, **overrides))
     record = _shadowed_record(hits)
     if trust and record["ring"] == "project":
         _require_trust(Path(str(record["dir"])).parent.parent)

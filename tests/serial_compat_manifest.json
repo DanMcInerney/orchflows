@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2337,
+  "count": 2351,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -706,6 +706,7 @@
    "test_orchflows_cli.AddTests.test_a_reference_without_a_pin_is_refused",
    "test_orchflows_cli.AddTests.test_a_tag_is_a_pin_and_the_import_resolves_through_the_ring",
    "test_orchflows_cli.AddTests.test_sync_restores_a_deleted_import_from_the_lock",
+   "test_orchflows_cli.ListTests.test_a_library_workflow_is_listed_once_and_only_as_a_workflow",
    "test_orchflows_cli.ListTests.test_a_sheet_is_listed_like_every_other_ring_item",
    "test_orchflows_cli.ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
    "test_orchflows_cli.ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
@@ -848,9 +849,12 @@
    "test_rings.ReservationAndShadowTests.test_a_reserved_ring_name_refuses_loudly_rather_than_never_running",
    "test_rings.ReservationAndShadowTests.test_the_library_keeps_its_own_reserved_names",
    "test_rings.RingOrderTests.test_a_bare_packs_ancestor_directory_is_not_a_root",
+   "test_rings.RingOrderTests.test_a_name_nowhere_keeps_the_plain_unresolved_refusal",
+   "test_rings.RingOrderTests.test_a_reusable_workflow_resolves_as_a_workflow_and_not_as_a_skill",
    "test_rings.RingOrderTests.test_a_reusable_workflow_shadows_a_gallery_name",
+   "test_rings.RingOrderTests.test_a_skill_sublayer_beside_the_workflow_home_still_resolves",
    "test_rings.RingOrderTests.test_a_workflow_reads_workflows_in_a_ring_and_example_workflows_in_lib",
-   "test_rings.RingOrderTests.test_lib_skills_expand_one_sublayer",
+   "test_rings.RingOrderTests.test_lib_skills_expand_every_sublayer_but_the_workflow_home",
    "test_rings.RingOrderTests.test_lib_workflows_search_the_skills_tier_before_the_gallery",
    "test_rings.RingOrderTests.test_missing_home_roots_do_not_break_resolution",
    "test_rings.RingOrderTests.test_the_home_ring_is_never_read_as_a_project_ring",
@@ -1089,6 +1093,7 @@
    "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_second_line_binds_the_ticket_to_the_kernel_contract",
    "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_stamp_moves_the_first_line_and_adds_exactly_one",
    "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_kernel_verb_is_refused_as_an_applied_skill",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_library_workflow_is_refused_as_the_workflow_it_is",
    "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_matching_role_mints_on_each_verb",
    "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_planner_skill_is_refused_on_do",
    "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_skill_declaring_no_role_is_refused_rather_than_assumed",
@@ -1136,6 +1141,9 @@
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_conflicted_merge_refuses_naming_the_files_and_the_remedy",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_land_refused_for_want_of_a_grade_leaves_no_merge_commit",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_the_candidates_commits_reach_the_tree_the_run_stands_in",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_cmd_shim_on_path_runs_like_any_other_first_word",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_cmd_shims_own_exit_code_is_the_verdict",
+   "test_ticket_done_spawn.DoneCommandSpawnTest.test_a_first_word_on_no_path_entry_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_close_over_two_unjudged_do_children_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_frame_that_sealed_its_gate_at_open_evaluates_that_one",
    "test_ticket_frames.FrameCloseTest.test_a_judge_under_the_frame_lets_the_same_close_land",
@@ -1373,6 +1381,12 @@
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_temporary_directory_cleanup_of_the_directory_it_moved_into",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_a_space_separated_scope_is_refused_before_any_ticket_is_written",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_prose_after_the_command_is_not_read_as_a_second_scope_token",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_the_comma_spelling_generates_the_unit",
+   "test_workflow_ladder_generator.TestScopeSpellingRefusal.test_the_refusal_names_the_unit_and_the_spelling_to_use",
+   "test_workflow_ladder_generator.TestShippedSpec.test_every_generated_details_file_carries_its_spec_done_line",
+   "test_workflow_ladder_generator.TestShippedSpec.test_every_spec_done_line_spells_scope_with_commas",
    "test_workflow_ladder_law.IdiomsTest.test_a_padded_idiom_fails_the_ceiling_check",
    "test_workflow_ladder_law.IdiomsTest.test_each_idiom_is_one_sentence_inside_its_ceiling",
    "test_workflow_ladder_law.IdiomsTest.test_every_idiom_is_worded_once_under_the_heading",
@@ -2340,7 +2354,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "d87beb590007cd2cc9a78cb07daab73f797ad7fc39cf045e5d068433a4ea0022"
+  "sha256": "6f810531c68e07044124361065dc63624f47371b210056dc9cb3f8badd7de819"
  },
  "mutation_owners": [
   {
@@ -4195,6 +4209,14 @@
   },
   {
    "module": "tests.test_orchflows_cli",
+   "owner": "ListTests.test_a_library_workflow_is_listed_once_and_only_as_a_workflow",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
    "owner": "ListTests.test_a_sheet_is_listed_like_every_other_ring_item",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -5010,6 +5032,15 @@
   {
    "module": "tests.test_ticket_done_predicate",
    "owner": "LandIntegratesTheCandidateTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_done_spawn",
+   "owner": "DoneCommandSpawnTest._on_path",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",

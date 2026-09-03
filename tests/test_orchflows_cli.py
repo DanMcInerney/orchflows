@@ -307,6 +307,39 @@ class ListTests(unittest.TestCase):
                 _code, after = _run("list", "--kind", "workflow")
             self.assertEqual("trusted", _row(after, "team-flow")[3])
 
+    def test_a_library_workflow_is_listed_once_and_only_as_a_workflow(self):
+        """One directory, one kind. `skills/workflows` ships inside the
+        skills tier for the installer's and the validator's sake, so its
+        bodies used to resolve under kind `skill` as well and reach the
+        inventory twice -- two rows for one file, each claiming a different
+        door. Derived from the home rather than named, so a workflow added
+        there is covered the day it lands."""
+
+        home = ROOT / "skills" / "workflows"
+        names = sorted(
+            path.name for path in home.iterdir()
+            if (path / "SKILL.md").is_file()
+        )
+        self.assertTrue(names, f"{home} ships no workflow for this to read")
+
+        with _home() as ring:
+            (ring / "nowhere").mkdir()
+            with patch.object(rings.Path, "cwd", return_value=ring / "nowhere"):
+                code, output = _run("list")
+
+        self.assertEqual(0, code, output)
+        for name in names:
+            with self.subTest(workflow=name):
+                rows = [
+                    cells for cells in (line.split() for line in output.splitlines())
+                    if len(cells) >= 5 and cells[1] == name
+                ]
+                self.assertEqual(
+                    1, len(rows),
+                    f"{name} is listed {len(rows)} times, not once: {output}",
+                )
+                self.assertEqual("workflow", rows[0][0])
+
     def test_a_sheet_is_listed_like_every_other_ring_item(self):
         """A sheet has no host surface, so `list` is the only place a user
         sees one at all: absent from the inventory it is an item that

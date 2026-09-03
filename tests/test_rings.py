@@ -120,7 +120,11 @@ class RingOrderTests(unittest.TestCase):
             )
             self.assertIn("example-workflows", rings.shadow_notice(record))
 
-    def test_lib_skills_expand_one_sublayer(self):
+    def test_lib_skills_expand_every_sublayer_but_the_workflow_home(self):
+        """`skills/workflows` ships inside the skills tier and is still a
+        workflow home, not a skill root: a body there answers to kind
+        `workflow` and to no other kind."""
+
         with _world() as world:
             (world["lib"] / "skills" / "kernel").mkdir(parents=True, exist_ok=True)
             (world["lib"] / "skills" / "workflows").mkdir(parents=True, exist_ok=True)
@@ -131,9 +135,61 @@ class RingOrderTests(unittest.TestCase):
                 if ring == "lib"
             ]
 
+            self.assertEqual([world["lib"] / "skills" / "kernel"], libs)
+
+    def test_a_reusable_workflow_resolves_as_a_workflow_and_not_as_a_skill(self):
+        """The cross-kind seam: one body, one kind. The refusal names the
+        workflow it is, because "does not resolve" alone sends the caller
+        hunting a file that is right there."""
+
+        with _world() as world:
+            _item(world["lib"] / "skills" / "workflows", "workflow", "demo-flow")
+
+            record = rings.resolve(
+                "workflow", "demo-flow", project=world["project"], lib=world["lib"],
+            )
             self.assertEqual(
-                [world["lib"] / "skills" / "kernel", world["lib"] / "skills" / "workflows"],
-                libs,
+                str(world["lib"] / "skills" / "workflows" / "demo-flow" / "SKILL.md"),
+                record["path"],
+            )
+
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve(
+                    "skill", "demo-flow", project=world["project"], lib=world["lib"],
+                )
+
+            self.assertEqual("unresolved", raised.exception.code)
+            self.assertIn("workflow", raised.exception.detail)
+            self.assertIn(
+                str(world["lib"] / "skills" / "workflows" / "demo-flow" / "SKILL.md"),
+                raised.exception.detail,
+            )
+
+    def test_a_name_nowhere_keeps_the_plain_unresolved_refusal(self):
+        """The workflow clause is a fact about this name, not a sentence
+        every miss now carries."""
+
+        with _world() as world:
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve(
+                    "skill", "demo-flow", project=world["project"], lib=world["lib"],
+                )
+
+            self.assertEqual(
+                "skill does not resolve: demo-flow", raised.exception.detail,
+            )
+
+    def test_a_skill_sublayer_beside_the_workflow_home_still_resolves(self):
+        with _world() as world:
+            _item(world["lib"] / "skills" / "kernel", "skill", "orch-do")
+
+            record = rings.resolve(
+                "skill", "orch-do", project=world["project"], lib=world["lib"],
+            )
+
+            self.assertEqual(
+                str(world["lib"] / "skills" / "kernel" / "orch-do" / "SKILL.md"),
+                record["path"],
             )
 
     def test_a_bare_packs_ancestor_directory_is_not_a_root(self):
