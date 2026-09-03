@@ -179,26 +179,44 @@ def _folded(path) -> str:
         return str(path).casefold()
 
 
+def _imported(ring: Path) -> bool:
+    """Whether `imports.lock` pins this bundle.
+
+    `orchflows sync` never asks the ledger about an import: the pin is the
+    acceptance, which is what `rings._trust_state` calls inherent and what
+    `rings.resolve` means by "you pinned the third". A directory sitting
+    under `imports/` that the lock does not name resolves nowhere at that
+    door, so it is a stranger at this one too.
+    """
+
+    home = rings.home_ring()
+    folded = _folded(ring)
+    return any(
+        _folded(home / rings.IMPORTS_DIR / record["name"] / rings.BUNDLE_DIR) == folded
+        for record in rings.read_imports(home)
+    )
+
+
 def _untrusted(ring: Path):
     """The ring, unless this is content its user has already accepted.
 
     Reading a declaration is inert and resolving a name on `PATH` runs
     nothing, but a `::` probe is the item's own command, so the question
     here is the one `orchflows trust` exists for: has this user accepted
-    this ring's content? Two rings answer yes. The home ring is the user's
-    own directory. A project ring is the one `scripts/rings.py` holds to
-    the trust ledger, so its answer is the ledger's. Every other directory
-    waits for a grant -- `check` grades whatever directory it is handed,
-    which is any bundle at all, cloned or copied from anywhere -- and it
-    waits with `orchflows sync`'s own remedy rather than a second sentence.
+    this ring's content? Two rings answer yes without the ledger, and for
+    the same reason `orchflows sync` does not ask it about them: the home
+    ring is the user's own directory, and an import is pinned. Every other
+    directory is the ledger's to answer -- the project ring, and any bundle
+    at all, cloned or copied from anywhere, that `check` was handed -- so
+    the grant `orchflows sync`'s own remedy asks for, printed here rather
+    than in a second sentence, is the grant that makes this probe run.
     """
 
     if _folded(ring) == _folded(rings.home_ring()):
         return None
-    project = rings.project_ring()
-    if project is not None and _folded(ring) == _folded(project):
-        return None if rings_trust.state(ring)["trusted"] else ring
-    return ring
+    if _imported(ring):
+        return None
+    return None if rings_trust.state(ring)["trusted"] else ring
 
 
 def _tooling(ring: Path, diag, declaring, packages) -> None:
