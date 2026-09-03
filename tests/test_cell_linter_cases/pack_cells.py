@@ -37,8 +37,8 @@ def validate_the_real_tree():
 
     Three cases below assert over the real tree's report, and three
     separate subprocesses spent 1.8s producing the same bytes three
-    times. Argument-free, validate.py only reads a tree -- `--pin` is the
-    one mode that writes -- so one result is every reader's result."""
+    times. validate.py only reads a tree, so one result is every
+    reader's result."""
     global _REAL_TREE_RUN
     if _REAL_TREE_RUN is None:
         _REAL_TREE_RUN = subprocess.run(
@@ -109,14 +109,13 @@ _TEMPLATE = None
 
 
 def setUpModule():
-    """contracts/ + tools/validate.py + matching pins, built once.
+    """contracts/ + tools/validate.py, built once.
 
-    Every `_IsolatedTree` case starts from the same three, and building
-    them per test spent a `--pin` subprocess seventeen times over for a
-    tree that is byte-identical every time -- a third of this module's
-    runtime. Built once here and copied per test, so each case still owns
-    a private, mutable tree to write its synthetic packs into. Same hoist
-    as tests/test_cutcheck.py:828, at module scope because three classes
+    Every `_IsolatedTree` case starts from the same two, and building them
+    per test copied a tree that is byte-identical every time. Built once
+    here and copied per test, so each case still owns a private, mutable
+    tree to write its synthetic packs into. Same hoist as
+    tests/test_cutcheck.py:828, at module scope because three classes
     share it."""
     global _TEMPLATE_DIR, _TEMPLATE
     _TEMPLATE_DIR = tempfile.TemporaryDirectory()
@@ -128,13 +127,6 @@ def setUpModule():
     # clause (ARCHITECTURE.md), so a tree that runs the copy carries it.
     (_TEMPLATE / "scripts").mkdir()
     shutil.copy(ROOT / "scripts" / "doclint.py", _TEMPLATE / "scripts" / "doclint.py")
-    pinned = subprocess.run(  # matching pins so only synthetic packages can fail
-        [sys.executable, str(_TEMPLATE / "tools" / "validate.py"), "--pin"],
-        capture_output=True,
-        text=True,
-    )
-    if pinned.returncode != 0:
-        raise RuntimeError("pinning the template tree failed:\n" + pinned.stdout + pinned.stderr)
 
 
 def tearDownModule():

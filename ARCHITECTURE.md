@@ -7,8 +7,8 @@ family's owner modules and again for T2's second directory.
 ## Four tiers
 
 - **T0 — [`contracts/`](contracts/):** the narrow waist. Each contract
-  owns one pure data shape, hash-pinned: a field or enum change breaks
-  it even when the prose meaning holds.
+  owns one pure data shape, whose generated table renders from
+  [`contracts/shapes.json`](contracts/shapes.json).
   [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns the
   two callables; `workflows/` the reusable domain-blind workflows.

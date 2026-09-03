@@ -79,10 +79,9 @@ class TicketProtocolTest(unittest.TestCase):
         ):
             self.assertIn(token, dispatch)
         # The handshake half rode out with its machinery: no survivor keeps
-        # its vocabulary alive in the contract that used to own it. Read
-        # against the normative prose alone -- a supersession record's whole
-        # job is to name what it retired, so it names these on purpose.
-        normative = dispatch.partition("T0 supersession record")[0]
+        # its vocabulary alive in the contract that used to own it, and the
+        # supersession records that named what they retired are gone, so the
+        # whole file is the surface this reads.
         for retired in (
             "`dispatch-receive`", "`dispatch-receipt`", "`receipt-required`",
             "`authority-mismatch`", "`profile-mismatch`",
@@ -90,7 +89,7 @@ class TicketProtocolTest(unittest.TestCase):
             "`reply_to`", "`reference`", "`admission`", "`independence`",
             "`dispatch-packet`", "`durability`", "`review_kind`",
         ):
-            self.assertNotIn(retired, normative)
+            self.assertNotIn(retired, dispatch)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
         profiles = (root / "hosts" / "profiles.md").read_text(encoding="utf-8")
         tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
@@ -168,8 +167,6 @@ class TicketProtocolTest(unittest.TestCase):
         for projection in (host, dispatch):
             self.assertIn("workspace", projection.lower())
         self.assertIn("tickets.py land", host)
-        work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
-        self.assertIn("evidence store", work_item.lower())
         self.assertIn('LIVE_CLAIM_STATUSES = ("claimed",)', ui_model)
         self.assertNotIn("Parked claims stay live", dispatch)
         self.assertNotIn("holds the lease", ui_model)

@@ -52,11 +52,6 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
     from tickets_format import dequote
 
 CONTRACTS_DIR = ROOT / "contracts"
-PINS_FILE = ROOT / "tests" / "pins.json"
-PIN_MESSAGE = (
-    "T0 contract changed; if intentional, re-pin via: "
-    "python tools/validate.py --pin"
-)
 
 
 def rel(path: Path) -> str:
@@ -466,7 +461,7 @@ def cell_clauses(text: str) -> list:
 # that the cost is paid consciously, and what reopens it.
 
 __all__ = (
-    'CONTRACTS_DIR', 'PINS_FILE', 'PIN_MESSAGE', 'rel',
+    'CONTRACTS_DIR', 'rel',
     '_read_source', 'Diagnostics', 'workflow_tiers', 'discover_packages',
     'parse_frontmatter',
     'APPLIED_ROLE_VALUES',

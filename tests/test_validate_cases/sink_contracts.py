@@ -45,8 +45,8 @@ SINK_PATHS = {
 }
 
 # The `.orch` references allowed to survive anywhere in `contracts/`.
-# Enumerated, not counted: after the supersession no contract composes a
-# run-state path from the repository, so the allow-list is empty.
+# Enumerated, not counted: no contract composes a run-state path from
+# the repository, so the allow-list is empty.
 ALLOWED_ORCH_REFERENCES = ()
 
 # Every field `run.json` carries, from the writer's own recorded shape

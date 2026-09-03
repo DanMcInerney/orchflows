@@ -237,8 +237,7 @@ one is [composition](../rules/composition.md) §13's.
    [pack authoring](pack-authoring.md) and the
    [pack signature](../contracts/pack-signature.md), which owns the four
    cells and every craft section — `## Lens`'s `### root` entry included, so
-   a custom pack a planner freezes a root against fills it like any other. A T0 shape change is a
-   supersession change and follows its contract's pinning procedure.
+   a custom pack a planner freezes a root against fills it like any other.
 4. For a workflow, write it step by step rather than from a template. For
    each step ask the four questions in *Which work earns a callable* above:
    none of the four and the step is a sentence in your prose, one or more

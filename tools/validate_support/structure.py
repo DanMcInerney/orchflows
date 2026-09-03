@@ -295,8 +295,8 @@ def _doclint():
     of the near-duplicate method (ARCHITECTURE.md). This compiler is one of
     its two callers; a project running the script is the other.
 
-    Imported on first use: `--pin` and every isolated fixture that carries
-    no `scripts/` still has to run, and only the checks that ask this
+    Imported on first use: every isolated fixture that carries no
+    `scripts/` still has to run, and only the checks that ask this
     question need the owner. ROOT goes first on the path so a tree grades
     against its own copy.
     """

@@ -2,7 +2,7 @@
 """The orchflows compiler.
 
 Enforces package anatomy, frontmatter, call-graph acyclicity, pack
-signature completeness, T0 hash pins, the
+signature completeness, the
 ticket-template contract (whose shape law is scripts/tickets.py's, read
 from there rather than restated), the result-envelope lead, and the
 duplication checks -- per pack cell and across tiers -- that replaced
@@ -70,7 +70,7 @@ _SUPPORT_MODULES = (
     _lifecycle_literals_module, _sheets_module, _tooling_module,
 )
 _ROOT_BINDINGS = (
-    "ROOT", "CONTRACTS_DIR", "PINS_FILE", "FRICTION_OWNER", "NAME_CHECK_MARKER",
+    "ROOT", "CONTRACTS_DIR", "FRICTION_OWNER", "NAME_CHECK_MARKER",
 )
 
 
@@ -88,18 +88,15 @@ def _restore_support(state) -> None:
 
 
 def _bind_root(root: Path) -> None:
-    global ROOT, CONTRACTS_DIR, PINS_FILE, FRICTION_OWNER, NAME_CHECK_MARKER
+    global ROOT, CONTRACTS_DIR, FRICTION_OWNER, NAME_CHECK_MARKER
     ROOT = root
     CONTRACTS_DIR = root / "contracts"
-    PINS_FILE = root / "tests" / "pins.json"
     FRICTION_OWNER = root / "scripts" / "state_root.py"
     NAME_CHECK_MARKER = root / "ARCHITECTURE.md"
     for module in _SUPPORT_MODULES:
         module.ROOT = root
         if hasattr(module, "CONTRACTS_DIR"):
             module.CONTRACTS_DIR = CONTRACTS_DIR
-        if hasattr(module, "PINS_FILE"):
-            module.PINS_FILE = PINS_FILE
         if hasattr(module, "FRICTION_OWNER"):
             module.FRICTION_OWNER = FRICTION_OWNER
         if hasattr(module, "NAME_CHECK_MARKER"):
@@ -183,8 +180,6 @@ DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-
 # another line is still graded and a reworded sentence fails loudly here
 # rather than quietly widening the exemption.
 DOC_PATH_EXEMPT_SITES = frozenset({
-    ("contracts/pack-signature.md", "tests/pins.json",
-     "share the same contract"),
     ("reader/docs/modularization.md", "reader/web/src/api/client.ts",
      "remain separate central seams"),
     ("reader/docs/modularization.md", "reader/web/src/api/schema.ts",
@@ -336,7 +331,6 @@ def _run_validation_impl() -> Diagnostics:
     validate_regenerated_artifacts(diag)
     validate_documented_paths(diag)
     validate_surface_budgets(diag)
-    validate_pins(diag)
     validate_friction_locations(diag)
     return diag
 
@@ -358,23 +352,7 @@ def _main_impl(argv=None) -> int:
     except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
         pass
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--pin",
-        action="store_true",
-        help="rewrite tests/pins.json from the current contracts/*.md bytes",
-    )
-    args = parser.parse_args(argv)
-
-    if args.pin:
-        diag = Diagnostics()
-        validate_pin_supersessions(diag)
-        if diag.has_errors:
-            for line in diag.lines():
-                print(line)
-            return 1
-        pins = write_pins()
-        print(f"wrote {len(pins)} pin(s) to {rel(PINS_FILE)}")
-        return 0
+    parser.parse_args(argv)
 
     diag = run_validation()
     for line in diag.lines():

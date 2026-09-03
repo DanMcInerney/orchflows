@@ -176,8 +176,7 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # spelling kept equal to its owner is still a second spelling
 # (REVIEW-2026-08-15 T2). The residual risk is one-directional and small
 # -- a unit dropped from this list stops being checked rather than
-# silently passing a check it fails -- and the contract is hash-pinned, so
-# the paragraph cannot move without a supersession PR.
+# silently passing a check it fails.
 # Mechanized as a first-clause vocabulary lint, tolerant
 # of prose ordering within that clause; a Return whose first clause
 # instead names the work-item carrier (the ticket) passes, because the
