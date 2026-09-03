@@ -14,7 +14,7 @@ from pathlib import Path
 # would need this same walk to seed the import first, for no fact this
 # file otherwise needs from `scripts/`.
 ROOT = Path(__file__).resolve().parent.parent
-SKILL_ROOT = ROOT / ".orchflows" / "skills" / "super-research"
+SKILL_ROOT = ROOT / ".orchflows" / "skills" / "research-acquire"
 TESTS_DIR = SKILL_ROOT / "tests"
 SCRIPTS_DIR = SKILL_ROOT / "scripts"
 

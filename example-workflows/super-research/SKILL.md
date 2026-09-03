@@ -12,23 +12,17 @@ Open the frame, its goal the answered question:
 
     tickets.py frame-open <run> --goal-file <question-goal> --workflow super-research
 
+**Acquisition** — *fan-out*: "One `do` per named item, launched together
+under the frame; the shape line lists them as one wave."
 
-**Acquisition — one call per named source, launched together.**
+    tickets.py do <run> --pack orch-research-pack --skill research-acquire
+      --parent <frame> --goal-file <source-goal> --bound "<= 40 tool calls"
 
-    tickets.py do <run> --pack orch-research-pack --parent <frame>
-      --goal-file <source-goal> --bound "<= 40 tool calls"
-
-Each goal names one source, the window, the `as_of` and the cap, and
-directs the child to enter the `super-research` skill by name with its
-launch prompt forwarded verbatim, at the `SKILL.md` path
-`orchflows list --kind skill` resolves — carry that path, so no child
-searches; a body that opens a frame is this workflow's same-named
-adapter. That skill's Require, Preparation, Never and Return bind the
-child; its Return fills the `artifact: evidence:` line. Time-bounding is
-per operation — the skill's `WINDOW_REACH` table decides — so a windowed
-call whose operation cannot bound time at its origin returns
-`window_not_honored`; name it in the goal, so the child files a gap, not
-a silence. Keep each returned `artifact: evidence:<store-id>` line
+Each goal names one source, the window, the `as_of` and the cap. Time-bounding
+is per operation — `research-acquire`'s `WINDOW_REACH` table decides — so a
+windowed call whose operation cannot bound time at its origin returns
+`window_not_honored`; name that source in the goal, so the child files a gap
+rather than a silence. Keep each returned `artifact: evidence:<store-id>` line
 verbatim; the next call is handed it.
 
 **Coverage loop, at most two rounds.**
@@ -38,21 +32,22 @@ verbatim; the next call is handed it.
 
 The coverage goal asks one thing: which sub-questions no record answers,
 and which typed losses came back. Keep the `findings: <path>` line
-verbatim. Round two exists only for the gaps judge named — one `do` per
-gap, quoting the finding and the source that closes it, then one final
-`judge` over the enlarged set; a gap still open is declared.
+verbatim. Round two exists only for the gaps that judge named — one `do`
+per gap, quoting the finding and the source that closes it, then one final
+`judge` over the enlarged set — and a gap still open is *declare-gaps*: "A
+gap that remains is written as a gap, `[]` when there is none; silence is a
+defect."
 
 **Report, one call, the frame's last.**
 
     tickets.py do <run> --pack orch-content-pack --parent <frame>
-      --goal-file <report-goal> --bound "<= 40 tool calls"
+      --sheet html-dossier --goal-file <report-goal> --bound "<= 40 tool calls"
 
-Its goal hands every `artifact:` and `findings:` line verbatim and asks
-for one self-contained rendered dossier — one HTML file, no external
-fetch, legible in light and dark — answering first, then each source's
-evidence dated and cited from its `normalized_locator`, every typed loss,
-contradiction and open sub-question, under the skill's five report rules.
-Keep its `artifact: doc:` line verbatim.
+Its goal hands every `artifact:` and `findings:` line verbatim and asks for
+one dossier answering the question first, then each source's evidence dated
+and cited from its `normalized_locator`, every typed loss, contradiction and
+open sub-question, and each market's own price string with the markets that
+already resolved dropped. Keep its `artifact: doc:` line verbatim.
 
 Never: average contradicting sources, read a typed loss as an absence,
 quote a community comment without its author and count, or close over the
