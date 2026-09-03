@@ -109,11 +109,7 @@ def default_root() -> Path:
 
 
 def resolve_revision(repo, revision: str) -> str:
-    """The one commit `revision` names, refusing every other answer.
-
-    `^{commit}` is what makes this exact: a tag, a branch, or an ambiguous
-    short name either resolves to one commit or does not resolve.
-    """
+    """The one commit `revision` names, refusing every other answer."""
 
     done = git(repo, "rev-parse", "--verify", "--quiet", revision + "^{commit}")
     commit = _text(done.stdout)
@@ -125,12 +121,7 @@ def resolve_revision(repo, revision: str) -> str:
 
 
 def remove(repo, path) -> None:
-    """Take the checkout out of the tree and out of the repository's records.
-
-    Both halves run: `remove --force` deletes a checkout the command may have
-    dirtied along with its administrative entry, and `prune` is what clears
-    that entry when the directory went away by some other hand.
-    """
+    """Take the checkout out of the tree and out of the repository's records."""
 
     if git(repo, "worktree", "remove", "--force", os.fspath(path)).returncode != 0:
         shutil.rmtree(os.fspath(path), ignore_errors=True)
@@ -139,12 +130,7 @@ def remove(repo, path) -> None:
 
 def run_at(repo, revision, command, root=None, keep=False,
            stdout=None, stderr=None) -> dict:
-    """Run `command` at `revision`, and clean up whatever it did.
-
-    `stdout` and `stderr` are handed to the child unchanged and default to
-    this process's own, which is what keeps the two apart: there is no
-    argument that would merge them.
-    """
+    """Run `command` at `revision`, and clean up whatever it did."""
 
     repo = Path(repo).resolve()
     if git(repo, "rev-parse", "--git-dir").returncode != 0:
@@ -195,12 +181,7 @@ def run_at(repo, revision, command, root=None, keep=False,
 
 
 def split_command(argv):
-    """This tool's own arguments, then everything after the first bare `--`.
-
-    Partitioned before argparse sees any of it: the command is passed
-    through verbatim, so a command carrying `--repo` of its own is the
-    command's business and never this tool's.
-    """
+    """This tool's own arguments, then everything after the first bare `--`."""
 
     argv = list(argv)
     if "--" not in argv:
@@ -213,12 +194,7 @@ def split_command(argv):
 
 
 class _Parser(argparse.ArgumentParser):
-    """argparse's usage errors, spoken as this runner's refusals.
-
-    The base class exits `2` on a mistyped flag, and `2` is a status the
-    command could have returned. A refusal a caller cannot tell from a
-    verdict is the one thing REFUSAL_STATUS exists to prevent.
-    """
+    """argparse's usage errors, spoken as this runner's refusals."""
 
     def error(self, message):
         raise Refusal(message)
@@ -252,12 +228,7 @@ def parse_args(argv):
 
 
 def wants_usage(argv) -> bool:
-    """Whether the caller asked what this tool is, before the `--` rule bites.
-
-    The separator is this tool's own convention, and the caller reaching for
-    the usage is precisely the one who has not learned it yet; making them
-    satisfy it first is asking them to read the page they are asking for.
-    """
+    """Whether the caller asked what this tool is, before the `--` rule bites."""
 
     own = argv[:argv.index("--")] if "--" in argv else argv
     return any(item in ("-h", "--help") for item in own)
@@ -271,12 +242,7 @@ def emit(stream, text: str) -> None:
 
 
 def disposition(record: dict) -> str:
-    """What became of the checkout, as observed rather than as requested.
-
-    Three states, not two: asked to stay, gone, and still there after a
-    removal that was meant to take it. The third is the one a word derived
-    from `--keep` cannot say, and the one a reader most needs.
-    """
+    """What became of the checkout, as observed rather than as requested."""
 
     if record["kept"]:
         return "kept"

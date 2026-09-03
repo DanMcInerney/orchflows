@@ -1,9 +1,9 @@
 """Deterministic routing grades.
 
-This module owns the small amount of state-derived routing information that
-is safe to compute without making a model decision.  In particular, it does
-not decide whether a Goal is adequate or whether a review lens is sufficient;
-it only reports graph shape, declared pack coverage, and adapter capability.
+The state-derived routing information that is safe to compute without
+making a model decision: graph shape, declared pack coverage, and adapter
+capability. It does not decide whether a Goal is adequate or a review lens
+sufficient.
 """
 
 from __future__ import annotations
@@ -44,11 +44,7 @@ def _executor(value):
 
 
 def _member_ids(root_id: str, snapshot: dict) -> list[str]:
-    """Return the root's executor-result members.
-
-    A nested member remains a member of the issued root: the graph's width
-    is the number of independently observable result tickets in its cut.
-    """
+    """Return the root's executor-result members."""
 
     members = []
     for ticket_id in sorted(snapshot):
@@ -89,7 +85,7 @@ def _required_spec_fields(pack: str) -> list[str]:
         value = dequote(value)
         if not value:
             continue
-        # A pack may explain a field after an em dash.  The stable field name
+        # A pack may explain a field after an em dash; the stable field name
         # is the portion before that explanation.
         value = dequote(_EM_DASH.split(value, maxsplit=1)[0])
         if value and value not in fields:

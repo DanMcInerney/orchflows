@@ -1,9 +1,8 @@
 """The dispatch-v1 reserved outcome: its carrier, its grade, its commit.
 
-The whole outcome half of the return, in the module that already owned how
-a carrier is built and read. It moved here from the join because the join is
-what consumes an outcome, not what makes one, and because a module that owns
-both had no room left to say why either works.
+The whole outcome half of the return, in the module that owns how a carrier
+is built and read. It sits here rather than in the join because the join is
+what consumes an outcome, not what makes one.
 """
 
 from __future__ import annotations
@@ -49,9 +48,7 @@ DISPATCH_OUTCOME_USAGE = (
 # The canonical encoding `--file` admits, named as the call that produces it.
 # It lives in the refusals rather than the launch prompt: only the rare
 # relaying coordinator ever builds an envelope, and the refusal it meets is
-# the one surface it is guaranteed to read -- the prompt used to carry the
-# whole recipe for every child, and before that the refusal said "canonical
-# JSON" and left the relay to guess which of the four knobs it meant.
+# the one surface it is guaranteed to read.
 CANONICAL_DUMP = (
     'json.dump(envelope, handle, ensure_ascii=True, sort_keys=True, '
     'separators=(",", ":"))'
@@ -93,13 +90,7 @@ def _outcome_attempt(run: str, ticket_id: str):
 
 
 def _outcome_file(path):
-    """Read one complete canonical outcome carrier from a file or stdin.
-
-    ``-`` is standard input, decoded as UTF-8 the way the accepted-blocker
-    seam reads it: a relaying coordinator holds the envelope in memory, and
-    telling it to land the envelope in a file first is a step that exists
-    only to be forgotten.
-    """
+    """Read one complete canonical outcome carrier from a file or stdin."""
 
     if path == "-":
         try:
@@ -160,13 +151,7 @@ def _outcome_attempt_match(content: dict, run: str, ticket_id: str, attempt: dic
 
 
 def _outcome_content(args: list):
-    """Parse the closing note, or a complete inline-relay carrier.
-
-    The note is one free text, so the typed form is one flag rather than five:
-    nothing downstream parses this prose, so nothing here asks a child to sort
-    it into sections first. `--file` still carries the whole canonical
-    envelope, which is how a coordinator relays one it did not write.
-    """
+    """Parse the closing note, or a complete inline-relay carrier."""
 
     present = [flag for flag in ("--file", "--note", "--note-file") if flag in args]
     source_file = _extract_flag(args, "--file")
@@ -199,12 +184,7 @@ def _outcome_content(args: list):
 
 
 def _reserved_line(evidence: str):
-    """`(1-based number, line)` for the first line the ticket grammar owns.
-
-    Named rather than counted: two children of one run had to read this
-    module's source to learn which of their note's lines the bare "contains
-    a reserved heading" refusal meant, and what the rule was.
-    """
+    """`(1-based number, line)` for the first line the ticket grammar owns."""
 
     for number, line in enumerate(evidence.splitlines(), 1):
         if line.startswith("## ") or line.startswith(RESULT_ATTRIBUTION_PREFIX):
@@ -250,12 +230,7 @@ def _outcome_failure(run: str, ticket_id: str, content):
 
 
 def _cmd_dispatch_outcome(rest, *, _lock_held=False):
-    """Commit or replay the reserved outcome envelope.
-
-    ``_lock_held`` is the landing composition's: it holds this run's lock
-    across import, join, and retirement, and a commit that opened a second
-    lock on the same run would wait on its own caller.
-    """
+    """Commit or replay the reserved outcome envelope."""
 
     args = list(rest)
     if len(args) < 2:
@@ -300,10 +275,9 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
 
     def commit_outcome(text, _data, _attempt, _state):
         # The note appends to Report like any other filing. Nothing compares
-        # it against what the child already streamed: the delta law was there
-        # to keep five typed sections from being snapshotted twice, and with
-        # one free-text channel a repeated sentence is a reader's problem,
-        # never a refusal that loses the close.
+        # it against what the child already streamed: with one free-text
+        # channel a repeated sentence is a reader's problem, never a refusal
+        # that loses the close.
         prior = _section_body(text, REPORT_SECTION)
         try:
             updated = _write_section(

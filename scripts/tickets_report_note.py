@@ -2,18 +2,15 @@
 
 `## Report` is the item's one channel, and not everything worth reading
 there was written by the child that ran. The join writes too: the done
-predicate's own reading, and -- when a landing is refused on a merge
-conflict and later carried through -- that refusal and its resolution, so
-the repaired artifact's identity is on the child's own ticket rather than
-only in the driver's journal.
+predicate's own reading, and -- when a landing is refused on a merge conflict
+and later carried through -- that refusal and its resolution.
 
 None of these go through `tickets.py result`. A result record filed after
 its attempt's outcome is refused as out of causal order, and that rule is
 not the join's to loosen: the join is not a reopened attempt, so it writes
-into the section directly and signs the write with its own name. Every
-note is one whole line derived from what was observed, so a second landing
-that observes the same thing finds its own line already there and leaves
-it -- which is what lets `land` replay against a ticket it has written.
+into the section directly and signs the write with its own name. Every note
+is one whole line derived from what was observed, so a second landing that
+observes the same thing finds its line already there and leaves it.
 
 Stdlib-only, Python 3.9 and up.
 """
@@ -31,20 +28,13 @@ else:  # pragma: no cover - direct/installed flat script path
 
 # The opening words of the two landing notes, spelled once because they are
 # read as well as written: the resolution is filed only where the refusal
-# already stands, so a landing that was never refused stays silent instead
-# of narrating every ordinary merge into the item's one channel.
+# already stands, so a landing that was never refused stays silent.
 CONFLICT_PREFIX = "integration refused on conflict:"
 RESOLVED_PREFIX = "integration resolved:"
 
 
 def file_once(path, by: str, body: str, what: str):
-    """``(outcome, refusal)`` for one attributed note, filed at most once.
-
-    ``outcome`` is ``filed`` or ``replayed``; ``refusal`` is the caller's
-    error payload, or ``None``. The compare is over the section's own text
-    rather than over a marker, so what makes a note the same note is that it
-    says the same thing.
-    """
+    """``(outcome, refusal)`` for one attributed note, filed at most once."""
 
     block = f"{RESULT_ATTRIBUTION_PREFIX}`{by}`\n\n{body}"
     try:
@@ -87,13 +77,7 @@ def conflict_note(branch, into, root, paths) -> str:
 
 
 def resolution_note(branch, into, tip, revision) -> str:
-    """The identity the resolved candidate carried, and where it landed.
-
-    Both tips, because neither alone answers the question the refusal left
-    open: the candidate's says which revision the resolution actually
-    delivered, and the integrated one says what the tree the run stands on
-    became when it took that revision.
-    """
+    """The identity the resolved candidate carried, and where it landed."""
 
     return (
         f"{RESOLVED_PREFIX} candidate `{branch}` at {tip} merged into "

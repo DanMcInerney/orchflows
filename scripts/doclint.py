@@ -3,14 +3,10 @@
 
 Two questions, one JSON document on stdout: does every relative markdown
 link under ``<root>`` resolve to something on disk, and does one paragraph
-sit in two files? A dangling link sends a reader nowhere; a paragraph with
-two homes is a fact with two owners, and the check names both sites rather
-than choosing between them.
-
-Nothing here knows this repository. ``tools/validate.py`` imports these
-functions to ask the same two questions of the library tree -- the import
-runs that way and never the reverse, so a project that installs the
-scripts gets the oracle without the library's own grading.
+sit in two files? A duplication names both sites rather than choosing
+between them. Nothing here knows this repository -- ``tools/validate.py``
+imports these functions to ask the same two questions of the library tree,
+and never the reverse.
 
 Stdlib only, Python 3.9+, POSIX and Windows.
 
@@ -42,31 +38,25 @@ EXTERNAL_PREFIXES = ("http://", "https://", "mailto:")
 DEFAULT_NEAR_DUPLICATE_THRESHOLD = 0.9
 # A copy is found where its words are: two texts are compared when they
 # share a word carried by no more than this many texts. Above it a word is
-# idiom, and pairing on idiom means comparing every text with every other
-# -- quadratic in the corpus, which turns a check meant to run on every
-# save into a coffee break. Normative with the threshold: the two together
-# decide the reported set.
+# idiom, and pairing on idiom is quadratic in the corpus. Normative with
+# the threshold: the two together decide the reported set.
 DISTINCTIVE_MAX = 20
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]{3,}")
-# A heading, a one-line note, a table row: short blocks repeat across
-# documents by function rather than by copying, and reporting them would
-# drive documents to stop stating the obvious thing they must state.
+# A heading, a one-line note, a table row: short blocks repeat by function
+# rather than by copying.
 PARAGRAPH_MIN_WORDS = 12
 PARAGRAPH_SPLIT_RE = re.compile(r"\n\s*\n")
 
 
 def read(path: Path) -> str:
-    """The file's text. ``utf-8-sig`` because a BOM-prefixed file -- what
-    PowerShell's ``Out-File`` writes by default -- must read as its text
-    and not as text with a BOM glued to the first line; ``replace`` because
-    one undecodable byte in one file may not cost the whole report."""
+    """The file's text. ``utf-8-sig`` so a BOM-prefixed file reads as its
+    text; ``replace`` so one undecodable byte does not cost the report."""
 
     return path.read_text(encoding="utf-8-sig", errors="replace")
 
 
 def markdown_files(root: Path) -> list:
-    """Every ``*.md`` under ``root``, minus dot-directories: ``.git`` and
-    the caches beside it are not the project's documentation."""
+    """Every ``*.md`` under ``root``, minus dot-directories."""
 
     return sorted(
         path
@@ -78,16 +68,9 @@ def markdown_files(root: Path) -> list:
 def resolve_link(source: Path, target: str, root=None):
     """The path ``target`` names when read from ``source``, or ``None``
     when the link is not the repository's to resolve: an external URL, a
-    bare anchor, a templated path something else fills in, or a
-    root-relative ``/path`` when no ``root`` is given to read it from. An
-    anchor on a real path is dropped -- the file is what must exist. A
-    destination in angle brackets -- markdown's spelling of a path with a
-    space -- is read without them.
-
-    A name the path layer refuses to resolve is *not* that ``None``: it is
-    returned unresolved, so it is graded and found missing. A reader cannot
-    follow a link the filesystem will not answer for either, and sharing
-    one channel with "not ours to grade" sent it through unread."""
+    bare anchor, a templated path, or a root-relative ``/path`` with no
+    ``root`` to read it from. An anchor on a real path is dropped and a
+    destination in angle brackets is read without them."""
 
     target = target.strip()
     if target.startswith("<") and ">" in target:
@@ -106,15 +89,12 @@ def resolve_link(source: Path, target: str, root=None):
         return (base / target).resolve()
     except (OSError, ValueError):
         # ValueError as well as OSError: an embedded null is the path layer
-        # refusing the name before the filesystem is asked, and it reached
-        # here uncaught.
+        # refusing the name before the filesystem is asked.
         return base / target
 
 
 def dangling_links(source: Path, text: str, root=None) -> list:
-    """Every link target in ``text`` that resolves to nothing on disk.
-    ``root`` is where a root-relative ``/path`` is read from; without it
-    such a link is not graded."""
+    """Every link target in ``text`` that resolves to nothing on disk."""
 
     missing = []
     for match in LINK_RE.finditer(text):
@@ -127,9 +107,8 @@ def dangling_links(source: Path, text: str, root=None) -> list:
 
 def paragraphs(text: str) -> list:
     """The comparable blocks of ``text``: blank-line separated, whitespace
-    flattened, and anything under ``PARAGRAPH_MIN_WORDS`` words dropped.
-    CRLF is normalized first, so a Windows checkout and a POSIX one are
-    graded over the same blocks."""
+    flattened, anything under ``PARAGRAPH_MIN_WORDS`` words dropped, CRLF
+    normalized first so both checkouts are graded over the same blocks."""
 
     blocks = []
     for block in PARAGRAPH_SPLIT_RE.split(text.replace("\r\n", "\n")):
@@ -140,22 +119,15 @@ def paragraphs(text: str) -> list:
 
 
 def similarity(left: str, right: str) -> float:
-    """The near-duplicate ratio of two texts.
-
-    ``autojunk=False`` is normative rather than a tuning detail: difflib's
-    default drops characters common in any sequence over 200 characters,
-    which suppresses the ratio on exactly the longest passages -- the ones
-    a duplication check exists to catch.
-    """
+    """The near-duplicate ratio of two texts."""
 
     return difflib.SequenceMatcher(None, left, right, autojunk=False).ratio()
 
 
 def _candidates(texts: list, distinctive_max: int) -> set:
     """The ``(i, j)`` positions worth comparing: two texts sharing a word
-    that no more than ``distinctive_max`` texts carry. Built from an
-    inverted index over those words, so the cost is the candidate count
-    rather than the square of the corpus."""
+    no more than ``distinctive_max`` texts carry, from an inverted index,
+    so the cost is the candidate count rather than the corpus squared."""
 
     frequency: dict = {}
     words_at: list = []
@@ -179,17 +151,7 @@ def _candidates(texts: list, distinctive_max: int) -> set:
 
 def near_duplicate_pairs(texts, threshold, distinctive_max=DISTINCTIVE_MAX, accept=None):
     """Yield ``(i, j, ratio)`` for every pair of ``texts`` at or above
-    ``threshold``, ``i < j``, in index order.
-
-    ``accept(i, j)`` -- every candidate, absent -- filters pairs before any
-    ratio is computed, which is where a caller states what a pair may not
-    be: two blocks of one file, a copy the tree licensed.
-
-    The one near-duplicate method in the repository. ``report`` below
-    compares paragraphs across files with it and ``tools/validate.py``'s
-    cross-tier check compares clauses across tiers with it, so what counts
-    as a copy is decided in one place for both.
-    """
+    ``threshold``, ``i < j``, in index order."""
 
     texts = list(texts)
     by_left: dict = {}
@@ -201,9 +163,8 @@ def near_duplicate_pairs(texts, threshold, distinctive_max=DISTINCTIVE_MAX, acce
         matcher.set_seq2(texts[left])
         for right in sorted(by_left[left]):
             matcher.set_seq1(texts[right])
-            # The cheap bounds first, both of them upper bounds on the
-            # ratio: difflib computes them without matching anything, and
-            # they answer for four candidates in ten.
+            # The cheap bounds first, both upper bounds on the ratio:
+            # difflib computes them without matching anything.
             if matcher.real_quick_ratio() < threshold:
                 continue
             if matcher.quick_ratio() < threshold:
@@ -214,11 +175,7 @@ def near_duplicate_pairs(texts, threshold, distinctive_max=DISTINCTIVE_MAX, acce
 
 
 def report(root, threshold: float = DEFAULT_NEAR_DUPLICATE_THRESHOLD) -> dict:
-    """Every finding under ``root``, as the document the command prints.
-
-    Each finding carries the sites it convicts, because a duplication
-    reported at one file is a fact its reader cannot act on.
-    """
+    """Every finding under ``root``, as the document the command prints."""
 
     root = Path(root)
     findings = []
@@ -284,9 +241,8 @@ def main(argv=None) -> int:
     if not root.is_dir():
         raise SystemExit("doclint: no such directory: " + str(root))
     payload = report(root, args.threshold)
-    # One JSON document, ASCII-escaped by json's default: a console that is
-    # not UTF-8 -- a Windows one is cp1252 -- must still be able to print
-    # a finding that quotes an em dash.
+    # ASCII-escaped by json's default, so a console that is not UTF-8 can
+    # still print a finding that quotes an em dash.
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 1 if payload["findings"] else 0
 

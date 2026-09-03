@@ -304,12 +304,9 @@ def validate_routing_block(text: str, label: str, diag: Diagnostics, limit: int 
     scan here -- it is exercised directly, by synthetic text, the same way
     tests/test_architecture_owners.py's `CEILING_RE` exercises its
     can-fail direction against a padded copy rather than a second tree
-    (rules/verification.md Section 8). This checker is deliberately ahead
-    of its surface: it is the enforcement half of the render surface the
-    "Host-block root/child split" Deferred item in
-    research/architecture-repair-spec-2026-09-01.md will create, so a
-    dead-code sweep must not delete it for lacking a caller today -- it
-    gets wired in there once that split lands."""
+    (rules/verification.md Section 8). It is deliberately ahead of its
+    surface -- the enforcement half of a render surface not yet built -- so a
+    dead-code sweep must not delete it for lacking a caller today."""
 
     n = body_words(text)
     if n > limit:

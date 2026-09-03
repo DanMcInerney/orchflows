@@ -37,14 +37,7 @@ DISPATCH_JOIN_USAGE = (
 
 
 def dispatch_join_identity_defects(outcome_record_id: str, dispatch_id: str, joined_by: str):
-    """The argument-shape refusals a join can raise, before any tree read.
-
-    One function for both callers: the standalone command validates its own
-    parsed flags here, and `land`'s composition calls this before
-    `workspace-integrate` merges anything, so a malformed `--dispatch-id` or
-    `--by` refuses before the tree is mutated rather than after -- the
-    landing defect this closes (a refused join left the candidate merged).
-    """
+    """The argument-shape refusals a join can raise, before any tree read."""
 
     if outcome_record_id != OUTCOME_RECORD_ID:
         return _classification(
@@ -58,16 +51,7 @@ def dispatch_join_identity_defects(outcome_record_id: str, dispatch_id: str, joi
 
 
 def _closes_the_run(run: str, ticket_id: str) -> bool:
-    """Whether this ticket's terminal join is the run's own terminal moment.
-
-    The run's goal ticket, read from `tickets_worklog._run_goal` -- the one
-    owner `worklog` and `set-status` already read it from: the root of a cut
-    run, and the single ticket of an ad-hoc, direct, or loop run. Any other
-    member reaching a terminal status is one item finishing, and the run
-    identity's terminal timing is written once and never rewritten, so
-    stamping it there froze the whole run's elapsed time at whichever
-    sibling happened to join first.
-    """
+    """Whether this ticket's terminal join is the run's own terminal moment."""
 
     items, failure = _run_tickets(run)
     if failure is not None or not items:
@@ -77,17 +61,7 @@ def _closes_the_run(run: str, ticket_id: str) -> bool:
 
 
 def _cmd_dispatch_join(rest, *, _lock_held=False):
-    """Commit or replay one outcome-fenced join and its lifecycle transition.
-
-    Two writes, one critical section. The record commit and the run's
-    terminal timing are one transaction wherever this is called from: the
-    landing composition passes ``_lock_held`` and owns the lock, and the
-    direct route takes the same lock here for the whole pair. It used to
-    take it only inside ``_commit_record`` and stamp the identity after that
-    lock had been released, which left the window every other mutating path
-    was closed against -- and the identity is written once and never
-    rewritten, so a loss in that window is permanent.
-    """
+    """Commit or replay one outcome-fenced join and its lifecycle transition."""
 
     args = list(rest)
     assignment_seal = _extract_flag(args, "--assignment-seal")
@@ -179,13 +153,11 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
             run, ticket_id, dispatch_id, join_record_id, content,
             mutate=join, expected_seal=assignment_seal, record_kind="join",
             # The join is the driver's act, not the worker's, and the
-            # worker's own lease says nothing about when its caller gets
-            # around to reading the outcome and joining it. `join` above
-            # still refuses `outcome-record-mismatch` when no committed
-            # outcome names this dispatch_id, so an attempt that ended
-            # without ever filing one is refused exactly as before -- what
-            # is dropped is only the requirement that the *join* itself
-            # lands inside a lease the worker, not the driver, was bound by.
+            # worker's own lease says nothing about when its caller reads the
+            # outcome and joins it. `join` above still refuses
+            # `outcome-record-mismatch` when no committed outcome names this
+            # dispatch_id, so an attempt that ended without filing one is
+            # refused exactly as before.
             require_live_lease=False,
             _lock_held=True,
         )

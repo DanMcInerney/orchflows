@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """Resolve pack data and return the four cells every verb reads.
 
-Pack files are Markdown at the authoring boundary, but the resolved value is
-one closed JSON object.  The resolver is deliberately the only reader of a
-pack: callers do not need to know how cells are encoded or which references
-are part of their identity.  A digest is derived from the resolved cells,
-every local reference's bytes, the signature contract, and this resolver's
-version.  Scope and filesystem paths are observations, not
-part of identity, so identical project and canonical packs resolve to one
-digest.
+Pack files are Markdown at the authoring boundary, but the resolved value
+is one closed JSON object, and this resolver is the only reader of a pack.
+A digest is derived from the resolved cells, every local reference's bytes,
+the signature contract, and this resolver's version. Scope and filesystem
+paths are observations, not part of identity, so identical project and
+canonical packs resolve to one digest.
 
-The module is stdlib-only and works both from ``scripts/`` in a checkout and
-from the flat ``bin/`` directory produced by ``install.py``.
+Stdlib-only, and works both from ``scripts/`` in a checkout and from the
+flat ``bin/`` directory ``install.py`` produces.
 """
 
 from __future__ import annotations

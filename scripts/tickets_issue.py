@@ -43,14 +43,7 @@ ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 
 
 def pinned_pack_digest(pack):
-    """``(digest, refusal)`` for one stamped pack name at issue time.
-
-    Issue time is where the pin is taken, because that is the last moment
-    the assignment is still a draft: from the seal onward the digest is
-    what every later command compares against, so taking it later would be
-    pinning whatever the pack had already become. A ticket with no pack
-    pins nothing.
-    """
+    """``(digest, refusal)`` for one stamped pack name at issue time."""
 
     name = dequote(pack)
     if not name:
@@ -66,17 +59,7 @@ def pinned_pack_digest(pack):
 
 
 def pinned_items(sheets, skill, pack=None):
-    """``(fields, refusal)`` for the ring items stamped beside the pack.
-
-    Issue time again, and for the pack's reason above: this module is where
-    a ticket's pins are taken, and `scripts/tickets_pins.py` is where the
-    two new kinds are resolved, hashed, and refused -- so both minting
-    commands take one pin the same way.
-
-    The stamped pack rides along because a sheet declares the packs it may
-    be stamped beside, and the pair is only checkable where both names are
-    in hand: here, before the ticket exists.
-    """
+    """``(fields, refusal)`` for the ring items stamped beside the pack."""
 
     if __package__:
         from .tickets_pins import pin_fields
@@ -86,32 +69,7 @@ def pinned_items(sheets, skill, pack=None):
 
 
 def _applied_skill_refusal(skill, executor):
-    """Why this `--skill` may not be the method of this verb, or None.
-
-    Two refusals, both taken before anything is minted, because both are
-    facts about the flag rather than about the ticket it would become.
-
-    The reserved prefix is `scripts/rings.py`'s mechanical floor, said one
-    door earlier. That floor refuses an `orch-` name in a *ring*, and a
-    kernel verb resolves from the library, so nothing downstream would have
-    stopped `--skill orch-do`: the child would have been told to enter its
-    own contract as its method, reading the verb twice and the method never.
-
-    The role is `rules/roles.md` clause 4's. The launch binding -- agent,
-    model, effort -- is chosen off the verb's own declared role, so a
-    planner-role skill applied on a `do` would be entered by a worker agent
-    under a prompt written for the other role. The verb's requirement is
-    read off the kernel skill's own frontmatter rather than tabled here,
-    which is what keeps the pair from drifting into two spellings.
-
-    Resolution here is untrusted on purpose. `pin_fields` resolves the same
-    name a moment later and is the caller that *acts* on the item, so it is
-    the one that spends the user's grant; a use-once token consumed twice
-    in one mint would refuse the second read of the skill it had just
-    admitted. This end reads one frontmatter field to decide whether the
-    flag is even applicable, which is the same "report, do not act" case
-    `rings.resolve`'s `trust` switch exists for.
-    """
+    """Why this `--skill` may not be the method of this verb, or None."""
 
     name = dequote(skill)
     if not name:
@@ -210,14 +168,7 @@ def _cmd_new(rest):
 def _project_file_ticket(
     run: str, text: str, declared_id=None, *, source="ticket file"
 ):
-    """Project one hand-authored file exactly as issuing it would persist it.
-
-    The one remaining caller is ``lint --file``: grading the exact pre-issue
-    shape of a ticket a person wrote by hand, without writing it anywhere.
-    Issuing a file this way is no longer live -- ``new`` mints from
-    flags and ``do``/``judge`` mint from a goal file -- so this projection is
-    now read-only in every live path.
-    """
+    """Project one hand-authored file exactly as issuing it would persist it."""
     invalid = _segment_error("run id", run)
     if invalid is not None:
         return None, invalid
@@ -258,19 +209,13 @@ def _project_file_ticket(
     # The stamped sheets and applied skill are *not* re-pinned here. This
     # projection is read-only -- `lint --file` grades the exact bytes a
     # person wrote -- so rewriting the author's pin would replace the thing
-    # being graded, and the doors in `tickets_admission` already refuse a
-    # pin that names nothing or has drifted.
+    # being graded, and `tickets_admission`'s doors already refuse a pin
+    # that names nothing or has drifted.
     return (ticket_id, text), None
 
 
 def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = False):
-    """Write one ticket into the run, graded, under the run lock.
-
-    ``_lock_held`` is the idiom `dispatch-open` and `_commit_record` already
-    use: a caller that minted this id under its own hold of the run lock
-    cannot take it again -- the lock is one process byte, not a counter --
-    and releasing it to issue would let a second minter choose the same id.
-    """
+    """Write one ticket into the run, graded, under the run lock."""
 
     defects = ticket_defects(text)
     if defects:

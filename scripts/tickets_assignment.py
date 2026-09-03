@@ -3,13 +3,11 @@
 The ticket is the assignment: there is no wire object between it and the
 child. This module grades one ticket against everything a dispatch requires
 of it -- admitted claim, complete Goal and Context, a lawful review lane, an
-established workspace -- and resolves the facts a launch prompt cannot derive
-from the ticket alone: the pack's own craft file, its verification-scope
-sentence, the review lane's root ticket, and the dependency results.
+established workspace -- and resolves the facts a launch prompt cannot
+derive from the ticket alone.
 
-What it does not do is compose the prompt. `tickets_dispatch_launch.py` owns
-the one child-facing surface, and this module hands it resolved facts so the
-prompt is filled rather than reasoned about.
+It does not compose the prompt. `tickets_dispatch_launch.py` owns the one
+child-facing surface, and this module hands it resolved facts.
 """
 from __future__ import annotations
 
@@ -56,17 +54,13 @@ else:
 
 ASSIGNMENT_SECTIONS = (("goal", "Goal"), ("context", "Context"))
 # The installer's flat name surface (`installer/planning.py`): one
-# deterministic path per canonical name, which is the spelling a launch
-# hands a child for the kernel contract its applied skill is a method of.
+# deterministic path per canonical name, which is what a launch hands a
+# child for the kernel contract its applied skill is a method of.
 BY_NAME_DIR = "by-name"
 
 
 def _attempt_workspace(data: dict):
-    """The tree the ticket's dispatch attempt recorded, through its one owner.
-
-    Loaded at call time rather than at module scope: the flat installed
-    layout initializes these siblings in an order neither may depend on.
-    """
+    """The tree the ticket's dispatch attempt recorded, through its one owner."""
 
     try:
         if __package__:
@@ -132,8 +126,8 @@ def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
             attempt.get("state") != "live" or now >= window["lease_expires_at"],
             [],
         )
-    # Without a dispatch record there is no live claim to defend: the
-    # lease lives in dispatch_v1 alone (contracts/dispatch.md).
+    # Without a dispatch record there is no live claim to defend: the lease
+    # lives in dispatch_v1 alone (contracts/dispatch.md).
     return True, []
 
 
@@ -145,13 +139,7 @@ def _dependency_paths(loaded: dict, ticket_path: Path) -> list:
 
 
 def _workspace_line(path: Path):
-    """The craft's own `## Workspace` sentence, collapsed to one line, or None.
-
-    Read the one anchor `contracts/pack-signature.md` fixes for every craft:
-    a launch whose adapter commits nothing still owes the child its
-    workspace's own words for what an identity and a conflict are here,
-    exactly as its craft states them, never paraphrased in this module.
-    """
+    """The craft's own `## Workspace` sentence, collapsed to one line, or None."""
 
     text, failure = _read_utf8(path, "pack craft")
     if failure is not None:
@@ -174,17 +162,7 @@ def _craft(pack):
 
 def _skill_path(executor):
     """The applied skill's own manifest, resolved through the one ring
-    resolver -- the same guarantee `craft_path` already gives the pack.
-
-    A launch hands the child this path instead of telling it to find one:
-    `scripts/rings.py` resolves a skill name to one absolute path
-    deterministically (S7, 2026-09-01: a forked child fired an unscoped
-    filesystem search to locate its own skill file, the installed layout
-    the host block documents never reaching it). None when the executor
-    names no resolvable skill -- a launch with no working prompt is refused
-    long before this fact is read, so a caller here always holds a name
-    that either resolves or the dispatch never opens.
-    """
+    resolver -- the same guarantee `craft_path` already gives the pack."""
 
     name = dequote(executor)
     if not name:
@@ -196,15 +174,7 @@ def _skill_path(executor):
 
 
 def _kernel_contract(executor):
-    """Where the child reads the verb its applied skill is the method of.
-
-    The flat `by-name/<verb>/SKILL.md` the installer mints
-    (`installer/planning.py`) is the one spelling of a canonical name that
-    holds on every host, which is why it is what the prompt hands over. It
-    exists only in an install, so a source checkout -- and every test that
-    runs from one -- falls back to the same resolver `_skill_path` uses:
-    the same contract, one hop earlier, rather than a path naming nothing.
-    """
+    """Where the child reads the verb its applied skill is the method of."""
 
     name = dequote(executor)
     if not name:
@@ -217,19 +187,7 @@ def _kernel_contract(executor):
 
 
 def _applied_skill(loaded: dict):
-    """The `{name, path, environment}` of the ticket's applied skill, or None.
-
-    The name is the sealed pin's (`scripts/tickets_pins.py`); resolving it
-    again here is what turns it back into a path and a dependency
-    declaration, and the pin is what says the bytes behind that path are
-    still the ones the ticket stamped -- the door has already refused drift
-    by the time a launch is composed.
-
-    Untrusted for the reason `tickets_issue._applied_skill_refusal` is:
-    the mint spent the user's grant on this name, and a use-once token
-    respent here would refuse a dispatch of the very ticket that grant
-    admitted.
-    """
+    """The `{name, path, environment}` of the ticket's applied skill, or None."""
 
     name = dequote(loaded.get("skill"))
     if not name:
@@ -246,11 +204,7 @@ def _applied_skill(loaded: dict):
 
 
 def _declares_environment(item_dir) -> bool:
-    """Whether this item carries its own `requirements.txt` (PR #170).
-
-    Deferred like every optional sibling import in this module: the flat
-    installed layout initializes these in an order neither may depend on.
-    """
+    """Whether this item carries its own `requirements.txt`."""
 
     try:
         if __package__:
@@ -263,19 +217,7 @@ def _declares_environment(item_dir) -> bool:
 
 
 def _sheets(loaded: dict) -> list:
-    """`[{"name", "path", "digest"}]` for the sheets this ticket stamped.
-
-    The digest is the ticket's own pinned one, never a fresh hash: what the
-    prompt hands the child has to be the digest the assignment was sealed
-    with, so a child and its judge quote one number. Admission has already
-    re-derived and compared it -- `tickets_pins.pinned_findings` runs in the
-    same grade this function sits behind -- so a sheet that reaches here is
-    a sheet that still hashes to what is printed.
-
-    A name that will not resolve is therefore unreachable, and it drops its
-    line rather than crashing the launch: the door above owns that refusal,
-    and a second one here would report the same defect in a worse place.
-    """
+    """`[{"name", "path", "digest"}]` for the sheets this ticket stamped."""
 
     digests = digests_of(loaded.get("sheet_digests"))
     stamped = []
@@ -294,16 +236,7 @@ def _sheets(loaded: dict) -> list:
 
 def git_candidate(pack) -> bool:
     """Whether the landing merges a candidate branch this pack's child
-    committed into.
-
-    The same fact `workspace_establishment_finding` already checks a
-    recorded workspace's branch and baseline against
-    (``workspace_strategy == "git"``): only there does an isolated branch
-    exist for `land` to merge. This answers a narrower question than "did
-    the child commit" -- a document-tree child commits too
-    (`commits_in_place`), straight onto the coordinator's own branch, and
-    nothing is merged for it because nothing was isolated to merge from.
-    """
+    committed into."""
 
     if not str(pack or "").strip():
         return False
@@ -315,15 +248,7 @@ def git_candidate(pack) -> bool:
 
 def commits_in_place(pack) -> bool:
     """Whether this pack's child must commit in the tree it stands in for
-    its bytes to survive.
-
-    True for every adapter whose identity is a commit or a document
-    revision one records (git, document-tree); false only
-    for evidence-store, whose identity is a lane packet with no commit
-    behind it. Kept separate from `git_candidate`: a document-tree child
-    commits but the landing merges no branch for it, so the launch's
-    return line reads both facts to decide what it renders (finding F4).
-    """
+    its bytes to survive."""
 
     if not str(pack or "").strip():
         return False
@@ -334,12 +259,7 @@ def commits_in_place(pack) -> bool:
 
 
 def artifact_kind(pack):
-    """The typed artifact prefix the pack's adapter fixes, or None.
-
-    Resolved here with the rest of what the prompt cannot derive from the
-    ticket, and left None for a ticket that stamps no resolvable pack: a
-    child asked for a line in no grammar would print one nothing grades.
-    """
+    """The typed artifact prefix the pack's adapter fixes, or None."""
 
     if not str(pack or "").strip():
         return None
@@ -350,22 +270,11 @@ def artifact_kind(pack):
 
 
 def lens_key(loaded: dict, sections: dict):
-    """The `## Lens` entry this child's work is measured against, or None.
-
-    One key, read in whichever direction the ticket runs. A judge is handed
-    finished artifacts, so the typed identities on its Context name the kind
-    it checks -- one kind per judge, which the mint enforces, so two kinds
-    here is a ticket no mint could have written and gets no key rather than
-    a guessed one. A `do` makes the stamped pack's own deliverable, whose
-    kind its adapter fixes, unless it was minted to make a planning artifact
-    no adapter names and says so on `makes`.
-    """
+    """The `## Lens` entry this child's work is measured against, or None."""
 
     # Only the verb whose product is a findings file is keyed by the
     # identities on its Context; for every other executor an artifact line
-    # is evidence it read, not the product it owes, and a planning `do`
-    # citing a predecessor would otherwise be sent to that predecessor's
-    # kind. The registry is the same one the launch prompt reads.
+    # is evidence it read, not the product it owes.
     if EXECUTOR_REGISTRY.get(_executor_of(loaded), {}).get("files_findings"):
         kinds = sorted({
             line.strip()[len(ARTIFACT_CLAUSE):].split(":", 1)[0].strip()
@@ -378,12 +287,7 @@ def lens_key(loaded: dict, sections: dict):
 
 
 def dispatch_assignment(rest, *, attempt=None):
-    """Grade one ticket for dispatch and resolve every fact its launch names.
-
-    Read under the caller's run lock, because each of these decides what the
-    launch commits: the admission receipt, the established tree, and the
-    identity every record will be filed under.
-    """
+    """Grade one ticket for dispatch and resolve every fact its launch names."""
 
     args = list(rest)
     dispatched_name = _extract_flag(args, "--by")

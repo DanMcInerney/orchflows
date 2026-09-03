@@ -56,19 +56,7 @@ def _run_snapshot(run_dir: Path):
     texts, failures = run_snapshot(run_dir)
     return texts, [{'id': stem, 'reason': 'ticket unreadable before claimed-state grading: ' + failure['error']} for stem, failure in failures]
 def _snapshot_matches(run_dir: Path, snapshot: dict, _ids=None) -> bool:
-    """Whether the bytes this grade was taken over are still on disk.
-
-    Scoped to ``_ids`` -- the graded ticket and the dependencies its grade
-    actually read (`grade_admission`'s ``snapshot_ids``). A whole-run
-    comparison made every promotion lose to any concurrent sibling write:
-    a run of eight refused seven readies because the eighth ticket had been
-    touched, and none of the seven had read it. What the compare-and-swap
-    is protecting is the grade, so its scope is what the grade consulted.
-
-    ``None`` keeps the whole-run comparison for a caller that names no
-    scope; an unreadable member inside the scope refuses, one outside it is
-    not this promotion's business.
-    """
+    """Whether the bytes this grade was taken over are still on disk."""
     current, failures = _run_snapshot(run_dir)
     if _ids is None:
         return not failures and current == snapshot
@@ -211,8 +199,7 @@ def _set_status_under_run_lock(rest, *, ticket_path=None):
         return {'error': f"set-status cannot create '{status}': ready and claim transitions require the admission boundary"}
     # A terminal status is the run's own verdict, and the identity write
     # beside it stamps timing onto the run document itself. Both belong to
-    # the project the run belongs to; graded before the ticket is read, so
-    # a foreign workspace is refused for what it is.
+    # the project the run belongs to; graded before the ticket is read.
     if status in TERMINAL_STATES:
         held = binding_refusal(run, TERMINAL_REMEDY)
         if held is not None:
@@ -230,9 +217,8 @@ def _set_status_under_run_lock(rest, *, ticket_path=None):
     data = _parse_frontmatter(text)
     # The one exception is a lifecycle that never started executing: a lone
     # attempt opened and retired before any launch owns a status it has no
-    # way to release, and the ticket is wedged -- no join can exist without
-    # an outcome, and retirement refuses an already-ended attempt. Its
-    # width is `status_ownership_returned`'s, beside the records it reads.
+    # way to release, and the ticket is wedged. Its width is
+    # `status_ownership_returned`'s, beside the records it reads.
     if data.get('dispatch_v1') and not status_ownership_returned(data):
         return _classification(
             'dispatch-join-required',
@@ -278,8 +264,7 @@ def _set_status_under_run_lock(rest, *, ticket_path=None):
         # -- so a failed identity write is rolled back off the ticket. When
         # the rollback fails too, the pair is genuinely split and nothing may
         # swallow the second error: the caller is told both, and told the one
-        # command that lands the pair, which replays idempotently from either
-        # half's state.
+        # command that lands the pair, which replays idempotently.
         try:
             _write_text_atomically(ticket_path, text)
         except OSError as rollback:

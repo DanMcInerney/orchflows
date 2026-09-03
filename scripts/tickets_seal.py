@@ -1,15 +1,12 @@
 """The two commands that open and close one assignment generation.
 
-`tickets_generations` is the algebra -- what a draft is, what validates it,
-what a seal writes.  This is the pair of subcommands that run it against
-the sink: `draft-validate` persists one content-addressed receipt, and
-`seal` compare-and-swaps exactly that receipt's draft onto the run.
-
-They live beside the algebra rather than inside it because that module is
-at its source ceiling, and because a seal does two things the algebra never
-does: it writes, and it repairs what its own write invalidated -- the
-admission receipts of members already promoted under the previous
-generation.
+`tickets_generations` is the algebra; this is the pair of subcommands that
+run it against the sink: `draft-validate` persists one content-addressed
+receipt, and `seal` compare-and-swaps exactly that receipt's draft onto the
+run. They live beside the algebra rather than inside it because a seal does
+two things the algebra never does: it writes, and it repairs what its own
+write invalidated -- the admission receipts of members already promoted
+under the previous generation.
 """
 
 from __future__ import annotations
@@ -234,10 +231,9 @@ def _cmd_seal(rest) -> dict:
                 write_atomically(sealed_path, canonical_json(record) + "\n")
                 # The sealed record is on disk, so the grader can resolve it:
                 # every member this seal just re-generationed is re-graded and
-                # its receipt rewritten inside this same transaction. A member
-                # promoted under the previous generation otherwise holds a
-                # receipt only the previous generation computes, and its next
-                # dispatch is refused for staleness the seal itself introduced.
+                # its receipt rewritten inside this same transaction, or it
+                # would hold a receipt only the previous generation computes
+                # and its next dispatch would be refused for staleness.
                 refreshed = refresh_admissions(
                     run, run_dir, sealed, write_atomically,
                 )

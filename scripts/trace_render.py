@@ -12,9 +12,8 @@ HOST_CODEX = "codex"
 EXIT_CODE_RE = re.compile(r"[Ee]xit code:?\s*(-?\d+)")
 SHELL_COMMAND_RE = re.compile(r'command["\']?\s*:\s*"((?:[^"\\]|\\.)*)"')
 # Both roots a run-state path can carry. The sink is where every writer
-# lands now (``scripts/state_root.py``); the repository shape stays matched
-# because a trace may cover a session that predates the migration, and
-# because item 08 copies rather than moves, so both exist on disk at once.
+# lands (``scripts/state_root.py``); the repository shape stays matched
+# because a trace may cover a session that predates the migration.
 # ``\.orch`` cannot swallow ``.orchflows``: the separator after it is
 # required, and ``.orchflows`` has an ``f`` there.
 STATE_ROOT_RE = r"(?:\.orch|\.orchflows[/\\]state)"
@@ -36,9 +35,6 @@ CODEX_BOILERPLATE_MARKERS = (
 )
 
 
-# --------------------------------------------------------------------------
-# shared helpers
-# --------------------------------------------------------------------------
 
 def _parse_ts(value):
     if not isinstance(value, str) or not value:
@@ -110,9 +106,8 @@ def _finalize(host, session_id, events, clean, total, parse_errors):
         ev.pop("_start_ts", None)
     # Two zero totals, two answers: a transcript that is there and empty has
     # nothing to distrust, while a total of zero standing next to a parse
-    # error is a file nothing was read from -- and 1.0 there would claim
-    # full trust in no data, which `extract_claude` already refuses for a
-    # file that is not there at all.
+    # error is a file nothing was read from -- and 1.0 there would claim full
+    # trust in no data.
     confidence = round(clean / total, 4) if total else (0.0 if parse_errors else 1.0)
     return {
         "host": host,
@@ -133,9 +128,6 @@ def _read_lines(path: Path):
         if raw:
             yield lineno, raw
 
-# --------------------------------------------------------------------------
-# Mermaid rendering
-# --------------------------------------------------------------------------
 
 _MERMAID_UNSAFE_RE = re.compile(r'["\[\]{}()\n\r]')
 

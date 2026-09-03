@@ -13,20 +13,18 @@ configurable search path:
               skills/workflows/<name> then example-workflows/<name>,
               sheets/<name>
 
-Nearest ring wins.  A non-reserved name found in more than one ring resolves
+Nearest ring wins. A non-reserved name found in more than one ring resolves
 to the nearest hit and carries a one-line shadow notice naming both paths --
-never a silent first-hit.  `orch-` is a mechanically reserved floor: a
+never a silent first-hit. `orch-` is a mechanically reserved floor: a
 project, home, or imports item bearing that prefix is refused loudly here
 rather than shadowing a library name or, worse, never running.
 
-A skill lives at `<name>/SKILL.md`, a pack at `<name>/SKILL.md`, and a
-workflow — a skill whose prose calls callables — at `<name>/SKILL.md` too.
-A sheet lives at `<name>/SHEET.md`: extra craft a ticket stamps beside its
-pack, which is why it is resolved here and never invoked.
-Home roots are honoured when they exist and never required to;
-`orchflows sync` creates them.
+A skill, a pack and a workflow each live at `<name>/SKILL.md`; a sheet at
+`<name>/SHEET.md`, extra craft a ticket stamps beside its pack, which is why
+it is resolved here and never invoked. Home roots are honoured when they
+exist and never required to.
 
-This module is the sole owner of that order.  `scripts/packs_support.py` and
+This module is the sole owner of that order. `scripts/packs_support.py` and
 `scripts/tickets_adapters.py` both route through it, which is what keeps
 admission and execution from reading two different files as "the pack".
 """
@@ -54,11 +52,9 @@ RING_DIRS = {
 }
 # Every library directory a kind resolves through, in search order -- the
 # one place that says where the installed library keeps a kind. A workflow
-# has two homes: a reusable, domain-blind one ships inside the skills tier
+# has two homes: a reusable, domain-blind one inside the skills tier
 # (`skills/workflows`) and a domain-bearing one in the gallery
-# (`example-workflows`). The nearer of the two wins for a name in both,
-# which is a shadow nobody authored on purpose, so `tools/validate.py`
-# refuses that collision at the library rather than letting it resolve.
+# (`example-workflows`); `tools/validate.py` refuses a name in both.
 LIB_DIRS = {
     "skill": ("skills",),
     "pack": ("packs",),
@@ -72,9 +68,8 @@ MANIFESTS = {
 RESERVED_PREFIX = "orch-"
 BUNDLE_DIR = ".orchflows"
 # The bundle's own manifest, beside the item directories rather than inside
-# one of them: it describes the bundle, not any item in it
-# (contracts/bundle.md). Named here with the other layout names so the one
-# module that says where a bundle's parts live says where all of them do.
+# one of them: it describes the bundle, not any item in it. Named here so
+# the one module that says where a bundle's parts live says where all do.
 BUNDLE_MANIFEST = "BUNDLE.md"
 IMPORTS_DIR = "imports"
 IMPORTS_LOCK = "imports.lock"
@@ -117,7 +112,6 @@ def reserved_refusal(kind: str, name: str, ring: str, path: Path) -> str:
     )
 
 
-# --- roots -------------------------------------------------------------
 
 
 def home_ring() -> Path:
@@ -136,15 +130,7 @@ def lib_root() -> Path:
 
 
 def project_ring(start=None, home: Optional[Path] = None) -> Optional[Path]:
-    """The nearest ancestor's ``.orchflows`` bundle, or ``None``.
-
-    The home ring is never a project ring, however far a caller has cd'd
-    into their own home directory: the two have different trust rules and
-    reading one as the other would grant the project ring the home's.  Both
-    spellings are excluded -- the configured home ring, and the default
-    ``~/.orchflows`` -- because a test that moves the first still walks up
-    through the second.
-    """
+    """The nearest ancestor's ``.orchflows`` bundle, or ``None``."""
 
     try:
         current = Path(start or Path.cwd()).resolve()
@@ -167,11 +153,7 @@ def _folded(path) -> str:
 
 
 def _bundle_root(value, kind: str) -> Path:
-    """Normalize one override to the item directory it names.
-
-    A caller may hand the bundle (``<repo>/.orchflows``), the repository or
-    home above it, or the item directory itself; all three name one place.
-    """
+    """Normalize one override to the item directory it names."""
 
     resolved = Path(value).expanduser().resolve()
     if resolved.name == RING_DIRS[kind]:
@@ -191,20 +173,7 @@ def _home_root(value, kind: str) -> Path:
 
 
 def _lib_roots(kind: str, root: Path) -> List[Path]:
-    """Every library directory this kind searches, in ``LIB_DIRS`` order.
-
-    ``root`` names the library, or -- for a caller holding one directory
-    of it verbatim -- that directory itself, which is why each entry is
-    compared against the root's own name before being joined to it.
-
-    A skills sublayer that is one of the library's workflow homes is not a
-    skill root.  ``skills/workflows`` ships inside the skills tier for the
-    installer's and the validator's sake, but what it holds is workflows:
-    prose the driver runs in its own context, declaring no ``role``.  Kind
-    ``workflow`` reaches it through ``LIB_DIRS["workflow"]``; kind
-    ``skill`` walks past it, so one body answers to one kind.  The mirror
-    of ``installer/packages.py``'s ``discover_packages`` skip.
-    """
+    """Every library directory this kind searches, in ``LIB_DIRS`` order."""
 
     roots: List[Path] = []
     for relative in LIB_DIRS[kind]:
@@ -231,11 +200,7 @@ def imports_lock_path(home: Optional[Path] = None) -> Path:
 
 
 def read_imports(home: Optional[Path] = None) -> List[Dict[str, str]]:
-    """The pinned bundles ``imports.lock`` records, in file order.
-
-    An unreadable or malformed lock resolves to no imports rather than to a
-    guess: the lock is the pin (P12), and a half-read pin is not one.
-    """
+    """The pinned bundles ``imports.lock`` records, in file order."""
 
     path = imports_lock_path(home)
     try:
@@ -269,12 +234,7 @@ def item_roots(
     lib_dir=None,
     start=None,
 ) -> List[Tuple[str, Path]]:
-    """Every ``(ring, directory)`` this kind resolves through, nearest first.
-
-    ``lib`` names the library root; ``lib_dir`` names one item directory
-    inside it verbatim, which is what a caller holding a bare packs
-    directory (``packs.py --canonical-root``) has to hand.
-    """
+    """Every ``(ring, directory)`` this kind resolves through, nearest first."""
 
     kind = kind_of(kind)
     home_root = _home_root(home, kind) if home is not None else home_ring()
@@ -314,16 +274,10 @@ def _project_default(kind: str, home_root: Path, start) -> Optional[Path]:
     return None if bundle is None else bundle / RING_DIRS[kind]
 
 
-# --- resolution --------------------------------------------------------
 
 
 def _manifest(kind: str, root: Path, name: str) -> Optional[Path]:
-    """The item's manifest under ``root``, or ``None`` when it is not there.
-
-    The join is safe because the name is validated, and it is re-checked
-    after resolution so no filesystem alias can carry a lookup out of the
-    ring it was asked about.
-    """
+    """The item's manifest under ``root``, or ``None`` when it is not there."""
 
     candidate = root / name / MANIFESTS[kind]
     try:
@@ -370,13 +324,7 @@ def shadow_notice(record: Dict[str, object]) -> Optional[str]:
 
 def _shadowed_record(hits: List[Dict[str, object]]) -> Dict[str, object]:
     """The winning hit of a ``locate()`` list, its shadow list and notice
-    line attached.
-
-    ``resolve()`` and ``inventory()`` both build this before doing what
-    only one of them needs next -- ``resolve()``'s trust gate on a project
-    win, ``inventory()``'s reserved/refusal/trust recording for every hit
-    rather than a raise on the first one.
-    """
+    line attached."""
 
     record = dict(hits[0])
     record["shadows"] = [
@@ -388,13 +336,7 @@ def _shadowed_record(hits: List[Dict[str, object]]) -> Dict[str, object]:
 
 
 def _unresolved_refusal(kind: str, name: str, **overrides) -> str:
-    """Why the name resolved nowhere -- naming the kind that does hold it.
-
-    ``skills/workflows`` is a workflow home and not a skill root, so a
-    reusable workflow is unresolvable as a skill by construction.  Saying
-    only "does not resolve" would send a caller hunting a missing file;
-    naming the workflow it actually is says which door takes it.
-    """
+    """Why the name resolved nowhere -- naming the kind that does hold it."""
 
     kind = kind_of(kind)
     name = item_name(name)
@@ -411,13 +353,7 @@ def _unresolved_refusal(kind: str, name: str, **overrides) -> str:
 
 
 def resolve(kind: str, name: str, *, trust: bool = True, **overrides) -> Dict[str, object]:
-    """Resolve one item to its nearest ring, refusing a reserved ring name.
-
-    ``trust`` gates a project-ring win on the user's own ledger; pass
-    ``False`` from an inventory that reports trust state rather than acting
-    on it.  Home, imports and lib never gate: you installed one, authored
-    another, and pinned the third.
-    """
+    """Resolve one item to its nearest ring, refusing a reserved ring name."""
 
     hits = locate(kind, name, **overrides)
     for hit in hits:
@@ -450,12 +386,7 @@ def _require_trust(bundle: Path) -> None:
 
 
 def inventory(kinds: Sequence[str] = KINDS, **overrides) -> List[Dict[str, object]]:
-    """Every resolvable item from here, with ring, shadows and trust state.
-
-    The same roots and the same order runtime resolution uses -- an
-    inventory that walked its own tree would report a catalogue nothing
-    runs (krew's inventory-versus-runtime split).
-    """
+    """Every resolvable item from here, with ring, shadows and trust state."""
 
     try:
         if __package__:

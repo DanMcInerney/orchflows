@@ -3,31 +3,27 @@
 
 Reliability bar: this script must NEVER block, prompt, or raise. It exits
 non-zero for malformed argv, refused at parse before anything is written;
-an internal failure still exits 0 but names itself on stderr. Prints exactly
-one line, ``friction logged``, on success, and one line on stderr otherwise.
+an internal failure still exits 0 but names itself on stderr. Prints
+exactly one line, ``friction logged``, on success, and one line on stderr
+otherwise. Refusing malformed argv gives ``templates/host-block.md``'s
+manual append remedy a readable trigger.
 
-Refusing malformed argv gives ``templates/host-block.md``'s manual append
-remedy a readable trigger. A removed or unknown option is ordinary malformed
-argv and is refused without writing.
-
-The one wait it ever takes is the append lock's retry budget: nothing at
-all on POSIX, and on a contended Windows append a bounded half second
-that ends in the write either way. See ``_acquire_append_lock``.
+The one wait it ever takes is the append lock's retry budget: nothing on
+POSIX, and on a contended Windows append a bounded half second.
 
 Usage:
     python friction.py "<observed>" "<expected>"
         [--skill S] [--ticket T] [--run R]
 
 ``--run`` is an override, not the only route to the field: absent, the run
-is resolved mechanically -- ``$ORCHFLOWS_RUN``, else the candidate
-workspace the caller is standing in. See ``_resolved_run``.
+resolves from ``$ORCHFLOWS_RUN``, else the candidate workspace the caller
+stands in.
 
-Log location: ``<sink>/friction/<YYYY-MM>.jsonl``, where the sink is the
-one user-scope root ``scripts/state_root.py`` resolves — the sink env var
-(``rules/visibility.md`` section 6) or ``~/.orchflows/state``. One stream for
-every repository; the project an entry arose in is a field on the entry,
-never its location. There is no fallback: a write that cannot reach that
-root lands nowhere, and says so on stderr, per the bar above.
+Log location: ``<sink>/friction/<YYYY-MM>.jsonl``, the one user-scope root
+``scripts/state_root.py`` resolves. One stream for every repository; the
+project an entry arose in is a field on the entry, never its location.
+There is no fallback: a write that cannot reach that root lands nowhere,
+and says so on stderr.
 """
 
 from __future__ import annotations
@@ -50,9 +46,8 @@ FLAG_MAP = {
     "--ticket": "ticket",
     "--run": "run",
 }
-# The one non-zero exit, kept off 0 and off 1: 2 is the usage-error code
-# argparse itself uses, so a caller reading exit codes rather than stderr
-# still reads "you called it wrong" and not "the log failed".
+# The one non-zero exit, kept off 0 and off 1: 2 is argparse's own usage
+# code, so a caller reading exit codes reads "you called it wrong".
 USAGE_EXIT = 2
 # The run a host declares for the process it launched. Read only when the
 # caller named none, so an explicit --run always wins.
@@ -65,12 +60,12 @@ SESSION_ENV_VARS = (
 )
 GIT_REV_TIMEOUT_SECONDS = 2
 # Half the one-second ceiling this logger is held to, so the ceiling still
-# holds on a loaded machine once the last retry's sleep is counted in.
+# holds once the last retry's sleep is counted in.
 APPEND_LOCK_BUDGET_SECONDS = 0.5
 APPEND_LOCK_RETRY_SECONDS = 0.01
 # What `project_source` may say: which of the three questions below
-# actually answered "which project". Named so a reader of the stream and
-# `_provenance` cannot drift on the vocabulary.
+# answered "which project", named so the stream and `_provenance` cannot
+# drift on the vocabulary.
 SOURCE_RUN = "run"
 SOURCE_CWD = "cwd"
 SOURCE_NONE = "none"
@@ -124,13 +119,7 @@ def _parse_args(argv):
 
 
 def _console():
-    """Import the console discipline, here rather than at module scope.
-
-    The same bar ``_state_root`` records, and for the same reason: nothing
-    outside the standard library may run while this module is imported, so
-    a partial install with no ``console.py`` beside this file costs the
-    UTF-8 console and never the line this logger exists to append.
-    """
+    """Import the console discipline, here rather than at module scope."""
 
     try:  # in-repo; the installed copy sits flat beside console.py
         from scripts import console
@@ -140,16 +129,7 @@ def _console():
 
 
 def _state_root():
-    """Import the one resolver, here rather than at module scope.
-
-    rules/visibility.md §3: ``scripts/state_root.py`` owns the sink root,
-    and this script holds no second copy of it. The import sits inside a
-    function because the reliability bar above is absolute — a module-level
-    import that failed (a partial install with no ``state_root.py`` beside
-    this file) would traceback before ``main`` existed to swallow it, and
-    the logger would exit non-zero. From here, ``main``'s broad ``except``
-    still catches it.
-    """
+    """Import the one resolver, here rather than at module scope."""
 
     try:  # in-repo; the installed copy sits flat beside state_root.py
         from scripts import state_root
@@ -159,14 +139,7 @@ def _state_root():
 
 
 def _identity_module():
-    """Import the owner of project identity, guarded and here, not at module scope.
-
-    ``scripts/tickets.py`` owns what a project *is* and which sink layout a
-    record is written under. This script holds no second copy of either
-    rule; it calls them. The import is deferred and guarded for the same
-    reason ``_state_root``'s is: a partial install with no sibling beside
-    this file must cost the fields that sibling feeds, never the entry.
-    """
+    """Import the owner of project identity, guarded, not at module scope."""
 
     try:  # in-repo; the installed copy sits flat beside tickets.py
         from scripts import tickets
@@ -176,12 +149,7 @@ def _identity_module():
 
 
 def _unattributed():
-    """The provenance fields when nothing about the caller resolved.
-
-    Not an error. The entry still lands, and ``project_source: "none"``
-    is the entry saying so, so a reader grouping by project sees its own
-    group rather than mistaking it for someone else's.
-    """
+    """The provenance fields when nothing about the caller resolved."""
 
     return {
         "project": None,
@@ -192,15 +160,7 @@ def _unattributed():
 
 
 def _recorded_project(run, identity):
-    """The project ``run`` already belongs to, read from the sink, or ``None``.
-
-    A run's identity document is the only place that answer can come from,
-    so an entry filed against a run from anywhere reads as that run's
-    project. A run the sink does not hold, a document that does not parse,
-    and a document carrying no project all answer ``None`` — each falls
-    through to the caller's own repository, which is a weaker answer to
-    the same question, never a different one.
-    """
+    """The project ``run`` already belongs to, read from the sink, or ``None``."""
 
     if not run:
         return None
@@ -213,24 +173,7 @@ def _recorded_project(run, identity):
 
 
 def _resolved_run(options):
-    """Which run this entry belongs to. Never raises, never blocks.
-
-    Every entry of 2026-08-30 carried ``run: null`` because the flag was
-    the only route to the field and no caller passed it, which left a
-    whole day of friction unqueryable by the run that produced it. So the
-    flag becomes an override over a mechanical answer, in this order:
-
-    1. ``--run`` -- the caller said so, and nothing outranks that.
-    2. ``$ORCHFLOWS_RUN`` -- the host declared it for this process.
-    3. The candidate workspace the caller is standing in. Which run's
-       tree a path is comes from ``state_root.candidate_identity``, the
-       inverse of the one derivation that placed it; the answer counts
-       only when the sink still holds that item's ticket, so a stale or
-       hand-made directory under the worktrees root names no run.
-
-    Nothing else resolves to a run. An unresolved run is ``null``, as it
-    has always been: this widens the field's coverage and never guesses.
-    """
+    """Which run this entry belongs to. Never raises, never blocks."""
 
     named = options.get("run")
     if named:
@@ -259,20 +202,7 @@ def _in_a_repository():
 
 
 def _provenance(options):
-    """Which project this entry arose in, from where, and under which layout.
-
-    Precedence, and what each guard costs when it trips:
-
-    1. The resolved run (``_resolved_run``) naming a run the sink already
-       holds -> that run's own recorded project, ``project_source: "run"``.
-    2. Otherwise the repository the caller stands in ->
-       ``project_source: "cwd"``.
-    3. Otherwise ``project: null``, ``project_source: "none"``.
-
-    Every resolution sits in its own guard, so an unreachable sibling, a
-    corrupt identity document or an unreadable ``.git/config`` costs the
-    field it feeds and never the entry.
-    """
+    """Which project this entry arose in, from where, and under which layout."""
 
     fields = _unattributed()
     try:
@@ -283,8 +213,7 @@ def _provenance(options):
 
     try:
         # One call for both halves: the project the caller belongs to, and
-        # the workspace it is standing in. They differ in a linked worktree,
-        # which is exactly what `workspace` is here to record.
+        # the workspace it stands in. They differ in a linked worktree.
         standing_in, workspace = identity._writer_identity()
         fields["workspace"] = workspace
     except Exception:
@@ -301,9 +230,7 @@ def _provenance(options):
 
     # Outside any repository `_writer_identity` still names a project, so
     # that a run written from nowhere has an owner to collide on. An entry
-    # has nothing to collide on and genuinely arose in no project, so that
-    # answer is dropped here rather than recorded. The rule for what a
-    # project *is* stays item 03's, untouched.
+    # has nothing to collide on, so that answer is dropped here.
     if standing_in is not None and _in_a_repository():
         fields["project"] = standing_in
         fields["project_source"] = SOURCE_CWD
@@ -351,20 +278,13 @@ def _target_path(now: datetime):
 
 
 def _build_entry(observed, expected, options, now: datetime):
-    """One entry. Key order is the order a reader should meet the fields in.
-
-    ``sink_convention`` first because it says how to read the rest; then
-    the four that answer *where this came from*, cwd being the literal
-    directory and the other three the identity of it; then the fields the
-    caller supplied.
-    """
+    """One entry. Key order is the order a reader should meet the fields in."""
 
     try:
         provenance = _provenance(options)
     except Exception:
         # `_provenance` guards every resolution it makes, so reaching here
-        # means the guards themselves broke. Even that costs four fields
-        # and not the entry.
+        # means the guards themselves broke -- four fields, not the entry.
         provenance = _unattributed()
     return {
         "sink_convention": provenance.get("sink_convention"),
@@ -385,24 +305,8 @@ def _build_entry(observed, expected, options, now: datetime):
 
 
 def _acquire_append_lock(handle):
-    """Try for the byte-zero append lock. Never blocks on it, never fails for
-    want of it; returns whether it was taken.
-
-    Windows has no atomic append. The CRT emulates it with a seek and then a
-    write, so two appenders take the same offset and one whole line vanishes --
-    the same defect ``scripts/tickets.py:_append_one_line`` documents, and this
-    file was the source of the unlocked idiom it fixed. POSIX ``O_APPEND``
-    places the write at end-of-file in one step, so there is nothing to lock
-    there and this is a no-op.
-
-    ``LK_NBLCK``, not the ``LK_LOCK`` tickets.py takes: ``LK_LOCK`` blocks for
-    about ten seconds and *then* raises, and ``rules/improvement.md`` §1 says
-    this logger never blocks and never fails. ``LK_NBLCK`` returns at once, so
-    the wait is this budget and nothing longer -- under a second, below a plain
-    ``open()`` on a slow filesystem. A budget that runs out returns False and
-    the caller writes anyway: that degrades to the unlocked append this
-    replaced, never to a lost log line.
-    """
+    """Try for the byte-zero append lock. Never blocks, never fails for want
+    of it; returns whether it was taken."""
 
     if msvcrt is None:
         return False
@@ -438,9 +342,8 @@ def _append_line(path: Path, line: str) -> None:
 def _run(argv):
     observed, expected, options = _parse_args(argv)
     # Before `_build_entry`, so the provenance lookup and the recorded
-    # field read the same run. Guarded here as well as inside, on the bar
-    # this file is held to: resolving a run may cost the field, never the
-    # entry.
+    # field read the same run. Resolving a run may cost the field, never
+    # the entry.
     try:
         options["run"] = _resolved_run(options)
     except Exception:
@@ -466,9 +369,8 @@ def main(argv=None):
         return USAGE_EXIT
     except Exception as exc:
         # Still exit 0 -- the bar -- but not silently: the host block's
-        # "append the line by hand whenever the logger cannot run" needs
-        # something to trigger on, and the absence of `friction logged` is
-        # not it. One line, the cause named, never a traceback.
+        # manual-append remedy needs something to trigger on, and the
+        # absence of `friction logged` is not it.
         print("friction.py: not logged: {0}".format(exc), file=sys.stderr)
     return 0
 

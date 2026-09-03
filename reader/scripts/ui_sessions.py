@@ -6,13 +6,7 @@ from reader.scripts.ui_model import *
 from reader.scripts.ui_model import _in_tree, _json_object
 
 def _make_room(cache: dict, limit: int):
-    """Evict oldest-first until one insertion fits under ``limit``.
-
-    Insertion-ordered and bounded, because the process outlives every run
-    and every session it is ever asked about. A cache already below its
-    limit evicts nothing: a negative slice here would drop the *newest*
-    entries instead, which is the opposite of the policy.
-    """
+    """Evict oldest-first until one insertion fits under ``limit``."""
 
     excess = len(cache) - limit + 1
     for stale in list(cache)[:excess] if excess > 0 else ():
@@ -152,13 +146,7 @@ EVIDENCE_NONE = "no call in this transcript"
 
 
 def transcript_root(value=None) -> Path:
-    """The transcript root: ``value`` when given, else ``~/.claude/projects``.
-
-    Path arithmetic and nothing else -- the tree is never opened here. This
-    is also the only place the default is resolved, and ``main`` is its only
-    caller, so a reader handed no root renders a named empty state instead
-    of falling back to the operator's real transcripts.
-    """
+    """The transcript root: ``value`` when given, else ``~/.claude/projects``."""
 
     if value:
         return Path(value).expanduser()
@@ -166,16 +154,7 @@ def transcript_root(value=None) -> Path:
 
 
 def decode_slug(slug) -> str:
-    """A project directory name as the working directory it encodes, or ``""``.
-
-    Claude Code names the directory after the working directory with every
-    separator replaced by ``-``, which is not invertible: ``.`` encodes to
-    ``-`` as well, and a ``-`` already in a directory name is
-    indistinguishable from either, so ``…-orchflows--claude-worktrees-a-b``
-    decodes wrong in three places. What comes back is a guess, named as one
-    wherever it is the only source; a name that does not even open with the
-    separator marker is refused rather than guessed at.
-    """
+    """A project directory name as the working directory it encodes, or ``""``."""
 
     if not isinstance(slug, str) or not slug.startswith("-"):
         return ""
@@ -209,11 +188,7 @@ def _worktree_cwd(record: dict) -> str:
 
 
 def _content_blocks(record: dict) -> list:
-    """The content blocks of one conversation record, or none.
-
-    Observed shape: the blocks sit under ``message.content``. The record is
-    another program's JSON, so anything else there is not a block list.
-    """
+    """The content blocks of one conversation record, or none."""
 
     message = record.get(MESSAGE_KEY)
     blocks = message.get(CONTENT_KEY) if isinstance(message, dict) else None
@@ -223,14 +198,7 @@ def _content_blocks(record: dict) -> list:
 
 
 def _agent_evidence(record: dict, calls: set, returns: set) -> None:
-    """Fold one record into the call and return sets.
-
-    The tool *name* is the discriminator and dropping it is the whole bug
-    this guards: a subagent's ``toolUseId`` is a tool-use id like any other,
-    and a finished ``Bash`` command under that id is not a finished
-    subagent. A return is only counted for a call already seen, which is
-    also the order a transcript writes them in.
-    """
+    """Fold one record into the call and return sets."""
 
     for block in _content_blocks(record):
         kind = block.get(RECORD_TYPE_KEY)
@@ -246,14 +214,7 @@ def _agent_evidence(record: dict, calls: set, returns: set) -> None:
 
 def _transcript_summary(path: Path) -> dict:
     """The two labels the index draws from one transcript, the evidence that
-    each subagent ever ran, and nothing else.
-
-    Streamed a line at a time, and every line that is not one of the
-    rendered record types is dropped before a single value is taken from it.
-    A real transcript is megabytes of conversation; none of it is ever held
-    long enough to be filtered later, and what survives this pass is a
-    handful of tool-use ids -- one per subagent the session spawned.
-    """
+    each subagent ever ran, and nothing else."""
 
     calls, returns = set(), set()
     summary = {
@@ -300,14 +261,7 @@ TRANSCRIPT_CACHE_LIMIT = 256
 
 
 def cached_transcript(path: Path, identity) -> dict:
-    """``_transcript_summary`` memoized on the file's stat identity.
-
-    The index draws one title and one working directory out of a file that
-    is routinely megabytes, for every session on the machine, and the poll
-    asks for the page every second. Keyed on name, size and mtime -- the
-    same three facts the page's own validator is built from -- so an
-    unchanged transcript is parsed once and a changed one is parsed again.
-    """
+    """``_transcript_summary`` memoized on the file's stat identity."""
 
     summary = TRANSCRIPT_CACHE.get(identity)
     if summary is None:
@@ -319,14 +273,7 @@ def cached_transcript(path: Path, identity) -> dict:
 
 def _subagent_files(path: Path) -> tuple:
     """Every subagent file beside one transcript, metadata and conversation
-    alike.
-
-    The conversation is listed and never opened: it is megabytes of the
-    same content the transcript holds, and the only thing read off it is
-    the mtime the flowchart draws as a last activity. A session directory
-    that does not exist is no subagents, not an error -- most sessions
-    spawn nothing.
-    """
+    alike."""
 
     directory = _in_tree(path.parent, path.stem, SUBAGENTS_DIR)
     if directory is None:
@@ -350,12 +297,7 @@ def _agent_id(path: Path) -> str:
 
 
 def _subagent_identities(files) -> tuple:
-    """The stat identity of every subagent file beside one transcript.
-
-    This is the validator's contribution for the subagent tree, so it
-    covers what the pages read: the metadata they parse and the mtime they
-    draw. A narrower basis would answer 304 to a flowchart that has moved.
-    """
+    """The stat identity of every subagent file beside one transcript."""
 
     return tuple(
         identity
@@ -418,13 +360,7 @@ def _agent_record(meta: Path, modified) -> dict:
 
 
 def read_agents(path: Path) -> list:
-    """Every subagent recorded beside one transcript, in the tree's order.
-
-    A metadata file is a few hundred bytes and a session has a few dozen of
-    them, so this is the one place the detail view reads that the index
-    does not. Its cost is a directory listing plus one small read per
-    subagent -- no transcript is opened here at all.
-    """
+    """Every subagent recorded beside one transcript, in the tree's order."""
 
     activity = {}
     metas = []
@@ -457,9 +393,7 @@ def _session_diagnostics(summary: dict) -> list:
 
 
 def _label_session(session: dict) -> dict:
-    """One session's labels, from the cached parse of its own transcript.
-    Returns the summary, so a caller that needs more than the labels does
-    not parse the file a second time."""
+    """One session's labels, from the cached parse of its own transcript."""
 
     summary = cached_transcript(session["path"], session["identity"])
     session["title"] = summary["title"]
@@ -473,14 +407,7 @@ def _label_session(session: dict) -> dict:
 
 
 def _agent_activity(agent: dict, summary: dict) -> tuple:
-    """``(state, what it was read off)`` for one subagent.
-
-    Ordered by strength of evidence, and it runs out fast: a result quoting
-    the call is the only thing that says finished, an unanswered call is the
-    only thing that says running, and everything else is `unknown`. Nothing
-    here has a default branch that claims a state -- the absence of evidence
-    is the third state, not a reason to pick one of the other two.
-    """
+    """``(state, what it was read off)`` for one subagent."""
 
     called = agent["tool_use_id"]
     if called and called in summary["agent_returns"]:
@@ -492,11 +419,7 @@ def _agent_activity(agent: dict, summary: dict) -> tuple:
 
 def read_session(session: dict) -> dict:
     """One session, labelled, with every subagent recorded beside it and
-    each subagent's activity read off the session's own transcript.
-
-    The parse is the one ``_label_session`` already made and cached, so the
-    states cost no second pass over the file.
-    """
+    each subagent's activity read off the session's own transcript."""
 
     summary = _label_session(session)
     session["agents"] = read_agents(session["path"])

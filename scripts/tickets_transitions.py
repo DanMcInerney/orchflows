@@ -65,11 +65,10 @@ STAMPS = {
 # Sources are expanded one-per-row for the rendered view. A same-state event
 # still appears because it changes a required lifecycle record.
 #
-# `caller` as an actor means the command line, so such a row's event has
-# to be a routed subcommand; `tools/render_lifecycle.py` refuses one that
-# is not. An event folded inside another command names that command here
-# instead, which is why `issue` and `stamp` say `tickets.py do|judge` and
-# `ready` and `claim` say `tickets.py dispatch`.
+# `caller` as an actor means the command line, so such a row's event has to
+# be a routed subcommand; `tools/render_lifecycle.py` refuses one that is
+# not. An event folded inside another command names that command here
+# instead.
 _LIFECYCLE_SPECS = (
     LifecycleSpec("issue", ("unissued",), PENDING, "tickets.py do|judge", "sealed ticket source", "contracts/work-item.md", "rules/topology.md"),
     LifecycleSpec("stamp", ("unsealed draft",), PENDING, "tickets.py do|judge", "sealed root generation", "contracts/work-item.md", "rules/topology.md"),
@@ -86,15 +85,12 @@ _LIFECYCLE_SPECS = (
     LifecycleSpec("dispatch-join", ("claimed / outcome committed",), f"{state} / retired attempt", "caller", "reserved outcome record", "contracts/dispatch.md", "rules/delegation.md")
     for state in (SUSPENDED,) + tuple(TERMINAL_STATES)
 ) + tuple(
-    # Not a legacy path, though an earlier rendering called it one: these are
-    # the only transitions a ticket that was never dispatched can take, and
-    # `_set_status_under_run_lock` refuses once `dispatch_v1` records real
-    # execution (`dispatch-join-required`). Marking an issued-but-undispatched
-    # ticket blocked has no other route, so naming the majority of the table
-    # "legacy" told every cold reader the opposite of the truth. The second
-    # admissible shape is a lifecycle that never began -- one attempt, ended,
-    # carrying nothing but its own lifecycle records -- which otherwise owns
-    # a status it has no join and no retirement left to release.
+    # These are the only transitions a ticket that was never dispatched can
+    # take, and `_set_status_under_run_lock` refuses once `dispatch_v1`
+    # records real execution. The second admissible shape is a lifecycle that
+    # never began -- one attempt, ended, carrying nothing but its own
+    # lifecycle records -- which otherwise owns a status it has no join and
+    # no retirement left to release.
     LifecycleSpec(
         set_status_command(state),
         STATUSES,

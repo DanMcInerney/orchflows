@@ -19,22 +19,18 @@ class Adapter:
 
     key: str
     # The prefix of the one verbatim artifact line a child of this adapter's
-    # pack prints, and the prefix every command that binds a fixed identity
-    # grades: `git:<full-commit-id>`, `doc:<path>@sha256:<digest>`,
-    # `evidence:<store-id>`.
+    # pack prints, and every command that binds a fixed identity grades.
     artifact_kind: str
     establishes_isolation: bool
     deterministic_gate: bool
     workspace_strategy: str
     # Whether a child of this adapter must commit in the tree it stands in
-    # for its bytes to survive: true for git and document-tree, whose
-    # identities are a commit or a document revision one records; false
-    # for evidence-store, whose identity is a lane packet no commit stands
-    # behind. Distinct from
-    # `establishes_isolation and workspace_strategy == "git"` (whether the
-    # landing merges a candidate branch): a document-tree child commits
-    # straight onto the coordinator's own branch, so it must commit but has
-    # no isolated candidate for `land` to merge.
+    # for its bytes to survive: true for git and document-tree, false for
+    # evidence-store, whose identity is a lane packet no commit stands
+    # behind. Distinct from `establishes_isolation and workspace_strategy
+    # == "git"` (whether the landing merges a candidate branch): a
+    # document-tree child commits straight onto the coordinator's own
+    # branch, so it must commit but has no isolated candidate to merge.
     commits_in_place: bool
 
 
@@ -75,10 +71,9 @@ class AdapterError(ValueError):
         self.detail = detail
 
 
-# One code per ring refusal. The bare ``<dir>/packs`` ancestor root this
-# module used to check before ``<dir>/.orchflows/packs`` is gone: it gave
-# admission and execution two different first hits for one name, which is
-# the divergence ``scripts/rings.py`` exists to close.
+# One code per ring refusal. Only `<dir>/.orchflows/packs` is an ancestor
+# root: a second one gave admission and execution different first hits for
+# one name, which is the divergence ``scripts/rings.py`` exists to close.
 _RING_CODES = {
     "unresolved": "pack-unresolved",
     "reserved-name": "pack-reserved",
@@ -89,12 +84,7 @@ _RING_CODES = {
 
 
 def pack_path(pack, *, root=None) -> Path:
-    """Resolve the stamped pack through the one ring resolver.
-
-    ``root`` is where to stand while looking, never a root to search: the
-    order is project ring, home ring, pinned imports, then lib, and
-    ``scripts/rings.py`` owns it for every caller.
-    """
+    """Resolve the stamped pack through the one ring resolver."""
 
     name = dequote(pack)
     if not name:
@@ -107,14 +97,7 @@ def pack_path(pack, *, root=None) -> Path:
 
 
 def craft_path(pack, *, root=None) -> Path:
-    """The stamped pack's own craft file, where the pack's signature names it.
-
-    Read through the same declared-cell seam as the adapter key, and resolved
-    against the pack directory, so a pack that moves or renames its craft is
-    still the one place that says where the craft is. A launch prompt hands
-    this path to the child instead of telling it to resolve the pack, which is
-    the one instruction a fork arriving without a prompt could not obey.
-    """
+    """The stamped pack's own craft file, where the pack's signature names it."""
 
     path = pack_path(pack, root=root)
     try:
@@ -142,14 +125,7 @@ def craft_path(pack, *, root=None) -> Path:
 
 
 def pack_digest(pack, *, root=None) -> str:
-    """The resolved pack's content digest, through the one pack resolver.
-
-    A ticket pins this at issue time and every later command compares against
-    it, which is what makes "the stamped pack digest" a verification rather
-    than a lookup: `cells_for` re-derives digests to *find* a pack, and a
-    search can never notice that the pack changed under a sealed
-    assignment.
-    """
+    """The resolved pack's content digest, through the one pack resolver."""
 
     name = dequote(pack)
     if not name:
@@ -168,14 +144,7 @@ def pack_digest(pack, *, root=None) -> str:
 
 
 def declared_adapter(pack, *, root=None) -> str:
-    """Read the stable adapter key from the pack's typed `adapter` leaf.
-
-    The key is a closed field because machinery branches on it, which is
-    the whole reason `contracts/pack-signature.md` types it. It was read
-    out of the `workspace` cell's prose by regex until that left two
-    declarations of one fact with the prose winning -- a pack could type
-    one adapter and describe another, and the description decided.
-    """
+    """Read the stable adapter key from the pack's typed `adapter` leaf."""
 
     path = pack_path(pack, root=root)
     try:
@@ -215,11 +184,7 @@ def adapter_spec(pack, *, root=None) -> Adapter:
 
 def derived_isolation(declared, pack, *, root=None) -> str:
     """The ticket's effective isolation: the rare declared override, else
-    what the stamped pack's adapter establishes (contracts/work-item.md).
-
-    Fail-closed: a pack that cannot resolve derives 'required', because
-    assuming isolation never lets two candidates share a tree by accident.
-    """
+    what the stamped pack's adapter establishes (contracts/work-item.md)."""
     value = dequote(declared)
     if value:
         return "required" if value == "required" else "none"

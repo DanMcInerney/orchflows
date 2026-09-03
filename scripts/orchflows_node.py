@@ -2,25 +2,20 @@
 """An item's Node tooling: one lockfile install into the item's node_modules.
 
 The third dependency class, and the only one whose home is the item
-directory itself. A Python environment is machine-local under the home ring
-because two projects may want two of them; ``node_modules/`` is where every
-Node runtime already looks, so putting it anywhere else would mean teaching
-each of an item's scripts a path instead of letting `node` find it.
+directory itself: ``node_modules/`` is where every Node runtime already
+looks, so putting it anywhere else would mean teaching each of an item's
+scripts a path instead of letting `node` find it.
 
-The install is always the lockfile's -- ``npm ci`` or
-``pnpm install --frozen-lockfile`` -- never a resolving one: a ``sync`` that
-resolved would give two machines two dependency trees from one committed
-declaration. An item with a ``package.json`` and no lockfile beside it is
-therefore reported with the remedy rather than resolved for.
+The install is always the lockfile's -- ``npm ci`` or ``pnpm install
+--frozen-lockfile`` -- never a resolving one: a ``sync`` that resolved would
+give two machines two dependency trees from one committed declaration. An
+item with a ``package.json`` and no lockfile is reported with the remedy.
 
 Installing runs the item's content, exactly as pip does, so an untrusted
-project ring item is skipped and named with the trust remedy
-``orchflows_envs.py`` already spells. A machine with no `node` is reported
-too: this module installs packages, it does not install runtimes.
-
-Reuse is the same shape as the Python side: a stamp inside ``node_modules/``
-carries the lockfile's digest, so an unchanged lockfile costs one file read
-rather than a reinstall.
+project ring item is skipped and named with the trust remedy. A machine with
+no `node` is reported too: this module installs packages, not runtimes.
+Reuse is the Python side's shape -- a stamp inside ``node_modules/`` carries
+the lockfile's digest.
 
 Stdlib only, cross-platform, Python 3.9 and up. The only network reach is
 the package manager's, inside ``install``.
@@ -125,14 +120,7 @@ def install(
     *,
     which: Optional[Callable[[str], Optional[str]]] = None,
 ) -> None:
-    """Run the lockfile install in the item directory, or raise loudly.
-
-    The manager is spawned as ``orchflows_tools.executable`` resolves it: on
-    Windows ``npm`` and ``pnpm`` are ``.CMD`` shims that a bare name cannot
-    start. A spawn that cannot start at all is raised as the same failure a
-    non-zero exit is, rather than escaping as an ``OSError`` into a caller
-    that is reporting on every other item.
-    """
+    """Run the lockfile install in the item directory, or raise loudly."""
 
     argv = [orchflows_tools.executable(command[0], which), *command[1:]]
     try:
@@ -157,11 +145,7 @@ def ensure(
     which: Optional[Callable[[str], Optional[str]]] = None,
     installer: Optional[Callable[[Path, Tuple[str, ...]], None]] = None,
 ) -> Dict[str, object]:
-    """Make one item's ``node_modules`` match its lockfile, and say what happened.
-
-    A failed install leaves no stamp, so the next ``sync`` installs again
-    rather than trusting a half-written tree.
-    """
+    """Make one item's ``node_modules`` match its lockfile, and say what happened."""
 
     kind = rings.kind_of(kind)
     name = rings.item_name(name)
@@ -205,12 +189,7 @@ def ensure(
 
 
 def sync(records: List[Dict[str, object]], **overrides) -> List[Dict[str, object]]:
-    """Every item in one inventory that declares Node tooling, installed or named.
-
-    ``records`` is ``rings.inventory``'s output, the same resolver dispatch
-    reads, so what is installed here is what a launch of that item can
-    require. Untrusted project items are reported, never installed.
-    """
+    """Every item in one inventory that declares Node tooling, installed or named."""
 
     outcomes = []
     for record in records:

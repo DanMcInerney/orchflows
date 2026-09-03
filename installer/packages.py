@@ -286,36 +286,30 @@ def codex_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md: P
 
 # Every Grok text surface -- dispatch gate, legal frontmatter, skill file and
 # `render_grok_agent` -- lives in installer/managed_text.py, not here beside
-# its Claude and Codex siblings. Not a taxonomy choice: this file measured 483
-# tracked-source lines before the Grok column arrived, and the group does not
-# fit in what one-read size leaves.
+# its Claude and Codex siblings: this file has no one-read headroom left.
 
 
 def _role_description(name: str) -> str:
-    """The routing fact and nothing else. It used to add "follow the role
-    contract at <roles.md>": an imperative with no addressee, listed on
-    every turn to every context holding the Agent tool -- children
-    included -- while the dispatcher's law is already reached through
-    rules/roles.md section 4 (contracts/work-item.md, contracts/dispatch.md)."""
+    """The routing fact and nothing else.
+
+    A pointer to the role contract would be an imperative with no addressee,
+    listed on every turn to every context holding the Agent tool, while the
+    dispatcher's law is already reached through rules/roles.md section 4.
+    """
 
     return f"Orchflows child role {name}."
 
 
-# What a rendered role agent instructs, and all it instructs. It opened by
-# sending every child of every role to read rules/roles.md before acting --
-# 149 words loaded before the child had read its own ticket, whose own text
-# already carries the clauses a child acts on (stay in scope; write the
-# return into the durable artifact; deliver it by SendMessage). No rendered
-# role agent file names roles.md anywhere (D-2).
+# What a rendered role agent instructs, and all it instructs. No rendered
+# role agent file names rules/roles.md: a child's own ticket already carries
+# the clauses it acts on -- stay in scope, write the return into the durable
+# artifact, deliver it by SendMessage -- so a pointer there would be words
+# loaded before the child had read its assignment.
 #
-# "never redispatch" (until U13, 2026-09-01) named no mechanism -- three
-# children in run 20260901T155911Z fanned out background read-only agents
-# without ever handing off their own ticket, the causal-order stranding's
-# direct cause, so the word stopped the wrong thing. Reworded to the plain
-# mechanism it actually guards -- never hand the ticket or the established
-# role to another agent -- at the same word count (44); the launch prompt's
-# own close-after-returns sentence (U2b) carries the fan-out discipline this
-# wording no longer has to.
+# The scope clause names the plain mechanism it guards -- never hand the
+# ticket or the established role to another agent -- because "never
+# redispatch" names none, and the fan-out discipline is the launch prompt's
+# own close-after-returns sentence.
 ROLE_INSTRUCTIONS = (
     "Stay within delegated scope. Every record names dispatch id, seal, and "
     "assigned name; first record is your acceptance. Execute exact primary "
@@ -362,8 +356,8 @@ def _git_dirs(repo_root: Path) -> tuple[Path, Path] | None:
     be read. In an ordinary clone both are ``<root>/.git``. In a git worktree
     (``.git`` is a *file* holding ``gitdir: <path>``) HEAD lives in that
     gitdir while ``refs/`` and ``packed-refs`` live in the shared checkout the
-    gitdir's ``commondir`` names — so the two differ, and reading HEAD's ref
-    from the wrong one is why a worktree install used to record no commit."""
+    gitdir's ``commondir`` names — so the two differ, and HEAD's ref read
+    from the wrong one records no commit."""
 
     marker = repo_root / ".git"
     if marker.is_dir():

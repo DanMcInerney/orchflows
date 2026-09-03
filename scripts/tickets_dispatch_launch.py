@@ -2,15 +2,15 @@
 
 Two things meet here and nowhere else. `rules/roles.md` clause 4 resolves a
 child's role -- an explicit profile wins, else the applied skill's own
-declaration -- through this one function, never two; and the host records
-under `hosts/` own the launch verb, the native launch fields, and the
-per-role model and effort. Nothing here restates a model name, an effort
-value, or an agent identifier, and a host that adds a native field gets it
-carried without this module learning its name.
+declaration -- through this one function; and the host records under
+`hosts/` own the launch verb, the native launch fields, and the per-role
+model and effort. Nothing here restates a model name, an effort value, or
+an agent identifier, so a host that adds a native field gets it carried
+without this module learning its name.
 
-What the child-facing prompt may carry, and every group of lines that carries
-it, is `tickets_dispatch_launch_lines.py`'s; `launch_prompt` below is only the
-order they are rendered in.
+What the child-facing prompt may carry is
+`tickets_dispatch_launch_lines.py`'s; `launch_prompt` below is only the
+order those groups are rendered in.
 """
 
 from __future__ import annotations
@@ -61,16 +61,7 @@ EFFORT_KEY = "effort"
 
 
 def manifest_role(path):
-    """The `role:` one skill manifest declares, or None.
-
-    Read off the skill's own frontmatter rather than a table here: the skill
-    is the owner of what it is, and a second census in this family would go
-    stale the first time a skill changed its declaration. Split out from
-    `declared_role` because the mint asks the same question of a *ring*
-    skill -- one a caller applies through `--skill`, which the search below
-    does not reach -- and two regexes reading one frontmatter field is how
-    the two answers come to disagree.
-    """
+    """The `role:` one skill manifest declares, or None."""
 
     text, failure = _read_utf8(path, "executor role declaration")
     if failure is not None:
@@ -94,14 +85,7 @@ def declared_role(executor: str):
 
 
 def resolved_role_profile(executor, profile):
-    """`rules/roles.md` clause 4's order, as one `(role, profile)` answer.
-
-    An explicit profile naming one of the two canonical roles wins; else the
-    applied skill's own declaration decides. A profile that names neither is
-    still the caller's answer for what to establish, so it is carried
-    through untouched and the role stays the skill's -- the pre-open check and
-    this launch have to agree on both, and they agree by asking here.
-    """
+    """`rules/roles.md` clause 4's order, as one `(role, profile)` answer."""
 
     declared = declared_role(str(executor or ""))
     role = ROLE_PROFILES.get(profile) or declared
@@ -135,12 +119,7 @@ def host_names() -> tuple:
 
 
 def resolve_host(host):
-    """`(record, failure)` for one named host record.
-
-    The name is graded against the directory listing rather than a census
-    spelled here, which also closes it: nothing outside `hosts/` can be
-    opened by naming it.
-    """
+    """`(record, failure)` for one named host record."""
 
     name = str(host or "").strip()
     known = host_names()
@@ -187,13 +166,7 @@ def _binding(record, role):
 
 
 def _agent_identity(record, role) -> str:
-    """The name this host's launch verb establishes a child under.
-
-    Derived, never mapped: the host's own `role_agent` installed-item path
-    names the field its launch identifies an agent by, so a host whose
-    binding carries that field answers with it and a host whose path names
-    the profile answers with the profile's declared name.
-    """
+    """The name this host's launch verb establishes a child under."""
 
     profile, binding = _binding(record, role)
     template = str((record.get("installed_items") or {}).get("role_agent") or "")
@@ -225,13 +198,7 @@ def _native_fields(record, role, binding) -> dict:
 
 
 def binding_failure(record, role):
-    """Why this host cannot launch that role, or None.
-
-    Every one of these is refusable before a dispatch takes its first side
-    effect, which is the point of asking here first: a launch that cannot be
-    resolved after the attempt is open leaves an opened attempt nobody can
-    start.
-    """
+    """Why this host cannot launch that role, or None."""
 
     host = record.get("id")
     if role not in PROFILE_ROLES:
@@ -263,15 +230,7 @@ def binding_failure(record, role):
 
 
 def launch_prompt(assignment: dict) -> str:
-    """The one child-facing surface, filled from the graded assignment.
-
-    Every line is a fact the child cannot derive from the ticket it is pointed
-    at, rendered once. Nothing here paraphrases a contract, restates the
-    ticket's own Goal and Context, or repeats what the child's harness already
-    gives it. There is no accept step: the child's first filed record is its
-    acceptance, and the identities below are what proves it, because `result`
-    validates the same three on every write.
-    """
+    """The one child-facing surface, filled from the graded assignment."""
 
     # Deferred like every tickets->workspace import: a flat `tickets.py`
     # call that never dispatches must not require the workspace family.
@@ -353,13 +312,7 @@ def launch_spec(record, assignment: dict):
 
 
 def precheck(run: str, ticket_id: str, host):
-    """`(record, failure)` before a dispatch takes any side effect.
-
-    The ticket is read for its executor and profile alone, and the role that
-    comes back is the same function the assignment reading will call once the
-    attempt is open -- under the caller's run lock, so the answer cannot
-    move between the two.
-    """
+    """`(record, failure)` before a dispatch takes any side effect."""
 
     record, failure = resolve_host(host)
     if failure is not None:

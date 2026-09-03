@@ -198,9 +198,8 @@ def validate_carriage(packages, diag: Diagnostics) -> None:
 def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None:
     """Packs own their craft and check cells; no executor body is carried.
 
-    The previous pack-to-skill carriage check was tied to superseded executor
-    cells.  Pack references are now the authoritative craft carrier, while
-    shared ticket filing is enforced by the callable contract.
+    Pack references are the authoritative craft carrier, and shared ticket
+    filing is enforced by the callable contract.
     """
     del pkg, by_name, diag
 
@@ -217,10 +216,9 @@ def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None
 # refused inside a worktree has to land outside every worktree, so no copy
 # may send a hand-written file to the old location under `.orch/`.
 #
-# One checked copy, not two. AGENTS.md carries the same sentence and P3
-# deletes it (REVIEW-2026-08-15 T2); requiring it here would make that
-# deletion break the compiler, and until it happens the duplication is
-# reported by validate_cross_tier_duplication rather than mandated.
+# One checked copy, not two. AGENTS.md carries the same sentence, and
+# mandating it here would make deleting that copy break the compiler, so
+# the duplication is reported by validate_cross_tier_duplication instead.
 
 __all__ = (
     '_carriage_clean', '_carriage_stem_variants', '_carriage_body_stems', 'CARRIAGE_ELABORATION_LEADS',

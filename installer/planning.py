@@ -464,8 +464,7 @@ def plan_entry_count(plan: Plan) -> int:
     """Every directory, file and managed edit the plan would produce.
 
     ``--dry-run`` prints this so a green run states whether it planned the
-    install or planned nothing at all; the bare 0 it used to return read the
-    same either way.
+    install or planned nothing at all.
     """
 
     return (

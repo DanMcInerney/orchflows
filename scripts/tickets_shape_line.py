@@ -2,22 +2,16 @@
 
 A frame's shape is the wave plan stated once, in the open, before anything
 is minted: `outline > [do, do] > judge` says three waves, two of them
-parallel, and a reader who arrives at the ticket tree later can tell what
-the driver meant to do from what it actually did. The grammar itself is
-owned by `docs/vocabulary.md`'s `routing shape` entry; this module is the
-only place it is *parsed*, and the refusals below are the only place its
-notation is spelled back at a caller who got it wrong.
+parallel. The grammar is owned by `docs/vocabulary.md`'s `routing shape`
+entry; this module is the only place it is *parsed*.
 
 Two names are refused rather than parsed, because both are lawful English
-and neither is a frame. `do` alone is the worker lane -- one ticket, no
-wave plan, nothing to journal -- and `direct` is the lane that opens no
-frame at all. A driver that writes either has picked the wrong command,
-not written a bad shape, so the refusal says which command it wanted.
+and neither is a frame: `do` alone is the worker lane and `direct` opens no
+frame at all, so the refusal says which command the driver wanted.
 
 The parser reports the first token that does not belong where it stands
 rather than "unparseable": a shape line is short and hand-written, and the
-one thing its author cannot derive from a rejection is *where* it went
-wrong.
+one thing its author cannot derive from a rejection is *where* it went wrong.
 """
 
 from __future__ import annotations
@@ -25,13 +19,11 @@ from __future__ import annotations
 import re
 
 # The reserved names, and what they bind. Free identifiers are the driver's
-# own labels for a wave; these three name kernel verbs, so a reader knows
-# a wave called `judge` is a judge without asking.
+# own labels for a wave; these three name kernel verbs.
 RESERVED_NAMES = ("do", "outline", "judge")
 # The notation the parser recognises as structure rather than as a name.
 # Public because it is half the anchor set a check reads to hold the owner
-# prose and the echo below to one grammar; `_parse_item` reads it as the
-# "not a name" test.
+# prose and the echo below to one grammar.
 GRAMMAR_TOKENS = (">", "[", "]", ",", "*")
 SHAPE_RECORD_ID = "shape"
 SHAPE_PREFIX = "shape:"
@@ -51,12 +43,7 @@ _END = "<end of line>"
 
 
 def missing_shape_refusal() -> dict:
-    """What a root frame minted with neither `--shape` nor `--workflow` gets.
-
-    Before any write: a frame whose plan was never stated is the failure
-    the shape line exists to end, and minting one and then complaining
-    would leave the unplanned frame behind as the record.
-    """
+    """What a root frame minted with neither `--shape` nor `--workflow` gets."""
 
     return {"error": (
         f"a root frame states its wave plan at open: pass {SHAPE_USAGE}, or "
@@ -66,14 +53,7 @@ def missing_shape_refusal() -> dict:
 
 
 def shape_for(shape, workflow, parent):
-    """`(shape, refusal)`: the wave plan one `frame-open` opens under.
-
-    An explicit `--shape` outranks `--workflow`, because a driver that
-    wrote the line meant the line. A saved workflow's body *is* its plan,
-    so its name stands in for one. Only a root owes one at all: a called
-    frame is already a wave of its caller's shape, and demanding it restate
-    the plan would put the same fact in two places.
-    """
+    """`(shape, refusal)`: the wave plan one `frame-open` opens under."""
 
     if shape is not None:
         return parse_shape(shape)
@@ -85,11 +65,7 @@ def shape_for(shape, workflow, parent):
 
 
 def workflow_shape(workflow: str) -> str:
-    """The shape a saved workflow's name stands for.
-
-    Not grammar and never parsed as it: the workflow's own body is the wave
-    plan, and this records which body to go read.
-    """
+    """The shape a saved workflow's name stands for."""
 
     return f"{WORKFLOW_SHAPE_PREFIX}{workflow}"
 
@@ -101,12 +77,7 @@ def shape_record(shape: str) -> str:
 
 
 def journal_shape(journal) -> str:
-    """The shape one frame's journal recorded, or ''.
-
-    A prefix match on one line, the way `unjudged_reason` reads its own
-    line: the first `shape:` wins, so a later wave that quotes the shape
-    while discussing it cannot displace the record `frame-open` filed.
-    """
+    """The shape one frame's journal recorded, or ''."""
 
     for line in str(journal or "").splitlines():
         text = line.strip()
@@ -118,12 +89,7 @@ def journal_shape(journal) -> str:
 
 
 def parse_shape(text):
-    """`(shape, refusal)` for one `--shape` line.
-
-    The shape returned is the caller's own line, stripped: it is prose a
-    person wrote and a person reads back, and normalising its spacing would
-    only make the journal disagree with the command that filed it.
-    """
+    """`(shape, refusal)` for one `--shape` line."""
 
     line = (text or "").strip()
     if not line or "\n" in line:

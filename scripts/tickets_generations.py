@@ -203,12 +203,7 @@ def _failure_identity(findings) -> str:
 CORRECTION_BOUND = 1
 
 def correction_decision(findings, history) -> dict:
-    """Spend the one correction generation, or suspend deterministically.
-
-    The bound is fixed at one because no caller ever chose another: the
-    flag that named it is gone, so the number is a constant here rather
-    than an argument every call site spells the same way.
-    """
+    """Spend the one correction generation, or suspend deterministically."""
 
     prior = list(history or [])
     identity = _failure_identity(findings)
