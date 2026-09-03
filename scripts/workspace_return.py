@@ -155,6 +155,13 @@ def _recorded_target(run: str, ticket_id: str):
     the guess this exists to end -- so the refusal names the establishment
     that records it, which replays against an existing tree and writes the
     target on its way through.
+
+    The remedy names ``--repo``, and has to: only an establishment that
+    *names* its tree fixes the target, so the flagless command this refusal
+    used to prescribe replays at exit 0 and records nothing -- a refusal
+    whose one way out is a dead end. Only a delivering item's establishment
+    fixes it either, a judging item's never does, and that condition is
+    named here rather than derived: this module reads no ticket.
     """
 
     recorded = tickets_store.integration_target(run)
@@ -162,9 +169,10 @@ def _recorded_target(run: str, ticket_id: str):
         raise Refused(
             f"run {run!r} records no integration target: nothing says which "
             f"checkout and branch this run's work belongs on. Run "
-            f"'workspace.py establish {run} {ticket_id}' from the checkout "
-            f"driving this run -- it replays against the existing tree and "
-            f"records the target -- then land again"
+            f"'workspace.py establish {run} {ticket_id} --repo <the checkout "
+            f"this run integrates into>' -- only a --repo establishment of a "
+            f"delivering item records the target, and it replays against the "
+            f"existing tree -- then land {run}/{ticket_id} again"
         )
     root = Path(recorded["root"]).expanduser()
     if not root.is_dir():

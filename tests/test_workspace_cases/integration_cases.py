@@ -116,9 +116,18 @@ class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
             self.assertTrue((main / "scratch" / "work.txt").is_file())
 
     def test_a_run_that_recorded_no_target_is_refused_with_the_establishment(self):
+        """And the establishment it prescribes is one that actually records.
+
+        The flagless command this refusal used to name replayed at exit 0
+        and recorded nothing, so the refusal's only way out was a dead end;
+        the remedy is followed here rather than read, and the landing it
+        was blocking is taken afterwards.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            _main, ticket, derived = established(self, tmp)
+            main, ticket, derived = established(self, tmp)
+            commit_in(derived["path"], {"scratch/work.txt": "delivered\n"}, "the work")
             identity = state_root.runs_root() / "testrun" / "run.json"
             document = json.loads(identity.read_text(encoding="utf-8"))
             document.pop(tickets_store.INTEGRATION_KEY)
@@ -130,8 +139,25 @@ class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
                     baseline_of(ticket),
                 )
 
-            self.assertIn("records no integration target", str(refused.exception))
-            self.assertIn("workspace.py establish testrun T1", str(refused.exception))
+            remedy = str(refused.exception)
+            self.assertIn("records no integration target", remedy)
+            self.assertIn("workspace.py establish testrun T1 --repo", remedy)
+
+            # the prescribed command, its one placeholder filled in
+            replayed = run_workspace(
+                tmp, "establish", "testrun", "T1", "--repo", str(main),
+            )
+            self.assertEqual(0, replayed.returncode, replayed.stdout + replayed.stderr)
+            recorded = tickets_store.integration_target("testrun")
+            self.assertIsNotNone(recorded, "the prescribed remedy recorded nothing")
+            self.assertEqual(str(main.resolve()), recorded["root"])
+
+            body, code = workspace_return.integrate(
+                "testrun", "T1", derived["path"], derived["branch"],
+                baseline_of(ticket),
+            )
+            self.assertEqual(0, code)
+            self.assertEqual("merged", body["integrate"]["outcome"])
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
