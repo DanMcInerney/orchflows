@@ -189,16 +189,22 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
 
     def test_the_marker_and_not_the_line_number_decides(self):
         """The regression this keying exists for: a line inserted above an
-        exempt site must not move the exemption onto another line."""
+        exempt site must not move the exemption onto another line.
 
-        where, token, marker = sorted(validate.DOC_PATH_EXEMPT_SITES)[0]
+        Synthetic, like its sibling above: the live roster is empty whenever
+        no shipped sentence needs an exemption, and a case reading it would
+        stop exercising the check the moment that happened.
+        """
+
+        where, token, marker = "docs/probe.md", "tools/absent.py", "a roster entry"
         root = self._tree("No pointer here.\n")
         source = root / where
         source.parent.mkdir(parents=True, exist_ok=True)
         body = f"The roster names `{token}` and {marker}.\n"
-        saved = validate.ROOT
+        saved_root, saved_sites = validate.ROOT, validate.DOC_PATH_EXEMPT_SITES
         try:
             validate.ROOT = root
+            validate.DOC_PATH_EXEMPT_SITES = frozenset({(where, token, marker)})
             for prefix in ("", "An inserted line.\n\nAnd another.\n"):
                 source.write_text(prefix + body, encoding="utf-8")
                 diag = validate.Diagnostics()
@@ -206,7 +212,8 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
                 found = [line for line in diag.lines() if token in line]
                 self.assertEqual([], found, f"prefix={prefix!r}: {found}")
         finally:
-            validate.ROOT = saved
+            validate.ROOT = saved_root
+            validate.DOC_PATH_EXEMPT_SITES = saved_sites
 
     def test_the_real_library_tree_carries_no_dead_documented_path(self):
         diag = validate.Diagnostics()

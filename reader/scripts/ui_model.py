@@ -153,12 +153,6 @@ STATUS_PRESENTATION = {
 STATUS_FALLBACK = StatusPresentation("?", "unknown", "--st-unknown", "1px dotted")
 
 
-def status_presentation(status: str) -> StatusPresentation:
-    """Total over every possible field value; never raises."""
-
-    return STATUS_PRESENTATION.get(status, STATUS_FALLBACK)
-
-
 # A subagent's activity is not a ticket status: nobody writes it down, and
 # it is read off whatever evidence the session transcript happens to carry.
 # `unknown` is the honest answer for most of a real tree and it is a state,

@@ -28,7 +28,6 @@ SCRIPT_NAMES = (
     "_bootstrap.py",
     "browser_game_validate.py",
     "console.py",
-    "cutcheck.py",
     "doclint.py",
     "friction.py",
     "harvest.py",
@@ -46,7 +45,6 @@ SCRIPT_NAMES = (
 SCRIPT_SUPPORT_PREFIXES = (
     "tickets",
     "ui",
-    "cutcheck",
     "harvest",
     "orchflows",
     "packs",

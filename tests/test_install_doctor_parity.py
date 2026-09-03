@@ -62,9 +62,6 @@ def _maximal_plan(root: Path) -> tuple[Plan, dict]:
     frontend_asset.write_text("<!doctype html>\n", encoding="utf-8")
 
     fields = {
-        "scope": "user",
-        # The one legal value: apply_plan refuses every scope but user.
-        "project_root": None,
         "lib_home": installed / "lib",
         "scope_home": installed,
         "bin_dir": installed / "bin",
@@ -112,8 +109,6 @@ def _maximal_plan(root: Path) -> tuple[Plan, dict]:
         "claude_import": ImportPlan(
             hosts / "claude" / "CLAUDE.md",
             installed / "host-block.md",
-            "<!-- BEGIN ORCHFLOWS -->",
-            "<!-- END ORCHFLOWS -->",
             "Claude instructions",
         ),
         "warnings": ["informational preflight note"],

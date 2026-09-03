@@ -79,6 +79,13 @@ class TestManifestHardening(unittest.TestCase):
         self.assertIn("monkeypatch", owner["seams"])
 
     def test_required_fidelity_category_cannot_be_silently_removed(self):
+        # The roster's size is read off the committed manifest, the same
+        # fact `_canonical_sentinel_count` reads: a literal here would
+        # drift the next time a sentinel is added or retired, and convict
+        # the count instead of the refusal it is here to prove.
+        committed = len(
+            json.loads(MANIFEST.read_text(encoding="utf-8"))["sentinels"]
+        )
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
         data["sentinels"] = [
             entry for entry in data["sentinels"]
@@ -98,7 +105,9 @@ class TestManifestHardening(unittest.TestCase):
                 )
             ]
             path.write_text(json.dumps(data), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "exactly 14 sentinels"):
+            with self.assertRaisesRegex(
+                ValueError, "exactly %d sentinels" % committed
+            ):
                 run_serial_compat.load_manifest(path)
 
     def test_only_observed_intentional_residue_is_allowlisted(self):

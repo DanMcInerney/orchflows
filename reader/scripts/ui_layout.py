@@ -202,32 +202,3 @@ def edge_source(agent: dict, known: frozenset) -> str:
     if parent:
         return EDGE_FROM_PARENT
     return EDGE_PARENT_UNRESOLVED if agent["parent"] else EDGE_INFERRED
-
-
-def transcript_state(transcripts=None) -> tuple:
-    """The stat identity of everything the session views read.
-
-    The same three facts per file the sink walk contributes, over the
-    set this reader actually opens -- and the project directory names, so a
-    directory appearing empty is a change too. Naming the validator's basis
-    as the route's whole read set, rather than one directory, is `U3`'s
-    lesson from the friction feed.
-    """
-
-    found = discover_sessions(transcripts)
-    # Configured or not, and present or not, before any file: three pages
-    # differ here -- no root configured, a root that is not there yet, and a
-    # root holding nothing -- and none of the three has a file to stat, so a
-    # walk alone cannot tell them apart. The middle-to-last transition is the
-    # ordinary one: a viewer left open from before Claude Code first ran.
-    root = found["root"]
-    state = [("transcripts", int(found["present"]), "" if root is None else str(root))]
-    state.extend(("projects", 0, name) for name in found["projects"])
-    for session in found["sessions"]:
-        state.append(session["identity"])
-        state.extend(session["subagents"])
-    # A file that is not a session still renders: it renders a diagnostic.
-    # No directory is stat'd on this walk, so without these the row-shaped
-    # hole in the page appears and disappears under an unchanged tag.
-    state.extend(found["unaddressable"])
-    return tuple(state)

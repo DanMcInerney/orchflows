@@ -161,7 +161,13 @@ try:
 except ImportError:  # pragma: no cover - a checkout without the installer
     _INSTALLED_LIB_DIRS = None
 
-DOC_PATH_CHECKED_TREES = tuple(_INSTALLED_LIB_DIRS or ())
+# The installed roster, plus the one shipped-adjacent tree a reader also
+# follows paths out of. `reader/` installs its distribution but not its
+# prose, so its documents are graded as checkout paths (below).
+DOC_PATH_CHECKED_TREES = tuple(_INSTALLED_LIB_DIRS or ()) + ("reader/docs",)
+# The root orientation documents, which are files rather than trees and so
+# cannot ride the roster above.
+DOC_PATH_CHECKED_FILES = ("README.md", "TICKETS.md", "ARCHITECTURE.md", "DESIGN.md")
 # Checkout mechanics never land under lib/. UI, benchmark, and research
 # documents may instead point into their checked-out source trees.
 SOURCE_ONLY_DIRS = ("tools", "tests", "installer")
@@ -179,22 +185,7 @@ DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-
 # is a distinctive fragment of the carrying sentence, so the same token on
 # another line is still graded and a reworded sentence fails loudly here
 # rather than quietly widening the exemption.
-DOC_PATH_EXEMPT_SITES = frozenset({
-    ("reader/docs/modularization.md", "reader/web/src/api/client.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "reader/web/src/api/schema.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "reader/web/src/app/registry.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "reader/web/src/feed.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "reader/web/src/state/location.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "app/catalog.ts",
-     "Array order is rail/display order only"),
-    ("reader/docs/modularization.md", "reader/web/src/state/location.ts",
-     "There is no second registration or routing owner"),
-})
+DOC_PATH_EXEMPT_SITES = frozenset()
 
 
 def _doc_path_exempt(source_label: str, token: str, line: str) -> bool:
@@ -211,9 +202,19 @@ def _documented_path_finding(token: str, source: Path, root: Path):
 
     head = token.split("/", 1)[0]
     remainder = token[len(head) + 1:].rstrip("/")
+    # A lone segment with a trailing slash names a directory; the sentence
+    # carrying it supplies the parent, which this resolver does not have.
+    # ARCHITECTURE's `kernel/` hangs off `skills/`, README's `by-name/` off a
+    # ring root, DESIGN's `imports/` off the install root -- a sibling of the
+    # `lib/` tree resolved here, not a path under it. Grading these decides by
+    # root-name collision, passing `docs/` and refusing `kernel/` in the same
+    # sentence family, which is not the claim either one makes. A token with
+    # an interior separator still resolves below.
+    if not remainder:
+        return None
     # A path spelled relative to the file that names it -- a skill's own
     # scripts/ or references/ -- travels with that file into the install.
-    if remainder and (source.parent / token.rstrip("/")).exists():
+    if (source.parent / token.rstrip("/")).exists():
         return None
     if head in SOURCE_ONLY_DIRS:
         return (
@@ -245,6 +246,21 @@ def _documented_path_finding(token: str, source: Path, root: Path):
     )
 
 
+def _documented_path_sources(root: Path):
+    """Every markdown file the path check grades, trees then named files."""
+
+    for tree in DOC_PATH_CHECKED_TREES:
+        node = root / tree
+        if node.is_dir():
+            for source in sorted(node.rglob("*.md")):
+                if source.is_file():
+                    yield source
+    for name in DOC_PATH_CHECKED_FILES:
+        source = root / name
+        if source.is_file():
+            yield source
+
+
 def validate_documented_paths(diag: Diagnostics) -> None:
     """Grade the root currently exposed by this compatibility facade."""
 
@@ -267,22 +283,16 @@ def _validate_documented_paths_impl(diag: Diagnostics) -> None:
     if _INSTALLED_LIB_DIRS is None:
         diag.warn("installer", SKIPPED)
         return
-    for tree in DOC_PATH_CHECKED_TREES:
-        node = root / tree
-        if not node.is_dir():
-            continue
-        for source in sorted(node.rglob("*.md")):
-            if not source.is_file():
-                continue
-            text = _read_source(source)
-            for line in text.splitlines():
-                for match in DOCUMENTED_PATH_RE.finditer(line):
-                    token = match.group(1)
-                    if _doc_path_exempt(rel(source), token, line):
-                        continue
-                    finding = _documented_path_finding(token, source, root)
-                    if finding is not None:
-                        diag.error(rel(source), finding)
+    for source in _documented_path_sources(root):
+        text = _read_source(source)
+        for line in text.splitlines():
+            for match in DOCUMENTED_PATH_RE.finditer(line):
+                token = match.group(1)
+                if _doc_path_exempt(rel(source), token, line):
+                    continue
+                finding = _documented_path_finding(token, source, root)
+                if finding is not None:
+                    diag.error(rel(source), finding)
 
 
 def _run_validation_impl() -> Diagnostics:

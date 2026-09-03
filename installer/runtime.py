@@ -22,7 +22,7 @@ RUNTIME_METADATA_FILENAME = ".orchflows-runtime.json"
 def private_runtime_home() -> Path:
     """The user-owned runtime shared by every orchflows checkout."""
 
-    return _scope_home("user", None) / "runtime"
+    return _scope_home() / "runtime"
 
 
 def private_runtime_python(runtime_home: Path | None = None) -> Path:

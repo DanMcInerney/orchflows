@@ -5,7 +5,7 @@ accepted a shell string carrying an escaped newline and collapsed three
 intake bullets onto one stored line; lint and admission both passed it, and
 only a checker reading stored bytes saw the collapse. `format_policy_defects`
 is the one shape-defect owner both `new` (refusal) and `lint` (finding)
-already read through `ticket_defects` -> `_issue_defects`, so a fix there
+already read through `ticket_defects`, so a fix there
 reaches both commands without a second reader.
 """
 
@@ -133,14 +133,14 @@ class EscapedNewlineShapeTest(unittest.TestCase):
     def test_new_refusal_and_lint_finding_share_one_message(self):
         """One shape-defect owner: `new`'s refusal and `lint`'s finding on
         the same broken text read identically, because both call
-        `ticket_defects` through `_issue_defects`."""
+        `ticket_defects`."""
         from scripts.tickets_format import ticket_defects
         from scripts.tickets_issue_render import _render_ticket
 
         fields = {
             "id": "T6", "run": "testrun", "status": "pending",
             "admission": "pending", "executor": "orch-do",
-            "pack": "orch-code-pack", "independence": "gate",
+            "pack": "orch-code-pack",
             "depends_on": [], "isolation": "required", "bound": "30m",
         }
         sections = [

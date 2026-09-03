@@ -29,7 +29,6 @@ class TestLiveEdges(LiveRepositoryCase):
             {
                 "tests.test_tickets",
                 "tests.test_ticket_semantic_contract",
-                "tests.test_cutcheck",
             },
             set(self.for_format["modules"]),
         )

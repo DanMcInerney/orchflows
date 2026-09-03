@@ -374,14 +374,14 @@ class TestSchedule(unittest.TestCase):
     def test_a_cold_repository_starts_known_slow_modules_first(self):
         modules = [
             "tests.test_alpha",
-            "tests.test_cutcheck",
             "tests.test_installer_planning",
             "tests.test_installer_shared",
             "tests.test_tickets",
+            "tests.test_validate",
         ]
         self.assertEqual(
             ["tests.test_installer_planning", "tests.test_installer_shared",
-             "tests.test_cutcheck", "tests.test_tickets", "tests.test_alpha"],
+             "tests.test_tickets", "tests.test_validate", "tests.test_alpha"],
             run_tests.schedule(modules, {}, run_tests.DEFAULT_TESTS_DIR),
         )
 
@@ -427,9 +427,9 @@ class TestSchedule(unittest.TestCase):
     def test_a_cold_custom_directory_remains_alphabetical(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(
-                ["tests.test_alpha", "tests.test_cutcheck", "tests.test_tickets"],
+                ["tests.test_alpha", "tests.test_tickets", "tests.test_validate"],
                 run_tests.schedule(
-                    ["tests.test_cutcheck", "tests.test_alpha", "tests.test_tickets"],
+                    ["tests.test_validate", "tests.test_alpha", "tests.test_tickets"],
                     {}, Path(tmp),
                 ),
             )

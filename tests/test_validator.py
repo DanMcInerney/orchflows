@@ -108,7 +108,7 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
 class TestMarkdownAnchors(_IsolatedTree):
     def test_a_link_to_a_missing_heading_is_an_error(self):
         for root in validate.LINKED_MD_ROOTS:
-            (self.tmp_path / root).mkdir(exist_ok=True)
+            (self.tmp_path / root).mkdir(parents=True, exist_ok=True)
         (self.tmp_path / "docs" / "target.md").write_text(
             "# Present heading\n", encoding="utf-8"
         )

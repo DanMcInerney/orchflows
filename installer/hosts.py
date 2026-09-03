@@ -84,12 +84,10 @@ def preflight_instruction_target(
 
     spec = marker(host, "host_instructions", adapters)
     text = path.read_text(encoding="utf-8") if path.is_file() else ""
-    if spec["mode"] == "import-legacy":
+    if spec["mode"] == "import":
         if import_target is None:
             raise ValueError(f"{host}: host instruction import needs a target")
-        upsert_import_line(
-            text, f"@{import_target}", spec["start"], spec["end"]
-        )
+        upsert_import_line(text, f"@{import_target}")
     elif spec["mode"] == "inline":
         upsert_marked_block(text, block_content, spec["start"], spec["end"])
     elif spec["mode"] != "owned-file":

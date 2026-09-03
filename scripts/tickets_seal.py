@@ -46,9 +46,6 @@ else:  # pragma: no cover - direct/installed flat script path
         binding_findings, dependency_order_findings,
     )
 
-DRAFT_VALIDATE_USAGE = "draft-validate <run> <root-id> [--correction-bound N]"
-SEAL_USAGE = "seal <run> <root-id> --cut-generation <identity>"
-
 
 def _store_bindings():
     if __package__:
@@ -150,34 +147,27 @@ def _failure_path(run: str, root_id: str) -> Path:
     return _generation_dir(run) / f"{root_id}.failures.json"
 
 
-def _record_failure(run: str, root_id: str, findings: list, bound: int, write_atomically) -> dict:
+def _record_failure(run: str, root_id: str, findings: list, write_atomically) -> dict:
     path = _failure_path(run, root_id)
     history = []
     if path.is_file():
         value = json.loads(path.read_text(encoding="utf-8-sig"))
         history = list(value.get("history") or []) if isinstance(value, dict) else []
-    decision = correction_decision(findings, history, bound)
+    decision = correction_decision(findings, history)
     path.parent.mkdir(parents=True, exist_ok=True)
-    write_atomically(path, canonical_json({"bound": bound, "history": decision.get("history") or history}) + "\n")
+    write_atomically(path, canonical_json({"history": decision.get("history") or history}) + "\n")
     return decision
 
 
 def _cmd_draft_validate(rest) -> dict:
     args = list(rest)
-    bound_value = _extract(args, "--correction-bound")
     if len(args) != 2:
-        return {"error": f"usage: {DRAFT_VALIDATE_USAGE}"}
+        return {"error": "usage: draft-validate <run> <root-id>"}
     run, root_id = args
     _, _, _, segment_error, _, _ = _store_bindings()
     for kind, value in (("run id", run), ("ticket id", root_id)):
         refusal = segment_error(kind, value)
         if refusal is not None: return refusal
-    try:
-        bound = 1 if bound_value is None else int(bound_value)
-        if bound <= 0:
-            raise ValueError
-    except ValueError:
-        return {"error": "--correction-bound must be a finite positive integer"}
     _, run_lock, _, _, _, write_atomically = _store_bindings()
     try:
         with run_lock(run):
@@ -186,7 +176,7 @@ def _cmd_draft_validate(rest) -> dict:
                 return {"error": f"root ticket not found in exact snapshot: {root_id}"}
             findings = _draft_findings(root_id, snapshot)
             if findings:
-                decision = _record_failure(run, root_id, findings, bound, write_atomically)
+                decision = _record_failure(run, root_id, findings, write_atomically)
                 return {"error": "draft validation failed", "findings": findings, "correction": decision}
             draft = _next_draft(run, root_id, snapshot)
             receipt = validate_draft(root_id, snapshot, draft)
@@ -207,7 +197,7 @@ def _cmd_seal(rest) -> dict:
     args = list(rest)
     cut_generation = _extract(args, "--cut-generation")
     if len(args) != 2 or cut_generation is None:
-        return {"error": f"usage: {SEAL_USAGE}"}
+        return {"error": "usage: seal <run> <root-id> --cut-generation <identity>"}
     run, root_id = args
     _, run_lock, _, segment_error, _, write_atomically = _store_bindings()
     for kind, value in (("run id", run), ("ticket id", root_id)):
@@ -260,12 +250,4 @@ def _cmd_seal(rest) -> dict:
     return {"assignment_seal": {"cut_generation": cut_generation, "root_generation": draft["root_generation"], "state": "sealed", "path": str(sealed_path), "refreshed_admissions": refreshed}}
 
 
-GENERATION_SUBCOMMANDS = {
-    "draft-validate": (DRAFT_VALIDATE_USAGE, "Grade one exact assignment snapshot and persist its content-addressed validation receipt.", _cmd_draft_validate),
-    "seal": (SEAL_USAGE, "Compare-and-swap seal only the exact validated cut generation, making its units eligible for admission.", _cmd_seal),
-}
-
-__all__ = (
-    "DRAFT_VALIDATE_USAGE", "GENERATION_SUBCOMMANDS", "SEAL_USAGE",
-    "_cmd_draft_validate", "_cmd_seal",
-)
+__all__ = ("_cmd_draft_validate", "_cmd_seal")

@@ -116,8 +116,6 @@ class TestSourceCommit(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
             plan = install.Plan(
-                scope="user",
-                project_root=None,
                 lib_home=project / ".orchflows" / "lib",
                 scope_home=project / ".orchflows",
                 bin_dir=project / ".orch" / "bin",

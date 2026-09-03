@@ -100,16 +100,14 @@ HELP_COMMANDS = HELP_FLAGS | {"help"}
 VALUE_FLAGS = frozenset({
     "--run", "--by", "--executor", "--goal", "--context", "--details",
     "--depends-on", "--bound", "--pack", "--makes",
-    "--profile", "--independence", "--isolation",
+    "--profile", "--isolation",
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
     "--tree", "--workspace", "--proposal", "--covered",
-    "--cut-generation", "--correction-bound", "--now", "--dispatch-id",
+    "--now", "--dispatch-id",
     "--assignment-seal",
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
     "--outcome-record-id", "--status",
     "--goal-file", "--details-file", "--parent", "--done", "--artifacts",
-    "--result-file", "--verification-file",
-    "--feedback-file", "--risks-file", "--handoff-file",
     "--host", "--outcome-file",
 })
 

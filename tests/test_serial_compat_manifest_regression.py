@@ -16,7 +16,7 @@ class TestCodexRedirectManifestRegression(unittest.TestCase):
         identities = set(manifest["discovery"]["identities"])
 
         self.assertIn(
-            "test_installer.TestClaudeAdapterSet."
+            "test_installer.TestClaudeAdapters."
             "test_installer_description_says_codex_redirects_every_canonical_name",
             identities,
         )

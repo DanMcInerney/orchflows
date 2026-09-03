@@ -9,7 +9,6 @@ import tempfile
 import unittest
 from unittest import mock
 
-from scripts import cutcheck
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
@@ -36,7 +35,6 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None):
         "admission": "pending",
         "executor": executor,
         "pack": "orch-code-pack",
-        "independence": "gate",
         "depends_on": list(dependencies),
         "isolation": "required" if executor == "orch-do" else "none",
         "bound": "30m",
@@ -363,9 +361,6 @@ class SemanticTicketContractTest(unittest.TestCase):
         for ticket_id in sorted(sealed):
             self.assertEqual([], tickets_generations.seal_findings(ticket_id, sealed[ticket_id]))
 
-        self.assertEqual([], cutcheck.graph_findings(complete))
-        self.assertEqual([], cutcheck.graph_findings(sealed))
-
         later_cut = tickets_generations.draft_snapshot(
             "S", {"S": assignment("S", "orch-do")}, ordinal=2
         )
@@ -422,16 +417,16 @@ class SemanticTicketContractTest(unittest.TestCase):
             "the composite-gate topology grader outlived its command",
         )
 
-    def test_a_checker_independence_dependency_no_longer_waits_on_anything(self):
-        """The checker-stage apparatus that survived the `review_kind`
-        deletion is gone: no live command ever built the `review_v1` chain
-        `tickets.py check` required, so `checked_by` had no live producer.
-        `independence: checker` no longer differs from the default in
-        readiness -- both read the same status-only completeness.
+    def test_a_complete_dependency_leaves_its_downstream_waiting_on_nothing(self):
+        """Readiness reads dependency status and nothing else.
+
+        The `checker-stage` apparatus that once made this conditional is
+        gone with the `checked_by` anchor no live command ever wrote, so
+        one complete dependency is the whole answer.
         """
         from scripts import tickets_readiness
 
-        target = {"id": "R", "status": "complete", "independence": "checker"}
+        target = {"id": "R", "status": "complete"}
         downstream = {"id": "R.next", "status": "pending", "depends_on": ["R"]}
         tickets_by_id = {"R": target, "R.next": downstream}
         self.assertTrue(

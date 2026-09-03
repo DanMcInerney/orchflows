@@ -17,7 +17,6 @@ from .runtime import private_runtime_home
 
 
 def print_plan(plan: Plan, source_commit: str | None) -> None:
-    print(f"scope: {plan.scope}")
     print(f"detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
     print(f"detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
     print(f"detected grok CLI: {'yes' if plan.grok_enabled else 'no'}")
@@ -115,7 +114,7 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
 
 
 def print_summary(plan: Plan) -> None:
-    print(f"Installed orchflows at {plan.scope} scope.")
+    print("Installed orchflows.")
     if plan.frontend_home is not None:
         print(
             f"  frontend:    {plan.frontend_home} "
@@ -127,11 +126,10 @@ def print_summary(plan: Plan) -> None:
             print(f"    {block.label}: {block.dest}")
         print(f"  receipt:     {plan.receipt_path}")
         return
-    if plan.scope == "user":
-        print(f"  detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
-        print(f"  detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
-        print(f"  detected grok CLI: {'yes' if plan.grok_enabled else 'no'}")
-        print(f"  private runtime: {private_runtime_home()}")
+    print(f"  detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
+    print(f"  detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
+    print(f"  detected grok CLI: {'yes' if plan.grok_enabled else 'no'}")
+    print(f"  private runtime: {private_runtime_home()}")
     print(f"  library:     {plan.lib_home}  ({len(plan.lib_copies)} files)")
     if plan.by_name:
         print(f"  flat index:  {plan.lib_home / 'by-name'}  ({len(plan.by_name)} names)")
@@ -140,15 +138,15 @@ def print_summary(plan: Plan) -> None:
         host_block_dest = plan.host_block.dest if plan.host_block is not None else "(none)"
         print(
             f"  Claude Code: {len(plan.claude_adapters)} skill adapter(s), {len(plan.claude_agents)} role agent(s); "
-            f"import in {_claude_md_path(plan.scope, plan.project_root)} -> {host_block_dest}; "
-            f"settings in {_claude_settings_path(plan.scope, plan.project_root)}"
+            f"import in {_claude_md_path()} -> {host_block_dest}; "
+            f"settings in {_claude_settings_path()}"
         )
     if plan.codex_enabled:
         print(
             f"  Codex:       {len(plan.codex_prompts)} prompt(s), {len(plan.codex_skills)} redirect skill(s), "
             f"{len(plan.codex_agents)} role agent(s); "
-            f"instruction block in {_codex_agents_path(plan.scope, plan.project_root)}; "
-            f"settings in {_codex_config_path(plan.scope, plan.project_root)}"
+            f"instruction block in {_codex_agents_path()}; "
+            f"settings in {_codex_config_path()}"
         )
     if plan.grok_enabled:
         grok_rules_dest = plan.grok_rules.dest if plan.grok_rules is not None else "(none)"

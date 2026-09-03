@@ -12,35 +12,42 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
     against the installed CLI and does not resolve in AGENTS.md)."""
 
     def test_upsert_import_line_is_idempotent(self):
-        updated, action = install.upsert_import_line("", "@/x/host-block.md", "<!-- BEGIN -->", "<!-- END -->")
+        updated, action = install.upsert_import_line("", "@/x/host-block.md")
         self.assertEqual("@/x/host-block.md\n", updated)
         self.assertEqual("created-file", action)
 
-        updated2, action2 = install.upsert_import_line(
-            updated, "@/x/host-block.md", "<!-- BEGIN -->", "<!-- END -->"
-        )
+        updated2, action2 = install.upsert_import_line(updated, "@/x/host-block.md")
         self.assertEqual(updated, updated2)
         self.assertEqual("already-present", action2)
 
-    def test_upsert_import_line_migrates_legacy_inline_block(self):
-        legacy = "before\n<!-- BEGIN -->\nold managed content\n<!-- END -->\nafter\n"
-
-        updated, action = install.upsert_import_line(legacy, "@/x/host-block.md", "<!-- BEGIN -->", "<!-- END -->")
-
-        self.assertEqual("migrated-from-block", action)
-        self.assertNotIn("<!-- BEGIN -->", updated)
-        self.assertNotIn("old managed content", updated)
-        self.assertIn("before\n", updated)
-        self.assertIn("after\n", updated)
-        self.assertIn("@/x/host-block.md\n", updated)
-
     def test_upsert_import_line_appends_to_existing_file_without_block(self):
         updated, action = install.upsert_import_line(
-            "# My CLAUDE.md\nsome instructions\n", "@/x/host-block.md", "<!-- BEGIN -->", "<!-- END -->"
+            "# My CLAUDE.md\nsome instructions\n", "@/x/host-block.md"
         )
 
         self.assertEqual("added-import", action)
         self.assertTrue(updated.startswith("# My CLAUDE.md\nsome instructions\n"))
+        self.assertTrue(updated.rstrip("\n").endswith("@/x/host-block.md"))
+
+    def test_upsert_import_line_leaves_a_marker_block_it_finds_alone(self):
+        """The import is appended and nothing else in the file is touched:
+        the installer no longer reads, strips or rewrites a marked block in
+        CLAUDE.md, whoever wrote it."""
+
+        spec = install.marker("claude", "host_instructions")
+        self.assertEqual("import", spec["mode"])
+        existing = (
+            "before\n"
+            + spec["start"] + "\n"
+            + "someone else's block\n"
+            + spec["end"] + "\n"
+        )
+
+        updated, action = install.upsert_import_line(existing, "@/x/host-block.md")
+
+        self.assertEqual("added-import", action)
+        self.assertTrue(updated.startswith(existing))
+        self.assertIn("someone else's block", updated)
         self.assertTrue(updated.rstrip("\n").endswith("@/x/host-block.md"))
 
     def test_user_plan_renders_host_block_file_and_claude_import(self):
@@ -51,7 +58,7 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis(
                 "claude", "codex"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             self.assertEqual(home / ".orchflows" / "host-block.md", plan.host_block.dest)
             self.assertEqual("host-block", plan.host_block.kind)
@@ -92,36 +99,15 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
                 install.apply_plan(plan, accepted_source=install.resolve_source_commit())
-                plan2 = install.build_plan("user", None)
+                plan2 = install.build_plan()
                 install.apply_plan(plan2, accepted_source=install.resolve_source_commit())
 
             claude_text = (home / ".claude" / "CLAUDE.md").read_text(encoding="utf-8")
             host_block_path = home / ".orchflows" / "host-block.md"
             import_line = f"@{host_block_path.resolve()}"
             self.assertEqual(1, claude_text.count(import_line))
-
-    def test_apply_migrates_legacy_inline_block_in_claude_md(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            home = Path(tmp)
-            (home / ".claude").mkdir(parents=True)
-            claude_md = home / ".claude" / "CLAUDE.md"
-            spec = install.marker("claude", "host_instructions")
-            start_marker, end_marker = spec["start"], spec["end"]
-            claude_md.write_text(
-                f"# personal notes\n{start_marker}\nold rendered block\n{end_marker}\n", encoding="utf-8"
-            )
-
-            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
-                install.apply_plan(plan, accepted_source=install.resolve_source_commit())
-
-            claude_text = claude_md.read_text(encoding="utf-8")
-            self.assertIn("# personal notes", claude_text)
-            self.assertNotIn(start_marker, claude_text)
-            self.assertNotIn("old rendered block", claude_text)
-            self.assertIn(f"@{(home / '.orchflows' / 'host-block.md').resolve()}", claude_text)
 
     def test_uninstall_reports_manual_cleanup_for_import_line(self):
         with tempfile.TemporaryDirectory() as tmp:

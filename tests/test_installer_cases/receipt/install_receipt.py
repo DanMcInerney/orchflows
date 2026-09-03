@@ -27,8 +27,6 @@ class TestInstallReceipt(unittest.TestCase):
             agents.write_text("user instructions\n", encoding="utf-8")
 
             plan = install.Plan(
-                scope="user",
-                project_root=None,
                 lib_home=project / ".orchflows" / "lib",
                 scope_home=project / ".orchflows",
                 bin_dir=project / ".orch" / "bin",
@@ -107,8 +105,6 @@ class TestInstallReceipt(unittest.TestCase):
 
     def _role_agent_plan(self, project: Path, **kwargs) -> "install.Plan":
         defaults = dict(
-            scope="user",
-            project_root=None,
             lib_home=project / ".orchflows" / "lib",
             scope_home=project / ".orchflows",
             bin_dir=project / ".orch" / "bin",
@@ -251,8 +247,6 @@ class TestInstallReceipt(unittest.TestCase):
             )
             new_agent = project / ".codex" / "agents" / "orch_worker.toml"
             plan = install.Plan(
-                scope="user",
-                project_root=None,
                 lib_home=project / ".orchflows" / "lib",
                 scope_home=project / ".orchflows",
                 bin_dir=project / ".orch" / "bin",
@@ -302,7 +296,7 @@ class TestInstallReceipt(unittest.TestCase):
             with isolated_grok_home(root) as grok_home, patch.object(
                 install.Path, "home", return_value=home
             ), mock_host_clis("grok"), self._no_runtime_build():
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
                 receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             configs = [entry for entry in plan.configs if entry.kind == "grok-config"]
@@ -403,7 +397,7 @@ class TestInstallReceipt(unittest.TestCase):
                 with isolated_grok_home(root) as grok_home, patch.object(
                     install.Path, "home", return_value=home
                 ), mock_host_clis(*hosts), self._no_runtime_build():
-                    plan = install.build_plan("user", None)
+                    plan = install.build_plan()
                     install.apply_plan(plan, accepted_source=install.resolve_source_commit())
                 censuses.append(
                     {
@@ -436,7 +430,7 @@ class TestInstallReceipt(unittest.TestCase):
             with isolated_grok_home(root) as grok_home, patch.object(
                 install.Path, "home", return_value=home
             ), mock_host_clis("grok"), self._no_runtime_build():
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
                 printed = io.StringIO()
                 with redirect_stdout(printed):
                     install.print_plan(plan)
@@ -457,6 +451,6 @@ class TestInstallReceipt(unittest.TestCase):
             ), mock_host_clis("claude"), self._no_runtime_build():
                 quiet = io.StringIO()
                 with redirect_stdout(quiet):
-                    install.print_plan(install.build_plan("user", None))
+                    install.print_plan(install.build_plan())
         self.assertIn("detected grok CLI: no", quiet.getvalue())
         self.assertIn("Grok skills (0)", quiet.getvalue())
