@@ -15,7 +15,7 @@ answers whether the built artifact works; `bound`, each call's budget; and
 **Plan**, one call whose artifact is the cut:
 
     tickets.py do <run> --pack <pack> --parent <frame> --makes cut
-      --goal-file <plan-goal> --bound <bound>
+      --goal-file <plan-goal> --workspace <workspace> --bound <bound>
 
 Its goal: `goal` cut into waves, every item of a level independent of its
 siblings and every dependency edge an earlier wave's seam. The first wave
@@ -45,8 +45,10 @@ carried:
 Its goal: `goal` against that revision, each block named with the evidence
 for it. Blocks earn `bounded-repair`.
 
-Never: open a wave the cut did not place at that level; make in a shared
-tree; hand the judge a sheet the waves did not carry, or a candidate rather
+Never: leave `workspace` off any call of this frame — the run's integration
+target is fixed by its first establishment, so a call that defaults it sends
+every later wave's merge at the driver's own tree; open a wave the cut did not
+place at that level; make in a shared tree; hand the judge a sheet the waves did not carry, or a candidate rather
 than the joined tip; add a dependency the first wave did not pin without
 reporting the deviation; or close on anything but `outside-close`.
 
