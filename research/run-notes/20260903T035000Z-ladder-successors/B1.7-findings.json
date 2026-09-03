@@ -1,0 +1,88 @@
+{
+  "ticket": "B1.7",
+  "run": "20260903T035000Z-ladder-successors",
+  "judged": "B1.5 -- the ticket generator's --scope spelling",
+  "artifacts": {
+    "unit_commit": "git:dbd78e0dea366e702821e4934886c038578c9298",
+    "landed_merge": "git:d4299602805f736bce241777d5f0c14c9151939f",
+    "tree_judged": "1e362e8a6d14 (d4299602 == this worktree's HEAD bcb74a95, git diff empty)"
+  },
+  "pack": "orch-code-pack sha256:66b054c32e2d97b00f88db9e04ef8e32e906a3b51e9058c4450d5c82bbbeb1a5",
+  "lens": "git",
+  "verdict": "holds",
+  "blocking_count": 0,
+  "goal_criteria": {
+    "run_required_at_commit": "exit 0 -- tools/run_required.py at tree 1e362e8a6d14, rows validate 0 / run_tests 0 / run_serial_compat 0 / install.py --dry-run 0 (361 planned) / git diff --check 0, 2m36s watched; the land's own reading (B1 record: exit 0) agrees",
+    "section_2_names": "none touched; the unit changes Done lines, generate.py and a test module only",
+    "budgets": "generate.py 110 lines, tests/test_workflow_ladder_generator.py 113 lines; tools/validate.py exit 0 with 0 ERROR (the research/ sink-law walker included); git diff --check 468dbdc9..d4299602 exit 0",
+    "files_outside_details": "none -- git diff d4636683..d4299602 --stat lists exactly the unit's 18 files (spec, 14 *.details.md, generate.py, the new test module, the manifest); git diff dbd78e0d..d4299602 lists only the integrated tip's own three B1.3 files, which is the merge's job, not a reach"
+  },
+  "readings": [
+    {"check": "tools/run_tests.py --scope research,tests at HEAD", "exit": 0, "reading": "99 modules, 2337 tests, 0 failures, 0 errors, 14 skipped; tests.test_workflow_ladder_generator 6 tests ok"},
+    {"check": "tools/validate.py", "exit": 0, "reading": "18 WARN (pre-existing cross-tier near-duplicates on kernel/workflow bodies), 0 ERROR"},
+    {"check": "tools/run_required.py", "exit": 0, "reading": "all five rows 0, tree 1e362e8a6d14"},
+    {"check": "can-fail: TestShippedSpec with SPEC pointed at the baseline spec read out of git show 468dbdc9 (tree unmutated)", "exit": "n/a", "reading": "2 of 2 FAIL: ['contracts','scripts','tests','tools'] is not None; the pin bites"},
+    {"check": "can-fail: split_scope over every **Done.** line of the baseline spec vs the shipped spec", "exit": 0, "reading": "baseline 14 of 15 refused (U8 carries no --scope); shipped 0 of 15 refused"},
+    {"check": "mutant M1 (refusal deleted) against TestScopeSpellingRefusal in a scratch copy", "exit": 0, "reading": "KILLED -- test_a_space_separated_scope_is_refused_before_any_ticket_is_written fails"},
+    {"check": "mutant M2 (closing backtick no longer ends the span)", "exit": 0, "reading": "KILLED -- prose-after-command and refusal-value tests fail"},
+    {"check": "mutant M3 (refusal moved after the goal file is written)", "exit": 0, "reading": "KILLED -- 2 errors (a ticket file exists on refusal)"},
+    {"check": "generate.py main() over a U4 fixture spelled with spaces, temp dir", "exit": 1, "reading": "stderr: 'U4: Done spells --scope with spaces. docs would decide the run alone and rules tests tools would arrive as MODULE arguments. Spell it: --scope docs,rules,tests,tools'; only spec.md present afterwards"},
+    {"check": "generate.py at HEAD, then git diff -w --stat", "exit": 0, "reading": "wrote 15 units; content identical to the committed projection (0 lines ignoring whitespace); 30 files differ by CRLF only -- see F3"},
+    {"check": "git diff --check 468dbdc9 d4299602", "exit": 0, "reading": "clean"}
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": false,
+      "kind": "shape / checks pin shapes",
+      "file": "tests/test_workflow_ladder_generator.py:74-76",
+      "evidence": "test_the_refusal_names_the_unit_and_the_spelling_to_use asserts only split_scope('`--scope docs rules tests tools`') == ['docs','rules','tests','tools']; no test reads stderr, so neither the unit name ('U4: ') nor the 'Spell it: --scope docs,rules,tests,tools' tail that Details requires ('refused naming the unit') is pinned. The behaviour itself holds (probe: main() prints both)."
+    },
+    {
+      "id": "F2",
+      "blocking": false,
+      "kind": "shape / comments state only what code cannot -- the stated why is stale",
+      "file": "research/workflow-ladder-tickets/generate.py:31-39 (split_scope docstring) and :78-81 (refusal text)",
+      "evidence": "Both say the space spelling makes the run 'decide on a alone and print OK', while the function they cite, tools/run_tests_scope.refuse_positional, raises SystemExit('--scope takes one comma-separated value ...') on exactly that spelling. The silent-OK is the historical hazard refuse_positional already closed; a spec author reading the refusal is told a consequence that no longer happens. The B1.5 report carries the same two sentences side by side."
+    },
+    {
+      "id": "F3",
+      "blocking": false,
+      "kind": "pre-existing, outside this revision's diff",
+      "file": "research/workflow-ladder-tickets/generate.py write_text calls (unchanged by B1.5)",
+      "evidence": "Regenerating at HEAD on this Windows host (core.autocrlf=true) leaves all 30 projection files 'modified' in git status by CRLF alone; git diff -w is empty and .gitattributes '* text=auto eol=lf' normalises at the index, so the committed bytes are LF and correct. A judge or child re-running the generator sees a dirty tree with no content change."
+    }
+  ],
+  "causes": [
+    {
+      "id": "C1",
+      "findings": ["F1"],
+      "cause": "the refusal text is produced in main() but graded only through split_scope's return value",
+      "smallest_change": "in run_against, wrap self.generate.main() in contextlib.redirect_stderr(io.StringIO()) and return the text; in the refusal test assert it starts with 'U0: ' and ends with 'Spell it: --scope docs,rules,tests,tools' (or rename the test to what it asserts)",
+      "within_license": true,
+      "disposition": "non-blocking; carried as successor scope per rules/verification.md 10"
+    },
+    {
+      "id": "C2",
+      "findings": ["F2"],
+      "cause": "the why was copied from refuse_positional's own docstring, which describes the world before it existed",
+      "smallest_change": "replace the two sentences with one: 'run_tests.py refuses this spelling outright (--scope takes one comma-separated value), so the projection refuses it at the source'",
+      "within_license": true,
+      "disposition": "non-blocking; prose only"
+    },
+    {
+      "id": "C3",
+      "findings": ["F3"],
+      "cause": "Path.write_text without newline='\\n' follows the platform line ending",
+      "smallest_change": "pass newline='\\n' to both write_text calls in generate.py",
+      "within_license": false,
+      "disposition": "pre-existing at baseline 468dbdc9, not this unit's line; recommended successor scope"
+    }
+  ],
+  "observations": [
+    "O1: split_scope refuses '--scope a -v' as a space spelling (probe: ['a','-v']); no Done in the spec carries a flag after --scope, and the direction of the error is conservative, so no change is recommended.",
+    "O2: test_every_spec_done_line_spells_scope_with_commas reads only lines beginning '**Done.**', so a Done paragraph wrapped past its first line is checked on its first line alone; the generator's own refusal path and the sibling projection test both go through paragraphs() and cover the wrapped case at regeneration.",
+    "O3: the B1.5 report body was filed twice (result record b1-5-report and the outcome evidence, byte-alike); not a defect of the artifact."
+  ],
+  "executor_record": "consistent with the tree: 14 spec lines, 14 one-line details changes, U8 and every goal file byte-identical (git show --stat), manifest 2328->2334 then 2331->2337 on the merged tree; the friction it logged (scoped run silently omitting an uncommitted test module) reproduces from tools/affected_tests.py's committed-revision resolution and is worth its own successor."
+}

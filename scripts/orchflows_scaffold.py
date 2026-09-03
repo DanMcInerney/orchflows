@@ -23,9 +23,15 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 
 AUTHORING_DOC = "docs/custom-workflow-authoring.md"
 
+# An applied skill is entered by a child `--skill` establishes, and
+# `rules/roles.md` clause 6 says that child is of the skill's own declared
+# role -- so a skill without one, or carrying `role: none`, is refused at
+# dispatch. `worker` is what an applied skill does unless its author says
+# otherwise: execution, the role the verb `orch-do` itself declares.
 _SKILL = """---
 name: {name}
 description: One sentence saying when to use {name} and what it returns.
+role: worker
 ---
 
 # {name}
