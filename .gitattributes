@@ -3,4 +3,4 @@ install.cmd text eol=crlf
 research/orchflows-speed-baseline-2026-08-15-to-2026-08-28.txt whitespace=-blank-at-eol
 # Real captured TikTok pages, kept byte-authentic as smoke/keyless evidence:
 # their own markup carries trailing whitespace this repo does not author.
-.orchflows/skills/super-research/tests/fixtures/tiktok_public/*.html whitespace=-blank-at-eol
+.orchflows/skills/research-acquire/tests/fixtures/tiktok_public/*.html whitespace=-blank-at-eol

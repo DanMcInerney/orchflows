@@ -7,9 +7,9 @@ requires: []
 # orchflows-contrib
 
 This repository's own bundle: the first-party ring items that are not part
-of the installed library. `skills/super-research/` is one — an acquisition
-skill with its own scripts and tests, shipped to whoever imports this
-bundle rather than installed with the library.
+of the installed library. `skills/research-acquire/` is one — an
+acquisition skill with its own scripts and tests, shipped to whoever
+imports this bundle rather than installed with the library.
 
 Nothing else belongs here. The library ships from `skills/`, `packs/`,
 `sheets/` and `example-workflows/` at the repository root; design notes,

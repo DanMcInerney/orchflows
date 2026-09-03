@@ -13,8 +13,8 @@ from scripts import orchflows_adapters, rings, state_root
 
 
 from tests._repo_root import ROOT
-SUPER_RESEARCH = ROOT / ".claude" / "skills" / "super-research" / "SKILL.md"
-AGENTS_SUPER_RESEARCH = ROOT / ".agents" / "skills" / "super-research" / "SKILL.md"
+RESEARCH_ACQUIRE = ROOT / ".claude" / "skills" / "research-acquire" / "SKILL.md"
+AGENTS_RESEARCH_ACQUIRE = ROOT / ".agents" / "skills" / "research-acquire" / "SKILL.md"
 # No preprocessing construct may reach a generated adapter body: `@` includes
 # and `` !`cmd` `` both run before the model sees anything (FM-6).
 FORBIDDEN = ("@", "!`", "```")
@@ -225,37 +225,37 @@ class ScopeTests(unittest.TestCase):
 
 
 class CommittedProofTests(unittest.TestCase):
-    """This repository's own super-research shim is now generated."""
+    """This repository's own research-acquire shim is now generated."""
 
     def _expected(self, host: str) -> str:
-        item = ROOT / ".orchflows" / "skills" / "super-research" / "SKILL.md"
+        item = ROOT / ".orchflows" / "skills" / "research-acquire" / "SKILL.md"
         records = orchflows_adapters.host_records(ROOT)
         return orchflows_adapters.render(
-            "skill", "super-research", item, records[host],
+            "skill", "research-acquire", item, records[host],
             orchflows_adapters.pointer_for(item, ROOT),
         )
 
     def test_the_committed_claude_shim_is_what_the_machinery_renders(self):
         self.assertEqual(
-            self._expected("claude"), SUPER_RESEARCH.read_text(encoding="utf-8"),
+            self._expected("claude"), RESEARCH_ACQUIRE.read_text(encoding="utf-8"),
         )
 
     def test_the_committed_agents_shim_is_what_the_machinery_renders(self):
         self.assertEqual(
-            self._expected("claude"), AGENTS_SUPER_RESEARCH.read_text(encoding="utf-8"),
+            self._expected("claude"), AGENTS_RESEARCH_ACQUIRE.read_text(encoding="utf-8"),
         )
 
     def test_the_committed_shim_keeps_its_manual_invocation_flag(self):
-        text = SUPER_RESEARCH.read_text(encoding="utf-8")
-        self.assertIn("name: super-research", text)
+        text = RESEARCH_ACQUIRE.read_text(encoding="utf-8")
+        self.assertIn("name: research-acquire", text)
         self.assertIn("disable-model-invocation: true", text)
         self.assertIn(orchflows_adapters.MARKER, text)
 
     def test_the_committed_shim_holds_no_machine_specific_path(self):
-        for path in (SUPER_RESEARCH, AGENTS_SUPER_RESEARCH):
+        for path in (RESEARCH_ACQUIRE, AGENTS_RESEARCH_ACQUIRE):
             text = path.read_text(encoding="utf-8")
             self.assertNotIn(str(ROOT), text)
-            self.assertIn("Read .orchflows/skills/super-research/SKILL.md", text)
+            self.assertIn("Read .orchflows/skills/research-acquire/SKILL.md", text)
 
 
 class PortabilityTests(unittest.TestCase):
@@ -266,12 +266,17 @@ class PortabilityTests(unittest.TestCase):
     from there is the only reading that can fail if the pair stopped being
     portable."""
 
-    def test_super_research_copies_out_as_a_skill_and_a_workflow_together(self):
+    def test_the_acquisition_pair_copies_out_under_two_distinct_names(self):
+        """U7d renamed the skill, so the pair no longer shares one name.
+        The `-workflow` slug keeps their *paths* apart either way; what the
+        rename fixes is the name each adapter declares to its host, which
+        was `super-research` on both of them before it."""
+
         with _world() as world:
-            skill_copy = world["home"] / "skills" / "super-research" / "SKILL.md"
+            skill_copy = world["home"] / "skills" / "research-acquire" / "SKILL.md"
             skill_copy.parent.mkdir(parents=True)
             skill_copy.write_bytes(
-                (ROOT / ".orchflows" / "skills" / "super-research" / "SKILL.md").read_bytes()
+                (ROOT / ".orchflows" / "skills" / "research-acquire" / "SKILL.md").read_bytes()
             )
             workflow_copy = world["home"] / "workflows" / "super-research" / "SKILL.md"
             workflow_copy.parent.mkdir(parents=True)
@@ -280,7 +285,7 @@ class PortabilityTests(unittest.TestCase):
             )
 
             skill_record = rings.resolve(
-                "skill", "super-research", trust=False, start=world["root"],
+                "skill", "research-acquire", trust=False, start=world["root"],
             )
             workflow_record = rings.resolve(
                 "workflow", "super-research", start=world["root"],
@@ -294,12 +299,18 @@ class PortabilityTests(unittest.TestCase):
             rendered = {
                 path.parent.name: text
                 for path, text in entries
-                if "super-research" in path.parent.name
+                if path.parent.name in ("research-acquire", "super-research-workflow")
             }
-            self.assertEqual({"super-research", "super-research-workflow"}, set(rendered))
-            self.assertIn(
-                "is a workflow skill", rendered["super-research-workflow"],
+            self.assertEqual(
+                {"research-acquire", "super-research-workflow"}, set(rendered),
             )
+            declared = sorted(
+                line for text in rendered.values()
+                for line in text.splitlines() if line.startswith("name: ")
+            )
+            self.assertEqual(["name: research-acquire", "name: super-research"], declared)
+            self.assertIn("is a workflow skill", rendered["super-research-workflow"])
+            self.assertNotIn("is a workflow skill", rendered["research-acquire"])
             self.assertIn(
                 "disable-model-invocation: true", rendered["super-research-workflow"],
             )

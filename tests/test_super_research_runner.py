@@ -22,7 +22,7 @@ class SuperResearchRunnerTests(unittest.TestCase):
         self.repo = Path(self.scratch.name)
         tools_dir = self.repo / "tools"
         self.tests_dir = (
-            self.repo / ".orchflows" / "skills" / "super-research" / "tests"
+            self.repo / ".orchflows" / "skills" / "research-acquire" / "tests"
         )
         tools_dir.mkdir()
         self.tests_dir.mkdir(parents=True)

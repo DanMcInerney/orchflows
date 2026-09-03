@@ -355,21 +355,36 @@ class SuperResearchGoalTests(unittest.TestCase):
         self.assertIn("super-research", names)
 
     def test_the_skill_stays_resolvable_as_a_project_ring_skill(self):
-        """Clause 4: already true at arrival (measured in R.03's Context as
-        `rings.resolve('skill','super-research', trust=False)` -> ring
-        'project'). Pinned here as a can-fail reading taken without
-        mutating the tree under test, per the pack craft's Evidence
-        section, rather than left to have happened to keep working."""
+        """Clause 4, under U7d's rename: the acquisition skill is
+        `research-acquire`, and it still resolves from this repository's own
+        project ring. Read without mutating the tree under test, per the
+        pack craft's Evidence section, rather than left to have happened to
+        keep working."""
 
         with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
             record = rings.resolve(
-                "skill", "super-research", trust=False, start=ROOT, home=Path(empty_home),
+                "skill", "research-acquire", trust=False, start=ROOT, home=Path(empty_home),
             )
 
         self.assertEqual("project", record["ring"])
         self.assertEqual(
-            str(ROOT / ".orchflows" / "skills" / "super-research"), record["dir"],
+            str(ROOT / ".orchflows" / "skills" / "research-acquire"), record["dir"],
         )
+
+    def test_the_workflow_name_no_longer_names_a_skill_as_well(self):
+        """U7d Goal's last clause -- no two items share a name. Before the
+        rename this resolved to the project ring's own skill directory, so
+        one name meant a skill here and a workflow there and the generated
+        adapters collided by suffix."""
+
+        with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve(
+                    "skill", "super-research", trust=False, start=ROOT,
+                    home=Path(empty_home),
+                )
+
+        self.assertEqual("unresolved", raised.exception.code)
 
 
 if __name__ == "__main__":
