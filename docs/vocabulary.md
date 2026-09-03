@@ -296,8 +296,8 @@ invented for this library.
   qualification.
 - **gate** — the deterministic close gate: `land`'s repository-wide
   required checks, the one every ticket answers to
-  (`rules/verification.md` §7's "gate-deferred" independence, run
-  without caching by the dev-only tools/run_required.py).
+  (`rules/verification.md` §7, run without caching by the dev-only
+  tools/run_required.py).
 - **judge** — scoring one fixed candidate against frozen criteria, blind
   to other candidates when several are scored in one round: a
   `judge`-executor ticket whose criteria carry a score scale, blindness
