@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2116,
+  "count": 2124,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1249,6 +1249,14 @@
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_marker_and_not_the_line_number_decides",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_real_library_tree_carries_no_dead_documented_path",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_test_directory_is_an_error",
+   "test_validate.TestVocabularyTermsHaveConsumers.test_a_consumer_wrapped_across_a_line_still_counts",
+   "test_validate.TestVocabularyTermsHaveConsumers.test_a_hyphenated_consumer_still_counts",
+   "test_validate.TestVocabularyTermsHaveConsumers.test_a_term_no_shipped_file_uses_is_an_error",
+   "test_validate.TestVocabularyTermsHaveConsumers.test_a_tree_without_the_vocabulary_is_skipped_not_failed",
+   "test_validate.TestVocabularyTermsHaveConsumers.test_each_alternative_spelling_answers_for_itself",
+   "test_validate.TestVocabularyTermsHaveConsumers.test_the_real_library_defines_no_unconsumed_term",
+   "test_validate.TestVocabularyTermsHaveConsumers.test_the_reserved_scratch_directory_is_not_a_consumer",
+   "test_validate.TestVocabularyTermsHaveConsumers.test_the_suite_is_not_a_consumer",
    "test_validator.TestCompositionProtocolAdmission.test_a_script_module_named_for_a_composition_is_refused_by_boundary",
    "test_validator.TestCompositionProtocolAdmission.test_authoring_standard_states_the_protocol_boundary_and_exception",
    "test_validator.TestCompositionProtocolAdmission.test_browser_game_is_the_one_dated_visible_exception",
@@ -2119,7 +2127,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "c9fd1a3ebff5c2d3028fabaa1695c2e71e255e6f662281976cd6e6ed6b41f559"
+  "sha256": "2cdeaef307643abfdedaf7c4b1a4ef932b9b1a6f950e06d9dc3bf8e369b87ec9"
  },
  "mutation_owners": [
   {
