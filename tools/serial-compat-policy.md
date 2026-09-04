@@ -6,9 +6,10 @@
 - Fallback: `python tools/run_serial_compat.py --mode exhaustive`
 - Fallback use: scheduled, manual, and pre-release
 - Regeneration: `python tools/run_serial_compat.py --write-manifest` rewrites
-  the discovery block and the mutation-owner inventory from the tree; the
-  sentinel roster is chosen, not derived, so regeneration proves it survived
-  byte-for-byte and aborts if it did not
+  the discovery identities and the mutation-owner inventory from the tree; the
+  sentinel roster is chosen, not derived, so regeneration drops only a row whose
+  id the tree no longer discovers, proves every row it carries survived
+  byte-for-byte, and aborts if one did not
 - Rulings: a `restoration` is a reviewer's, never a scan's. Rule
   `selected-module-boundary` when the module returns the seam within the
   selected lane's own boundary, and `sharded-module-guard` when only

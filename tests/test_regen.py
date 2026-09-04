@@ -12,7 +12,6 @@ generator input legitimately moves mid-change.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import shutil
 import subprocess
@@ -58,11 +57,7 @@ def _cli(root: Path, *extra) -> dict:
 def _seed_manifest(path: Path, identities) -> None:
     document = {
         "schema": "orchflows.serial-compat.v1",
-        "discovery": {
-            "count": len(identities),
-            "identities": list(identities),
-            "sha256": hashlib.sha256("\n".join(identities).encode("utf-8")).hexdigest(),
-        },
+        "discovery": {"identities": list(identities)},
         "mutation_owners": [dict(RULED_BASELINE)],
         "sentinels": [
             {"categories": ["discovery"], "id": "test_fixture.Fixture.test_one",

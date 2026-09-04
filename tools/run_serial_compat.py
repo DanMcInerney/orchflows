@@ -57,12 +57,9 @@ def load_manifest(path: Path = MANIFEST_PATH) -> dict:
         raise ValueError("unsupported serial compatibility manifest")
     discovery = data.get("discovery")
     identities = discovery.get("identities") if isinstance(discovery, dict) else None
-    if (not isinstance(identities, list)
+    if (not isinstance(identities, list) or not identities
             or any(not isinstance(identity, str) or not identity for identity in identities)
-            or identities != sorted(set(identities))
-            or discovery.get("count") != len(identities)
-            or discovery.get("sha256") != hashlib.sha256(
-                "\n".join(identities).encode("utf-8")).hexdigest()):
+            or identities != sorted(set(identities))):
         raise ValueError("serial compatibility exact discovery is invalid")
     entries = data.get("sentinels")
     if not isinstance(entries, list) or not entries:
@@ -381,24 +378,31 @@ def _summary(results):
         "unexpected_successes": sum(len(result.unexpectedSuccesses) for result in results),
     }
 def _require_discovery(cases, manifest):
+    """The committed identities are the whole contract; drift names both sides.
+
+    A manifest carrying no discovery block at all asserts nothing -- the fixtures
+    that drive one seam pass such a manifest -- but one that carries the block
+    has to name exactly what this tree discovers.
+    """
     identities = sorted(case.id() for case in cases)
-    identity_hash = hashlib.sha256("\n".join(identities).encode("utf-8")).hexdigest()
-    expected = manifest.get("discovery")
-    if expected is not None and (
-        expected.get("count") != len(identities)
-        or expected.get("sha256") != identity_hash
-        or ("identities" in expected and expected["identities"] != identities)
-    ):
+    block = manifest.get("discovery")
+    if block is None:
+        return identities
+    committed = block.get("identities") if isinstance(block, dict) else None
+    if committed != identities:
+        gone = sorted(set(committed or ()) - set(identities))
+        new = sorted(set(identities) - set(committed or ()))
         raise ValueError(
-            "discovery identity drift: expected %s/%s, observed %d/%s"
-            % (expected.get("count"), expected.get("sha256"), len(identities), identity_hash)
+            "discovery identity drift: %s committed, %d observed; gone %s; new %s"
+            % (len(committed) if isinstance(committed, list) else committed,
+               len(identities), gone or "-", new or "-")
         )
-    return identities, identity_hash
+    return identities
 def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 1) -> dict:
     """Discover all cases, then run only committed sentinels in this process."""
     started = time.monotonic()
     cases = discover_cases(tests_dir)
-    _, identity_hash = _require_discovery(cases, manifest)
+    _require_discovery(cases, manifest)
     by_id = {}
     for case in cases:
         by_id.setdefault(case.id(), []).append(case)
@@ -457,7 +461,7 @@ def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 
             "version": sys.version.split()[0],
             "executable": sys.executable,
         },
-        "discovery": {"count": len(cases), "sha256": identity_hash},
+        "discovery": {"count": len(cases)},
         "sentinels": {"count": len(entries)},
         "boundaries": boundaries,
         "outcomes": outcomes,
@@ -468,7 +472,7 @@ def run_exhaustive(tests_dir: Path, manifest: dict, stream=None, verbosity: int 
     """Run every discovered case sequentially as the compatibility oracle."""
     started = time.monotonic()
     cases = discover_cases(tests_dir)
-    _, identity_hash = _require_discovery(cases, manifest)
+    _require_discovery(cases, manifest)
     result = unittest.TextTestRunner(
         stream=stream if stream is not None else sys.stderr, verbosity=verbosity
     ).run(unittest.TestSuite(cases))
@@ -482,7 +486,7 @@ def run_exhaustive(tests_dir: Path, manifest: dict, stream=None, verbosity: int 
         "interpreter": {
             "pid": os.getpid(), "version": sys.version.split()[0], "executable": sys.executable,
         },
-        "discovery": {"count": len(cases), "sha256": identity_hash},
+        "discovery": {"count": len(cases)},
         "outcomes": _summary([result]),
         "wall_time_seconds": round(time.monotonic() - started, 6),
         "ok": result.wasSuccessful(),

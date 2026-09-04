@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import io
 import json
 import logging
@@ -71,10 +70,8 @@ class TestSelectedDiscovery(unittest.TestCase):
             encoding="utf-8",
         )
         identities = json.loads(probe.stdout)
-        encoded = "\n".join(identities).encode("utf-8")
-        self.assertEqual(len(identities), manifest["discovery"]["count"])
-        self.assertEqual(hashlib.sha256(encoded).hexdigest(), manifest["discovery"]["sha256"])
         self.assertEqual(identities, manifest["discovery"]["identities"])
+        self.assertEqual(["identities"], sorted(manifest["discovery"]))
 
     def test_every_selected_identity_exists_exactly_once(self):
         manifest = run_serial_compat.load_manifest(MANIFEST)
@@ -149,7 +146,7 @@ class TestSelectedDiscovery(unittest.TestCase):
                 encoding="utf-8",
             )
             manifest = {
-                "discovery": {"count": 2, "sha256": "wrong"},
+                "discovery": {"identities": ["test_drift.Drift.test_vanished"]},
                 "sentinels": [{"id": "test_drift.Drift.test_one", "module": "test_drift"}],
                 "mutation_owners": [],
             }
@@ -298,11 +295,7 @@ class TestExhaustiveObservation(unittest.TestCase):
             )
             cases = run_serial_compat.discover_cases(tests_dir)
             identities = sorted(case.id() for case in cases)
-            manifest = {"discovery": {
-                "count": len(identities),
-                "sha256": hashlib.sha256("\n".join(identities).encode()).hexdigest(),
-                "identities": identities,
-            }}
+            manifest = {"discovery": {"identities": identities}}
             record = run_serial_compat.run_exhaustive(
                 tests_dir, manifest, stream=io.StringIO()
             )

@@ -1,6 +1,5 @@
 {
  "discovery": {
-  "count": 2125,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -926,6 +925,8 @@
    "test_serial_manifest.TestCommittedManifest.test_the_loader_accepts_the_committed_file_and_names_what_it_refuses",
    "test_serial_manifest.TestCommittedManifest.test_the_policy_names_every_ruling_the_loader_accepts",
    "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_is_marked",
+   "test_serial_manifest.TestRegeneration.test_a_roster_regeneration_would_respell_aborts_the_write",
+   "test_serial_manifest.TestRegeneration.test_regeneration_drops_a_sentinel_whose_id_no_longer_discovers",
    "test_serial_manifest.TestRegeneration.test_regeneration_replaces_stale_discovery_with_the_live_multiset",
    "test_serial_manifest.TestRegeneration.test_the_marker_is_a_restoration_the_loader_can_never_accept",
    "test_serial_manifest.TestRegeneration.test_the_rendered_manifest_keeps_key_order_indent_and_lf_newlines",
@@ -2127,8 +2128,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_a_pure_lf_ticket_is_still_pure_lf_after_the_stamp",
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
-  ],
-  "sha256": "6e44d208d14f12f55dc55be5c9aecab776c991ef7e63f2a596c7b60d28cc8d69"
+  ]
  },
  "mutation_owners": [
   {
