@@ -87,7 +87,7 @@ else:  # pragma: no cover - direct/installed flat script path
         _tickets_root, _writer_identity, segment_refusal,
     )
 
-# The three sentences a frame's driver has to hold for the whole run, printed
+# The four sentences a frame's driver has to hold for the whole run, printed
 # by the command that opens the frame rather than copied into each workflow
 # body: a paraphrase per body is a chance for each to drift with no way for a
 # reader to tell which wording was the law.
@@ -100,6 +100,10 @@ FRAME_LAW = (
     "Close with `tickets.py frame-close <run> <frame> --done <command>` run "
     "outside the children; a close over two or more `do` children needs a "
     "judging child or an `unjudged: <reason>` line.",
+    "Judge once, at the end: a unit lands on its own `done`, and after "
+    "the last wave one judging child reads the joined tip with every "
+    "unit's artifact together; its blocking findings get one bounded "
+    "repair, then the close gate.",
 )
 
 FRAME_OPEN_USAGE = (
@@ -314,9 +318,9 @@ def _judgement_refusal(run: str, frame_id: str, census: dict, reason: str):
         f"frame {run}/{frame_id} closes over {len(census['do'])} do-children "
         f"({', '.join(census['do'])}) and its subtree holds no judge: nobody "
         "has read those artifacts together, and this close would record that "
-        "silently. Open one `tickets.py judge` under this frame, or write one "
-        "`unjudged: <reason>` line into its journal (## Report) and close "
-        "again. Nothing was recorded."
+        "silently. Open one `tickets.py judge` under this frame over the "
+        "joined tip, or write one `unjudged: <reason>` line into its journal "
+        "(## Report) and close again. Nothing was recorded."
     )}
 
 
