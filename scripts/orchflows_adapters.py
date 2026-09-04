@@ -13,7 +13,7 @@ before the model saw anything would make a cloned repository an execution
 surface, and orchflows cannot gate a host's own loading of a committed
 `.claude/skills/`.
 
-Packs and sheets get no adapter: both are stamped on a ticket and never
+Standards get no adapter: both are stamped on a ticket and never
 invoked by name, so either in a host's skill list would be a name that
 cannot be called crowding the names that can. `ADAPTED_KINDS` decides that
 for every kind at once.

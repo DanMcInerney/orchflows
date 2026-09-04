@@ -9,7 +9,7 @@ invented for this library.
 
 ## Structure
 
-- **tier** — one of four layers: T0 contracts, T1 skills, T2 packs, T3
+- **tier** — one of four layers: T0 contracts, T1 skills, T2 standards, T3
   workflows. T0 is the only data interface between them; a higher
   tier may still name a lower one's files and skills, per
   `ARCHITECTURE.md`'s dependency direction. A role's capability is a
@@ -17,14 +17,14 @@ invented for this library.
 - **contract** — a T0 file defining a pure data shape. Its generated
   table is rendered from `contracts/shapes.json`.
 - **waist** — the T0 layer as a whole: the one narrow interface many hosts
-  sit below and many packs and workflows sit above.
+  sit below and many standards and workflows sit above.
 - **skill** — one callable package: a directory whose `SKILL.md` states a
   contract in Require / procedure / Never / Return anatomy.
 - **body** — a skill's procedure text: the always-paid part of its
   `SKILL.md`, budgeted by `rules/token-economy.md`.
 - **surface** — a text a reader loads automatically, never fetched on
   demand: the host block, `AGENTS.md`, a role agent file, a kernel
-  body, a pack's craft. `rules/token-economy.md` §11 orders every
+  body, a standard's. `rules/token-economy.md` §11 orders every
   surface by load frequency; each ceiling is owned by the dev-only
   tools/validate_support/common.py (`SURFACE_BUDGET`,
   `ROUTING_BLOCK_BUDGET`, `ROLE_AGENT_BUDGET`, `BODY_BUDGET`).
@@ -35,14 +35,14 @@ invented for this library.
 - **callable** — one of the two T1 kernel skills under `skills/kernel/`,
   `orch-do` and `orch-judge`, that do all real work. Each is invoked
   through one minting command — `tickets.py do` and `tickets.py judge` —
-  which mints the ticket, seals it through its parent, pins the pack
+  which mints the ticket, seals it through its parent, pins the standard
   digest, takes the lease, establishes the workspace, and emits the
   launch, in that one command.
 - **frame** — one workflow invocation's durable stack frame: the ticket
   carrying `frame: true` that `tickets.py frame-open` opens and
-  `tickets.py frame-close` closes. It binds no executor and stamps no pack,
+  `tickets.py frame-close` closes. It binds no executor and stamps no standard,
   because the orchestrator session drives it and a journal is not
-  craft-governed work; `contracts/work-item.md` owns the marker, the close
+  standard-governed work; `contracts/work-item.md` owns the marker, the close
   refusal, and the **parent** link that makes the ticket tree the call tree.
   `orchflows resume` lists this project's open frames.
 - **journal** — a frame's `## Report`: the driver's own working memory,
@@ -52,7 +52,7 @@ invented for this library.
   after a crash.
 - **typed artifact line** — the one machine line a callable's child prints
   for its result, `artifact: <kind>:<identity>`, the kind fixed by the
-  stamped pack's adapter; a `judge` ticket's child prints `findings: <path>`
+  stamped standard's adapter; a `judge` ticket's child prints `findings: <path>`
   beside it. The
   grammar, the kinds, and what a join grades are `contracts/dispatch.md`'s.
   A parent relays the line as it stands — paraphrase is the failure it
@@ -60,26 +60,32 @@ invented for this library.
 - **checker** — `orch-judge`: the planner-role
   callable rendering findings or verdicts over a fixed artifact and never
   a deliverable; it is exempt from the envelope per `rules/composition.md`.
-- **pack** — a T2 package of pure data satisfying the pack signature; a pack
-  binds cells and never contains control flow.
-- **cell** — one field of the pack signature: `adapter`, the typed
-  workspace-mechanism key, and `craft`, the one document pointer; the
-  signature (below) owns the roster.
-- **craft section** — one `##` section of a pack's craft document, resolved
-  whole through `packs.py cells <digest>`. The signature's craft-section
-  table names the mandatory ones; every callable reads the whole document.
-  `## Lens` is keyed by artifact kind: one `###` entry per kind the domain
-  produces — the library-owned `root` and `cut`, then the pack adapter's
-  own; the signature owns what an entry states. The kind a call is for names
+- **standard** — a T2 item of pure prose stating what a good artifact
+  carries in one domain: one manifest at `standards/<name>/STANDARD.md`,
+  stamped on a ticket, digest-pinned at issue and read whole at that digest
+  by that ticket's maker and its judge. It states knowledge, never control
+  flow. `contracts/standard.md` owns its frontmatter, its `##` section
+  table, its word ceiling and its digest. `## Lens` is keyed by artifact
+  kind: one `###` entry per kind the domain produces — the library-owned
+  `root` and `cut`, then the adapter's own. The kind a call is for names
   its entry: a making `orch-do` makes toward the adapter's, a planning one
-  toward `### root` or `### cut`, and `orch-judge` checks against the
-  entry its typed artifact lines name.
-- **signature** — `contracts/pack-signature.md`: the cells every pack must
-  provide and the sharing constraints between them.
-- **adapter** — a pack-declared workspace mechanism key from a closed
+  toward `### root` or `### cut`, and `orch-judge` checks against the entry
+  its typed artifact lines name.
+- **root** — a standard naming no `narrows:`. It introduces its domain, so
+  it declares the adapter, it is the only kind routing resolves, and it is
+  the only one the section table lets carry `## Workspace`, `## Spec
+  fields` and `## Stages`.
+- **narrowing** — a standard naming exactly one other in `narrows:`, which
+  is how specificity cascades: `three-js` narrows `javascript` narrows
+  `code`. The chain resolves broad to narrow and every level is pinned. A
+  narrowing only tightens: where its clause would permit what a broader
+  standard forbids, the broader wins and the judge reports a
+  `standard-defect` — the standard is the defect, not the artifact.
+  Nothing resolves one automatically; it arrives because an author named it.
+- **adapter** — a standard-declared workspace mechanism key from a closed
   registry (git candidate, evidence store, …); it fixes the identity
-  form and artifact-line prefix a pack's children print
-  (`contracts/pack-signature.md`'s `adapter` cell,
+  form and artifact-line prefix a standard's children print
+  (`contracts/standard.md`'s `adapter` cell,
   `scripts/tickets_adapters.py`'s registry).
 - **workflow** — a skill whose prose calls callables or other skills: a
   `SKILL.md` under `example-workflows/` (the library's gallery) or a ring's
@@ -98,13 +104,8 @@ invented for this library.
   is where that job's `tools.txt` requirements are declared.
 - **idiom** — a control-flow sentence whose wording recurs across workflows,
   fixed once in `docs/custom-workflow-authoring.md` and quoted verbatim
-  rather than paraphrased; a pack's craft names its own domain's idiom in
-  that pack's namespace.
-- **sheet** — extra craft stamped on one ticket beside its pack: a ring item
-  of kind `sheet` at `sheets/<name>/SHEET.md`, digest-pinned at issue and
-  read at that digest by that ticket's maker and its judge. It only tightens
-  the stamped pack's craft; `contracts/sheet.md` owns its shape, budget and
-  the `sheet-defect` finding a loosening earns.
+  rather than paraphrased; a standard's names its own domain's idiom in
+  that standard's namespace.
 - **applied skill** — a ring skill a ticket pins in its `skill` field, run as
   the method inside the kernel contract the ticket's `executor` names:
   `orch-do` or `orch-judge` still owns Require, Never and Return, and an
@@ -116,10 +117,10 @@ invented for this library.
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
   their scope; bounds per `docs/custom-workflow-authoring.md`.
-- **ring** — one of four fixed lookup roots a custom skill, pack, sheet,
-  or workflow resolves through — project, home, imports, lib — nearest
+- **ring** — one of four fixed lookup roots a custom skill, standard or
+  workflow resolves through — project, home, imports, lib — nearest
   ring wins on a same name; `scripts/rings.py` is the sole resolver.
-- **bundle** — one ring's directory tree of skill/pack/sheet/workflow items:
+- **bundle** — one ring's directory tree of skill/standard/workflow items:
   the unit `imports.lock` pins and the trust ledger (below) grants or
   refuses by content digest (`scripts/rings.py`, `scripts/rings_trust.py`).
 - **trust ledger** — `~/.orchflows/trust.json`, outside every repository
@@ -137,8 +138,6 @@ invented for this library.
 - **call edge** — a resolved backticked skill name in a skill body; the call
   graph is acyclic. A `Require` item riding a named T0 field instead is
   **carriage**, rule 10 of `rules/composition.md`.
-- **craft** — the pack cell owning a domain's vocabulary and shape
-  principles; cell contract in `contracts/pack-signature.md`.
 
 ## Work
 
@@ -158,8 +157,8 @@ invented for this library.
   `rules/verification.md` §8 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
   `contracts/work-item.md`; a planning `orch-do` is its only editor, at
-  intake, and every later reader treats it as frozen. The stamped pack's
-  craft names what one carries in its `## Spec fields` section.
+  intake, and every later reader treats it as frozen. The stamped standard's
+  standard names what one carries in its `## Spec fields` section.
 - **semantic root** — the executable delivery contract owned by the caller,
   not the spec's general vision. `rules/delegation.md` owns which facts the
   caller freezes and which deterministic corrections a decomposer may make;
@@ -173,10 +172,10 @@ invented for this library.
 - **exemplar** — an artifact a root ticket's `## Context` names to
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
-- **stamp** — the pack fixed at intake, carried by a ticket's `pack`
+- **stamp** — the standard fixed at intake, carried by a ticket's `standard`
   field, which every later reader takes blind.
 - **domain** — the deliverable's kind (code, content, research,
-  design, data); selects an item's pack and review lens, per [topology](../rules/topology.md) §§5–6.
+  design, data); selects an item's standard and review lens, per [topology](../rules/topology.md) §§5–6.
 - **work item / ticket** — a sealed Goal, Context, optional Details,
   lifecycle, and graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
@@ -242,7 +241,7 @@ invented for this library.
   fresh cut cannot yet satisfy (a dangling dependency, an unsealed
   assignment).
 - **workspace** — where results live and what identities mean there (git
-  revisions, doc slots, evidence store), per the pack craft's `## Workspace`
+  revisions, doc slots, evidence store), per the standard's `## Workspace`
   section.
 - **candidate worktree** — the derived tree an isolation-`required` item works
   in, at the path and branch `scripts/state_root.py` derives from the run and
@@ -278,7 +277,7 @@ invented for this library.
   `contracts/verdict.md`; a property of a structured evaluation method.
 - **independence** — acceptance evidence originating outside the executing
   context through exactly one ordinary path; law in `rules/verification.md`
-  §7. Research craft narrows the term for sources: no shared upstream.
+  §7. Research standard narrows the term for sources: no shared upstream.
 - **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
 - **evidence** — methods, observations, sources, captures, or other records
   demonstrating or challenging Goal at a fixed artifact identity.
@@ -315,8 +314,8 @@ result**, **evaluation mode** and **incumbent** (the `evolve`
 workflow).
 
 - **seam** — a boundary where behavior can differ or leak and must be
-  checked explicitly: a public code boundary (each pack's craft
-  narrows this per domain, e.g. `packs/orch-code-pack/references/craft.md`)
+  checked explicitly: a public code boundary (each standard's
+  narrows this per domain, e.g. `standards/orch-code/STANDARD.md`)
   or a process boundary state can cross — the dev-only
   tools/run_serial_compat.py's closed seam set (cwd, environment,
   import-path, …).

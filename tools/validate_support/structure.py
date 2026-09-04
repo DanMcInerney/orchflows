@@ -4,7 +4,7 @@ from __future__ import annotations
 from . import common as __dep_common
 CALL_TOKEN_RE = __dep_common.CALL_TOKEN_RE
 CARRIAGE_SENTENCE_SPLIT_RE = __dep_common.CARRIAGE_SENTENCE_SPLIT_RE
-CRAFT_BUDGET = __dep_common.CRAFT_BUDGET
+STANDARD_BUDGET = __dep_common.STANDARD_BUDGET
 DESCRIPTION_BUDGET = __dep_common.DESCRIPTION_BUDGET
 ENVELOPE_UNITS = __dep_common.ENVELOPE_UNITS
 ENVELOPE_VOCAB_RES = __dep_common.ENVELOPE_VOCAB_RES
@@ -39,14 +39,29 @@ _split_frontmatter = __dep_packages._split_frontmatter
 body_words = __dep_packages.body_words
 parse_frontmatter = __dep_packages.parse_frontmatter
 rel = __dep_packages.rel
-def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
-    craft = pkg["path"] / "references" / "craft.md"
-    if not craft.is_file():
-        diag.warn(rel(craft), SKIPPED)
+def validate_standard_budget(manifest, diag: Diagnostics) -> None:
+    """One manifest against `STANDARD_BUDGET` (contracts/standard.md rule 4).
+
+    The one ceiling for both kinds: a root and a narrowing are one format
+    under one set of rules, and what stops a narrowing growing into a
+    second owner of a domain is the section table, not a smaller number.
+    Words over the whole file, frontmatter counted, because a line ceiling
+    is met by writing longer lines, and this check reads the manifest
+    whichever kind it is.
+    """
+
+    if not manifest.is_file():
+        diag.warn(rel(manifest), SKIPPED)
         return
-    n = sum(1 for ln in _read_source(craft).split("\n") if ln.strip())
-    if n > CRAFT_BUDGET:
-        diag.error(rel(craft), f"craft reference has {n} non-empty lines, exceeds the craft budget of {CRAFT_BUDGET}")
+    n = len(_read_source(manifest).split())
+    if n > STANDARD_BUDGET:
+        diag.error(
+            rel(manifest),
+            f"standard has {n} words, exceeds the standard budget of "
+            f"{STANDARD_BUDGET}",
+        )
+
+
 def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     for match in MD_LINK_RE.finditer(body):
@@ -79,7 +94,7 @@ def build_call_graph(packages, diag: Diagnostics, known=None):
             if token in ROLE_PROFILES:
                 continue
             if token not in names:
-                diag.error(file_label, f"backtick reference `{token}` does not resolve to any skill or pack")
+                diag.error(file_label, f"backtick reference `{token}` does not resolve to any skill or standard")
                 continue
             graph[pkg["path"].name].add(token)
     return graph
@@ -129,14 +144,14 @@ def validate_call_graph(packages, diag: Diagnostics, known=None) -> None:
 
 
 def validate_domain_blindness(packages, diag: Diagnostics) -> None:
-    """Reject pack-owned names in executable machinery.
+    """Reject standard-owned names in executable machinery.
 
-    Pack directories are the data owner for both their canonical identity and
+    Standard directories are the data owner for both their canonical identity and
     their executor/assembly names.  Reading those names from the discovered
-    pack signatures keeps this check extensible: adding a pack automatically
+    standard signatures keeps this check extensible: adding a standard automatically
     expands the invariant without editing validator code.
     """
-    names = {pkg["path"].name for pkg in packages if pkg["is_pack"]}
+    names = {pkg["path"].name for pkg in packages if pkg["is_standard"]}
     if not names:
         return
     for directory_name in ("scripts", "tools"):
@@ -150,7 +165,7 @@ def validate_domain_blindness(packages, diag: Diagnostics) -> None:
                 diag.error(
                     rel(path),
                     f"domain-specific name `{name}` appears in machinery; "
-                    "select behavior through pack data",
+                    "select behavior through standard data",
                 )
 
 
@@ -412,7 +427,7 @@ def validate_templates(diag: Diagnostics, roots=None) -> None:
 # "iteration", so noun mentions carry no bound obligation (review thread T7).
 
 __all__ = (
-    'validate_craft_budget', 'validate_reference_links', 'build_call_graph', 'find_cycle',
+    'validate_standard_budget', 'validate_reference_links', 'build_call_graph', 'find_cycle',
     'validate_call_graph', 'validate_domain_blindness', '_envelope_first_clause', '_envelope_missing',
     'validate_envelope', 'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
     'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE',

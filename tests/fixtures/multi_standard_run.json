@@ -1,0 +1,55 @@
+{
+  "run": "multi-standard-run",
+  "tickets": [
+    {
+      "id": "01-research",
+      "standard": "orch-research",
+      "adapter": "evidence-store",
+      "artifact_kind": "evidence",
+      "workspace": "research/multi-standard-run",
+      "artifact_identity": "evidence:multi-standard-run:01-research",
+      "depends_on": [],
+      "context_identities": []
+    },
+    {
+      "id": "02-draft",
+      "standard": "orch-content",
+      "adapter": "document-tree",
+      "artifact_kind": "doc",
+      "workspace": "documents/multi-standard-run/draft.md",
+      "artifact_identity": "doc:documents/multi-standard-run/draft.md@sha256:02draft",
+      "depends_on": ["01-research"],
+      "context_identities": ["evidence:multi-standard-run:01-research"]
+    },
+    {
+      "id": "03-render",
+      "standard": "orch-design",
+      "adapter": "git",
+      "artifact_kind": "git",
+      "workspace": "candidates/multi-standard-run/render",
+      "artifact_identity": "git:03render00000000000000000000000000000000",
+      "depends_on": ["02-draft"],
+      "context_identities": ["doc:documents/multi-standard-run/draft.md@sha256:02draft"]
+    }
+  ],
+  "joins": [
+    {
+      "id": "01-research",
+      "adapter": "evidence-store",
+      "artifact_kind": "evidence",
+      "artifact_identity": "evidence:multi-standard-run:01-research"
+    },
+    {
+      "id": "02-draft",
+      "adapter": "document-tree",
+      "artifact_kind": "doc",
+      "artifact_identity": "doc:documents/multi-standard-run/draft.md@sha256:02draft"
+    },
+    {
+      "id": "03-render",
+      "adapter": "git",
+      "artifact_kind": "git",
+      "artifact_identity": "git:03render00000000000000000000000000000000"
+    }
+  ]
+}

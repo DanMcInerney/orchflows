@@ -10,7 +10,7 @@ successfully without writing anything. ``CLAUDE_CONFIG_DIR``, ``CODEX_HOME`` and
 - ``~/.orchflows/`` (private Python runtime, library, scripts, receipt, the
   rendered ``host-block.md``). The library also carries a flat, host-agnostic
   ``lib/by-name/<orch-name>/SKILL.md`` index: one deterministic path per
-  canonical package (every skill tier plus packs), each a redirect pointer to
+  canonical package (every skill tier plus standards), each a redirect pointer to
   its tiered source so a name resolves without guessing a sublayer. The
   pointer never copies the body, so it carries no relative links — an agent
   follows it to the tiered file, where every ``references/`` and ``../../../``
@@ -161,14 +161,13 @@ from installer.packages import (
     accepted_source_commit,
     FORK_ARRIVAL_CLAUSE,
     ROLE_INSTRUCTIONS,
-    SHEET_MANIFEST_FILE,
     WORKFLOW_SKILL_FILE,
     _git_dirs,
     _role_description,
     by_name_pointer_text,
     claude_role_adapter_text,
     discover_packages,
-    discover_sheets,
+    discover_standards,
     discover_workflow_skills,
     frontmatter_field,
     host_legal_frontmatter,

@@ -39,8 +39,8 @@ SEARCH_PROTOCOL = ROOT / "docs" / "search-plan-protocol.md"
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 EXECUTOR_RE = re.compile(r"^executor:\s*(\S+)", re.MULTILINE)
-# One callable call as the prose writes it: the verb, then the pack it stamps.
-CALLABLE_CALL_RE = re.compile(r"\b(do|judge)(?: <run>)? --pack ")
+# One callable call as the prose writes it: the verb, then the standard it stamps.
+CALLABLE_CALL_RE = re.compile(r"\b(do|judge)(?: <run>)? --standard ")
 
 
 def canonical_bytes(value):
@@ -371,7 +371,7 @@ def normalized(text: str) -> str:
 
 # The restart controls no script can observe -- the controller's, not the
 # module's -- each pinned by the term that distinguishes its clause rather than
-# by the sentence spelling it (`packs/orch-code-pack/references/craft.md`):
+# by the sentence spelling it (`standards/orch-code/STANDARD.md`):
 # `before delegation` is the ordering the `in_flight` record must keep (the
 # field name itself recurs in the restart clause, so it cannot tell the two
 # apart), `redispatch` the verb a restart forbids, `every archive member` what
@@ -428,7 +428,7 @@ def recursive_target_errors(evolve: str, generation: str, tournament: str):
 def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str):
     errors = []
     combined_evolve = evolve + generation
-    # Who runs each step is the pack the callable call stamps, read off the
+    # Who runs each step is the standard the callable call stamps, read off the
     # call line the prose writes. `judge` twice: eligibility opens the
     # campaign, the final score card closes it; `do` twice: the frozen
     # evaluation, then the per-candidate write. Since P3 the *scorer* was
@@ -444,7 +444,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         errors.append("evolve-call-graph")
     admission = evolve.partition("Admit the incumbent")[2].partition("Generations,")[0]
     generations = evolve.partition("Generations,")[2].partition("Close the campaign")[0]
-    if "judge --pack" not in admission:
+    if "judge --standard" not in admission:
         errors.append("eligibility-unit")
     # The generations reuse the admission verdicts rather than re-taking
     # them: each candidate is handed that judge's findings unaltered.
@@ -460,7 +460,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         if demoted in combined_evolve:
             errors.append("judge-owner")
             break
-    # A workflow binds its executor in the callable call's `--pack`; a
+    # A workflow binds its executor in the callable call's `--standard`; a
     # backticked callable name in the prose is the second grammar P4 removed.
     if set(CALL_EDGE_RE.findall(combined_evolve)):
         errors.append("evolve-call-edge")

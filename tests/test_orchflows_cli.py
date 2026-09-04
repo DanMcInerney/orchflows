@@ -70,7 +70,7 @@ class SyncTests(unittest.TestCase):
             code, output = _run("sync")
 
             self.assertEqual(0, code, output)
-            for name in ("skills", "packs", "workflows", "imports"):
+            for name in ("skills", "standards", "workflows", "imports"):
                 self.assertTrue((home / name).is_dir(), name)
             self.assertTrue((home / "lib.version").is_file())
             self.assertTrue((home / ".gitignore").is_file())
@@ -198,24 +198,31 @@ class AddTests(unittest.TestCase):
 
 
 class NewTests(unittest.TestCase):
-    def test_a_new_pack_is_a_valid_pack_the_day_it_is_written(self):
+    def test_a_new_root_is_a_valid_standard_the_day_it_is_written(self):
         with _home() as home:
             with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
                 (home / "nowhere").mkdir()
-                code, output = _run("new", "pack", "widget-pack")
+                code, output = _run("new", "standard", "widget-standard")
 
             self.assertEqual(0, code, output)
-            skill = home / "packs" / "widget-pack" / "SKILL.md"
-            craft = home / "packs" / "widget-pack" / "references" / "craft.md"
-            self.assertTrue(skill.is_file())
-            body = craft.read_text(encoding="utf-8")
+            manifest = home / "standards" / "widget-standard" / "STANDARD.md"
+            self.assertTrue(manifest.is_file())
+            # One file: the directory holds the manifest and nothing else
+            # (contracts/standard.md `## Location and anatomy`).
+            self.assertEqual(
+                ["STANDARD.md"],
+                sorted(p.name for p in manifest.parent.iterdir()),
+            )
+            body = manifest.read_text(encoding="utf-8")
+            self.assertIn("adapter: git", body.split("---", 2)[1])
             for heading in orchflows_scaffold.sections():
                 self.assertIn(f"## {heading}", body)
             # The Lens is keyed by artifact kind, so a skeleton carrying the
-            # heading and none of the entries is a craft no verb can read.
+            # heading and none of the entries is a standard no verb can read.
             for kind in orchflows_scaffold.lens_entries():
                 self.assertIn(f"### {kind}", body)
-            for retired in ("## Outline", "## Slicing", "## Evidence", "## Shape"):
+            for retired in ("## Standard", "## Outline", "## Slicing", "## Evidence",
+                            "## Shape"):
                 self.assertNotIn(retired, body)
 
     def test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one(self):
@@ -231,41 +238,57 @@ class NewTests(unittest.TestCase):
             self.assertTrue((project / ".orchflows" / "workflows" / "team-flow" / "SKILL.md").is_file())
             self.assertIn("orchflows trust", output)
 
-    def test_a_new_sheet_is_a_valid_sheet_the_day_it_is_written(self):
+    def test_a_new_standard_is_a_valid_standard_the_day_it_is_written(self):
         """The scaffold's whole promise, on the kind that has no host
-        surface to notice a defect later: what `orchflows new sheet` writes
-        passes the library validator's sheet checks unedited.
+        surface to notice a defect later: what `orchflows new standard` writes
+        passes the library validator's root checks unedited.
 
         It is graded by the real checks against a tree holding the real
-        `packs/`, not by a re-listing of the anchors here -- a skeleton that
-        named a pack no install carries, or keyed its `## Lens` by a kind
-        that pack's adapter never emits, would satisfy an anchor list and
-        still be a sheet no ticket could stamp.
+        `standards/`, not by a re-listing of the anchors here -- a skeleton
+        whose frontmatter named an unregistered adapter, or whose sections
+        the section table refuses, would satisfy an anchor list and still be
+        a standard no ticket could stamp.
         """
 
+        from tools.validate_support import names as validate_names
         from tools.validate_support import packages as validate_packages
-        from tools.validate_support import sheets as validate_sheets
+        from tools.validate_support import standards as validate_standards
 
         with _home() as home:
             with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
                 (home / "nowhere").mkdir()
-                code, output = _run("new", "sheet", "market-brief")
+                code, output = _run("new", "standard", "widget-brief")
 
             self.assertEqual(0, code, output)
-            manifest = home / "sheets" / "market-brief" / "SHEET.md"
+            manifest = home / "standards" / "widget-brief" / "STANDARD.md"
             self.assertTrue(manifest.is_file())
 
             graded = home / "graded"
-            (graded / "sheets").mkdir(parents=True)
-            shutil.copytree(ROOT / "packs", graded / "packs")
-            shutil.copytree(manifest.parent, graded / "sheets" / "market-brief")
+            graded.mkdir(parents=True)
+            shutil.copytree(ROOT / "standards", graded / "standards")
+            shutil.copytree(manifest.parent, graded / "standards" / "widget-brief")
             diag = validate_packages.Diagnostics()
-            for module in (validate_packages, validate_sheets):
+            modules = (validate_packages, validate_names, validate_standards)
+            for module in modules:
                 module.ROOT = graded
             try:
-                validate_sheets.validate_sheets(diag)
+                scaffolded = [
+                    pkg for pkg in validate_packages.discover_packages()
+                    if pkg["path"].name == "widget-brief"
+                ]
+                self.assertEqual(1, len(scaffolded), "the skeleton is a root")
+                pkg = scaffolded[0]
+                text = validate_packages._read_source(pkg["skill_md"])
+                fm, body = validate_packages.parse_frontmatter(
+                    text, validate_packages.rel(pkg["skill_md"]), diag,
+                )
+                pkg["frontmatter"], pkg["body"] = fm or {}, body or ""
+                validate_packages.validate_frontmatter(fm, pkg, diag)
+                validate_packages.validate_anatomy(body, pkg, diag)
+                validate_standards.validate_standard_adapter(fm, pkg, diag)
+                validate_names.validate_standard_sections([pkg], diag)
             finally:
-                for module in (validate_packages, validate_sheets):
+                for module in modules:
                     module.ROOT = ROOT
             self.assertEqual([], diag.lines())
 
@@ -284,7 +307,7 @@ class ListTests(unittest.TestCase):
         with _home() as home, tempfile.TemporaryDirectory() as raw:
             project = Path(raw).resolve()
             (project / ".git").mkdir()
-            for directory in ("skills", "packs", "workflows"):
+            for directory in ("skills", "standards", "workflows"):
                 (home / directory).mkdir(parents=True, exist_ok=True)
             (home / "workflows" / "team-flow").mkdir(parents=True)
             (home / "workflows" / "team-flow" / "SKILL.md").write_text(
@@ -340,36 +363,36 @@ class ListTests(unittest.TestCase):
                 )
                 self.assertEqual("workflow", rows[0][0])
 
-    def test_a_sheet_is_listed_like_every_other_ring_item(self):
-        """A sheet has no host surface, so `list` is the only place a user
+    def test_a_standard_is_listed_like_every_other_ring_item(self):
+        """A standard has no host surface, so `list` is the only place a user
         sees one at all: absent from the inventory it is an item that
         resolves and cannot be found."""
 
         with _home() as home:
-            (home / "sheets" / "market-brief").mkdir(parents=True)
-            (home / "sheets" / "market-brief" / "SHEET.md").write_text(
+            (home / "standards" / "market-brief").mkdir(parents=True)
+            (home / "standards" / "market-brief" / "STANDARD.md").write_text(
                 "---\nname: market-brief\n---\n", encoding="utf-8",
             )
 
             with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
                 (home / "nowhere").mkdir()
-                code, output = _run("list", "--kind", "sheet")
+                code, output = _run("list", "--kind", "standard")
 
             self.assertEqual(0, code, output)
             self.assertEqual(
-                ["sheet", "market-brief", "home"], _row(output, "market-brief")[:3],
+                ["standard", "market-brief", "home"], _row(output, "market-brief")[:3],
             )
 
     def test_list_names_a_reserved_ring_item_rather_than_hiding_it(self):
         with _home() as home:
-            (home / "packs" / "orch-widget-pack").mkdir(parents=True)
-            (home / "packs" / "orch-widget-pack" / "SKILL.md").write_text(
-                "---\nname: orch-widget-pack\n---\n", encoding="utf-8",
+            (home / "standards" / "orch-widget-standard").mkdir(parents=True)
+            (home / "standards" / "orch-widget-standard" / "STANDARD.md").write_text(
+                "---\nname: orch-widget-standard\n---\n", encoding="utf-8",
             )
 
             with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
                 (home / "nowhere").mkdir()
-                code, output = _run("list", "--kind", "pack")
+                code, output = _run("list", "--kind", "standard")
 
             self.assertEqual(0, code, output)
             self.assertIn("refused", output)
@@ -380,7 +403,7 @@ class TrustCommandTests(unittest.TestCase):
     def test_trust_and_untrust_move_the_ledger_and_nothing_else(self):
         with _home() as home, tempfile.TemporaryDirectory() as raw:
             bundle = Path(raw).resolve() / ".orchflows"
-            (bundle / "packs").mkdir(parents=True)
+            (bundle / "standards").mkdir(parents=True)
 
             code, granted = _run("trust", str(bundle))
             self.assertEqual(0, code, granted)
@@ -394,7 +417,7 @@ class TrustCommandTests(unittest.TestCase):
     def test_trust_once_is_spent_and_says_so(self):
         with _home(), tempfile.TemporaryDirectory() as raw:
             bundle = Path(raw).resolve() / ".orchflows"
-            (bundle / "packs").mkdir(parents=True)
+            (bundle / "standards").mkdir(parents=True)
 
             code, output = _run("trust", "--once", str(bundle))
 

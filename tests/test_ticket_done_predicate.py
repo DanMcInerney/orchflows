@@ -136,7 +136,7 @@ class LandDonePredicateTest(unittest.TestCase):
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "none",
+            "--standard", "orch-code", "--isolation", "none",
         )
         if done is not None:
             path = self.ticket_path()
@@ -396,7 +396,7 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         ])
         self.assertNotIn("error", result, result)
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"

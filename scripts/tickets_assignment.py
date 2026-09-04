@@ -18,7 +18,7 @@ from pathlib import Path
 if __package__:
     from . import rings
     from .tickets_adapters import (
-        AdapterError, adapter_spec, craft_path, derived_isolation,
+        AdapterError, adapter_spec, manifest_path, derived_isolation,
     )
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_dispatch_launch import resolved_role_profile
@@ -26,7 +26,9 @@ if __package__:
         ARTIFACT_CLAUSE, MAKES_FIELD, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
-    from .tickets_pins import PinError, digests_of, names_of, resolved
+    from .tickets_pins import (
+        STANDARDS_FIELD, adapter_standard, standards_of,
+    )
     from .tickets_registry import EXECUTOR_REGISTRY
     from .tickets_transitions import CHECKABLE_STATUSES
     from .tickets_store import (
@@ -36,7 +38,7 @@ if __package__:
 else:
     import rings
     from tickets_adapters import (
-        AdapterError, adapter_spec, craft_path, derived_isolation,
+        AdapterError, adapter_spec, manifest_path, derived_isolation,
     )
     from tickets_context import graded_admission, run_snapshot
     from tickets_dispatch_launch import resolved_role_profile
@@ -44,7 +46,9 @@ else:
         ARTIFACT_CLAUSE, MAKES_FIELD, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
-    from tickets_pins import PinError, digests_of, names_of, resolved
+    from tickets_pins import (
+        STANDARDS_FIELD, adapter_standard, standards_of,
+    )
     from tickets_registry import EXECUTOR_REGISTRY
     from tickets_transitions import CHECKABLE_STATUSES
     from tickets_store import (
@@ -75,14 +79,14 @@ def _attempt_workspace(data: dict):
 def workspace_establishment_finding(data: dict, workspace):
     """Return the refusal code/detail for a non-established workspace."""
 
-    pack = data.get("pack")
-    if not str(pack or "").strip():
+    standard = adapter_standard(data)
+    if not standard:
         return None
     try:
-        adapter = adapter_spec(pack)
+        adapter = adapter_spec(standard)
     except AdapterError as error:
         return error.code, error.detail
-    required = derived_isolation(data.get("isolation"), pack) == "required"
+    required = derived_isolation(data.get("isolation"), standard) == "required"
     if not required:
         return None
     recorded = _attempt_workspace(data)
@@ -139,22 +143,22 @@ def _dependency_paths(loaded: dict, ticket_path: Path) -> list:
 
 
 def _workspace_line(path: Path):
-    """The craft's own `## Workspace` sentence, collapsed to one line, or None."""
+    """The standard's own `## Workspace` sentence, collapsed to one line, or None."""
 
-    text, failure = _read_utf8(path, "pack craft")
+    text, failure = _read_utf8(path, "standard")
     if failure is not None:
         return None
     collapsed = re.sub(r"\s+", " ", _sections(text).get("Workspace", "")).strip()
     return collapsed or None
 
 
-def _craft(pack):
-    """`(craft_path, workspace_line)` for the stamped pack, or `(None, None)`."""
+def _manifest(standard):
+    """`(manifest path, workspace line)` for one stamped standard, or `(None, None)`."""
 
-    if not str(pack or "").strip():
+    if not str(standard or "").strip():
         return None, None
     try:
-        path = craft_path(pack)
+        path = manifest_path(standard)
     except AdapterError:
         return None, None
     return str(path), _workspace_line(path)
@@ -162,7 +166,7 @@ def _craft(pack):
 
 def _skill_path(executor):
     """The applied skill's own manifest, resolved through the one ring
-    resolver -- the same guarantee `craft_path` already gives the pack."""
+    resolver -- the same guarantee `manifest_path` already gives the standard."""
 
     name = dequote(executor)
     if not name:
@@ -216,55 +220,70 @@ def _declares_environment(item_dir) -> bool:
     return orchflows_envs.requirements_of(item_dir) is not None
 
 
-def _sheets(loaded: dict) -> list:
-    """`[{"name", "path", "digest"}]` for the sheets this ticket stamped."""
+def _standards(loaded: dict) -> list:
+    """`[{"name", "path", "digest"}]` for every level this ticket stamped.
 
-    digests = digests_of(loaded.get("sheet_digests"))
+    Broad to narrow, at the pinned digests rather than at whatever resolves
+    now: a launch that handed the child a fresher file than the one its seal
+    covers would be the substitution the pin exists to prevent. A level that
+    no longer resolves is dropped here and refused at the admission door,
+    which is where a drifted pin is graded.
+    """
+
+    if __package__:
+        from .standards_support import StandardError, resolve_chain
+    else:  # pragma: no cover - direct/installed flat script path
+        from standards_support import StandardError, resolve_chain
+    levels = standards_of(loaded.get(STANDARDS_FIELD))
+    if not levels:
+        return []
+    try:
+        chain = {
+            str(link["name"]): link
+            for link in resolve_chain([name for name, _digest in levels])
+        }
+    except StandardError:
+        return []
     stamped = []
-    for name in names_of(loaded.get("sheets")):
-        try:
-            record = resolved("sheet", name)
-        except PinError:
+    for name, digest in levels:
+        link = chain.get(name)
+        if link is None:
             continue
-        stamped.append({
-            "name": name,
-            "path": str(record["path"]),
-            "digest": digests.get(name, str(record["digest"])),
-        })
+        stamped.append({"name": name, "path": str(link["path"]), "digest": digest})
     return stamped
 
 
-def git_candidate(pack) -> bool:
-    """Whether the landing merges a candidate branch this pack's child
+def git_candidate(standard) -> bool:
+    """Whether the landing merges a candidate branch this standard's child
     committed into."""
 
-    if not str(pack or "").strip():
+    if not str(standard or "").strip():
         return False
     try:
-        return adapter_spec(pack).workspace_strategy == "git"
+        return adapter_spec(standard).workspace_strategy == "git"
     except AdapterError:
         return False
 
 
-def commits_in_place(pack) -> bool:
-    """Whether this pack's child must commit in the tree it stands in for
+def commits_in_place(standard) -> bool:
+    """Whether this standard's child must commit in the tree it stands in for
     its bytes to survive."""
 
-    if not str(pack or "").strip():
+    if not str(standard or "").strip():
         return False
     try:
-        return adapter_spec(pack).commits_in_place
+        return adapter_spec(standard).commits_in_place
     except AdapterError:
         return False
 
 
-def artifact_kind(pack):
-    """The typed artifact prefix the pack's adapter fixes, or None."""
+def artifact_kind(standard):
+    """The typed artifact prefix the standard's adapter fixes, or None."""
 
-    if not str(pack or "").strip():
+    if not str(standard or "").strip():
         return None
     try:
-        return adapter_spec(pack).artifact_kind
+        return adapter_spec(standard).artifact_kind
     except AdapterError:
         return None
 
@@ -283,7 +302,7 @@ def lens_key(loaded: dict, sections: dict):
         })
         if kinds:
             return kinds[0] if len(kinds) == 1 else None
-    return dequote(loaded.get(MAKES_FIELD)) or artifact_kind(loaded.get("pack"))
+    return dequote(loaded.get(MAKES_FIELD)) or artifact_kind(adapter_standard(loaded))
 
 
 def dispatch_assignment(rest, *, attempt=None):
@@ -335,30 +354,34 @@ def dispatch_assignment(rest, *, attempt=None):
     if assigned_name is None:
         return {"error": "dispatch requires the child identity through --by when it differs from the dispatch attempt owner"}
     role, _profile = resolved_role_profile(executor, loaded.get("profile"))
-    pack = loaded.get("pack")
-    craft, workspace_line = _craft(pack)
+    stamped = _standards(loaded)
+    declaring = adapter_standard(loaded)
+    manifest, workspace_line = _manifest(declaring)
     applied = _applied_skill(loaded)
     return {"assignment": {
         "applied_skill": None if applied is None else applied["name"],
         "applied_skill_environment": bool(applied and applied["environment"]),
-        "artifact_kind": artifact_kind(pack),
+        "artifact_kind": artifact_kind(declaring),
         "assigned_name": assigned_name,
         "assignment_seal": None if attempt is None else attempt["assignment_seal"],
-        "commits_in_place": commits_in_place(pack),
-        "craft": craft,
+        "commits_in_place": commits_in_place(declaring),
         "dependencies": _dependency_paths(loaded, ticket_path),
         "dispatch_id": None if attempt is None else attempt["dispatch_id"],
         "executor": executor,
         "executor_script": _executor_script(executor),
-        "git_candidate": git_candidate(pack),
+        "git_candidate": git_candidate(declaring),
         "id": loaded["id"],
         "kernel_contract": None if applied is None else _kernel_contract(executor),
         "lease_expires_at": None if attempt is None else attempt["lease_expires_at"],
         "lens_key": lens_key(loaded, sections),
-        "pack": pack,
+        "manifest": manifest,
+        "other_standards": [
+            level for level in stamped if level["name"] != declaring
+        ],
         "role": role,
         "run": str(loaded.get("run") or run),
-        "sheets": _sheets(loaded),
+        "standard": declaring,
+        "standards": stamped,
         "skill_path": (
             applied["path"] if applied is not None else _skill_path(executor)
         ),

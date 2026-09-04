@@ -25,6 +25,7 @@ from scripts import state_root
 from scripts import tickets
 from scripts.tickets_assignment import workspace_establishment_finding
 from scripts.tickets_format import canonical_json, parse_canonical_json
+from tests.test_ticket_callables import RESEARCH_STANDARD, standards_field
 from scripts.tickets_outcome import DISPATCH_OUTCOME_USAGE
 
 
@@ -50,7 +51,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--profile", "orch-worker",
+            "--standard", "orch-code", "--profile", "orch-worker",
             "--isolation", "required",
         )
         self.run_command("stamp-generation", "run", "T")
@@ -325,7 +326,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         """Frontmatter whose live attempt records `workspace` and nothing else."""
 
         return {
-            "pack": "orch-research-pack",
+            "standards": standards_field(RESEARCH_STANDARD),
             "isolation": "required",
             "dispatch_v1": canonical_json({
                 "protocol": "orchflows.dispatch.v1",
@@ -395,7 +396,7 @@ class DispatchCarriageTest(unittest.TestCase):
             ("new", "run", "T", "--executor", "orch-do",
              "--goal", "Deliver the behavior.",
              "--context", "The repository is authoritative.",
-             "--pack", "orch-code-pack", "--isolation", "none"),
+             "--standard", "orch-code", "--isolation", "none"),
             ("stamp-generation", "run", "T"),
         ):
             self.run_command(*arguments)

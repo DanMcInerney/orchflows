@@ -63,7 +63,7 @@ class TestBenchmarkArchitecture(unittest.TestCase):
         self.assertLess(admit, generations)
         self.assertLess(generations, close)
         for anchor in (admit, close):
-            self.assertIn("judge --pack orch-code-pack", body[anchor:])
+            self.assertIn("judge --standard orch-code", body[anchor:])
         # The loop's exit is a judge verdict, never a `loop:` marker.
         self.assertIn("judge's verdict is the loop's only exit condition", body)
         self.assertNotIn("loop:", body)

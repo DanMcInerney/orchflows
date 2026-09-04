@@ -830,12 +830,12 @@
       "x-governing-identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
       "allOf": [{"$ref": "#/$defs/recordRevision"}],
       "required": [
-        "ordered_artifact_kinds", "packs", "run_identities", "root_identities",
+        "ordered_artifact_kinds", "standards", "run_identities", "root_identities",
         "dependencies", "current_status", "ordered_artifacts"
       ],
       "properties": {
         "ordered_artifact_kinds": {"$ref": "#/$defs/materialField"},
-        "packs": {"$ref": "#/$defs/materialField"},
+        "standards": {"$ref": "#/$defs/materialField"},
         "run_identities": {"$ref": "#/$defs/materialField"},
         "root_identities": {"$ref": "#/$defs/materialField"},
         "dependencies": {"$ref": "#/$defs/materialField"},
@@ -852,11 +852,11 @@
     },
     "successorArtifact": {
       "type": "object",
-      "description": "One proposed artifact and its lawful successor-root coordinates. The kind selects the existing stamped pack; planned changes to opened only when orch-outline materializes the successor under AUTH-05.",
+      "description": "One proposed artifact and its lawful successor-root coordinates. The kind selects the existing stamped standard; planned changes to opened only when orch-outline materializes the successor under AUTH-05.",
       "x-governing-identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
       "additionalProperties": false,
       "required": [
-        "artifact_identity", "artifact_kind", "pack", "run_identity",
+        "artifact_identity", "artifact_kind", "standard", "run_identity",
         "root_identity", "dependencies", "current_status"
       ],
       "properties": {
@@ -864,10 +864,10 @@
         "artifact_kind": {
           "enum": ["research", "prose", "code", "rendered-interface"]
         },
-        "pack": {
+        "standard": {
           "enum": [
-            "orch-research-pack", "orch-content-pack", "orch-code-pack",
-            "orch-design-pack"
+            "orch-research", "orch-content", "orch-code",
+            "orch-design"
           ]
         },
         "run_identity": {"$ref": "#/$defs/stableIdentity"},
@@ -882,19 +882,19 @@
       "allOf": [
         {
           "if": {"properties": {"artifact_kind": {"const": "research"}}},
-          "then": {"properties": {"pack": {"const": "orch-research-pack"}}}
+          "then": {"properties": {"standard": {"const": "orch-research"}}}
         },
         {
           "if": {"properties": {"artifact_kind": {"const": "prose"}}},
-          "then": {"properties": {"pack": {"const": "orch-content-pack"}}}
+          "then": {"properties": {"standard": {"const": "orch-content"}}}
         },
         {
           "if": {"properties": {"artifact_kind": {"const": "code"}}},
-          "then": {"properties": {"pack": {"const": "orch-code-pack"}}}
+          "then": {"properties": {"standard": {"const": "orch-code"}}}
         },
         {
           "if": {"properties": {"artifact_kind": {"const": "rendered-interface"}}},
-          "then": {"properties": {"pack": {"const": "orch-design-pack"}}}
+          "then": {"properties": {"standard": {"const": "orch-design"}}}
         }
       ]
     }

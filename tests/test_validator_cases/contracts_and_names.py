@@ -114,16 +114,16 @@ class TestNameResolution(_IsolatedTree):
         result = self._run()
         self.assertEqual([], self.unresolved(result.stdout))
 
-    def test_a_pack_name_resolves_under_packs(self):
+    def test_a_standard_name_resolves_under_standards(self):
         self._write_skill("orch-real")
-        pack_dir = self.tmp_path / "packs" / "orch-synth-pack"
-        pack_dir.mkdir(parents=True)
-        (pack_dir / "SKILL.md").write_text("---\nname: orch-synth-pack\n"
-                                           "description: a synthetic pack\n---\n",
+        standard_dir = self.tmp_path / "standards" / "orch-synth-standard"
+        standard_dir.mkdir(parents=True)
+        (standard_dir / "STANDARD.md").write_text("---\nname: orch-synth-standard\n"
+                                           "description: a synthetic standard\n---\n",
                                            encoding="utf-8")
-        self._write_rule("1. The stamp is `orch-synth-pack`'s.\n")
+        self._write_rule("1. The stamp is `orch-synth-standard`'s.\n")
         result = self._run()
-        self.assertNotIn("`orch-synth-pack` names no package", result.stdout)
+        self.assertNotIn("`orch-synth-standard` names no package", result.stdout)
 
     def test_the_two_role_names_are_allowed(self):
         self._write_skill("orch-real")
@@ -158,12 +158,13 @@ class TestNameResolution(_IsolatedTree):
             "contracts/synthetic.md",
             "templates/synthetic.md",
             "README.md",
-            # recursive, all three: a stub, a nested reference, a pack
-            # reference and a skill reference are each a file the old
-            # non-recursive glob over four top-level directories never saw
+            # recursive, all three: a stub, a nested reference, a
+            # standard reference and a skill reference are each a file
+            # the old non-recursive glob over four top-level
+            # directories never saw
             "example-workflows/demo/00-step.md",
             "example-workflows/references/protocol.md",
-            "packs/orch-synth-pack/references/craft.md",
+            "standards/orch-synth-standard/references/notes.md",
             "skills/kernel/orch-real/references/notes.md",
         )
         for relative in checked:

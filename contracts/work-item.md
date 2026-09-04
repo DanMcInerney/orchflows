@@ -35,21 +35,23 @@ still apply at the integrated tip.
 Frontmatter is lifecycle and graph state, separate from semantic content:
 
 - `id`, `run`, `status` — stable identity, owning run, and lifecycle state.
-- `executor`, optional `profile`, and `pack` — exact dispatch and
-  role binding. Callable executors are the two registered verbs
+- `executor` and optional `profile` — exact dispatch and role binding.
+  Callable executors are the two registered verbs
   `orch-do` and `orch-judge`;
   `script:<repo-relative path>`
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
-- optional `pack_digest` — the stamped pack's content digest, taken at issue
-  time and never afterwards. Every later command resolves the named pack and
-  refuses when the two differ, so a pack that changed under a sealed
-  assignment, or a nearer ring that came to shadow it, is a refusal rather
-  than a substitution. A ticket naming no pack pins nothing.
-- optional `sheets` and `sheet_digests` — the stamped sheets' names, and the
-  content digest of each, taken at issue beside the pack's. A sheet is extra
-  craft the caller stamps for this one assignment ([sheet.md](sheet.md)); a
-  ticket stamping none carries neither field.
+- optional `standards` — the resolved standard this assignment is governed by,
+  as an ordered `<name>@sha256:<hex>` list, broad to narrow. Each stamped
+  name resolves to a chain by following `narrows:` to a standard carrying
+  none ([standard.md](standard.md)); chains join in the order stamped, a
+  standard reached twice is read once at its first position, and the joined
+  set carries exactly one adapter. Every level's digest is taken at issue
+  time and never afterwards, and every later command re-derives the whole
+  chain and refuses when it differs, so a standard that changed under a
+  sealed assignment — or a nearer ring that came to shadow it, or a
+  `narrows:` edge that moved — is a refusal rather than a substitution. A
+  ticket stamping none carries no field.
 - optional `skill` and `skill_digest` — the applied skill this ticket's
   executor enters as its method, and that skill's content digest at issue.
   `executor` is unchanged: the kernel verb still owns the contract, and the
@@ -65,10 +67,10 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   with no result delta close it `stalled`. A ticket carrying no predicate is
   graded by the driver at the join instead.
 - optional `makes` — the artifact kind a planning `do` produces, `root` or
-  `cut`. Every craft's `## Lens` carries one entry per artifact kind its
+  `cut`. Every standard's `## Lens` carries one entry per artifact kind its
   domain produces, and the dispatch names the entry this child works
-  against: a `do` making the stamped pack's own deliverable takes the kind
-  from the adapter and carries no marker, and a `judge` takes it from the
+  against: a `do` making the resolved standards' own deliverable takes the
+  kind from the adapter and carries no marker, and a `judge` takes it from the
   typed identities on its Context. The marker exists for the one case
   neither answers — a `do` whose deliverable is a frozen root or a cut of
   work items, which no adapter names.
@@ -76,9 +78,9 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   ticket is one call-stack frame: the durable record of one workflow
   invocation, opened by `tickets.py frame-open` and closed by
   `tickets.py frame-close`. A frame binds no `executor` and stamps no
-  `pack`, and both absences are the marker's meaning rather than an
+  `standards`, and both absences are the marker's meaning rather than an
   omission — nothing dispatches a frame, because the orchestrator session
-  is what drives it, and a frame is a journal rather than craft-governed
+  is what drives it, and a frame is a journal rather than standard-governed
   work. `executor` is required of every other ticket and of no frame. Its
   `## Report` is that journal: the driver appends one line per wave through
   `tickets.py result` and re-reads it at the start of the next wave, which
@@ -97,8 +99,9 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   callables, and the parent relays each result forward.
 - `bound` — operational effort bound.
 - `isolation` — the rare explicit workspace override; an absent
-  `isolation` derives its effective value from the stamped pack's adapter
-  (`establishes_isolation`), read through one derivation everywhere.
+  `isolation` derives its effective value from the one adapter the resolved
+  standards declare (`establishes_isolation`), read through one derivation
+  everywhere.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
 - `workspace_branch`, and `workspace_baseline` — lifecycle observations written
@@ -186,8 +189,8 @@ never by itself a rejection: Goal is the acceptance boundary.
 
 `executor` names one registered callable verb or `script:<repo-relative path>`.
 `orch-do` and
-`orch-judge` read the stamped pack's craft and may not import a superseded
-skill body or invent a second pack parser. Anything needing a fresh role or
+`orch-judge` read the resolved standards and may not import a superseded
+skill body or invent a second standard parser. Anything needing a fresh role or
 independent verdict is a new ticket and child. Domains may add facts to
 Context but do not replace the semantic sections.
 
@@ -213,10 +216,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `status` | yes | `pending`, `ready`, `claimed`, `suspended`, `complete`, `blocked`, `stalled`, `failed`, `limited` |
 | `admission` | no | — |
 | `executor` | yes | — |
-| `pack` | no | — |
-| `pack_digest` | no | — |
-| `sheets` | no | — |
-| `sheet_digests` | no | — |
+| `standards` | no | — |
 | `skill` | no | — |
 | `skill_digest` | no | — |
 | `profile` | no | — |

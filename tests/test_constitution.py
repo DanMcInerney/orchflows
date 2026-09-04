@@ -14,7 +14,7 @@ and `docs/documentation.md`'s Bootstrap section remains the write-time
 path an agent actually starts from.
 
 Anchors, not sentences
-(`packs/orch-code-pack/references/craft.md`): each principle is read by
+(`standards/orch-code/STANDARD.md`): each principle is read by
 its number under the `## Constitution` heading, each pointer by its
 file's own heading, and every check is shown failing against a copy
 with the fact dropped and the anchor left standing. The can-fail
@@ -38,14 +38,14 @@ ENTRY_RE = re.compile(r"^(\d+)\.\s+(.*)$")
 # out. The fact, not the wording: principle 6 keeps the three forces
 # that alone justify buying coordination and stops naming the rule
 # downstream of it, and principle 8 states the domain-blindness itself
-# instead of the pack-cell mechanism that happens to implement it here.
+# instead of the standard-cell mechanism that happens to implement it here.
 REQUIRED = {
     6: ("parallelism", "isolation", "durability"),
     8: ("domain-blind", "data", "control flow"),
 }
 REMOVED = {
     6: ("topology",),
-    8: ("pack cell",),
+    8: ("standard cell",),
 }
 
 # The scaffolding principle's three facts: what expires, what does not,
@@ -216,15 +216,15 @@ class AmendedPrinciplesTest(unittest.TestCase):
         self.assertEqual(["6: still names topology"], missing_facts(restored))
 
     def test_principle_8_naming_the_mechanism_fails_the_check(self):
-        """The can-fail direction restores the pack-cell wording."""
+        """The can-fail direction restores the standard-cell wording."""
 
         superseded = self.text.replace(
             principle_lines(self.text, 8),
-            "8. Generic bodies are domain-blind; domain deviations live in pack\n   cells.",
+            "8. Generic bodies are domain-blind; domain deviations live in standard\n   cells.",
         )
-        self.assertIn("live in pack cells", principles(superseded)[8])
+        self.assertIn("live in standard cells", principles(superseded)[8])
         self.assertEqual(
-            ["8: data", "8: control flow", "8: still names pack cell"],
+            ["8: data", "8: control flow", "8: still names standard cell"],
             missing_facts(superseded),
         )
 

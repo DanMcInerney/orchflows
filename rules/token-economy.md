@@ -8,7 +8,7 @@
    model will soon have is never encoded; specificity enters through the
    spec or the user's prompt.
 3. Integration detail — endpoints, flags, auth, version pins — lives in
-   scripts and pack references, never in a skill body. It rots on its
+   scripts and standard references, never in a skill body. It rots on its
    own schedule regardless of model quality.
 4. A repeated deterministic step becomes `executor: script:<path>` — a
    tested script as a graph node
@@ -21,10 +21,10 @@
    ([composition.md](composition.md) §11); everything else that survives
    §1 — method, checklists, host mechanics, worked detail, domain data —
    sits behind one link in the owning package's `references/` or the
-   stamped pack's cell, placed at the call site where it is first needed
+   stamped standard's cell, placed at the call site where it is first needed
    (§7). Test per passage: would an executor that never followed the
    link still meet every Require, Never and Return? Yes → reference.
-   The cells [contracts/pack-signature.md](../contracts/pack-signature.md)
+   The cells [contracts/standard.md](../contracts/standard.md)
    mandates are the standing exception.
 7. A link states at its call site when to follow it. Copy or cite is
    [visibility.md](visibility.md) §3's call.
@@ -37,11 +37,11 @@
     one unit owning one concern end to end; depth only behind a
     contract strong enough that readers never descend past it; shape
     for the evidence that demonstrates the Goal — live in this clause, never in a
-    pack's craft Shape. A metered, search-navigating reader pays the
-    same cost in every domain; a copy per pack only adds a place to
+    standard's Shape. A metered, search-navigating reader pays the
+    same cost in every domain; a copy per standard only adds a place to
     drift.
 11. Budgets bound what is loaded whether or not it is needed, and only
-    that: a router block, an agent file, a `SKILL.md` body, a pack's
+    that: a router block, an agent file, a `SKILL.md` body, a standard's
     cells. What a link makes available on demand
     is unbudgeted — it answers to §1 sentence by sentence and to any
     contract mandating its content. Ceilings order by load frequency,
@@ -49,17 +49,18 @@
     times the children forever, whatever the model: every-turn surfaces
     tightest — the host block and at most eight standing demands, a
     project's routing block, this repository's `AGENTS.md`, a role
-    agent file; every-dispatch units next — kernel bodies, pack
-    `SKILL.md`, a pack's craft as
-    [contracts/pack-signature.md](../contracts/pack-signature.md)
-    mandates, and a stamped sheet; every-run units widest — workflow
+    agent file; every-dispatch units next — kernel bodies and every
+    stamped standard as
+    [contracts/standard.md](../contracts/standard.md)
+    mandates; every-run units widest — workflow
     bodies. Every number is
     `common.py`'s (`SURFACE_BUDGET`, `ROUTING_BLOCK_BUDGET`,
-    `ROLE_AGENT_BUDGET`, `BODY_BUDGET`, `SHEET_BUDGET`); the eight-demand
-    cap is not a body ceiling and is not owned there. `SHEET_BUDGET`
-    alone counts non-empty lines, because
-    [contracts/sheet.md](../contracts/sheet.md) bounds a list of criteria
-    rather than prose.
+    `ROLE_AGENT_BUDGET`, `BODY_BUDGET`, `STANDARD_BUDGET`); the
+    eight-demand cap is not a body ceiling and is not owned there.
+    `STANDARD_BUDGET` is one number for a root and a narrowing alike,
+    counted over the whole manifest with its frontmatter, because the
+    section table rather than a smaller ceiling is what keeps a
+    narrowing from growing into a second owner of a domain.
     Counted in words with link targets
     stripped by tools/validate.py. A ticket carries no such ceiling: it
     is written for one child and read by one child, so its length is

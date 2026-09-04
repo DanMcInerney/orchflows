@@ -1,41 +1,47 @@
 #!/usr/bin/env python3
-"""Digest pins for the ring items a ticket stamps beside its pack.
+"""Digest pins for the ring items a ticket stamps.
 
-Two kinds pin here: the sheets a ticket stamps as extra craft
-(`contracts/sheet.md`) and the applied skill its executor enters as its
+Two kinds pin here: the standards a ticket stamps as its standard
+(`contracts/standard.md`) and the applied skill its executor enters as its
 method. Both are ordinary ring items resolving through `scripts/rings.py`'s
-one order, so both carry the hazard a pack does: a *name* resolves to
-whatever bytes happen to be nearest.
+one order, so both carry one hazard: a *name* resolves to whatever bytes
+happen to be nearest.
 
-The answer is the pack's, applied to two more kinds: take the digest at
-issue, the last moment the assignment is still a draft, and re-derive it at
-every later door. These items are directories of prose rather than a cell
-table, so their identity is a tree hash rather than a resolved-cell
-identity, which is why `pack_digest` is not migrated onto this module.
+The answer to it: take the digest at issue, the last moment the assignment
+is still a draft, and re-derive it at every later door. Identity is a hash
+over the item's directory tree, which is one rule for a root standard, a
+narrowing, and an applied skill alike.
+
+A stamped standard is not one item but a chain. `scripts/standards.py` walks
+`narrows:` to the root and checks the resolved set; this module turns that
+chain into the one ordered `(name, digest)` list the ticket carries.
 """
 
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 try:
-    from scripts import rings
-    from scripts.tickets_markdown import _parse_frontmatter, dequote
+    from scripts import standards_support, rings
+    from scripts.tickets_markdown import (
+        STANDARDS_FIELD, STANDARD_SEPARATOR, dequote,
+    )
 except ImportError:  # pragma: no cover - direct/installed flat script path
+    import standards_support
     import rings
-    from tickets_markdown import _parse_frontmatter, dequote
+    from tickets_markdown import STANDARDS_FIELD, STANDARD_SEPARATOR, dequote
 
 
 # The kinds this module pins, and the directories inside one that its tree
-# hash skips. A sheet carries prose and nothing else, so nothing is skipped
-# there. A skill may carry its own tests and installed dependencies, and
-# neither is what the ticket stamped.
-PINNED_KINDS = ("sheet", "skill")
+# hash skips. A standard carries prose and nothing else, so nothing is
+# skipped for either directory one still lives in. A skill may carry its own
+# tests and installed dependencies, and neither is what the ticket stamped.
+PINNED_KINDS = ("standard", "standard", "skill")
 SKIPPED_DIRS = {
-    "sheet": frozenset(),
+    "standard": frozenset(),
+    "standard": frozenset(),
     "skill": frozenset(("tests", "__pycache__", "node_modules")),
 }
 # The one hashed-tree format version. It prefixes the digest input so a
@@ -144,84 +150,66 @@ def names_of(value) -> List[str]:
     return [name for name in (dequote(item) for item in values) if name]
 
 
-def digests_of(value) -> Dict[str, str]:
-    """The `{name: digest}` mapping one frontmatter value carries, or `{}`."""
+def resolved_standards(names: Sequence[str], **overrides) -> List[Dict[str, object]]:
+    """One stamped set's whole chain, broad to narrow, each level digested.
 
-    raw = str(value or "").strip()
-    if not raw:
-        return {}
+    Resolution -- the `narrows:` walk, the cycle, depth and parent refusals,
+    and the one-adapter check -- belongs to `standards_support` and raises
+    `StandardError`. What is added here is the pin: the tree digest of every
+    level, taken once, at the last moment the assignment is still a draft.
+    """
+
+    chain = standards_support.resolve_chain(list(names), **overrides)
+    for link in chain:
+        link["digest"] = tree_digest(str(link["kind"]), Path(str(link["dir"])))
+    return chain
+
+
+def encode_standards(chain: Sequence[Dict[str, object]]) -> List[str]:
+    """The chain as the frontmatter list the ticket carries, in walk order."""
+
+    return [f"{link['name']}{STANDARD_SEPARATOR}{link['digest']}" for link in chain]
+
+
+def standards_of(value) -> List[Tuple[str, str]]:
+    """The `(name, digest)` levels one `standards:` value carries, in order."""
+
+    levels = []
+    for entry in names_of(value if isinstance(value, (list, tuple)) else [value]):
+        name, separator, digest = entry.partition(STANDARD_SEPARATOR)
+        if separator:
+            levels.append((name.strip(), digest.strip()))
+    return levels
+
+
+def adapter_standard(data: dict, **overrides) -> str:
+    """The stamped standard declaring this ticket's adapter, or `''`.
+
+    Empty covers both a ticket stamping nothing and a set whose adapter no
+    longer resolves; the second is reported as its own finding by the
+    admission door, which is the one place a resolution failure is graded.
+    """
+
+    names = [name for name, _digest in standards_of(data.get(STANDARDS_FIELD))]
+    if not names:
+        return ""
     try:
-        mapping = json.loads(raw)
-    except ValueError:
-        return {}
-    if not isinstance(mapping, dict):
-        return {}
-    return {str(key): str(item) for key, item in mapping.items()}
+        return standards_support.adapter_standard(names, **overrides)
+    except standards_support.StandardError:
+        return ""
 
 
-def encode_digests(mapping: Dict[str, str]) -> str:
-    """One frontmatter-safe line for a `{name: digest}` mapping."""
+def pin_fields(standards: Sequence[str], skill, **overrides):
+    """`(fields, refusal)` -- the pin fields for one issuing ticket."""
 
-    return json.dumps(mapping, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-
-
-def declared_packs(record: Dict[str, object]) -> List[str]:
-    """The pack names one resolved sheet's `packs:` frontmatter carries."""
-
-    try:
-        text = Path(str(record["path"])).read_text(encoding="utf-8-sig")
-    except OSError as error:
-        raise PinError("item-unreadable", f"unreadable sheet {record['path']}: {error}")
-    return names_of(_parse_frontmatter(text).get("packs"))
-
-
-def stamp_refusal(name: str, pack: str, packs: Sequence[str]) -> str:
-    """The one sentence a sheet says when it is stamped beside a wrong pack."""
-
-    remedy = (
-        f"Stamp '{name}' beside a pack it names, or add '{pack}' to its "
-        "`packs:` if the sheet really governs that domain."
-    )
-    if not packs:
-        return (
-            f"sheet '{name}' declares no `packs:`, and this callable stamps "
-            f"'{pack}'. Every sheet names the packs it may be stamped beside "
-            f"(contracts/sheet.md): add `packs: [{pack}]` to the sheet."
-        )
-    return (
-        f"sheet '{name}' declares packs {list(packs)} and this callable stamps "
-        f"'{pack}': a sheet tightens a craft it was written against and says "
-        f"nothing about one it was not. {remedy}"
-    )
-
-
-def pin_fields(sheets: Sequence[str], skill, pack=None, **overrides):
-    """`(fields, refusal)` -- the four pin fields for one issuing ticket."""
-
-    fields = {
-        "sheets": None, "sheet_digests": None, "skill": None, "skill_digest": None,
-    }
-    names = names_of(list(sheets or ()))
-    duplicated = sorted({name for name in names if names.count(name) > 1})
-    if duplicated:
-        return None, {"error": (
-            "--sheet names " + ", ".join(f"'{name}'" for name in duplicated)
-            + " more than once; one stamp per sheet"
-        )}
-    stamped = dequote(pack) or ""
+    fields = {STANDARDS_FIELD: None, "skill": None, "skill_digest": None}
+    names = names_of(list(standards or ()))
     if names:
-        digests = {}
-        for name in names:
-            try:
-                record = resolved("sheet", name, **overrides)
-                declared = declared_packs(record)
-            except PinError as error:
-                return None, {"error": error.detail}
-            if stamped and stamped not in declared:
-                return None, {"error": stamp_refusal(name, stamped, declared)}
-            digests[name] = str(record["digest"])
-        fields["sheets"] = sorted(names)
-        fields["sheet_digests"] = encode_digests(digests)
+        try:
+            chain = resolved_standards(names, **overrides)
+            fields[STANDARDS_FIELD] = encode_standards(chain)
+        except (standards_support.StandardError, PinError) as error:
+            return None, {"error": error.detail}
     applied = names_of(skill)
     if applied:
         try:
@@ -232,29 +220,57 @@ def pin_fields(sheets: Sequence[str], skill, pack=None, **overrides):
     return fields, None
 
 
+def _chain_drift(levels, chain, finding) -> List[dict]:
+    """Every level whose bytes -- or whose place in the chain -- moved."""
+
+    current = {str(link["name"]): link for link in chain}
+    findings = []
+    for name, pinned in levels:
+        link = current.get(name)
+        if link is not None and str(link["digest"]) == pinned:
+            continue
+        findings.append(finding(
+            "standard-digest-mismatch", STANDARDS_FIELD,
+            drift_refusal(
+                "standard", name,
+                "no" if link is None else str(link["ring"]),
+                pinned,
+                "nothing" if link is None else str(link["digest"]),
+            ),
+        ))
+    for name in current:
+        if name not in {level for level, _digest in levels}:
+            findings.append(finding(
+                "standard-digest-mismatch", STANDARDS_FIELD,
+                f"standard '{name}' is in the chain the stamped names resolve "
+                f"to now, and this sealed assignment pinned no level for it: a "
+                f"`narrows:` edge changed under the seal. Restore the pinned "
+                f"chain, or open a fresh callable (tickets.py do | judge).",
+            ))
+    return findings
+
+
 def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
     """Every pin defect one ticket's frontmatter carries, as gradeable findings."""
 
     findings = []
-    sheets = names_of(data.get("sheets"))
-    digests = digests_of(data.get("sheet_digests"))
-    raw_digests = str(data.get("sheet_digests") or "").strip()
-    if raw_digests and not digests:
+    raw = data.get(STANDARDS_FIELD)
+    levels = standards_of(raw)
+    stamped = names_of(raw if isinstance(raw, (list, tuple)) else [raw])
+    if len(levels) != len(stamped):
         findings.append(finding(
-            "sheet-digests-invalid", "sheet_digests",
-            "sheet_digests is not a canonical JSON object of name to digest",
+            "standard-pin-invalid", STANDARDS_FIELD,
+            f"every {STANDARDS_FIELD} entry is "
+            f"'<name>{STANDARD_SEPARATOR}sha256:<hex>'; got {stamped}",
         ))
-    elif sorted(digests) != sorted(sheets):
-        findings.append(finding(
-            "sheet-digest-unbound", "sheet_digests",
-            f"stamped sheets {sorted(sheets)} and pinned digests "
-            f"{sorted(digests)} name different sets",
-        ))
-    else:
-        for name in sheets:
-            detail = drift("sheet", name, digests[name], **overrides)
-            if detail is not None:
-                findings.append(finding("sheet-digest-mismatch", "sheet_digests", detail))
+    elif levels:
+        try:
+            chain = resolved_standards([name for name, _digest in levels], **overrides)
+        except (standards_support.StandardError, PinError) as error:
+            chain = None
+            findings.append(finding(error.code, STANDARDS_FIELD, error.detail))
+        if chain is not None:
+            findings.extend(_chain_drift(levels, chain, finding))
     applied = names_of(data.get("skill"))
     pinned = str(data.get("skill_digest") or "").strip()
     if bool(applied) != bool(pinned):
@@ -271,8 +287,9 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
 
 
 __all__ = (
-    "DIGEST_PREFIX", "PINNED_KINDS", "PinError", "SKIPPED_DIRS", "TREE_VERSION",
-    "declared_packs", "digests_of", "drift", "drift_refusal", "encode_digests",
+    "DIGEST_PREFIX", "PINNED_KINDS", "STANDARDS_FIELD", "STANDARD_SEPARATOR",
+    "PinError", "SKIPPED_DIRS", "TREE_VERSION",
+    "adapter_standard", "drift", "drift_refusal", "encode_standards",
     "item_digest", "names_of", "pin_fields", "pinned_findings", "resolved",
-    "stamp_refusal", "tree_digest",
+    "resolved_standards", "standards_of", "tree_digest",
 )

@@ -9,7 +9,7 @@ from pathlib import Path
 if __package__:
     from . import _bootstrap
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
-    from .tickets_adapters import AdapterError, adapter_spec, pack_digest
+    from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
         RESULT_BEARING_STATES,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, declared_parent,
@@ -19,7 +19,7 @@ if __package__:
 else:
     import _bootstrap
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
-    from tickets_adapters import AdapterError, adapter_spec, pack_digest
+    from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
         RESULT_BEARING_STATES,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, declared_parent,
@@ -50,50 +50,49 @@ def _ordered(findings) -> list:
     return [finding(*row) for row in sorted(rows)]
 
 
-def adapter_resolution(pack):
-    """Resolve one declared pack adapter as data, never as a traceback."""
+def adapter_resolution(data):
+    """Resolve one ticket's declared adapter as data, never as a traceback.
 
-    if not str(pack or "").strip():
+    The adapter is declared by whichever resolved standard introduces the
+    domain, so the ticket names it only through its stamped chain: this
+    reads that chain and hands the rest of the module the one name every
+    adapter-keyed derivation is taken off.
+    """
+
+    if __package__:
+        from .tickets_pins import STANDARDS_FIELD, adapter_standard
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_pins import STANDARDS_FIELD, adapter_standard
+    if not data.get(STANDARDS_FIELD):
+        return None, None
+    stamped = adapter_standard(data)
+    if not stamped:
         return None, None
     try:
-        return adapter_id(pack), None
+        return adapter_id(stamped), None
     except AdapterError as error:
-        return None, finding(error.code, "pack", error.detail)
-
-
-def pinned_digest_finding(pack: str, pinned: str):
-    """Refuse a stamped pack whose content is no longer what was sealed."""
-
-    try:
-        current = pack_digest(pack)
-    except AdapterError as error:
-        return finding(error.code, "pack_digest", error.detail)
-    if current == pinned:
-        return None
-    return finding(
-        "pack-digest-mismatch", "pack_digest",
-        f"pack '{pack}' resolves to {current}, but this sealed assignment "
-        f"pinned {pinned}: the pack changed under the seal, or another ring "
-        "now shadows it. Restore the pinned pack, or open a fresh callable "
-        "(tickets.py do | judge) against the pack you mean to run.",
-    )
+        return None, finding(error.code, STANDARDS_FIELD, error.detail)
 
 
 def binding_findings(ticket_id: str, data: dict) -> list:
     """Grade script resolution and adapter-owned operational isolation."""
+    if __package__:
+        from .tickets_pins import STANDARDS_FIELD
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_pins import STANDARDS_FIELD
     findings = []
     executor = _executor_of(data)
-    pack = str(data.get("pack") or "").strip()
+    stamped = bool(data.get(STANDARDS_FIELD))
     if (
         executor
         and not executor.startswith(SCRIPT_EXECUTOR_PREFIX)
         and not executor_registered(executor)
     ):
         findings.append(finding("executor-unregistered", "executor", executor_refusal(executor)))
-    elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_pack") and not pack:
+    elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_standard") and not stamped:
         findings.append(finding(
-            "executor-pack-required", "pack",
-            f"{executor} consumes resolved pack cells and requires a stamped pack",
+            "executor-standard-required", STANDARDS_FIELD,
+            f"{executor} reads a resolved standard and requires one stamped",
         ))
     unbound = executor.startswith(SCRIPT_EXECUTOR_PREFIX)
     if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
@@ -103,26 +102,16 @@ def binding_findings(ticket_id: str, data: dict) -> list:
                 "script-executor-unresolved", "executor",
                 f"executor names script '{target or '<missing>'}', which does not resolve in the tree",
             ))
-    if pack and not unbound:
-        adapter, adapter_failure = adapter_resolution(pack)
+    if stamped and not unbound:
+        _adapter, adapter_failure = adapter_resolution(data)
         if adapter_failure is not None:
             findings.append(adapter_failure)
-    pinned = str(data.get("pack_digest") or "").strip()
-    if pack and pinned:
-        mismatch = pinned_digest_finding(pack, pinned)
-        if mismatch is not None:
-            findings.append(mismatch)
-    elif pinned:
-        findings.append(finding(
-            "pack-digest-unbound", "pack_digest",
-            "a pinned pack digest without a stamped pack names nothing",
-        ))
     findings.extend(stamped_item_findings(data))
     return findings
 
 
 def stamped_item_findings(data: dict) -> list:
-    """Re-verify the sheets and applied skill pinned beside the pack."""
+    """Re-derive every level of the stamped chain, and the applied skill."""
 
     if __package__:
         from .tickets_pins import pinned_findings
@@ -187,7 +176,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
         assignment_digest = module.assignment_digest
         seal_findings = module.seal_findings
     findings = list(seal_findings(ticket_id, text))
-    adapter, adapter_failure = adapter_resolution(data.get("pack"))
+    adapter, adapter_failure = adapter_resolution(data)
     if adapter_failure is not None:
         findings.append(adapter_failure)
     dependencies = [str(value) for value in (data.get("depends_on") or [])]

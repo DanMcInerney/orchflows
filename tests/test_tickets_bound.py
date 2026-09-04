@@ -42,7 +42,7 @@ id: {tid}
 run: testrun
 status: {status}
 executor: orch-tdd
-pack: orch-code-pack
+standard: orch-code
 depends_on: []
 isolation: required
 write_scope: scratch/{tid}.txt

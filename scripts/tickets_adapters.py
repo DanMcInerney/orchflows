@@ -1,8 +1,9 @@
-"""Pack-declared workspace adapters and their closed mechanism registry."""
+"""Standard-declared workspace adapters and their closed mechanism registry."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from pathlib import Path
 
 try:
@@ -19,7 +20,7 @@ class Adapter:
 
     key: str
     # The prefix of the one verbatim artifact line a child of this adapter's
-    # pack prints, and every command that binds a fixed identity grades.
+    # standard prints, and every command that binds a fixed identity grades.
     artifact_kind: str
     establishes_isolation: bool
     deterministic_gate: bool
@@ -63,7 +64,7 @@ ADAPTER_REGISTRY = {
 
 
 class AdapterError(ValueError):
-    """A pack cannot select one closed registered adapter."""
+    """A standard cannot select one closed registered adapter."""
 
     def __init__(self, code: str, detail: str):
         super().__init__(detail)
@@ -71,97 +72,84 @@ class AdapterError(ValueError):
         self.detail = detail
 
 
-# One code per ring refusal. Only `<dir>/.orchflows/packs` is an ancestor
+# One code per ring refusal. Only `<dir>/.orchflows/standards` is an ancestor
 # root: a second one gave admission and execution different first hits for
 # one name, which is the divergence ``scripts/rings.py`` exists to close.
 _RING_CODES = {
-    "unresolved": "pack-unresolved",
-    "reserved-name": "pack-reserved",
-    "bundle-untrusted": "pack-untrusted",
-    "trust-unavailable": "pack-untrusted",
-    "name-invalid": "pack-unresolved",
+    "unresolved": "standard-unresolved",
+    "reserved-name": "standard-reserved",
+    "bundle-untrusted": "standard-untrusted",
+    "trust-unavailable": "standard-untrusted",
+    "name-invalid": "standard-unresolved",
 }
 
 
-def pack_path(pack, *, root=None) -> Path:
-    """Resolve the stamped pack through the one ring resolver."""
+def standard_path(standard, *, root=None) -> Path:
+    """Resolve the stamped standard through the one ring resolver."""
 
-    name = dequote(pack)
+    name = dequote(standard)
     if not name:
-        raise AdapterError("pack-unresolved", "ticket names no pack")
+        raise AdapterError("standard-unresolved", "ticket names no standard")
     try:
-        record = rings.resolve("pack", name, start=root)
+        record = rings.resolve("standard", name, start=root)
     except rings.RingError as error:
-        raise AdapterError(_RING_CODES.get(error.code, "pack-unresolved"), error.detail) from error
+        raise AdapterError(_RING_CODES.get(error.code, "standard-unresolved"), error.detail) from error
     return Path(str(record["path"]))
 
 
-def craft_path(pack, *, root=None) -> Path:
-    """The stamped pack's own craft file, where the pack's signature names it."""
+def manifest_path(standard, *, root=None) -> Path:
+    """The stamped standard's manifest -- the document a verb reads whole.
 
-    path = pack_path(pack, root=root)
-    try:
-        if __package__:
-            from . import packs_support
-        else:  # pragma: no cover - direct/installed script path
-            import packs_support
-        value = packs_support._declared_cell(path, "craft")
-        targets = packs_support._reference_paths(value)
-    except ImportError as error:  # pragma: no cover - broken installation
-        raise AdapterError("pack-resolver-unavailable", str(error)) from error
-    except packs_support.PackError as error:
-        raise AdapterError("craft-declaration-invalid", error.detail) from error
-    if not targets:
+    One file since the collapse: the manifest carries the domain prose that
+    used to sit behind a `standard` cell pointing at a second file, so the
+    path the launch prompt hands a child is the manifest the ring resolved.
+    """
+
+    path = standard_path(standard, root=root)
+    if not path.is_file():  # pragma: no cover - the ring resolver already refused
         raise AdapterError(
-            "craft-declaration-invalid",
-            f"pack declares no craft reference: {path}",
+            "standard-declaration-invalid", f"standard does not resolve: {path}",
         )
-    resolved = (path.parent / targets[0]).resolve()
-    if not resolved.is_file():
+    return path
+
+
+ADAPTER_FIELD_RE = re.compile(r"(?m)^adapter:\s*([^\r\n]+?)\s*$")
+
+
+def adapter_in_frontmatter(text: str) -> str:
+    """The adapter key one standard's frontmatter names, or `''` for none.
+
+    The one reader of that field. `scripts/standards_support.py` resolves a
+    standard whose bytes it has already read and calls this rather than
+    carrying a second regex for one spelling; whether the key is
+    *registered* stays `adapter_for_key`'s, one door further on.
+    """
+
+    parts = text.split("---", 2)
+    match = ADAPTER_FIELD_RE.search(parts[1]) if len(parts) > 2 else None
+    return dequote(match.group(1)) if match else ""
+
+
+def declared_adapter(standard, *, root=None) -> str:
+    """The stable adapter key one standard declares in its frontmatter.
+
+    Frontmatter rather than a table cell since the collapse: the adapter is
+    the typed leaf downstream machinery branches on, and the manifest is
+    where contracts/standard.md puts it.
+    """
+
+    path = standard_path(standard, root=root)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
         raise AdapterError(
-            "craft-declaration-invalid", f"pack craft does not resolve: {resolved}",
-        )
-    return resolved
-
-
-def pack_digest(pack, *, root=None) -> str:
-    """The resolved pack's content digest, through the one pack resolver."""
-
-    name = dequote(pack)
-    if not name:
-        raise AdapterError("pack-unresolved", "ticket names no pack")
-    try:
-        if __package__:
-            from . import packs_support
-        else:  # pragma: no cover - direct/installed script path
-            import packs_support
-        resolved = packs_support.resolve_pack(name, start=root)
-    except ImportError as error:  # pragma: no cover - broken installation
-        raise AdapterError("pack-resolver-unavailable", str(error)) from error
-    except packs_support.PackError as error:
-        raise AdapterError(error.code, error.detail) from error
-    return str(resolved["digest"])
-
-
-def declared_adapter(pack, *, root=None) -> str:
-    """Read the stable adapter key from the pack's typed `adapter` leaf."""
-
-    path = pack_path(pack, root=root)
-    try:
-        if __package__:
-            from . import packs_support
-        else:  # pragma: no cover - direct/installed script path
-            import packs_support
-        value = packs_support._declared_cell(path, "adapter")
-    except ImportError as error:  # pragma: no cover - broken installation
-        raise AdapterError("pack-resolver-unavailable", str(error)) from error
-    except packs_support.PackError as error:
-        raise AdapterError("adapter-declaration-invalid", error.detail) from error
-    normalized = dequote(value)
+            "adapter-declaration-invalid", f"unreadable standard {path}: {error}",
+        ) from error
+    normalized = adapter_in_frontmatter(text)
     if not normalized:
         raise AdapterError(
             "adapter-declaration-invalid",
-            f"pack must declare exactly one typed adapter leaf: {path}",
+            f"standard must declare exactly one adapter: {path}",
         )
     return normalized
 
@@ -173,35 +161,35 @@ def adapter_for_key(key: str) -> Adapter:
     adapter = ADAPTER_REGISTRY.get(normalized)
     if adapter is None:
         raise AdapterError(
-            "adapter-unregistered", f"pack declares unregistered adapter: {normalized or '<missing>'}",
+            "adapter-unregistered", f"standard declares unregistered adapter: {normalized or '<missing>'}",
         )
     return adapter
 
 
-def adapter_spec(pack, *, root=None) -> Adapter:
-    return adapter_for_key(declared_adapter(pack, root=root))
+def adapter_spec(standard, *, root=None) -> Adapter:
+    return adapter_for_key(declared_adapter(standard, root=root))
 
 
-def derived_isolation(declared, pack, *, root=None) -> str:
+def derived_isolation(declared, standard, *, root=None) -> str:
     """The ticket's effective isolation: the rare declared override, else
-    what the stamped pack's adapter establishes (contracts/work-item.md)."""
+    what the stamped standard's adapter establishes (contracts/work-item.md)."""
     value = dequote(declared)
     if value:
         return "required" if value == "required" else "none"
-    if not dequote(pack):
+    if not dequote(standard):
         return "none"
     try:
-        return "required" if adapter_spec(pack, root=root).establishes_isolation else "none"
+        return "required" if adapter_spec(standard, root=root).establishes_isolation else "none"
     except AdapterError:
         return "required"
 
 
-def adapter_id(pack, *, root=None) -> str:
-    return adapter_spec(pack, root=root).key
+def adapter_id(standard, *, root=None) -> str:
+    return adapter_spec(standard, root=root).key
 
 
 __all__ = (
     "ADAPTER_REGISTRY", "Adapter", "AdapterError", "adapter_for_key",
-    "adapter_id", "adapter_spec", "craft_path", "declared_adapter",
-    "derived_isolation", "pack_digest", "pack_path",
+    "adapter_id", "adapter_in_frontmatter", "adapter_spec", "manifest_path",
+    "declared_adapter", "derived_isolation", "standard_path",
 )

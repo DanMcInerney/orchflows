@@ -121,30 +121,30 @@ class ScopeTests(unittest.TestCase):
                 {destination for destination, _ in entries},
             )
 
-    def test_a_pack_gets_no_adapter(self):
+    def test_a_standard_gets_no_adapter(self):
         with _world() as world:
-            pack = world["home"] / "packs" / "widget-pack" / "SKILL.md"
-            pack.parent.mkdir(parents=True)
-            pack.write_bytes(b"---\nname: widget-pack\n---\n")
+            standard = world["home"] / "standards" / "widget-standard" / "STANDARD.md"
+            standard.parent.mkdir(parents=True)
+            standard.write_bytes(b"---\nname: widget-standard\n---\n")
 
             entries = orchflows_adapters.plan("home", project=world["project"])
 
-            self.assertEqual([], [path for path, _ in entries if "widget-pack" in str(path)])
+            self.assertEqual([], [path for path, _ in entries if "widget-standard" in str(path)])
 
-    def test_a_sheet_gets_no_adapter(self):
-        """A sheet is stamped on a ticket and never invoked, so it is the
-        pack's case exactly: a name in a host's skill list that cannot be
+    def test_a_standard_gets_no_adapter(self):
+        """A standard is stamped on a ticket and never invoked, so it is the
+        standard's case exactly: a name in a host's skill list that cannot be
         called crowds out the names that can. `ADAPTED_KINDS` is the one
-        place that is decided, and `sheet` is not in it."""
+        place that is decided, and `standard` is not in it."""
 
         with _world() as world:
-            sheet = world["home"] / "sheets" / "market-brief" / "SHEET.md"
-            sheet.parent.mkdir(parents=True)
-            sheet.write_bytes(b"---\nname: market-brief\n---\n")
+            standard = world["home"] / "standards" / "market-brief" / "STANDARD.md"
+            standard.parent.mkdir(parents=True)
+            standard.write_bytes(b"---\nname: market-brief\n---\n")
 
             entries = orchflows_adapters.plan("home", project=world["project"])
 
-            self.assertNotIn("sheet", orchflows_adapters.ADAPTED_KINDS)
+            self.assertNotIn("standard", orchflows_adapters.ADAPTED_KINDS)
             self.assertEqual(
                 [], [path for path, _ in entries if "market-brief" in str(path)],
             )

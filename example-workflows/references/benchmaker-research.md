@@ -1,7 +1,7 @@
 # BenchMaker research charter
 
 The acquire stage cuts its research by this charter; the research
-pack's slicing law owns lane independence and the terminal join.
+standard's slicing law owns lane independence and the terminal join.
 
 ## Lanes
 
@@ -31,7 +31,7 @@ identity:
 - failure atlas — observed and taxonomy-derived failure modes, each
   naming the deviation that produces it;
 - prior-art register — the field lane's dispositions;
-- disagreement register — per the research pack's oracle policy;
+- disagreement register — per the research standard's oracle policy;
 - gaps — everything acquisition left uncovered or unresolved;
   explicit, `[]` when none;
 - sourcing mode — mined, authored, or generated-then-filtered, chosen

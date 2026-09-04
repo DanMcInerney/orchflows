@@ -44,6 +44,26 @@ def _probe(marker: Path) -> str:
     )
 
 
+NARROWING = """---
+name: market-brief
+description: One sentence saying when to stamp market-brief.
+narrows: widget-standard
+---
+
+# market-brief
+
+## Making
+
+What this narrowing adds for the maker. Additive and tighten-only.
+
+## Lens
+
+### git
+
+What a judge checks here beside the broader standard's entry.
+"""
+
+
 class CheckTests(unittest.TestCase):
     """`orchflows check`: the compiler's item checks over a ring.
 
@@ -56,16 +76,27 @@ class CheckTests(unittest.TestCase):
     """
 
     def _ring(self, home: Path) -> Path:
-        """A home ring holding one scaffolded item of every kind."""
+        """A home ring holding one scaffolded item of every kind, plus one
+        narrowing.
+
+        The narrowing is written here rather than scaffolded because
+        `orchflows new standard` writes the root skeleton -- one kind, one
+        skeleton -- and an author reaching for a narrowing writes `narrows:`
+        and drops the three sections a narrowing is refused, which is
+        exactly what this does.
+        """
 
         (home / "nowhere").mkdir(exist_ok=True)
         with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
             for kind, name in (
-                ("skill", "helper"), ("pack", "widget-pack"),
-                ("workflow", "team-flow"), ("sheet", "market-brief"),
+                ("skill", "helper"), ("standard", "widget-standard"),
+                ("workflow", "team-flow"),
             ):
                 code, output = _run("new", kind, name)
                 self.assertEqual(0, code, output)
+        narrowing = home / "standards" / "market-brief" / "STANDARD.md"
+        narrowing.parent.mkdir(parents=True, exist_ok=True)
+        narrowing.write_text(NARROWING, encoding="utf-8")
         return home
 
     def _check(self, home: Path, *argv):
@@ -83,12 +114,12 @@ class CheckTests(unittest.TestCase):
             self.assertEqual(0, code, output)
             self.assertNotIn("ERROR", output)
             self.assertIn(f"ring: {home}", output)
-            self.assertIn("skill 1, pack 1, workflow 1, sheet 1", output)
+            self.assertIn("skill 1, standard 2, workflow 1", output)
 
-    def test_a_sheet_carrying_a_pack_only_section_is_refused(self):
+    def test_a_narrowing_carrying_a_root_only_section_is_refused(self):
         with _home() as home:
             self._ring(home)
-            manifest = home / "sheets" / "market-brief" / "SHEET.md"
+            manifest = home / "standards" / "market-brief" / "STANDARD.md"
             manifest.write_text(
                 manifest.read_text(encoding="utf-8") + "\n## Workspace\n\nMine.\n",
                 encoding="utf-8",
@@ -97,8 +128,8 @@ class CheckTests(unittest.TestCase):
             code, output = self._check(home, str(home))
 
             self.assertEqual(1, code, output)
-            self.assertIn("sheets/market-brief/SHEET.md", output)
-            self.assertIn("'## Workspace' is the pack's", output)
+            self.assertIn("standards/market-brief/STANDARD.md", output)
+            self.assertIn("'## Workspace' is a root's", output)
 
     def test_a_workflow_body_over_the_tier_budget_is_refused(self):
         with _home() as home:
@@ -349,23 +380,23 @@ class CheckTests(unittest.TestCase):
             self.assertTrue(marker.exists(), output)
             self.assertNotIn("orchflows trust", output)
 
-    def test_a_refused_sheets_declaration_is_never_probed(self):
-        """A sheet has no code of its own, so `validate_sheets` refuses the
-        file's existence rather than reading it. Resolving what it declares
-        anyway would run the content of an item the checker has already
-        ruled cannot carry any."""
+    def test_a_refused_standard_declaration_is_never_probed(self):
+        """A standard has no code of its own, so `validate_standards` refuses
+        the file's existence rather than reading it. Resolving what it
+        declares anyway would run the content of an item the checker has
+        already ruled cannot carry any."""
 
         with _home() as home:
             self._ring(home)
             marker = home / "probe-ran"
-            (home / rings.RING_DIRS["sheet"] / "market-brief" / "tools.txt").write_text(
+            (home / rings.RING_DIRS["standard"] / "market-brief" / "tools.txt").write_text(
                 _probe(marker), encoding="utf-8",
             )
 
             code, output = self._check(home, str(home))
 
             self.assertEqual(1, code, output)
-            self.assertIn("a sheet has no code of its own", output)
+            self.assertIn("a standard has no code of its own", output)
             self.assertFalse(marker.exists(), output)
 
     # --- the bundle's own manifest -------------------------------------

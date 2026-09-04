@@ -1,7 +1,7 @@
 """Deterministic routing grades.
 
 The state-derived routing information that is safe to compute without
-making a model decision: graph shape, declared pack coverage, and adapter
+making a model decision: graph shape, declared standard coverage, and adapter
 capability. It does not decide whether a Goal is adequate or a review lens
 sufficient.
 """
@@ -11,12 +11,14 @@ from __future__ import annotations
 import re
 
 if __package__:
-    from .tickets_adapters import AdapterError, adapter_spec, pack_path
+    from .tickets_adapters import AdapterError, adapter_spec, manifest_path
+    from .tickets_pins import adapter_standard
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
-    from tickets_adapters import AdapterError, adapter_spec, pack_path
+    from tickets_adapters import AdapterError, adapter_spec, manifest_path
+    from tickets_pins import adapter_standard
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -56,23 +58,22 @@ def _member_ids(root_id: str, snapshot: dict) -> list[str]:
 
 
 _SPEC_FIELDS_HEADING = re.compile(r"(?m)^##\s+Spec fields\s*$")
-_NEXT_CRAFT_SECTION = re.compile(r"(?m)^##\s+")
+_NEXT_STANDARD_SECTION = re.compile(r"(?m)^##\s+")
 _FIELD_SEPARATOR = re.compile(r"\s*;\s*")
 _EM_DASH = re.compile(r"\s+[—–-]\s+")
 _WORDS = re.compile(r"[a-z0-9_]+")
 
 
-def _required_spec_fields(pack: str) -> list[str]:
+def _required_spec_fields(standard: str) -> list[str]:
     try:
-        craft = pack_path(pack).parent / "references" / "craft.md"
-        text = craft.read_text(encoding="utf-8")
+        text = manifest_path(standard).read_text(encoding="utf-8")
     except (AdapterError, OSError, UnicodeDecodeError) as error:
         raise GradeError(str(error)) from error
     match = _SPEC_FIELDS_HEADING.search(text)
     if not match:
         return []
     rest = text[match.end():]
-    boundary = _NEXT_CRAFT_SECTION.search(rest)
+    boundary = _NEXT_STANDARD_SECTION.search(rest)
     declared = " ".join(
         line.strip()
         for line in (rest[: boundary.start()] if boundary else rest).splitlines()
@@ -85,7 +86,7 @@ def _required_spec_fields(pack: str) -> list[str]:
         value = dequote(value)
         if not value:
             continue
-        # A pack may explain a field after an em dash; the stable field name
+        # A standard may explain a field after an em dash; the stable field name
         # is the portion before that explanation.
         value = dequote(_EM_DASH.split(value, maxsplit=1)[0])
         if value and value not in fields:
@@ -116,11 +117,11 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
     if members:
         raise GradeError(f"root {root_id} is a direct root with executor-result members")
     shape, width = "single", 1
-    pack = dequote(root_data.get("pack"))
-    if not pack:
-        raise GradeError(f"root {root_id} names no pack")
+    standard = adapter_standard(root_data)
+    if not standard:
+        raise GradeError(f"root {root_id} names no standard declaring an adapter")
     try:
-        deterministic_gate = bool(adapter_spec(pack).deterministic_gate)
+        deterministic_gate = bool(adapter_spec(standard).deterministic_gate)
     except AdapterError as error:
         raise GradeError(error.detail) from error
     sections = _sections(_ticket_text(root_value)) if _ticket_text(root_value) else {}
@@ -128,7 +129,7 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         sections.get(name, "") for name in ("Goal", "Context", "Details")
     )
     unmentioned = [
-        field for field in _required_spec_fields(pack)
+        field for field in _required_spec_fields(standard)
         if not _mentioned(field, semantic_text)
     ]
     return {

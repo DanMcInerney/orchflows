@@ -1,0 +1,233 @@
+{
+  "judge": "B1.6",
+  "run": "20260904T160000Z-standards",
+  "tip": "e77b1731fa79f0c77f71243acc5eae69eacf6b63",
+  "branch": "claude/standards",
+  "units_judged": ["U0", "U1", "U2", "U2b", "U3", "driver"],
+  "artifacts": [
+    "git:ca83a8fe22255d031e384b81df1d264ba84823d1",
+    "git:423400e27177db13d1983d7a76777c00eaa5ee2b",
+    "git:18d52cb4e6aaf5a71855c9a1f2ecb1d611cd48a6",
+    "git:ce549cca130a5b6b77e511cb0b4648b84c5d103e",
+    "git:fbb98b47a60d6cbc6b9458482c314744e4bd98c2"
+  ],
+  "verdict": "blocked",
+  "verdict_reason": "Two blocking causes, both at seams between units and neither visible to a per-unit judge. Every frozen-goal number re-derives correctly and every mechanical gate is green at the tip.",
+  "gates_at_tip": [
+    {"command": "uv run --no-project python tools/run_required.py --no-cache", "exit": 0, "note": "all five rows 0; planned entries 333; tree 0bc89ad9916c"},
+    {"command": "uv run --no-project python tools/regen.py --check", "exit": 0, "note": "t0-shapes, lifecycle, ci-topology, host-adapters, serial-compat-manifest all current"},
+    {"command": "git diff --check", "exit": 0}
+  ],
+  "frozen_goal_numbers_rederived": {
+    "install_dry_run": {
+      "main_6d47143e": 359,
+      "run_base_cf5fe59f": 359,
+      "post_U0_ca83a8fe": 358,
+      "post_U1_423400e2": 358,
+      "post_U2_18d52cb4": 333,
+      "post_U2b_ce549cca": 333,
+      "post_U3_fbb98b47": 333,
+      "tip_e77b1731": 333,
+      "decomposition_derived_by_diffing_the_two_plans": {
+        "host_adapters_removed": 20,
+        "host_adapters_detail": "Claude Code skill adapters 17->12, Codex prompts 17->12, Codex redirect skills 17->12, Grok skills 17->12; the twenty removed lines are the five orch-*-pack entries in each of the four groups",
+        "second_files_removed": 5,
+        "second_files_detail": "library files 125->120: the five packs/orch-*-pack/references/craft.md copies",
+        "net_contract_from_main": 1,
+        "net_contract_detail": "U0 added contracts/standard.md and deleted contracts/pack-signature.md and contracts/sheet.md, moving 359->358 before U2 ran",
+        "by_name_pointers": "5, present in both plans, unchanged",
+        "reduction_from_main": 26,
+        "reduction_from_U2_base": 25
+      },
+      "verdict": "the goal's 25-entry reduction is a reading of the U2 step alone and holds exactly; the 333 total is honest and is not a coincidental match"
+    },
+    "standard_budget": {
+      "constant": "STANDARD_BUDGET = 1200 at tools/validate_support/common.py:84",
+      "counts_whole_manifest_words_frontmatter_included": true,
+      "same_number_for_root_and_narrowing": true,
+      "manifest_words": {
+        "standards/orch-design/STANDARD.md": 900,
+        "standards/orch-code/STANDARD.md": 882,
+        "standards/orch-data/STANDARD.md": 738,
+        "standards/orch-content/STANDARD.md": 730,
+        "standards/orch-research/STANDARD.md": 685,
+        "standards/html-dossier/STANDARD.md": 512,
+        "standards/standard-craft/STANDARD.md": 484,
+        "standards/market-brief/STANDARD.md": 451
+      },
+      "craft_budget_and_sheet_budget_name_nothing": true
+    },
+    "host_block_words": {"value": 400, "ceiling": 400, "note": "exactly at the ceiling; 401 errors"},
+    "agents_md_words": {"value": 206, "ceiling": 230},
+    "contracts_count": {"files": 7, "README_spelling": "Seven"}
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": true,
+      "cause": "U3's verification grep was scoped to ten directories and .orchflows/ -- this repository's own home ring -- is not one of them, so four shipped lines still name retired items in the present tense.",
+      "goal_clause": "something a unit was to delete still exists or is still named in the present tense by a shipped file",
+      "evidence": {
+        "command": "git grep -nE \"\\bpacks?\\b|\\bsheets?\\b|\\bcrafts?\\b\" -- ':!research/*' ':!REVIEW*' ':!benchmarks/*' ':!reader/*' ':!.orch/*' ':!*.json' ':!*.html' ':!*fixtures*'",
+        "survivors_outside_U3_scope": [
+          ".orchflows/BUNDLE.md:14-15  'The library ships from `skills/`, `packs/`, `sheets/` and `example-workflows/` at the repository root'",
+          ".orchflows/skills/research-acquire/SKILL.md:12  'You are entered from an `orch-do` child stamped `orch-research-pack`, by name'",
+          ".orchflows/skills/research-acquire/SKILL.md:15  'its `## Lens` line names `### evidence`, the craft entry'",
+          ".orchflows/skills/research-acquire/SKILL.md:78  'this pack commits nothing, so its identity is the SHA-256 of its'"
+        ],
+        "corroboration": "ls -d packs sheets -> No such file or directory; standards/ holds the eight items; orch-research-pack resolves to nothing at the tip",
+        "not_a_survivor": "U3's own grep over its ten directories returns two lines, both the item name standard-craft, which spec section 2 fixes. I re-ran it and reproduce exactly those two."
+      },
+      "why_it_matters": "BUNDLE.md is wrong about where the library ships from. The SKILL.md line is worse than prose: it is a live instruction telling a child it was stamped under a name no ring carries.",
+      "smallest_change": "In .orchflows/BUNDLE.md replace '`skills/`, `packs/`, `sheets/` and `example-workflows/`' with '`skills/`, `standards/` and `example-workflows/`'. In .orchflows/skills/research-acquire/SKILL.md: line 12 orch-research-pack -> orch-research; line 15 'the craft entry' -> \"the standard's entry\"; line 78 'this pack commits nothing' -> 'this skill commits nothing'. Then add .orchflows/ to the grep's directory list and re-run it."
+    },
+    {
+      "id": "F2",
+      "blocking": true,
+      "cause": "The legacy domain door in scripts/tickets_pins.py survived a hand-off that had no owner. U1 kept it as a migration-only guard and named it U2's to delete once the narrowings carried narrows:; U2 gave all three narrows: and did not delete it; U2b owned only packs_support.py/packs.py/test_packs.py; U3 was forbidden to design. It is now dead code that instructs an author to write frontmatter the validator refuses.",
+      "goal_clause": "two units' changes contradict each other at the tip even though each was green alone; and something a unit was to delete still exists",
+      "sites": [
+        "scripts/tickets_pins.py:202 declared_domain",
+        "scripts/tickets_pins.py:223 domain_refusal",
+        "scripts/tickets_pins.py:235 _domain_refusals",
+        "scripts/tickets_pins.py:256 the call inside pin_fields",
+        "scripts/tickets_pins.py:341 both names in __all__",
+        "tests/test_ticket_pins.py:560 test_a_narrowing_off_its_declared_domain_refuses"
+      ],
+      "evidence": {
+        "field_is_unreachable": "declared_domain reads a manifest frontmatter key `standards:`. I added `standards: [orch-content]` to standards/html-dossier/STANDARD.md in a scratch copy of the tip and ran tools/validate.py: ERROR standards/html-dossier/STANDARD.md: standard frontmatter key 'standards' is not allowed, exit 1.",
+        "contract_does_not_declare_it": "contracts/standard.md's ## Frontmatter and its generated standard_frontmatter shape declare only name, description, narrows, adapter.",
+        "the_message_is_impossible_to_obey": "domain_refusal returns \"... or add '<domain>' to its `standards:` if it really governs that domain\" -- the key the validator just refused.",
+        "the_check_is_green_over_an_inadmissible_state": "tests/test_ticket_pins.py::test_a_narrowing_off_its_declared_domain_refuses builds its manifest through the test's own _narrowing(..., standards=(...)) fixture, never through the validator.",
+        "mutant": "Removing the _domain_refusals call from pin_fields and running 'python -m unittest discover -s tests -p test_ticket*.py' leaves exactly one added red: that same test. A second red, test_tickets_bound.BoundCheckCommandTest.test_each_row_carries_the_bound_as_read_and_the_claim_as_measured, reproduces identically at the run base cf5fe59f under the same discover command and is inherited, not this run's.",
+        "hand_off_record": "frame journal record journal:004-u1: U1 'kept the packs: domain door as a migration-only guard beside the new two-adapter refusal ... and named declared_domain/domain_refusal as U2's to delete once the sheets carry narrows:'. No later unit's Details name them.",
+        "the_rename_made_it_worse": "U3's sweep re-spelled the retired item key packs: to standards:, which is now also the ticket's live pinned-chain field name, so the dead guard reads like a live feature."
+      },
+      "smallest_change": "Delete declared_domain, domain_refusal and _domain_refusals, and the _domain_refusals call in pin_fields; drop both names from tickets_pins.__all__; delete test_a_narrowing_off_its_declared_domain_refuses -- its live sibling test_a_narrowing_off_its_domain_refuses_through_narrows_too already covers the rule through the two-adapter refusal, which is the door that actually fires. Regenerate tests/serial_compat_manifest.json with tools/regen.py."
+    },
+    {
+      "id": "F3",
+      "blocking": false,
+      "cause": "U3's mechanical sweep rewrote both halves of one sentence U2b wrote about the file U0 deleted, leaving a self-contradiction.",
+      "site": "scripts/standards_support.py, _signature_digest docstring: '`contracts/standard.md` is that document since the collapse retired `contracts/standard.md`.'",
+      "evidence": "git diff ce549cca fbb98b47 -- scripts/packs_support.py scripts/standards_support.py shows the single pair: '-    `contracts/pack-signature.md`. It is read from the library root and' / '+    `contracts/standard.md`. It is read from the library root and'",
+      "note": "The behaviour is right and proved: _signature_digest() returns 4f1e824a2af9421fcb7fe82ea07be354e1ec3bb161f780dafd866d147f9bada9 at this tip, and forcing it to return None makes tests.test_standards.test_the_library_standard_contract_byte_changes_the_digest red -- the binding is not vacuous.",
+      "smallest_change": "'... is that document since the collapse retired the pack signature contract.'"
+    },
+    {
+      "id": "F4",
+      "blocking": false,
+      "cause": "The public CLI surface still carries the retired noun: 'standards.py cells <digest>' and cells_for() are named for the two-row table the collapse deleted, and one docstring still forward-references U3 as future work.",
+      "sites": ["scripts/standards.py:69,104,129", "scripts/standards_support.py:293,302"],
+      "evidence": "standards_support.py:302 reads 'The name survives the collapse; the cells table it was named for does not ... `scripts/standards.py` renames both under U3.' U3 has run.",
+      "note": "U2b named the survival deliberately, so this is a reported decision, not a hidden one. Renaming a public subcommand is a surface decision, not a sweep.",
+      "smallest_change": "Fix the stale forward reference now; queue the subcommand rename (cells -> show, or fold it into resolve --digest) as a successor with its own deprecation story."
+    },
+    {
+      "id": "F5",
+      "blocking": false,
+      "cause": "U3 deleted a shipped capability inside a unit whose Details say designing is a finding: orchflows new no longer scaffolds a narrowing.",
+      "evidence": "git diff ce549cca fbb98b47 -- scripts/orchflows_scaffold.py deletes _SHEET and _sheet_binding; scripts/rings.py:47 KINDS = ('skill', 'standard', 'workflow'), so 'orchflows new sheet <name>' is gone and 'orchflows new standard <name>' writes only the root skeleton.",
+      "note": "Reported by U3 and relayed by the driver in journal:007-u3, so it is not hidden; and decision 1 leaves no second noun to scaffold under, so U3's reasoning was sound as far as its brief let it go.",
+      "smallest_change": "An optional --narrows <parent> on 'orchflows new standard' that selects the narrowing skeleton and keys its ## Lens off the parent's adapter -- the binding _sheet_binding() already computed. Successor work, not repair."
+    },
+    {
+      "id": "F6",
+      "blocking": false,
+      "cause": "contracts/standard.md's ## Lens completeness sentence is written for a root and applies verbatim to a narrowing, where it is false.",
+      "site": "contracts/standard.md:84-89",
+      "evidence": "The sentence says Lens 'carries exactly these ### entries, in this order: ### root, then ### cut, then one entry per artifact kind ...'. All three narrowings carry only their one kind entry: html-dossier ### doc, market-brief ### evidence, standard-craft ### doc. That is what the three sheets carried before the run (verified at cf5fe59f) and what the next paragraph's 'a narrowing that keys no entry the stamp's kind matches' presupposes. The validator agrees with the items, not the sentence.",
+      "smallest_change": "Scope it: \"A root's ## Lens carries exactly these ### entries, in this order ...; a narrowing keys only the entries it adds to.\""
+    },
+    {
+      "id": "F7",
+      "blocking": false,
+      "cause": "## Making is required of a root and ships on all five holding one sentence, because no craft carried maker guidance outside the sections that already map by name.",
+      "evidence": "Extracted per root: orch-code, orch-content, orch-data and orch-research each hold only 'The shape principles every domain shares are [rules/token-economy.md](../../rules/token-economy.md) section 10's.'; orch-design holds only \"Framework specifics live with the workspace's standards owner.\"",
+      "note": "Not a shape defect -- the section is present and the section table is satisfied. U2 reported it, the driver routed it out of U3 at 6c4a7bdd so a sweep would not invent prose, and it is recorded for this judgment.",
+      "smallest_change": "None in this run. The decision is the user's: either ## Making earns content the crafts never had, or section 2's table has one required section too many."
+    },
+    {
+      "id": "F8",
+      "blocking": false,
+      "cause": "The spec's own section 3 U0 opening still says 'the two per-file ceilings and the digest' where decision 4, section 1 and rule 4 all say one.",
+      "site": "research/standards-spec-2026-09-04.md, section 3 U0, first paragraph",
+      "evidence": "U0 reported it and wrote one ceiling per its Goal; I confirm the tip implements one -- STANDARD_BUDGET = 1200 at tools/validate_support/common.py:84, one validate_standard_budget at tools/validate_support/structure.py:42, CRAFT_BUDGET and SHEET_BUDGET naming nothing.",
+      "smallest_change": "'the one per-file ceiling and the digest'. Spec wording; the tip is right."
+    },
+    {
+      "id": "F9",
+      "blocking": false,
+      "cause": "benchmarks/ fixtures name retired item names in pack: frontmatter and provenance JSON. No unit owned them and no check reads them as live names.",
+      "sites": [
+        "benchmarks/benchmaker/cases/cs-run-conduct/seeds/*/record/packets/*.md:9",
+        "benchmarks/benchmaker/cases/cs-multidomain-fresh/**/provenance.json",
+        "benchmarks/benchmaker/cases/cs-run-conduct/evidence/packet.md:8"
+      ],
+      "note": "Same class as the two REVIEW files U3 was told to leave: frozen evidence of a past state. Recorded so the next reader does not mistake it for a miss.",
+      "smallest_change": "None. If a future run wants them swept, it is a benchmark re-baseline, not a rename."
+    },
+    {
+      "id": "F10",
+      "blocking": false,
+      "cause": "Run housekeeping rather than tree state: B1.1 through B1.4 still read 'status: claimed' while their four armed repair tickets read 'status: complete'.",
+      "note": "The join owns terminal status, so this is named rather than acted on.",
+      "smallest_change": "Settle the four unit tickets at the join beside the repairs the driver already settled."
+    }
+  ],
+  "checks_run_and_the_mutants_that_prove_they_bite": [
+    {"check": "budget, narrowing at 1200 words", "reading": "exit 0"},
+    {"check": "budget, narrowing at 1201 words", "reading": "ERROR standards/html-dossier/STANDARD.md: standard has 1201 words, exceeds the standard budget of 1200; exit 1"},
+    {"check": "budget, root at 1201 words", "reading": "ERROR standards/orch-code/STANDARD.md: standard has 1201 words, exceeds the standard budget of 1200; exit 1 -- same number, so decision 4's retired asymmetry is genuinely gone"},
+    {"check": "narrowing carrying ## Workspace / ## Spec fields / ## Stages", "reading": "each refused: section '## X' is a root's; a narrowing carrying it would be a second owner of a fact about the domain; exit 1"},
+    {"check": "narrowing carrying ## Vocabulary", "reading": "exit 0, optional as the table says"},
+    {"check": "root missing ## Workspace / ## Spec fields", "reading": "each refused: standard carries no '## X' heading; exit 1"},
+    {"check": "standard directory carrying scripts/, requirements.txt, tools.txt", "reading": "each refused; exit 1"},
+    {"check": "unknown frontmatter key on a standard", "reading": "ERROR standard frontmatter key 'standards' is not allowed; exit 1"},
+    {"check": "host block at 401 words", "reading": "ERROR templates/host-block.md: surface has 401 words, exceeds the every-turn budget of 400"},
+    {"check": "AGENTS.md at 231 words", "reading": "ERROR AGENTS.md: surface has 231 words, exceeds the every-turn budget of 230"},
+    {"check": "resolver: cycle check removed", "reading": "FAIL test_a_cycle_refuses_by_name"},
+    {"check": "resolver: STANDARD_DEPTH_LIMIT 8 -> 99", "reading": "FAIL test_a_ninth_hop_refuses_and_an_eighth_resolves"},
+    {"check": "resolver: dedupe disabled", "reading": "FAIL test_one_standard_stamped_twice_is_read_once_rather_than_refused and 5 more"},
+    {"check": "resolver: adapter-missing check removed", "reading": "FAIL test_a_resolved_set_carrying_no_adapter_refuses"},
+    {"check": "resolver: adapter-conflict check removed", "reading": "FAIL test_a_resolved_set_carrying_two_adapters_refuses and test_a_narrowing_off_its_domain_refuses_through_narrows_too"},
+    {"check": "_signature_digest forced to None", "reading": "FAIL test_the_library_standard_contract_byte_changes_the_digest -- the signature binding bites"},
+    {"check": "tree path made absolute rather than directory-relative", "reading": "FAIL test_project_ring_with_identical_bytes_has_the_same_digest and test_line_endings_across_the_tree_do_not_change_standard_identity -- the one thing that must NOT move the digest"},
+    {"check": "retired '| Cell | Binding |' refusal removed", "reading": "FAIL test_a_manifest_still_carrying_the_retired_cells_table_is_refused and the chain-walk sibling"}
+  ],
+  "seams_read_and_their_readings": {
+    "U0_against_U3": "clean. contracts/ holds seven .md files; README spells Seven and names all seven; no link anywhere resolves to contracts/pack-signature.md or contracts/sheet.md; no md link into contracts/standard.md carries an anchor, and every prose citation of it (rules 2, 3, 4, 5; the section table; the purity paragraph; the sharing constraints; ## Location and anatomy; ## Admission) names something the file carries. docs/pack-authoring.md is renamed to docs/standard-authoring.md.",
+    "U1_against_U2": "one blocking finding, F2. What U1 walks and what U2 wrote are the same field at the same spelling -- declared_narrows() reads narrows: and all three narrowings declare it -- and no test still asserts the shape U2 replaced; but the migration guard U1 kept for the retired spelling was never deleted.",
+    "U2_against_U3": "clean. Diffing each of U2's eight manifests against the tip's shows 3 insertions / 3 deletions for seven of them and 29/30 for standard-craft, whose whole subject is the retired noun; nothing of U2's was lost to a git mv and nothing was re-applied on top of it. Diffing the pre-U2 references/craft.md against the tip's STANDARD.md for all five roots shows only the added frontmatter, the added ## Making heading and the corrected ../../ link depth.",
+    "U2_against_U2b_and_the_driver_commits": "clean but for F3. The digest is the directory tree and moves for a changed byte, an added file and a deleted file, and does not move for the same bytes in a second ring -- all four proved by mutant. The signature binding is live and non-vacuous. The driver's four commits (4333043f, ce9faaa0, 7f72334a, 6c4a7bdd) each carry their reasoning and their evidence; 4333043f's claim that pack_digest had no remaining caller re-derives -- no occurrence anywhere in the tree.",
+    "the_rename_against_itself": "F1. Re-run rather than trusted: over U3's ten directories the grep returns exactly the two standard-craft lines U3 defended, and those are defensible because section 2 fixes that name. Outside those ten it returns four more, in .orchflows/."
+  },
+  "driver_judgment": {
+    "adding_U2b": "correct, and correctly placed. Spec section 4's disjointness claim was false and is what hid the work: the collapse has two halves and the spec assigned the resolver half to nobody. Giving it its own unit under the old names, before the sweep, rather than to U3 (a rename told that designing is a finding) or to an armed repair (whose goal is a green suite no unit before U3 can reach) is the reading I would have made. The Details it wrote for U2b named the three consequences -- the cells reader, the tree digest, and the silently-None _signature_digest -- and demanded a non-vacuous reading for the third; the child delivered all three and the mutants confirm them.",
+    "leaving_four_repairs_armed_and_unclaimed_until_U3": "sound, and recorded as the run's principal deviation from RUN.md's repair door. Each repair's goal was a green suite; no unit before the sweep could reach one; dispatching them would have been U3's work done early in a child that did not own it.",
+    "routing_unowned_findings_into_Details": "sound. Each of the four routings -- shapes.json split between U1 and U2, README's contract count to U3, the ## Identity sentence to U3, the ## Making non-instruction to U3 -- is a correction against a reading already taken, and each landed."
+  },
+  "report_claims_checked_against_command_output": {
+    "verified": [
+      "install 358 -> 333 and the 20+5 decomposition, re-derived by diffing the two plans rather than read",
+      "the five adapter values git, document-tree, git, git, evidence-store",
+      "all eight manifests between 451 and 900 words against 1200",
+      "U3's retired-term grep returns two lines over its ten directories",
+      "host block 400/400, AGENTS.md 206/230, ARCHITECTURE.md 920",
+      "README's contract count is seven against ls contracts/*.md",
+      "packs/ and sheets/ are gone; standards/ holds eight items",
+      "standards_support.py is 468 lines, under the 500-line presumption U1 was over at 536",
+      "regen.py runs at the tip (exit 0), where it crashed at U1's base"
+    ],
+    "unsupported_claims_found": "none. Every number in every unit's report and in the seven frame journal records re-derives at the tip or at the commit it names.",
+    "one_number_a_child_corrected_and_this_judgment_confirms": "the driver's U2b Details said thirteen test_packs failures; the child counted fourteen and said so. The Details were written off a run summary's ERROR count and missed one FAIL."
+  },
+  "state_facts_not_findings": [
+    "templates/host-block.md sits at exactly 400 of 400 words; the ceiling holds with no room left.",
+    "The validator emits 15 warnings at the tip and 15 at the run base cf5fe59f, in one-to-one correspondence (contracts/pack-signature.md -> contracts/standard.md, packs/orch-code-pack/references/craft.md -> standards/orch-code/STANDARD.md). None added.",
+    "Test methods across tests/*.py: 1135 at the base, 1147 at the tip. No test file was lost without a rename (test_multi_pack.py -> test_multi_standard.py, test_packs.py -> test_standards.py). No check was weakened to reach green.",
+    "tests/test_tickets_bound.BoundCheckCommandTest.test_each_row_carries_the_bound_as_read_and_the_claim_as_measured fails when co-resident with the other test_ticket* modules under unittest discover. It reproduces identically at cf5fe59f and passes alone and under the selected serial-compat lane. Inherited, not this run's.",
+    "spec section 1's clause 'no shipped file names pack, sheet or craft as a library term' is in tension with section 2's fixed item name standards/standard-craft/. Section 2's names are fixed, so the name wins; naming the tension so it is not rediscovered.",
+    "U1 spent 205 tool calls against a bound of 200. Reported by the driver at the time; recorded here because the join, not this judgment, owns what to do about a bound overrun."
+  ]
+}

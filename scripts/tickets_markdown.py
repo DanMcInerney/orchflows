@@ -12,6 +12,16 @@ kept with reasons, deferrals with reasons -- because nothing machine-critical
 was ever read out of them. Nothing is read out of this one either, so its
 form is the child's.
 """
+STANDARDS_FIELD = 'standards'
+STANDARD_SEPARATOR = '@'
+"""The frontmatter field carrying one ticket's resolved chain, and the
+character joining a level's name to its digest inside one entry.
+
+Owned here, at the leaf the pin module and the format owner both
+already import, because a field name that lived in either would put a
+dependency edge between them for one string.
+"""
+
 EXECUTOR_SECTIONS = (REPORT_SECTION,)
 EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
 CUT_SECTIONS = ('Goal', 'Context', 'Details')

@@ -24,6 +24,7 @@ import scripts.tickets_generations as generations  # noqa: E402
 import scripts.workspace as workspace  # noqa: E402
 import scripts.workspace_git as workspace_git  # noqa: E402  the ticket stamp's writer
 import scripts.workspace_record as workspace_record  # noqa: E402  the attempt record
+from tests.test_ticket_callables import standards_field  # noqa: E402  the pin's one builder
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
@@ -89,7 +90,7 @@ def payload_of(completed) -> dict:
 
 def make_ticket(
     run_dir: Path, tid: str, *, scope=("scratch",), extra=(),
-    pack="orch-code-pack", isolation="required", executor="orch-do",
+    standard="orch-code", isolation="required", executor="orch-do",
 ) -> Path:
     """A fixture work item, never this run's own ticket.
 
@@ -97,7 +98,7 @@ def make_ticket(
     shape, so the item carries ``isolation: required`` unless a caller is
     grading some other value through ``extra`` or ``isolation``.
     ``isolation=None`` omits the field entirely, for a fixture proving what
-    an absent declaration derives from the stamped pack. ``executor`` is the
+    an absent declaration derives from the stamped standard. ``executor`` is the
     registered verb this item binds: a judging item establishes a candidate
     like any other and is refused only what a judge may not decide.
     """
@@ -108,7 +109,7 @@ def make_ticket(
         "run: testrun",
         "status: claimed",
         f"executor: {executor}",
-        f"pack: {pack}",
+        "standards: [" + ", ".join(standards_field(standard)) + "]",
         "depends_on: []",
         "write_scope:",
     ]
@@ -321,7 +322,7 @@ def graded_item(tid, *, branch="wt-branch", scope=("scratch",), isolation="requi
     """A ticket of the shared repository, under this test's own id.
 
     ``isolation=None`` omits the field, for a fixture proving what an
-    absent declaration derives from the stamped pack.
+    absent declaration derives from the stamped standard.
     """
 
     graded = graded_repository()

@@ -161,8 +161,8 @@ Deliver one result.
     def test_the_outline_and_slice_executors_collapse_to_one_remedy(self):
         """`orch-outline` retired as a verb in wave 3; `orch-slice` retires
         in W4a together with the instantiate layer that was its only
-        minter of decomposed roots. Both leave their craft behind as the
-        planning `do` making a root or cut toward the pack craft's Lens
+        minter of decomposed roots. Both leave their standard behind as the
+        planning `do` making a root or cut toward the standard's Lens
         entry for that kind (`research/lego-design-2026-08-31.md`, then
         `research/lens-keying-2026-09-02.md`), and both
         predecessors -- `orch-spec` and `orch-decompose` -- refuse toward
@@ -170,7 +170,7 @@ Deliver one result.
         refuses."""
 
         remedy = (
-            "a planning `do` making a `root` or `cut` toward the pack craft's "
+            "a planning `do` making a `root` or `cut` toward the standard's "
             "`## Lens` entry for that kind"
         )
         for retired in ("orch-outline", "orch-spec", "orch-slice", "orch-decompose"):
@@ -181,7 +181,7 @@ Deliver one result.
                 self.assertIn(remedy, refusal)
                 self.assertNotIn("bind '", refusal)
 
-    def test_do_and_judge_require_pack_authority(self):
+    def test_do_and_judge_require_standard_authority(self):
         text = """---
 id: R
 run: r
@@ -211,9 +211,9 @@ Deliver one result.
 
 []
 """
-        self.assertTrue(any("executor-pack-required" in defect for defect in tickets.ticket_defects(text)))
+        self.assertTrue(any("executor-standard-required" in defect for defect in tickets.ticket_defects(text)))
         judged = text.replace("executor: orch-do", "executor: orch-judge")
-        self.assertTrue(any("executor-pack-required" in defect for defect in tickets.ticket_defects(judged)))
+        self.assertTrue(any("executor-standard-required" in defect for defect in tickets.ticket_defects(judged)))
 
     def test_shipped_callable_skill_packages_are_exactly_registry(self):
         root = ROOT / "skills"
@@ -224,19 +224,19 @@ Deliver one result.
         }
         self.assertEqual(set(tickets.CALLABLE_EXECUTORS), shipped)
 
-    def test_pack_craft_carries_each_absorbed_execution_family(self):
-        root = ROOT / "packs"
+    def test_each_standard_carries_its_absorbed_execution_family(self):
+        root = ROOT / "standards"
         expected = {
-            "orch-code-pack": ("checks answer to goal", "repair", "conflict"),
-            "orch-content-pack": ("draft", "assembly", "cut log"),
-            "orch-data-pack": ("pipeline", "reproduce", "leakage"),
-            "orch-design-pack": ("view identities", "capture", "golden"),
-            "orch-research-pack": ("primary sources", "synthesize", "gaps"),
+            "orch-code": ("checks answer to goal", "repair", "conflict"),
+            "orch-content": ("draft", "assembly", "cut log"),
+            "orch-data": ("pipeline", "reproduce", "leakage"),
+            "orch-design": ("view identities", "capture", "golden"),
+            "orch-research": ("primary sources", "synthesize", "gaps"),
         }
-        for pack, markers in expected.items():
-            text = (root / pack / "references" / "craft.md").read_text(encoding="utf-8").lower()
+        for standard, markers in expected.items():
+            text = (root / standard / "STANDARD.md").read_text(encoding="utf-8").lower()
             for marker in markers:
-                with self.subTest(pack=pack, marker=marker):
+                with self.subTest(standard=standard, marker=marker):
                     self.assertIn(marker, text)
 
     def test_the_declared_launch_shape_is_the_invocation_and_nothing_else(self):

@@ -189,7 +189,7 @@ def _ticket_detail(ticket: dict, run_record: dict, root: Path, run: str) -> dict
     record["report"] = record["sections"].get(REPORT_SECTION.lower(), "")
     record["context"] = record["sections"].get("context", "")
     record["details"] = _redact_host_paths(_text(ticket.get("details")), root, ticket)
-    record["pack"] = _text(ticket.get("pack"))
+    record["standard"] = _text(ticket.get("standard"))
     events = read_events(root, run)
     record["history"] = [
         {

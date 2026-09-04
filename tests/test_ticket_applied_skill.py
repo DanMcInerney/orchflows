@@ -24,7 +24,7 @@ from unittest import mock
 
 from scripts import rings, tickets_assignment
 
-from tests.test_ticket_callables import CODE_PACK, CallableSinkTest
+from tests.test_ticket_callables import CODE_STANDARD, CallableSinkTest
 from tests.test_ticket_pins import _skill
 
 WORKER_SKILL = "house-style"
@@ -67,13 +67,13 @@ class AppliedSkillTest(CallableSinkTest):
 
     def do(self, *arguments, **keywords):
         return self.callable(
-            "do", "--pack", CODE_PACK, "--isolation", "required",
+            "do", "--standard", CODE_STANDARD, "--isolation", "required",
             *arguments, **keywords,
         )
 
     def judge(self, *arguments, **keywords):
         return self.callable(
-            "judge", "--pack", CODE_PACK, "--isolation", "none",
+            "judge", "--standard", CODE_STANDARD, "--isolation", "none",
             "--artifacts", "git:" + "a" * 40, *arguments, **keywords,
         )
 

@@ -89,7 +89,7 @@ def read_ticket(path: Path) -> dict:
         # The planner's free-form guidance for this one child: prose, not a
         # path list, so nothing here parses it into items.
         "details": sections.get("Details", ""),
-        "pack": _scalar(front.get("pack")),
+        "standard": _scalar(front.get("standard")),
         "goal": sections.get("Goal", ""),
         "sections": sections,
         "raw": text,

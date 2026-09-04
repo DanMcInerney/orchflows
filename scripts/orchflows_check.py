@@ -18,7 +18,7 @@ anatomy and its tier word budget are not its law. Its frontmatter is
 graded, because a name that does not match its folder resolves nothing;
 and its `role` is graded against the two an applied skill may declare,
 because `--skill` reads that field and a ring skill without one would pass
-here and be refused at dispatch. A ring pack, workflow and sheet take the
+here and be refused at dispatch. A ring standard and workflow take the
 library's checks whole.
 """
 
@@ -37,20 +37,20 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 
 
 def support():
-    """`(bundle, names, packages, sheets, structure, tooling)`, checkout or install."""
+    """`(bundle, names, packages, standards, structure, tooling)`, checkout or install."""
 
     library = str(rings.lib_root())
     if library not in sys.path:
         sys.path.insert(0, library)
     try:
         from tools.validate_support import (
-            bundle, names, packages, sheets, structure, tooling,
+            bundle, names, packages, standards, structure, tooling,
         )
     except ImportError:  # pragma: no cover - direct/installed flat script path
         from validate_support import (
-            bundle, names, packages, sheets, structure, tooling,
+            bundle, names, packages, standards, structure, tooling,
         )
-    return bundle, names, packages, sheets, structure, tooling
+    return bundle, names, packages, standards, structure, tooling
 
 
 def ring_at(argument=None) -> Path:
@@ -127,7 +127,7 @@ def _package(directory: Path, manifest: Path, kind: str) -> dict:
         "path": directory,
         "skill_md": manifest,
         "kind": kind,
-        "is_pack": kind == "pack",
+        "is_standard": kind == "standard",
     }
 
 
@@ -166,8 +166,9 @@ def _tooling(ring: Path, diag, declaring, packages) -> None:
 
     untrusted = _untrusted(ring)
     for kind, directory in declaring:
-        if kind == "sheet":
-            continue  # `validate_sheets` has already refused this file's existence
+        if kind == "standard":
+            continue  # `validate_standards` has already refused this file's existence
+
         tools = orchflows_tools.tools_of(directory)
         if tools is None:
             continue
@@ -187,7 +188,7 @@ def _tooling(ring: Path, diag, declaring, packages) -> None:
                 diag.error(file_label, f"line {entry['line']}: {missing}")
 
 
-def _grade(ring: Path, diag, bundle, names, packages, sheets, structure, tooling) -> dict:
+def _grade(ring: Path, diag, bundle, names, packages, standards, structure, tooling) -> dict:
     """Run every check over the ring, and return what each kind counted."""
 
     counted = {}
@@ -197,12 +198,13 @@ def _grade(ring: Path, diag, bundle, names, packages, sheets, structure, tooling
         found = items(ring, kind)
         counted[kind] = len(found)
         declaring.extend((kind, directory) for directory, _manifest in found)
-        if kind == "sheet":
-            continue  # a sheet has no body and its own checks below
         for directory, manifest in found:
+            source = packages._read_source(manifest)
+            if kind == "standard" and packages.declares_narrows(source):
+                continue  # a narrowing has no root's body and its own checks below
             pkg = _package(directory, manifest, kind)
             fm, body = packages.parse_frontmatter(
-                packages._read_source(manifest), packages.rel(manifest), diag,
+                source, packages.rel(manifest), diag,
             )
             if fm is None or body is None:
                 continue
@@ -216,16 +218,13 @@ def _grade(ring: Path, diag, bundle, names, packages, sheets, structure, tooling
                     fm, pkg, diag, allowed=packages.APPLIED_ROLE_VALUES,
                 )
                 continue
-            if kind != "pack":
-                continue
             packages.validate_role(fm, pkg, diag)
             packages.validate_anatomy(body, pkg, diag)
-            packages.validate_budget(body, pkg, diag)
-            packages.validate_pack_signature(body, pkg, diag)
-            structure.validate_craft_budget(pkg, diag)
-    names.validate_craft_sections(graded, diag)
+            standards.validate_standard_adapter(fm, pkg, diag)
+            structure.validate_standard_budget(manifest, diag)
+    names.validate_standard_sections(graded, diag)
     structure.validate_templates(diag, roots=[ring / rings.RING_DIRS["workflow"]])
-    sheets.validate_sheets(diag, pack_roots=_roots(ring, "pack"))
+    standards.validate_standards(diag, standard_roots=_roots(ring, "standard"))
     structure.validate_call_graph(graded, diag, known=resolvable_names(ring))
     # A `tools.txt` is a declaration `orchflows sync` reads before a run; a
     # line its parser cannot read is a tool nobody is told is missing. The
@@ -242,15 +241,15 @@ def _grade(ring: Path, diag, bundle, names, packages, sheets, structure, tooling
 def check(ring: Path):
     """`(diagnostics, counts)` for one ring, graded by the library's checks."""
 
-    bundle, names, packages, sheets, structure, tooling = support()
-    modules = (bundle, names, packages, sheets, structure, tooling)
+    bundle, names, packages, standards, structure, tooling = support()
+    modules = (bundle, names, packages, standards, structure, tooling)
     diag = packages.Diagnostics()
     saved = [module.ROOT for module in modules]
     for module in modules:
         module.ROOT = ring
     try:
         counted = _grade(
-            ring, diag, bundle, names, packages, sheets, structure, tooling,
+            ring, diag, bundle, names, packages, standards, structure, tooling,
         )
     finally:
         for module, root in zip(modules, saved):

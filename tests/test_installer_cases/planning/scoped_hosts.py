@@ -521,26 +521,26 @@ class TestScopedHostConfiguration(unittest.TestCase):
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
             packages = install.discover_packages()
             templates = install.discover_workflow_skills()
-            sheets = install.discover_sheets()
+            standards = install.discover_standards()
             # One flat entry per canonical name — skills across every tier,
-            # packs, invocable templates and stamped sheets alike — no tier
-            # in the path.
+            # invocable templates and stamped standards alike — no tier in
+            # the path.
             self.assertEqual(
-                len(packages) + len(templates) + len(sheets), len(plan.by_name),
+                len(packages) + len(templates) + len(standards), len(plan.by_name),
             )
             self.assertEqual(
                 {p.parent.name for p in packages}
                 | {d.name for d, _, _ in templates}
-                | {d.name for d, _, _ in sheets},
+                | {d.name for d, _, _, _ in standards},
                 {dest.parent.name for dest, _ in plan.by_name},
             )
-            sheet_names = {d.name for d, _, _ in sheets}
+            manifest_by_name = {d.name: m for d, m, _, _ in standards}
             for dest, content in plan.by_name:
                 self.assertEqual(by_name_root, dest.parent.parent.resolve())
                 # The manifest name is what `scripts/rings.py` resolves, so a
-                # sheet's pointer carries the sheet's manifest name.
+                # standard's pointer carries that standard's manifest name.
                 self.assertEqual(
-                    "SHEET.md" if dest.parent.name in sheet_names else "SKILL.md",
+                    manifest_by_name.get(dest.parent.name, "SKILL.md"),
                     dest.name,
                 )
                 frontmatter, body = install.split_frontmatter(content)
@@ -549,57 +549,71 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(str(expected_lib_path), body)
                 self.assertIn("follow it exactly.", body)
 
-    def test_a_sheet_directory_is_read_as_a_sheet_and_a_bare_one_is_not(self):
+    def test_a_standard_directory_is_read_as_one_and_a_bare_one_is_not(self):
         """Discovery, against a real tree rather than a mock: a directory
-        with the manifest and a `name` is a sheet; one without either is
-        library data that still reaches the lib copy but takes no name."""
+        with the manifest and a `name` is a standard; one without either is
+        library data that still reaches the lib copy but takes no name.
+
+        A root and a narrowing sit in the one directory under the one
+        manifest name, so discovery reads both from the same walk and the
+        `narrows:` field is all that tells them apart."""
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            good = root / "sheets" / "market-brief"
+            good = root / "standards" / "market-brief"
             good.mkdir(parents=True)
-            (good / "SHEET.md").write_text(
-                "---\nname: market-brief\ndescription: d\npacks: [orch-code-pack]\n"
-                "---\n\n## Craft\n\nnarrow it\n",
+            (good / "STANDARD.md").write_text(
+                "---\nname: market-brief\ndescription: d\nnarrows: orch-code\n"
+                "---\n\n## Making\n\nnarrow it\n",
                 encoding="utf-8",
             )
-            (root / "sheets" / "references").mkdir()
-            (root / "sheets" / "references" / "notes.md").write_text("data\n", encoding="utf-8")
-            unnamed = root / "sheets" / "nameless"
+            (root / "standards" / "references").mkdir()
+            (root / "standards" / "references" / "notes.md").write_text("data\n", encoding="utf-8")
+            unnamed = root / "standards" / "nameless"
             unnamed.mkdir()
-            (unnamed / "SHEET.md").write_text("---\ndescription: d\n---\n", encoding="utf-8")
+            (unnamed / "STANDARD.md").write_text("---\ndescription: d\n---\n", encoding="utf-8")
+            rooted = root / "standards" / "orch-code"
+            rooted.mkdir(parents=True)
+            (rooted / "STANDARD.md").write_text(
+                "---\nname: orch-code\ndescription: d\nadapter: git\n"
+                "---\n\n## Making\n\nstate it\n",
+                encoding="utf-8",
+            )
 
-            found = install.discover_sheets(root)
+            found = install.discover_standards(root)
 
-            self.assertEqual(["market-brief"], [d.name for d, _, _ in found])
-            self.assertIn("packs: [orch-code-pack]", found[0][1])
+            self.assertEqual(
+                [("market-brief", "STANDARD.md"), ("orch-code", "STANDARD.md")],
+                [(d.name, manifest) for d, manifest, _, _ in found],
+            )
+            self.assertIn("narrows: orch-code", found[0][2])
 
-    def test_a_sheet_lands_in_the_lib_copy_and_takes_one_flat_pointer(self):
+    def test_a_standard_lands_in_the_lib_copy_and_takes_one_flat_pointer(self):
         """Both halves of the installed surface a stamped item needs.
 
-        The copy: `sheets` is in `CANONICAL_DIRS`, the one list the lib-copy
-        loop walks -- witnessed here by `packs`, a canonical directory that
+        The copy: `standards` is in `CANONICAL_DIRS`, the one list the lib-copy
+        loop walks -- witnessed here by `standards`, a canonical directory that
         does exist in this tree, so the list membership is the copy.
 
-        The pointer: `by-name/<name>/SHEET.md`, naming the installed
+        The pointer: `by-name/<name>/STANDARD.md`, naming the installed
         manifest. Discovery is substituted so the pointer's shape is graded
-        against one fixed sheet rather than against whichever sheets the
-        library happens to ship; the real tree's sheets reach the index
+        against one fixed standard rather than against whichever the
+        library happens to ship; the real tree's standards reach the index
         through `test_user_plan_writes_flat_by_name_index_for_every_package`.
         """
 
         from installer import planning as install_planning
 
-        self.assertIn("sheets", install.CANONICAL_DIRS)
+        self.assertIn("standards", install.CANONICAL_DIRS)
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
-            sheet_dir = install.REPO_ROOT / "sheets" / "market-brief"
+            standard_dir = install.REPO_ROOT / "standards" / "market-brief"
             frontmatter = "---\nname: market-brief\ndescription: d\n---"
             with patch.object(install.Path, "home", return_value=home), \
                     patch.object(
-                        install_planning, "discover_sheets",
-                        return_value=[(sheet_dir, frontmatter, "body")],
+                        install_planning, "discover_standards",
+                        return_value=[(standard_dir, "STANDARD.md", frontmatter, "body")],
                     ), mock_host_clis("claude"):
                 plan = install.build_plan()
 
@@ -613,22 +627,22 @@ class TestScopedHostConfiguration(unittest.TestCase):
             # a runner's temp dir may be a short name (RUNNER~1) or a
             # symlink (/private/var), so compare resolved to resolved.
             self.assertEqual(
-                lib_home / "by-name" / "market-brief" / "SHEET.md",
+                lib_home / "by-name" / "market-brief" / "STANDARD.md",
                 pointer[0].resolve(),
             )
             self.assertIn(
-                str(lib_home / "sheets" / "market-brief" / "SHEET.md"), pointer[1],
+                str(lib_home / "standards" / "market-brief" / "STANDARD.md"), pointer[1],
             )
             self.assertIn("name: market-brief", pointer[1])
-            # No host surface: a sheet is stamped, never invoked.
+            # No host surface: a standard is stamped, never invoked.
             for surface in (plan.claude_adapters, plan.codex_prompts, plan.codex_skills):
                 self.assertEqual(
                     [], [d for d, _ in surface if "market-brief" in str(d)],
                 )
             # The copy loop's witness: a canonical directory that exists here
-            # has its files planned into lib, so `sheets` in the list is the
-            # same copy on the day a sheet exists.
-            sample = install.REPO_ROOT / "packs" / "orch-code-pack" / "SKILL.md"
+            # has its files planned into lib, so `standards` in the list is the
+            # same copy on the day a standard exists.
+            sample = install.REPO_ROOT / "standards" / "orch-code" / "STANDARD.md"
             self.assertIn(
                 (sample, plan.lib_home / sample.relative_to(install.REPO_ROOT)),
                 plan.lib_copies,
@@ -646,7 +660,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             self.assertEqual(
                 len(install.discover_packages())
                 + len(install.discover_workflow_skills())
-                + len(install.discover_sheets()),
+                + len(install.discover_standards()),
                 len(plan.by_name),
             )
 

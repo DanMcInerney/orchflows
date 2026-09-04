@@ -1,0 +1,136 @@
+{
+  "judge": "B1.9",
+  "run": "20260904T160000Z-standards",
+  "round": 2,
+  "answers": "research/standards-tickets/judge-findings.json (B1.6, committed a4bd4500)",
+  "tip": "62f04c4f596dea03afcc9cbc91add9e303bd5c59",
+  "branch": "claude/standards",
+  "artifacts": [
+    "git:1fa8876e1525c9181fbd42b467e86f5c5999b183",
+    "git:3c6f5ccbf93d762acf0c57d374874488432108be"
+  ],
+  "verdict": "clean",
+  "verdict_reason": "F1 and F2 are extinguished by re-run, not by reading: the eleven-directory grep returns no line naming a retired item, and the sibling test goes red under the two-adapter mutant at the tip. F3 and F6 are true as they now stand and name nothing retired. Eight files moved, all at the four findings' named sites or the one derived file a regen touches. All three gates exit 0 at the tip and every frozen-goal number re-derives. One non-blocking finding, about a count in the driver's commit message, not about the tree.",
+  "gates_at_tip": [
+    {"command": "uv run --no-project python tools/run_required.py --no-cache", "exit": 0, "note": "five rows 0 0 0 0 0; planned entries: 333; tree 7452f6a19c5c; grep -n 'FAILED MODULE' over the redirected log matched nothing (grep exit 1); ran 18:35:51 to 18:38:09 in the foreground"},
+    {"command": "python tools/regen.py --check", "exit": 0, "note": "derived artifacts are current: t0-shapes, lifecycle, ci-topology, host-adapters, serial-compat-manifest"},
+    {"command": "git diff --check", "exit": 0}
+  ],
+  "F1_re_run": {
+    "command": "grep -rn \"\\bpack\\b\\|\\bsheet\\b\\|\\bcraft\\b\" rules/ contracts/ docs/ templates/ skills/ standards/ example-workflows/ scripts/ tools/ installer/ .orchflows/ --exclude=*.json --exclude=*.html --exclude=*.pyc --exclude-dir=__pycache__",
+    "note": "U3's own spelling at research/standards-tickets/U3.details.md:29 with .orchflows/ appended, the exclusions the first round and the repair both used; exit 0",
+    "survivors": [
+      {"line": "standards/standard-craft/STANDARD.md:2:name: standard-craft", "defence": "the item's fixed name; spec section 2 fixes it; expected"},
+      {"line": "standards/standard-craft/STANDARD.md:7:# standard-craft", "defence": "same"},
+      {"line": ".orchflows/skills/research-acquire/tests/test_adapters_cases/reddit_feed.py:65: T07's craft pass caught in the other direction.", "defence": "a test docstring naming a past review pass; ordinary English; expected; predates the run (7fb3c8c8, 2026-09-02, before the run base cf5fe59f of 2026-09-04)"},
+      {"line": ".orchflows/skills/research-acquire/tests/fixtures/transport/minimal_adapter.py:36: \"\"\"One record per nonempty line. The whole of this adapter's craft.\"\"\"", "defence": "the fourth line. A fixture docstring about a super-research transport adapter's parse_body; 'craft' is ordinary English for what that function does, the same class as the reddit_feed line; it names no library item, and the library never had a craft belonging to an adapter. Predates the run in the same commit 7fb3c8c8. Not F1's class -- see finding R1 for what it is evidence of."}
+    ],
+    "the_four_lines_F1_named": "absent: BUNDLE.md:14-15 now reads skills/, standards/ and example-workflows/ (ls -d packs sheets: No such file or directory; standards/ holds the eight items); SKILL.md:12 reads orch-research (standards/orch-research/STANDARD.md exists, adapter: evidence-store); SKILL.md:15 reads the standard's entry; SKILL.md:78 reads this skill commits nothing",
+    "first_round_command_re_run": "git grep -nE '\\bpacks?\\b|\\bsheets?\\b|\\bcrafts?\\b' -- ':!research/*' ':!REVIEW*' ':!benchmarks/*' ':!reader/*' ':!.orch/*' ':!*.json' ':!*.html' ':!*fixtures*' returns exactly three lines (standard-craft twice, reddit_feed.py:65); dropping the fixtures exclusion adds only minimal_adapter.py:36",
+    "pack_suffixed_names": "git grep -nE 'orch-[a-z]+-pack' outside research/benchmarks/REVIEW/reader/.orch hits only tests/fixtures/final_specs/01/authorities.json and 04/historical.json -- frozen fixture JSON of past specs, the class F9 already recorded; no shipped prose",
+    "excluded_json_html": "git grep -c over .orchflows/*.json and *.html: instagram web_profile_info.json 1, reddit_shreddit listing.html 3, tiktok_public video_page.html 1 -- the five third-party captures the repair enumerated, reproduced"
+  },
+  "F2_re_run": {
+    "method": "scratch copy of the tip by git archive HEAD (no git metadata; scripts/standards_support.py sha256 d578d9f3... identical to the workspace's); mutant applied with sed to that copy only; workspace git status clean before and after",
+    "sibling_unmutated": {"command": "python -m unittest tests.test_ticket_pins.StampedCallableTest.test_a_narrowing_off_its_domain_refuses_through_narrows_too", "exit": 0, "reading": "Ran 1 test, OK"},
+    "mutant": "scripts/standards_support.py:451 'if len(declaring) > 1:' -> 'if False:'",
+    "sibling_mutated": {"exit": 1, "reading": "FAIL: AssertionError: 'error' not found in {'do': {... 'launch': {... 'prompt': ...}}} -- the callable opened and minted ticket B1; FAILED (failures=1)"},
+    "whole_module_mutated": {"command": "python -m unittest tests.test_ticket_pins", "exit": 1, "reading": "Ran 35 tests; FAILED (failures=2): test_a_narrowing_off_its_domain_refuses_through_narrows_too and StandardChainTest.test_a_resolved_set_carrying_two_adapters_refuses -- the door is held at two seams, the callable and the chain"},
+    "test_standards_mutated": {"exit": 0, "reading": "Ran 22 tests, OK -- that module never covered this door, so nothing there was weakened"},
+    "verdict": "the survivor goes red; the deletion removed no door nothing else holds",
+    "what_the_deleted_test_covered_exactly": "In the copy, with tests/test_ticket_pins.py alone reverted to 7d9cec38 and the deleted test re-run at the tip: FAIL, 'error' not found -- the callable opens for a ring item carrying standards: [orch-content] and no narrows:. That is the coverage removed: the refusal of a legacy-spelled off-domain item at pin time. It is coverage of an inadmissible state: adding standards: [orch-content] to standards/html-dossier/STANDARD.md in the copy and running tools/validate.py gives 'ERROR standards/html-dossier/STANDARD.md: standard frontmatter key 'standards' is not allowed', exit 1, at this tip.",
+    "repair_claim_before_deletion": {"command": "at a git-archive copy of 7d9cec38: python -m unittest <sibling> <deleted test>", "exit": 0, "reading": "Ran 2 tests, OK -- the repair's 'both green before deleting' claim reproduces"},
+    "residue": "git grep for declared_domain, domain_refusal, _domain_refusals, test_a_narrowing_off_its_declared_domain_refuses hits only research/standards-tickets/judge-findings.json, the first round's record; no live reader of a manifest standards: key remains in scripts/ or tools/ (STANDARDS_FIELD in tickets_markdown/tickets_shapes is the ticket's pinned-chain field, a different fact); Path, Dict, List, Sequence and dequote each still have live sites in tickets_pins.py (4, 4, 8, 4, 3 occurrences)",
+    "sizes": "scripts/tickets_pins.py 295 lines, scripts/standards_support.py 468, tests/test_ticket_pins.py 691; test defs in test_ticket_pins.py 36 -> 35, tree-wide 2145 -> 2144; the serial-compat manifest diff is one deleted line and regen --check is current"
+  },
+  "F3_against_F1": {
+    "what_stands": "scripts/standards_support.py:190-191: '`contracts/standard.md` is that document since the collapse retired the contract it replaced.'",
+    "commit_1fa8876e": "applied the first judge's prescription verbatim ('retired the pack signature contract'), which put the word pack into scripts/, inside U3's sweep scope; the child flagged it and offered the alternative",
+    "commit_3c6f5ccb": "the driver took the alternative, one line, no other change",
+    "true": "yes: ca83a8fe ('Make contracts/standard.md the one owner of the standard kind') is the one commit that deleted contracts/pack-signature.md, and _signature_digest hashes rings.lib_root()/contracts/standard.md three lines below the sentence",
+    "names_anything_retired": "no; the grep above returns no line from scripts/",
+    "verdict": "extinguished, and the seam this round exists to catch did not open: the tree under the sweep's scope carries no retired term"
+  },
+  "F6": {
+    "what_stands": "contracts/standard.md:84-87: 'A root's `## Lens` carries exactly these `###` entries, in this order: ... ; a narrowing keys only the entries it adds to.'",
+    "true": "yes: standards/html-dossier ### doc, market-brief ### evidence, standard-craft ### doc, each one entry; the following paragraph's 'a narrowing that keys no entry the stamp's kind matches adds nothing' presupposes it; tools/validate.py exits 0 over these items inside run_required",
+    "verdict": "extinguished"
+  },
+  "blast_radius": {
+    "files": [
+      {"path": ".orchflows/BUNDLE.md", "finding": "F1"},
+      {"path": ".orchflows/skills/research-acquire/SKILL.md", "finding": "F1"},
+      {"path": "contracts/standard.md", "finding": "F6"},
+      {"path": "scripts/standards_support.py", "finding": "F3, both commits"},
+      {"path": "scripts/tickets_pins.py", "finding": "F2"},
+      {"path": "tests/test_ticket_pins.py", "finding": "F2; the _narrowing fixture's standards= parameter and its docstring sentence went with the one caller, reported by the repair"},
+      {"path": "tests/serial_compat_manifest.json", "finding": "derived; one line, the deleted test's identity; regen --check current"}
+    ],
+    "outside_the_named_sites": "none. git diff --name-only 7d9cec38 3c6f5ccb lists exactly these seven; the ticket anticipated two derived files and only one moved, which the repair's report says and regen --check confirms",
+    "F4_F5_F7_F8_F9_F10": "untouched: scripts/standards.py, scripts/orchflows_scaffold.py, research/standards-spec-2026-09-04.md and benchmarks/ do not appear in either commit; the five ## Making sections were not opened"
+  },
+  "frozen_goal_numbers_rederived_at_tip": {
+    "install_dry_run": {
+      "tip_62f04c4f": 333,
+      "run_base_cf5fe59f": 359,
+      "reduction": 26,
+      "decomposition_by_diffing_the_two_plans": {
+        "library_files": "126 -> 120: removed 20 (5 pack SKILL.md, 5 craft.md, packs.py, packs_support.py, sheets/.gitkeep + 3 SHEET.md, validate_support/sheets.py, contracts/pack-signature.md, contracts/sheet.md, docs/pack-authoring.md); added 14 (standards.py, standards_support.py, standards/.gitkeep + 8 STANDARD.md, validate_support/standards.py, contracts/standard.md, docs/standard-authoring.md); net -6",
+        "host_adapter_writes": "-20: the five orch-*-pack entries in each of Claude skills, Codex prompts, Codex skills, Grok skills",
+        "by_name": "8 removed (5 pack SKILL.md, 3 SHEET.md), 8 written (STANDARD.md); net 0",
+        "scripts": "82 -> 82 (packs.py/packs_support.py -> standards.py/standards_support.py); bin install likewise 2 for 2",
+        "other_groups": "runtime directories 4, flat name index 20, frontend assets 45, host configuration 3, managed blocks 1, managed imports 1 -- unchanged",
+        "sum": "-6 - 20 = -26 = 359 - 333; agrees with the first round's 20 + 5 + 1"
+      }
+    },
+    "standard_budget": {
+      "constant": "STANDARD_BUDGET = 1200 at tools/validate_support/common.py:84, the one constant; git grep CRAFT_BUDGET|SHEET_BUDGET outside research/ and REVIEW*: no match",
+      "counter": "structure.py:56 len(source.split()) -- agrees with wc -w",
+      "manifest_words": {
+        "standards/orch-design/STANDARD.md": 900,
+        "standards/orch-code/STANDARD.md": 882,
+        "standards/orch-data/STANDARD.md": 738,
+        "standards/orch-content/STANDARD.md": 730,
+        "standards/orch-research/STANDARD.md": 685,
+        "standards/html-dossier/STANDARD.md": 512,
+        "standards/standard-craft/STANDARD.md": 484,
+        "standards/market-brief/STANDARD.md": 451
+      },
+      "unchanged_from_round_1": true
+    },
+    "host_block_words": {"value": 400, "ceiling": 400, "source": "SURFACE_BUDGET at common.py:33; wc -w templates/host-block.md"},
+    "agents_md_words": {"value": 206, "ceiling": 230},
+    "contracts_count": {"files": 7, "listing": "bundle, dispatch, result, shapes.json, standard, verdict, work-item, worklog", "README_spelling": "README.md:224 'Seven contracts -- bundle, dispatch, result, ...'"}
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "blocking": false,
+      "kind": "report-claim-vs-command-output",
+      "cause": "The driver's follow-on commit message (3c6f5ccb) says 'The scoped grep now returns three lines: the item name standard-craft twice ... and one test docstring in the home ring'. The scoped grep -- U3's spelling with .orchflows/ added, the one the sentence names -- returns four text lines at the tip; the fourth is .orchflows/skills/research-acquire/tests/fixtures/transport/minimal_adapter.py:36. Three is the count under the first round's git grep, whose pathspec excludes *fixtures*.",
+      "evidence": "the two commands and their outputs under F1_re_run; the repair's own evidence record listed both .orchflows lines, so the miscount is the driver's and not the child's",
+      "why_it_is_not_F1": "the line is a fixture docstring, ordinary English about a transport adapter's parse_body, the same class as the reddit_feed.py:65 line the driver counted; it names no library item (the library's craft belonged to a pack, never to an adapter); it predates the run (7fb3c8c8, 2026-09-02). The ticket's Details say a fourth survivor is a finding; I deviate on its class -- it is a finding about the count in the record, not about a shipped file naming a retired item -- and report the deviation here with the grep output as its evidence.",
+      "smallest_change": "none to the tree. The corrected count stands in this record: four text lines under U3's spelling with .orchflows/, three under the first round's pathspec; all four defended."
+    }
+  ],
+  "state_facts_not_findings": [
+    "A ring item that is neither a root (no adapter:) nor a narrowing (no narrows:) resolves at pin time as a bare link: the chain walk in standards_support._chain returns when declared_narrows is empty and resolve_chain only counts adapters. The re-applied deleted test shows exactly this at the tip (the callable opened). tools/validate.py refuses such an item in the library tree ('missing required key narrows'), but pin_fields does not validate a ring item's frontmatter. This predates the repair -- the only pin-time guard was the legacy standards: door, which never fired for an item carrying no such key -- and no unit of this run owned it. Recorded as successor scope: a pin-time refusal of a manifest that declares neither adapter: nor narrows:, or a validator pass over ring items at resolution.",
+    "The repair's report and the driver's Details both anticipated two derived files moving under regen; one moved. Not a finding: regen --check is current and the report says so.",
+    "The first round's F4, F5, F7, F8, F9, F10 remain exactly as recorded; nothing this round touched their sites.",
+    "The whole test_ticket_pins module under the mutant lost two tests, not one: the chain-level test_a_resolved_set_carrying_two_adapters_refuses is a second, independent check on the same door. The rule the deleted test asserted is therefore held at two seams."
+  ],
+  "report_claims_checked_against_command_output": {
+    "verified": [
+      "the eleven-directory grep's survivors, reproduced line for line including the five excluded json/html matches",
+      "sibling green before and red under the mutant; both tests green at 7d9cec38 before deletion",
+      "run_required --no-cache exit 0 with planned entries 333; regen --check exit 0; git diff --check exit 0",
+      "seven files in the repair commit, one in the driver's; no import in tickets_pins.py fell out of use",
+      "the manifest diff is one line; test identities dropped by exactly one"
+    ],
+    "unsupported": "none in the repair's report. One count in the driver's commit message is off by one (R1)."
+  },
+  "deviations_from_details": [
+    "Details: 'A fourth is a finding.' Filed as R1, non-blocking and about the driver's count rather than the tree, because the fourth line is not of F1's class; evidence under F1_re_run."
+  ],
+  "scratch_incident": "A first attempt to make the mutant copy with git worktree add --detach <scratchpad>/mut HEAD exited 128 (not a git repository) and left a checkout with no .git holding 36 tests in test_ticket_pins.py where the tip holds 35 -- a tree that was not the tip. Its readings are discarded; the directory was deleted and git worktree prune run (no registration under this scratchpad remained). The readings above come from git archive HEAD copies, whose bytes were checked against the workspace by sha256. Logged as friction."
+}

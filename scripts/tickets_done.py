@@ -38,6 +38,7 @@ if __package__:
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
+    from .tickets_pins import STANDARDS_FIELD
     from .tickets_report_note import file_once
     from .tickets_store import (
         TicketWriteRefused, _create_text_exclusively, _load_ticket,
@@ -54,6 +55,7 @@ else:  # pragma: no cover - direct/installed flat script path
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
+    from tickets_pins import STANDARDS_FIELD
     from tickets_report_note import file_once
     from tickets_store import (
         TicketWriteRefused, _create_text_exclusively, _load_ticket,
@@ -129,7 +131,7 @@ def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
     fields = {
         "id": check_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": "orch-judge",
-        "pack": dequote(source.get("pack")) or None,
+        STANDARDS_FIELD: source.get(STANDARDS_FIELD) or None,
         "depends_on": [depends_on],
         "isolation": "none", "bound": source.get("bound"),
         "root_generation": source.get("root_generation"),
@@ -273,7 +275,7 @@ def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict
     rendered = _render_ticket({
         "id": repair_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": "orch-do",
-        "pack": dequote(source.get("pack")) or None,
+        STANDARDS_FIELD: source.get(STANDARDS_FIELD) or None,
         "depends_on": [],
         "isolation": "none", "bound": source.get("bound"),
         "root_generation": source.get("root_generation"),

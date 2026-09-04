@@ -113,7 +113,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertEqual(1, host.count(authoring_pointer))
         self.assertRegex(
             collapsed_host,
-            re.compile(r"Skill/workflow/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
+            re.compile(r"Skill/workflow/standard/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
         )
         self.assertNotIn("**errand**", collapsed_host)
         self.assertNotIn("sequence: [orch-outline, orch-slice]", host)

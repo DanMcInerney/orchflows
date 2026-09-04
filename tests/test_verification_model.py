@@ -33,9 +33,9 @@ class GoalEvidenceContractTest(unittest.TestCase):
         self.assertNotIn("## Completion test", contract)
         self.assertNotIn("named oracle", contract)
 
-    def test_execute_consumes_pack_craft_and_records_post_work_evidence(self):
+    def test_execute_consumes_the_standard_and_records_post_work_evidence(self):
         execute = read("skills/kernel/orch-do/SKILL.md")
-        self.assertIn("whole craft document", execute)
+        self.assertIn("read the whole manifest", " ".join(execute.split()))
         # The Details prescribe/deviate rule is contracts/work-item.md's and
         # the launch prompt's; a third copy here was the same law thrice.
         self.assertNotIn("Details prescribes", execute)
@@ -44,19 +44,19 @@ class GoalEvidenceContractTest(unittest.TestCase):
         result_contract = " ".join(read("contracts/result.md").split())
         self.assertIn("do not change the semantic assignment digest", result_contract)
 
-    def test_callable_bodies_do_not_resolve_the_craft_themselves(self):
-        # One fact, one owner: the launch prompt hands the craft path and
-        # the artifact kind, so neither callable restates how a craft is
-        # projected. `packs.py cells` itself is not retired -- the
+    def test_callable_bodies_do_not_resolve_the_standard_themselves(self):
+        # One fact, one owner: the launch prompt hands the standard path and
+        # the artifact kind, so neither callable restates how a standard is
+        # projected. `standards.py cells` itself is not retired -- the
         # vocabulary still owns it -- only its second owner here.
         for skill in ("orch-do", "orch-judge"):
             with self.subTest(skill=skill):
                 body = read(f"skills/kernel/{skill}/SKILL.md")
-                self.assertNotIn("packs.py cells", body)
+                self.assertNotIn("standards.py cells", body)
 
-    def test_non_code_packs_define_artifact_evidence_without_code_tests(self):
+    def test_non_code_standards_define_artifact_evidence_without_code_tests(self):
         """What proves a deliverable is stated under the Lens entry keyed by
-        the kind the pack's adapter emits, not in a section beside it: the
+        the kind the standard's adapter emits, not in a section beside it: the
         checking verb reads one entry, so evidence outside it is evidence
         no verb is pointed at."""
 
@@ -65,16 +65,16 @@ class GoalEvidenceContractTest(unittest.TestCase):
             "design": ("git", ("interaction", "accessibility")),
             "research": ("evidence", ("sources", "uncertainty")),
         }
-        for pack, (kind, anchors) in expected.items():
-            with self.subTest(pack=pack):
-                craft = read(f"packs/orch-{pack}-pack/references/craft.md")
-                lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", craft)
-                self.assertIsNotNone(lens, f"{pack} craft has no ## Lens section")
+        for standard, (kind, anchors) in expected.items():
+            with self.subTest(standard=standard):
+                standard = read(f"standards/orch-{standard}/STANDARD.md")
+                lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", standard)
+                self.assertIsNotNone(lens, f"{standard} standard has no ## Lens section")
                 match = re.search(
                     r"(?ms)^### %s\s*$(.*?)(?=^###? |\Z)" % kind, lens.group(1)
                 )
                 self.assertIsNotNone(
-                    match, f"{pack} craft has no ## Lens `### {kind}` entry"
+                    match, f"{standard} standard has no ## Lens `### {kind}` entry"
                 )
                 body = match.group(1)
                 self.assertTrue(all(anchor in body for anchor in anchors))
@@ -113,7 +113,7 @@ class CritiqueContractTest(unittest.TestCase):
             "rules/verification.md",
             "skills/kernel/orch-judge/SKILL.md",
             "scripts/tickets_assignment.py",
-            "contracts/pack-signature.md",
+            "contracts/standard.md",
         )
         forbidden = (
             "named oracle",
@@ -129,63 +129,64 @@ class CritiqueContractTest(unittest.TestCase):
                 self.assertNotIn(phrase, joined)
 
 
-class CraftLensKeyTest(unittest.TestCase):
+class StandardLensKeyTest(unittest.TestCase):
     """`## Lens` is keyed by artifact kind
     (`research/lens-keying-2026-09-02.md`).
 
-    The four non-exemplar packs only: `orch-code-pack` is the exemplar
+    The four non-exemplar standards only: `orch-code` is the exemplar
     migrated beside the contract, validator and scaffold that read this
-    shape, and `validate_craft_sections` is where every pack including
-    that one answers for it. Pinning the code craft here too would give
+    shape, and `validate_standard_sections` is where every standard including
+    that one answers for it. Pinning the code standard here too would give
     one fact two owners and make this file red for a change it does not
     own.
     """
 
-    PACKS = (
-        "orch-content-pack",
-        "orch-data-pack",
-        "orch-design-pack",
-        "orch-research-pack",
+    STANDARDS = (
+        "orch-content",
+        "orch-data",
+        "orch-design",
+        "orch-research",
     )
 
-    def craft(self, pack: str) -> str:
-        return read(f"packs/{pack}/references/craft.md")
+    def standard(self, standard: str) -> str:
+        return read(f"standards/{standard}/STANDARD.md")
 
-    def test_craft_sections_are_the_migrated_set(self):
-        for pack in self.PACKS:
-            with self.subTest(pack=pack):
-                headings = re.findall(r"(?m)^## (.+?)\s*$", self.craft(pack))
+    def test_standard_sections_are_the_migrated_set(self):
+        for standard in self.STANDARDS:
+            with self.subTest(standard=standard):
+                headings = re.findall(r"(?m)^## (.+?)\s*$", self.standard(standard))
                 self.assertEqual(
-                    ["Vocabulary", "Workspace", "Spec fields", "Lens", "Stages"],
+                    ["Making", "Vocabulary", "Workspace", "Spec fields",
+                     "Lens", "Stages"],
                     headings,
                 )
 
     def test_lens_keys_are_root_cut_then_the_adapter_artifact_kind(self):
-        # The kind comes from the adapter the pack declares, never from a
+        # The kind comes from the adapter the standard declares, never from a
         # list written out here: a hand-copied kind is exactly the fact
         # that went stale between the design outline and this tree.
         from scripts.tickets_adapters import adapter_spec
 
-        for pack in self.PACKS:
-            with self.subTest(pack=pack):
+        for standard in self.STANDARDS:
+            with self.subTest(standard=standard):
                 lens = re.search(
-                    r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", self.craft(pack),
+                    r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", self.standard(standard),
                 )
-                self.assertIsNotNone(lens, f"{pack} craft has no ## Lens section")
+                self.assertIsNotNone(lens, f"{standard} standard has no ## Lens section")
                 keys = re.findall(r"(?m)^### (.+?)\s*$", lens.group(1))
                 self.assertEqual(
-                    ["root", "cut", adapter_spec(pack).artifact_kind], keys,
+                    ["root", "cut", adapter_spec(standard).artifact_kind], keys,
                 )
 
 
 class BlockingLawOwnershipTest(unittest.TestCase):
     """What `blocking` means is library law with one owner; how findings
-    weigh against each other is each craft's own.
+    weigh against each other is each standard's own.
 
-    The two halves were one paragraph in `orch-code-pack`'s `### git`
-    entry, which left the four other packs' judges with a field to fill
+    The two halves were one paragraph in `orch-code`'s `### git`
+    entry, which left the four other standards' judges with a field to fill
     and nothing to read for it. The law is now `rules/verification.md`
-    §9 and no craft restates it.
+    §9 and no standard restates it.
     """
 
     # Anchors, not sentences: each is a backticked field value or a
@@ -193,36 +194,43 @@ class BlockingLawOwnershipTest(unittest.TestCase):
     # that keeps the law keeps these; a deletion or a second copy is what
     # goes red.
     LAW_ANCHORS = ("`blocking: true`", "`blocking: false`", "never repaired")
-    # Either half of the weighting vocabulary the five crafts use: an
+    # Either half of the weighting vocabulary the five standards use: an
     # explicit precedence ("outranks") or a deferral to the criteria list
     # ("listed order").
     WEIGHT_ANCHOR = re.compile(r"outranks|listed order")
 
-    def packs(self):
-        return sorted(path.parent.name for path in (ROOT / "packs").glob("*/SKILL.md"))
+    def standards(self):
+        """The five roots. A narrowing sits in the same directory and states
+        no domain of its own, so `narrows:` is what selects them."""
 
-    def lens_entry(self, pack: str, kind: str) -> str:
-        craft = read(f"packs/{pack}/references/craft.md")
-        lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", craft)
-        self.assertIsNotNone(lens, f"{pack} craft has no ## Lens section")
+        return sorted(
+            path.parent.name
+            for path in (ROOT / "standards").glob("*/STANDARD.md")
+            if not re.search(r"(?m)^narrows:", path.read_text(encoding="utf-8"))
+        )
+
+    def lens_entry(self, standard: str, kind: str) -> str:
+        standard = read(f"standards/{standard}/STANDARD.md")
+        lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", standard)
+        self.assertIsNotNone(lens, f"{standard} standard has no ## Lens section")
         entry = re.search(
             r"(?ms)^### %s\s*$(.*?)(?=^### |\Z)" % re.escape(kind), lens.group(1)
         )
-        self.assertIsNotNone(entry, f"{pack} craft has no `### {kind}` entry")
+        self.assertIsNotNone(entry, f"{standard} standard has no `### {kind}` entry")
         return entry.group(1)
 
-    def test_the_rule_owns_the_law_and_no_craft_restates_it(self):
+    def test_the_rule_owns_the_law_and_no_standard_restates_it(self):
         rule = " ".join(read("rules/verification.md").split())
         clause = re.search(r"(?s)\b9\. (.*?)(?=\s\d{1,2}\. |\Z)", rule)
         self.assertIsNotNone(clause, "rules/verification.md carries no clause 9")
         for anchor in self.LAW_ANCHORS:
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, clause.group(1))
-        self.assertEqual(5, len(self.packs()))
-        for pack in self.packs():
-            with self.subTest(pack=pack):
+        self.assertEqual(5, len(self.standards()))
+        for standard in self.standards():
+            with self.subTest(standard=standard):
                 self.assertNotIn(
-                    "blocking", read(f"packs/{pack}/references/craft.md")
+                    "blocking", read(f"standards/{standard}/STANDARD.md")
                 )
 
     def test_the_judge_points_at_the_clause_that_carries_the_law(self):
@@ -230,15 +238,15 @@ class BlockingLawOwnershipTest(unittest.TestCase):
         self.assertIn("`rules/verification.md` §9", body)
 
     def test_every_deliverable_lens_entry_weighs_its_findings_once(self):
-        """The kind comes from the pack's own adapter, so the entry this
+        """The kind comes from the standard's own adapter, so the entry this
         reads is the one the launch prompt names -- never a list of kinds
         copied here, which is the fact that goes stale."""
 
         from scripts.tickets_adapters import adapter_spec
 
-        for pack in self.packs():
-            with self.subTest(pack=pack):
-                entry = self.lens_entry(pack, adapter_spec(pack).artifact_kind)
+        for standard in self.standards():
+            with self.subTest(standard=standard):
+                entry = self.lens_entry(standard, adapter_spec(standard).artifact_kind)
                 self.assertEqual(
                     1,
                     len(self.WEIGHT_ANCHOR.findall(entry)),

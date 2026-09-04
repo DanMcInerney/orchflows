@@ -63,7 +63,7 @@ class TestCheckGradesFromTheCallersGit(unittest.TestCase):
         self.assertEqual("isolation-missing", payload_of(done)["verdict"])
 
     def test_an_absent_isolation_field_is_graded_as_required(self):
-        """No declared ``isolation`` on a git-adapter pack still derives
+        """No declared ``isolation`` on a git-adapter standard still derives
         ``required`` at the join: an absent field must not read as ``none``
         and skip the grade at exit 0 with ``not required``
         (``contracts/work-item.md``, ``scripts/tickets_adapters.derived_isolation``)."""

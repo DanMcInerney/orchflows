@@ -502,7 +502,7 @@ class PruneTests(unittest.TestCase):
                 {"requirements.txt": "requests==2.32.3\n"},
             )
             kept = orchflows_envs.env_home("skill", "fetcher", world["home"])
-            orphan = orchflows_envs.env_home("pack", "retired", world["home"])
+            orphan = orchflows_envs.env_home("standard", "retired", world["home"])
             stranger = world["home"] / orchflows_envs.ENVS_DIR / "not-a-kind" / "thing"
             for directory in (kept, orphan, stranger):
                 directory.mkdir(parents=True)
@@ -510,7 +510,7 @@ class PruneTests(unittest.TestCase):
             removed = orchflows_envs.prune(_inventory(world), home=world["home"])
 
             self.assertEqual(
-                [("pack", "retired", "pruned", str(orphan))],
+                [("standard", "retired", "pruned", str(orphan))],
                 [(r["kind"], r["name"], r["action"], r["env"]) for r in removed],
             )
             self.assertFalse(orphan.exists())
@@ -601,7 +601,7 @@ class ValidatorTests(unittest.TestCase):
             graded = world["root"] / "graded"
             item = graded / "example-workflows" / "render"
             item.mkdir(parents=True)
-            shutil.copytree(ROOT / "packs", graded / "packs")
+            shutil.copytree(ROOT / "standards", graded / "standards")
             (item / "SKILL.md").write_bytes(b"---\nname: render\n---\n\nbody\n")
             (item / orchflows_tools.TOOLS_NAME).write_bytes(b"ffmpeg\npython 3.11\n")
             diag = validate_packages.Diagnostics()

@@ -11,7 +11,7 @@ class TestStartEstablishesEvidenceStore(unittest.TestCase):
     checkout that has no meaning for the research adapter.
     """
 
-    def test_research_pack_creates_and_records_the_canonical_run_store(self):
+    def test_research_standard_creates_and_records_the_canonical_run_store(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             sink = use_sink(tmp)
@@ -20,7 +20,7 @@ class TestStartEstablishesEvidenceStore(unittest.TestCase):
             ticket = make_ticket(
                 run_dir,
                 "T1",
-                extra=(("pack", "orch-research-pack"),),
+                standard="orch-research",
             )
 
             done = run_workspace(tmp, "start", "testrun", "T1")

@@ -49,13 +49,12 @@ from .models import (
     _is_build_artifact,
 )
 from .packages import (
-    SHEET_MANIFEST_FILE,
     WORKFLOW_SKILL_FILE,
     by_name_pointer_text,
     claude_role_adapter_text,
     codex_role_adapter_body,
     discover_packages,
-    discover_sheets,
+    discover_standards,
     discover_workflow_skills,
     frontmatter_field,
     host_legal_frontmatter,
@@ -172,7 +171,7 @@ def build_plan(
         role = frontmatter_field(frontmatter, "role") or "none"
         lib_skill_md = (lib_home / rel).resolve()
         # Flat, host-agnostic resolution: one deterministic path per canonical
-        # name, tier or pack alike, so no agent has to guess a sublayer. The
+        # name, tier or standard alike, so no agent has to guess a sublayer. The
         # stub only points at the tiered source (never duplicates it), so it
         # carries no relative links to break.
         by_name.append(
@@ -284,23 +283,22 @@ def build_plan(
                 )
             )
 
-    # A sheet is stamped on a ticket and never invoked, so it gets the one
-    # surface a stamped item needs and no host surface at all: the flat
-    # pointer, so a child handed the *name* `market-brief` has one
-    # deterministic path to read it at, exactly as a pack does. The pointer
-    # is named `SHEET.md`, not `SKILL.md` -- the manifest name is what
-    # `scripts/rings.py` resolves, and a pointer under the other name would
-    # be a second spelling of where a sheet lives.
-    for sheet_dir, frontmatter, _body in discover_sheets():
-        lib_sheet_dir = (lib_home / sheet_dir.relative_to(REPO_ROOT)).resolve()
+    # A standard is stamped on a ticket and never invoked, so it gets the
+    # one surface a stamped item needs and no host surface at all: the
+    # flat pointer, so a child handed the *name* `market-brief` has one
+    # deterministic path to read it at. The pointer carries the manifest
+    # name the standard itself carries, never a second spelling -- that
+    # name is what `scripts/rings.py` resolves.
+    for item_dir, manifest_name, frontmatter, _body in discover_standards():
+        lib_item_dir = (lib_home / item_dir.relative_to(REPO_ROOT)).resolve()
         pointer = (
             frontmatter
-            + f"\nRead {lib_sheet_dir / SHEET_MANIFEST_FILE} and follow it "
-            f"exactly. It is the sheet at {lib_sheet_dir}, stamped on a "
-            "ticket beside its pack and never invoked by name.\n"
+            + f"\nRead {lib_item_dir / manifest_name} and follow it "
+            f"exactly. It is the standard at {lib_item_dir}, stamped on a "
+            "ticket and never invoked by name.\n"
         )
         by_name.append(
-            (lib_home / "by-name" / sheet_dir.name / SHEET_MANIFEST_FILE, pointer)
+            (lib_home / "by-name" / item_dir.name / manifest_name, pointer)
         )
 
     claude_agents = []

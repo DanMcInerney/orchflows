@@ -9,11 +9,7 @@ def _doclint():
 
 from . import common as __dep_common
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
-CELL_REFERENCE_LINK_RE = __dep_common.CELL_REFERENCE_LINK_RE
 CELL_SIMILARITY_THRESHOLD = __dep_common.CELL_SIMILARITY_THRESHOLD
-CRAFT_CELLS_BY_POINTER = __dep_common.CRAFT_CELLS_BY_POINTER
-PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
-PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
 ROOT = __dep_common.ROOT
 re = __dep_common.re
 
@@ -28,7 +24,7 @@ CELL_DUPLICATION_ALLOWLIST = (
     {
         "family": "identity-term workspace naming",
         "reason": (
-            "The signature's craft-section table requires every Workspace "
+            "contracts/standard.md's section table requires every Workspace "
             "section to open by naming its adapter semantics and identity "
             "unit -- 'X: identities are Y' -- so these clauses rhyme by "
             "mandate, not by drift. Each names a different adapter and a "
@@ -43,27 +39,13 @@ CELL_DUPLICATION_ALLOWLIST = (
 )
 
 
-def _cell_content(pkg: dict, cell: str, binding: str):
-    """(text, label) for the content behind one cell. A pointer cell
-    resolves to its reference file -- every pack's craft row is mandated
-    to bind references/craft.md, so comparing the row instead of what it
-    points at convicts the signature itself."""
-    if cell in CRAFT_CELLS_BY_POINTER:
-        match = CELL_REFERENCE_LINK_RE.search(binding)
-        if match:
-            target = pkg["path"] / match.group(1)
-            if target.is_file():
-                return _read_source(target), rel(target)
-    return binding, rel(pkg["skill_md"])
+STANDARD_SECTION_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
 
 
-CRAFT_SECTION_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
-
-
-def _craft_sections(text: str) -> dict:
-    """{section name: body} for one craft document's `##` sections."""
+def _standard_sections(text: str) -> dict:
+    """{section name: body} for one standard document's `##` sections."""
     sections = {}
-    matches = list(CRAFT_SECTION_RE.finditer(text))
+    matches = list(STANDARD_SECTION_RE.finditer(text))
     for i, match in enumerate(matches):
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
         sections[match.group(1)] = text[match.end():end]
@@ -78,34 +60,30 @@ def free_content(clause: str) -> str:
 
 
 def validate_cell_duplication(packages, diag: Diagnostics) -> None:
-    """Per same-named craft section, compare the content behind it across
-    packs: a clause carried verbatim by two packs is an error, a clause
+    """Per same-named `##` section, compare its content across standards: a clause carried verbatim by two standards is an error, a clause
     pair whose free_content matches at CELL_SIMILARITY_THRESHOLD or above
     is a warning naming both sites. Allowlisted clauses are out of the
     comparison entirely. Differently named sections never compare — the
     section heading scopes the comparison the way the cell name did."""
-    packs = [pkg for pkg in packages if pkg["is_pack"]]
-    if len(packs) < 2:
+    standards = [pkg for pkg in packages if pkg["is_standard"]]
+    if len(standards) < 2:
         return
     allowed = set()
     for family in CELL_DUPLICATION_ALLOWLIST:
         allowed.update(family["clauses"])
 
     per_section = {}
-    for pkg in packs:
-        binding = dict(PACK_CELL_ROW_RE.findall(pkg.get("body", ""))).get("craft")
-        if binding is None:
-            continue
-        text, label = _cell_content(pkg, "craft", binding)
-        for name, body in _craft_sections(text).items():
+    for pkg in standards:
+        text, label = pkg.get("body", ""), rel(pkg["skill_md"])
+        for name, body in _standard_sections(text).items():
             clauses = [c for c in cell_clauses(body) if c not in allowed]
             per_section.setdefault(name, []).append((label, clauses))
 
     for name in sorted(per_section):
-        per_pack = per_section[name]
+        per_standard = per_section[name]
 
         sites = {}
-        for label, clauses in per_pack:
+        for label, clauses in per_standard:
             for clause in clauses:
                 sites.setdefault(clause, set()).add(label)
         for clause, labels in sorted(sites.items()):
@@ -114,14 +92,14 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
             ordered = sorted(labels)
             diag.error(
                 ordered[0],
-                f"{name}: craft section duplicated verbatim in "
+                f"{name}: standard section duplicated verbatim in "
                 f"{', '.join(ordered[1:])}: {clause!r}",
             )
 
-        for i in range(len(per_pack)):
-            for j in range(i + 1, len(per_pack)):
-                left_label, left_clauses = per_pack[i]
-                right_label, right_clauses = per_pack[j]
+        for i in range(len(per_standard)):
+            for j in range(i + 1, len(per_standard)):
+                left_label, left_clauses = per_standard[i]
+                right_label, right_clauses = per_standard[j]
                 for left in left_clauses:
                     left_free = free_content(left)
                     if len(left_free.split()) < CELL_CLAUSE_MIN_WORDS:
@@ -136,7 +114,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                         if ratio >= CELL_SIMILARITY_THRESHOLD:
                             diag.warn(
                                 left_label,
-                                f"{name}: craft section near-duplicate at "
+                                f"{name}: standard section near-duplicate at "
                                 f"{ratio:.2f} with {right_label}: "
                                 f"{left!r} ~ {right!r}",
                             )
@@ -145,7 +123,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
 # --- Cross-tier duplication ------------------------------------------
 #
 # The same clause comparison as validate_cell_duplication, run across the
-# library's tiers instead of across the packs of one signature cell. It is
+# library's tiers instead of across the standards of one section. It is
 # what replaces keeping copies in sync: a clause carried by both a rule and
 # a skill body is a fact with two owners, and the compiler names both sites
 # rather than holding the two spellings equal.
@@ -166,7 +144,7 @@ CROSS_TIER_DUPLICATE_LEVEL = "WARN"
 # links and backticked names is the library's shared vocabulary, and
 # convicting it would drive files to stop pointing at their owners -- the
 # reason cell_clauses already exempts a sentence citing an owner outside
-# its pack. One connective word ("see", "per") does not make it prose.
+# its standard. One connective word ("see", "per") does not make it prose.
 CROSS_TIER_CITATION_RES = (
     re.compile(r"\[[^\]]*\]\([^)]*\)"),
     re.compile(r"`[^`]*`"),
@@ -181,8 +159,8 @@ def _cross_tier_prose(clause: str) -> str:
     return re.sub(r"\s+", " ", clause).strip()
 
 
-# Two files of one tier are usually that tier's own business: the pack
-# linter already owns that question inside packs, and a template's stubs
+# Two files of one tier are usually that tier's own business: the standard
+# linter already owns that question inside standards, and a template's stubs
 # are graded against their own manifest. skills/ has no such second check,
 # so two skill bodies could carry one clause byte for byte while the
 # linter flagged each of them against some innocent third file in another
@@ -219,7 +197,7 @@ WORKFLOW_TIER = "workflows"
 #
 # docs/library-review.md's Constitution principle 8 owns the value that
 # machinery is domain-blind and a domain enters as data, never as control
-# flow; contracts/pack-signature.md states the same fact as its own purity
+# flow; contracts/standard.md states the same fact as its own purity
 # consequence -- the thing the signature exists to enforce. Reporting the
 # pair asks the contract to stop stating what it enforces. The DESIGN.md,
 # ARCHITECTURE.md and README.md restatements sit outside this corpus by
@@ -239,7 +217,7 @@ LICENSED_COPIES = (
     ),
     (
         "docs/library-review.md",
-        "contracts/pack-signature.md",
+        "contracts/standard.md",
         "control flow",
     ),
 )
@@ -322,14 +300,14 @@ def cross_tier_documents(packages):
     documents = []
     homes = workflow_tiers()
     for pkg in packages:
-        if pkg["is_pack"]:
-            tier = "packs"
+        if pkg["is_standard"]:
+            tier = "standards"
         else:
             tier = WORKFLOW_TIER if pkg["kind"] in homes else "skills"
         documents.append((tier, rel(pkg["skill_md"]), pkg.get("body") or ""))
-        if pkg["is_pack"]:
+        if pkg["is_standard"]:
             for reference in sorted((pkg["path"] / "references").glob("*.md")):
-                documents.append(("packs", rel(reference), _read_source(reference)))
+                documents.append(("standards", rel(reference), _read_source(reference)))
     for tier in ("rules", "contracts", "docs"):
         directory = ROOT / tier
         if directory.is_dir():
@@ -374,7 +352,7 @@ def _cross_tier_clauses(packages):
 
 def _cross_tier_accept(entries):
     """Which of doclint's candidate pairs this library compares: two
-    tiers, or two files of one tier the pack linter cannot see, and never
+    tiers, or two files of one tier the standard linter cannot see, and never
     a copy the library licensed."""
 
     def accept(left: int, right: int) -> bool:
@@ -383,7 +361,7 @@ def _cross_tier_accept(entries):
         if left_tier == right_tier:
             # Two skills, never one skill against its own clauses: a body's
             # Require, its steps and its Return restate one fact by design,
-            # and that is the pack linter's question.
+            # and that is the standard linter's question.
             if left_tier not in SAME_TIER_COMPARED or left_label == right_label:
                 return False
         return not _licensed(left_label, left_clause, right_label, right_clause)
@@ -392,7 +370,7 @@ def _cross_tier_accept(entries):
 
 
 def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
-    """Every clause of every skill body, rule, contract, pack reference and
+    """Every clause of every skill body, rule, contract, standard reference and
     the host-block template against every clause of another tier, through
     `doclint.near_duplicate_pairs`: a pair matching at
     CELL_SIMILARITY_THRESHOLD or above is reported at
@@ -530,7 +508,7 @@ def validate_generated_enum_copies(diag: Diagnostics, root=None) -> None:
 __all__ = (
     'ENUM_OWNER_MODULES', 'RATCHETED_ENUMS', '_generated_value_sets',
     '_module_string_sets', 'validate_generated_enum_copies',
-    'CELL_DUPLICATION_ALLOWLIST', '_cell_content', 'CRAFT_SECTION_RE', '_craft_sections',
+    'CELL_DUPLICATION_ALLOWLIST', 'STANDARD_SECTION_RE', '_standard_sections',
     'free_content', 'validate_cell_duplication',
     'CROSS_TIER_DUPLICATE_LEVEL', 'CROSS_TIER_CITATION_RES', 'CROSS_TIER_PROSE_MIN_WORDS', '_cross_tier_prose',
     'SAME_TIER_COMPARED', 'WORKFLOW_TIER', 'LICENSED_COPIES', '_licensed', 'cross_tier_documents',

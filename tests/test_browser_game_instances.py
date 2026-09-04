@@ -130,8 +130,8 @@ class BrowserGameInstanceValidationTests(unittest.TestCase):
 
     def test_successor_aggregates_must_equal_ordered_entries(self):
         checkpoint = copy.deepcopy(self.checkpoint)
-        checkpoint["branch"]["successor_plan"]["packs"]["value"] = ["orch-content-pack"]
-        self.assertTrue(any("packs aggregate" in error for error in self._errors(checkpoint=checkpoint)))
+        checkpoint["branch"]["successor_plan"]["standards"]["value"] = ["orch-content"]
+        self.assertTrue(any("standards aggregate" in error for error in self._errors(checkpoint=checkpoint)))
 
 
 if __name__ == "__main__":

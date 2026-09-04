@@ -18,7 +18,7 @@ the candidate workspace, which is the campaign call's alone.
 frozen identity is already the campaign's, and every call below reads that
 instead:
 
-    tickets.py do <run> --pack orch-code-pack --parent <frame>
+    tickets.py do <run> --standard orch-code --parent <frame>
       --goal-file <eval-goal> --bound "<= 40 tool calls"
 
 Its goal: one candidate-blind evaluation for `target` — *freeze*: "Fix the
@@ -30,21 +30,21 @@ search policy — written into that call's `## Report` and nowhere inside
 criteria, aggregation and adapter; in benchmark mode the qualified
 benchmark and its runner own them.
 
-**Admit the incumbent**: one `judge --pack orch-code-pack` whose typed
+**Admit the incumbent**: one `judge --standard orch-code` whose typed
 artifact line is `incumbent`'s fixed evidence identity, verdicts over the
 frozen evaluation's required admission and regression criteria. A covered
 PASS is what permits generation to open, and nothing else does.
 
 **Generations, until the promotion rule and margin are met over the final
 incumbent's score card or `bound` is spent.** Each generation is prose, not
-machinery: one `do --pack orch-code-pack --isolation required` per
+machinery: one `do --standard orch-code --isolation required` per
 candidate, written through `writer` inside `mutation_scope` and handed the
 eligibility findings verbatim; one `judge` scoring the incumbent and every
 eligible candidate blind against the frozen evaluation;
 `search_plan.py advance` selecting the next search-policy/v1 cases. The
 judge's verdict is the loop's only exit condition.
 
-**Close the campaign**: one `judge --pack orch-code-pack` over the final
+**Close the campaign**: one `judge --standard orch-code` over the final
 incumbent — one score card naming it and the admitted result/evidence
 behind it.
 

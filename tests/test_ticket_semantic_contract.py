@@ -25,6 +25,7 @@ from scripts.tickets_issue_render import _render_ticket
 from scripts import workspace
 
 from tests._repo_root import ROOT
+from tests.test_ticket_callables import CODE_STANDARD, standards_field
 
 
 def assignment(ticket_id, executor, dependencies=(), *, root_generation=None):
@@ -34,7 +35,7 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None):
         "status": "pending",
         "admission": "pending",
         "executor": executor,
-        "pack": "orch-code-pack",
+        "standards": standards_field(CODE_STANDARD),
         "depends_on": list(dependencies),
         "isolation": "required" if executor == "orch-do" else "none",
         "bound": "30m",
@@ -125,7 +126,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             with self.subTest(executor):
                 created = retired_commands.run([
                     "new", run, "R", "--executor", executor,
-                    "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
+                    "--goal", goal, "--context", "[]", "--standard", "orch-code",
                     "--isolation", "required",
                 ])
                 self.assertNotIn("error", created, created)
@@ -154,12 +155,12 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.dispatch(
             "new", "unit-length", "R", "--executor", "orch-do",
             "--goal", "Deliver the run.", "--context", "[]",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         goal = " ".join(["word"] * 400)
         created = retired_commands.run([
             "new", "unit-length", "R.01", "--executor", "orch-judge",
-            "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
+            "--goal", goal, "--context", "[]", "--standard", "orch-code",
         ])
         self.assertNotIn("error", created, created)
 
@@ -174,7 +175,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertFalse(run_dir.exists())
         accepted = retired_commands.run([
             "new", "malformed-root", "R", "--executor", "orch-do",
-            "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
+            "--goal", goal, "--context", "[]", "--standard", "orch-code",
             "--isolation", "required",
         ])
         self.assertNotIn("error", accepted, accepted)
@@ -184,7 +185,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "new", "direct", "R1", "--executor", "orch-do",
             "--goal", "Create the observable artifact.",
             "--context", "No exceptional constraints.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.seal("direct", "R1")
         ready = self.dispatch("ready", "--run", "direct")
@@ -245,7 +246,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "new", "inspect-run", "R1", "--executor", "orch-do",
             "--goal", "Expose this ticket.",
             "--context", "Inspection is read-only.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         ticket_path = (
             Path(self.temporary.name) / "tickets" / "inspect-run" / "R1.md"
@@ -277,7 +278,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.dispatch(
             "new", "details", "R1", "--executor", "orch-do",
             "--goal", "Repair the behavior.", "--context", "The repository is authoritative.",
-            "--details", "- start at src/start.py", "--pack", "orch-code-pack",
+            "--details", "- start at src/start.py", "--standard", "orch-code",
             "--isolation", "required",
         )
         self.seal("details", "R1")
@@ -292,7 +293,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.dispatch(
             "new", "packet", "R1", "--executor", "orch-do",
             "--goal", "Create the artifact.", "--context", "Use repository facts.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.seal("packet", "R1")
         self.dispatch("ready", "--run", "packet")
@@ -440,7 +441,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "new", "tdd", "R", "--executor", "orch-do",
             "--goal", "Correct the observable behavior.",
             "--context", "The repository supplies the implementation facts.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.seal("tdd", "R")
         self.dispatch("ready", "--run", "tdd")
@@ -462,10 +463,9 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.assertNotIn("oracle_class", prompt)
 
-    def test_content_pack_preserves_whole_artifact_direct_route(self):
-        pack = (ROOT / "packs" / "orch-content-pack" / "SKILL.md").read_text(encoding="utf-8")
-        craft = (ROOT / "packs" / "orch-content-pack" / "references" / "craft.md").read_text(encoding="utf-8")
-        text = (pack + "\n" + craft).lower()
+    def test_content_standard_preserves_whole_artifact_direct_route(self):
+        standard = (ROOT / "standards" / "orch-content" / "STANDARD.md").read_text(encoding="utf-8")
+        text = (standard + "\n" + standard).lower()
         self.assertIn("whole", text)
         self.assertIn("direct", text)
         self.assertIn("one executor", text)

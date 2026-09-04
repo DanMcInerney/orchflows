@@ -24,19 +24,20 @@ import re
 from datetime import datetime, timedelta, timezone
 
 if __package__:
+    from .standards_support import StandardError, adapter_standard
     from .tickets_adapters import ADAPTER_REGISTRY, AdapterError, adapter_id
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_bound import parse_bound
     from .tickets_format import (
         ARTIFACT_CLAUSE, MAKES_FIELD, PLANNING_KINDS,
         REPORT_SECTION, _extract_all, _extract_flag,
-        _parse_frontmatter, _read_utf8, _set_frontmatter_field, dequote,
+        _parse_frontmatter, _read_utf8, _set_frontmatter_field,
         done_defects, next_mint_id,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue import (
         ISOLATION_VALUES, NEW_DEFAULT_BOUND, _applied_skill_refusal,
-        _issue_ticket, pinned_items, pinned_pack_digest,
+        _issue_ticket, pinned_items,
     )
     from .tickets_issue_render import _render_ticket
     from .tickets_seal import _cmd_draft_validate, _cmd_seal
@@ -44,19 +45,20 @@ if __package__:
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _segment_error, _tickets_root,
     )
 else:  # pragma: no cover - direct/installed flat script path
+    from standards_support import StandardError, adapter_standard
     from tickets_adapters import ADAPTER_REGISTRY, AdapterError, adapter_id
     from tickets_admission import ADMISSION_PENDING
     from tickets_bound import parse_bound
     from tickets_format import (
         ARTIFACT_CLAUSE, MAKES_FIELD, PLANNING_KINDS,
         REPORT_SECTION, _extract_all, _extract_flag,
-        _parse_frontmatter, _read_utf8, _set_frontmatter_field, dequote,
+        _parse_frontmatter, _read_utf8, _set_frontmatter_field,
         done_defects, next_mint_id,
     )
     from tickets_generations import assignment_digest
     from tickets_issue import (
         ISOLATION_VALUES, NEW_DEFAULT_BOUND, _applied_skill_refusal,
-        _issue_ticket, pinned_items, pinned_pack_digest,
+        _issue_ticket, pinned_items,
     )
     from tickets_issue_render import _render_ticket
     from tickets_seal import _cmd_draft_validate, _cmd_seal
@@ -65,16 +67,16 @@ else:  # pragma: no cover - direct/installed flat script path
     )
 
 DO_USAGE = (
-    "do <run> --pack P --goal-file F [--details-file D] [--parent ID] "
-    "[--sheet S] [--sheet ...] [--skill S] "
+    "do <run> --standard P [--standard ...] --goal-file F [--details-file D] "
+    "[--parent ID] [--standard S] [--standard ...] [--skill S] "
     "[--done <canonical-json>] [--makes " + "|".join(PLANNING_KINDS) + "] "
     "[--isolation required|none] [--bound B] "
     "[--workspace <source-tree-to-cut-from>] [--host H]"
 )
 JUDGE_USAGE = (
-    "judge <run> --pack P --goal-file F --artifacts <typed-line> "
+    "judge <run> --standard P [--standard ...] --goal-file F --artifacts <typed-line> "
     "[--artifacts ...] [--details-file D] [--parent ID] "
-    "[--sheet S] [--sheet ...] [--skill S] "
+    "[--standard S] [--standard ...] [--skill S] "
     "[--isolation required|none] [--bound B] "
     "[--workspace <source-tree-to-cut-from>] [--host H]"
 )
@@ -96,13 +98,13 @@ JUDGE_KINDS = ARTIFACT_KINDS | frozenset(GENERATION_KINDS)
 # whose call this ticket is, in the section a reader of the ticket alone
 # would otherwise have to infer it from the id.
 PARENT_CLAUSE = "- parent: "
-# The adapter whose workspace *is* lanes, and so the one whose craft prices
+# The adapter whose workspace *is* lanes, and so the one whose standard prices
 # a lane at one independently answerable sub-question. Selected off the
-# pack's own declared adapter rather than off a pack name, because machinery
-# stays domain-blind; a pack that adopts this adapter inherits the door.
+# standard's own declared adapter rather than off a standard name, because machinery
+# stays domain-blind; a standard that adopts this adapter inherits the door.
 LANE_ADAPTER = "evidence-store"
-# The marker that adapter's craft root entry states the form of. The door
-# counts it; the craft is where the form is said.
+# The marker that adapter's standard root entry states the form of. The door
+# counts it; the standard is where the form is said.
 _SUBQUESTION_MARKER = "sub-questions"
 _HEADING_LINE = re.compile(r"^ {0,3}#{1,6}\s")
 _NUMBERED_ITEM = re.compile(r"^\s*\d+[.)]\s+\S")
@@ -120,22 +122,22 @@ def subquestion_count(goal: str) -> int:
     return count
 
 
-def _one_lane(pack, parent, goal: str, goal_file):
+def _one_lane(standards, parent, goal: str, goal_file):
     """The refusal for a parentless lane-adapter `do` carrying several lanes."""
 
     if parent:
         return None
     try:
-        if adapter_id(dequote(pack)) != LANE_ADAPTER:
+        if adapter_id(adapter_standard(standards)) != LANE_ADAPTER:
             return None
-    except AdapterError:
+    except (AdapterError, StandardError):
         return None
     lanes = subquestion_count(goal)
     if lanes < 2:
         return None
     return {"error": (
         f"goal file {goal_file}: {lanes} sub-questions are {lanes} lanes, "
-        "per the research craft's cut rule; open a frame with `--shape` and "
+        "per the research standard's cut rule; open a frame with `--shape` and "
         "mint one `do` per sub-question under it"
     )}
 
@@ -269,20 +271,17 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
     return ticket_id, None
 
 
-def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
-            done, isolation, bound, artifacts, makes=None, sheets=(), skill=None):
+def _minted(run: str, run_dir, *, executor, standards, goal, details, parent,
+            done, isolation, bound, artifacts, makes=None, skill=None):
     """`(ticket_id, refusal)` -- one callable's fields, minted through `_mint`."""
 
-    pinned, refusal = pinned_pack_digest(pack)
-    if refusal is not None:
-        return None, refusal
-    stamped, refusal = pinned_items(sheets, skill, pack=pack)
+    stamped, refusal = pinned_items(standards, skill)
     if refusal is not None:
         return None, refusal
     fields = {
         "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": executor,
-        "pack": pack, "pack_digest": pinned, **stamped,
+        **stamped,
         "parent": parent or None,
         "isolation": isolation, "bound": bound,
         "done": done, MAKES_FIELD: makes,
@@ -333,7 +332,10 @@ def _cmd_callable(rest, *, judge: bool):
 
     usage = JUDGE_USAGE if judge else DO_USAGE
     args = list(rest)
-    pack = _extract_flag(args, "--pack")
+    # Two spellings of one repeatable stamping flag while the items still
+    # live in two directories: every `--standard` first, then every `--standard`,
+    # which is the order a chain is read in anyway.
+    standards = _extract_all(args, "--standard") + _extract_all(args, "--standard")
     goal_file = _extract_flag(args, "--goal-file")
     details_file = _extract_flag(args, "--details-file")
     parent = _extract_flag(args, "--parent")
@@ -344,12 +346,11 @@ def _cmd_callable(rest, *, judge: bool):
     host = _extract_flag(args, "--host")
     workspace = _extract_flag(args, "--workspace")
     artifacts = _extract_all(args, "--artifacts")
-    sheets = _extract_all(args, "--sheet")
     skill = _extract_flag(args, "--skill")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"{'judge' if judge else 'do'} does not accept {stray}. usage: {usage}"}
-    if len(args) != 1 or not pack or not goal_file:
+    if len(args) != 1 or not standards or not goal_file:
         return {"error": f"usage: {usage}"}
     run = args[0]
     named = [("run id", run)] + ([("ticket id", parent)] if parent else [])
@@ -365,7 +366,7 @@ def _cmd_callable(rest, *, judge: bool):
     if refusal is not None:
         return refusal
     # A judge is handed finished artifacts and names their kind on its
-    # Context; only a `do` chooses what it makes, and only when the pack's
+    # Context; only a `do` chooses what it makes, and only when the standard's
     # adapter does not already say.
     if makes is not None:
         if judge:
@@ -383,7 +384,7 @@ def _cmd_callable(rest, *, judge: bool):
     if not goal.strip():
         return {"error": f"goal file {goal_file} is empty; Goal is one observable end result"}
     if not judge:
-        crowded = _one_lane(pack, parent, goal, goal_file)
+        crowded = _one_lane(standards, parent, goal, goal_file)
         if crowded is not None:
             return crowded
     details = None
@@ -402,7 +403,7 @@ def _cmd_callable(rest, *, judge: bool):
         lines, failure = _artifact_lines(artifacts, run_dir)
         if failure is not None:
             return failure
-        # One judge, one kind: the kind selects the craft's `## Lens` entry
+        # One judge, one kind: the kind selects the standard's `## Lens` entry
         # the judge reads its criteria from, and a call handed two kinds has
         # no one entry to be judged against. Two calls, not one.
         kinds = sorted({line.split(":", 1)[0] for line in lines})
@@ -421,9 +422,10 @@ def _cmd_callable(rest, *, judge: bool):
         ticket_id, failure = _minted(
             run, run_dir,
             executor=JUDGE_EXECUTOR if judge else DO_EXECUTOR,
-            pack=pack, goal=goal.strip(), details=(details or "").strip() or None,
+            standards=standards, goal=goal.strip(),
+            details=(details or "").strip() or None,
             parent=parent, done=done, isolation=isolation, bound=bound,
-            artifacts=lines, makes=makes, sheets=sheets, skill=skill,
+            artifacts=lines, makes=makes, skill=skill,
         )
     if failure is not None:
         return failure

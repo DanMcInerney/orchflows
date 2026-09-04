@@ -33,7 +33,7 @@ class ReturnLineConditionalTest(unittest.TestCase):
     `commits_in_place` decides whether the clause renders at all -- true for
     every adapter whose identity is a commit or a document revision one
     records (git, document-tree), false only for
-    evidence-store, which alone gets its own craft's `## Workspace` sentence
+    evidence-store, which alone gets its own standard's `## Workspace` sentence
     instead. `git_candidate` decides whether the clause's branch-merge
     sentence renders -- true only where the adapter establishes isolation
     over git; a document-tree child commits, onto
@@ -43,44 +43,44 @@ class ReturnLineConditionalTest(unittest.TestCase):
     """
 
     def assignment(
-        self, *, pack: str, artifact_kind, commits_in_place: bool,
+        self, *, standard: str, artifact_kind, commits_in_place: bool,
         git_candidate: bool, workspace_line,
     ):
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
             "artifact_kind": artifact_kind, "commits_in_place": commits_in_place,
-            "craft": None,
+            "manifest": None,
             "dependencies": [], "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "git_candidate": git_candidate, "id": "T",
-            "lease_expires_at": "2099-01-01T00:00:00Z", "pack": pack,
+            "lease_expires_at": "2099-01-01T00:00:00Z", "standard": standard,
             "role": "worker", "run": "run", "ticket_path": "/sink/run/T.md",
             "workspace": "/tree", "workspace_line": workspace_line,
         }
 
-    def test_a_research_pack_do_launch_carries_no_commit_clause(self):
+    def test_a_research_standard_do_launch_carries_no_commit_clause(self):
         from scripts.tickets_assignment import _workspace_line, commits_in_place
 
-        craft = ROOT / "packs" / "orch-research-pack" / "references" / "craft.md"
-        research_line = _workspace_line(craft)
+        standard = ROOT / "standards" / "orch-research" / "STANDARD.md"
+        research_line = _workspace_line(standard)
         self.assertIsNotNone(research_line)
-        self.assertFalse(commits_in_place("orch-research-pack"))
+        self.assertFalse(commits_in_place("orch-research"))
 
         prompt = launch.launch_prompt(self.assignment(
-            pack="orch-research-pack", artifact_kind="evidence",
+            standard="orch-research", artifact_kind="evidence",
             commits_in_place=False, git_candidate=False, workspace_line=research_line,
         ))
 
         self.assertNotIn("Commit your work inside this candidate", prompt)
         self.assertIn(research_line, prompt)
 
-    def test_a_code_pack_do_launch_still_commits(self):
+    def test_a_code_standard_do_launch_still_commits(self):
         from scripts.tickets_assignment import commits_in_place, git_candidate
 
-        self.assertTrue(commits_in_place("orch-code-pack"))
-        self.assertTrue(git_candidate("orch-code-pack"))
+        self.assertTrue(commits_in_place("orch-code"))
+        self.assertTrue(git_candidate("orch-code"))
 
         prompt = launch.launch_prompt(self.assignment(
-            pack="orch-code-pack", artifact_kind="git",
+            standard="orch-code", artifact_kind="git",
             commits_in_place=True, git_candidate=True, workspace_line=None,
         ))
 
@@ -92,21 +92,21 @@ class ReturnLineConditionalTest(unittest.TestCase):
         )
         self.assertIn("artifact: git:<full-commit-id>", prompt)
 
-    def test_a_content_pack_do_launch_commits_without_a_merge_sentence(self):
+    def test_a_content_standard_do_launch_commits_without_a_merge_sentence(self):
         """The document-tree adapter commits in place but establishes no git
         candidate to merge: the launch keeps the commit clause and drops the
         sentence that would claim a candidate branch nothing isolated
-        (finding F4 -- U2's original condition told this child its pack
+        (finding F4 -- U2's original condition told this child its standard
         commits nothing, which is false: run 20260901T181410Z's B1.1
         committed 89b23e3d in exactly this shape under the old prompt)."""
 
         from scripts.tickets_assignment import commits_in_place, git_candidate
 
-        self.assertTrue(commits_in_place("orch-content-pack"))
-        self.assertFalse(git_candidate("orch-content-pack"))
+        self.assertTrue(commits_in_place("orch-content"))
+        self.assertFalse(git_candidate("orch-content"))
 
         prompt = launch.launch_prompt(self.assignment(
-            pack="orch-content-pack", artifact_kind="doc",
+            standard="orch-content", artifact_kind="doc",
             commits_in_place=True, git_candidate=False, workspace_line=None,
         ))
 
@@ -120,7 +120,7 @@ class ReturnLineConditionalTest(unittest.TestCase):
         # broad form red with the clause itself correct)
         self.assertNotIn("inside this candidate", prompt)
         self.assertNotIn("the landing merges the candidate", prompt)
-        self.assertNotIn("Your stamped pack commits nothing", prompt)
+        self.assertNotIn("Your stamped standard commits nothing", prompt)
         self.assertIn(
             "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", prompt,
         )
@@ -139,7 +139,7 @@ class IdentityLineTest(unittest.TestCase):
 
     def prompt(self, **overrides) -> str:
         facts = dict(ReturnLineConditionalTest().assignment(
-            pack="orch-code-pack", artifact_kind="git", commits_in_place=True,
+            standard="orch-code", artifact_kind="git", commits_in_place=True,
             git_candidate=True, workspace_line=None,
         ))
         facts.update(overrides)
@@ -173,7 +173,7 @@ class IdentityLineTest(unittest.TestCase):
 class LensKeyPromptTest(unittest.TestCase):
     """U5: the prompt names the artifact kind and the `## Lens` entry it picks.
 
-    A craft's `## Lens` carries one entry per artifact kind its domain
+    A standard's `## Lens` carries one entry per artifact kind its domain
     produces, so the path alone left the child to choose which entry was its
     own. Each case fires through the mint that resolves the kind -- the
     adapter's for a making `do`, `--makes` for a planning one, the typed
@@ -227,7 +227,7 @@ class LensKeyPromptTest(unittest.TestCase):
             facade, "_workspace_prepare", return_value={"outcome": "skipped"},
         ):
             return tickets._dispatch([
-                verb, self.RUN, "--pack", "orch-code-pack",
+                verb, self.RUN, "--standard", "orch-code",
                 "--goal-file", str(self.goal_file), "--isolation", "required",
                 "--workspace", str(self.candidate), *extra,
             ])
@@ -244,7 +244,7 @@ class LensKeyPromptTest(unittest.TestCase):
         self.assertIn("is what your artifact must satisfy.", prompt)
 
     def test_a_planning_do_is_sent_to_the_kind_it_was_minted_to_make(self):
-        """`--makes` is the one product no adapter names: the code pack's
+        """`--makes` is the one product no adapter names: the code standard's
         adapter would have answered `git` for this same ticket."""
 
         answer = self.minted("do", "--makes", "root")
@@ -260,7 +260,7 @@ class LensKeyPromptTest(unittest.TestCase):
         self.assertNotIn("### git", prompt)
 
     def test_a_judge_is_sent_to_the_kind_on_its_artifact_line(self):
-        """The judge's kind is the artifact's, never the stamped pack's: this
+        """The judge's kind is the artifact's, never the stamped standard's: this
         one is stamped for code and handed an evidence identity."""
 
         prompt = self.prompt(self.minted(
@@ -287,17 +287,17 @@ class LensKeyPromptTest(unittest.TestCase):
             [], list((Path(self.temporary.name) / "tickets").glob("*/*.md")),
         )
 
-    def test_no_craft_carries_no_lens_sentence(self):
-        """The sentence answers to the craft it points into: an assignment
-        that resolved no craft file has no entry to send anyone to."""
+    def test_no_manifest_carries_no_lens_sentence(self):
+        """The sentence answers to the standard it points into: an assignment
+        that resolved no standard file has no entry to send anyone to."""
 
         facts = dict(ReturnLineConditionalTest().assignment(
-            pack="orch-code-pack", artifact_kind="git", commits_in_place=True,
+            standard="orch-code", artifact_kind="git", commits_in_place=True,
             git_candidate=True, workspace_line=None,
         ))
         facts["lens_key"] = "git"
 
-        self.assertIsNone(facts["craft"])
+        self.assertIsNone(facts["manifest"])
         self.assertNotIn("## Lens", launch.launch_prompt(facts))
 
 

@@ -68,12 +68,18 @@ def frontmatter_field(frontmatter: str, key: str):
 
 
 def discover_packages(root: Path = REPO_ROOT):
-    """Every skill/pack package: ``skills/<sublayer>/orch-*`` and ``packs/orch-*``.
+    """Every skill package: ``skills/<sublayer>/orch-*``.
+
+    Standards are not walked here. A standard renders no host adapter --
+    nothing invokes one, so a Claude skill, a Codex prompt, a Codex
+    redirect and a Grok skill for each would be four names no caller can
+    reach (contracts/standard.md's opening). ``discover_standards`` claims
+    them, and the one surface a stamped item needs is the by-name pointer.
 
     A skills sublayer that is one of the library's workflow homes is not
-    walked here. ``discover_workflow_skills`` claims it, and a name minted
-    by both would have one path written from two plan entries -- with the
-    manual-invocation flag on only one of them."""
+    walked here either. ``discover_workflow_skills`` claims it, and a name
+    minted by both would have one path written from two plan entries --
+    with the manual-invocation flag on only one of them."""
 
     packages = []
     skills_root = root / "skills"
@@ -85,12 +91,6 @@ def discover_packages(root: Path = REPO_ROOT):
                 skill_md = pkg / "SKILL.md"
                 if skill_md.is_file():
                     packages.append(skill_md)
-    packs_root = root / "packs"
-    if packs_root.is_dir():
-        for pkg in sorted(p for p in packs_root.iterdir() if p.is_dir()):
-            skill_md = pkg / "SKILL.md"
-            if skill_md.is_file():
-                packages.append(skill_md)
     return packages
 
 
@@ -103,25 +103,21 @@ def _relative(path: Path, root: Path) -> str:
         return ""
 
 
-SHEET_MANIFEST_FILE = "SHEET.md"
+STANDARD_MANIFEST_FILE = "STANDARD.md"
+# One directory and one manifest for every standard, root and narrowing
+# alike: `narrows:` is what tells them apart, never where they sit.
+STANDARD_DIR = "standards"
 
 
-def discover_sheets(root: Path = REPO_ROOT):
-    """Every library sheet: a directory ``sheets/<name>/`` with its manifest.
+def _discover_standards_under(root: Path, directory: str, manifest_name: str):
+    """``(dir, manifest_name, frontmatter, body)`` per standard under one home."""
 
-    Returns ``(directory, frontmatter, body)`` per sheet, the shape
-    ``discover_workflow_skills`` returns, because the caller does the same
-    thing with both: mint one flat name pointer. A directory without the
-    manifest, or without frontmatter naming the sheet, is library data
-    rather than a name -- it still reaches the installed lib copy.
-    """
-
-    sheets = []
-    root_dir = root / "sheets"
+    found = []
+    root_dir = root / directory
     if not root_dir.is_dir():
-        return sheets
-    for directory in sorted(p for p in root_dir.iterdir() if p.is_dir()):
-        manifest = directory / SHEET_MANIFEST_FILE
+        return found
+    for item in sorted(p for p in root_dir.iterdir() if p.is_dir()):
+        manifest = item / manifest_name
         if not manifest.is_file():
             continue
         try:
@@ -130,8 +126,21 @@ def discover_sheets(root: Path = REPO_ROOT):
             continue
         if not frontmatter_field(frontmatter, "name"):
             continue
-        sheets.append((directory, frontmatter, body))
-    return sheets
+        found.append((item, manifest_name, frontmatter, body))
+    return found
+
+
+def discover_standards(root: Path = REPO_ROOT):
+    """Every library standard, root and narrowing alike.
+
+    Returns ``(directory, manifest_name, frontmatter, body)``. A standard
+    is stamped on a ticket and never invoked, so the caller mints one flat
+    name pointer for each and no host surface at all. A directory without
+    its manifest, or without frontmatter naming the standard, is library
+    data rather than a name -- it still reaches the installed lib copy.
+    """
+
+    return _discover_standards_under(root, STANDARD_DIR, STANDARD_MANIFEST_FILE)
 
 
 WORKFLOW_SKILL_FILE = "SKILL.md"

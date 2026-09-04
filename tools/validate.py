@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """The orchflows compiler.
 
-Enforces package anatomy, frontmatter, call-graph acyclicity, pack
+Enforces package anatomy, frontmatter, call-graph acyclicity, standard
 signature completeness, the
 ticket-template contract (whose shape law is scripts/tickets.py's, read
 from there rather than restated), the result-envelope lead, and the
-duplication checks -- per pack cell and across tiers -- that replaced
+duplication checks -- per standard section and across tiers -- that replaced
 keeping copies in sync, per AGENTS.md, ARCHITECTURE.md,
 rules/composition.md, contracts/result.md,
-contracts/work-item.md, and contracts/pack-signature.md. Stdlib only, no
+contracts/work-item.md, and contracts/standard.md. Stdlib only, no
 network.
 
 Exit 0 clean or WARN-only. Exit 1 on any ERROR; one line per finding:
@@ -45,7 +45,7 @@ from tools.validate_support import lifecycle_literals as _lifecycle_literals_mod
 from tools.validate_support import lint as _lint_module
 from tools.validate_support import names as _names_module
 from tools.validate_support import packages as _packages_module
-from tools.validate_support import sheets as _sheets_module
+from tools.validate_support import standards as _standards_module
 from tools.validate_support import structure as _structure_module
 from tools.validate_support import tooling as _tooling_module
 from tools.validate_support import vocabulary as _vocabulary_module
@@ -56,7 +56,7 @@ from tools.validate_support.browser_game import *
 from tools.validate_support.friction import *
 from tools.validate_support.lifecycle_literals import *
 from tools.validate_support.packages import *
-from tools.validate_support.sheets import *
+from tools.validate_support.standards import *
 from tools.validate_support.tooling import *
 from tools.validate_support.vocabulary import *
 from tools.validate_support.duplication import *
@@ -69,7 +69,7 @@ _SUPPORT_MODULES = (
     _common_module, _bundle_module, _carriage_module, _friction_module,
     _packages_module,
     _duplication_module, _structure_module, _lint_module, _names_module,
-    _lifecycle_literals_module, _sheets_module, _tooling_module,
+    _lifecycle_literals_module, _standards_module, _tooling_module,
     _vocabulary_module,
 )
 _ROOT_BINDINGS = (
@@ -335,9 +335,9 @@ def _run_validation_impl() -> Diagnostics:
         validate_budget(body, pkg, diag)
         validate_loop_lint(body, pkg, diag)
         validate_reference_links(body, pkg, diag)
-        if pkg["is_pack"]:
-            validate_pack_signature(body, pkg, diag)
-            validate_craft_budget(pkg, diag)
+        if pkg["is_standard"]:
+            validate_standard_adapter(fm, pkg, diag)
+            validate_standard_budget(pkg["skill_md"], diag)
 
     validate_domain_blindness(packages, diag)
     validate_call_graph(packages, diag)
@@ -352,8 +352,8 @@ def _run_validation_impl() -> Diagnostics:
     validate_browser_game_traceability(diag, root=ROOT)
     validate_cross_package_links(packages, diag)
     validate_names(packages, diag)
-    validate_craft_sections(packages, diag)
-    validate_sheets(diag)
+    validate_standard_sections(packages, diag)
+    validate_standards(diag)
     validate_tools_declarations(diag)
     validate_bundle_manifest(diag)
     validate_markdown_links(diag)

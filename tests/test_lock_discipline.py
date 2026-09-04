@@ -36,6 +36,7 @@ from scripts import workspace_git  # noqa: E402
 from tests.test_tickets_cases.common import (  # noqa: E402
     TICKETS_PY, make_repo, run_cmd, sink_root, use_sink,
 )
+from tests.test_ticket_callables import standards_field  # noqa: E402
 
 SCRIPTS = ROOT / "scripts"
 WORKSPACE_PY = SCRIPTS / "workspace.py"
@@ -223,7 +224,10 @@ class TestWorkspaceStampsUnderTheRunLock(unittest.TestCase):
         }, separators=(",", ":"), sort_keys=True)
         self.ticket = ticket_at(
             sink_root() / "tickets" / "testrun", "T1", status="claimed",
-            extra=(("pack", "orch-research-pack"), ("dispatch_v1", attempt)),
+            extra=(
+                ("standards", "[" + ", ".join(standards_field("orch-research")) + "]"),
+                ("dispatch_v1", attempt),
+            ),
         )
         self.here = tmp
 

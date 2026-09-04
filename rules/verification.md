@@ -7,12 +7,12 @@ places this evidence law in the ticket lifecycle.
    challenges the fixed artifact and evidence under factual Context. The sealed
    assignment adds no proof checklist.
 2. Executor records belong to [result.md](../contracts/result.md), outside the
-   semantic seal. Evidence must fit its artifact; each pack's `evidence` cell
+   semantic seal. Evidence must fit its artifact; each standard's `evidence` cell
    owns the domain-specific forms.
 3. Verification and critique are read-only. A checker that changes the
    target has become a repair executor and cannot judge that changed identity.
 4. `orch-judge` owns blocker enumeration and root-cause synthesis. Its
-   exclusions and ranking are the shared review model, not a pack variation.
+   exclusions and ranking are the shared review model, not a standard variation.
 5. Accepted blockers enter one distinct repair pass. That change invalidates
    prior critique verdicts, and no second critique follows.
 6. A proof method must be able to contradict the claim it supports. For a test
@@ -39,5 +39,5 @@ places this evidence law in the ticket lifecycle.
    identity. Every other finding is `blocking: false` — reported in the
    review, never repaired in the run that reported it, and carried out as
    successor scope instead. Which findings a lens can raise, and how they
-   weigh against each other, stay the pack craft's; what the field means
+   weigh against each other, stay the standard's; what the field means
    does not vary by domain.

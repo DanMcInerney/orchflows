@@ -2,7 +2,7 @@
 
 Every case fires on something the design bought and nothing else provides.
 A frame is minted, sealed and journalled without ever being dispatched --
-so it carries no executor and no pack, and the ordinary `result` command
+so it carries no executor and no standard, and the ordinary `result` command
 is what its driver appends waves to. Its close is a recording act, and it
 refuses the one thing a prose driver silently gets away with: shipping two
 artifacts nobody read together. `orchflows resume` is the pull that finds
@@ -35,8 +35,9 @@ from scripts.tickets_store import UTC_STAMP
 from scripts.tickets_shape_line import (
     GRAMMAR_TOKENS, RESERVED_NAMES, SHAPE_GRAMMAR,
 )
+from tests.test_ticket_callables import standards_field
 
-DOC_PACK = "orch-content-pack"
+DOC_STANDARD = "orch-content"
 GOAL = "Deliver the migration wave.\nAnd say what it cost.\n"
 FIXED_NOW = "2026-08-31T12:00:00Z"
 # Every root frame states its wave plan at open, so every fixture that opens
@@ -114,7 +115,7 @@ class FrameSinkTest(unittest.TestCase):
 
     def callable(self, verb, frame_id, *arguments, run=None) -> str:
         answer = self.call(
-            verb, run or self.RUN, "--pack", DOC_PACK,
+            verb, run or self.RUN, "--standard", DOC_STANDARD,
             "--goal-file", str(self.goal_file), "--parent", frame_id,
             *arguments,
         )
@@ -131,7 +132,7 @@ class FrameSinkTest(unittest.TestCase):
 
 
 class FrameShapeTest(FrameSinkTest):
-    """A frame binds no craft and dispatches nothing, and says so in bytes."""
+    """A frame binds no standard and dispatches nothing, and says so in bytes."""
 
     def test_opening_a_frame_mints_the_run_and_seals_its_goal(self):
         self.assertFalse(self.run_dir().exists())
@@ -143,7 +144,7 @@ class FrameShapeTest(FrameSinkTest):
         data = _parse_frontmatter(self.ticket_text("B1"))
         self.assertEqual("true", data["frame"])
         self.assertNotIn("executor", data)
-        self.assertNotIn("pack", data)
+        self.assertNotIn("standard", data)
         self.assertTrue(data["root_generation"].startswith("root:B1:1:sha256:"))
         self.assertEqual(frame["assignment_seal"], data["assignment_seal"])
         self.assertEqual("claimed", data["status"])
@@ -171,10 +172,11 @@ class FrameShapeTest(FrameSinkTest):
         self.assertNotEqual(outer["assignment_seal"], inner["assignment_seal"])
         self.assertIn("- parent: B1", _sections(self.ticket_text("B1.1"))["Context"])
 
-    def test_a_frame_carrying_a_craft_binding_is_off_contract(self):
+    def test_a_frame_carrying_a_standard_binding_is_off_contract(self):
         for field, value, refusal in (
             ("executor", DO_EXECUTOR, "a frame binds no executor"),
-            ("pack", DOC_PACK, "a frame binds no pack"),
+            ("standards", "[" + ", ".join(standards_field(DOC_STANDARD)) + "]",
+             "a frame binds no standard"),
             ("frame", "yes", "frame is the marker `true`"),
         ):
             text = _set_frontmatter_field(_ticket("frame: true\n"), field, value)

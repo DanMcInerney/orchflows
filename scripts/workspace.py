@@ -22,7 +22,7 @@ its JSON payload, while this returns a real exit code per failure mode.
 
 Exit codes:
     0  success, including ``isolation: none`` or an absent field whose
-       stamped pack's adapter does not establish isolation
+       stamped standard's adapter does not establish isolation
     1  usage or internal error
     2  isolation-missing
     3  wrong-branch-point
@@ -126,7 +126,7 @@ COMMAND_HELP = {
     "establish": "create and record the candidate worktree this item's identity derives",
     "prepare": "install what the recorded workspace declares; takes no run lock",
     "retire": "remove that derived worktree, leaving every stamp that names it",
-    "start": "record the pack workspace the caller already stands in; never creates one",
+    "start": "record the standard workspace the caller already stands in; never creates one",
     "check": "from the integrating checkout: grade isolation and report the actual diff",
 }
 USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
@@ -266,7 +266,9 @@ def _cmd_check(rest):
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     reported = {"run": run, "id": ticket_id, "ticket": str(path)}
 
-    isolation = tickets.derived_isolation(data.get(ISOLATION_KEY), data.get("pack"))
+    isolation = tickets.derived_isolation(
+        data.get(ISOLATION_KEY), tickets.adapter_standard(data),
+    )
     if isolation != REQUIRED:
         # read-only lanes and unisolated-by-design items never reach git
         reported.update({ISOLATION_KEY: isolation, "verdict": "not required"})

@@ -13,13 +13,11 @@ Ceiling: 945 whitespace-delimited words. Terms are
   two callables; `workflows/` the reusable domain-blind workflows.
   Control flow is not a tier: it is the caller's prose. A package
   owns its `SKILL.md`, `references/`, `scripts/`.
-- **T2 — [`packs/`](packs/):** domain data satisfying the
-  [pack signature](contracts/pack-signature.md), never control flow.
-  Cells bind generic workflows to the domain concerns the signature
-  lists; the signature owns term-placement constraints, `craft` domain
-  vocabulary and domain-only shape.
-  `sheets/` narrows it: extra craft one ticket stamps beside a
-  pack ([sheet](contracts/sheet.md)).
+- **T2 — [`standards/`](standards/):** domain prose under the
+  [standard contract](contracts/standard.md), never control flow. A root
+  states one domain and declares the workspace adapter; a narrowing names
+  one other standard in `narrows:` and only tightens it. The contract owns
+  the frontmatter, the section table, the word ceiling and the digest.
 - **T3 — [`example-workflows/`](example-workflows/):** named workflows, each
   a skill body calling callables; their authoring standard is
   [custom workflow authoring](docs/custom-workflow-authoring.md).
@@ -35,7 +33,7 @@ Ceiling: 945 whitespace-delimited words. Terms are
   3.9+, its standard library alone (the library's floor, not a ring
   item's), Windows and POSIX, then no network. An unprefixed family module is
   the public command and import facade; same-family helpers own internal concerns.
-  `tickets_format.py` owns syntax, closed parsers, the pack registry;
+  `tickets_format.py` owns syntax, closed parsers, the standard registry;
   `tickets_markdown.py` semantic payload parsing and byte preservation;
   `tickets_admission.py` receipt lifecycle; `tickets_generations.py` immutable
   generation and seal identities; `tickets_project.py` run-project binding;
@@ -52,7 +50,7 @@ Ceiling: 945 whitespace-delimited words. Terms are
   alone derives that path and branch; nothing else computes either.
 - [`scripts/rings.py`](scripts/rings.py) owns the one ring resolution order —
   project, home, pinned imports, lib — with its reserved-prefix floor and
-  shadow notices; `packs_support.py` and `tickets_adapters.py` route through
+  shadow notices; `standards_support.py` and `tickets_adapters.py` route through
   it and spell no root of their own. `rings_trust.py` owns the never-portable
   trust ledger. `orchflows.py` is the ring and resume command surface over
   `orchflows_home.py` (home layout, the committed/regenerable line, pins),
@@ -139,8 +137,8 @@ Arrows point from reader or binder to dependency:
 
 `AGENTS.md` → `rules/` → `contracts/` → `skills/` → package `scripts/`.
 
-Packs depend on contracts and may name callable skills. Generic skills
-never name a pack or domain. A workflow calls skills and
+Standards depend on contracts and may name callable skills. Generic skills
+never name a standard or domain. A workflow calls skills and
 scripts; no skill depends on a workflow. A lower layer
 may link the law or contract binding it; a rule never depends on
 package internals. Shared packages never name project packages;

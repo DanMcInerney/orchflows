@@ -4,19 +4,16 @@ from __future__ import annotations
 
 from . import common as __dep_common
 ALLOWED_FRONTMATTER_KEYS = __dep_common.ALLOWED_FRONTMATTER_KEYS
+STANDARD_OPTIONAL_FRONTMATTER = __dep_common.STANDARD_OPTIONAL_FRONTMATTER
+STANDARD_FLOW_CONDITIONAL_RE = __dep_common.STANDARD_FLOW_CONDITIONAL_RE
+STANDARD_FLOW_IMPERATIVE_RE = __dep_common.STANDARD_FLOW_IMPERATIVE_RE
 BODY_BUDGET = __dep_common.BODY_BUDGET
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
-CRAFT_ROW_RE = __dep_common.CRAFT_ROW_RE
 DESCRIPTION_BUDGET = __dep_common.DESCRIPTION_BUDGET
 LINK_TARGET_RE = __dep_common.LINK_TARGET_RE
 LIST_MARKER_RE = __dep_common.LIST_MARKER_RE
 NEVER_RE = __dep_common.NEVER_RE
-OUTSIDE_PACK_CITATION = __dep_common.OUTSIDE_PACK_CITATION
-PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
-PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
-PACK_TYPED_CELLS = __dep_common.PACK_TYPED_CELLS
-PACK_ADAPTER_RE = __dep_common.PACK_ADAPTER_RE
-PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
+OUTSIDE_STANDARD_CITATION = __dep_common.OUTSIDE_STANDARD_CITATION
 Path = __dep_common.Path
 REQUIRE_RE = __dep_common.REQUIRE_RE
 RETURN_RE = __dep_common.RETURN_RE
@@ -27,6 +24,9 @@ ROUTING_BLOCK_BUDGET = __dep_common.ROUTING_BLOCK_BUDGET
 SENTENCE_END_RE = __dep_common.SENTENCE_END_RE
 SIGNATURE_CELL_POINTER_RE = __dep_common.SIGNATURE_CELL_POINTER_RE
 SKILL_TIERS = __dep_common.SKILL_TIERS
+STANDARD_DIR_NAME = __dep_common.STANDARD_DIR_NAME
+STANDARD_MANIFEST = __dep_common.STANDARD_MANIFEST
+declares_narrows = __dep_common.declares_narrows
 SKIPPED = __dep_common.SKIPPED
 SURFACE_BUDGET = __dep_common.SURFACE_BUDGET
 TABLE_DELIM_ROW_RE = __dep_common.TABLE_DELIM_ROW_RE
@@ -107,7 +107,7 @@ def workflow_tiers() -> frozenset:
 
 
 def discover_packages():
-    """Return every skill/pack package as a dict with path, kind, skill_md.
+    """Return every skill/standard package as a dict with path, kind, skill_md.
 
     A tier directory holding only ``references/`` is not a package and is
     not a defect in itself -- the ``is_file()`` guard below reads it as no
@@ -132,20 +132,25 @@ def discover_packages():
                     "path": pkg_dir,
                     "skill_md": skill_md,
                     "kind": tier,
-                    "is_pack": False,
+                    "is_standard": False,
                 })
-    packs_dir = ROOT / "packs"
-    if packs_dir.is_dir():
-        for pkg_dir in sorted(packs_dir.iterdir()):
+    standards_dir = ROOT / STANDARD_DIR_NAME
+    if standards_dir.is_dir():
+        for pkg_dir in sorted(standards_dir.iterdir()):
             if not pkg_dir.is_dir():
                 continue
-            skill_md = pkg_dir / "SKILL.md"
-            if skill_md.is_file():
+            manifest = pkg_dir / STANDARD_MANIFEST
+            # Roots only. A narrowing lives in the same directory and is
+            # graded against the sections it is *refused*, which is
+            # `standards.validate_standards`; grading it here would apply a
+            # root's required sections to a manifest the contract forbids
+            # them to.
+            if manifest.is_file() and not declares_narrows(_read_source(manifest)):
                 packages.append({
                     "path": pkg_dir,
-                    "skill_md": skill_md,
-                    "kind": "pack",
-                    "is_pack": True,
+                    "skill_md": manifest,
+                    "kind": "standard",
+                    "is_standard": True,
                 })
     return packages
 
@@ -179,7 +184,13 @@ def parse_frontmatter(text: str, file_label: str, diag: Diagnostics):
 
 def validate_frontmatter(fm: dict, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
-    extra = set(fm) - ALLOWED_FRONTMATTER_KEYS
+    # A standard's two optional keys are contracts/standard.md's, not a
+    # skill's: `narrows` names the one broader standard and `adapter` the
+    # workspace mechanism, and neither is legal on a skill.
+    allowed = ALLOWED_FRONTMATTER_KEYS | (
+        set(STANDARD_OPTIONAL_FRONTMATTER) if pkg["is_standard"] else set()
+    )
+    extra = set(fm) - allowed
     for key in sorted(extra):
         diag.error(file_label, f"frontmatter key '{key}' is not allowed")
 
@@ -220,9 +231,9 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics, allowed=None) -> None:
 
     allowed = ROLE_VALUES if allowed is None else allowed
     file_label = rel(pkg["skill_md"])
-    if pkg["is_pack"]:
+    if pkg["is_standard"]:
         if "role" in fm:
-            diag.error(file_label, "pack frontmatter must not declare 'role'")
+            diag.error(file_label, "standard frontmatter must not declare 'role'")
         return
     role = fm.get("role")
     if pkg["kind"] in workflow_tiers():
@@ -244,13 +255,22 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics, allowed=None) -> None:
 def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     operative = re.sub(r"(?ms)^(```|~~~).*?^\1[^\n]*$", "", body)
-    if pkg["is_pack"]:
+    if pkg["is_standard"]:
         for label in ("Require:", "Never:", "Return:"):
             if label in operative:
-                diag.error(file_label, f"pack body must not contain '{label}' (packs carry no control flow)")
-        flow = r"\bif\b[^.\n]{0,160}\bthen\b|\b(?:delegate|dispatch|spawn|stop|park|refuse)\b"
-        if re.search(flow, operative, re.IGNORECASE):
-            diag.error(file_label, "pack body carries control flow; packs provide data only")
+                diag.error(
+                    file_label,
+                    f"standard body must not contain '{label}' (a standard "
+                    "carries no Return contract)",
+                )
+        if STANDARD_FLOW_CONDITIONAL_RE.search(
+            operative
+        ) or STANDARD_FLOW_IMPERATIVE_RE.search(operative):
+            diag.error(
+                file_label,
+                "standard body carries control flow; a standard provides "
+                "data only",
+            )
         return
     require = REQUIRE_RE.search(operative)
     never = NEVER_RE.search(operative)
@@ -314,36 +334,21 @@ def validate_routing_block(text: str, label: str, diag: Diagnostics, limit: int 
 
 
 def validate_budget(body: str, pkg: dict, diag: Diagnostics) -> None:
+    """A skill body against its tier's ceiling.
+
+    A standard is not graded here: its ceiling is one word count over the
+    whole manifest, frontmatter counted, and `structure.validate_standard_budget`
+    is the one check that applies it to both kinds.
+    """
+
+    if pkg["is_standard"]:
+        return
     file_label = rel(pkg["skill_md"])
     n = body_words(body)
-    tier = "pack" if pkg["is_pack"] else pkg["kind"]
+    tier = pkg["kind"]
     limit = BODY_BUDGET[tier]
     if n > limit:
         diag.error(file_label, f"body has {n} words, exceeds the {tier} budget of {limit}")
-
-
-def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
-    file_label = rel(pkg["skill_md"])
-    rows = PACK_TABLE_CELL_RE.findall(body)
-    found = set(rows)
-    unknown = sorted(found - set(PACK_SIGNATURE_CELLS) - {"cell"})
-    if unknown:
-        diag.error(file_label, f"pack signature table has unknown cell(s): {', '.join(unknown)}")
-    missing = [cell for cell in PACK_SIGNATURE_CELLS if cell not in found]
-    if missing:
-        diag.error(file_label, f"pack signature table missing cell(s): {', '.join(missing)}")
-    repeated = sorted(cell for cell in PACK_SIGNATURE_CELLS if rows.count(cell) > 1)
-    if repeated:
-        diag.error(file_label, f"pack signature table repeats cell(s): {', '.join(repeated)}")
-    row = CRAFT_ROW_RE.search(body)
-    if row and "(references/craft.md)" not in row.group(1):
-        diag.error(file_label, "craft cell must bind [references/craft.md](references/craft.md)")
-    cells = dict(PACK_CELL_ROW_RE.findall(body))
-    if "adapter" in cells and not PACK_ADAPTER_RE.match(dequote(cells["adapter"])):
-        diag.error(
-            file_label,
-            f"adapter cell must be one registered mechanism key, got: {cells['adapter']!r}",
-        )
 
 
 def cell_clauses(text: str) -> list:
@@ -359,17 +364,17 @@ def cell_clauses(text: str) -> list:
 
     Structure is not content and never compares: table header and
     delimiter rows, headings, list markers, and any sentence citing an
-    owner outside the pack. That last one is the pointer or stated
+    owner outside the standard. That last one is the pointer or stated
     deviation rules/visibility.md §3 and rules/token-economy.md §7
-    require every pack to share once content moves to one owner --
-    convicting it would drive packs to stop deferring. It is decided per
+    require every standard to share once content moves to one owner --
+    convicting it would drive standards to stop deferring. It is decided per
     sentence, before the ';' cut: the deviation half carries no citation
     of its own, so cutting first strands it outside the exemption.
 
-    Whitespace collapses first, so two packs whose only difference is
+    Whitespace collapses first, so two standards whose only difference is
     where a 75-column line wraps still read as one clause. A clause
     under CELL_CLAUSE_MIN_WORDS words is a label or a term of art, not
-    content: the signature intends packs to name the same terms.
+    content: the signature intends standards to name the same terms.
     """
     lines = text.split("\n")
     structural = set()
@@ -409,7 +414,7 @@ def cell_clauses(text: str) -> list:
             # to the halves keeps the deviation while discarding the citation
             # that exempts it -- convicting the very sentence the exemption
             # exists to protect.
-            if OUTSIDE_PACK_CITATION in sentence or SIGNATURE_CELL_POINTER_RE.search(
+            if OUTSIDE_STANDARD_CITATION in sentence or SIGNATURE_CELL_POINTER_RE.search(
                 sentence
             ):
                 continue
@@ -431,6 +436,6 @@ __all__ = (
     'APPLIED_ROLE_VALUES',
     'validate_frontmatter', 'validate_role', 'validate_anatomy', 'body_words',
     '_split_frontmatter', 'validate_surface_budgets', 'validate_routing_block',
-    'validate_budget', 'validate_pack_signature',
+    'validate_budget',
     'cell_clauses',
 )

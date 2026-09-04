@@ -19,6 +19,8 @@ import unittest
 
 from scripts.tickets_assignment import lens_key
 
+from tests.test_ticket_callables import CODE_STANDARD, standards_field
+
 
 def _sections(context: str) -> dict:
     return {"Goal": "Deliver the behavior.\n", "Context": context}
@@ -32,29 +34,29 @@ class LensKeyTest(unittest.TestCase):
         owes: `makes` is what this ticket was minted to produce."""
 
         key = lens_key(
-            {"executor": "orch-do", "makes": "root", "pack": "orch-code-pack"},
+            {"executor": "orch-do", "makes": "root", "standards": standards_field(CODE_STANDARD)},
             _sections("- parent: B1\n- artifact: git:0123456789abcdef\n"),
         )
 
         self.assertEqual("root", key)
 
     def test_a_making_do_citing_a_predecessor_keeps_its_adapter_kind(self):
-        """No `makes`, so the stamped pack's adapter fixes the kind -- and
+        """No `makes`, so the stamped standard's adapter fixes the kind -- and
         an `evidence` identity in Context does not move it."""
 
         key = lens_key(
-            {"executor": "orch-do", "pack": "orch-code-pack"},
+            {"executor": "orch-do", "standards": standards_field(CODE_STANDARD)},
             _sections("- artifact: evidence:store-1\n"),
         )
 
         self.assertEqual("git", key)
 
     def test_a_judge_is_keyed_by_the_one_kind_on_its_context(self):
-        """The judge's kind is the artifact's, never the stamped pack's:
+        """The judge's kind is the artifact's, never the stamped standard's:
         this one is stamped for code and handed an evidence identity."""
 
         key = lens_key(
-            {"executor": "orch-judge", "pack": "orch-code-pack"},
+            {"executor": "orch-judge", "standards": standards_field(CODE_STANDARD)},
             _sections("- artifact: evidence:store-1\n"),
         )
 
@@ -65,7 +67,7 @@ class LensKeyTest(unittest.TestCase):
         than the sentence the prompt then omits."""
 
         key = lens_key(
-            {"executor": "orch-judge", "pack": "orch-code-pack"},
+            {"executor": "orch-judge", "standards": standards_field(CODE_STANDARD)},
             _sections(
                 "- artifact: git:0123456789abcdef\n"
                 "- artifact: evidence:store-1\n"

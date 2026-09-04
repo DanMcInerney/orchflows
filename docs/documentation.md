@@ -85,7 +85,7 @@ project maintains its own instance beside its router file.
 |---|---|---|
 | orchestrator, cold | router block, then the ownership map; vocabulary entries on demand | ~2 pages |
 | orchestrator, lifecycle | [the generated lifecycle table](lifecycle.md) | one rendered table |
-| decomposer | the root ticket, the stamped pack, the owners the spec names | the ticket |
+| decomposer | the root ticket, the stamped standard, the owners the spec names | the ticket |
 | executor | its Goal and relevant Context | the ticket |
 | evaluator | the lens, then the artifact — blind to the producer's prose | the lens |
 | human | README, then whatever it links | nothing |
@@ -126,8 +126,8 @@ lands. It is proposed and evolves under §5, never from symmetry.
 | factory | procedure | library instance | project instance | oracle |
 |---|---|---|---|---|
 | documentation | this file, §6 | `docs/`, `AGENTS.md` | router, vocabulary, ownership map, sink | tools/validate.py, `doclint.py` in a project; authoring lens |
-| vocabulary | [vocabulary-authoring.md](vocabulary-authoring.md) | [vocabulary.md](vocabulary.md); each pack's craft Vocabulary | `<repo>/docs/vocabulary.md` | consumer test; craft budget |
-| pack | [pack-authoring.md](pack-authoring.md); [custom-workflow-authoring.md](custom-workflow-authoring.md) | `packs/` | a scoped pack | pack-signature checks in tools/validate.py |
+| vocabulary | [vocabulary-authoring.md](vocabulary-authoring.md) | [vocabulary.md](vocabulary.md); each standard's Vocabulary | `<repo>/docs/vocabulary.md` | consumer test; standard budget |
+| standard | [standard-authoring.md](standard-authoring.md); [custom-workflow-authoring.md](custom-workflow-authoring.md) | `standards/` | a scoped standard | standard checks in tools/validate.py |
 | skill | [rules/composition.md](../rules/composition.md) §5, §11; [rules/token-economy.md](../rules/token-economy.md) §6; [custom-workflow-authoring.md](custom-workflow-authoring.md) | `skills/` | `<repo>/.orchflows/skills/<name>` | tools/validate.py; authoring lens |
 | workflow | [rules/composition.md](../rules/composition.md) §1; [custom-workflow-authoring.md](custom-workflow-authoring.md) | `example-workflows/` | `<repo>/.orchflows/workflows/<name>` | tools/validate.py; authoring lens |
 | review | [library-review.md](library-review.md) — its method; the constitution is the parameter | this library's constitution | a project's constitution under the same report contract | the report contract |
@@ -136,4 +136,4 @@ lands. It is proposed and evolves under §5, never from symmetry.
 The test suite is not a factory: its conventions are owned by the code
 that enforces them in the checkout (tests/__init__.py,
 tools/run_tests.py), and the shape law every
-project's tests share is the code pack's craft.
+project's tests share is the code standard's.
