@@ -35,6 +35,7 @@ from scripts.tickets_store import UTC_STAMP
 from scripts.tickets_shape_line import (
     GRAMMAR_TOKENS, RESERVED_NAMES, SHAPE_GRAMMAR,
 )
+from tests.test_ticket_callables import standards_field
 
 DOC_PACK = "orch-content-pack"
 GOAL = "Deliver the migration wave.\nAnd say what it cost.\n"
@@ -174,7 +175,8 @@ class FrameShapeTest(FrameSinkTest):
     def test_a_frame_carrying_a_craft_binding_is_off_contract(self):
         for field, value, refusal in (
             ("executor", DO_EXECUTOR, "a frame binds no executor"),
-            ("pack", DOC_PACK, "a frame binds no pack"),
+            ("standards", "[" + ", ".join(standards_field(DOC_PACK)) + "]",
+             "a frame binds no standard"),
             ("frame", "yes", "frame is the marker `true`"),
         ):
             text = _set_frontmatter_field(_ticket("frame: true\n"), field, value)

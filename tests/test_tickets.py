@@ -13,6 +13,7 @@ from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
+from tests.test_ticket_callables import standards_field
 from tests.test_tickets_cases.common import run_cmd, use_sink
 from tests.test_tickets_cases.cli_help import HelpTest  # noqa: F401
 from tests.test_tickets_cases.escaped_newline import (  # noqa: F401
@@ -56,6 +57,7 @@ import scripts.tickets_assignment as tickets_assignment
 import scripts.tickets_dispatch_launch as launch_module
 
 from tests._repo_root import ROOT
+from scripts import tickets_pins
 
 __all__ = (
     "AdapterRegistryTest", "PackPinTest", "SemanticTicketContractTest",
@@ -140,13 +142,14 @@ class AdapterRegistryTest(unittest.TestCase):
     def test_admission_reports_exactly_adapter_unregistered_for_the_pack_key(self):
         with self._project() as root:
             self._pack(root, "no-such-adapter")
-            ticket = (
-                "---\nid: T1\nrun: testrun\nstatus: pending\n"
-                "executor: orch-do\ndepends_on: []\nbound: 30m\n"
-                "pack: widget-pack\nisolation: required\n---\n\n"
-                "## Goal\n\nDeliver the widget.\n\n## Context\n\n[]\n"
-            )
             with mock.patch("scripts.rings.Path.cwd", return_value=root):
+                stamped = ", ".join(standards_field("widget-pack"))
+                ticket = (
+                    "---\nid: T1\nrun: testrun\nstatus: pending\n"
+                    "executor: orch-do\ndepends_on: []\nbound: 30m\n"
+                    f"standards: [{stamped}]\nisolation: required\n---\n\n"
+                    "## Goal\n\nDeliver the widget.\n\n## Context\n\n[]\n"
+                )
                 grade = tickets_mod.grade_admission("T1", ticket, {}, context={})
             adapter_codes = [
                 item["code"] for item in grade["findings"]
@@ -163,9 +166,14 @@ class AdapterRegistryTest(unittest.TestCase):
             workspace_strategy="git",
             commits_in_place=True,
         )
-        with mock.patch.object(tickets_assignment, "adapter_spec", return_value=adapter):
+        with mock.patch.object(
+            tickets_assignment, "adapter_spec", return_value=adapter,
+        ), mock.patch.object(
+            tickets_assignment, "adapter_standard", return_value="widget-pack",
+        ):
             finding = tickets_assignment.workspace_establishment_finding(
-                {"pack": "widget-pack", "isolation": "required"}, None,
+                {"standards": ["widget-pack@sha256:" + "0" * 64],
+                 "isolation": "required"}, None,
             )
         self.assertEqual("workspace-unestablished", finding[0])
 
@@ -352,8 +360,8 @@ class PackPinTest(unittest.TestCase):
 
             self.assertNotIn("error", payload)
             text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
-            expected = tickets_mod._tickets_adapters_module.pack_digest("widget-pack")
-            self.assertIn(f"pack_digest: {expected}", text)
+            expected = tickets_pins.item_digest("pack", "widget-pack")
+            self.assertIn(f"standards: [widget-pack@{expected}]", text)
 
     def test_a_pack_edited_under_the_pin_refuses_at_admission(self):
         with self._pinned_world() as (tmp, pack):
@@ -372,10 +380,10 @@ class PackPinTest(unittest.TestCase):
             )
 
             codes = [item["code"] for item in findings]
-            self.assertIn("pack-digest-mismatch", codes)
+            self.assertIn("standard-digest-mismatch", codes)
             detail = next(
                 item["detail"] for item in findings
-                if item["code"] == "pack-digest-mismatch"
+                if item["code"] == "standard-digest-mismatch"
             )
             self.assertIn("changed under the seal", detail)
             # The remedy names a living command: the generation stamp retired
@@ -419,10 +427,10 @@ class PackPinTest(unittest.TestCase):
                 "--pack", "widget-pack",
             )
             text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
-            digest = tickets_mod._tickets_adapters_module.pack_digest("widget-pack")
+            digest = tickets_pins.item_digest("pack", "widget-pack")
 
             system = tickets_mod.assignment_payload("T1", text)["system"]
-            self.assertEqual(digest, system["pack_digest"])
+            self.assertEqual([f"widget-pack@{digest}"], system["standards"])
             repointed = text.replace(digest, "sha256:" + "0" * 64)
             self.assertNotEqual(
                 tickets_mod.assignment_digest("T1", text),

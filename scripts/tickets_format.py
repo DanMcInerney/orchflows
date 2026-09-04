@@ -25,7 +25,8 @@ if __package__:
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REPORT_SECTION,
         REQUIRED_SECTIONS,
-        SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
+        SECTION_ORDER, SECTION_RANK, STANDARDS_FIELD, TicketFormatError,
+        _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
@@ -43,7 +44,8 @@ else:
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REPORT_SECTION,
         REQUIRED_SECTIONS,
-        SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
+        SECTION_ORDER, SECTION_RANK, STANDARDS_FIELD, TicketFormatError,
+        _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
@@ -214,10 +216,10 @@ def ticket_defects(text: str) -> list:
     if executor:
         if not executor.startswith(SCRIPT_EXECUTOR_PREFIX) and not executor_registered(executor):
             defects.append(executor_refusal(executor))
-        elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_pack") and not str(data.get("pack") or "").strip():
+        elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_pack") and not data.get(STANDARDS_FIELD):
             defects.append(
-                f"executor-pack-required: {executor} consumes resolved pack cells and "
-                "requires a stamped pack"
+                f"executor-pack-required: {executor} reads a resolved standard and "
+                "requires one stamped"
             )
     parsed_sections = _sections(text)
     sections = {name.strip().lower(): body for name, body in parsed_sections.items()}
@@ -233,7 +235,7 @@ def ticket_defects(text: str) -> list:
     if not sections.get('context', '').strip():
         defects.append("Context must be present; use [] when no exceptional facts apply")
     defects.extend(format_policy_defects(text, data, sections))
-    defects.extend(frame_defects(data.get('frame'), data.get('executor'), data.get('pack')))
+    defects.extend(frame_defects(data.get('frame'), data.get('executor'), data.get(STANDARDS_FIELD)))
     defects.extend(done_defects(data.get('done')))
     return defects
 def lease_of(data):
@@ -310,7 +312,7 @@ def frame_defects(value, executor, pack) -> list:
         for field, present, reason in (
             ('executor', dequote(executor),
              'the orchestrator session drives it, and nothing dispatches it'),
-            ('pack', str(pack or '').strip(),
+            ('standard', ', '.join(pack or ()),
              'a frame is a journal, not craft-governed work'),
         ) if present
     ]

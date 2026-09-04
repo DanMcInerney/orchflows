@@ -26,7 +26,9 @@ if __package__:
         ARTIFACT_CLAUSE, MAKES_FIELD, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
-    from .tickets_pins import PinError, digests_of, names_of, resolved
+    from .tickets_pins import (
+        STANDARDS_FIELD, adapter_standard, standards_of,
+    )
     from .tickets_registry import EXECUTOR_REGISTRY
     from .tickets_transitions import CHECKABLE_STATUSES
     from .tickets_store import (
@@ -44,7 +46,9 @@ else:
         ARTIFACT_CLAUSE, MAKES_FIELD, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
-    from tickets_pins import PinError, digests_of, names_of, resolved
+    from tickets_pins import (
+        STANDARDS_FIELD, adapter_standard, standards_of,
+    )
     from tickets_registry import EXECUTOR_REGISTRY
     from tickets_transitions import CHECKABLE_STATUSES
     from tickets_store import (
@@ -75,8 +79,8 @@ def _attempt_workspace(data: dict):
 def workspace_establishment_finding(data: dict, workspace):
     """Return the refusal code/detail for a non-established workspace."""
 
-    pack = data.get("pack")
-    if not str(pack or "").strip():
+    pack = adapter_standard(data)
+    if not pack:
         return None
     try:
         adapter = adapter_spec(pack)
@@ -216,21 +220,36 @@ def _declares_environment(item_dir) -> bool:
     return orchflows_envs.requirements_of(item_dir) is not None
 
 
-def _sheets(loaded: dict) -> list:
-    """`[{"name", "path", "digest"}]` for the sheets this ticket stamped."""
+def _standards(loaded: dict) -> list:
+    """`[{"name", "path", "digest"}]` for every level this ticket stamped.
 
-    digests = digests_of(loaded.get("sheet_digests"))
+    Broad to narrow, at the pinned digests rather than at whatever resolves
+    now: a launch that handed the child a fresher file than the one its seal
+    covers would be the substitution the pin exists to prevent. A level that
+    no longer resolves is dropped here and refused at the admission door,
+    which is where a drifted pin is graded.
+    """
+
+    if __package__:
+        from .packs_support import PackError, resolve_chain
+    else:  # pragma: no cover - direct/installed flat script path
+        from packs_support import PackError, resolve_chain
+    levels = standards_of(loaded.get(STANDARDS_FIELD))
+    if not levels:
+        return []
+    try:
+        chain = {
+            str(link["name"]): link
+            for link in resolve_chain([name for name, _digest in levels])
+        }
+    except PackError:
+        return []
     stamped = []
-    for name in names_of(loaded.get("sheets")):
-        try:
-            record = resolved("sheet", name)
-        except PinError:
+    for name, digest in levels:
+        link = chain.get(name)
+        if link is None:
             continue
-        stamped.append({
-            "name": name,
-            "path": str(record["path"]),
-            "digest": digests.get(name, str(record["digest"])),
-        })
+        stamped.append({"name": name, "path": str(link["path"]), "digest": digest})
     return stamped
 
 
@@ -283,7 +302,7 @@ def lens_key(loaded: dict, sections: dict):
         })
         if kinds:
             return kinds[0] if len(kinds) == 1 else None
-    return dequote(loaded.get(MAKES_FIELD)) or artifact_kind(loaded.get("pack"))
+    return dequote(loaded.get(MAKES_FIELD)) or artifact_kind(adapter_standard(loaded))
 
 
 def dispatch_assignment(rest, *, attempt=None):
@@ -335,7 +354,8 @@ def dispatch_assignment(rest, *, attempt=None):
     if assigned_name is None:
         return {"error": "dispatch requires the child identity through --by when it differs from the dispatch attempt owner"}
     role, _profile = resolved_role_profile(executor, loaded.get("profile"))
-    pack = loaded.get("pack")
+    stamped = _standards(loaded)
+    pack = adapter_standard(loaded)
     craft, workspace_line = _craft(pack)
     applied = _applied_skill(loaded)
     return {"assignment": {
@@ -358,7 +378,8 @@ def dispatch_assignment(rest, *, attempt=None):
         "pack": pack,
         "role": role,
         "run": str(loaded.get("run") or run),
-        "sheets": _sheets(loaded),
+        "sheets": [level for level in stamped if level["name"] != pack],
+        "standards": stamped,
         "skill_path": (
             applied["path"] if applied is not None else _skill_path(executor)
         ),

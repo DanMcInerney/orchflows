@@ -266,7 +266,9 @@ def _cmd_check(rest):
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     reported = {"run": run, "id": ticket_id, "ticket": str(path)}
 
-    isolation = tickets.derived_isolation(data.get(ISOLATION_KEY), data.get("pack"))
+    isolation = tickets.derived_isolation(
+        data.get(ISOLATION_KEY), tickets.adapter_standard(data),
+    )
     if isolation != REQUIRED:
         # read-only lanes and unisolated-by-design items never reach git
         reported.update({ISOLATION_KEY: isolation, "verdict": "not required"})

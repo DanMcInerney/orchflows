@@ -25,6 +25,7 @@ from scripts import state_root
 from scripts import tickets
 from scripts.tickets_assignment import workspace_establishment_finding
 from scripts.tickets_format import canonical_json, parse_canonical_json
+from tests.test_ticket_callables import RESEARCH_PACK, standards_field
 from scripts.tickets_outcome import DISPATCH_OUTCOME_USAGE
 
 
@@ -325,7 +326,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         """Frontmatter whose live attempt records `workspace` and nothing else."""
 
         return {
-            "pack": "orch-research-pack",
+            "standards": standards_field(RESEARCH_PACK),
             "isolation": "required",
             "dispatch_v1": canonical_json({
                 "protocol": "orchflows.dispatch.v1",

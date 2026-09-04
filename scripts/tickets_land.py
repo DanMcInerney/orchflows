@@ -37,6 +37,7 @@ if __package__:
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
     from .tickets_adapters import derived_isolation
+    from .tickets_pins import adapter_standard
     from .tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
     from .tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from .tickets_outcome import _cmd_dispatch_outcome
@@ -55,6 +56,7 @@ else:  # pragma: no cover - direct/installed flat script path
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
     from tickets_adapters import derived_isolation
+    from tickets_pins import adapter_standard
     from tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
     from tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from tickets_outcome import _cmd_dispatch_outcome
@@ -141,7 +143,7 @@ def _derived_isolation(data: dict) -> bool:
     """Whether this item was given a derived worktree to integrate and retire."""
 
     return derived_isolation(
-        data.get("isolation"), data.get("pack")
+        data.get("isolation"), adapter_standard(data)
     ) == REQUIRED_ISOLATION
 
 

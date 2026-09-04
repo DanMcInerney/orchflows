@@ -13,11 +13,11 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 try:
     from scripts import rings
     from scripts.tickets_adapters import ADAPTER_REGISTRY
-    from scripts.tickets_markdown import dequote
+    from scripts.tickets_markdown import _parse_frontmatter, dequote
 except ImportError:
     import rings
     from tickets_adapters import ADAPTER_REGISTRY
-    from tickets_markdown import dequote
+    from tickets_markdown import _parse_frontmatter, dequote
 
 
 RESOLVER_VERSION = "orchflows.pack-resolver.v2"
@@ -359,3 +359,178 @@ def cells_for(
             "cells": dict(resolved["cells"]),
         }
     raise PackError("digest-unresolved", f"pack digest does not resolve: {requested}")
+
+
+# --- The `narrows:` cascade ------------------------------------------------
+#
+# A standard states what a good artifact carries in some domain, and may
+# narrow exactly one other standard. Resolution walks that single parent to a
+# standard carrying none, so `three-js` narrows `javascript` narrows `code`
+# and the reader gets all three, broad to narrow.
+#
+# Two ring kinds are searched because a standard still lives in one of two
+# directories: `packs/` holds the roots and `sheets/` the narrowings. Nothing
+# here depends on which -- a root is a standard with no `narrows:`, not a
+# standard in a particular directory -- so the collapse into one `standards/`
+# ring changes this tuple and nothing else.
+STANDARD_KINDS = ("pack", "sheet")
+# The most `narrows:` edges one chain may follow. The ninth refuses: past
+# eight, a chain is no longer specificity, and the walk needs a bound that
+# does not depend on the cycle check catching a malformed ring first.
+STANDARD_DEPTH_LIMIT = 8
+
+
+def _standard_record(name: str, requested: str, depth: int, **overrides):
+    """One standard's ring record and the old kind that still carries it.
+
+    A name is looked for as every kind a standard can still live in, so the
+    refusal reports the most specific failure rather than the last one: a
+    reserved name or an untrusted bundle is a different answer from a name
+    nothing anywhere carries, and only the latter is worth restating as
+    "resolves in no reachable ring".
+    """
+
+    failures = []
+    for kind in STANDARD_KINDS:
+        try:
+            return dict(rings.resolve(kind, name, **overrides)), kind
+        except rings.RingError as error:
+            failures.append(error)
+    specific = next((error for error in failures if error.code != "unresolved"), None)
+    if specific is not None:
+        raise PackError(_RING_CODES.get(specific.code, "pack-unresolved"), specific.detail)
+    if depth:
+        raise PackError(
+            "standard-parent-unresolved",
+            f"standard '{requested}' narrows '{name}', which resolves in no "
+            f"reachable ring",
+        )
+    raise PackError(
+        "pack-unresolved",
+        f"standard '{name}' cannot be pinned: it resolves in no reachable ring",
+    )
+
+
+def _manifest_text(path: Path) -> str:
+    raw = _read_bytes(path, "standard")
+    try:
+        return raw.decode("utf-8-sig")
+    except UnicodeDecodeError as error:
+        raise PackError("pack-unreadable", f"unreadable standard {path}: {error}") from error
+
+
+def declared_narrows(text: str) -> str:
+    """The one parent a standard's frontmatter names, or `''` for a root."""
+
+    return dequote(_parse_frontmatter(text).get("narrows"))
+
+
+def declared_adapter_of(text: str, path: Path) -> str:
+    """The workspace mechanism this standard declares, or `''` for none.
+
+    Frontmatter is read first and the cells table second: the frontmatter
+    `adapter:` is where the collapsed manifest declares it, and the table is
+    where every shipped root still does. Both are declarations rather than
+    fallbacks -- a standard carrying neither declares no adapter, which is a
+    fact the resolved-set check reads, not an error to swallow here.
+    """
+
+    frontmatter = dequote(_parse_frontmatter(text).get("adapter"))
+    declared = frontmatter or _parse_rows(text, path, require_all=False).get("adapter", "")
+    if not declared:
+        return ""
+    adapter = _atom(declared, "adapter", path)
+    if not _ADAPTER_RE.fullmatch(adapter):
+        raise PackError("pack-shape-invalid", f"adapter has invalid key: {adapter!r}")
+    # Whether the key is *registered* is `tickets_adapters`', at the one door
+    # that turns a key into a mechanism. Counted here as declared either way,
+    # so a set carrying one unregistered adapter is refused as unregistered
+    # rather than as carrying none.
+    return adapter
+
+
+def _chain(name: str, **overrides) -> List[Dict[str, object]]:
+    """One stamped name's ancestry, broad to narrow, or a `PackError`."""
+
+    requested = _pack_name(name)
+    walked: List[str] = []
+    links: List[Dict[str, object]] = []
+    current, depth = requested, 0
+    while True:
+        if current in walked:
+            raise PackError(
+                "standard-cycle",
+                f"standard '{requested}' narrows a cycle: "
+                + " -> ".join(walked + [current]),
+            )
+        walked.append(current)
+        record, kind = _standard_record(current, requested, depth, **overrides)
+        path = Path(str(record["path"]))
+        text = _manifest_text(path)
+        links.append({
+            "name": current,
+            "kind": kind,
+            "ring": str(record["ring"]),
+            "path": str(path),
+            "dir": str(record["dir"]),
+            "adapter": declared_adapter_of(text, path),
+        })
+        parent = declared_narrows(text)
+        if not parent:
+            return list(reversed(links))
+        depth += 1
+        if depth > STANDARD_DEPTH_LIMIT:
+            raise PackError(
+                "standard-depth",
+                f"standard '{requested}' has not terminated in "
+                f"{STANDARD_DEPTH_LIMIT} hops: " + " -> ".join(walked + [parent]),
+            )
+        current = _pack_name(parent)
+
+
+def resolve_chain(names: Sequence[str], **overrides) -> List[Dict[str, object]]:
+    """Every stamped name's chain, concatenated broad to narrow.
+
+    Chains join in the order written and a standard reached twice is read
+    once, at its first position, so a shared ancestor is not read -- or
+    charged for -- twice. The joined set carries exactly one adapter: with
+    none the ticket has no workspace mechanism, and with two it has a
+    contradiction no later door can resolve.
+    """
+
+    resolved_links: List[Dict[str, object]] = []
+    seen = set()
+    for name in names:
+        for link in _chain(name, **overrides):
+            if link["name"] in seen:
+                continue
+            seen.add(link["name"])
+            resolved_links.append(link)
+    if not resolved_links:
+        raise PackError("standard-unstamped", "no standard is stamped")
+    declaring = [link for link in resolved_links if link["adapter"]]
+    if not declaring:
+        raise PackError(
+            "standard-adapter-missing",
+            "the resolved standards "
+            + ", ".join(f"'{link['name']}'" for link in resolved_links)
+            + " declare no adapter, so the ticket has no workspace mechanism",
+        )
+    if len(declaring) > 1:
+        raise PackError(
+            "standard-adapter-conflict",
+            "the resolved standards declare "
+            + " and ".join(
+                f"'{link['name']}' -> {link['adapter']}" for link in declaring
+            )
+            + ": one ticket carries one adapter, so these do not compose",
+        )
+    return resolved_links
+
+
+def adapter_standard(names: Sequence[str], **overrides) -> str:
+    """The name of the one resolved standard that declares the adapter."""
+
+    return next(
+        str(link["name"]) for link in resolve_chain(names, **overrides) if link["adapter"]
+    )
