@@ -220,9 +220,8 @@ def _grade(ring: Path, diag, bundle, names, packages, sheets, structure, tooling
                 continue
             packages.validate_role(fm, pkg, diag)
             packages.validate_anatomy(body, pkg, diag)
-            packages.validate_budget(body, pkg, diag)
-            packages.validate_pack_signature(body, pkg, diag)
-            structure.validate_craft_budget(pkg, diag)
+            sheets.validate_standard_adapter(fm, pkg, diag)
+            structure.validate_craft_budget(manifest, diag)
     names.validate_craft_sections(graded, diag)
     structure.validate_templates(diag, roots=[ring / rings.RING_DIRS["workflow"]])
     sheets.validate_sheets(diag, pack_roots=_roots(ring, "pack"))

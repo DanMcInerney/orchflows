@@ -4,19 +4,16 @@ from __future__ import annotations
 
 from . import common as __dep_common
 ALLOWED_FRONTMATTER_KEYS = __dep_common.ALLOWED_FRONTMATTER_KEYS
+STANDARD_OPTIONAL_FRONTMATTER = __dep_common.STANDARD_OPTIONAL_FRONTMATTER
+STANDARD_FLOW_CONDITIONAL_RE = __dep_common.STANDARD_FLOW_CONDITIONAL_RE
+STANDARD_FLOW_IMPERATIVE_RE = __dep_common.STANDARD_FLOW_IMPERATIVE_RE
 BODY_BUDGET = __dep_common.BODY_BUDGET
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
-CRAFT_ROW_RE = __dep_common.CRAFT_ROW_RE
 DESCRIPTION_BUDGET = __dep_common.DESCRIPTION_BUDGET
 LINK_TARGET_RE = __dep_common.LINK_TARGET_RE
 LIST_MARKER_RE = __dep_common.LIST_MARKER_RE
 NEVER_RE = __dep_common.NEVER_RE
 OUTSIDE_PACK_CITATION = __dep_common.OUTSIDE_PACK_CITATION
-PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
-PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
-PACK_TYPED_CELLS = __dep_common.PACK_TYPED_CELLS
-PACK_ADAPTER_RE = __dep_common.PACK_ADAPTER_RE
-PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
 Path = __dep_common.Path
 REQUIRE_RE = __dep_common.REQUIRE_RE
 RETURN_RE = __dep_common.RETURN_RE
@@ -179,7 +176,13 @@ def parse_frontmatter(text: str, file_label: str, diag: Diagnostics):
 
 def validate_frontmatter(fm: dict, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
-    extra = set(fm) - ALLOWED_FRONTMATTER_KEYS
+    # A standard's two optional keys are contracts/standard.md's, not a
+    # skill's: `narrows` names the one broader standard and `adapter` the
+    # workspace mechanism, and neither is legal on a skill.
+    allowed = ALLOWED_FRONTMATTER_KEYS | (
+        set(STANDARD_OPTIONAL_FRONTMATTER) if pkg["is_pack"] else set()
+    )
+    extra = set(fm) - allowed
     for key in sorted(extra):
         diag.error(file_label, f"frontmatter key '{key}' is not allowed")
 
@@ -247,10 +250,19 @@ def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
     if pkg["is_pack"]:
         for label in ("Require:", "Never:", "Return:"):
             if label in operative:
-                diag.error(file_label, f"pack body must not contain '{label}' (packs carry no control flow)")
-        flow = r"\bif\b[^.\n]{0,160}\bthen\b|\b(?:delegate|dispatch|spawn|stop|park|refuse)\b"
-        if re.search(flow, operative, re.IGNORECASE):
-            diag.error(file_label, "pack body carries control flow; packs provide data only")
+                diag.error(
+                    file_label,
+                    f"standard body must not contain '{label}' (a standard "
+                    "carries no Return contract)",
+                )
+        if STANDARD_FLOW_CONDITIONAL_RE.search(
+            operative
+        ) or STANDARD_FLOW_IMPERATIVE_RE.search(operative):
+            diag.error(
+                file_label,
+                "standard body carries control flow; a standard provides "
+                "data only",
+            )
         return
     require = REQUIRE_RE.search(operative)
     never = NEVER_RE.search(operative)
@@ -314,36 +326,21 @@ def validate_routing_block(text: str, label: str, diag: Diagnostics, limit: int 
 
 
 def validate_budget(body: str, pkg: dict, diag: Diagnostics) -> None:
+    """A skill body against its tier's ceiling.
+
+    A standard is not graded here: its ceiling is one word count over the
+    whole manifest, frontmatter counted, and `structure.validate_craft_budget`
+    is the one check that applies it to both kinds.
+    """
+
+    if pkg["is_pack"]:
+        return
     file_label = rel(pkg["skill_md"])
     n = body_words(body)
-    tier = "pack" if pkg["is_pack"] else pkg["kind"]
+    tier = pkg["kind"]
     limit = BODY_BUDGET[tier]
     if n > limit:
         diag.error(file_label, f"body has {n} words, exceeds the {tier} budget of {limit}")
-
-
-def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
-    file_label = rel(pkg["skill_md"])
-    rows = PACK_TABLE_CELL_RE.findall(body)
-    found = set(rows)
-    unknown = sorted(found - set(PACK_SIGNATURE_CELLS) - {"cell"})
-    if unknown:
-        diag.error(file_label, f"pack signature table has unknown cell(s): {', '.join(unknown)}")
-    missing = [cell for cell in PACK_SIGNATURE_CELLS if cell not in found]
-    if missing:
-        diag.error(file_label, f"pack signature table missing cell(s): {', '.join(missing)}")
-    repeated = sorted(cell for cell in PACK_SIGNATURE_CELLS if rows.count(cell) > 1)
-    if repeated:
-        diag.error(file_label, f"pack signature table repeats cell(s): {', '.join(repeated)}")
-    row = CRAFT_ROW_RE.search(body)
-    if row and "(references/craft.md)" not in row.group(1):
-        diag.error(file_label, "craft cell must bind [references/craft.md](references/craft.md)")
-    cells = dict(PACK_CELL_ROW_RE.findall(body))
-    if "adapter" in cells and not PACK_ADAPTER_RE.match(dequote(cells["adapter"])):
-        diag.error(
-            file_label,
-            f"adapter cell must be one registered mechanism key, got: {cells['adapter']!r}",
-        )
 
 
 def cell_clauses(text: str) -> list:
@@ -431,6 +428,6 @@ __all__ = (
     'APPLIED_ROLE_VALUES',
     'validate_frontmatter', 'validate_role', 'validate_anatomy', 'body_words',
     '_split_frontmatter', 'validate_surface_budgets', 'validate_routing_block',
-    'validate_budget', 'validate_pack_signature',
+    'validate_budget',
     'cell_clauses',
 )

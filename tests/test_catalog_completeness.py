@@ -65,11 +65,22 @@ def tearDownModule():
 
 
 def registered_names() -> set:
-    """Every canonical name a host must be able to invoke, from its owner."""
+    """Every canonical name a host must be able to invoke, from its owner.
 
-    packs = {path.parent.name for path in sorted((ROOT / "packs").glob("*/SKILL.md"))}
+    A standard is not one of them: it is stamped on a ticket and never
+    invoked, so it renders no host adapter (contracts/standard.md). The one
+    surface it does take -- the flat by-name pointer -- is graded by
+    `stamped_names` below.
+    """
+
     templates = {directory.name for directory, _fm, _body in install.discover_workflow_skills()}
-    return set(CALLABLE_EXECUTORS) | packs | templates
+    return set(CALLABLE_EXECUTORS) | templates
+
+
+def stamped_names() -> set:
+    """Every standard: the names that take the flat pointer and no more."""
+
+    return {directory.name for directory, _m, _fm, _body in install.discover_standards()}
 
 
 def name_reader(host: str, item: str, adapters=None):
@@ -154,7 +165,7 @@ class CatalogCompletenessTests(unittest.TestCase):
         # Graded before anything is compared: an expectation that came back
         # empty would make every containment below vacuously true.
         self.assertIn("orch-do", expected)
-        self.assertIn("orch-code-pack", expected)
+        self.assertNotIn("orch-code-pack", expected)
         self.assertGreaterEqual(len(expected), 11)
 
         found = catalog_names(self._plan())
@@ -180,6 +191,29 @@ class CatalogCompletenessTests(unittest.TestCase):
                 planted[label] = found[label] - {"orch-do"}
                 self.assertEqual(
                     {label: ["orch-do"]}, omissions(expected, planted)
+                )
+
+    def test_a_standard_takes_the_flat_pointer_and_no_host_surface(self):
+        """The other half of the same completeness question. A standard is
+        stamped, never invoked, so its name owes exactly one surface --
+        omitting it from `registered_names` has to leave it checked
+        somewhere or the collapse would have deleted five names silently.
+        """
+
+        stamped = stamped_names()
+        self.assertIn("orch-code-pack", stamped)
+        self.assertIn("market-brief", stamped)
+
+        found = catalog_names(self._plan())
+        self.assertEqual(
+            set(), stamped - found["flat by-name index"],
+            "a standard the flat index never names is unreachable by name",
+        )
+        for label, _attribute, _host, _item in CATALOGS:
+            with self.subTest(catalog=label):
+                self.assertEqual(
+                    set(), stamped & found[label],
+                    "%s renders a standard; nothing invokes one" % label,
                 )
 
     def test_the_name_reader_is_that_host_s_own_path_template(self):

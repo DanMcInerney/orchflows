@@ -67,7 +67,7 @@ class GoalEvidenceContractTest(unittest.TestCase):
         }
         for pack, (kind, anchors) in expected.items():
             with self.subTest(pack=pack):
-                craft = read(f"packs/orch-{pack}-pack/references/craft.md")
+                craft = read(f"packs/orch-{pack}-pack/SKILL.md")
                 lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", craft)
                 self.assertIsNotNone(lens, f"{pack} craft has no ## Lens section")
                 match = re.search(
@@ -149,14 +149,15 @@ class CraftLensKeyTest(unittest.TestCase):
     )
 
     def craft(self, pack: str) -> str:
-        return read(f"packs/{pack}/references/craft.md")
+        return read(f"packs/{pack}/SKILL.md")
 
     def test_craft_sections_are_the_migrated_set(self):
         for pack in self.PACKS:
             with self.subTest(pack=pack):
                 headings = re.findall(r"(?m)^## (.+?)\s*$", self.craft(pack))
                 self.assertEqual(
-                    ["Vocabulary", "Workspace", "Spec fields", "Lens", "Stages"],
+                    ["Making", "Vocabulary", "Workspace", "Spec fields",
+                     "Lens", "Stages"],
                     headings,
                 )
 
@@ -202,7 +203,7 @@ class BlockingLawOwnershipTest(unittest.TestCase):
         return sorted(path.parent.name for path in (ROOT / "packs").glob("*/SKILL.md"))
 
     def lens_entry(self, pack: str, kind: str) -> str:
-        craft = read(f"packs/{pack}/references/craft.md")
+        craft = read(f"packs/{pack}/SKILL.md")
         lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", craft)
         self.assertIsNotNone(lens, f"{pack} craft has no ## Lens section")
         entry = re.search(
@@ -222,7 +223,7 @@ class BlockingLawOwnershipTest(unittest.TestCase):
         for pack in self.packs():
             with self.subTest(pack=pack):
                 self.assertNotIn(
-                    "blocking", read(f"packs/{pack}/references/craft.md")
+                    "blocking", read(f"packs/{pack}/SKILL.md")
                 )
 
     def test_the_judge_points_at_the_clause_that_carries_the_law(self):

@@ -158,12 +158,13 @@ class TestNameResolution(_IsolatedTree):
             "contracts/synthetic.md",
             "templates/synthetic.md",
             "README.md",
-            # recursive, all three: a stub, a nested reference, a pack
-            # reference and a skill reference are each a file the old
-            # non-recursive glob over four top-level directories never saw
+            # recursive, all three: a stub, a nested reference, a
+            # standard reference and a skill reference are each a file
+            # the old non-recursive glob over four top-level
+            # directories never saw
             "example-workflows/demo/00-step.md",
             "example-workflows/references/protocol.md",
-            "packs/orch-synth-pack/references/craft.md",
+            "packs/orch-synth-pack/references/notes.md",
             "skills/kernel/orch-real/references/notes.md",
         )
         for relative in checked:

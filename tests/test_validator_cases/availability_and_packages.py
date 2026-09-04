@@ -207,7 +207,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
     def test_pack_declaring_role_at_all_is_error(self):
         self._write_pack(
             "somepack",
-            b"---\nname: somepack\ndescription: a pack that wrongly declares a role\nrole: worker\n---\n"
+            b"---\nname: somepack\ndescription: a standard that wrongly declares a role\nrole: worker\n---\n"
             b"| slicing | x |\n",
         )
         result = self._run()
@@ -343,13 +343,13 @@ class TestWorkflowLibraryHomes(_IsolatedTree):
 
 
 class TestSheetAnatomy(_IsolatedTree):
-    """A sheet is graded against `contracts/sheet.md`, at the tree seam.
+    """A narrowing is graded against `contracts/standard.md`, at the seam.
 
     Every case writes one synthetic `sheets/<name>/SHEET.md` beside one
-    synthetic pack and runs the whole validator, so what is checked is the
+    synthetic root and runs the whole validator, so what is checked is the
     ERROR/exit-code contract a run reads, not a helper called in isolation.
-    The pack is written rather than copied because two of the checks are
-    *about* the pack: which packs a sheet may be stamped beside, and which
+    The root is written rather than copied because two of the checks are
+    *about* it: which standard a narrowing may tighten, and which
     `## Lens` keys its adapter makes readable.
     """
 
@@ -361,9 +361,9 @@ class TestSheetAnatomy(_IsolatedTree):
         real pack must carry and reds these cases on its own defects.
 
         `kind` is the artifact kind `adapter` emits: the scaffold writes a
-        `git` pack, so a fixture that changes the adapter changes its
-        craft's `## Lens` entry to match, or the craft-section check reds
-        the pack itself and hides the sheet finding under test.
+        `git` standard, so a fixture that changes the adapter changes the
+        manifest's `## Lens` entry to match, or the section check reds the
+        root itself and hides the narrowing finding under test.
         """
 
         name = name or self.PACK
@@ -371,9 +371,9 @@ class TestSheetAnatomy(_IsolatedTree):
         for relative, text in orchflows_scaffold.files_for("pack", name):
             path = pack / relative
             path.parent.mkdir(parents=True, exist_ok=True)
-            if relative == "SKILL.md" and adapter != "git":
-                text = text.replace("| adapter | git |", f"| adapter | {adapter} |")
-            if relative == "references/craft.md" and kind != "git":
+            if adapter != "git":
+                text = text.replace("adapter: git", f"adapter: {adapter}")
+            if kind != "git":
                 text = text.replace("### git", f"### {kind}")
             path.write_bytes(text.encode("utf-8"))
         return pack
@@ -387,11 +387,11 @@ class TestSheetAnatomy(_IsolatedTree):
     def _sheet_text(self, name: str, *, packs=None, sections=None, lens=("git",)):
         packs = self.PACK if packs is None else packs
         body = sections if sections is not None else [
-            ("Craft", "Narrow the craft here."),
+            ("Making", "Narrow the making guidance here."),
         ]
         lines = [
             "---", f"name: {name}", "description: When to stamp it.",
-            f"packs: [{packs}]", "---", "", f"# {name}", "",
+            f"narrows: {packs}", "---", "", f"# {name}", "",
         ]
         for heading, prose in body:
             lines.extend([f"## {heading}", "", prose, ""])
@@ -415,14 +415,15 @@ class TestSheetAnatomy(_IsolatedTree):
         self.assertEqual([], self._errors(result.stdout, "market-brief"))
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_a_pack_only_section_inside_a_sheet_is_refused(self):
+    def test_a_root_only_section_inside_a_narrowing_is_refused(self):
         """`## Workspace` states identities and isolation -- a fact about the
-        domain, which the pack owns. A sheet carrying it is a second owner."""
+        domain, which the root owns. A narrowing carrying it is a second
+        owner."""
 
         self._write_pack()
         self._write_sheet("market-brief", self._sheet_text(
             "market-brief",
-            sections=[("Craft", "Narrow it."), ("Workspace", "Commits, branches.")],
+            sections=[("Making", "Narrow it."), ("Workspace", "Commits, branches.")],
         ))
 
         result = self._run()
@@ -463,7 +464,7 @@ class TestSheetAnatomy(_IsolatedTree):
             result.stdout,
         )
 
-    def test_a_packs_name_that_resolves_to_no_pack_is_refused(self):
+    def test_a_narrows_name_that_resolves_to_no_standard_is_refused(self):
         self._write_pack()
         self._write_sheet("market-brief", self._sheet_text(
             "market-brief", packs="orch-absent-pack",
@@ -494,16 +495,15 @@ class TestSheetAnatomy(_IsolatedTree):
             result.stdout,
         )
 
-    def test_a_named_pack_whose_kind_no_lens_entry_carries_is_refused(self):
-        """The other direction of the same fact. A sheet stamped beside two
-        packs but keyed for one hands the other pack's verb an entry that
+    def test_a_named_standard_whose_kind_no_lens_entry_carries_is_refused(self):
+        """The other direction of the same fact. A narrowing keyed for a
+        kind its own root never emits hands that root's verb an entry that
         does not exist, so the stamp adds nothing it can read."""
 
-        self._write_pack()
         self._write_pack("orch-paper-pack", adapter="document-tree", kind="doc")
         self._write_sheet("market-brief", self._sheet_text(
             "market-brief",
-            packs="%s, orch-paper-pack" % self.PACK,
+            packs="orch-paper-pack",
             lens=("git",),
         ))
 
@@ -515,26 +515,27 @@ class TestSheetAnatomy(_IsolatedTree):
             any("orch-paper-pack" in line and "### doc" in line for line in errors),
             result.stdout,
         )
-        # The pack that *is* keyed is not reported: the finding names the
-        # uncovered stamp, never every pack the sheet lists.
-        self.assertFalse(any(self.PACK in line for line in errors), result.stdout)
 
-    def test_a_sheet_over_the_budget_is_refused(self):
+    def test_a_standard_over_the_budget_is_refused(self):
+        """One ceiling, in words over the whole manifest: the same number a
+        root is held to, so this fixture has to be long rather than merely
+        many-lined."""
+
         self._write_pack()
         self._write_sheet("market-brief", self._sheet_text(
             "market-brief",
-            sections=[("Craft", "\n".join(f"- clause {n}" for n in range(120)))],
+            sections=[("Making", "\n".join(f"- clause {n}" for n in range(500)))],
         ))
 
         result = self._run()
 
         self.assertEqual(1, result.returncode)
         self.assertTrue(
-            any("sheet budget" in line for line in self._errors(result.stdout, "market-brief")),
+            any("standard budget" in line for line in self._errors(result.stdout, "market-brief")),
             result.stdout,
         )
 
-    def test_a_missing_mandatory_section_is_refused(self):
+    def test_a_missing_required_section_is_refused(self):
         self._write_pack()
         self._write_sheet("market-brief", self._sheet_text(
             "market-brief", sections=[],
@@ -544,5 +545,5 @@ class TestSheetAnatomy(_IsolatedTree):
 
         self.assertEqual(1, result.returncode)
         errors = " ".join(self._errors(result.stdout, "market-brief"))
-        self.assertIn("## Craft", errors)
+        self.assertIn("## Making", errors)
         self.assertIn("## Lens", errors)

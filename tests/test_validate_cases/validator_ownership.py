@@ -69,24 +69,26 @@ class TestSyncCheckIsGone(unittest.TestCase):
 
 
 def workspace_adapter(skill_md: Path) -> str:
-    """The registered adapter key declared by one pack's typed `adapter` leaf.
+    """The registered adapter key one standard declares in its frontmatter.
 
-    Read independently of `tickets_adapters.declared_adapter` so the pack
-    data and the parser cannot agree by sharing one implementation.
+    Read independently of `tickets_adapters.declared_adapter` so the
+    standard's data and the parser cannot agree by sharing one
+    implementation.
     """
 
-    for line in skill_md.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|"):
+    text = skill_md.read_text(encoding="utf-8")
+    parts = text.split("---", 2)
+    if len(parts) < 3:
+        raise AssertionError(f"{skill_md}: no frontmatter")
+    for line in parts[1].splitlines():
+        field, sep, value = line.partition(":")
+        if not sep or field.strip() != "adapter":
             continue
-        parts = stripped.split("|", 3)
-        if len(parts) < 4 or parts[1].strip() != "adapter":
-            continue
-        key = parts[2].strip().strip("`").strip()
+        key = value.strip().strip("`").strip()
         if not key:
-            raise AssertionError(f"{skill_md}: `adapter` leaf is empty")
+            raise AssertionError(f"{skill_md}: `adapter` field is empty")
         return key
-    raise AssertionError(f"{skill_md}: no `adapter` row")
+    raise AssertionError(f"{skill_md}: no `adapter` field")
 
 
 class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
@@ -126,21 +128,26 @@ class TestPackAdmissionIsDomainBlind(unittest.TestCase):
 
 
 class TestPackAdmissionRegistryAgainstPacks(unittest.TestCase):
-    def cells(self, skill_md: Path):
+    def frontmatter(self, skill_md: Path):
         found = {}
-        for line in skill_md.read_text(encoding="utf-8").splitlines():
-            match = re.match(r"^\|\s*([a-z_]+)\s*\|\s*(.*?)\s*\|$", line)
-            if match:
-                found[match.group(1)] = match.group(2)
+        text = skill_md.read_text(encoding="utf-8")
+        for line in text.split("---", 2)[1].splitlines():
+            field, sep, value = line.partition(":")
+            if sep:
+                found[field.strip()] = value.strip()
         return found
 
-    def test_flat_signature_declares_only_registered_adapter_keys(self):
+    def test_frontmatter_declares_only_registered_adapter_keys(self):
+        """No data path binds an executor or a skill: a standard's
+        frontmatter is `name`, `description`, `narrows` and `adapter`, and
+        the adapter is a key the registry implements."""
+
         packs = {path.name for path in PACKS.iterdir() if (path / "SKILL.md").is_file()}
         for pack in sorted(packs):
-            cells = self.cells(PACKS / pack / "SKILL.md")
-            self.assertNotIn("executor", cells, pack)
-            self.assertNotIn("skill", cells, pack)
-            self.assertIn(cells.get("adapter"), tickets_mod.ADAPTER_REGISTRY, pack)
+            declared = self.frontmatter(PACKS / pack / "SKILL.md")
+            self.assertNotIn("executor", declared, pack)
+            self.assertNotIn("skill", declared, pack)
+            self.assertIn(declared.get("adapter"), tickets_mod.ADAPTER_REGISTRY, pack)
 
 
 CROSS_TIER = "cross-tier near-duplicate"

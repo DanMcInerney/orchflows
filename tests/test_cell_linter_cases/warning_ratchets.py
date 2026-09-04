@@ -31,7 +31,7 @@ def ceiling_breach(count, ceiling=None, kind=NEAR):
 
 
 class WarningCeilingTest(unittest.TestCase):
-    # One clause packs/orch-code-pack/references/craft.md's `## Lens`
+    # One clause packs/orch-code-pack/SKILL.md's `## Lens`
     # already owns -- its `### cut` entry -- restated in a third pack's
     # same-named section with a single noun changed. This is what a
     # regression here looks like: not a new kind of finding, one more copy
@@ -93,7 +93,7 @@ class WarningCeilingTest(unittest.TestCase):
         tree_report = validate_the_real_tree().stdout
         held = warning_lines(tree_report, NEAR)
         clone = self._clone_beside_the_tree()
-        planted = clone / "packs" / "orch-research-pack" / "references" / "craft.md"
+        planted = clone / "packs" / "orch-research-pack" / "SKILL.md"
         text = planted.read_text(encoding="utf-8")
         self.assertIn("## Lens\n", text)
         planted.write_text(

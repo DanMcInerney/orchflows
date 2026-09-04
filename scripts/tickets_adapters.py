@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from pathlib import Path
 
 try:
@@ -97,52 +98,46 @@ def pack_path(pack, *, root=None) -> Path:
 
 
 def craft_path(pack, *, root=None) -> Path:
-    """The stamped pack's own craft file, where the pack's signature names it."""
+    """The stamped standard's manifest -- the document a verb reads whole.
+
+    One file since the collapse: the manifest carries the domain prose that
+    used to sit behind a `craft` cell pointing at a second file, so the
+    path the launch prompt hands a child is the manifest the ring resolved.
+    """
 
     path = pack_path(pack, root=root)
-    try:
-        if __package__:
-            from . import packs_support
-        else:  # pragma: no cover - direct/installed script path
-            import packs_support
-        value = packs_support._declared_cell(path, "craft")
-        targets = packs_support._reference_paths(value)
-    except ImportError as error:  # pragma: no cover - broken installation
-        raise AdapterError("pack-resolver-unavailable", str(error)) from error
-    except packs_support.PackError as error:
-        raise AdapterError("craft-declaration-invalid", error.detail) from error
-    if not targets:
+    if not path.is_file():  # pragma: no cover - the ring resolver already refused
         raise AdapterError(
-            "craft-declaration-invalid",
-            f"pack declares no craft reference: {path}",
+            "craft-declaration-invalid", f"standard does not resolve: {path}",
         )
-    resolved = (path.parent / targets[0]).resolve()
-    if not resolved.is_file():
-        raise AdapterError(
-            "craft-declaration-invalid", f"pack craft does not resolve: {resolved}",
-        )
-    return resolved
+    return path
+
+
+ADAPTER_FIELD_RE = re.compile(r"(?m)^adapter:\s*([^\r\n]+?)\s*$")
 
 
 def declared_adapter(pack, *, root=None) -> str:
-    """Read the stable adapter key from the pack's typed `adapter` leaf."""
+    """The stable adapter key one standard declares in its frontmatter.
+
+    Frontmatter rather than a table cell since the collapse: the adapter is
+    the typed leaf downstream machinery branches on, and the manifest is
+    where contracts/standard.md puts it.
+    """
 
     path = pack_path(pack, root=root)
     try:
-        if __package__:
-            from . import packs_support
-        else:  # pragma: no cover - direct/installed script path
-            import packs_support
-        value = packs_support._declared_cell(path, "adapter")
-    except ImportError as error:  # pragma: no cover - broken installation
-        raise AdapterError("pack-resolver-unavailable", str(error)) from error
-    except packs_support.PackError as error:
-        raise AdapterError("adapter-declaration-invalid", error.detail) from error
-    normalized = dequote(value)
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        raise AdapterError(
+            "adapter-declaration-invalid", f"unreadable standard {path}: {error}",
+        ) from error
+    parts = text.split("---", 2)
+    match = ADAPTER_FIELD_RE.search(parts[1]) if len(parts) > 2 else None
+    normalized = dequote(match.group(1)) if match else ""
     if not normalized:
         raise AdapterError(
             "adapter-declaration-invalid",
-            f"pack must declare exactly one typed adapter leaf: {path}",
+            f"standard must declare exactly one adapter: {path}",
         )
     return normalized
 

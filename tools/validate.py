@@ -336,8 +336,8 @@ def _run_validation_impl() -> Diagnostics:
         validate_loop_lint(body, pkg, diag)
         validate_reference_links(body, pkg, diag)
         if pkg["is_pack"]:
-            validate_pack_signature(body, pkg, diag)
-            validate_craft_budget(pkg, diag)
+            validate_standard_adapter(fm, pkg, diag)
+            validate_craft_budget(pkg["skill_md"], diag)
 
     validate_domain_blindness(packages, diag)
     validate_call_graph(packages, diag)

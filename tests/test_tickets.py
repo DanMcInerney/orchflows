@@ -89,9 +89,8 @@ class AdapterRegistryTest(unittest.TestCase):
         pack.mkdir(parents=True, exist_ok=True)
         (pack / "SKILL.md").write_text(
             body if body is not None else (
-                "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
-                "| cell | binding |\n| --- | --- |\n"
-                f"| adapter | {adapter} |\n"
+                "---\nname: widget-pack\ndescription: Synthetic project standard.\n"
+                f"adapter: {adapter}\n---\n\n## Making\n\nMake it well.\n"
             ),
             encoding="utf-8",
         )
@@ -125,14 +124,15 @@ class AdapterRegistryTest(unittest.TestCase):
                 tickets_mod.adapter_id("widget-pack", root=root)
             self.assertEqual("adapter-unregistered", caught.exception.code)
 
-    def test_unknown_pack_cells_fail_through_the_shared_resolver_parser(self):
+    def test_a_manifest_declaring_no_adapter_fails_through_the_reader(self):
+        """The cells table is gone: a standard declares its adapter in
+        frontmatter, so a manifest carrying the old table declares none."""
+
         with self._project() as root:
             self._pack(root, "git", body=(
                 "---\nname: widget-pack\n---\n\n"
                 "| cell | binding |\n| --- | --- |\n"
-                "| workspace | widget records |\n"
                 "| adapter | git |\n"
-                "| executor | orch-tdd |\n"
             ))
 
             with self.assertRaises(tickets_mod.AdapterError) as caught:

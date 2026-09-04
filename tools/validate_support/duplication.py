@@ -9,11 +9,7 @@ def _doclint():
 
 from . import common as __dep_common
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
-CELL_REFERENCE_LINK_RE = __dep_common.CELL_REFERENCE_LINK_RE
 CELL_SIMILARITY_THRESHOLD = __dep_common.CELL_SIMILARITY_THRESHOLD
-CRAFT_CELLS_BY_POINTER = __dep_common.CRAFT_CELLS_BY_POINTER
-PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
-PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
 ROOT = __dep_common.ROOT
 re = __dep_common.re
 
@@ -28,7 +24,7 @@ CELL_DUPLICATION_ALLOWLIST = (
     {
         "family": "identity-term workspace naming",
         "reason": (
-            "The signature's craft-section table requires every Workspace "
+            "contracts/standard.md's section table requires every Workspace "
             "section to open by naming its adapter semantics and identity "
             "unit -- 'X: identities are Y' -- so these clauses rhyme by "
             "mandate, not by drift. Each names a different adapter and a "
@@ -41,20 +37,6 @@ CELL_DUPLICATION_ALLOWLIST = (
         ),
     },
 )
-
-
-def _cell_content(pkg: dict, cell: str, binding: str):
-    """(text, label) for the content behind one cell. A pointer cell
-    resolves to its reference file -- every pack's craft row is mandated
-    to bind references/craft.md, so comparing the row instead of what it
-    points at convicts the signature itself."""
-    if cell in CRAFT_CELLS_BY_POINTER:
-        match = CELL_REFERENCE_LINK_RE.search(binding)
-        if match:
-            target = pkg["path"] / match.group(1)
-            if target.is_file():
-                return _read_source(target), rel(target)
-    return binding, rel(pkg["skill_md"])
 
 
 CRAFT_SECTION_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
@@ -78,8 +60,7 @@ def free_content(clause: str) -> str:
 
 
 def validate_cell_duplication(packages, diag: Diagnostics) -> None:
-    """Per same-named craft section, compare the content behind it across
-    packs: a clause carried verbatim by two packs is an error, a clause
+    """Per same-named `##` section, compare its content across standards: a clause carried verbatim by two packs is an error, a clause
     pair whose free_content matches at CELL_SIMILARITY_THRESHOLD or above
     is a warning naming both sites. Allowlisted clauses are out of the
     comparison entirely. Differently named sections never compare — the
@@ -93,10 +74,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
 
     per_section = {}
     for pkg in packs:
-        binding = dict(PACK_CELL_ROW_RE.findall(pkg.get("body", ""))).get("craft")
-        if binding is None:
-            continue
-        text, label = _cell_content(pkg, "craft", binding)
+        text, label = pkg.get("body", ""), rel(pkg["skill_md"])
         for name, body in _craft_sections(text).items():
             clauses = [c for c in cell_clauses(body) if c not in allowed]
             per_section.setdefault(name, []).append((label, clauses))
@@ -114,7 +92,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
             ordered = sorted(labels)
             diag.error(
                 ordered[0],
-                f"{name}: craft section duplicated verbatim in "
+                f"{name}: standard section duplicated verbatim in "
                 f"{', '.join(ordered[1:])}: {clause!r}",
             )
 
@@ -136,7 +114,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                         if ratio >= CELL_SIMILARITY_THRESHOLD:
                             diag.warn(
                                 left_label,
-                                f"{name}: craft section near-duplicate at "
+                                f"{name}: standard section near-duplicate at "
                                 f"{ratio:.2f} with {right_label}: "
                                 f"{left!r} ~ {right!r}",
                             )
@@ -530,7 +508,7 @@ def validate_generated_enum_copies(diag: Diagnostics, root=None) -> None:
 __all__ = (
     'ENUM_OWNER_MODULES', 'RATCHETED_ENUMS', '_generated_value_sets',
     '_module_string_sets', 'validate_generated_enum_copies',
-    'CELL_DUPLICATION_ALLOWLIST', '_cell_content', 'CRAFT_SECTION_RE', '_craft_sections',
+    'CELL_DUPLICATION_ALLOWLIST', 'CRAFT_SECTION_RE', '_craft_sections',
     'free_content', 'validate_cell_duplication',
     'CROSS_TIER_DUPLICATE_LEVEL', 'CROSS_TIER_CITATION_RES', 'CROSS_TIER_PROSE_MIN_WORDS', '_cross_tier_prose',
     'SAME_TIER_COMPARED', 'WORKFLOW_TIER', 'LICENSED_COPIES', '_licensed', 'cross_tier_documents',

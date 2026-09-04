@@ -371,7 +371,7 @@ def normalized(text: str) -> str:
 
 # The restart controls no script can observe -- the controller's, not the
 # module's -- each pinned by the term that distinguishes its clause rather than
-# by the sentence spelling it (`packs/orch-code-pack/references/craft.md`):
+# by the sentence spelling it (`packs/orch-code-pack/SKILL.md`):
 # `before delegation` is the ordering the `in_flight` record must keep (the
 # field name itself recurs in the restart clause, so it cannot tell the two
 # apart), `redispatch` the verb a restart forbids, `every archive member` what

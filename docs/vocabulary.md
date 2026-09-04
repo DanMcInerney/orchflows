@@ -316,7 +316,7 @@ workflow).
 
 - **seam** — a boundary where behavior can differ or leak and must be
   checked explicitly: a public code boundary (each pack's craft
-  narrows this per domain, e.g. `packs/orch-code-pack/references/craft.md`)
+  narrows this per domain, e.g. `packs/orch-code-pack/SKILL.md`)
   or a process boundary state can cross — the dev-only
   tools/run_serial_compat.py's closed seam set (cwd, environment,
   import-path, …).

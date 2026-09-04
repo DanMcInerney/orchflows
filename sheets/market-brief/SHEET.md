@@ -1,12 +1,12 @@
 ---
 name: market-brief
 description: Stamp beside the research pack when the answer is a market brief - audience, pains, competitors, live trends.
-packs: [orch-research-pack]
+narrows: orch-research-pack
 ---
 
 # market-brief
 
-## Craft
+## Making
 
 The brief serves one decision: whether to enter, price against, or leave a
 market. Everything below narrows the research craft toward that decision;

@@ -4,7 +4,7 @@
 One file per kind, and nothing beyond what its own admission requires: a
 skeleton that guessed at content would be a second, weaker copy of the
 authoring standard. Every skeleton is a *valid* item on the day it is
-written -- a pack carries all four cells and every mandatory craft
+written -- a standard carries its frontmatter and every required
 section, a workflow carries a frame open, one callable call and a close --
 so the first thing an author does is edit, never repair.
 """
@@ -44,11 +44,12 @@ State what this skill does, in the imperative, to the agent that runs it.
 Return: what the caller gets back.
 """
 
-# The craft's mandatory `##` sections come from contracts/pack-signature.md;
+# A root's required `##` sections come from contracts/standard.md;
 # the skeleton carries every one as an empty anchor rather than inventing
 # domain content, because an absent section is a shape defect and invented
 # content is worse than none.
 _CRAFT_SECTIONS = (
+    ("Making", "What the maker does here to reach a well-formed artifact."),
     ("Vocabulary", "Define this domain's terms once, here."),
     ("Workspace", "Identities, isolation, candidate diffs, conflict handling."),
     ("Spec fields", "What a spec must carry before decomposition accepts it."),
@@ -66,15 +67,10 @@ _CRAFT_LENS_ENTRIES = (
 
 _PACK = """---
 name: {name}
-description: Domain pack for <artifacts>. Stamp when the deliverable is <kind>.
+description: Domain standard for <artifacts>. Stamp when the deliverable is <kind>.
+adapter: git
 ---
 
-# {name}
-
-| cell | binding |
-| --- | --- |
-| adapter | git |
-| craft | the domain document at [craft](references/craft.md) |
 """
 
 _WORKFLOW = """---
@@ -102,30 +98,30 @@ is a command, and whose close carries a judge child or an
 """
 
 
-# A sheet is extra craft stamped beside a pack, so its skeleton is the one
-# that cannot be domain-blind: it has to name a pack that resolves in this
-# installation and key its `## Lens` by a kind that pack's adapter emits.
-# Both facts are read from the installed packs below rather than spelled
-# here -- a pack name written into this module would be a domain name inside
-# machinery, which `tools/validate.py` refuses.
+# A narrowing tightens exactly one broader standard, so its skeleton is the
+# one that cannot be domain-blind: it has to name a standard that resolves
+# in this installation and key its `## Lens` by a kind that standard's
+# adapter emits. Both facts are read from the installed standards below
+# rather than spelled here -- a domain name written into this module would
+# be a domain name inside machinery, which `tools/validate.py` refuses.
 _SHEET = """---
 name: {name}
-description: One sentence saying when to stamp {name} beside its pack.
-packs: [{pack}]
+description: One sentence saying when to stamp {name}.
+narrows: {pack}
 ---
 
 # {name}
 
-## Craft
+## Making
 
-What this sheet adds to the stamped pack's craft for the maker. Additive
-and tighten-only: never loosen what the craft already requires.
+What this narrowing adds for the maker. Additive and tighten-only: never
+loosen what the broader standard already requires.
 
 ## Lens
 
 ### {kind}
 
-What a judge checks here beside the craft's own `### {kind}` entry.
+What a judge checks here beside the broader standard's `### {kind}` entry.
 """
 
 
@@ -169,7 +165,7 @@ def _sheet_binding():
 
 
 def _craft(name: str) -> str:
-    body = [f"# {name} craft", ""]
+    body = [f"# {name}", ""]
     for heading, prompt in _CRAFT_SECTIONS:
         body.extend([f"## {heading}", "", prompt, ""])
         if heading != "Lens":
@@ -187,10 +183,7 @@ def files_for(kind: str, name: str) -> List[Tuple[str, str]]:
     if kind == "skill":
         return [("SKILL.md", _SKILL.format(name=name))]
     if kind == "pack":
-        return [
-            ("SKILL.md", _PACK.format(name=name)),
-            ("references/craft.md", _craft(name)),
-        ]
+        return [("SKILL.md", _PACK.format(name=name) + _craft(name))]
     if kind == "workflow":
         return [("SKILL.md", _WORKFLOW.format(name=name))]
     if kind == "sheet":

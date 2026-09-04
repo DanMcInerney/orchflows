@@ -98,7 +98,7 @@ class TestHostBlockRendering(unittest.TestCase):
 #
 # An anchor is never a sentence: it is a placeholder path, a backticked
 # identifier or field, a rendered command, a bold branch marker, or a term of
-# art the vocabulary owns -- per packs/orch-code-pack/references/craft.md,
+# art the vocabulary owns -- per packs/orch-code-pack/SKILL.md,
 # checks pin shapes, never an owner file's prose. A demand's clause cut whole
 # takes its anchors with it, so this goes red; a demand reworded keeps them,
 # so a rewrite of the block is a one-file change and not this file's business.

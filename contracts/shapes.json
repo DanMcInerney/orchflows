@@ -194,22 +194,25 @@
       "required": ["goal", "iterations", "failed_approaches", "queued_scope", "terminal"]
     },
     {
-      "name": "pack_cells",
-      "contract": "pack-signature.md",
-      "fields": ["adapter", "craft"],
-      "required": ["adapter", "craft"]
+      "name": "standard_frontmatter",
+      "contract": "standard.md",
+      "fields": ["name", "description", "narrows", "adapter"],
+      "required": ["name", "description"]
     },
     {
-      "name": "sheet_frontmatter",
-      "contract": "sheet.md",
-      "fields": ["name", "description", "packs"],
-      "required": ["name", "description", "packs"]
+      "name": "standard_root_sections",
+      "contract": "standard.md",
+      "fields": [
+        "Making", "Lens", "Vocabulary", "Scaffolding", "Workspace",
+        "Spec fields", "Stages"
+      ],
+      "required": ["Making", "Lens", "Vocabulary", "Workspace", "Spec fields"]
     },
     {
-      "name": "sheet_sections",
-      "contract": "sheet.md",
-      "fields": ["Craft", "Lens", "Vocabulary"],
-      "required": ["Craft", "Lens"]
+      "name": "standard_narrowing_sections",
+      "contract": "standard.md",
+      "fields": ["Making", "Lens", "Vocabulary", "Scaffolding"],
+      "required": ["Making", "Lens"]
     }
   ]
 }

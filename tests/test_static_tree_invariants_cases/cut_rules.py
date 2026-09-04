@@ -3,8 +3,8 @@ import unittest
 
 from ._support import ROOT, read_flat
 
-CODE_CRAFT = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
-DESIGN_CRAFT = ROOT / "packs" / "orch-design-pack" / "references" / "craft.md"
+CODE_CRAFT = ROOT / "packs" / "orch-code-pack" / "SKILL.md"
+DESIGN_CRAFT = ROOT / "packs" / "orch-design-pack" / "SKILL.md"
 
 PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
 # The member assignment shape has one owner, contracts/work-item.md; a

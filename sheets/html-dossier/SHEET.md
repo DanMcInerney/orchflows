@@ -1,12 +1,12 @@
 ---
 name: html-dossier
 description: Stamp when the deliverable is one self-contained HTML dossier that opens offline and cites every claim in-file.
-packs: [orch-content-pack]
+narrows: orch-content-pack
 ---
 
 # html-dossier
 
-## Craft
+## Making
 
 The dossier is one file a reader opens from disk, years later, with no
 network and no server. That single constraint decides most of what follows.

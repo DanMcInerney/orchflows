@@ -85,7 +85,7 @@ class CheckTests(unittest.TestCase):
             self.assertIn(f"ring: {home}", output)
             self.assertIn("skill 1, pack 1, workflow 1, sheet 1", output)
 
-    def test_a_sheet_carrying_a_pack_only_section_is_refused(self):
+    def test_a_narrowing_carrying_a_root_only_section_is_refused(self):
         with _home() as home:
             self._ring(home)
             manifest = home / "sheets" / "market-brief" / "SHEET.md"
@@ -98,7 +98,7 @@ class CheckTests(unittest.TestCase):
 
             self.assertEqual(1, code, output)
             self.assertIn("sheets/market-brief/SHEET.md", output)
-            self.assertIn("'## Workspace' is the pack's", output)
+            self.assertIn("'## Workspace' is a root's", output)
 
     def test_a_workflow_body_over_the_tier_budget_is_refused(self):
         with _home() as home:
@@ -349,11 +349,11 @@ class CheckTests(unittest.TestCase):
             self.assertTrue(marker.exists(), output)
             self.assertNotIn("orchflows trust", output)
 
-    def test_a_refused_sheets_declaration_is_never_probed(self):
-        """A sheet has no code of its own, so `validate_sheets` refuses the
-        file's existence rather than reading it. Resolving what it declares
-        anyway would run the content of an item the checker has already
-        ruled cannot carry any."""
+    def test_a_refused_standard_declaration_is_never_probed(self):
+        """A standard has no code of its own, so `validate_sheets` refuses
+        the file's existence rather than reading it. Resolving what it
+        declares anyway would run the content of an item the checker has
+        already ruled cannot carry any."""
 
         with _home() as home:
             self._ring(home)
@@ -365,7 +365,7 @@ class CheckTests(unittest.TestCase):
             code, output = self._check(home, str(home))
 
             self.assertEqual(1, code, output)
-            self.assertIn("a sheet has no code of its own", output)
+            self.assertIn("a standard has no code of its own", output)
             self.assertFalse(marker.exists(), output)
 
     # --- the bundle's own manifest -------------------------------------
