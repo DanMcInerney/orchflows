@@ -9,11 +9,12 @@ Require: one bounded question naming the platforms it reaches, a frozen `as_of`
 at or after the run's own reads, a window where the question has one, and a
 hard per-step item cap.
 
-You are entered from an `orch-do` child stamped `orch-research-pack`, by name
+You are entered from an `orch-do` child stamped `orch-research`, by name
 through its Skill tool with that child's launch prompt as your arguments. The
 prompt stays binding here — its ticket, its workspace, its `--by` name and its
-close are yours — and its `## Lens` line names `### evidence`, the craft entry
-the packet you return is read against. Execute here; invoke no skill again.
+close are yours — and its `## Lens` line names `### evidence`, the standard's
+entry the packet you return is read against. Execute here; invoke no skill
+again.
 
 Preparation, in order:
 1. Read [references/protocol.md](references/protocol.md) alone from its first
@@ -75,7 +76,7 @@ retry, fall back to another route, or answer a 429 with a changed identity.
 Return: one `AcquisitionArtifact` — `records`, `edges`, `groups`, per-step
 `StepResult`, `outcome`, `loss` — written as `dataclasses.asdict` JSON to one
 file in the workspace the launch prompt names. That file is the evidence
-packet; this pack commits nothing, so its identity is the SHA-256 of its
+packet; this skill commits nothing, so its identity is the SHA-256 of its
 bytes, and the closing note carries `artifact: evidence:sha256:<digest>` on a
 line of its own. From `run_scheduled`, the `WorkLedgerEvent` tuple.
 

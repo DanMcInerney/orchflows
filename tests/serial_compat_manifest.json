@@ -1148,7 +1148,6 @@
    "test_ticket_pins.PinnedItemResolutionTest.test_the_drift_refusal_names_the_item_the_ring_and_both_digests",
    "test_ticket_pins.PinnedItemResolutionTest.test_two_rings_holding_one_name_hash_to_two_digests",
    "test_ticket_pins.StampedCallableTest.test_a_do_without_the_flags_carries_no_new_frontmatter_field",
-   "test_ticket_pins.StampedCallableTest.test_a_narrowing_off_its_declared_domain_refuses",
    "test_ticket_pins.StampedCallableTest.test_a_narrowing_off_its_domain_refuses_through_narrows_too",
    "test_ticket_pins.StampedCallableTest.test_a_narrowing_that_moves_after_the_mint_refuses_at_admission",
    "test_ticket_pins.StampedCallableTest.test_a_root_only_do_prompt_names_no_further_standard",
