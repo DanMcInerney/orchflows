@@ -36,16 +36,23 @@ observation in `## Report` and continues.
    without duplicating itself or claiming a workspace mechanism it has no
    opinion about. Rejected: adapter-on-roots-only, which forces one house
    style per domain.
-4. **No chain budget, and the two existing per-file ceilings are kept
-   apart.** A root takes `CRAFT_BUDGET`, 130 non-empty lines; a narrowing
-   takes `SHEET_BUDGET`, 100. The 30-line gap is not an accident of history:
-   `tools/validate_support/common.py:77` states its purpose — a narrowing
-   that grew a domain's worth of law would be a second, unregistered domain,
-   so its ceiling sits under its parent's. Rejected: one flat ceiling for
-   both, which would delete that mechanism and break `orch-design` on
-   contact, its craft being exactly 100 lines today. Rejected: a budget on
-   the resolved chain, and a scaffold sub-budget tightened as a ratchet —
-   real mechanisms, but they buy pressure an author can apply by hand, and
+4. **One ceiling, in words, equal for a root and a narrowing: 1200.**
+   `CRAFT_BUDGET` (130 non-empty lines) and `SHEET_BUDGET` (100) both retire
+   into one `STANDARD_BUDGET`, counted in whitespace-separated words over the
+   whole manifest, frontmatter included. Lines are gamed by writing longer
+   ones; words are not, and the library already budgets its two most-loaded
+   files in words — the host block at 400 and `AGENTS.md` at 230. Measured
+   before choosing: the five crafts plus their manifests run 920, 902, 758,
+   750 and 705 words, and the three sheets 512, 488 and 451, so 1200 clears
+   the largest by roughly 30% and no item is at risk during the migration.
+   The old gap between the two ceilings was a soft guard against a narrowing
+   growing into an unregistered domain; the hard guard is the section table,
+   which refuses `## Workspace`, `## Spec fields` and `## Stages` to a
+   narrowing outright, and that survives. Rejected: keeping the asymmetry,
+   which prices a narrowing's words differently from a root's for a
+   structural reason the section table already enforces. Rejected: a budget
+   on the resolved chain, and a scaffold sub-budget tightened as a ratchet —
+   real mechanisms, but this ceiling can be ratcheted down instead, and
    depth is already bounded by every level being a file someone had to
    write.
 5. **`## Scaffolding` is the only marked durability class.** Everything
@@ -172,11 +179,10 @@ The rules, stated once here:
 2. Exactly one adapter across a ticket's resolved standards.
 3. `narrows:` resolves to a standard in a reachable ring, never revisits a
    name, and terminates within eight hops.
-4. At most 130 non-empty lines in a root's manifest and 100 in a
-   narrowing's, frontmatter counted — today's `CRAFT_BUDGET` and
-   `SHEET_BUDGET`, unchanged in value and in reason. A narrowing's ceiling
-   sits under its parent's so that a narrowing cannot grow into an
-   unregistered domain.
+4. At most `STANDARD_BUDGET` words per manifest, frontmatter counted,
+   whitespace-separated, equal for a root and a narrowing. Its value is
+   1200. Words rather than lines because a line ceiling is gamed by writing
+   longer lines.
 5. The digest is SHA-256 over the directory tree, pinned at issue and
    re-derived at every door.
 6. Routing resolves roots only; a narrowing arrives because an author named
@@ -338,10 +344,13 @@ Then `install.py --accepted-source <tip>` and `orchflows sync`.
   optional adapter is what makes it possible later; nothing here needs it.
 - **The chain budget and the scaffold ratchet.** Decision 4. Revisit when a
   real chain runs deep enough to hurt.
-- **Splitting the shipped roots.** Nothing is near a ceiling: against 130,
-  the five crafts run 100 (`orch-design`), 94, 91, 83 and 82, and the
-  collapse adds only frontmatter. Authoring a narrowing costs its parent no
-  lines at all, since a narrowing is its own file with its own budget — the
-  pressure only appears when someone wants to *promote* a narrowing's
-  content up into a root, and `orch-design` is the one with least room for
-  that.
+- **Splitting the shipped roots.** Nothing is near the ceiling: against 1200
+  words the five run 920, 902, 758, 750 and 705, and the collapse removes
+  the cells table rather than adding to it. Authoring a narrowing costs its
+  parent nothing at all, since a narrowing is its own file with its own
+  budget — the pressure appears only when promoting a narrowing's content up
+  into a root, and `orch-design` at 920 has the least room for that.
+- **Ratcheting `STANDARD_BUDGET` down.** A ceiling in this library only
+  falls. 1200 was chosen for migration safety, not as a target, and lowering
+  it once the shipped standards have had their scaffolding deleted is the
+  cheapest version of the pressure decision 4 declined to build.
