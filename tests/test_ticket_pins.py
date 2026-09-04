@@ -58,20 +58,22 @@ def _sheet(root: Path, name: str, body: str, narrows=None, packs=()) -> Path:
 
 
 def _pack(root: Path, name: str, adapter: str = "git") -> Path:
-    """One root standard, in the directory a root still lives in: a pack
-    manifest whose cells table is where an adapter is declared today."""
+    """One root standard, in the directory a root still lives in.
+
+    Collapsed shape: one manifest, `adapter` in frontmatter, no cells table
+    and no second file. The resolver refuses a manifest still carrying a
+    `| Cell | Binding |` table, so a fixture that wrote one would exercise
+    that refusal rather than the pin these cases are about.
+    """
 
     path = root / "packs" / name / rings.MANIFESTS["pack"]
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(
         (
-            f"---\nname: {name}\n---\n\n| cell | binding |\n| --- | --- |\n"
-            f"| adapter | {adapter} |\n"
-            "| craft | [references/craft.md](references/craft.md) |\n"
+            f"---\nname: {name}\nadapter: {adapter}\n---\n\n"
+            f"# {name}\n\n## Making\n\nProse.\n"
         ).encode("utf-8")
     )
-    (path.parent / "references").mkdir(parents=True, exist_ok=True)
-    (path.parent / "references" / "craft.md").write_bytes(b"# Craft\n\nProse.\n")
     return path
 
 
