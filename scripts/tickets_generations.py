@@ -11,21 +11,28 @@ import hashlib
 import re
 if __package__:
     from .tickets_admission import binding_findings
-    from .tickets_format import (MAKES_FIELD, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from .tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from .workspace_git import BASELINE_KEY, BRANCH_KEY
 else:
     from tickets_admission import binding_findings
-    from tickets_format import (MAKES_FIELD, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from workspace_git import BASELINE_KEY, BRANCH_KEY
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
-# `makes` rides here with the rest of the system-owned assignment so the
-# artifact kind a dispatch reads is the kind the mint wrote: edited past the
-# seal, it fails admission rather than silently renaming the Lens entry the
-# child works against.
-ASSIGNMENT_SYSTEM_FIELDS = (
-    "bound", "done", "isolation", MAKES_FIELD, "pack",
-    "pack_digest", "profile", "sheet_digests", "sheets", "skill",
-    "skill_digest",
+# The fields the trunk writes after `assignment_seal` is set, and so the only
+# ones outside the seal. The partition is stated as this complement rather
+# than as the roster of sealed names so that the seal is a function of the
+# ticket alone: a field the trunk stops naming, while an open ticket still
+# carries it, moves no digest and fences no live dispatch out of its own
+# attempt. Every other carried field is sealed -- `makes`, for one, so that
+# the artifact kind a dispatch reads is the kind the mint wrote.
+UNSEALED_FIELDS = (
+    "admission", "assignment_seal", "cut_generation", "dispatch_v1",
+    "root_generation", "status", BASELINE_KEY, BRANCH_KEY,
 )
+# These three ride the payload already, as `dependencies`, `executor` and
+# `ticket`; sealing them twice would only make the digest read itself.
+PAYLOAD_NAMED_FIELDS = ("depends_on", "executor", "id")
 
 
 class GenerationError(ValueError):
@@ -47,7 +54,8 @@ def assignment_payload(ticket_id: str, text: str) -> dict:
         "dependencies": [str(value) for value in (data.get("depends_on") or [])],
         "executor": _executor_of(data),
         "system": {
-            key: data.get(key) for key in ASSIGNMENT_SYSTEM_FIELDS if key in data
+            key: value for key, value in data.items()
+            if key not in UNSEALED_FIELDS and key not in PAYLOAD_NAMED_FIELDS
         },
         "ticket": ticket_id,
     }
