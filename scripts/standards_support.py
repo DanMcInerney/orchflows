@@ -188,7 +188,7 @@ def _signature_digest() -> Optional[str]:
     """Hash the library's own well-formedness contract for a standard.
 
     `contracts/standard.md` is that document since the collapse retired
-    the pack signature contract. It is read from the library root and
+    the contract it replaced. It is read from the library root and
     never from the standard's own ring: a ring supplying the document its
     items are judged against would be grading itself.
     """
