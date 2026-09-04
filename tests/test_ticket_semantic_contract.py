@@ -25,6 +25,7 @@ from scripts.tickets_issue_render import _render_ticket
 from scripts import workspace
 
 from tests._repo_root import ROOT
+from tests.test_ticket_callables import CODE_PACK, standards_field
 
 
 def assignment(ticket_id, executor, dependencies=(), *, root_generation=None):
@@ -34,7 +35,7 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None):
         "status": "pending",
         "admission": "pending",
         "executor": executor,
-        "pack": "orch-code-pack",
+        "standards": standards_field(CODE_PACK),
         "depends_on": list(dependencies),
         "isolation": "required" if executor == "orch-do" else "none",
         "bound": "30m",

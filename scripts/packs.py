@@ -34,6 +34,20 @@ PACK_CELLS = _support.PACK_CELLS
 TYPED_CELLS = _support.TYPED_CELLS
 PackError = _support.PackError
 ADAPTER_REGISTRY = _support.ADAPTER_REGISTRY
+STANDARD_DEPTH_LIMIT = _support.STANDARD_DEPTH_LIMIT
+STANDARD_KINDS = _support.STANDARD_KINDS
+
+
+def resolve_chain(names, **overrides):
+    """Resolve stamped names to one chain through the same-family implementation."""
+
+    return _support.resolve_chain(names, **overrides)
+
+
+def adapter_standard(names, **overrides) -> str:
+    """The one resolved standard declaring the adapter, same-family."""
+
+    return _support.adapter_standard(names, **overrides)
 
 
 def resolve_pack(

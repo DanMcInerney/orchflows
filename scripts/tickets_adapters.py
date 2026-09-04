@@ -113,25 +113,6 @@ def craft_path(pack, *, root=None) -> Path:
     return path
 
 
-def pack_digest(pack, *, root=None) -> str:
-    """The resolved pack's content digest, through the one pack resolver."""
-
-    name = dequote(pack)
-    if not name:
-        raise AdapterError("pack-unresolved", "ticket names no pack")
-    try:
-        if __package__:
-            from . import packs_support
-        else:  # pragma: no cover - direct/installed script path
-            import packs_support
-        resolved = packs_support.resolve_pack(name, start=root)
-    except ImportError as error:  # pragma: no cover - broken installation
-        raise AdapterError("pack-resolver-unavailable", str(error)) from error
-    except packs_support.PackError as error:
-        raise AdapterError(error.code, error.detail) from error
-    return str(resolved["digest"])
-
-
 ADAPTER_FIELD_RE = re.compile(r"(?m)^adapter:\s*([^\r\n]+?)\s*$")
 
 
@@ -198,5 +179,5 @@ def adapter_id(pack, *, root=None) -> str:
 __all__ = (
     "ADAPTER_REGISTRY", "Adapter", "AdapterError", "adapter_for_key",
     "adapter_id", "adapter_spec", "craft_path", "declared_adapter",
-    "derived_isolation", "pack_digest", "pack_path",
+    "derived_isolation", "pack_path",
 )

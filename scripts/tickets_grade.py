@@ -12,11 +12,13 @@ import re
 
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, craft_path
+    from .tickets_pins import adapter_standard
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
     from tickets_adapters import AdapterError, adapter_spec, craft_path
+    from tickets_pins import adapter_standard
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -115,9 +117,9 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
     if members:
         raise GradeError(f"root {root_id} is a direct root with executor-result members")
     shape, width = "single", 1
-    pack = dequote(root_data.get("pack"))
+    pack = adapter_standard(root_data)
     if not pack:
-        raise GradeError(f"root {root_id} names no pack")
+        raise GradeError(f"root {root_id} names no standard declaring an adapter")
     try:
         deterministic_gate = bool(adapter_spec(pack).deterministic_gate)
     except AdapterError as error:

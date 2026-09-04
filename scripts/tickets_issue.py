@@ -9,11 +9,12 @@ if __package__:
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
         DEFAULT_BOUND_MINUTES, REPORT_SECTION,
-        REQUIRED_ISOLATION, _extract_flag,
+        REQUIRED_ISOLATION, _extract_all, _extract_flag,
         _parse_frontmatter, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
     from .tickets_issue_render import _frontmatter_list, _render_ticket
+    from .tickets_pins import STANDARDS_FIELD
     from .tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update,
         _run_lock, _segment_error, _tickets_root, _write_identity,
@@ -23,11 +24,12 @@ else:
     from tickets_emission import grade_run_emission
     from tickets_format import (
         DEFAULT_BOUND_MINUTES, REPORT_SECTION,
-        REQUIRED_ISOLATION, _extract_flag,
+        REQUIRED_ISOLATION, _extract_all, _extract_flag,
         _parse_frontmatter, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
     from tickets_issue_render import _frontmatter_list, _render_ticket
+    from tickets_pins import STANDARDS_FIELD
     from tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update,
         _run_lock, _segment_error, _tickets_root, _write_identity,
@@ -36,36 +38,26 @@ else:
 NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
     "[--details TEXT] [--depends-on a,b] "
-    "[--bound B] [--pack P] [--profile P] [--isolation required|none]"
+    "[--bound B] [--pack P] [--pack ...] [--profile P] "
+    "[--isolation required|none]"
 )
 NEW_DEFAULT_BOUND = f"{DEFAULT_BOUND_MINUTES}m"
 ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 
 
-def pinned_pack_digest(pack):
-    """``(digest, refusal)`` for one stamped pack name at issue time."""
+def pinned_items(standards, skill):
+    """``(fields, refusal)`` for the ring items one ticket stamps.
 
-    name = dequote(pack)
-    if not name:
-        return None, None
-    if __package__:
-        from .tickets_adapters import AdapterError, pack_digest
-    else:  # pragma: no cover - direct/installed flat script path
-        from tickets_adapters import AdapterError, pack_digest
-    try:
-        return pack_digest(name), None
-    except AdapterError as error:
-        return None, {"error": f"pack '{name}' cannot be pinned: {error.detail}"}
-
-
-def pinned_items(sheets, skill, pack=None):
-    """``(fields, refusal)`` for the ring items stamped beside the pack."""
+    The stamped names resolve to one chain -- every level of every name's
+    ancestry, broad to narrow -- and the chain is what the ticket pins, so
+    there is one pinning call rather than one per kind.
+    """
 
     if __package__:
         from .tickets_pins import pin_fields
     else:  # pragma: no cover - direct/installed flat script path
         from tickets_pins import pin_fields
-    return pin_fields(sheets, skill, pack=pack)
+    return pin_fields(standards, skill)
 
 
 def _applied_skill_refusal(skill, executor):
@@ -125,7 +117,7 @@ def _cmd_new(rest):
     details = _extract_flag(args, "--details")
     depends_on = _extract_flag(args, "--depends-on")
     bound = _extract_flag(args, "--bound")
-    pack = _extract_flag(args, "--pack")
+    pack = _extract_all(args, "--pack")
     profile = _extract_flag(args, "--profile")
     isolation = _extract_flag(args, "--isolation")
     stray = next((arg for arg in args if arg.startswith("-")), None)
@@ -143,17 +135,18 @@ def _cmd_new(rest):
         return {"error": f"new requires {', '.join(missing)}. usage: {NEW_USAGE}"}
     if isolation is not None and isolation.strip() not in ISOLATION_VALUES:
         return {"error": f"--isolation '{isolation}' is not one of {list(ISOLATION_VALUES)}"}
-    # Sorted here, at the one command that authors the list from a flag. Two
-    # orderings of one edge set are two assignment digests, and the digest
-    # cannot absorb the difference without invalidating every historical
-    # seal, so the canonical order is established where the list is written.
-    pinned, refusal = pinned_pack_digest(pack)
+    stamped, refusal = pinned_items(pack, None)
     if refusal is not None:
         return refusal
     fields = {
         "id": ticket_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": executor,
-        "pack": pack, "pack_digest": pinned,
+        STANDARDS_FIELD: stamped[STANDARDS_FIELD],
+        # Sorted here, at the one command that authors the list from a flag.
+        # Two orderings of one edge set are two assignment digests, and the
+        # digest cannot absorb the difference without invalidating every
+        # historical seal, so the canonical order is established where the
+        # list is written.
         "depends_on": sorted(_split_commas(depends_on)),
         "isolation": isolation, "bound": bound or NEW_DEFAULT_BOUND,
         "profile": profile,
@@ -195,18 +188,7 @@ def _project_file_ticket(
     text = _set_frontmatter_field(text, "run", run)
     text = _set_frontmatter_field(text, "status", ADMISSION_PENDING)
     text = _invalidate_assignment(text)
-    # Issue time takes the pin, whatever the file said: a placed ticket that
-    # carried its own digest would be pinning the author's claim about the
-    # pack rather than the pack.
-    pinned, refusal = pinned_pack_digest(data.get("pack"))
-    if refusal is not None:
-        return None, refusal
-    text = (
-        _set_frontmatter_field(text, "pack_digest", pinned)
-        if pinned
-        else _remove_frontmatter_field(text, "pack_digest")
-    )
-    # The stamped sheets and applied skill are *not* re-pinned here. This
+    # The stamped chain and applied skill are *not* re-pinned here. This
     # projection is read-only -- `lint --file` grades the exact bytes a
     # person wrote -- so rewriting the author's pin would replace the thing
     # being graded, and `tickets_admission`'s doors already refuse a pin
@@ -250,5 +232,5 @@ __all__ = (
     "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
     "_applied_skill_refusal", "_cmd_new", "_frontmatter_list",
     "_issue_ticket", "_project_file_ticket", "_render_ticket",
-    "pinned_items", "pinned_pack_digest",
+    "pinned_items",
 )

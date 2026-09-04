@@ -29,6 +29,7 @@ if _SIBLING_DIR not in _bootstrap_sys.path:
 
 if __package__:
     from . import tickets_adapters as _tickets_adapters_module
+    from . import tickets_pins as _tickets_pins_module
     from . import tickets_format as _tickets_format_module
     from . import tickets_store as _tickets_store_module
     from . import tickets_issue as _tickets_issue_module
@@ -46,6 +47,7 @@ else:
     # By name, as `tickets_generations` is reached: the family's
     # module-level import census is pinned.
     import tickets_adapters as _tickets_adapters_module
+    import tickets_pins as _tickets_pins_module
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
     import tickets_issue as _tickets_issue_module
@@ -74,6 +76,7 @@ AdapterError = _tickets_adapters_module.AdapterError
 adapter_id = _tickets_adapters_module.adapter_id
 adapter_spec = _tickets_adapters_module.adapter_spec
 derived_isolation = _tickets_adapters_module.derived_isolation
+adapter_standard = _tickets_pins_module.adapter_standard
 binding_findings = _tickets_admission_module.binding_findings
 grade_admission = _tickets_admission_module.grade_admission
 _GENERATION_EXPORTS = frozenset({"assignment_digest", "assignment_payload"})

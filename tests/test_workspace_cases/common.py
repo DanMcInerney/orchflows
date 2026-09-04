@@ -24,6 +24,7 @@ import scripts.tickets_generations as generations  # noqa: E402
 import scripts.workspace as workspace  # noqa: E402
 import scripts.workspace_git as workspace_git  # noqa: E402  the ticket stamp's writer
 import scripts.workspace_record as workspace_record  # noqa: E402  the attempt record
+from tests.test_ticket_callables import standards_field  # noqa: E402  the pin's one builder
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
@@ -108,7 +109,7 @@ def make_ticket(
         "run: testrun",
         "status: claimed",
         f"executor: {executor}",
-        f"pack: {pack}",
+        "standards: [" + ", ".join(standards_field(pack)) + "]",
         "depends_on: []",
         "write_scope:",
     ]

@@ -25,27 +25,53 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from scripts import rings, rings_trust, state_root, tickets_admission, tickets_pins
+from scripts import (
+    packs_support, rings, rings_trust, state_root, tickets_admission, tickets_pins,
+)
 from scripts.tickets_format import _parse_frontmatter
 
-from tests.test_ticket_callables import CODE_PACK, CallableSinkTest
+from tests.test_ticket_callables import CODE_PACK, DOC_PACK, CallableSinkTest
 
 SHEET = "market-brief"
 APPLIED_SKILL = "house-style"
 
 
-def _sheet(root: Path, name: str, body: str, packs=(CODE_PACK,)) -> Path:
-    """One sheet manifest. `packs` is the field the stamp is checked against."""
+def _sheet(root: Path, name: str, body: str, narrows=None, packs=()) -> Path:
+    """One narrowing manifest.
+
+    `narrows` names the parent the chain walks to. `packs` is the field
+    `narrows:` replaces, written only by the cases about the domain door
+    that still reads it while an item can carry one.
+    """
 
     path = root / "sheets" / name / rings.MANIFESTS["sheet"]
     path.parent.mkdir(parents=True, exist_ok=True)
-    declared = ("packs: [" + ", ".join(packs) + "]\n") if packs else ""
+    declared = f"narrows: {narrows}\n" if narrows else ""
+    declared += ("packs: [" + ", ".join(packs) + "]\n") if packs else ""
     # Bytes, not text: a text write on Windows lands CRLF, and the digest
     # normalizes those away, so a CRLF fixture would hide a normalization
     # that stopped happening.
     path.write_bytes(
         f"---\nname: {name}\n{declared}---\n\n## Craft\n\n{body}\n".encode("utf-8")
     )
+    return path
+
+
+def _pack(root: Path, name: str, adapter: str = "git") -> Path:
+    """One root standard, in the directory a root still lives in: a pack
+    manifest whose cells table is where an adapter is declared today."""
+
+    path = root / "packs" / name / rings.MANIFESTS["pack"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(
+        (
+            f"---\nname: {name}\n---\n\n| cell | binding |\n| --- | --- |\n"
+            f"| adapter | {adapter} |\n"
+            "| craft | [references/craft.md](references/craft.md) |\n"
+        ).encode("utf-8")
+    )
+    (path.parent / "references").mkdir(parents=True, exist_ok=True)
+    (path.parent / "references" / "craft.md").write_bytes(b"# Craft\n\nProse.\n")
     return path
 
 
@@ -196,37 +222,53 @@ class PinnedItemResolutionTest(unittest.TestCase):
 class PinnedItemFieldTest(unittest.TestCase):
     """What `pin_fields` writes, and what it refuses to write."""
 
-    def test_a_ticket_stamping_nothing_gets_four_absent_fields(self):
+    def test_a_ticket_stamping_nothing_gets_three_absent_fields(self):
         self.assertEqual(
-            {"sheets": None, "sheet_digests": None, "skill": None, "skill_digest": None},
+            {"standards": None, "skill": None, "skill_digest": None},
             tickets_pins.pin_fields((), None)[0],
         )
 
-    def test_stamped_names_and_digests_are_written_as_one_sorted_pair(self):
+    def test_every_resolved_level_is_written_as_one_name_and_digest(self):
         with _rings() as world:
-            _sheet(world["lib"], SHEET, "lib")
-            _sheet(world["lib"], "html-dossier", "lib")
+            _pack(world["lib"], CODE_PACK)
+            _sheet(world["lib"], SHEET, "lib", narrows=CODE_PACK)
+            _sheet(world["lib"], "html-dossier", "lib", narrows=CODE_PACK)
 
             fields, refusal = tickets_pins.pin_fields(
                 ["html-dossier", SHEET], None, **_overrides(world),
             )
 
             self.assertIsNone(refusal)
-            self.assertEqual(["html-dossier", SHEET], fields["sheets"])
             self.assertEqual(
-                {"html-dossier", SHEET}, set(tickets_pins.digests_of(fields["sheet_digests"])),
+                [
+                    (CODE_PACK, tickets_pins.item_digest(
+                        "pack", CODE_PACK, **_overrides(world))),
+                    ("html-dossier", tickets_pins.item_digest(
+                        "sheet", "html-dossier", **_overrides(world))),
+                    (SHEET, tickets_pins.item_digest(
+                        "sheet", SHEET, **_overrides(world))),
+                ],
+                tickets_pins.standards_of(fields["standards"]),
             )
 
-    def test_one_sheet_stamped_twice_is_refused(self):
+    def test_one_standard_stamped_twice_is_read_once_rather_than_refused(self):
+        """The rule the duplicate refusal became: a name given twice is one
+        level, at its first position, because a shared ancestor reached down
+        two chains has to resolve without the caller pruning it first."""
+
         with _rings() as world:
-            _sheet(world["lib"], SHEET, "lib")
+            _pack(world["lib"], CODE_PACK)
+            _sheet(world["lib"], SHEET, "lib", narrows=CODE_PACK)
 
             fields, refusal = tickets_pins.pin_fields(
                 [SHEET, SHEET], None, **_overrides(world),
             )
 
-            self.assertIsNone(fields)
-            self.assertIn(SHEET, refusal["error"])
+            self.assertIsNone(refusal)
+            self.assertEqual(
+                [CODE_PACK, SHEET],
+                [name for name, _digest in tickets_pins.standards_of(fields["standards"])],
+            )
 
 
 class PinnedItemDoorTest(unittest.TestCase):
@@ -244,31 +286,48 @@ class PinnedItemDoorTest(unittest.TestCase):
             self.overrides = _overrides(world)
             yield world
 
-    def test_an_unchanged_sheet_and_skill_pass_the_door(self):
+    def test_an_unchanged_chain_and_skill_pass_the_door(self):
         with self._world() as world:
-            _sheet(world["lib"], SHEET, "lib")
+            _pack(world["lib"], CODE_PACK)
+            _sheet(world["lib"], SHEET, "lib", narrows=CODE_PACK)
             _skill(world["lib"], APPLIED_SKILL, "lib", sublayer="kernel")
             fields, _ = tickets_pins.pin_fields([SHEET], APPLIED_SKILL, **self.overrides)
 
             self.assertEqual(set(), self._codes(fields))
 
-    def test_a_sheet_edited_under_the_seal_is_refused_at_the_door(self):
+    def test_a_narrowing_edited_under_the_seal_is_refused_at_the_door(self):
         with self._world() as world:
-            path = _sheet(world["lib"], SHEET, "lib")
+            _pack(world["lib"], CODE_PACK)
+            path = _sheet(world["lib"], SHEET, "lib", narrows=CODE_PACK)
             fields, _ = tickets_pins.pin_fields([SHEET], None, **self.overrides)
 
             path.write_bytes(path.read_bytes() + b"one more clause\n")
 
-            self.assertEqual({"sheet-digest-mismatch"}, self._codes(fields))
+            self.assertEqual({"standard-digest-mismatch"}, self._codes(fields))
 
-    def test_a_nearer_ring_shadowing_the_stamped_sheet_is_refused(self):
+    def test_a_root_edited_under_the_seal_is_refused_at_the_door(self):
+        """The level the caller never named. A chain pins every level, so an
+        edit to the root a narrowing reached is a refusal too -- otherwise
+        the ancestry a child reads would be unsealed above its first hop."""
+
         with self._world() as world:
-            _sheet(world["lib"], SHEET, "lib")
+            path = _pack(world["lib"], CODE_PACK)
+            _sheet(world["lib"], SHEET, "lib", narrows=CODE_PACK)
             fields, _ = tickets_pins.pin_fields([SHEET], None, **self.overrides)
 
-            _sheet(world["home"], SHEET, "home")
+            path.write_bytes(path.read_bytes() + b"\n<!-- a clause nobody sealed -->\n")
 
-            self.assertEqual({"sheet-digest-mismatch"}, self._codes(fields))
+            self.assertEqual({"standard-digest-mismatch"}, self._codes(fields))
+
+    def test_a_nearer_ring_shadowing_a_stamped_level_is_refused(self):
+        with self._world() as world:
+            _pack(world["lib"], CODE_PACK)
+            _sheet(world["lib"], SHEET, "lib", narrows=CODE_PACK)
+            fields, _ = tickets_pins.pin_fields([SHEET], None, **self.overrides)
+
+            _sheet(world["home"], SHEET, "home", narrows=CODE_PACK)
+
+            self.assertEqual({"standard-digest-mismatch"}, self._codes(fields))
 
     def test_an_applied_skill_edited_under_the_seal_is_refused(self):
         with self._world() as world:
@@ -282,11 +341,7 @@ class PinnedItemDoorTest(unittest.TestCase):
     def test_half_a_pin_names_nothing_and_says_so(self):
         with self._world():
             self.assertEqual(
-                {"sheet-digest-unbound"}, self._codes({"sheets": [SHEET]}),
-            )
-            self.assertEqual(
-                {"sheet-digests-invalid"},
-                self._codes({"sheet_digests": "not json"}),
+                {"standard-pin-invalid"}, self._codes({"standards": [SHEET]}),
             )
             self.assertEqual(
                 {"skill-digest-unbound"}, self._codes({"skill": APPLIED_SKILL}),
@@ -320,19 +375,25 @@ class StampedCallableTest(CallableSinkTest):
             )["findings"]
         }
 
-    def test_a_stamped_do_pins_both_kinds_and_admits(self):
+    def _chain(self, *names) -> list:
+        return [
+            (name, tickets_pins.item_digest(
+                "pack" if name == CODE_PACK else "sheet", name,
+            ))
+            for name in names
+        ]
+
+    def test_a_stamped_do_pins_the_whole_chain_and_admits(self):
         self.callable(
             "do", "--pack", CODE_PACK, "--isolation", "required",
             "--sheet", SHEET, "--skill", APPLIED_SKILL,
         )
 
         data = _parse_frontmatter(self.ticket_text("B1"))
-        self.assertEqual([SHEET], data["sheets"])
-        self.assertEqual(APPLIED_SKILL, data["skill"])
         self.assertEqual(
-            {SHEET: tickets_pins.item_digest("sheet", SHEET)},
-            tickets_pins.digests_of(data["sheet_digests"]),
+            self._chain(CODE_PACK, SHEET), tickets_pins.standards_of(data["standards"]),
         )
+        self.assertEqual(APPLIED_SKILL, data["skill"])
         self.assertEqual(
             tickets_pins.item_digest("skill", APPLIED_SKILL), data["skill_digest"],
         )
@@ -345,11 +406,13 @@ class StampedCallableTest(CallableSinkTest):
         )
 
         data = _parse_frontmatter(self.ticket_text("B1"))
-        self.assertEqual([SHEET], data["sheets"])
+        self.assertEqual(
+            self._chain(CODE_PACK, SHEET), tickets_pins.standards_of(data["standards"]),
+        )
         self.assertNotIn("skill", data)
         self.assertEqual(set(), self._codes("B1"))
 
-    def test_a_sheet_that_moves_after_the_mint_refuses_at_admission(self):
+    def test_a_narrowing_that_moves_after_the_mint_refuses_at_admission(self):
         self.callable(
             "do", "--pack", CODE_PACK, "--isolation", "required", "--sheet", SHEET,
         )
@@ -357,7 +420,7 @@ class StampedCallableTest(CallableSinkTest):
         manifest = self.ring / "sheets" / SHEET / rings.MANIFESTS["sheet"]
         manifest.write_bytes(manifest.read_bytes() + b"a clause nobody sealed\n")
 
-        self.assertIn("sheet-digest-mismatch", self._codes("B1"))
+        self.assertIn("standard-digest-mismatch", self._codes("B1"))
 
     def test_the_stamped_pins_are_sealed_with_the_rest_of_the_assignment(self):
         self.callable(
@@ -396,8 +459,8 @@ class StampedCallableTest(CallableSinkTest):
 
         self.assertEqual(
             [
-                "id", "run", "status", "admission", "executor", "pack",
-                "pack_digest", "isolation", "bound",
+                "id", "run", "status", "admission", "executor", "standards",
+                "isolation", "bound",
                 "root_generation", "cut_generation", "assignment_seal",
                 "dispatch_v1", "workspace_branch", "workspace_baseline",
             ],
@@ -486,10 +549,11 @@ class StampedCallableTest(CallableSinkTest):
                 lines,
             )
 
-    def test_a_sheet_that_does_not_name_the_stamped_pack_refuses(self):
-        """The `packs:` door. A sheet tightens the craft it was written
-        against; stamped beside another pack it is criteria for a domain it
-        never read, so the callable never opens."""
+    def test_a_narrowing_off_its_declared_domain_refuses(self):
+        """The domain door, under the spelling an item can still carry. A
+        narrowing tightens the craft it was written against; stamped beside
+        another domain it is criteria for one it never read, so the callable
+        never opens."""
 
         _sheet(self.ring, "doc-only", "Prose shape.", packs=("orch-content-pack",))
 
@@ -502,19 +566,137 @@ class StampedCallableTest(CallableSinkTest):
         self.assertIn(CODE_PACK, answer["error"])
         self.assertFalse(self.run_dir().exists())
 
-    def test_a_sheet_declaring_no_packs_is_refused_rather_than_stamped_anywhere(self):
-        """The field is required (`contracts/sheet.md`), so its absence is a
-        refusal with its own sentence -- not a sheet that fits every pack."""
+    def test_a_narrowing_off_its_domain_refuses_through_narrows_too(self):
+        """The same door under the spelling that replaces it: naming a
+        parent in another domain puts two adapters in one resolved set,
+        which is the contradiction rather than a preference."""
 
-        _sheet(self.ring, "unbound", "No packs named.", packs=())
+        _sheet(self.ring, "doc-narrowing", "Prose shape.", narrows="orch-content-pack")
 
         answer = self.callable(
             "do", "--pack", CODE_PACK, "--isolation", "required",
-            "--sheet", "unbound", expect_error=True,
+            "--sheet", "doc-narrowing", expect_error=True,
         )
 
-        self.assertIn("declares no `packs:`", answer["error"])
+        self.assertIn("orch-content-pack", answer["error"])
+        self.assertIn(CODE_PACK, answer["error"])
         self.assertFalse(self.run_dir().exists())
+
+
+class StandardChainTest(unittest.TestCase):
+    """The `narrows:` walk: what resolves, in what order, and what refuses.
+
+    Every case is one clause of the cascade rule. A chain is walked from the
+    stamped name to a standard carrying no `narrows:`, and the resolved set
+    is checked for exactly one adapter -- zero leaves the ticket with no
+    workspace mechanism, two leave it with a contradiction, and neither is
+    something a later door can repair.
+    """
+
+    def _names(self, world, *stamped):
+        return [
+            entry["name"]
+            for entry in tickets_pins.resolved_standards(stamped, **_overrides(world))
+        ]
+
+    def _refusal(self, world, *stamped):
+        with self.assertRaises(packs_support.PackError) as raised:
+            tickets_pins.resolved_standards(stamped, **_overrides(world))
+        return raised.exception
+
+    def test_a_chain_of_three_pins_three_digests_broad_to_narrow(self):
+        with _rings() as world:
+            _pack(world["lib"], CODE_PACK)
+            _sheet(world["lib"], "javascript", "JS.", narrows=CODE_PACK)
+            _sheet(world["lib"], "three-js", "3D.", narrows="javascript")
+
+            entries = tickets_pins.resolved_standards(
+                ["three-js"], **_overrides(world),
+            )
+
+            self.assertEqual(
+                [CODE_PACK, "javascript", "three-js"],
+                [entry["name"] for entry in entries],
+            )
+            self.assertEqual(
+                [
+                    tickets_pins.item_digest("pack", CODE_PACK, **_overrides(world)),
+                    tickets_pins.item_digest("sheet", "javascript", **_overrides(world)),
+                    tickets_pins.item_digest("sheet", "three-js", **_overrides(world)),
+                ],
+                [entry["digest"] for entry in entries],
+            )
+
+    def test_a_standard_named_twice_is_read_once_at_its_first_position(self):
+        with _rings() as world:
+            _pack(world["lib"], CODE_PACK)
+            _sheet(world["lib"], "house", "House.", narrows=CODE_PACK)
+            _sheet(world["lib"], "brief", "Brief.", narrows=CODE_PACK)
+
+            self.assertEqual(
+                [CODE_PACK, "house", "brief"], self._names(world, "house", "brief"),
+            )
+            self.assertEqual(
+                [CODE_PACK, "house", "brief"],
+                self._names(world, CODE_PACK, "house", CODE_PACK, "brief"),
+            )
+
+    def test_a_cycle_refuses_by_name(self):
+        with _rings() as world:
+            _sheet(world["lib"], "a", "A.", narrows="b")
+            _sheet(world["lib"], "b", "B.", narrows="a")
+
+            error = self._refusal(world, "a")
+
+            self.assertEqual("standard-cycle", error.code)
+            self.assertIn("a", error.detail)
+            self.assertIn("b", error.detail)
+
+    def test_a_ninth_hop_refuses_and_an_eighth_resolves(self):
+        with _rings() as world:
+            _pack(world["lib"], CODE_PACK)
+            previous = CODE_PACK
+            for level in range(1, 9):
+                _sheet(world["lib"], f"n{level}", "level", narrows=previous)
+                previous = f"n{level}"
+
+            self.assertEqual(9, len(self._names(world, "n8")))
+
+            _sheet(world["lib"], "n9", "one hop too far", narrows="n8")
+            error = self._refusal(world, "n9")
+
+            self.assertEqual("standard-depth", error.code)
+            self.assertIn("8", error.detail)
+
+    def test_a_parent_that_resolves_in_no_ring_refuses(self):
+        with _rings() as world:
+            _sheet(world["lib"], "orphan", "No parent.", narrows="nowhere")
+
+            error = self._refusal(world, "orphan")
+
+            self.assertEqual("standard-parent-unresolved", error.code)
+            self.assertIn("nowhere", error.detail)
+            self.assertIn("orphan", error.detail)
+
+    def test_a_resolved_set_carrying_two_adapters_refuses(self):
+        with _rings() as world:
+            _pack(world["lib"], CODE_PACK)
+            _pack(world["lib"], DOC_PACK, adapter="document-tree")
+
+            error = self._refusal(world, CODE_PACK, DOC_PACK)
+
+            self.assertEqual("standard-adapter-conflict", error.code)
+            for fragment in (CODE_PACK, DOC_PACK, "git", "document-tree"):
+                self.assertIn(fragment, error.detail)
+
+    def test_a_resolved_set_carrying_no_adapter_refuses(self):
+        with _rings() as world:
+            _sheet(world["lib"], "bare", "No domain.", narrows=None)
+
+            error = self._refusal(world, "bare")
+
+            self.assertEqual("standard-adapter-missing", error.code)
+            self.assertIn("bare", error.detail)
 
 
 if __name__ == "__main__":  # pragma: no cover - direct invocation

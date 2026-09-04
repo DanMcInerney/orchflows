@@ -325,7 +325,7 @@ class TestEstablishCreatesTheDerivedCandidate(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             main, run_dir = make_repo(tmp)
-            make_ticket(run_dir, "T1", extra=(("pack", "orch-research-pack"),))
+            make_ticket(run_dir, "T1", pack="orch-research-pack")
             sink = Path(os.environ[STATE_HOME_ENV_VAR])
 
             done = self.establish(tmp, main)
