@@ -81,12 +81,13 @@ that stated one again would own it twice.
 
 ## Lens
 
-`## Lens` carries exactly these `###` entries, in this order: `### root`,
-then `### cut`, then one entry per artifact kind the resolved set's one
-adapter produces — neither a missing kind nor a kind that adapter never
-emits. The keys are artifact kinds (`git`, `doc`, `evidence`), which the
-adapter registry maps from the workspace mechanism key, not the mechanism
-keys themselves. `root` is a frozen goal and `cut` a set of work items
+A root's `## Lens` carries exactly these `###` entries, in this order:
+`### root`, then `### cut`, then one entry per artifact kind the resolved
+set's one adapter produces — neither a missing kind nor a kind that
+adapter never emits; a narrowing keys only the entries it adds to. The
+keys are artifact kinds (`git`, `doc`, `evidence`), which the adapter
+registry maps from the workspace mechanism key, not the mechanism keys
+themselves. `root` is a frozen goal and `cut` a set of work items
 under one; both are library-owned, and the ticket already spells their
 identities `root:<id>:<n>:sha256:<digest>` and
 `cut:<id>:<n>:sha256:<digest>`.

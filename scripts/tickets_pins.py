@@ -199,52 +199,6 @@ def adapter_standard(data: dict, **overrides) -> str:
         return ""
 
 
-def declared_domain(link: Dict[str, object]) -> List[str]:
-    """The domains one narrowing declares it may be stamped under.
-
-    `standards:` is the pre-`narrows:` spelling of one rule -- a narrowing
-    tightens the domain it was written against and says nothing about one it
-    was not -- and it survives only while an item can still carry it. Once a
-    narrowing names its parent, the parent *is* the declaration and the two
-    lists cannot disagree, so this reads one field and returns `[]` for an
-    item that has moved on.
-    """
-
-    try:
-        text = Path(str(link["path"])).read_text(encoding="utf-8-sig")
-    except OSError as error:
-        raise PinError("item-unreadable", f"unreadable standard {link['path']}: {error}")
-    data = standards_support._parse_frontmatter(text)
-    if dequote(data.get("narrows")):
-        return []
-    return names_of(data.get("standards"))
-
-
-def domain_refusal(name: str, domain: str, declared: Sequence[str]) -> str:
-    """The one sentence a narrowing says when it is stamped off its domain."""
-
-    return (
-        f"standard '{name}' declares standards {list(declared)} and this callable "
-        f"stamps '{domain}': a narrowing tightens a standard it was written "
-        f"against and says nothing about one it was not. Stamp '{name}' "
-        f"beside a domain it names, or add '{domain}' to its `standards:` if it "
-        "really governs that domain."
-    )
-
-
-def _domain_refusals(chain: Sequence[Dict[str, object]]):
-    """Why one resolved chain does not compose, under the legacy spelling."""
-
-    domain = next(str(link["name"]) for link in chain if link["adapter"])
-    for link in chain:
-        if link["adapter"]:
-            continue
-        declared = declared_domain(link)
-        if declared and domain not in declared:
-            return domain_refusal(str(link["name"]), domain, declared)
-    return None
-
-
 def pin_fields(standards: Sequence[str], skill, **overrides):
     """`(fields, refusal)` -- the pin fields for one issuing ticket."""
 
@@ -253,9 +207,6 @@ def pin_fields(standards: Sequence[str], skill, **overrides):
     if names:
         try:
             chain = resolved_standards(names, **overrides)
-            refusal = _domain_refusals(chain)
-            if refusal is not None:
-                return None, {"error": refusal}
             fields[STANDARDS_FIELD] = encode_standards(chain)
         except (standards_support.StandardError, PinError) as error:
             return None, {"error": error.detail}
@@ -338,8 +289,7 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
 __all__ = (
     "DIGEST_PREFIX", "PINNED_KINDS", "STANDARDS_FIELD", "STANDARD_SEPARATOR",
     "PinError", "SKIPPED_DIRS", "TREE_VERSION",
-    "adapter_standard", "declared_domain", "domain_refusal", "drift",
-    "drift_refusal", "encode_standards", "item_digest", "names_of",
-    "pin_fields", "pinned_findings", "resolved", "resolved_standards",
-    "standards_of", "tree_digest",
+    "adapter_standard", "drift", "drift_refusal", "encode_standards",
+    "item_digest", "names_of", "pin_fields", "pinned_findings", "resolved",
+    "resolved_standards", "standards_of", "tree_digest",
 )

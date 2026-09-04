@@ -36,18 +36,15 @@ STANDARD = "market-brief"
 APPLIED_SKILL = "house-style"
 
 
-def _narrowing(root: Path, name: str, body: str, narrows=None, standards=()) -> Path:
+def _narrowing(root: Path, name: str, body: str, narrows=None) -> Path:
     """One narrowing manifest.
 
-    `narrows` names the parent the chain walks to. `standards` is the field
-    `narrows:` replaces, written only by the cases about the domain door
-    that still reads it while an item can carry one.
+    `narrows` names the parent the chain walks to.
     """
 
     path = root / "standards" / name / rings.MANIFESTS["standard"]
     path.parent.mkdir(parents=True, exist_ok=True)
     declared = f"narrows: {narrows}\n" if narrows else ""
-    declared += ("standards: [" + ", ".join(standards) + "]\n") if standards else ""
     # Bytes, not text: a text write on Windows lands CRLF, and the digest
     # normalizes those away, so a CRLF fixture would hide a normalization
     # that stopped happening.
@@ -556,23 +553,6 @@ class StampedCallableTest(CallableSinkTest):
                 any(f"`{name}` at {path} whole (sha256 {digest})" in line for line in lines),
                 lines,
             )
-
-    def test_a_narrowing_off_its_declared_domain_refuses(self):
-        """The domain door, under the spelling an item can still carry. A
-        narrowing tightens the standard it was written against; stamped beside
-        another domain it is criteria for one it never read, so the callable
-        never opens."""
-
-        _narrowing(self.ring, "doc-only", "Prose shape.", standards=("orch-content",))
-
-        answer = self.callable(
-            "do", "--standard", CODE_STANDARD, "--isolation", "required",
-            "--standard", "doc-only", expect_error=True,
-        )
-
-        self.assertIn("orch-content", answer["error"])
-        self.assertIn(CODE_STANDARD, answer["error"])
-        self.assertFalse(self.run_dir().exists())
 
     def test_a_narrowing_off_its_domain_refuses_through_narrows_too(self):
         """The same door under the spelling that replaces it: naming a
