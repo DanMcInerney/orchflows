@@ -67,27 +67,39 @@ STANDARD_ROOT_OPTIONAL_SECTIONS = ("Scaffolding", "Stages")
 STANDARD_NARROWING_REQUIRED_SECTIONS = ("Making", "Lens")
 STANDARD_NARROWING_OPTIONAL_SECTIONS = ("Vocabulary", "Scaffolding")
 STANDARD_NARROWING_REFUSED_SECTIONS = ("Workspace", "Spec fields", "Stages")
-# Headings an earlier kind carried that a standard no longer does. `Craft`
-# is the sheet section `## Making` absorbed; the rest retired into `## Lens`
+# Headings an earlier kind carried that a standard no longer does. `Standard`
+# is the standard section `## Making` absorbed; the rest retired into `## Lens`
 # entries keyed by artifact kind.
-STANDARD_RETIRED_SECTIONS = ("Craft", "Outline", "Slicing", "Evidence", "Shape")
+STANDARD_RETIRED_SECTIONS = ("Standard", "Outline", "Slicing", "Evidence", "Shape")
 # The two artifact kinds every standard's Lens keys, in their required order
 # before the adapter's own: the machinery already identifies a frozen root
 # and a cut, so every domain judges both.
-CRAFT_LIBRARY_LENS_KINDS = ("root", "cut")
+STANDARD_LIBRARY_LENS_KINDS = ("root", "cut")
 # One ceiling for a standard, root and narrowing alike (contracts/standard.md
 # rule 4): whitespace-separated words over the whole manifest, frontmatter
 # counted. Words rather than lines because a line ceiling is met by writing
-# longer lines. It replaces the two it folds -- a craft's 130 non-empty lines
-# and a sheet's 100 -- because the section table, not a smaller number, is
+# longer lines. It replaces the two it folds -- a standard's 130 non-empty lines
+# and a standard's 100 -- because the section table, not a smaller number, is
 # what keeps a narrowing from growing into a second owner of a domain.
 STANDARD_BUDGET = 1200
-SHEET_DIR_NAME = "sheets"
-SHEET_MANIFEST = "SHEET.md"
+STANDARD_DIR_NAME = "standards"
+STANDARD_MANIFEST = "STANDARD.md"
 # A standard carries prose and nothing executable, so it declares no
 # dependencies and owns no environment.
-SHEET_REFUSED_ENTRIES = ("scripts", "requirements.txt", "tools.txt")
-# Cross-pack cell linter. Both figures are normative: with `doclint`'s ratio
+STANDARD_REFUSED_ENTRIES = ("scripts", "requirements.txt", "tools.txt")
+# The one place a root is told from a narrowing. They are one kind under one
+# directory, so the partition is the field and never the path: a standard
+# naming a broader one in `narrows:` is a narrowing, and one naming none is a
+# root (contracts/standard.md rule 3).
+STANDARD_NARROWS_RE = re.compile(r"(?m)^narrows:\s*\S")
+
+
+def declares_narrows(text: str) -> bool:
+    """Whether one manifest's frontmatter names a broader standard."""
+
+    parts = text.split("---", 2)
+    return bool(len(parts) > 2 and STANDARD_NARROWS_RE.search(parts[1]))
+# Cross-standard section linter. Both figures are normative: with `doclint`'s ratio
 # under them the reported pair set is a function of these two and of
 # `doclint.DISTINCTIVE_MAX`.
 CELL_SIMILARITY_THRESHOLD = 0.55
@@ -97,14 +109,14 @@ CALL_TOKEN_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 REQUIRE_RE = re.compile(r"^Require:", re.MULTILINE)
 NEVER_RE = re.compile(r"^Never:", re.MULTILINE)
 RETURN_RE = re.compile(r"^Return[ :]", re.MULTILINE)
-PACK_ADAPTER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+STANDARD_ADAPTER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 # contracts/standard.md's purity paragraph: a standard body carries no
 # delegation language, stop states, conditionals or Return contract. A
 # conditional is matched wherever it sits; a delegation verb only in
 # imperative position -- opening a sentence or a list item -- because the
 # clause forbids the manifest *telling* a reader to dispatch or stop, and
 # the same words are ordinary domain prose mid-sentence ("metaprogrammed
-# dispatch", "at what precision does it stop moving"). Before the pack
+# dispatch", "at what precision does it stop moving"). Before the standard
 # collapse this body was nine lines and the distinction never arose.
 STANDARD_FLOW_CONDITIONAL_RE = re.compile(
     r"\bif\b[^.\n]{0,160}\bthen\b", re.IGNORECASE
@@ -119,10 +131,10 @@ STANDARD_FLOW_IMPERATIVE_RE = re.compile(
 TABLE_DELIM_ROW_RE = re.compile(r"^\|(?:\s*:?-{2,}:?\s*\|)+\s*$")
 LIST_MARKER_RE = re.compile(r"^(?:[-*+]|\d+[.)])\s+")
 SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
-OUTSIDE_PACK_CITATION = "](../"
+OUTSIDE_STANDARD_CITATION = "](../"
 # The same citation written as prose instead of a link: a reference file
 # opens by naming the cell it satisfies, and that cell is
-# contracts/pack-signature.md's. Dropped for OUTSIDE_PACK_CITATION's reason.
+# contracts/standard.md's. Dropped for OUTSIDE_STANDARD_CITATION's reason.
 SIGNATURE_CELL_POINTER_RE = re.compile(r"per the signature's [a-z_]+ cell")
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
@@ -165,7 +177,7 @@ CARRIAGE_PAREN_RE = re.compile(r"\([^)]*\)")
 CARRIAGE_CODE_RE = re.compile(r"`([^`]*)`")
 CARRIAGE_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
 CARRIAGE_DASH_SPLIT_RE = re.compile(r"[–—]")  # en dash, em dash
-# Rule 10(c) / pack-signature.md's sharing constraint: a Return files per
+# Rule 10(c) / standard.md's sharing constraint: a Return files per
 # work-item.md's filing law -- the ticket, or the store the assignment names
 # -- and those two destinations are this check's two pass conditions, so
 # kernel-tier primitives stay domain-blind.
@@ -173,9 +185,9 @@ TICKET_FILING_RE = re.compile(r"\bticket\b|\bwork[- ]item\b", re.IGNORECASE)
 # The Return paragraph only -- "ticket" is common enough as an ordinary noun
 # elsewhere in a body that searching the whole body would false-pass.
 RETURN_TEXT_RE = re.compile(r"^Return[ :](.*?)(?:\n[ \t]*\n|\Z)", re.MULTILINE | re.DOTALL)
-PACK_WORKSPACE_RE = re.compile(r"^\|\s*workspace\s*\|\s*(.+?)\s*\|\s*$", re.MULTILINE)
-PACK_STORE_RE = re.compile(r"\bstore\b", re.IGNORECASE)
-PACK_SLICING_RE = re.compile(r"^\|\s*slicing\s*\|\s*\[.*?\]\(([^)]+)\)", re.MULTILINE)
+STANDARD_WORKSPACE_RE = re.compile(r"^\|\s*workspace\s*\|\s*(.+?)\s*\|\s*$", re.MULTILINE)
+STANDARD_STORE_RE = re.compile(r"\bstore\b", re.IGNORECASE)
+STANDARD_SLICING_RE = re.compile(r"^\|\s*slicing\s*\|\s*\[.*?\]\(([^)]+)\)", re.MULTILINE)
 
 # Closed-class words stripped from the head of a Require item and treated as
 # a phrase boundary once real content has started -- never an open-class word.
@@ -193,7 +205,7 @@ CARRIAGE_QUALIFIERS = {
 }
 
 # Carriage gaps deferred pending a caller-prose fix, keyed by ("edge",
-# caller, callee, head_noun) or ("pack", pack_name, role, head_noun).
+# caller, callee, head_noun) or ("standard", standard_name, role, head_noun).
 CARRIAGE_DEFERRED = {}
 
 __all__ = (
@@ -204,7 +216,7 @@ __all__ = (
     'DESCRIPTION_BUDGET',
     'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES',
     'APPLIED_ROLE_VALUES',
-    'PACK_ADAPTER_RE', 'STANDARD_FLOW_CONDITIONAL_RE',
+    'STANDARD_ADAPTER_RE', 'STANDARD_FLOW_CONDITIONAL_RE',
     'STANDARD_FLOW_VERBS', 'STANDARD_FLOW_IMPERATIVE_RE',
     'STANDARD_REQUIRED_FRONTMATTER', 'STANDARD_OPTIONAL_FRONTMATTER',
     'STANDARD_NARROWS_KEY', 'STANDARD_ADAPTER_KEY',
@@ -212,17 +224,17 @@ __all__ = (
     'STANDARD_NARROWING_REQUIRED_SECTIONS',
     'STANDARD_NARROWING_OPTIONAL_SECTIONS',
     'STANDARD_NARROWING_REFUSED_SECTIONS',
-    'STANDARD_RETIRED_SECTIONS', 'CRAFT_LIBRARY_LENS_KINDS',
+    'STANDARD_RETIRED_SECTIONS', 'STANDARD_LIBRARY_LENS_KINDS',
     'STANDARD_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
-    'SHEET_DIR_NAME', 'SHEET_MANIFEST',
-    'SHEET_REFUSED_ENTRIES',
+    'STANDARD_DIR_NAME', 'STANDARD_MANIFEST',
+    'STANDARD_REFUSED_ENTRIES', 'STANDARD_NARROWS_RE', 'declares_narrows',
     'CELL_CLAUSE_MIN_WORDS', 'CALL_TOKEN_RE', 'REQUIRE_RE', 'NEVER_RE',
     'RETURN_RE', 'TABLE_DELIM_ROW_RE',
-    'LIST_MARKER_RE', 'SENTENCE_END_RE', 'OUTSIDE_PACK_CITATION', 'SIGNATURE_CELL_POINTER_RE',
+    'LIST_MARKER_RE', 'SENTENCE_END_RE', 'OUTSIDE_STANDARD_CITATION', 'SIGNATURE_CELL_POINTER_RE',
     'MD_LINK_RE', 'LOOP_TRIGGER_RE', 'BOUND_TERM_RE',
     'TERMINAL_TERM_RE', 'ENVELOPE_UNITS', 'ENVELOPE_VOCAB_RES',
     'CARRIAGE_REQUIRE_BLOCK_RE', 'CARRIAGE_SENTENCE_SPLIT_RE', 'CARRIAGE_MD_LINK_RE', 'CARRIAGE_PAREN_RE',
     'CARRIAGE_CODE_RE', 'CARRIAGE_WORD_RE', 'CARRIAGE_DASH_SPLIT_RE', 'TICKET_FILING_RE',
-    'RETURN_TEXT_RE', 'PACK_WORKSPACE_RE', 'PACK_STORE_RE', 'PACK_SLICING_RE',
+    'RETURN_TEXT_RE', 'STANDARD_WORKSPACE_RE', 'STANDARD_STORE_RE', 'STANDARD_SLICING_RE',
     'CARRIAGE_QUALIFIERS', 'CARRIAGE_DEFERRED',
 )

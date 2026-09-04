@@ -8,7 +8,7 @@ pointer in every member whose work is governed by it.
 
 ## Rings
 
-A custom skill, pack, sheet, or workflow lives in one of four rings, and
+A custom skill, standard, or workflow lives in one of four rings, and
 `scripts/rings.py` reads them in one fixed order — nearest first:
 
 | ring | where | what it holds |
@@ -16,10 +16,10 @@ A custom skill, pack, sheet, or workflow lives in one of four rings, and
 | project | `<repo>/.orchflows/` | items this repository ships to whoever clones it |
 | home | `~/.orchflows/` | your own items |
 | imports | `~/.orchflows/imports/<name>/` | pinned external bundles |
-| lib | the installed library | `skills/kernel/`, `skills/workflows/`, `packs/`, `sheets/`, and the `example-workflows/` gallery |
+| lib | the installed library | `skills/kernel/`, `skills/workflows/`, `standards/`, and the `example-workflows/` gallery |
 
 One bundle shape everywhere: a directory named `.orchflows` holding the
-four item directories skills, packs, sheets, and workflows. A project ring is
+three item directories skills, standards and workflows. A project ring is
 one, the home ring's custom half is one, and a published repository that *is*
 one — nothing else in it — is one too. Each `example-workflows/` entry is a bundle you can copy out.
 Which ring an item belongs in is the placement rule,
@@ -39,7 +39,7 @@ naming both paths.
 
 ## Scope and landing
 
-Author in a git-backed workspace under the code pack. Scope chooses the
+Author in a git-backed workspace under the code standard. Scope chooses the
 landing zone; it is not an installation scope.
 
 | scope | source landing | always-on rule landing | admission |
@@ -49,7 +49,7 @@ landing zone; it is not an installation scope.
 | user | the home ring, or a git-backed authoring repository imported into it | user host integrations, outside managed blocks | source-repository checks and authoring lens before install |
 
 Direct files under `~/.orchflows/lib/` are installed outputs, not git
-code-pack candidates. Author or import their source in a repository first,
+code-standard candidates. Author or import their source in a repository first,
 then install the accepted source and adapters explicitly. The shared
 `install.py` remains a user-scope install for this canonical library; it does
 not turn a ring item into an installation scope.
@@ -72,7 +72,7 @@ changes. `orchflows untrust <bundle>` withdraws either.
 The ledger is `~/.orchflows/trust.json`, outside every repository and
 gitignored: a grant is a judgement about one machine and never syncs. Nothing
 inside a project decides whether that project is trusted — a ring that shipped
-its own ledger, or its own copy of the pack signature contract, changes
+its own ledger, or its own copy of the standard contract, changes
 nothing. A pinned import needs no prompt, because adding it was the consent;
 only a change to its pin puts it in front of you again.
 
@@ -117,15 +117,15 @@ own manifest, installed by the child in its worktree as part of making the
 artifact and committed with it. Orchflows never owns them; a workflow that
 needs them present for its `done` probe declares the toolchain in its own
 `tools.txt` instead. An item that declares nothing runs as it always did, and
-what it imports is its own suite's claim to make. A sheet declares nothing at
+what it imports is its own suite's claim to make. A standard declares nothing at
 all: it carries knowledge, so a `scripts` directory, a `requirements.txt` and
 a `tools.txt` inside one are refused.
 
 ## The five flows
 
-- **Create** — `orchflows new {skill|pack|workflow} <name>` scaffolds into the
+- **Create** — `orchflows new {skill|standard|workflow} <name>` scaffolds into the
   project ring when you stand in a project, else the home ring. The
-  self-hosted route stays: an orchflows run can author a pack.
+  self-hosted route stays: an orchflows run can author a standard.
 - **Use it everywhere** — put it in the home ring and push. Every machine that
   clones and syncs has it, on every host the installer detected.
 - **Share it with a team** — commit it to the project ring. Teammates get it
@@ -148,18 +148,18 @@ a `tools.txt` inside one are refused.
 ## What a workflow is made of
 
 A workflow is a skill whose prose calls other skills, down to two callables.
-`tickets.py do` makes one artifact through one stamped pack's craft;
+`tickets.py do` makes one artifact through one stamped standard;
 `tickets.py judge` reads fixed artifacts and returns findings. Each call is
-one minting command: it mints the ticket, seals it, pins the pack digest,
+one minting command: it mints the ticket, seals it, pins the standard digest,
 takes the lease, establishes the workspace, and emits the `launch` you
-invoke verbatim. Every call names exactly one pack — that call's craft,
-workspace semantics, and evidence discipline — so two domains in one
+invoke verbatim. Every call resolves exactly one adapter — that call's
+workspace semantics and evidence discipline — so two domains in one
 deliverable are two calls and a handoff, never one call with two tastes.
-Depth mixes packs freely, because callables never share a workspace.
+Depth mixes standards freely, because callables never share a workspace.
 
 `tickets.py frame-open` opens the invocation's frame and `frame-close` ends
-it. A frame is pack-less and lease-less: it is a journal, not
-craft-governed work, and its driver is the session you are already talking
+it. A frame is standard-less and lease-less: it is a journal, not
+standard-governed work, and its driver is the session you are already talking
 to. Write the calls in whatever order, parallelism, branching or bounded
 repetition the job needs — that prose *is* the control flow, and there is no
 engine under it to keep in step. That prose is also the frame's shape, so a
@@ -182,8 +182,8 @@ that restates it is a second owner of it.
 Write the calls literally when you know them: the same three `do`s every
 time is a better workflow than a planner asked to rediscover them. Only
 where the calls depend on what the work finds does a planning `do` earn its
-context — and which craft sections each kind of call reads is
-[vocabulary](vocabulary.md)'s craft-section entry.
+context — and which sections each kind of call reads is
+[vocabulary](vocabulary.md)'s `standard` entry.
 
 ## Which work earns a callable
 
@@ -234,23 +234,23 @@ one is [composition](../rules/composition.md) §13's.
    [composition](../rules/composition.md) §6 and the placement rule in
    [token economy](../rules/token-economy.md) §6.
 3. For a skill, use the anatomy and carriage rules in
-   [composition](../rules/composition.md) §§5, 10–11. For a pack, follow
-   [pack authoring](pack-authoring.md) and the
-   [pack signature](../contracts/pack-signature.md), which owns the four
-   cells and every craft section — `## Lens`'s `### root` entry included, so
-   a custom pack a planner freezes a root against fills it like any other.
+   [composition](../rules/composition.md) §§5, 10–11. For a standard, follow
+   [standard authoring](standard-authoring.md) and the
+   [standard contract](../contracts/standard.md), which owns the
+   frontmatter and every section — `## Lens`'s `### root` entry included, so
+   a custom standard a planner freezes a root against fills it like any other.
 4. For a workflow, write it step by step rather than from a template. For
    each step ask the four questions in *Which work earns a callable* above:
    none of the four and the step is a sentence in your prose, one or more
    and it is a callable. Then the recurrence rule,
    [composition](../rules/composition.md) §13, picks the rung — reusable
    workflow, sentence, or idiom — and an idiom is quoted from *Idioms*
-   above, never reworded. Craft one assignment wants and no other is a
-   **sheet** stamped on that call; a method one call runs inside the kernel
+   above, never reworded. Standard one assignment wants and no other is a
+   **standard** stamped on that call; a method one call runs inside the kernel
    contract is an **applied skill** pinned with `--skill`
    ([composition](../rules/composition.md) §12). Its `Return:` is what
    `frame-close` records, and its `done` is a command something outside the
-   workflow runs. A multi-stage pack's stages run at one role,
+   workflow runs. A multi-stage standard's stages run at one role,
    [roles.md](../rules/roles.md)
    §4's alone. Invoking the finished body against a scratch run, and reading
    the tickets it opened, is its deterministic admission.
@@ -282,7 +282,7 @@ the name matches its directory, the description is present and inside budget,
 the body fits the workflow tier's word budget, and the manual-invocation flag
 [composition](../rules/composition.md) §1 requires is declared. Validation a
 workflow needs instead
-belongs to pack data when it is domain craft or to a T0 contract when machinery
+belongs to standard data when it is domain standard or to a T0 contract when machinery
 branches on it; a workflow that needs another shape exposes that missing
 owner.
 
@@ -301,8 +301,8 @@ Review the fixed artifact independently against these owners:
   §§5–6, 10–11;
 - ownership and dependency direction: [visibility](../rules/visibility.md)
   §§2–4;
-- pack purity and signature completeness:
-  [pack signature](../contracts/pack-signature.md);
+- standard purity and section completeness:
+  [standard contract](../contracts/standard.md);
 - vocabulary: [vocabulary](vocabulary.md), using its meanings and no others;
 - implemented enforcement and non-normative illustrations:
   [documentation](documentation.md) laws 6, 9.

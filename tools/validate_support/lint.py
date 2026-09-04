@@ -73,7 +73,7 @@ def validate_cross_package_links(packages, diag: Diagnostics) -> None:
 # DESIGN -- arrive through the top-level glob below rather than through this
 # tuple, which names directories only.
 LINKED_MD_ROOTS = (
-    "rules", "contracts", "docs", "skills", "packs", "example-workflows",
+    "rules", "contracts", "docs", "skills", "standards", "example-workflows",
     "templates", "benchmarks", "hosts", "reader/docs",
 )
 # Sites whose heading carries a parenthetical suffix; none currently.

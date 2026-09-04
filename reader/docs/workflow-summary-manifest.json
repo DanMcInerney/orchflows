@@ -141,7 +141,7 @@
     },
     "orch-do": {
       "nodes": [
-        {"id": "resolve", "label": "Resolve the stamped pack"},
+        {"id": "resolve", "label": "Resolve the stamped standard"},
         {"id": "apply", "label": "Apply execute cells"},
         {"id": "evidence", "label": "Record artifact evidence"}
       ],

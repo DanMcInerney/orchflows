@@ -1,6 +1,6 @@
 ---
 name: browser-game
-description: Turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.
+description: Turn an incomplete browser-game brief into evidence-bound checkpoints and standard-stamped successor delivery.
 disable-model-invocation: true
 ---
 
@@ -31,7 +31,7 @@ neither blocks the other.
 <!-- BGW-TRACE[implementation:program-record|PJ-03,PJ-07] -->
 <!-- BGW-TRACE[implementation:question-authority|PJ-06,PJ-09,PJ-10] -->
 <!-- BGW-TRACE[implementation:decision-safety|PJ-22] -->
-**Record**, `do --pack orch-content-pack --isolation required`: one
+**Record**, `do --standard orch-content --isolation required`: one
 versioned program record in `workspace` for `brief`, conforming to its
 [program-record schema](../references/browser-game-program-record.schema.json)
 and [intake-authority policy](../references/browser-game-intake-policy.json).
@@ -44,7 +44,7 @@ settled decision keeps its revision and invalidation trigger.
 <!-- BGW-TRACE[implementation:experiment-validity|PJ-16,PJ-17] -->
 <!-- BGW-TRACE[implementation:conditional-fidelity|PJ-23] -->
 <!-- BGW-TRACE[implementation:revalidation|PJ-25] -->
-**Evidence**, `do --pack orch-research-pack` handed the record's artifact
+**Evidence**, `do --standard orch-research` handed the record's artifact
 line: one fixed evidence packet for the independently schedulable empirical
 fields affecting the record's next transition. Each experiment matches its
 source field's open `decision_id`, predeclares every required field and
@@ -55,24 +55,24 @@ trigger identity stays `inactive`.
 <!-- BGW-TRACE[implementation:checkpoint-disposition|PJ-05] -->
 <!-- BGW-TRACE[implementation:kind-separation|AUTH-05,PJ-18,PJ-19,PJ-28] -->
 <!-- BGW-TRACE[implementation:evidence-identity|PJ-08,PJ-24] -->
-**Checkpoint**, one `judge --pack orch-content-pack` over both artifact
+**Checkpoint**, one `judge --standard orch-content` over both artifact
 lines: exactly one disposition — `advance`, `revise`, `experiment`,
 `user-decision-required` or `stop` — bound to its governing requirement, the
 fixed record revision and evidence identity. Its findings validate
 against the
 [checkpoint contract](../references/browser-game-checkpoint.schema.json).
 Only where that disposition is lawful does one further
-`do --pack orch-content-pack` materialize the
-[pack-separated successor plan](../references/browser-game-program-record.schema.json#/$defs/successorPlanRevision),
+`do --standard orch-content` materialize the
+[standard-separated successor plan](../references/browser-game-program-record.schema.json#/$defs/successorPlanRevision),
 each ordered entry preserving its artifact identity, artifact kind, matching
-pack, run/root identities, dependencies and `planned`/`opened`
+standard, run/root identities, dependencies and `planned`/`opened`
 status.
 
 Never: invent a stack, cohort, support promise, budget, fallback, provider
 or release policy; settle a user-only field from evidence
 or paraphrase its question before relay; represent absence as agreement or
 overwrite a settled decision; infer `advance` from task completion; open a
-successor whose kind, pack, predecessor identity, dependency or root identity
+successor whose kind, standard, predecessor identity, dependency or root identity
 is unresolved; hide one artifact kind behind another's identity; or file
 anything the instance validator rejects.
 

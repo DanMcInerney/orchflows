@@ -1,18 +1,18 @@
 """Grade every library standard against `contracts/standard.md`.
 
-A root states a domain; a narrowing tightens one. They are one format
-under one set of rules and differ only in the sections the contract's
-section table allows them, so what a narrowing may say is bounded by what
-its root already says. Every bound here is one that contract states: the
+A root states a domain; a narrowing tightens one. They are one kind in one
+`standards/` directory, told apart by `narrows:` alone: this module grades
+the narrowings and `packages.py` the roots, because the section table gives
+each a different set. What a narrowing may say is bounded by what its root
+already says. Every bound here is one that contract states: the
 frontmatter keys, the two sections both kinds carry, the three a narrowing
 is refused, the one word ceiling, and the refusal of anything executable
 inside the directory.
 
 Its own module rather than a fifth concern inside `packages.py`: that file
 already owns discovery, frontmatter, role, anatomy and budget for skills at
-four hundred lines, and a narrowing is a different manifest under a
-different directory. The seam is the item kind, so the growth goes
-sideways.
+four hundred lines. The seam is the section table a manifest is graded
+against, so the growth goes sideways.
 
 Two of the checks read a *root* to grade a *narrowing*. `narrows:` names
 the one standard the narrowing tightens, so a name that resolves to no
@@ -26,12 +26,12 @@ a second table here.
 from __future__ import annotations
 
 from . import common as __dep_common
-PACK_ADAPTER_RE = __dep_common.PACK_ADAPTER_RE
+STANDARD_ADAPTER_RE = __dep_common.STANDARD_ADAPTER_RE
 Path = __dep_common.Path
 ROOT = __dep_common.ROOT
-SHEET_DIR_NAME = __dep_common.SHEET_DIR_NAME
-SHEET_MANIFEST = __dep_common.SHEET_MANIFEST
-SHEET_REFUSED_ENTRIES = __dep_common.SHEET_REFUSED_ENTRIES
+STANDARD_DIR_NAME = __dep_common.STANDARD_DIR_NAME
+STANDARD_MANIFEST = __dep_common.STANDARD_MANIFEST
+STANDARD_REFUSED_ENTRIES = __dep_common.STANDARD_REFUSED_ENTRIES
 STANDARD_ADAPTER_KEY = __dep_common.STANDARD_ADAPTER_KEY
 STANDARD_NARROWS_KEY = __dep_common.STANDARD_NARROWS_KEY
 STANDARD_NARROWING_OPTIONAL_SECTIONS = __dep_common.STANDARD_NARROWING_OPTIONAL_SECTIONS
@@ -44,9 +44,10 @@ SKIPPED = __dep_common.SKIPPED
 re = __dep_common.re
 
 from .packages import (
-    DESCRIPTION_BUDGET, _read_source, dequote, parse_frontmatter, rel,
+    DESCRIPTION_BUDGET, _read_source, declares_narrows, dequote,
+    parse_frontmatter, rel,
 )
-from .structure import validate_craft_budget
+from .structure import validate_standard_budget
 
 # The adapter-key-to-artifact-kind table is the runtime's, imported rather
 # than respelled: a narrowing's Lens entries are keyed by exactly the kind
@@ -67,12 +68,18 @@ LENS_ENTRY_RE = re.compile(r"^###\s+(.+?)\s*$", re.MULTILINE)
 ADAPTER_FIELD_RE = re.compile(r"(?m)^adapter:\s*([^\r\n]+?)\s*$")
 
 
-def sheet_root() -> Path:
-    return ROOT / SHEET_DIR_NAME
+def standard_root() -> Path:
+    return ROOT / STANDARD_DIR_NAME
 
 
-def discover_sheets():
-    """Every library narrowing as ``{"path": dir, "manifest": manifest}``.
+def discover_standards():
+    """Every library standard as ``{"path", "manifest", "narrows"}``.
+
+    Root and narrowing alike, with `narrows` saying which: they are one
+    kind in one directory, so the field is the partition and the path is
+    not. The section, frontmatter and Lens checks below take the
+    narrowings, because `packages.discover_packages` takes the roots and
+    grades them against the sections a root is *required*.
 
     A directory without the manifest is data rather than a standard,
     exactly as a tier directory holding only ``references/`` is no
@@ -80,20 +87,24 @@ def discover_sheets():
     standard missing its manifest.
     """
 
-    root = sheet_root()
+    root = standard_root()
     if not root.is_dir():
         return []
     found = []
     for directory in sorted(root.iterdir()):
         if not directory.is_dir():
             continue
-        manifest = directory / SHEET_MANIFEST
+        manifest = directory / STANDARD_MANIFEST
         if manifest.is_file():
-            found.append({"path": directory, "manifest": manifest})
+            found.append({
+                "path": directory,
+                "manifest": manifest,
+                "narrows": declares_narrows(_read_source(manifest)),
+            })
     return found
 
 
-def declared_packs(value: str):
+def declared_standards(value: str):
     """The one standard a ``narrows:`` value names, as a list.
 
     A list, because the caller resolves a set of names and the rule that
@@ -105,20 +116,20 @@ def declared_packs(value: str):
     return [name] if name else []
 
 
-def _pack_manifest(pack_roots, name: str):
-    """The first packs directory carrying ``name``'s manifest, or ``None``."""
+def _standard_manifest(standard_roots, name: str):
+    """The first standards directory carrying ``name``'s manifest, or ``None``."""
 
-    for root in pack_roots:
-        manifest = Path(root) / name / "SKILL.md"
+    for root in standard_roots:
+        manifest = Path(root) / name / STANDARD_MANIFEST
         if manifest.is_file():
             return manifest
     return None
 
 
-def default_pack_roots():
+def default_standard_roots():
     """Where a library narrowing's `narrows:` name resolves: this library's."""
 
-    return [ROOT / "packs"]
+    return [standard_root()]
 
 
 def declared_adapter(text: str) -> str:
@@ -131,10 +142,10 @@ def declared_adapter(text: str) -> str:
     return dequote(match.group(1)) if match else ""
 
 
-def pack_lens_kinds(pack_roots, packs):
-    """``(kind_by_pack, unresolved)`` for the standard a narrowing names.
+def standard_lens_kinds(standard_roots, standards):
+    """``(kind_by_standard, unresolved)`` for the standard a narrowing names.
 
-    ``kind_by_pack`` maps each resolved name to the one artifact kind its
+    ``kind_by_standard`` maps each resolved name to the one artifact kind its
     adapter emits. Their values are the closed set of `###` keys the
     narrowing's `## Lens` may key, and each key is separately owed: a root
     whose kind no entry carries is a stamp that would hand a verb a
@@ -142,16 +153,16 @@ def pack_lens_kinds(pack_roots, packs):
     whose adapter is unregistered, lands in ``unresolved`` instead of
     silently widening that set.
 
-    ``pack_roots`` is the directories to look in, nearest first. The
+    ``standard_roots`` is the directories to look in, nearest first. The
     library has one; a ring's narrowing almost always names a *library*
     root, so a caller grading a ring passes every directory that resolves
     from there and a stamp that can be taken is not reported as one that
     cannot.
     """
 
-    kind_by_pack, unresolved = {}, []
-    for name in packs:
-        manifest = _pack_manifest(pack_roots, name)
+    kind_by_standard, unresolved = {}, []
+    for name in standards:
+        manifest = _standard_manifest(standard_roots, name)
         if manifest is None:
             unresolved.append(name)
             continue
@@ -159,8 +170,8 @@ def pack_lens_kinds(pack_roots, packs):
         if adapter is None:
             unresolved.append(name)
             continue
-        kind_by_pack[name] = adapter.artifact_kind
-    return kind_by_pack, unresolved
+        kind_by_standard[name] = adapter.artifact_kind
+    return kind_by_standard, unresolved
 
 
 def validate_standard_adapter(fm: dict, pkg: dict, diag) -> None:
@@ -180,7 +191,7 @@ def validate_standard_adapter(fm: dict, pkg: dict, diag) -> None:
             "its domain, so it names the one workspace mechanism key",
         )
         return
-    if not PACK_ADAPTER_RE.match(value):
+    if not STANDARD_ADAPTER_RE.match(value):
         diag.error(
             file_label,
             f"adapter must be one registered mechanism key, got: {value!r}",
@@ -192,8 +203,8 @@ def validate_standard_adapter(fm: dict, pkg: dict, diag) -> None:
         )
 
 
-def validate_sheet_frontmatter(fm: dict, sheet: dict, diag) -> None:
-    file_label = rel(sheet["manifest"])
+def validate_standard_frontmatter(fm: dict, standard: dict, diag) -> None:
+    file_label = rel(standard["manifest"])
     allowed = set(STANDARD_REQUIRED_FRONTMATTER) | set(STANDARD_OPTIONAL_FRONTMATTER)
     for key in sorted(set(fm) - allowed):
         diag.error(file_label, f"standard frontmatter key '{key}' is not allowed")
@@ -203,16 +214,16 @@ def validate_sheet_frontmatter(fm: dict, sheet: dict, diag) -> None:
     if not fm.get(STANDARD_NARROWS_KEY):
         diag.error(
             file_label,
-            "standard frontmatter missing required key 'narrows'; every item "
-            "under this directory is a narrowing, and a standard with no "
-            "'narrows' is a root",
+            "standard frontmatter missing required key 'narrows'; this "
+            "check grades narrowings, and a standard with no 'narrows' is a "
+            "root graded against a root's sections instead",
         )
     name = fm.get("name")
-    if name and name != sheet["path"].name:
+    if name and name != standard["path"].name:
         diag.error(
             file_label,
             f"standard frontmatter name '{name}' does not match folder name "
-            f"'{sheet['path'].name}'",
+            f"'{standard['path'].name}'",
         )
     description = fm.get("description") or ""
     if len(description) > DESCRIPTION_BUDGET:
@@ -223,8 +234,8 @@ def validate_sheet_frontmatter(fm: dict, sheet: dict, diag) -> None:
         )
 
 
-def validate_sheet_sections(body: str, sheet: dict, diag) -> None:
-    file_label = rel(sheet["manifest"])
+def validate_standard_sections(body: str, standard: dict, diag) -> None:
+    file_label = rel(standard["manifest"])
     present = SECTION_RE.findall(body)
     for heading in STANDARD_NARROWING_REQUIRED_SECTIONS:
         if heading not in present:
@@ -249,7 +260,7 @@ def validate_sheet_sections(body: str, sheet: dict, diag) -> None:
             diag.error(file_label, f"section '## {heading}' is not a standard section")
 
 
-def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag, pack_roots=None) -> None:
+def validate_standard_lens(body: str, fm: dict, standard: dict, diag, standard_roots=None) -> None:
     """`## Lens` keys and the named root's kind are the same set.
 
     Both directions, because each fails its own way: an entry under a key
@@ -259,10 +270,10 @@ def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag, pack_roots=None)
     `## Lens`).
     """
 
-    file_label = rel(sheet["manifest"])
-    packs = declared_packs(fm.get(STANDARD_NARROWS_KEY))
-    kind_by_pack, unresolved = pack_lens_kinds(
-        default_pack_roots() if pack_roots is None else pack_roots, packs,
+    file_label = rel(standard["manifest"])
+    standards = declared_standards(fm.get(STANDARD_NARROWS_KEY))
+    kind_by_standard, unresolved = standard_lens_kinds(
+        default_standard_roots() if standard_roots is None else standard_roots, standards,
     )
     for name in unresolved:
         diag.error(
@@ -270,9 +281,9 @@ def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag, pack_roots=None)
             f"narrows names '{name}', which resolves to no standard with a "
             "registered adapter in this library",
         )
-    kinds = set(kind_by_pack.values())
+    kinds = set(kind_by_standard.values())
     entries = LENS_ENTRY_RE.findall(body)
-    if packs and not unresolved and not entries:
+    if standards and not unresolved and not entries:
         diag.error(file_label, "standard '## Lens' carries no '###' artifact-kind entry")
     for entry in entries:
         if unresolved or not kinds:
@@ -281,32 +292,26 @@ def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag, pack_roots=None)
             diag.error(
                 file_label,
                 f"'## Lens' entry '### {entry}' is not an artifact kind the "
-                f"standard {sorted(packs)} emits ({sorted(kinds)})",
+                f"standard {sorted(standards)} emits ({sorted(kinds)})",
             )
     if unresolved:
         return
-    for name in sorted(kind_by_pack):
-        if kind_by_pack[name] not in entries:
+    for name in sorted(kind_by_standard):
+        if kind_by_standard[name] not in entries:
             diag.error(
                 file_label,
                 f"narrows names '{name}', whose artifact kind "
-                f"'{kind_by_pack[name]}' has no '## Lens' entry "
-                f"'### {kind_by_pack[name]}'",
+                f"'{kind_by_standard[name]}' has no '## Lens' entry "
+                f"'### {kind_by_standard[name]}'",
             )
 
 
-def validate_sheet_budget(sheet: dict, diag) -> None:
-    """The one ceiling, applied to a narrowing's manifest."""
-
-    validate_craft_budget(sheet["manifest"], diag)
-
-
-def validate_sheet_contents(sheet: dict, diag) -> None:
+def validate_standard_contents(standard: dict, diag) -> None:
     """A standard's directory carries prose and nothing executable."""
 
-    file_label = rel(sheet["manifest"])
-    for entry in SHEET_REFUSED_ENTRIES:
-        if (sheet["path"] / entry).exists():
+    file_label = rel(standard["manifest"])
+    for entry in STANDARD_REFUSED_ENTRIES:
+        if (standard["path"] / entry).exists():
             diag.error(
                 file_label,
                 f"standard directory carries '{entry}'; a standard has no "
@@ -315,30 +320,37 @@ def validate_sheet_contents(sheet: dict, diag) -> None:
             )
 
 
-def validate_sheets(diag, pack_roots=None) -> None:
-    """Grade every narrowing under this root, or say the check found none."""
+def validate_standards(diag, standard_roots=None) -> None:
+    """Grade every narrowing under this root, or say the check found none.
 
-    root = sheet_root()
+    `validate_standard_contents` is the one check here that reaches a root
+    as well: what a standard's *directory* may hold is a fact about the
+    kind, and the section table does not partition it.
+    """
+
+    root = standard_root()
     if not root.is_dir():
         diag.warn(rel(root), SKIPPED)
         return
-    for sheet in discover_sheets():
-        file_label = rel(sheet["manifest"])
-        fm, body = parse_frontmatter(_read_source(sheet["manifest"]), file_label, diag)
+    for standard in discover_standards():
+        validate_standard_contents(standard, diag)
+        if not standard["narrows"]:
+            continue
+        file_label = rel(standard["manifest"])
+        fm, body = parse_frontmatter(_read_source(standard["manifest"]), file_label, diag)
         if fm is None or body is None:
             continue
-        validate_sheet_frontmatter(fm, sheet, diag)
-        validate_sheet_sections(body, sheet, diag)
-        validate_sheet_lens(body, fm, sheet, diag, pack_roots)
-        validate_sheet_budget(sheet, diag)
-        validate_sheet_contents(sheet, diag)
+        validate_standard_frontmatter(fm, standard, diag)
+        validate_standard_sections(body, standard, diag)
+        validate_standard_lens(body, fm, standard, diag, standard_roots)
+        validate_standard_budget(standard["manifest"], diag)
 
 
 __all__ = (
-    "declared_adapter", "declared_packs", "default_pack_roots",
-    "discover_sheets", "pack_lens_kinds", "sheet_root",
-    "validate_sheet_budget", "validate_sheet_contents",
-    "validate_sheet_frontmatter", "validate_sheet_lens",
-    "validate_sheet_sections", "validate_sheets",
+    "declared_adapter", "declared_standards", "default_standard_roots",
+    "discover_standards", "standard_lens_kinds", "standard_root",
+    "validate_standard_contents",
+    "validate_standard_frontmatter", "validate_standard_lens",
+    "validate_standard_sections", "validate_standards",
     "validate_standard_adapter",
 )

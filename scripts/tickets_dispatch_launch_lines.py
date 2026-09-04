@@ -114,20 +114,20 @@ def _files_findings(assignment: dict) -> bool:
     ).get("files_findings"))
 
 
-def _craft_lines(assignment: dict) -> list:
-    """The pack's craft, handed as a path, and the entry it is read at."""
+def _manifest_lines(assignment: dict) -> list:
+    """The stamped standard, handed as a path, and the entry it is read at."""
 
     lines = []
-    craft = assignment.get("craft")
-    if craft is not None:
-        lines.append(f"Read your stamped pack's craft at {craft}.")
+    manifest = assignment.get("manifest")
+    if manifest is not None:
+        lines.append(f"Read your stamped standard at {manifest}.")
         key = assignment.get("lens_key")
         if key:
             lines.append(
-                f"You judge `{key}` artifacts: the craft's `## Lens` entry "
+                f"You judge `{key}` artifacts: the standard's `## Lens` entry "
                 f"`### {key}` is your criteria."
                 if _files_findings(assignment) else
-                f"You make a `{key}`: the craft's `## Lens` entry `### {key}` "
+                f"You make a `{key}`: the standard's `## Lens` entry `### {key}` "
                 "is what your artifact must satisfy."
             )
     lines.append(
@@ -137,28 +137,28 @@ def _craft_lines(assignment: dict) -> list:
     return lines
 
 
-def _sheet_lines(assignment: dict) -> list:
-    """One line per stamped sheet: where it is, at which digest, and how far
-    it reaches into the craft the line above already handed over."""
+def _other_standard_lines(assignment: dict) -> list:
+    """One line per stamped standard beside the one the line above handed
+    over: where it is, at which digest, and how far it reaches into that one."""
 
     key = assignment.get("lens_key")
     if not key:
         return []
     lines = []
-    for sheet in assignment.get("sheets") or ():
-        digest = str(sheet.get("digest") or "")
+    for standard in assignment.get("other_standards") or ():
+        digest = str(standard.get("digest") or "")
         opening = (
-            f"Read the sheet `{sheet['name']}` at {sheet['path']} whole "
+            f"Read the standard `{standard['name']}` at {standard['path']} whole "
             f"(sha256 {digest.split(':', 1)[-1]})."
         )
         lines.append(
             f"{opening} Its `## Lens` `### {key}` entry adds criteria you "
-            "check beside the craft's; where it loosens the craft's, the "
-            "craft wins and you report the conflict as a `sheet-defect` "
+            "check beside the standard's; where it loosens the standard's, the "
+            "standard wins and you report the conflict as a `standard-defect` "
             "finding."
             if _files_findings(assignment) else
-            f"{opening} Its `## Craft` binds your making; its `## Lens` "
-            f"`### {key}` entry adds to the craft's `### {key}` and never "
+            f"{opening} Its `## Making` binds your making; its `## Lens` "
+            f"`### {key}` entry adds to the standard's `### {key}` and never "
             "loosens it."
         )
     return lines
@@ -207,7 +207,7 @@ def _return_lines(assignment: dict) -> list:
     else:
         workspace_line = assignment.get("workspace_line")
         lines = [
-            "Your stamped pack commits nothing; its workspace channel is: "
+            "Your stamped standard commits nothing; its workspace channel is: "
             f'"{workspace_line}"'
         ] if workspace_line else []
     if kind in ARTIFACT_LINE_FORMS:

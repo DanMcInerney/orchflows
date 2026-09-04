@@ -1,12 +1,12 @@
 ---
 name: bakeoff
-description: Compare named candidates made blind under one pack and return the winner's artifact line scored against a rubric sheet.
+description: Compare named candidates made blind under one standard and return the winner's artifact line scored against a rubric standard.
 disable-model-invocation: true
 ---
 
 Require: `candidates`, the named list under comparison, one line of brief
-each; `pack`, the single pack every candidate is made under; `rubric`, the
-name of the sheet carrying the comparison's criteria; and `bound`, each
+each; `standard`, the single standard every candidate is made under; `rubric`, the
+name of the standard carrying the comparison's criteria; and `bound`, each
 candidate's budget.
 
     tickets.py frame-open <run> --goal-file <bakeoff-goal> --bound <bound> --workflow bakeoff
@@ -20,16 +20,16 @@ provenance, or another candidate's brief.
 **Make them together** — *fan-out*: "One `do` per named item, launched
 together under the frame; the shape line lists them as one wave."
 
-    tickets.py do <run> --pack <pack> --parent <frame> --isolation required
+    tickets.py do <run> --standard <standard> --parent <frame> --isolation required
       --goal-file <candidate-goal> --bound <bound>
 
 **Score them blind.** One judge over every candidate's typed artifact line,
 in label order, with the rubric stamped:
 
-    tickets.py judge <run> --pack <pack> --parent <frame> --sheet <rubric>
+    tickets.py judge <run> --standard <standard> --parent <frame> --standard <rubric>
       --goal-file <judge-goal> --artifacts <line> [--artifacts <line>]...
 
-Its goal: rank every line against the rubric sheet's criteria, name the
+Its goal: rank every line against the rubric standard's criteria, name the
 winning label, and say what separated it from the runner-up — in the
 labels' terms alone. Unblind afterwards, against the map you kept, and
 report a candidate that returned nothing as a gap — *declare-gaps*: "A gap

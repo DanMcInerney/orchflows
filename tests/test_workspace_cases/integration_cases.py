@@ -227,7 +227,7 @@ class TestOnlyADeclaringEstablishmentFixesTheTarget(unittest.TestCase):
             main, run_dir = make_repo(tmp)
             prose = tmp / "prose"
             prose.mkdir()
-            make_ticket(run_dir, "C1", pack="orch-content-pack", isolation=None)
+            make_ticket(run_dir, "C1", standard="orch-content", isolation=None)
             content = run_workspace(
                 prose, "establish", "testrun", "C1", "--repo", str(prose),
             )

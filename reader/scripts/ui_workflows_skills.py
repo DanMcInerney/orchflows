@@ -77,11 +77,11 @@ def _read_skill(root: Path, path: Path) -> tuple[dict, str]:
 
 
 def skill_index(root: Path) -> tuple[dict[str, str], set[str]]:
-    """Return canonical skill and pack names mapped to installed lib paths.
+    """Return canonical skill and standard names mapped to installed lib paths.
 
-    Packs belong here because a callable call stamps exactly one of them, and
-    the pack is what carries that call's craft. Leaving them out reported
-    every workflow's own pack as an unresolved reference.
+    Standards belong here because a callable call stamps exactly one of them, and
+    the standard is what carries that call's standard. Leaving them out reported
+    every workflow's own standard as an unresolved reference.
     """
 
     root = Path(root)
@@ -89,7 +89,7 @@ def skill_index(root: Path) -> tuple[dict[str, str], set[str]]:
     duplicates = set()
     paths = sorted(
         list((root / "skills").glob("*/*/SKILL.md"))
-        + list((root / "packs").glob("*/SKILL.md")),
+        + list((root / "standards").glob("*/SKILL.md")),
         key=lambda path: path.relative_to(root).as_posix(),
     )
     for path in paths:

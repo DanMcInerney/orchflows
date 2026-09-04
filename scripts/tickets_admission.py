@@ -89,9 +89,9 @@ def binding_findings(ticket_id: str, data: dict) -> list:
         and not executor_registered(executor)
     ):
         findings.append(finding("executor-unregistered", "executor", executor_refusal(executor)))
-    elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_pack") and not stamped:
+    elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_standard") and not stamped:
         findings.append(finding(
-            "executor-pack-required", STANDARDS_FIELD,
+            "executor-standard-required", STANDARDS_FIELD,
             f"{executor} reads a resolved standard and requires one stamped",
         ))
     unbound = executor.startswith(SCRIPT_EXECUTOR_PREFIX)

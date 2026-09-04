@@ -21,7 +21,7 @@ import tools.validate as validate  # noqa: E402
 from tests.tree_removal import remove_repo_tree  # noqa: E402
 
 VALIDATE = ROOT / "tools" / "validate.py"
-PACKS = ROOT / "packs"
+STANDARDS = ROOT / "standards"
 TEMPLATES = ROOT / "templates"
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
 
@@ -91,13 +91,25 @@ def workspace_adapter(skill_md: Path) -> str:
     raise AssertionError(f"{skill_md}: no `adapter` field")
 
 
-class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
-    """Pack data selects only mechanisms the adapter registry implements."""
+def is_narrowing(directory: Path) -> bool:
+    """Whether one standard directory holds a narrowing rather than a root."""
 
-    def test_every_pack_declares_a_registered_adapter(self):
+    text = (directory / "STANDARD.md").read_text(encoding="utf-8")
+    return bool(re.search(r"(?m)^narrows:", text))
+
+
+class TestStandardWorkspaceTableAgainstStandards(unittest.TestCase):
+    """Standard data selects only mechanisms the adapter registry implements."""
+
+    def test_every_root_declares_a_registered_adapter(self):
+        """Roots only: a narrowing declares no adapter of its own, because
+        the one adapter across a resolved chain is the introducing
+        standard's (contracts/standard.md rule 2)."""
+
         declared = {
-            workspace_adapter(path / "SKILL.md")
-            for path in PACKS.iterdir() if (path / "SKILL.md").is_file()
+            workspace_adapter(path / "STANDARD.md")
+            for path in STANDARDS.iterdir()
+            if (path / "STANDARD.md").is_file() and not is_narrowing(path)
         }
         self.assertLessEqual(declared, set(tickets_mod.ADAPTER_REGISTRY))
 
@@ -110,24 +122,24 @@ class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
             self.assertIsInstance(adapter.commits_in_place, bool)
             self.assertIn(adapter.workspace_strategy, {"git", "evidence-store", "document-tree"})
 
-    def test_no_pack_keyed_workspace_registry_survives(self):
+    def test_no_standard_keyed_workspace_registry_survives(self):
         source = TICKETS_PY.read_text(encoding="utf-8")
-        self.assertNotIn("ADAPTER_BY_PACK", source)
-        self.assertNotIn("PACK_WORKSPACE_MECHANISMS", source)
+        self.assertNotIn("ADAPTER_BY_STANDARD", source)
+        self.assertNotIn("STANDARD_WORKSPACE_MECHANISMS", source)
 
 
-class TestPackAdmissionIsDomainBlind(unittest.TestCase):
-    def test_no_pack_to_executor_registry_survives(self):
-        self.assertFalse(hasattr(tickets_mod, "PACK_EXECUTOR_BINDINGS"))
+class TestStandardAdmissionIsDomainBlind(unittest.TestCase):
+    def test_no_standard_to_executor_registry_survives(self):
+        self.assertFalse(hasattr(tickets_mod, "STANDARD_EXECUTOR_BINDINGS"))
         for source in (
             ROOT / "scripts" / "tickets.py",
             ROOT / "scripts" / "tickets_format.py",
             ROOT / "scripts" / "tickets_admission.py",
         ):
-            self.assertNotIn("PACK_EXECUTOR_BINDINGS", source.read_text(encoding="utf-8"))
+            self.assertNotIn("STANDARD_EXECUTOR_BINDINGS", source.read_text(encoding="utf-8"))
 
 
-class TestPackAdmissionRegistryAgainstPacks(unittest.TestCase):
+class TestStandardAdmissionRegistryAgainstStandards(unittest.TestCase):
     def frontmatter(self, skill_md: Path):
         found = {}
         text = skill_md.read_text(encoding="utf-8")
@@ -142,12 +154,17 @@ class TestPackAdmissionRegistryAgainstPacks(unittest.TestCase):
         frontmatter is `name`, `description`, `narrows` and `adapter`, and
         the adapter is a key the registry implements."""
 
-        packs = {path.name for path in PACKS.iterdir() if (path / "SKILL.md").is_file()}
-        for pack in sorted(packs):
-            declared = self.frontmatter(PACKS / pack / "SKILL.md")
-            self.assertNotIn("executor", declared, pack)
-            self.assertNotIn("skill", declared, pack)
-            self.assertIn(declared.get("adapter"), tickets_mod.ADAPTER_REGISTRY, pack)
+        standards = {path.name for path in STANDARDS.iterdir() if (path / "STANDARD.md").is_file()}
+        for standard in sorted(standards):
+            declared = self.frontmatter(STANDARDS / standard / "STANDARD.md")
+            self.assertNotIn("executor", declared, standard)
+            self.assertNotIn("skill", declared, standard)
+            if "narrows" in declared:
+                # A narrowing names its parent instead: the chain carries one
+                # adapter, declared by whichever standard introduces the domain.
+                self.assertNotIn("adapter", declared, standard)
+                continue
+            self.assertIn(declared.get("adapter"), tickets_mod.ADAPTER_REGISTRY, standard)
 
 
 CROSS_TIER = "cross-tier near-duplicate"
@@ -162,8 +179,8 @@ COPIED_SENTENCE = (
 )
 # The two forms the check must not read as content: a markdown link and a
 # backticked skill name, each standing alone as its own clause. Neither
-# opens with `](../`, so nothing here is exempt by the pack linter's
-# outside-the-pack citation rule -- the exemption under test is the
+# opens with `](../`, so nothing here is exempt by the standard linter's
+# outside-the-standard citation rule -- the exemption under test is the
 # cross-tier one.
 CITATION_ONLY = "[the work-item contract](contracts/work-item.md)"
 NAME_ONLY = "`orch-mimic`"
@@ -258,9 +275,9 @@ class CrossTierDuplicationTest(unittest.TestCase):
         self.assertEqual([], findings, result.stdout)
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_two_skills_sharing_a_clause_are_reported_and_two_packs_are_not(self):
+    def test_two_skills_sharing_a_clause_are_reported_and_two_standards_are_not(self):
         """One tier's internal business is a second linter's — where there
-        is one. Inside packs the pack linter already asks this question, and
+        is one. Inside standards the standard linter already asks this question, and
         the cross-tier pass stays out. skills/ has no such check at all, so
         skipping same-tier pairs there meant two skill bodies could carry a
         clause byte for byte while each was flagged against an innocent third
@@ -277,13 +294,13 @@ class CrossTierDuplicationTest(unittest.TestCase):
         self.assertIn("(within skills)", findings[0])
         self.assertEqual(("skills",), tuple(sorted(validate.SAME_TIER_COMPARED)))
 
-    def test_two_packs_sharing_a_clause_stay_the_pack_linters(self):
+    def test_two_standards_sharing_a_clause_stay_the_standard_linters(self):
         self._write("Nothing here.", "Nothing shared.")
-        for name in ("orch-alpha-pack", "orch-beta-pack"):
-            pack = self.tmp_path / "packs" / name
-            pack.mkdir(parents=True, exist_ok=True)
-            (pack / "SKILL.md").write_text(
-                f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
+        for name in ("orch-alpha-standard", "orch-beta-standard"):
+            standard = self.tmp_path / "standards" / name
+            standard.mkdir(parents=True, exist_ok=True)
+            (standard / "STANDARD.md").write_text(
+                f"---\nname: {name}\ndescription: a synthetic standard\n---\n\n"
                 f"| cell | binding |\n| --- | --- |\n| slicing | {COPIED_SENTENCE} |\n",
                 encoding="utf-8",
             )

@@ -1,10 +1,10 @@
 ---
-name: orch-content-pack
-description: Domain pack for prose read by humans — document evidence and workspace. Stamp when the deliverable is a document.
+name: orch-content
+description: Domain standard for prose read by humans — document evidence and workspace. Stamp when the deliverable is a document.
 adapter: document-tree
 ---
 
-# orch-content-pack
+# orch-content
 
 ## Making
 

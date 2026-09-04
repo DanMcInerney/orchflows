@@ -9,7 +9,7 @@ frame closes on, would leave the body validating and the run wrong. What
 the frame law itself prints -- relaying the returned lines, closing outside
 the children -- is the trunk's to say and is pinned nowhere here.
 
-Anchors, not sentences (`packs/orch-code-pack/SKILL.md`): each
+Anchors, not sentences (`standards/orch-code/STANDARD.md`): each
 fact is read inside a span the body's own structure marks -- the `Require:`
 paragraph, one bolded step, the `Never:` paragraph, the `Return` paragraph
 -- and each case is shown failing against an in-memory copy with the fact
@@ -53,7 +53,7 @@ def span(text: str, opener: str) -> str:
 CASES = {
     "Require names every input the caller supplies": (
         "Require:",
-        ("`goal`", "`pack`", "`judge-pack`", "`sheets`", "`[]` when none",
+        ("`goal`", "`standard`", "`judge-standard`", "`narrowings`", "`[]` when none",
          "`probe`", "`bound`", "`workspace`"),
     ),
     "the plan step makes a cut and pins the dependency set": (
@@ -63,17 +63,17 @@ CASES = {
     ),
     "each wave is isolated, stamped, and fanned out": (
         "**Waves**",
-        ("--isolation required", "--sheet <sheet> [--sheet ...]",
+        ("--isolation required", "[--standard <narrowing> ...]",
          "--workspace <workspace>", "*fan-out*"),
     ),
-    "the judge reads the joined tip under the same sheets": (
+    "the judge reads the joined tip under the same standards": (
         "**Judge**",
-        ("--pack <judge-pack>", "--sheet <sheet> [--sheet ...]",
+        ("--standard <judge-standard>", "[--standard <narrowing> ...]",
          "--artifacts git:<tip>", "*bounded-repair*"),
     ),
     "Never forbids the shared tree, the unstamped judge and the inside close": (
         "Never:",
-        ("make in a shared tree", "hand the judge a sheet the waves did not carry",
+        ("make in a shared tree", "hand the judge a standard the waves did not carry",
          "a candidate rather than the joined tip", "*outside-close*"),
     ),
     "Return closes on the probe over the joined tip": (

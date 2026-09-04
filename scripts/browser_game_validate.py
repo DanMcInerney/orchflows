@@ -37,7 +37,7 @@ STATE_BY_DISPOSITION = {
 }
 SUCCESSOR_PROJECTIONS = {
     "ordered_artifact_kinds": "artifact_kind",
-    "packs": "pack",
+    "standards": "standard",
     "run_identities": "run_identity",
     "root_identities": "root_identity",
     "dependencies": "dependencies",

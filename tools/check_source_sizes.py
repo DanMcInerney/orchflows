@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Warn on tracked sources past one-read size; size never blocks.
 
-The band is the code pack's presumption -- a module owns one concern at
+The band is the code standard's presumption -- a module owns one concern at
 one-read size, ~100-500 lines -- and a blocking ceiling is harmful: it
 makes authors compress prose and re-wrap statements to fit the headroom
 left. So the report warns

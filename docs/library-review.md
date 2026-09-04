@@ -1,7 +1,7 @@
 # Library review prompt
 
 The standing prompt for a full review of this library. Run it through
-`orch-judge`: one path-walk lane per pack plus the ad-hoc lane, and one
+`orch-judge`: one path-walk lane per standard plus the ad-hoc lane, and one
 lane per question below. Findings feed a repair lane or tickets. The
 prompt shrinks under its own law: a question that has produced nothing
 for two passes is folded or deleted; it grows only when a constitution
@@ -62,7 +62,7 @@ sentence in the library must be required by one of them.
 
 ## The path walks — does it run?
 
-One realistic request per pack, plus one through the ad-hoc lane
+One realistic request per standard, plus one through the ad-hoc lane
 (a lone ad-hoc callable, a critique-then-repair pair, and an ad-hoc
 set). Walk the exact live path hop by hop, carrying the artifacts as
 concrete data checked against their contracts. A hop is a finding

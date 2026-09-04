@@ -167,7 +167,7 @@ class WorkflowSourceTests(unittest.TestCase):
         evolve = sources.source_inventory(ROOT, "evolve")
         expected_evolve_paths = {
             "lib/example-workflows/evolve/SKILL.md",
-            "lib/packs/orch-code-pack/SKILL.md",
+            "lib/standards/orch-code/STANDARD.md",
             "bin/search_plan.py",
             "bin/tickets.py",
         }

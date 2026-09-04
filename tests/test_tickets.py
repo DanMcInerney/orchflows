@@ -60,68 +60,68 @@ from tests._repo_root import ROOT
 from scripts import tickets_pins
 
 __all__ = (
-    "AdapterRegistryTest", "PackPinTest", "SemanticTicketContractTest",
+    "AdapterRegistryTest", "StandardPinTest", "SemanticTicketContractTest",
     "ResultAttributionTest",
 )
 
 
 class AdapterRegistryTest(unittest.TestCase):
-    """A pack selects one registered mechanism through its typed adapter cell."""
+    """A standard selects one registered mechanism through its typed adapter cell."""
 
     @contextlib.contextmanager
     def _project(self):
         """A trusted project ring under a temporary home.
 
-        The ring is `<root>/.orchflows/packs`, the one fixed path
-        `scripts/rings.py` reads; the bare `<root>/packs` this fixture used
+        The ring is `<root>/.orchflows/standards`, the one fixed path
+        `scripts/rings.py` reads; the bare `<root>/standards` this fixture used
         to write is no longer a resolution root anywhere.
         """
 
         with tempfile.TemporaryDirectory() as raw, tempfile.TemporaryDirectory() as raw_home:
             root = Path(raw).resolve()
             home = Path(raw_home).resolve()
-            (root / ".orchflows" / "packs").mkdir(parents=True)
+            (root / ".orchflows" / "standards").mkdir(parents=True)
             with mock.patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}):
                 yield root
 
-    def _pack(self, root: Path, adapter: str, body: str = None):
-        pack = root / ".orchflows" / "packs" / "widget-pack"
-        pack.mkdir(parents=True, exist_ok=True)
-        (pack / "SKILL.md").write_text(
+    def _standard(self, root: Path, adapter: str, body: str = None):
+        standard = root / ".orchflows" / "standards" / "widget-standard"
+        standard.mkdir(parents=True, exist_ok=True)
+        (standard / "STANDARD.md").write_text(
             body if body is not None else (
-                "---\nname: widget-pack\ndescription: Synthetic project standard.\n"
+                "---\nname: widget-standard\ndescription: Synthetic project standard.\n"
                 f"adapter: {adapter}\n---\n\n## Making\n\nMake it well.\n"
             ),
             encoding="utf-8",
         )
         rings_trust.grant(root / ".orchflows")
 
-    def test_a_project_pack_selects_git_without_a_pack_name_registration(self):
+    def test_a_project_standard_selects_git_without_a_standard_name_registration(self):
         with self._project() as root:
-            self._pack(root, "git")
+            self._standard(root, "git")
 
-            self.assertEqual("git", tickets_mod.adapter_id("widget-pack", root=root))
-            adapter = tickets_mod.adapter_spec("widget-pack", root=root)
+            self.assertEqual("git", tickets_mod.adapter_id("widget-standard", root=root))
+            adapter = tickets_mod.adapter_spec("widget-standard", root=root)
             self.assertEqual("git", adapter.artifact_kind)
             self.assertTrue(adapter.establishes_isolation)
             self.assertTrue(adapter.deterministic_gate)
             self.assertEqual("git", adapter.workspace_strategy)
 
-    def test_an_untrusted_project_pack_refuses_before_its_adapter_is_read(self):
+    def test_an_untrusted_project_standard_refuses_before_its_adapter_is_read(self):
         with self._project() as root:
-            self._pack(root, "git")
+            self._standard(root, "git")
             rings_trust.revoke(root / ".orchflows")
 
             with self.assertRaises(tickets_mod.AdapterError) as caught:
-                tickets_mod.adapter_id("widget-pack", root=root)
-            self.assertEqual("pack-untrusted", caught.exception.code)
+                tickets_mod.adapter_id("widget-standard", root=root)
+            self.assertEqual("standard-untrusted", caught.exception.code)
 
     def test_an_unregistered_declared_key_fails_closed(self):
         with self._project() as root:
-            self._pack(root, "no-such-adapter")
+            self._standard(root, "no-such-adapter")
 
             with self.assertRaises(tickets_mod.AdapterError) as caught:
-                tickets_mod.adapter_id("widget-pack", root=root)
+                tickets_mod.adapter_id("widget-standard", root=root)
             self.assertEqual("adapter-unregistered", caught.exception.code)
 
     def test_a_manifest_declaring_no_adapter_fails_through_the_reader(self):
@@ -129,21 +129,21 @@ class AdapterRegistryTest(unittest.TestCase):
         frontmatter, so a manifest carrying the old table declares none."""
 
         with self._project() as root:
-            self._pack(root, "git", body=(
-                "---\nname: widget-pack\n---\n\n"
+            self._standard(root, "git", body=(
+                "---\nname: widget-standard\n---\n\n"
                 "| cell | binding |\n| --- | --- |\n"
                 "| adapter | git |\n"
             ))
 
             with self.assertRaises(tickets_mod.AdapterError) as caught:
-                tickets_mod.adapter_id("widget-pack", root=root)
+                tickets_mod.adapter_id("widget-standard", root=root)
             self.assertEqual("adapter-declaration-invalid", caught.exception.code)
 
-    def test_admission_reports_exactly_adapter_unregistered_for_the_pack_key(self):
+    def test_admission_reports_exactly_adapter_unregistered_for_the_standard_key(self):
         with self._project() as root:
-            self._pack(root, "no-such-adapter")
+            self._standard(root, "no-such-adapter")
             with mock.patch("scripts.rings.Path.cwd", return_value=root):
-                stamped = ", ".join(standards_field("widget-pack"))
+                stamped = ", ".join(standards_field("widget-standard"))
                 ticket = (
                     "---\nid: T1\nrun: testrun\nstatus: pending\n"
                     "executor: orch-do\ndepends_on: []\nbound: 30m\n"
@@ -169,10 +169,10 @@ class AdapterRegistryTest(unittest.TestCase):
         with mock.patch.object(
             tickets_assignment, "adapter_spec", return_value=adapter,
         ), mock.patch.object(
-            tickets_assignment, "adapter_standard", return_value="widget-pack",
+            tickets_assignment, "adapter_standard", return_value="widget-standard",
         ):
             finding = tickets_assignment.workspace_establishment_finding(
-                {"standards": ["widget-pack@sha256:" + "0" * 64],
+                {"standards": ["widget-standard@sha256:" + "0" * 64],
                  "isolation": "required"}, None,
             )
         self.assertEqual("workspace-unestablished", finding[0])
@@ -221,7 +221,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     retired_commands.run([
         "new", "testrun", "T1", "--executor", "orch-do",
         "--goal", "Test result attribution.", "--context", "[]",
-        "--pack", "orch-code-pack", "--isolation", "required",
+        "--standard", "orch-code", "--isolation", "required",
     ])
     retired_commands.run(["stamp-generation", "testrun", "T1"])
     validated = retired_commands.run(["draft-validate", "testrun", "T1"])
@@ -321,58 +321,58 @@ class ResultAttributionTest(unittest.TestCase):
             self.assertEqual(before, ticket.read_bytes())
 
 
-class PackPinTest(unittest.TestCase):
+class StandardPinTest(unittest.TestCase):
     """The seal is the lockfile: what you approved is what runs."""
 
     @contextlib.contextmanager
     def _pinned_world(self):
-        """A trusted project ring holding one complete pack, and a sink."""
+        """A trusted project ring holding one complete standard, and a sink."""
 
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw).resolve()
             use_sink(tmp)
             (tmp / ".git").mkdir()
-            pack = tmp / ".orchflows" / "packs" / "widget-pack"
-            pack.mkdir(parents=True)
-            source = ROOT / "packs" / "orch-code-pack"
+            standard = tmp / ".orchflows" / "standards" / "widget-standard"
+            standard.mkdir(parents=True)
+            source = ROOT / "standards" / "orch-code"
             for path in source.rglob("*"):
                 if path.is_file():
-                    target = pack / path.relative_to(source)
+                    target = standard / path.relative_to(source)
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(path.read_bytes())
-            skill = pack / "SKILL.md"
+            skill = standard / "STANDARD.md"
             skill.write_bytes(
-                skill.read_bytes().replace(b"name: orch-code-pack", b"name: widget-pack")
+                skill.read_bytes().replace(b"name: orch-code", b"name: widget-standard")
             )
             with mock.patch.dict(
                 os.environ, {state_root.ENV_VAR: str(tmp / "state-sink")}
             ), mock.patch("scripts.rings.Path.cwd", return_value=tmp):
                 rings_trust.grant(tmp / ".orchflows")
-                yield tmp, pack
+                yield tmp, standard
 
-    def test_new_pins_the_stamped_packs_digest_at_issue_time(self):
-        with self._pinned_world() as (tmp, pack):
+    def test_new_pins_the_stamped_standards_digest_at_issue_time(self):
+        with self._pinned_world() as (tmp, standard):
             payload = run_cmd(
                 tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
-                "--pack", "widget-pack",
+                "--standard", "widget-standard",
             )
 
             self.assertNotIn("error", payload)
             text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
-            expected = tickets_pins.item_digest("pack", "widget-pack")
-            self.assertIn(f"standards: [widget-pack@{expected}]", text)
+            expected = tickets_pins.item_digest("standard", "widget-standard")
+            self.assertIn(f"standards: [widget-standard@{expected}]", text)
 
-    def test_a_pack_edited_under_the_pin_refuses_at_admission(self):
-        with self._pinned_world() as (tmp, pack):
+    def test_a_standard_edited_under_the_pin_refuses_at_admission(self):
+        with self._pinned_world() as (tmp, standard):
             payload = run_cmd(
                 tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
-                "--pack", "widget-pack",
+                "--standard", "widget-standard",
             )
             text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
-            craft = pack / "references" / "craft.md"
-            craft.write_bytes(craft.read_bytes() + b"\nchanged under the seal\n")
+            standard = standard / "STANDARD.md"
+            standard.write_bytes(standard.read_bytes() + b"\nchanged under the seal\n")
             rings_trust.grant(tmp / ".orchflows")
 
             findings = tickets_mod.binding_findings(
@@ -391,12 +391,12 @@ class PackPinTest(unittest.TestCase):
             self.assertIn("tickets.py do | judge", detail)
             self.assertNotIn("stamp-generation", detail)
 
-    def test_an_unchanged_pack_grades_clean(self):
-        with self._pinned_world() as (tmp, _pack):
+    def test_an_unchanged_standard_grades_clean(self):
+        with self._pinned_world() as (tmp, _standard):
             payload = run_cmd(
                 tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
-                "--pack", "widget-pack",
+                "--standard", "widget-standard",
             )
             text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
 
@@ -406,31 +406,31 @@ class PackPinTest(unittest.TestCase):
 
             self.assertEqual([], findings)
 
-    def test_a_pack_that_cannot_be_pinned_refuses_at_issue(self):
-        with self._pinned_world() as (tmp, _pack):
+    def test_a_standard_that_cannot_be_pinned_refuses_at_issue(self):
+        with self._pinned_world() as (tmp, _standard):
             payload = run_cmd(
                 tmp, "new", "testrun", "T2", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
-                "--pack", "no-such-pack",
+                "--standard", "no-such-standard",
             )
 
             self.assertIn("cannot be pinned", payload["error"])
 
     def test_the_pinned_digest_is_inside_the_sealed_assignment(self):
         """The trust grant and the seal cite one digest, so what was
-        approved is what runs: re-pointing the pack changes the seal."""
+        approved is what runs: re-pointing the standard changes the seal."""
 
-        with self._pinned_world() as (tmp, _pack):
+        with self._pinned_world() as (tmp, _standard):
             payload = run_cmd(
                 tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
-                "--pack", "widget-pack",
+                "--standard", "widget-standard",
             )
             text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
-            digest = tickets_pins.item_digest("pack", "widget-pack")
+            digest = tickets_pins.item_digest("standard", "widget-standard")
 
             system = tickets_mod.assignment_payload("T1", text)["system"]
-            self.assertEqual([f"widget-pack@{digest}"], system["standards"])
+            self.assertEqual([f"widget-standard@{digest}"], system["standards"])
             repointed = text.replace(digest, "sha256:" + "0" * 64)
             self.assertNotEqual(
                 tickets_mod.assignment_digest("T1", text),

@@ -41,7 +41,7 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   `script:<repo-relative path>`
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
-- optional `standards` — the resolved craft this assignment is governed by,
+- optional `standards` — the resolved standard this assignment is governed by,
   as an ordered `<name>@sha256:<hex>` list, broad to narrow. Each stamped
   name resolves to a chain by following `narrows:` to a standard carrying
   none ([standard.md](standard.md)); chains join in the order stamped, a
@@ -67,7 +67,7 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   with no result delta close it `stalled`. A ticket carrying no predicate is
   graded by the driver at the join instead.
 - optional `makes` — the artifact kind a planning `do` produces, `root` or
-  `cut`. Every craft's `## Lens` carries one entry per artifact kind its
+  `cut`. Every standard's `## Lens` carries one entry per artifact kind its
   domain produces, and the dispatch names the entry this child works
   against: a `do` making the resolved standards' own deliverable takes the
   kind from the adapter and carries no marker, and a `judge` takes it from the
@@ -80,7 +80,7 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   `tickets.py frame-close`. A frame binds no `executor` and stamps no
   `standards`, and both absences are the marker's meaning rather than an
   omission — nothing dispatches a frame, because the orchestrator session
-  is what drives it, and a frame is a journal rather than craft-governed
+  is what drives it, and a frame is a journal rather than standard-governed
   work. `executor` is required of every other ticket and of no frame. Its
   `## Report` is that journal: the driver appends one line per wave through
   `tickets.py result` and re-reads it at the start of the next wave, which

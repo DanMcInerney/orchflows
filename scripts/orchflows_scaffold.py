@@ -48,7 +48,7 @@ Return: what the caller gets back.
 # the skeleton carries every one as an empty anchor rather than inventing
 # domain content, because an absent section is a shape defect and invented
 # content is worse than none.
-_CRAFT_SECTIONS = (
+_ROOT_SECTIONS = (
     ("Making", "What the maker does here to reach a well-formed artifact."),
     ("Vocabulary", "Define this domain's terms once, here."),
     ("Workspace", "Identities, isolation, candidate diffs, conflict handling."),
@@ -57,15 +57,15 @@ _CRAFT_SECTIONS = (
 )
 
 # `## Lens`'s `###` entries, keyed by artifact kind. `root` and `cut` are
-# library-owned; the third is the kind the pack's adapter emits.
-_CRAFT_LENS_ENTRIES = (
+# library-owned; the third is the kind the standard's adapter emits.
+_ROOT_LENS_ENTRIES = (
     ("root", "What a well-formed frozen root carries in this domain."),
     ("cut", "How a spec cuts into work items here."),
     ("git", "What a finished deliverable must satisfy, what proves it, "
             "and which findings block."),
 )
 
-_PACK = """---
+_ROOT = """---
 name: {name}
 description: Domain standard for <artifacts>. Stamp when the deliverable is <kind>.
 adapter: git
@@ -88,40 +88,13 @@ append that wave's decision with `tickets.py result <run> <frame> --by
 <frame>`. Replace the one call below with this workflow's real calls, and
 keep every returned `artifact:` line verbatim.
 
-    tickets.py do <run> --pack <pack> --parent <frame> --goal-file <goal>
+    tickets.py do <run> --standard <standard> --parent <frame> --goal-file <goal>
 
 Never: state a constraint here that this workflow's calls do not obey.
 
 Return: `tickets.py frame-close <run> <frame> --done <check>`, whose done
 is a command, and whose close carries a judge child or an
 `unjudged: <reason>` journal line once two or more calls have run.
-"""
-
-
-# A narrowing tightens exactly one broader standard, so its skeleton is the
-# one that cannot be domain-blind: it has to name a standard that resolves
-# in this installation and key its `## Lens` by a kind that standard's
-# adapter emits. Both facts are read from the installed standards below
-# rather than spelled here -- a domain name written into this module would
-# be a domain name inside machinery, which `tools/validate.py` refuses.
-_SHEET = """---
-name: {name}
-description: One sentence saying when to stamp {name}.
-narrows: {pack}
----
-
-# {name}
-
-## Making
-
-What this narrowing adds for the maker. Additive and tighten-only: never
-loosen what the broader standard already requires.
-
-## Lens
-
-### {kind}
-
-What a judge checks here beside the broader standard's `### {kind}` entry.
 """
 
 
@@ -143,34 +116,13 @@ importing it. Each requirement above is one <git-url>@<tag-or-sha>.
 """
 
 
-def _sheet_binding():
-    """`(pack, artifact kind)` the sheet skeleton is written against."""
-
-    if __package__:
-        from .tickets_adapters import AdapterError, adapter_spec
-    else:  # pragma: no cover - direct/installed flat script path
-        from tickets_adapters import AdapterError, adapter_spec
-    for record in rings.inventory(("pack",)):
-        if record.get("reserved") and record.get("refusal"):
-            continue
-        try:
-            return str(record["name"]), adapter_spec(str(record["name"])).artifact_kind
-        except AdapterError:
-            continue
-    raise rings.RingError(
-        "no-pack-to-stamp",
-        "no pack resolves from here, so a sheet skeleton would name none; "
-        f"install the library or author the sheet by hand against {AUTHORING_DOC}",
-    )
-
-
-def _craft(name: str) -> str:
+def _root_body(name: str) -> str:
     body = [f"# {name}", ""]
-    for heading, prompt in _CRAFT_SECTIONS:
+    for heading, prompt in _ROOT_SECTIONS:
         body.extend([f"## {heading}", "", prompt, ""])
         if heading != "Lens":
             continue
-        for kind, entry in _CRAFT_LENS_ENTRIES:
+        for kind, entry in _ROOT_LENS_ENTRIES:
             body.extend([f"### {kind}", "", entry, ""])
     return "\n".join(body)
 
@@ -182,16 +134,17 @@ def files_for(kind: str, name: str) -> List[Tuple[str, str]]:
     name = rings.item_name(name)
     if kind == "skill":
         return [("SKILL.md", _SKILL.format(name=name))]
-    if kind == "pack":
-        return [("SKILL.md", _PACK.format(name=name) + _craft(name))]
+    if kind == "standard":
+        # The root skeleton, because a root is the domain-blind one: a
+        # narrowing skeleton would have to name a broader standard that
+        # resolves here, and an author who has one in mind writes `narrows:`
+        # into this file and deletes the sections a narrowing is refused.
+        return [(
+            rings.MANIFESTS["standard"],
+            _ROOT.format(name=name) + _root_body(name),
+        )]
     if kind == "workflow":
         return [("SKILL.md", _WORKFLOW.format(name=name))]
-    if kind == "sheet":
-        pack, artifact_kind = _sheet_binding()
-        return [(
-            rings.MANIFESTS["sheet"],
-            _SHEET.format(name=name, pack=pack, kind=artifact_kind),
-        )]
     # Every kind is named, and an unnamed one refuses. A tail that fell
     # through to the workflow skeleton would write a `SKILL.md` under a kind
     # whose manifest is not that -- a wrong item written silently, which is
@@ -242,15 +195,15 @@ def write_bundle(ring: Path, name: str, version: Optional[str] = None) -> Path:
 
 
 def sections() -> Dict[str, str]:
-    """The mandatory craft anchors this scaffold writes, as data for a test."""
+    """The mandatory root anchors this scaffold writes, as data for a test."""
 
-    return dict(_CRAFT_SECTIONS)
+    return dict(_ROOT_SECTIONS)
 
 
 def lens_entries() -> Dict[str, str]:
     """The `## Lens` artifact-kind anchors it writes, likewise."""
 
-    return dict(_CRAFT_LENS_ENTRIES)
+    return dict(_ROOT_LENS_ENTRIES)
 
 
 __all__ = (

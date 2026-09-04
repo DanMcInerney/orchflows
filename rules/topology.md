@@ -23,7 +23,7 @@ connects this law to the admission-owned state transition.
    the root's own `done` predicate is the fresh
    outside check. A root with one lawful executor keeps its ordinary path.
    Additional review is another named lens, never another engine.
-6. A pack belongs to a ticket, not a run. Incompatible workspace semantics use
+6. A standard belongs to a ticket, not a run. Incompatible workspace semantics use
    successor roots rather than pretending to share a candidate. Adapters meet
    only at the join: identities may cross dependency edges, but candidate bytes
    may not.

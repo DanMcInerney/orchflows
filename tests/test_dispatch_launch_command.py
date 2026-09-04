@@ -79,7 +79,7 @@ class DispatchLaunchTest(unittest.TestCase):
             "new", run, "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required", *extra,
+            "--standard", "orch-code", "--isolation", "required", *extra,
         )
         self.run_command("stamp-generation", run, "T")
         validated = self.run_command("draft-validate", run, "T")
@@ -142,14 +142,14 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(binding["effort"], result["launch"]["effort"])
         self.assertEqual("orch-worker", result["launch"]["agent"])
         prompt = result["launch"]["prompt"]
-        for retired in ("dispatch-receive", "dispatch-packet", "packs.py resolve"):
+        for retired in ("dispatch-receive", "dispatch-packet", "standards.py resolve"):
             self.assertNotIn(retired, prompt)
 
     def test_the_prompt_carries_every_fact_a_child_cannot_derive(self):
         """The eight orphans that made twelve of twelve launches hand-written.
 
         Each is asserted where it lives -- the established tree, this host's
-        interpreter, the stamped pack's own craft file -- so a prompt that
+        interpreter, the stamped standard's own standard file -- so a prompt that
         stopped resolving one of them fails here rather than in a run.
         """
 
@@ -158,13 +158,13 @@ class DispatchLaunchTest(unittest.TestCase):
             self.ticket_path().read_text(encoding="utf-8")
         )
         state = parse_canonical_json(attempt["dispatch_v1"])["attempts"][0]
-        craft = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
+        standard = ROOT / "standards" / "orch-code" / "STANDARD.md"
         friction = ROOT / "scripts" / "friction.py"
         skill = ROOT / "skills" / "kernel" / "orch-do" / "SKILL.md"
 
         for fact in (
             str(self.ticket_path()), str(self.candidate), sys.executable,
-            str(craft), state["assignment_seal"], "D1", "worker",
+            str(standard), state["assignment_seal"], "D1", "worker",
             state["lease_expires_at"], "outcome",
             "the gate's row", "to completion in the turn it starts",
             workspace_git.NOTES_DIR + "/",
@@ -190,12 +190,12 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertNotIn("python ", prompt.replace(sys.executable, ""))
         # every fact once: the prompt states, never restates
         self.assertEqual(1, prompt.count(state["lease_expires_at"]))
-        self.assertEqual(1, prompt.count(str(craft)))
+        self.assertEqual(1, prompt.count(str(standard)))
         self.assertEqual(1, prompt.count(state["assignment_seal"]))
         self.assertEqual(1, prompt.count(str(friction)))
         self.assertEqual(1, prompt.count(str(skill)))
         # the standing gate line is the one scope statement, rendered once
-        # for every dispatch: no craft carries a second wording of it
+        # for every dispatch: no standard carries a second wording of it
         self.assertEqual(
             1, prompt.count("run it here only if this ticket is the gate")
         )
@@ -212,10 +212,10 @@ class DispatchLaunchTest(unittest.TestCase):
     def assignment_facts() -> dict:
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
-            "craft": None, "dependencies": [],
+            "standard": None, "dependencies": [],
             "dispatch_id": "D1", "executor": "orch-judge",
             "executor_script": None, "id": "R1.gate.critique.code",
-            "lease_expires_at": "2099-01-01T00:00:00Z", "pack": "orch-code-pack",
+            "lease_expires_at": "2099-01-01T00:00:00Z", "standard": "orch-code",
             "role": "worker", "run": "run",
             "ticket_path": "/sink/run/R1.gate.critique.code.md", "workspace": "/tree",
         }

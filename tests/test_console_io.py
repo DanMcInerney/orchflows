@@ -84,7 +84,7 @@ class TestAClosedReaderIsNotAFailure(unittest.TestCase):
         pipe. Without the discipline CPython reports it at shutdown and exits
         120, which a caller reading exit codes reads as a failed tool."""
 
-        for name in ("tickets.py", "workspace.py", "packs.py", "trace.py"):
+        for name in ("tickets.py", "workspace.py", "standards.py", "trace.py"):
             with self.subTest(script=name):
                 read_end, write_end = os.pipe()
                 try:

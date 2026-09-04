@@ -92,7 +92,7 @@ class SealedRunTest(SinkTest):
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.before_stamp()
         self.dispatch("stamp-generation", "run", "T")
@@ -150,7 +150,7 @@ class SealedRunTest(SinkTest):
             "new", "run", "T.check", "--executor", "orch-judge",
             "--goal", "Judge what T delivered against its Goal.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "none",
+            "--standard", "orch-code", "--isolation", "none",
         )
         path = self.ticket_path("T.check")
         path.write_text(
@@ -445,7 +445,7 @@ class TestRepairingAnUnreadableRunIdentity(SinkTest):
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.identity = self.home / "runs" / "run" / "run.json"
 
@@ -568,7 +568,7 @@ class TestDependsOnIsCanonicallyOrdered(SinkTest):
             "new", "run", ticket_id, "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         ]
         if depends_on is not None:
             arguments.extend(("--depends-on", depends_on))
@@ -620,7 +620,7 @@ class TestPendingNamesItsPromotion(SinkTest):
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.dispatch("stamp-generation", "run", "T")
         validated = self.dispatch("draft-validate", "run", "T")

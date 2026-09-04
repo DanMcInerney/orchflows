@@ -1,10 +1,10 @@
 ---
-name: orch-design-pack
-description: Domain pack for rendered interfaces — render evidence, git workspace. Stamp when the deliverable is judged as rendered.
+name: orch-design
+description: Domain standard for rendered interfaces — render evidence, git workspace. Stamp when the deliverable is judged as rendered.
 adapter: git
 ---
 
-# orch-design-pack
+# orch-design
 
 ## Making
 

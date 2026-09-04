@@ -1,10 +1,10 @@
 # Vocabulary authoring
 
-The order of work when a namespace — this library, a domain pack, or a
+The order of work when a namespace — this library, a domain standard, or a
 project — earns a vocabulary. Definition law lives with its owners: one
 meaning everywhere in [vocabulary.md](vocabulary.md)'s preamble; the
-mandated consumer test and craft budget in
-[contracts/pack-signature.md](../contracts/pack-signature.md)'s craft
+mandated consumer test and standard budget in
+[contracts/standard.md](../contracts/standard.md)'s standard
 cell; lexical stability in [documentation.md](documentation.md) law 2;
 one name per concept in
 [rules/token-economy.md](../rules/token-economy.md) §10. This file only
@@ -12,7 +12,7 @@ orders the work; its budget is 40 lines.
 
 1. Namespace first. A term belongs to the smallest namespace all its
    consumers share: the library's own words in `docs/vocabulary.md`, a
-   domain's in its pack's craft, a project's in `<repo>/docs/vocabulary.md`.
+   domain's in its standard's, a project's in `<repo>/docs/vocabulary.md`.
    A term with one consumer is defined inline where it is used and
    earns no entry.
 2. Collision second. Grep the term against every namespace above it

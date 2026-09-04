@@ -9,7 +9,7 @@ if str(ROOT) not in sys.path:
 from tests.test_validator_cases.support import _IsolatedTree
 from tests.test_validator_cases.availability_and_packages import (
     TestASkippedCheckSaysSo,
-    TestSheetAnatomy,
+    TestStandardAnatomy,
     TestSyntheticPackageBoundaryInputs,
     TestWorkflowLibraryHomes,
 )
@@ -19,7 +19,7 @@ from tests.test_validator_cases.contracts_and_names import (
 )
 from tests.test_validator_cases.corpus_and_surfaces import (
     TestDuplicationCorpus,
-    TestCraftSections,
+    TestStandardSections,
     TestLicensedCopies,
     TestWordBudgetAndLinks,
 )
@@ -62,12 +62,12 @@ class TestRecursiveNameResolution(_IsolatedTree):
 
 
 class TestDomainBlindnessAdmission(_IsolatedTree):
-    """Machinery must not branch on pack or pack-owned skill names."""
+    """Machinery must not branch on standard or standard-owned skill names."""
 
-    def _write_pack(self, name, executor):
-        pack = self.tmp_path / "packs" / name
-        pack.mkdir(parents=True)
-        (pack / "SKILL.md").write_text(
+    def _write_standard(self, name, executor):
+        standard = self.tmp_path / "standards" / name
+        standard.mkdir(parents=True)
+        (standard / "STANDARD.md").write_text(
             f"---\nname: {name}\ndescription: synthetic standard\n"
             "adapter: git\n---\n"
             f"# {name}\n\n## Making\n\ncontent.\n",
@@ -79,27 +79,27 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
 
-    def test_a_canonical_pack_name_in_scripts_is_refused(self):
-        self._write_pack("orch-example-pack", "orch-example-executor")
-        self._write_machinery("scripts", "PACK = 'orch-example-pack'\n")
+    def test_a_canonical_standard_name_in_scripts_is_refused(self):
+        self._write_standard("orch-example-standard", "orch-example-executor")
+        self._write_machinery("scripts", "STANDARD = 'orch-example-standard'\n")
 
         result = self._run()
 
         self.assertEqual(1, result.returncode, result.stdout)
         self.assertIn(
-            "ERROR scripts/machinery.py: domain-specific name `orch-example-pack`",
+            "ERROR scripts/machinery.py: domain-specific name `orch-example-standard`",
             result.stdout.replace("\\", "/"),
         )
 
-    def test_a_pack_owned_skill_name_in_tools_is_refused(self):
-        self._write_pack("orch-example-pack", "orch-example-executor")
-        self._write_machinery("tools", "PACK = 'orch-example-pack'\n")
+    def test_a_standard_owned_skill_name_in_tools_is_refused(self):
+        self._write_standard("orch-example-standard", "orch-example-executor")
+        self._write_machinery("tools", "STANDARD = 'orch-example-standard'\n")
 
         result = self._run()
 
         self.assertEqual(1, result.returncode, result.stdout)
         self.assertIn(
-            "ERROR tools/machinery.py: domain-specific name `orch-example-pack`",
+            "ERROR tools/machinery.py: domain-specific name `orch-example-standard`",
             result.stdout.replace("\\", "/"),
         )
 
@@ -126,20 +126,20 @@ class TestMarkdownAnchors(_IsolatedTree):
 
 class TestPrivateReferenceAdmission(_IsolatedTree):
     def test_cross_package_private_reference_is_an_error(self):
-        for name in ("pack-a", "pack-b"):
-            package = self.tmp_path / "packs" / name
+        for name in ("standard-a", "standard-b"):
+            package = self.tmp_path / "standards" / name
             package.mkdir(parents=True)
-            (package / "SKILL.md").write_text(
-                f"---\nname: {name}\ndescription: synthetic pack\n---\n",
+            (package / "STANDARD.md").write_text(
+                f"---\nname: {name}\ndescription: synthetic standard\n---\n",
                 encoding="utf-8",
             )
-        private = self.tmp_path / "packs" / "pack-b" / "references" / "private.md"
+        private = self.tmp_path / "standards" / "standard-b" / "references" / "private.md"
         private.parent.mkdir()
         private.write_text("# Private\n", encoding="utf-8")
-        with (self.tmp_path / "packs" / "pack-a" / "SKILL.md").open(
+        with (self.tmp_path / "standards" / "standard-a" / "STANDARD.md").open(
             "a", encoding="utf-8"
         ) as stream:
-            stream.write("\nSee [private](../pack-b/references/private.md).\n")
+            stream.write("\nSee [private](../standard-b/references/private.md).\n")
 
         result = self._run()
 
@@ -159,10 +159,10 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
             encoding="utf-8",
         )
 
-    def _write_pack(self, name, body, keys="adapter: git\n"):
-        path = self.tmp_path / "packs" / name
+    def _write_standard(self, name, body, keys="adapter: git\n"):
+        path = self.tmp_path / "standards" / name
         path.mkdir(parents=True)
-        (path / "SKILL.md").write_text(
+        (path / "STANDARD.md").write_text(
             f"---\nname: {name}\ndescription: synthetic standard\n{keys}---\n{body}",
             encoding="utf-8",
         )
@@ -196,8 +196,8 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         self.assertIn("kernel skills are primitives", result.stdout)
 
     def test_standard_control_flow_is_rejected(self):
-        self._write_pack(
-            "orch-flow-pack",
+        self._write_standard(
+            "orch-flow-standard",
             "If evidence is absent, then delegate and stop.\n",
         )
         result = self._run()
@@ -211,9 +211,9 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         `metaprogrammed dispatch` and `at what precision does it stop
         moving`, both of which the shipped standards carry."""
 
-        self._write_pack(
-            "orch-prose-pack",
-            "# orch-prose-pack\n\n## Making\n\n"
+        self._write_standard(
+            "orch-prose-standard",
+            "# orch-prose-standard\n\n## Making\n\n"
             "No runtime registries or metaprogrammed dispatch, and say at "
             "what precision the number does stop moving.\n",
         )
@@ -224,8 +224,8 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         """The cells table is gone, so frontmatter is the whole declared
         surface: the roster closes there or nowhere."""
 
-        self._write_pack(
-            "orch-extra-pack", "body.\n", keys="adapter: git\nslicing: inline\n",
+        self._write_standard(
+            "orch-extra-standard", "body.\n", keys="adapter: git\nslicing: inline\n",
         )
         result = self._run()
         self.assertIn("frontmatter key 'slicing' is not allowed", result.stdout)
@@ -234,8 +234,8 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         self._write_skill(
             "orch-new-executor", "Require: input.\nNever: skip.\nReturn: assumptions.\n"
         )
-        self._write_pack(
-            "orch-binding-pack", "body.\n",
+        self._write_standard(
+            "orch-binding-standard", "body.\n",
             keys="adapter: git\nexecutor: orch-new-executor\n",
         )
         result = self._run()
@@ -247,8 +247,8 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
             "Require: input.\nNever: skip.\n"
             "Return: the ticket has status, result identity, and verification.\n",
         )
-        self._write_pack(
-            "orch-binding-pack", "body.\n",
+        self._write_standard(
+            "orch-binding-standard", "body.\n",
             keys="adapter: git\nexecutor: orch-prose-envelope\n",
         )
         result = self._run()

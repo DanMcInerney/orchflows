@@ -31,7 +31,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
             "new", "testrun", "T1", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "- one\\n- two\\n- three",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.assertIn("error", refused)
         self.assertIn("backslash-n", refused["error"])
@@ -45,7 +45,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
             "new", "testrun", "T2", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "line one\nline two\nline three",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.assertNotIn("error", accepted)
 
@@ -56,7 +56,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
             "--goal", "Deliver the artifact.",
             "--context",
             "Evidence: C:\\Users\\danhm\\.orchflows\\state\\notes\\thing.md.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.assertNotIn("error", accepted)
 
@@ -68,7 +68,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         accepted = self.dispatch(
             "new", "testrun", "T4", "--executor", "orch-do",
             "--goal", fenced_goal, "--context", "[]",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.assertNotIn("error", accepted)
 
@@ -87,7 +87,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
             "new", "testrun", "T4b", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "Pass `newline=\\n` to open() and rstrip a newline.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.assertNotIn("error", accepted)
 
@@ -99,7 +99,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
             "new", "testrun", "T4c", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "See `newline=\\n` for context. - one\\n- two\\n- three",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.assertIn("error", refused)
         self.assertIn("backslash-n", refused["error"])
@@ -113,7 +113,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         accepted = self.dispatch(
             "new", "testrun", "T5", "--executor", "orch-do",
             "--goal", "Deliver the artifact.", "--context", "[]",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.assertNotIn("error", accepted)
         path = Path(accepted["new"]["path"])
@@ -140,7 +140,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         fields = {
             "id": "T6", "run": "testrun", "status": "pending",
             "admission": "pending", "executor": "orch-do",
-            "pack": "orch-code-pack",
+            "standard": "orch-code",
             "depends_on": [], "isolation": "required", "bound": "30m",
         }
         sections = [
@@ -157,7 +157,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
             "new", "testrun", "T7", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "note one\\nnote two",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.assertIn(matches[0], refused["error"])
 

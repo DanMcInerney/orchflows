@@ -33,7 +33,7 @@ class TestSourceCommit(unittest.TestCase):
             (repo / ".git").mkdir(parents=True)
             (repo / ".git" / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
             (repo / ".git" / "packed-refs").write_text(
-                "# pack-refs with: peeled fully-peeled sorted\nfeedface refs/heads/main\n",
+                "# standard-refs with: peeled fully-peeled sorted\nfeedface refs/heads/main\n",
                 encoding="utf-8",
             )
 
@@ -80,7 +80,7 @@ class TestSourceCommit(unittest.TestCase):
             root = Path(tmp)
             repo = self._worktree(root)
             (root / "main" / ".git" / "packed-refs").write_text(
-                "# pack-refs with: peeled fully-peeled sorted\nfeedface refs/heads/work\n",
+                "# standard-refs with: peeled fully-peeled sorted\nfeedface refs/heads/work\n",
                 encoding="utf-8",
             )
 

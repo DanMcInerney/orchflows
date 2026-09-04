@@ -1,7 +1,7 @@
 ---
 name: html-dossier
 description: Stamp when the deliverable is one self-contained HTML dossier that opens offline and cites every claim in-file.
-narrows: orch-content-pack
+narrows: orch-content
 ---
 
 # html-dossier

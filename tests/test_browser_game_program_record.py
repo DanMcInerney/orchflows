@@ -137,7 +137,7 @@ REQUIRED_RECORDS = {
         {"AUTH-05", "PJ-18", "PJ-19", "PJ-28"},
         {
             "ordered_artifact_kinds",
-            "packs",
+            "standards",
             "run_identities",
             "root_identities",
             "dependencies",
@@ -212,11 +212,11 @@ INTAKE_FIELDS = {
     },
 }
 
-SUCCESSOR_KIND_PACKS = {
-    "research": "orch-research-pack",
-    "prose": "orch-content-pack",
-    "code": "orch-code-pack",
-    "rendered-interface": "orch-design-pack",
+SUCCESSOR_KIND_STANDARDS = {
+    "research": "orch-research",
+    "prose": "orch-content",
+    "code": "orch-code",
+    "rendered-interface": "orch-design",
 }
 
 
@@ -345,7 +345,7 @@ class TestBrowserGameProgramRecord(unittest.TestCase):
             {
                 "artifact_identity",
                 "artifact_kind",
-                "pack",
+                "standard",
                 "run_identity",
                 "root_identity",
                 "dependencies",
@@ -354,7 +354,7 @@ class TestBrowserGameProgramRecord(unittest.TestCase):
             set(artifact["required"]),
         )
         self.assertEqual(
-            set(SUCCESSOR_KIND_PACKS),
+            set(SUCCESSOR_KIND_STANDARDS),
             set(artifact["properties"]["artifact_kind"]["enum"]),
         )
         self.assertEqual(
@@ -381,10 +381,10 @@ class TestBrowserGameProgramRecord(unittest.TestCase):
 
         bindings = {
             clause["if"]["properties"]["artifact_kind"]["const"]:
-            clause["then"]["properties"]["pack"]["const"]
+            clause["then"]["properties"]["standard"]["const"]
             for clause in artifact["allOf"]
         }
-        self.assertEqual(SUCCESSOR_KIND_PACKS, bindings)
+        self.assertEqual(SUCCESSOR_KIND_STANDARDS, bindings)
 
 
 if __name__ == "__main__":

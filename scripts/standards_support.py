@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Internal pack resolver implementation for the public ``packs.py`` facade."""
+"""Internal standard resolver implementation for the public ``standards.py`` facade."""
 
 from __future__ import annotations
 
@@ -25,11 +25,15 @@ except ImportError:
 
 # v3 reads the collapsed standard: one manifest, `adapter` in frontmatter,
 # identity over the directory tree. v2 read a two-row cells table and the
-# second file its `craft` cell named, and neither exists. The version rides
+# second file its `standard` cell named, and neither exists. The version rides
 # in the identity so a resolver that reads differently cannot agree with
 # itself across the change.
-RESOLVER_VERSION = "orchflows.pack-resolver.v3"
-_PACK_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+RESOLVER_VERSION = "orchflows.standard-resolver.v3"
+# Roots and narrowings are one ring kind under one `standards/` directory: a
+# root is a standard with no `narrows:`, never a standard in a particular
+# place.
+STANDARD_KIND = "standard"
+_STANDARD_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ADAPTER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 # The retired signature table's header row. A manifest still carrying it is
 # half-migrated, and accepting it silently is how such an item survives.
@@ -38,8 +42,8 @@ _FRONTMATTER_NAME_RE = re.compile(r"(?m)^name:\s*([^\r\n]+?)\s*$")
 _SHA_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-class PackError(ValueError):
-    """A pack could not be resolved or does not satisfy the closed shape."""
+class StandardError(ValueError):
+    """A standard could not be resolved or does not satisfy the closed shape."""
 
     def __init__(self, code: str, detail: str):
         super().__init__(detail)
@@ -77,13 +81,13 @@ def _read_bytes(path: Path, subject: str) -> bytes:
     try:
         return _canonicalize_bytes(path.read_bytes())
     except (OSError, UnicodeError) as error:
-        raise PackError("pack-unreadable", f"unreadable {subject} {path}: {error}") from error
+        raise StandardError("standard-unreadable", f"unreadable {subject} {path}: {error}") from error
 
 
-def _pack_name(value: object) -> str:
+def _standard_name(value: object) -> str:
     name = dequote(value)
-    if not name or not _PACK_NAME_RE.fullmatch(name) or name in (".", ".."):
-        raise PackError("pack-invalid", f"invalid pack name: {name or '<missing>'}")
+    if not name or not _STANDARD_NAME_RE.fullmatch(name) or name in (".", ".."):
+        raise StandardError("standard-invalid", f"invalid standard name: {name or '<missing>'}")
     return name
 
 
@@ -93,10 +97,10 @@ def _roots(
     project_root: Optional[Path],
     user_root: Optional[Path],
 ) -> List[Tuple[str, Path]]:
-    """Return the ring roots for packs, nearest first."""
+    """Return the ring roots for standards, nearest first."""
 
     return rings.item_roots(
-        "pack",
+        STANDARD_KIND,
         project=project_root,
         home=user_root,
         lib_dir=canonical_root,
@@ -115,7 +119,7 @@ def _manifest_text(path: Path) -> str:
     try:
         return raw.decode("utf-8-sig")
     except UnicodeDecodeError as error:
-        raise PackError("pack-unreadable", f"unreadable standard {path}: {error}") from error
+        raise StandardError("standard-unreadable", f"unreadable standard {path}: {error}") from error
 
 
 def declared_adapter_of(text: str, path: Path) -> str:
@@ -132,8 +136,8 @@ def declared_adapter_of(text: str, path: Path) -> str:
     if not declared:
         return ""
     if not _ADAPTER_RE.fullmatch(declared):
-        raise PackError(
-            "pack-shape-invalid", f"adapter has invalid key {declared!r} in {path}",
+        raise StandardError(
+            "standard-shape-invalid", f"adapter has invalid key {declared!r} in {path}",
         )
     # Whether the key is *registered* is `tickets_adapters`', at the one door
     # that turns a key into a mechanism. Counted here as declared either way,
@@ -152,8 +156,8 @@ def _refuse_retired_table(text: str, path: Path) -> None:
     """
 
     if _RETIRED_TABLE_RE.search(text):
-        raise PackError(
-            "pack-shape-invalid",
+        raise StandardError(
+            "standard-shape-invalid",
             f"standard still carries the retired '| Cell | Binding |' table: "
             f"{path}. The adapter is frontmatter now (contracts/standard.md).",
         )
@@ -184,7 +188,7 @@ def _signature_digest() -> Optional[str]:
     """Hash the library's own well-formedness contract for a standard.
 
     `contracts/standard.md` is that document since the collapse retired
-    `contracts/pack-signature.md`. It is read from the library root and
+    `contracts/standard.md`. It is read from the library root and
     never from the standard's own ring: a ring supplying the document its
     items are judged against would be grading itself.
     """
@@ -202,9 +206,9 @@ def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
     _refuse_retired_table(text, path)
     declared = _frontmatter_name(text, path)
     if not declared:
-        raise PackError("pack-shape-invalid", f"pack has no declared name: {path}")
+        raise StandardError("standard-shape-invalid", f"standard has no declared name: {path}")
     if declared != name:
-        raise PackError("pack-shape-invalid", f"pack name {declared!r} does not match path {name!r}")
+        raise StandardError("standard-shape-invalid", f"standard name {declared!r} does not match path {name!r}")
     adapter = declared_adapter_of(text, path)
     if adapter:
         # Registration is `tickets_adapters`', at the one door that turns a
@@ -212,17 +216,17 @@ def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
         try:
             adapter_for_key(adapter)
         except AdapterError as error:
-            raise PackError("pack-shape-invalid", error.detail) from error
+            raise StandardError("standard-shape-invalid", error.detail) from error
     identity = {
         "resolver": RESOLVER_VERSION,
-        "pack": name,
+        "standard": name,
         "adapter": adapter,
         "tree": _tree(path.parent),
         "signature_sha256": _signature_digest(),
     }
     digest = "sha256:" + _sha256(_canonical_json(identity))
     return {
-        "pack": name,
+        "standard": name,
         "scope": scope,
         "path": str(path),
         "adapter": adapter,
@@ -230,35 +234,35 @@ def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
     }
 
 
-# One code per ring refusal, so a caller reading `PackError.code` learns the
+# One code per ring refusal, so a caller reading `StandardError.code` learns the
 # same distinction the resolver drew: unresolved, reserved-floor, untrusted.
 _RING_CODES = {
-    "unresolved": "pack-unresolved",
-    "reserved-name": "pack-reserved",
-    "bundle-untrusted": "pack-untrusted",
-    "trust-unavailable": "pack-untrusted",
-    "name-invalid": "pack-invalid",
-    "kind-invalid": "pack-invalid",
+    "unresolved": "standard-unresolved",
+    "reserved-name": "standard-reserved",
+    "bundle-untrusted": "standard-untrusted",
+    "trust-unavailable": "standard-untrusted",
+    "name-invalid": "standard-invalid",
+    "kind-invalid": "standard-invalid",
 }
 
 
-def resolve_pack(
-    pack: str,
+def resolve_standard(
+    standard: str,
     *,
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
     start: Optional[Path] = None,
 ) -> Dict[str, object]:
-    """Resolve one pack through the one ring resolver: project, home,
+    """Resolve one standard through the one ring resolver: project, home,
     imports, then lib. Scope and filesystem paths are observations; the
     digest is not derived from them, so identical bytes in two rings
     resolve to one identity. ``start`` is where to stand while looking."""
 
-    name = _pack_name(pack)
+    name = _standard_name(standard)
     try:
         record = rings.resolve(
-            "pack",
+            "standard",
             name,
             project=project_root,
             home=user_root,
@@ -266,7 +270,7 @@ def resolve_pack(
             start=start,
         )
     except rings.RingError as error:
-        raise PackError(_RING_CODES.get(error.code, "pack-unresolved"), error.detail) from error
+        raise StandardError(_RING_CODES.get(error.code, "standard-unresolved"), error.detail) from error
     resolved = _resolved(Path(str(record["path"])), str(record["ring"]), name)
     resolved["notices"] = list(record.get("notices") or [])
     return resolved
@@ -274,13 +278,14 @@ def resolve_pack(
 
 def _available_names(roots: Sequence[Tuple[str, Path]]) -> Iterable[str]:
     names = set()
-    for _, packs_root in roots:
+    for _, standards_root in roots:
         try:
-            entries = list(packs_root.iterdir())
+            entries = list(standards_root.iterdir())
         except OSError:
             continue
         for entry in entries:
-            if entry.is_dir() and (entry / "SKILL.md").is_file() and _PACK_NAME_RE.fullmatch(entry.name):
+            manifest = entry / rings.MANIFESTS[STANDARD_KIND]
+            if entry.is_dir() and manifest.is_file() and _STANDARD_NAME_RE.fullmatch(entry.name):
                 names.add(entry.name)
     return sorted(names)
 
@@ -301,7 +306,7 @@ def cells_for(
 
     requested = str(digest or "").strip()
     if not _SHA_RE.fullmatch(requested):
-        raise PackError("digest-invalid", f"invalid pack digest: {requested or '<missing>'}")
+        raise StandardError("digest-invalid", f"invalid standard digest: {requested or '<missing>'}")
     roots = _roots(
         canonical_root=canonical_root,
         project_root=project_root,
@@ -309,23 +314,23 @@ def cells_for(
     )
     for name in _available_names(roots):
         try:
-            resolved = resolve_pack(
+            resolved = resolve_standard(
                 name,
                 canonical_root=canonical_root,
                 project_root=project_root,
                 user_root=user_root,
             )
-        except PackError:
+        except StandardError:
             continue
         if resolved["digest"] != requested:
             continue
         return {
-            "pack": resolved["pack"],
+            "standard": resolved["standard"],
             "scope": resolved["scope"],
             "digest": requested,
             "adapter": resolved["adapter"],
         }
-    raise PackError("digest-unresolved", f"pack digest does not resolve: {requested}")
+    raise StandardError("digest-unresolved", f"standard digest does not resolve: {requested}")
 
 
 # --- The `narrows:` cascade ------------------------------------------------
@@ -335,12 +340,6 @@ def cells_for(
 # standard carrying none, so `three-js` narrows `javascript` narrows `code`
 # and the reader gets all three, broad to narrow.
 #
-# Two ring kinds are searched because a standard still lives in one of two
-# directories: `packs/` holds the roots and `sheets/` the narrowings. Nothing
-# here depends on which -- a root is a standard with no `narrows:`, not a
-# standard in a particular directory -- so the collapse into one `standards/`
-# ring changes this tuple and nothing else.
-STANDARD_KINDS = ("pack", "sheet")
 # The most `narrows:` edges one chain may follow. The ninth refuses: past
 # eight, a chain is no longer specificity, and the walk needs a bound that
 # does not depend on the cycle check catching a malformed ring first.
@@ -348,32 +347,29 @@ STANDARD_DEPTH_LIMIT = 8
 
 
 def _standard_record(name: str, requested: str, depth: int, **overrides):
-    """One standard's ring record and the old kind that still carries it.
+    """One standard's ring record, or the most specific refusal for it.
 
-    A name is looked for as every kind a standard can still live in, so the
-    refusal reports the most specific failure rather than the last one: a
-    reserved name or an untrusted bundle is a different answer from a name
-    nothing anywhere carries, and only the latter is worth restating as
-    "resolves in no reachable ring".
+    A refusal that is not "nothing carries this name" is reported as
+    itself -- a reserved name or an untrusted bundle is a different answer
+    from a name nothing anywhere carries, and only the latter is worth
+    restating as "resolves in no reachable ring".
     """
 
-    failures = []
-    for kind in STANDARD_KINDS:
-        try:
-            return dict(rings.resolve(kind, name, **overrides)), kind
-        except rings.RingError as error:
-            failures.append(error)
-    specific = next((error for error in failures if error.code != "unresolved"), None)
-    if specific is not None:
-        raise PackError(_RING_CODES.get(specific.code, "pack-unresolved"), specific.detail)
+    try:
+        return dict(rings.resolve(STANDARD_KIND, name, **overrides)), STANDARD_KIND
+    except rings.RingError as error:
+        if error.code != "unresolved":
+            raise StandardError(
+                _RING_CODES.get(error.code, "standard-unresolved"), error.detail,
+            ) from error
     if depth:
-        raise PackError(
+        raise StandardError(
             "standard-parent-unresolved",
             f"standard '{requested}' narrows '{name}', which resolves in no "
             f"reachable ring",
         )
-    raise PackError(
-        "pack-unresolved",
+    raise StandardError(
+        "standard-unresolved",
         f"standard '{name}' cannot be pinned: it resolves in no reachable ring",
     )
 
@@ -385,15 +381,15 @@ def declared_narrows(text: str) -> str:
 
 
 def _chain(name: str, **overrides) -> List[Dict[str, object]]:
-    """One stamped name's ancestry, broad to narrow, or a `PackError`."""
+    """One stamped name's ancestry, broad to narrow, or a `StandardError`."""
 
-    requested = _pack_name(name)
+    requested = _standard_name(name)
     walked: List[str] = []
     links: List[Dict[str, object]] = []
     current, depth = requested, 0
     while True:
         if current in walked:
-            raise PackError(
+            raise StandardError(
                 "standard-cycle",
                 f"standard '{requested}' narrows a cycle: "
                 + " -> ".join(walked + [current]),
@@ -416,12 +412,12 @@ def _chain(name: str, **overrides) -> List[Dict[str, object]]:
             return list(reversed(links))
         depth += 1
         if depth > STANDARD_DEPTH_LIMIT:
-            raise PackError(
+            raise StandardError(
                 "standard-depth",
                 f"standard '{requested}' has not terminated in "
                 f"{STANDARD_DEPTH_LIMIT} hops: " + " -> ".join(walked + [parent]),
             )
-        current = _pack_name(parent)
+        current = _standard_name(parent)
 
 
 def resolve_chain(names: Sequence[str], **overrides) -> List[Dict[str, object]]:
@@ -443,17 +439,17 @@ def resolve_chain(names: Sequence[str], **overrides) -> List[Dict[str, object]]:
             seen.add(link["name"])
             resolved_links.append(link)
     if not resolved_links:
-        raise PackError("standard-unstamped", "no standard is stamped")
+        raise StandardError("standard-unstamped", "no standard is stamped")
     declaring = [link for link in resolved_links if link["adapter"]]
     if not declaring:
-        raise PackError(
+        raise StandardError(
             "standard-adapter-missing",
             "the resolved standards "
             + ", ".join(f"'{link['name']}'" for link in resolved_links)
             + " declare no adapter, so the ticket has no workspace mechanism",
         )
     if len(declaring) > 1:
-        raise PackError(
+        raise StandardError(
             "standard-adapter-conflict",
             "the resolved standards declare "
             + " and ".join(

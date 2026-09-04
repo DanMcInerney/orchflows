@@ -31,7 +31,7 @@ carrying the digest's cluster_key, matcher_draft and watermark
 verbatim. Larger, or when independent eyes are wanted, spend one
 callable:
 
-    tickets.py do <run> --pack orch-content-pack --parent <frame>
+    tickets.py do <run> --standard orch-content --parent <frame>
       --goal-file <mine-goal> --bound "<= 40 tool calls"
 
 Its goal: the digest path, the same owner/contradiction/proposal
@@ -41,7 +41,7 @@ closes the cycle.
 
 **Deliver**, unless invoked mine-only — one callable in `workspace`:
 
-    tickets.py do <run> --pack orch-code-pack --parent <frame>
+    tickets.py do <run> --standard orch-code --parent <frame>
       --isolation required --goal-file <deliver-goal>
       --bound "<= 120 tool calls"
 

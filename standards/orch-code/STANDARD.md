@@ -1,10 +1,10 @@
 ---
-name: orch-code-pack
-description: Domain pack for executable artifacts — code evidence, git workspace. Stamp when the deliverable is code.
+name: orch-code
+description: Domain standard for executable artifacts — code evidence, git workspace. Stamp when the deliverable is code.
 adapter: git
 ---
 
-# orch-code-pack
+# orch-code
 
 ## Making
 

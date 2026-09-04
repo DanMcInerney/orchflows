@@ -209,7 +209,7 @@ class LibraryTreeTest(unittest.TestCase):
     file that carries it, so scanning a tier still resolves the citations
     it makes into every other one."""
 
-    TIERS = ("rules", "contracts", "docs", "skills", "packs", "example-workflows", "templates")
+    TIERS = ("rules", "contracts", "docs", "skills", "standards", "example-workflows", "templates")
 
     def test_no_tier_carries_a_dangling_link(self):
         dangling = []
@@ -376,7 +376,7 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
             "context: fork",
             "matching `agent`",
             "resolve the declared role",
-            "not git\ncode-pack candidates",
+            "not git\ncode-standard candidates",
             "reserved `orch-` prefix",
         ):
             with self.subTest(anchor=anchor):

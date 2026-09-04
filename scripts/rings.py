@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""The one resolver for custom skills, packs, and workflows across the rings.
+"""The one resolver for custom skills, standards, and workflows across the rings.
 
 Search order -- one fixed root-relative path per ring and per kind, never a
 configurable search path:
 
-    project   <repo>/.orchflows/{skills,packs,workflows,sheets}/<name>
-    home      ~/.orchflows/{skills,packs,workflows,sheets}/<name>
-    imports   ~/.orchflows/imports/<bundle>/.orchflows/{skills,packs,workflows,sheets}/<name>,
+    project   <repo>/.orchflows/{skills,standards,workflows}/<name>
+    home      ~/.orchflows/{skills,standards,workflows}/<name>
+    imports   ~/.orchflows/imports/<bundle>/.orchflows/{skills,standards,workflows}/<name>,
               bundle by bundle in the order ~/.orchflows/imports.lock records
     lib       the installed library: skills/<sublayer>/<name> -- every
-              sublayer but the workflow home named next -- packs/<name>,
-              skills/workflows/<name> then example-workflows/<name>,
-              sheets/<name>
+              sublayer but the workflow home named next -- standards/<name>,
+              skills/workflows/<name> then example-workflows/<name>
 
 Nearest ring wins. A non-reserved name found in more than one ring resolves
 to the nearest hit and carries a one-line shadow notice naming both paths --
@@ -19,14 +18,15 @@ never a silent first-hit. `orch-` is a mechanically reserved floor: a
 project, home, or imports item bearing that prefix is refused loudly here
 rather than shadowing a library name or, worse, never running.
 
-A skill, a pack and a workflow each live at `<name>/SKILL.md`; a sheet at
-`<name>/SHEET.md`, extra craft a ticket stamps beside its pack, which is why
-it is resolved here and never invoked. Home roots are honoured when they
-exist and never required to.
+A skill and a workflow each live at `<name>/SKILL.md`; a standard at
+`<name>/STANDARD.md`. A standard is prose a ticket stamps, which is why it is
+resolved here and never invoked -- a root and a narrowing are one kind under
+one directory, told apart by `narrows:` and never by where they sit. Home
+roots are honoured when they exist and never required to.
 
-This module is the sole owner of that order. `scripts/packs_support.py` and
+This module is the sole owner of that order. `scripts/standards_support.py` and
 `scripts/tickets_adapters.py` both route through it, which is what keeps
-admission and execution from reading two different files as "the pack".
+admission and execution from reading two different files as "the standard".
 """
 
 from __future__ import annotations
@@ -44,11 +44,10 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
     import state_root
 
 
-KINDS = ("skill", "pack", "workflow", "sheet")
+KINDS = ("skill", "standard", "workflow")
 RINGS = ("project", "home", "imports", "lib")
 RING_DIRS = {
-    "skill": "skills", "pack": "packs", "workflow": "workflows",
-    "sheet": "sheets",
+    "skill": "skills", "standard": "standards", "workflow": "workflows",
 }
 # Every library directory a kind resolves through, in search order -- the
 # one place that says where the installed library keeps a kind. A workflow
@@ -57,13 +56,11 @@ RING_DIRS = {
 # (`example-workflows`); `tools/validate.py` refuses a name in both.
 LIB_DIRS = {
     "skill": ("skills",),
-    "pack": ("packs",),
+    "standard": ("standards",),
     "workflow": ("skills/workflows", "example-workflows"),
-    "sheet": ("sheets",),
 }
 MANIFESTS = {
-    "skill": "SKILL.md", "pack": "SKILL.md", "workflow": "SKILL.md",
-    "sheet": "SHEET.md",
+    "skill": "SKILL.md", "standard": "STANDARD.md", "workflow": "SKILL.md",
 }
 RESERVED_PREFIX = "orch-"
 BUNDLE_DIR = ".orchflows"
@@ -124,7 +121,7 @@ def lib_root() -> Path:
     """The library this checkout or install reads: a source tree, else ``lib/``."""
 
     checkout = _bootstrap.ROOT
-    if (checkout / "packs").is_dir() and (checkout / "contracts").is_dir():
+    if (checkout / "standards").is_dir() and (checkout / "contracts").is_dir():
         return checkout
     return checkout / "lib"
 

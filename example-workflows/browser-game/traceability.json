@@ -257,7 +257,7 @@
         "identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
         "required_fields": [
           "ordered_artifact_kinds",
-          "packs",
+          "standards",
           "run_identities",
           "root_identities",
           "dependencies",

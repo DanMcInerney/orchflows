@@ -8,7 +8,7 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 
 ### Library workflow skills
 
-- [browser-game](../../example-workflows/browser-game/SKILL.md) — `callable`; turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.
+- [browser-game](../../example-workflows/browser-game/SKILL.md) — `callable`; turn an incomplete browser-game brief into evidence-bound checkpoints and standard-stamped successor delivery.
 - [benchmaker](../../example-workflows/benchmaker/SKILL.md) — `callable`; build and qualify a runnable benchmark.
 - [evolve](../../example-workflows/evolve/SKILL.md) — `callable`; run bounded candidate generations against a frozen evaluation; manual only.
 - [drift-canary](../../example-workflows/drift-canary/SKILL.md) — `callable`; detect drift after a model, effort, or host change.
@@ -19,7 +19,7 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 ### T1 workflow skills
 
 Custom-item authoring follows ordinary code routing and is not a callable workflow.
-- [orch-do](../../skills/kernel/orch-do/SKILL.md) — produce one artifact through the stamped pack's craft, or plan a root or cut toward its `## Lens` entry for that kind.
+- [orch-do](../../skills/kernel/orch-do/SKILL.md) — produce one artifact through the stamped standard's, or plan a root or cut toward its `## Lens` entry for that kind.
 - [orch-judge](../../skills/kernel/orch-judge/SKILL.md) — judge a fixed artifact or verify a repair.
 
 ## Catalog projection and semantic summaries
@@ -42,7 +42,7 @@ Catalog IDs are canonical owner names. Node IDs are `workflow:{workflow}`, `work
 
 For a T3 composition, project its manifest and work stubs: create `work:<workflow>/<stub>` for each stub; add `x -> stub` as `dependency` for every `depends_on: [x]`; add `stub -> skill:<executor>` as `executor`. Do not repair source. Report duplicate nodes, missing dependencies, and unknown executors with closed diagnostic codes `duplicate-node`, `dangling-edge`, and `unresolved-reference`.
 
-For a T1 workflow skill, create the `workflow:{workflow}` caller from its `SKILL.md`; for each validated resolved backticked workflow-skill reference create its `skill:` target and one caller-to-target `skill-call`, and for each validated invoked `.py` command create its `script:` target and one caller-to-target `script-call`. Repeated occurrences coalesce by edge ID. Prose mentions and T0 carriage create nothing. The pack a callable call stamps is a canonical name like any other, so it resolves to its `packs/` source rather than reporting `unresolved-reference`. Thus `evolve` is one `workflow:evolve` caller over `skill:orch-code-pack` and the two scripts its prose invokes; its generations are a prose loop over `do` and `judge` whose exit condition is a judge verdict, so no iteration node is invented ([evolve](../../example-workflows/evolve/SKILL.md); [generation mapping](../../example-workflows/references/evolve-generation.md)).
+For a T1 workflow skill, create the `workflow:{workflow}` caller from its `SKILL.md`; for each validated resolved backticked workflow-skill reference create its `skill:` target and one caller-to-target `skill-call`, and for each validated invoked `.py` command create its `script:` target and one caller-to-target `script-call`. Repeated occurrences coalesce by edge ID. Prose mentions and T0 carriage create nothing. The standard a callable call stamps is a canonical name like any other, so it resolves to its `standards/` source rather than reporting `unresolved-reference`. Thus `evolve` is one `workflow:evolve` caller over `skill:orch-code` and the two scripts its prose invokes; its generations are a prose loop over `do` and `judge` whose exit condition is a judge verdict, so no iteration node is invented ([evolve](../../example-workflows/evolve/SKILL.md); [generation mapping](../../example-workflows/references/evolve-generation.md)).
 
 `/workflows/{workflowId}/sources/{sourceId}` and `/api/v1/workflows/{workflowId}/sources/{sourceId}` accept only URL-safe opaque source IDs associated with that workflow. The expected inventory is exactly the composition template, every work stub, every executor skill, and every resolved referenced skill or invoked script; for T1 it is the root `SKILL.md` plus every resolved target. Validation requires inventory equality, a `source_id` on every resolvable node, and a source link for every such ID; unresolved targets instead require `unresolved-reference`. `ui_workflows_projection.py`, assembled by the existing facade, maps each ID to one allowlisted installed-library-relative file, resolves symlinks, proves containment before opening, and reads once ([privacy boundary](platform.md#projection-and-privacy-boundary)). Success is exactly `{schema:"orchflows.workflow-source.v1",id,text,sha256,language,redacted}`; `sha256` covers delivered UTF-8 text after host-path redaction. Requests never accept paths; responses never expose paths, state-sink data, or unrelated files. Unknown or escaped IDs return generic `404`, unreadable or malformed cataloged sources return non-sensitive typed `422`, and unexpected faults return route-local generic `500`. Success retains shared content-derived ETag/`304` behavior.
 

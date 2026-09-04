@@ -38,7 +38,7 @@ else:
 NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
     "[--details TEXT] [--depends-on a,b] "
-    "[--bound B] [--pack P] [--pack ...] [--profile P] "
+    "[--bound B] [--standard P] [--standard ...] [--profile P] "
     "[--isolation required|none]"
 )
 NEW_DEFAULT_BOUND = f"{DEFAULT_BOUND_MINUTES}m"
@@ -75,8 +75,8 @@ def _applied_skill_refusal(skill, executor):
     if name.startswith(rings.RESERVED_PREFIX):
         return {"error": (
             f"--skill '{name}' takes the reserved '{rings.RESERVED_PREFIX}' "
-            "prefix. The library's own verbs and packs are what a ticket "
-            "stamps as its executor and its pack; an applied skill is the "
+            "prefix. The library's own verbs and standards are what a ticket "
+            "stamps as its executor and its standard; an applied skill is the "
             "method that runs inside one, and no kernel verb is a method of "
             "itself. Name a ring skill outside "
             f"'{rings.RESERVED_PREFIX}*'."
@@ -117,7 +117,7 @@ def _cmd_new(rest):
     details = _extract_flag(args, "--details")
     depends_on = _extract_flag(args, "--depends-on")
     bound = _extract_flag(args, "--bound")
-    pack = _extract_all(args, "--pack")
+    standard = _extract_all(args, "--standard")
     profile = _extract_flag(args, "--profile")
     isolation = _extract_flag(args, "--isolation")
     stray = next((arg for arg in args if arg.startswith("-")), None)
@@ -135,7 +135,7 @@ def _cmd_new(rest):
         return {"error": f"new requires {', '.join(missing)}. usage: {NEW_USAGE}"}
     if isolation is not None and isolation.strip() not in ISOLATION_VALUES:
         return {"error": f"--isolation '{isolation}' is not one of {list(ISOLATION_VALUES)}"}
-    stamped, refusal = pinned_items(pack, None)
+    stamped, refusal = pinned_items(standard, None)
     if refusal is not None:
         return refusal
     fields = {

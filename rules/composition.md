@@ -18,7 +18,7 @@
    `[]` for empty collections. A change to a Return shape is breaking.
 5. Anatomy: frontmatter (`name` = folder name, `description` within
    the character budget `common.py`'s `DESCRIPTION_BUDGET` already
-   enforces, `role` ∈ {planner, worker, none} — pack SKILL.md carries
+   enforces, `role` ∈ {planner, worker, none} — standard SKILL.md carries
    no `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
    budgets and their counting are
    [token-economy.md](token-economy.md) §11's; what the body holds is
@@ -34,8 +34,8 @@
    gathered; work is never silently discarded.
 9. Generic skills (kernel, workflows) never name a
    domain; how they reach domain facts is
-   [contracts/pack-signature.md](../contracts/pack-signature.md)'s. A
-   generic body may name the skill the stamped pack's cell binds, only
+   [contracts/standard.md](../contracts/standard.md)'s. A
+   generic body may name the skill the stamped standard's cell binds, only
    in apposition to the cell reference that binds it.
 10. Every `Require:` item rides a named T0 carrier — a field a T0
     contract defines, never bare prose; the caller supplies each
@@ -52,10 +52,11 @@
     record a Return field is contracted to carry — disagreement,
     rationale, and contradiction are recorded as found — and is named
     in the result's `## Report`.
-12. A sheet and an applied skill are stamped by the caller on one ticket
+12. A standard and an applied skill are stamped by the caller on one ticket
     and read only by that ticket's maker and its judge, each at the digest
-    the ticket pins. A sheet is extra craft that only tightens the stamped
-    pack's ([contracts/sheet.md](../contracts/sheet.md)); an applied skill
+    the ticket pins. A stamped standard resolves its whole `narrows:` chain,
+    and every narrowing in it only tightens the one it names
+    ([contracts/standard.md](../contracts/standard.md)); an applied skill
     is the method inside the kernel contract the ticket's `executor` names,
     which still binds Require, Never and Return. Neither is a call edge:
     nothing invokes them.

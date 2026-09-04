@@ -1,35 +1,35 @@
 {
-  "run": "multi-pack-run",
+  "run": "multi-standard-run",
   "tickets": [
     {
       "id": "01-research",
-      "pack": "orch-research-pack",
+      "standard": "orch-research",
       "adapter": "evidence-store",
       "artifact_kind": "evidence",
-      "workspace": "research/multi-pack-run",
-      "artifact_identity": "evidence:multi-pack-run:01-research",
+      "workspace": "research/multi-standard-run",
+      "artifact_identity": "evidence:multi-standard-run:01-research",
       "depends_on": [],
       "context_identities": []
     },
     {
       "id": "02-draft",
-      "pack": "orch-content-pack",
+      "standard": "orch-content",
       "adapter": "document-tree",
       "artifact_kind": "doc",
-      "workspace": "documents/multi-pack-run/draft.md",
-      "artifact_identity": "doc:documents/multi-pack-run/draft.md@sha256:02draft",
+      "workspace": "documents/multi-standard-run/draft.md",
+      "artifact_identity": "doc:documents/multi-standard-run/draft.md@sha256:02draft",
       "depends_on": ["01-research"],
-      "context_identities": ["evidence:multi-pack-run:01-research"]
+      "context_identities": ["evidence:multi-standard-run:01-research"]
     },
     {
       "id": "03-render",
-      "pack": "orch-design-pack",
+      "standard": "orch-design",
       "adapter": "git",
       "artifact_kind": "git",
-      "workspace": "candidates/multi-pack-run/render",
+      "workspace": "candidates/multi-standard-run/render",
       "artifact_identity": "git:03render00000000000000000000000000000000",
       "depends_on": ["02-draft"],
-      "context_identities": ["doc:documents/multi-pack-run/draft.md@sha256:02draft"]
+      "context_identities": ["doc:documents/multi-standard-run/draft.md@sha256:02draft"]
     }
   ],
   "joins": [
@@ -37,13 +37,13 @@
       "id": "01-research",
       "adapter": "evidence-store",
       "artifact_kind": "evidence",
-      "artifact_identity": "evidence:multi-pack-run:01-research"
+      "artifact_identity": "evidence:multi-standard-run:01-research"
     },
     {
       "id": "02-draft",
       "adapter": "document-tree",
       "artifact_kind": "doc",
-      "artifact_identity": "doc:documents/multi-pack-run/draft.md@sha256:02draft"
+      "artifact_identity": "doc:documents/multi-standard-run/draft.md@sha256:02draft"
     },
     {
       "id": "03-render",

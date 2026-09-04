@@ -1,7 +1,7 @@
 ---
 name: market-brief
-description: Stamp beside the research pack when the answer is a market brief - audience, pains, competitors, live trends.
-narrows: orch-research-pack
+description: Stamp beside the research standard when the answer is a market brief - audience, pains, competitors, live trends.
+narrows: orch-research
 ---
 
 # market-brief
@@ -9,7 +9,7 @@ narrows: orch-research-pack
 ## Making
 
 The brief serves one decision: whether to enter, price against, or leave a
-market. Everything below narrows the research craft toward that decision;
+market. Everything below narrows the research standard toward that decision;
 nothing here relaxes it.
 
 - **One audience, named.** Say who buys, at what size and in what role,

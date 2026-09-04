@@ -1,10 +1,10 @@
 ---
-name: orch-research-pack
-description: Domain pack for knowledge claims — traceable sources, evidence store. Stamp when the deliverable answers a question.
+name: orch-research
+description: Domain standard for knowledge claims — traceable sources, evidence store. Stamp when the deliverable answers a question.
 adapter: evidence-store
 ---
 
-# orch-research-pack
+# orch-research
 
 ## Making
 

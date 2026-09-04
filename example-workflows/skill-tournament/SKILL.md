@@ -8,7 +8,7 @@ Require: `skill`, the fixed skill identity being evolved; `surface`, its
 declared mutable surface, which belongs to the campaign and its candidates;
 `policy`, the frozen search policy, promotion rule and margin; `bound`, the
 campaign's budget, which the benchmark's own allocation is never drawn from;
-and `sources`, `rigor` and `pack`, which this workflow carries down into the
+and `sources`, `rigor` and `standard`, which this workflow carries down into the
 nested benchmark.
 
 One skill improves against one benchmark built and qualified for it —
@@ -20,7 +20,7 @@ opens its own frame under this one, and the ticket tree is the call tree.
 
 
 **Build the benchmark.** Invoke `benchmaker` with `target=skill`, the
-skill's declared observable outcome as `outcome`, `sources`, `rigor`, `pack`
+skill's declared observable outcome as `outcome`, `sources`, `rigor`, `standard`
 and this workflow's benchmark location as `package`, opening its frame under
 this one:
 

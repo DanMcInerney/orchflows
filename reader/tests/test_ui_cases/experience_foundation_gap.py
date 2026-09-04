@@ -190,7 +190,7 @@ class TestExperienceFoundationGap(unittest.TestCase):
         ticket = selected["ticket"]
         self.assertEqual("- scratch/g1.txt", ticket["details"])
         self.assertIsInstance(ticket["context"], str)
-        self.assertIsInstance(ticket["pack"], str)
+        self.assertIsInstance(ticket["standard"], str)
         self.assertIsInstance(ticket["history"], list)
         self.assertIn("## Goal", ticket["raw"])
         self.assertNotIn("unselected-ticket-body-sentinel", ticket["raw"])

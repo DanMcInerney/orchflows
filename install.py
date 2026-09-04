@@ -10,7 +10,7 @@ successfully without writing anything. ``CLAUDE_CONFIG_DIR``, ``CODEX_HOME`` and
 - ``~/.orchflows/`` (private Python runtime, library, scripts, receipt, the
   rendered ``host-block.md``). The library also carries a flat, host-agnostic
   ``lib/by-name/<orch-name>/SKILL.md`` index: one deterministic path per
-  canonical package (every skill tier plus packs), each a redirect pointer to
+  canonical package (every skill tier plus standards), each a redirect pointer to
   its tiered source so a name resolves without guessing a sublayer. The
   pointer never copies the body, so it carries no relative links — an agent
   follows it to the tiered file, where every ``references/`` and ``../../../``

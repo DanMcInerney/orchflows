@@ -1,10 +1,10 @@
 ---
-name: orch-data-pack
-description: Domain pack for data analysis — reproducible computation over pinned datasets. Stamp when the deliverable is an analysis.
+name: orch-data
+description: Domain standard for data analysis — reproducible computation over pinned datasets. Stamp when the deliverable is an analysis.
 adapter: git
 ---
 
-# orch-data-pack
+# orch-data
 
 ## Making
 

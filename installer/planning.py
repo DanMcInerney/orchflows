@@ -171,7 +171,7 @@ def build_plan(
         role = frontmatter_field(frontmatter, "role") or "none"
         lib_skill_md = (lib_home / rel).resolve()
         # Flat, host-agnostic resolution: one deterministic path per canonical
-        # name, tier or pack alike, so no agent has to guess a sublayer. The
+        # name, tier or standard alike, so no agent has to guess a sublayer. The
         # stub only points at the tiered source (never duplicates it), so it
         # carries no relative links to break.
         by_name.append(

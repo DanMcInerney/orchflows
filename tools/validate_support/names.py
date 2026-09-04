@@ -1,4 +1,4 @@
-"""Validate canonical names and mandatory craft sections."""
+"""Validate canonical names and mandatory standard sections."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ dequote = __dep_packages.dequote
 rel = __dep_packages.rel
 
 from . import common as __dep_common
-CRAFT_LIBRARY_LENS_KINDS = __dep_common.CRAFT_LIBRARY_LENS_KINDS
+STANDARD_LIBRARY_LENS_KINDS = __dep_common.STANDARD_LIBRARY_LENS_KINDS
 STANDARD_ADAPTER_KEY = __dep_common.STANDARD_ADAPTER_KEY
 STANDARD_ROOT_REQUIRED_SECTIONS = __dep_common.STANDARD_ROOT_REQUIRED_SECTIONS
 STANDARD_ROOT_OPTIONAL_SECTIONS = __dep_common.STANDARD_ROOT_OPTIONAL_SECTIONS
@@ -20,8 +20,8 @@ SKIPPED = __dep_common.SKIPPED
 re = __dep_common.re
 
 # The adapter registry is `scripts/tickets_adapters`', imported rather than
-# respelled: a pack's artifact kind is the same fact the runtime branches on
-# when it stamps a ticket, and a second table here would let a craft's Lens
+# respelled: a standard's artifact kind is the same fact the runtime branches on
+# when it stamps a ticket, and a second table here would let a standard's Lens
 # key a kind no adapter emits while both files read correct. Same direction
 # as `packages.py`'s `dequote` import -- `tools` may import `scripts`.
 #
@@ -36,11 +36,11 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 
 # Every shipped prose tree is recursive; depth does not change a call edge.
 NAME_CHECKED_TREES = (
-    "rules", "docs", "contracts", "templates", "example-workflows", "packs", "skills"
+    "rules", "docs", "contracts", "templates", "example-workflows", "standards", "skills"
 )
 NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md", "TICKETS.md")
 # Host routing owns this control directive; it is not a package in the
-# repository's skill/pack namespace, but remains a valid backticked command
+# repository's skill/standard namespace, but remains a valid backticked command
 # in the managed host block.
 HOST_ROUTING_DIRECTIVES = {"orch-off"}
 # `orch-` alone is the prefix, not a name; a name carries at least one
@@ -100,25 +100,25 @@ def validate_names(packages, diag: Diagnostics) -> None:
             diag.error(
                 rel(path),
                 f"`{name}` names no package: no skills/<tier>/{name}/SKILL.md "
-                f"and no packs/{name}/SKILL.md. A backticked name is a call "
+                f"and no standards/{name}/SKILL.md. A backticked name is a call "
                 "edge (rules/composition.md rule 2); name it in plain text to "
                 "mention it without calling it",
             )
 
 
-CRAFT_SECTION_HEADING_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
-CRAFT_LENS_KEY_RE = re.compile(r"(?m)^###\s+(.*\S)\s*$")
+STANDARD_SECTION_HEADING_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
+STANDARD_LENS_KEY_RE = re.compile(r"(?m)^###\s+(.*\S)\s*$")
 
 
 def _lens_keys(text: str) -> list:
     """The `###` entry names under `## Lens`, in document order.
 
     Only the `###` level: the entries themselves may carry `####`
-    subsections, and a craft's other `##` sections may carry `###` of
+    subsections, and a standard's other `##` sections may carry `###` of
     their own, so the scan stops at the next `##`.
     """
     lens = None
-    matches = list(CRAFT_SECTION_HEADING_RE.finditer(text))
+    matches = list(STANDARD_SECTION_HEADING_RE.finditer(text))
     for i, match in enumerate(matches):
         if match.group(1) != "Lens":
             continue
@@ -127,7 +127,7 @@ def _lens_keys(text: str) -> list:
         break
     if lens is None:
         return []
-    return CRAFT_LENS_KEY_RE.findall(lens)
+    return STANDARD_LENS_KEY_RE.findall(lens)
 
 
 def _adapter_kind(pkg: dict):
@@ -144,7 +144,7 @@ def _adapter_kind(pkg: dict):
     return adapter.artifact_kind if adapter else None
 
 
-def validate_craft_sections(packages, diag: Diagnostics) -> None:
+def validate_standard_sections(packages, diag: Diagnostics) -> None:
     """Each root carries the required `##` sections, none of the retired
     ones, nothing outside the table's roster, and a `## Lens` keyed by
     artifact kind.
@@ -163,16 +163,16 @@ def validate_craft_sections(packages, diag: Diagnostics) -> None:
     prose alone.
 
     Narrowings are graded against the other row of the same table, by
-    `standards.validate_sheets`: they arrive under a different directory
+    `standards.validate_standards`: they arrive under a different directory
     and a different manifest name until the rename lands.
     """
 
     for pkg in packages:
-        if not pkg["is_pack"]:
+        if not pkg["is_standard"]:
             continue
         manifest = pkg["skill_md"]
         text = pkg.get("body", "")
-        found = set(CRAFT_SECTION_HEADING_RE.findall(text))
+        found = set(STANDARD_SECTION_HEADING_RE.findall(text))
         for section in STANDARD_ROOT_REQUIRED_SECTIONS:
             if section not in found:
                 diag.error(
@@ -209,13 +209,13 @@ def validate_craft_sections(packages, diag: Diagnostics) -> None:
         kind = _adapter_kind(pkg)
         if kind is None:
             continue
-        expected = set(CRAFT_LIBRARY_LENS_KINDS) | {kind}
+        expected = set(STANDARD_LIBRARY_LENS_KINDS) | {kind}
         keys = set(_lens_keys(text))
         for missing in sorted(expected - keys):
             diag.error(
                 rel(manifest),
                 f"`## Lens` carries no `### {missing}` entry — the entries "
-                f"are {', '.join(CRAFT_LIBRARY_LENS_KINDS)} and this "
+                f"are {', '.join(STANDARD_LIBRARY_LENS_KINDS)} and this "
                 f"standard's adapter kind `{kind}`, so a verb handed a "
                 f"`{missing}` artifact would have no criteria to read",
             )
@@ -225,7 +225,7 @@ def validate_craft_sections(packages, diag: Diagnostics) -> None:
                 f"`## Lens` carries a `### {extra}` entry for an artifact "
                 f"kind this standard never produces — its adapter emits "
                 f"`{kind}`, beside the library's "
-                f"{', '.join(CRAFT_LIBRARY_LENS_KINDS)}",
+                f"{', '.join(STANDARD_LIBRARY_LENS_KINDS)}",
             )
 
 
@@ -241,7 +241,7 @@ def validate_unique_names(packages, diag: Diagnostics) -> None:
 __all__ = (
     'NAME_CHECKED_TREES', 'NAME_CHECKED_FILES', 'BACKTICKED_NAME_RE',
     'HOST_ROUTING_DIRECTIVES',
-    'NAME_CHECK_MARKER', 'HEADING_RE', 'CRAFT_SECTION_HEADING_RE',
-    'CRAFT_LENS_KEY_RE', '_lens_keys', '_adapter_kind',
-    '_heading_slugs', 'validate_names', 'validate_craft_sections', 'validate_unique_names',
+    'NAME_CHECK_MARKER', 'HEADING_RE', 'STANDARD_SECTION_HEADING_RE',
+    'STANDARD_LENS_KEY_RE', '_lens_keys', '_adapter_kind',
+    '_heading_slugs', 'validate_names', 'validate_standard_sections', 'validate_unique_names',
 )

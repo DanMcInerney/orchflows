@@ -13,7 +13,7 @@ from scripts import tickets
 from scripts import tickets_grade
 from scripts.tickets_grade import grade_snapshot, GradeError
 
-from tests.test_ticket_callables import CODE_PACK, standards_field
+from tests.test_ticket_callables import CODE_STANDARD, standards_field
 
 
 def ticket(ticket_id: str, executor: str, *, goal: str = "Deliver the result.", context: str = "The repository is fixed.", loop: str = "", done: str = "") -> str:
@@ -23,7 +23,7 @@ def ticket(ticket_id: str, executor: str, *, goal: str = "Deliver the result.", 
         f"executor: {executor}",
         *((f"loop: {loop}",) if loop else ()),
         *((f"done: {done}",) if done else ()),
-        "standards: [" + ", ".join(standards_field(CODE_PACK)) + "]",
+        "standards: [" + ", ".join(standards_field(CODE_STANDARD)) + "]",
         "---",
         "",
         "## Goal",

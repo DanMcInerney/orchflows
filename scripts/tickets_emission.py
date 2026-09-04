@@ -4,7 +4,7 @@ Commands that write a ticket and commands that grade one they are handed
 run the one grade, `tickets_context.graded_admission`. What this module
 adds is the partition: an emission cannot be held to a claim's standard,
 so a dependency that has not run yet and an unsealed assignment defer,
-while a locator no adapter resolves or an executor its pack does not bind
+while a locator no adapter resolves or an executor its standard does not bind
 is the emitter's own and is refused here.
 
 ``DEFERRED_CODES`` is the whole of what is deferred, so the law is
