@@ -103,9 +103,18 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                      'fields': ('assignment_seal', 'body', 'operation', 'writer'),
                      'required': ('assignment_seal', 'body', 'operation', 'writer'),
                      'values': {'operation': ('result',)}},
- 'pack_cells': {'contract': 'pack-signature.md', 'fields': ('adapter', 'craft'), 'required': ('adapter', 'craft'), 'values': {}},
- 'sheet_frontmatter': {'contract': 'sheet.md', 'fields': ('name', 'description', 'packs'), 'required': ('name', 'description', 'packs'), 'values': {}},
- 'sheet_sections': {'contract': 'sheet.md', 'fields': ('Craft', 'Lens', 'Vocabulary'), 'required': ('Craft', 'Lens'), 'values': {}},
+ 'standard_frontmatter': {'contract': 'standard.md',
+                          'fields': ('name', 'description', 'narrows', 'adapter'),
+                          'required': ('name', 'description'),
+                          'values': {}},
+ 'standard_narrowing_sections': {'contract': 'standard.md',
+                                 'fields': ('Making', 'Lens', 'Vocabulary', 'Scaffolding'),
+                                 'required': ('Making', 'Lens'),
+                                 'values': {}},
+ 'standard_root_sections': {'contract': 'standard.md',
+                            'fields': ('Making', 'Lens', 'Vocabulary', 'Scaffolding', 'Workspace', 'Spec fields', 'Stages'),
+                            'required': ('Making', 'Lens', 'Vocabulary', 'Workspace', 'Spec fields'),
+                            'values': {}},
  'ticket_assignment_sections': {'contract': 'work-item.md', 'fields': ('Goal', 'Context', 'Details'), 'required': ('Goal', 'Context'), 'values': {}},
  'ticket_frontmatter': {'contract': 'work-item.md',
                         'fields': ('id',
@@ -246,17 +255,17 @@ WORKLOG_VIEW_FIELDS = tuple(SHAPES['worklog_view']['fields'])
 WORKLOG_VIEW_REQUIRED = frozenset(SHAPES['worklog_view']['required'])
 WORKLOG_VIEW_VALUES = SHAPES['worklog_view']['values']
 
-PACK_CELLS_FIELDS = tuple(SHAPES['pack_cells']['fields'])
-PACK_CELLS_REQUIRED = frozenset(SHAPES['pack_cells']['required'])
-PACK_CELLS_VALUES = SHAPES['pack_cells']['values']
+STANDARD_FRONTMATTER_FIELDS = tuple(SHAPES['standard_frontmatter']['fields'])
+STANDARD_FRONTMATTER_REQUIRED = frozenset(SHAPES['standard_frontmatter']['required'])
+STANDARD_FRONTMATTER_VALUES = SHAPES['standard_frontmatter']['values']
 
-SHEET_FRONTMATTER_FIELDS = tuple(SHAPES['sheet_frontmatter']['fields'])
-SHEET_FRONTMATTER_REQUIRED = frozenset(SHAPES['sheet_frontmatter']['required'])
-SHEET_FRONTMATTER_VALUES = SHAPES['sheet_frontmatter']['values']
+STANDARD_ROOT_SECTIONS_FIELDS = tuple(SHAPES['standard_root_sections']['fields'])
+STANDARD_ROOT_SECTIONS_REQUIRED = frozenset(SHAPES['standard_root_sections']['required'])
+STANDARD_ROOT_SECTIONS_VALUES = SHAPES['standard_root_sections']['values']
 
-SHEET_SECTIONS_FIELDS = tuple(SHAPES['sheet_sections']['fields'])
-SHEET_SECTIONS_REQUIRED = frozenset(SHAPES['sheet_sections']['required'])
-SHEET_SECTIONS_VALUES = SHAPES['sheet_sections']['values']
+STANDARD_NARROWING_SECTIONS_FIELDS = tuple(SHAPES['standard_narrowing_sections']['fields'])
+STANDARD_NARROWING_SECTIONS_REQUIRED = frozenset(SHAPES['standard_narrowing_sections']['required'])
+STANDARD_NARROWING_SECTIONS_VALUES = SHAPES['standard_narrowing_sections']['values']
 
 def fields(name: str) -> tuple:
     """Return the declared field order for one shape."""

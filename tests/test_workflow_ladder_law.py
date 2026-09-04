@@ -6,7 +6,7 @@ from everywhere else. The failure this pins is placement drift: a fact
 restated in a second file agrees with the first until one copy moves, and a
 fact deleted from its owner leaves every link pointing at nothing.
 
-Anchors, not sentences (`packs/orch-code-pack/references/craft.md`): each
+Anchors, not sentences (`packs/orch-code-pack/SKILL.md`): each
 fact is read inside a stable anchor -- a `##` heading, a numbered clause of a
 rules file, a kernel body's Require/Never/Return anatomy -- and every case is
 shown failing against an in-memory copy with the fact dropped and the anchor
@@ -99,10 +99,10 @@ CASES = {
         "rules/composition.md", ("clause", 14),
         ("Placement.", "innermost ring that contains every caller"),
     ),
-    "token economy places a sheet in the every-dispatch tier": (
+    "token economy places a standard in the every-dispatch tier": (
         "rules/token-economy.md", ("clause", 11),
-        ("every-dispatch units next", "and a stamped sheet",
-         "`BODY_BUDGET`, `SHEET_BUDGET`"),
+        ("every-dispatch units next", "stamped standard as",
+         "`BODY_BUDGET`, `STANDARD_BUDGET`"),
     ),
     "architecture places the two directories": (
         "ARCHITECTURE.md", ("section", "## Four tiers"),

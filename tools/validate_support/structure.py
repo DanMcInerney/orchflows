@@ -4,7 +4,7 @@ from __future__ import annotations
 from . import common as __dep_common
 CALL_TOKEN_RE = __dep_common.CALL_TOKEN_RE
 CARRIAGE_SENTENCE_SPLIT_RE = __dep_common.CARRIAGE_SENTENCE_SPLIT_RE
-CRAFT_BUDGET = __dep_common.CRAFT_BUDGET
+STANDARD_BUDGET = __dep_common.STANDARD_BUDGET
 DESCRIPTION_BUDGET = __dep_common.DESCRIPTION_BUDGET
 ENVELOPE_UNITS = __dep_common.ENVELOPE_UNITS
 ENVELOPE_VOCAB_RES = __dep_common.ENVELOPE_VOCAB_RES
@@ -39,14 +39,29 @@ _split_frontmatter = __dep_packages._split_frontmatter
 body_words = __dep_packages.body_words
 parse_frontmatter = __dep_packages.parse_frontmatter
 rel = __dep_packages.rel
-def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
-    craft = pkg["path"] / "references" / "craft.md"
-    if not craft.is_file():
-        diag.warn(rel(craft), SKIPPED)
+def validate_craft_budget(manifest, diag: Diagnostics) -> None:
+    """One manifest against `STANDARD_BUDGET` (contracts/standard.md rule 4).
+
+    The one ceiling for both kinds: a root and a narrowing are one format
+    under one set of rules, and what stops a narrowing growing into a
+    second owner of a domain is the section table, not a smaller number.
+    Words over the whole file, frontmatter counted, because a line ceiling
+    is met by writing longer lines, and this check reads the manifest
+    whichever kind it is.
+    """
+
+    if not manifest.is_file():
+        diag.warn(rel(manifest), SKIPPED)
         return
-    n = sum(1 for ln in _read_source(craft).split("\n") if ln.strip())
-    if n > CRAFT_BUDGET:
-        diag.error(rel(craft), f"craft reference has {n} non-empty lines, exceeds the craft budget of {CRAFT_BUDGET}")
+    n = len(_read_source(manifest).split())
+    if n > STANDARD_BUDGET:
+        diag.error(
+            rel(manifest),
+            f"standard has {n} words, exceeds the standard budget of "
+            f"{STANDARD_BUDGET}",
+        )
+
+
 def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     for match in MD_LINK_RE.finditer(body):

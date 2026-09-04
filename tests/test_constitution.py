@@ -14,7 +14,7 @@ and `docs/documentation.md`'s Bootstrap section remains the write-time
 path an agent actually starts from.
 
 Anchors, not sentences
-(`packs/orch-code-pack/references/craft.md`): each principle is read by
+(`packs/orch-code-pack/SKILL.md`): each principle is read by
 its number under the `## Constitution` heading, each pointer by its
 file's own heading, and every check is shown failing against a copy
 with the fact dropped and the anchor left standing. The can-fail

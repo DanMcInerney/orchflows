@@ -198,24 +198,31 @@ class AddTests(unittest.TestCase):
 
 
 class NewTests(unittest.TestCase):
-    def test_a_new_pack_is_a_valid_pack_the_day_it_is_written(self):
+    def test_a_new_root_is_a_valid_standard_the_day_it_is_written(self):
         with _home() as home:
             with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
                 (home / "nowhere").mkdir()
                 code, output = _run("new", "pack", "widget-pack")
 
             self.assertEqual(0, code, output)
-            skill = home / "packs" / "widget-pack" / "SKILL.md"
-            craft = home / "packs" / "widget-pack" / "references" / "craft.md"
-            self.assertTrue(skill.is_file())
-            body = craft.read_text(encoding="utf-8")
+            manifest = home / "packs" / "widget-pack" / "SKILL.md"
+            self.assertTrue(manifest.is_file())
+            # One file: the directory holds the manifest and nothing else
+            # (contracts/standard.md `## Location and anatomy`).
+            self.assertEqual(
+                ["SKILL.md"],
+                sorted(p.name for p in manifest.parent.iterdir()),
+            )
+            body = manifest.read_text(encoding="utf-8")
+            self.assertIn("adapter: git", body.split("---", 2)[1])
             for heading in orchflows_scaffold.sections():
                 self.assertIn(f"## {heading}", body)
             # The Lens is keyed by artifact kind, so a skeleton carrying the
-            # heading and none of the entries is a craft no verb can read.
+            # heading and none of the entries is a standard no verb can read.
             for kind in orchflows_scaffold.lens_entries():
                 self.assertIn(f"### {kind}", body)
-            for retired in ("## Outline", "## Slicing", "## Evidence", "## Shape"):
+            for retired in ("## Craft", "## Outline", "## Slicing", "## Evidence",
+                            "## Shape"):
                 self.assertNotIn(retired, body)
 
     def test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one(self):

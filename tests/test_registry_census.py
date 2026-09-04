@@ -224,7 +224,7 @@ Deliver one result.
         }
         self.assertEqual(set(tickets.CALLABLE_EXECUTORS), shipped)
 
-    def test_pack_craft_carries_each_absorbed_execution_family(self):
+    def test_each_standard_carries_its_absorbed_execution_family(self):
         root = ROOT / "packs"
         expected = {
             "orch-code-pack": ("checks answer to goal", "repair", "conflict"),
@@ -234,7 +234,7 @@ Deliver one result.
             "orch-research-pack": ("primary sources", "synthesize", "gaps"),
         }
         for pack, markers in expected.items():
-            text = (root / pack / "references" / "craft.md").read_text(encoding="utf-8").lower()
+            text = (root / pack / "SKILL.md").read_text(encoding="utf-8").lower()
             for marker in markers:
                 with self.subTest(pack=pack, marker=marker):
                     self.assertIn(marker, text)

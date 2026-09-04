@@ -9,7 +9,7 @@ frame closes on, would leave the body validating and the run wrong. What
 the frame law itself prints -- relaying the returned lines, closing outside
 the children -- is the trunk's to say and is pinned nowhere here.
 
-Anchors, not sentences (`packs/orch-code-pack/references/craft.md`): each
+Anchors, not sentences (`packs/orch-code-pack/SKILL.md`): each
 fact is read inside a span the body's own structure marks -- the `Require:`
 paragraph, one bolded step, the `Never:` paragraph, the `Return` paragraph
 -- and each case is shown failing against an in-memory copy with the fact

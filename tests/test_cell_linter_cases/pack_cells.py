@@ -21,8 +21,8 @@ import tools.validate as validate  # noqa: E402
 VALIDATE = ROOT / "tools" / "validate.py"
 CONTRACTS = ROOT / "contracts"
 
-VERBATIM = "craft section duplicated verbatim"
-NEAR = "craft section near-duplicate"
+VERBATIM = "standard section duplicated verbatim"
+NEAR = "standard section near-duplicate"
 # validate.py's other duplication finding: the same clause comparison run
 # across the library's tiers rather than across one signature cell. Named
 # here because this module owns both ratchets.
@@ -48,31 +48,27 @@ def validate_the_real_tree():
 
 PACK_TEMPLATE = """---
 name: {name}
-description: synthetic pack built beside the tree to exercise one validator branch.
+description: synthetic standard built beside the tree to exercise one branch.
+adapter: git
 ---
-
-Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
-
-| cell | binding |
-| --- | --- |
-| adapter | git |
-| craft | [references/craft.md](references/craft.md) |
 """
 
-# The mandatory craft sections, in the signature's order. Every default a
-# synthetic craft supplies is under the clause floor, so a test compares
+# A root's required sections, in the contract's order. Every default a
+# synthetic standard supplies is under the clause floor, so a test compares
 # only the content it writes itself.
 CRAFT_SECTION_ORDER = (
+    "Making",
     "Vocabulary",
     "Workspace",
     "Spec fields",
     "Lens",
 )
 
-# `## Lens`'s `###` entries: the two library kinds plus the one PACK_TEMPLATE's
-# `adapter | git` row emits. The linter compares `##` sections, so every entry
-# here lands in one "Lens" bucket -- which is why a test that wants two packs
-# compared under a made-up section writes into an entry, not a new heading.
+# `## Lens`'s `###` entries: the two library kinds plus the one
+# PACK_TEMPLATE's `adapter: git` frontmatter emits. The linter compares `##`
+# sections, so every entry here lands in one "Lens" bucket -- which is why a
+# test that wants two standards compared under a made-up section writes into
+# an entry, not a new heading.
 CRAFT_LENS_ORDER = ("root", "cut", "git")
 
 
@@ -129,19 +125,16 @@ class _IsolatedTree(unittest.TestCase):
 
     def _write_pack(self, name, workspace="inline: none",
                     sections=None, entries=None, lead=""):
-        """One synthetic folded pack: a two-cell SKILL.md plus a craft.md
+        """One synthetic standard: a `SKILL.md`
         carrying every mandatory section and every `## Lens` entry
         (validate_craft_sections errors on a missing one, and on a Lens key
-        the pack's adapter never emits). `sections` overrides a section's
-        body by `##` heading and `entries` a Lens entry's by artifact kind;
-        `lead` is the paragraph before the first section heading."""
+        the standard's adapter never emits). `sections` overrides a
+        section's body by `##` heading and `entries` a Lens entry's by
+        artifact kind; `lead` is the paragraph before the first heading."""
         pack_dir = self.tmp_path / "packs" / name
-        (pack_dir / "references").mkdir(parents=True)
-        (pack_dir / "SKILL.md").write_text(
-            PACK_TEMPLATE.format(name=name),
-            encoding="utf-8",
-        )
+        pack_dir.mkdir(parents=True)
         bodies = {
+            "Making": "Make one %s well." % name,
             "Vocabulary": "Only %s terms." % name,
             "Workspace": workspace,
             "Spec fields": "one %s field" % name,
@@ -154,7 +147,7 @@ class _IsolatedTree(unittest.TestCase):
             "git": "criteria; one %s method." % name,
         }
         lens.update(entries or {})
-        craft = "# Craft\n\n"
+        craft = PACK_TEMPLATE.format(name=name) + "\n# %s\n\n" % name
         if lead:
             craft += lead.rstrip("\n") + "\n\n"
         for heading in CRAFT_SECTION_ORDER:
@@ -166,7 +159,7 @@ class _IsolatedTree(unittest.TestCase):
                 continue
             for kind in CRAFT_LENS_ORDER:
                 craft += "### %s\n\n%s\n\n" % (kind, lens[kind].rstrip("\n"))
-        (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
+        (pack_dir / "SKILL.md").write_text(craft, encoding="utf-8")
 
 
 class CurrentWorkspaceBindingTest(unittest.TestCase):
@@ -211,18 +204,18 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
     def test_every_shipped_workspace_binds_the_current_ticket_protocol(self):
         packs = {}
         for path in sorted((ROOT / "packs").glob("*/SKILL.md")):
-            cells = dict(
-                re.findall(r"^\| ([a-z_]+) \| (.+?) \|\s*$", path.read_text(encoding="utf-8"), re.M)
+            text = path.read_text(encoding="utf-8")
+            declared = dict(
+                re.findall(r"(?m)^([a-z_]+):\s*(.+?)\s*$", text.split("---", 2)[1])
             )
-            craft = (path.parent / "references" / "craft.md").read_text(encoding="utf-8")
-            match = self.WORKSPACE_SECTION.search(craft)
+            match = self.WORKSPACE_SECTION.search(text)
             self.assertIsNotNone(match, path.parent.name)
-            packs[path.parent.name] = (cells, " ".join(match.group(1).split()))
+            packs[path.parent.name] = (declared, " ".join(match.group(1).split()))
         self.assertEqual(set(self.EXPECTED), set(packs))
         for pack, (adapter, substrate) in self.EXPECTED.items():
             with self.subTest(pack=pack):
-                cells, workspace = packs[pack]
-                self.assertEqual(adapter, cells["adapter"])
+                declared, workspace = packs[pack]
+                self.assertEqual(adapter, declared["adapter"])
                 for fragment in substrate:
                     self.assertIn(fragment, workspace)
                 # Assignment metadata, candidate authority, and Suggested
@@ -269,7 +262,7 @@ class TestCellClauseSplitter(unittest.TestCase):
         )
 
     def test_a_pointer_clause_keeps_its_exemption_after_the_split(self):
-        """packs/orch-code-pack/references/craft.md:3-6 verbatim: one
+        """packs/orch-code-pack/SKILL.md's `## Making` verbatim: one
         sentence whose citation sits in the first semicolon half and whose
         stated deviation sits in the second. Cutting at the ';' before the
         exemption is applied throws away the half carrying the citation and
@@ -301,8 +294,8 @@ class TestCellDuplication(_IsolatedTree):
         self._write_pack("betapack", workspace="git: %s" % self.SHARED)
         out = self._run().stdout
         self.assertIn(VERBATIM, out)
-        self.assertIn("packs/alphapack/references/craft.md", out)
-        self.assertIn("packs/betapack/references/craft.md", out)
+        self.assertIn("packs/alphapack/SKILL.md", out)
+        self.assertIn("packs/betapack/SKILL.md", out)
         self.assertIn(self.SHARED, out)
 
     def test_a_verbatim_clause_wrapped_differently_is_still_an_error(self):
@@ -320,8 +313,8 @@ class TestCellDuplication(_IsolatedTree):
         self._write_pack("nearbpack", workspace="the workspace's linter or formatter decides standards shape")
         out = self._run().stdout
         self.assertIn(NEAR, out)
-        self.assertIn("packs/nearapack/references/craft.md", out)
-        self.assertIn("packs/nearbpack/references/craft.md", out)
+        self.assertIn("packs/nearapack/SKILL.md", out)
+        self.assertIn("packs/nearbpack/SKILL.md", out)
         self.assertNotIn(VERBATIM, out)
 
     def test_unrelated_clauses_are_not_reported(self):
@@ -344,18 +337,17 @@ class TestCellDuplication(_IsolatedTree):
         self.assertNotIn(VERBATIM, self._run().stdout)
 
     def test_a_clause_is_compared_inside_its_named_section(self):
-        """Both packs' `craft` rows are byte-identical -- a linter over
-        cell text would convict the row validate_pack_signature mandates.
-        The finding compares same-named sections of the documents behind
-        the rows and names the craft files."""
+        """Both manifests carry the same section headings -- a linter over
+        headings would convict the section table itself. The finding
+        compares same-named sections of the two manifests and names them."""
         shared = "The unit is a module at roughly one-read size, understood in one sitting."
         self._write_pack("ptrapack", sections={"Vocabulary": shared})
         self._write_pack("ptrbpack", sections={"Vocabulary": shared})
         out = self._run().stdout
         self.assertIn(VERBATIM, out)
-        self.assertIn("packs/ptrapack/references/craft.md", out)
-        self.assertIn("packs/ptrbpack/references/craft.md", out)
-        self.assertNotIn("[references/craft.md](references/craft.md)", out)
+        self.assertIn("packs/ptrapack/SKILL.md", out)
+        self.assertIn("packs/ptrbpack/SKILL.md", out)
+        self.assertIn("Vocabulary: standard section duplicated", out)
 
     def test_the_same_clause_under_different_sections_is_not_compared(self):
         """The section heading scopes the comparison the way the cell name
@@ -383,12 +375,12 @@ class TestOutsideCitationExemption(_IsolatedTree):
     it carry it by obligation. The pair below has the real tree's shape
     with the domain noun swapped for a synthetic one."""
 
-    # packs/*/references/craft.md's shared opener: a sentence citing the
-    # owner outside the pack (`](../`), which every craft may carry once
-    # the fact moved to one owner.
+    # packs/*/SKILL.md's shared opener: a sentence citing the owner outside
+    # the standard (`](../`), which every standard may carry once the fact
+    # moved to one owner.
     CITATION = (
         "The shape principles every %s shares are "
-        "[rules/token-economy.md](../../../rules/token-economy.md) §10's."
+        "[rules/token-economy.md](../../rules/token-economy.md) §10's."
     )
 
     def test_the_outside_citation_is_exempt(self):

@@ -68,10 +68,9 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
         pack = self.tmp_path / "packs" / name
         pack.mkdir(parents=True)
         (pack / "SKILL.md").write_text(
-            f"---\nname: {name}\ndescription: synthetic pack\n---\n"
-            "| cell | binding |\n| --- | --- |\n"
-            "| adapter | git |\n"
-            "| craft | [references/craft.md](references/craft.md) |\n",
+            f"---\nname: {name}\ndescription: synthetic standard\n"
+            "adapter: git\n---\n"
+            f"# {name}\n\n## Making\n\ncontent.\n",
             encoding="utf-8",
         )
 
@@ -160,11 +159,11 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
             encoding="utf-8",
         )
 
-    def _write_pack(self, name, body):
+    def _write_pack(self, name, body, keys="adapter: git\n"):
         path = self.tmp_path / "packs" / name
         path.mkdir(parents=True)
         (path / "SKILL.md").write_text(
-            f"---\nname: {name}\ndescription: synthetic pack\n---\n{body}",
+            f"---\nname: {name}\ndescription: synthetic standard\n{keys}---\n{body}",
             encoding="utf-8",
         )
 
@@ -196,35 +195,51 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         result = self._run()
         self.assertIn("kernel skills are primitives", result.stdout)
 
-    def test_pack_control_flow_is_rejected(self):
+    def test_standard_control_flow_is_rejected(self):
         self._write_pack(
             "orch-flow-pack",
             "If evidence is absent, then delegate and stop.\n",
         )
         result = self._run()
-        self.assertIn("pack body carries control flow", result.stdout)
+        self.assertIn("standard body carries control flow", result.stdout)
 
-    def test_duplicate_pack_cell_rows_are_rejected(self):
-        rows = (
-            "| slicing | inline |\n| workspace | inline |\n"
-            "| required_spec_fields | inline |\n| craft | inline |\n"
-            "| adapter | git |\n| adapter | git |\n"
-            "| evidence | inline |"
-        )
+    def test_domain_prose_that_merely_uses_a_flow_word_is_clean(self):
+        """The purity clause forbids the manifest *telling* a reader to
+        dispatch or stop. Those same words are ordinary domain prose in the
+        middle of a sentence, and the manifest is nine hundred words of it
+        since the collapse -- so an anywhere-in-the-body match convicts
+        `metaprogrammed dispatch` and `at what precision does it stop
+        moving`, both of which the shipped standards carry."""
+
         self._write_pack(
-            "orch-duplicate-pack",
-            "| cell | binding |\n| --- | --- |\n" + rows + "\n",
+            "orch-prose-pack",
+            "# orch-prose-pack\n\n## Making\n\n"
+            "No runtime registries or metaprogrammed dispatch, and say at "
+            "what precision the number does stop moving.\n",
         )
         result = self._run()
-        self.assertIn("pack signature table repeats cell(s): adapter", result.stdout)
+        self.assertNotIn("standard body carries control flow", result.stdout)
+
+    def test_an_unknown_standard_frontmatter_key_is_rejected(self):
+        """The cells table is gone, so frontmatter is the whole declared
+        surface: the roster closes there or nowhere."""
+
+        self._write_pack(
+            "orch-extra-pack", "body.\n", keys="adapter: git\nslicing: inline\n",
+        )
+        result = self._run()
+        self.assertIn("frontmatter key 'slicing' is not allowed", result.stdout)
 
     def test_a_new_executor_is_not_outside_envelope_admission(self):
         self._write_skill(
             "orch-new-executor", "Require: input.\nNever: skip.\nReturn: assumptions.\n"
         )
-        self._write_pack("orch-binding-pack", "| executor | `orch-new-executor` |\n")
+        self._write_pack(
+            "orch-binding-pack", "body.\n",
+            keys="adapter: git\nexecutor: orch-new-executor\n",
+        )
         result = self._run()
-        self.assertIn("unknown cell", result.stdout)
+        self.assertIn("frontmatter key 'executor' is not allowed", result.stdout)
 
     def test_envelope_words_in_a_sentence_are_not_an_envelope(self):
         self._write_skill(
@@ -232,9 +247,12 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
             "Require: input.\nNever: skip.\n"
             "Return: the ticket has status, result identity, and verification.\n",
         )
-        self._write_pack("orch-binding-pack", "| executor | `orch-prose-envelope` |\n")
+        self._write_pack(
+            "orch-binding-pack", "body.\n",
+            keys="adapter: git\nexecutor: orch-prose-envelope\n",
+        )
         result = self._run()
-        self.assertIn("unknown cell", result.stdout)
+        self.assertIn("frontmatter key 'executor' is not allowed", result.stdout)
 
     def test_one_unrelated_shared_stem_does_not_carry_an_input(self):
         self._write_skill(

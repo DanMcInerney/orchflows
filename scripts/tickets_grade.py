@@ -11,12 +11,12 @@ from __future__ import annotations
 import re
 
 if __package__:
-    from .tickets_adapters import AdapterError, adapter_spec, pack_path
+    from .tickets_adapters import AdapterError, adapter_spec, craft_path
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
-    from tickets_adapters import AdapterError, adapter_spec, pack_path
+    from tickets_adapters import AdapterError, adapter_spec, craft_path
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -64,8 +64,7 @@ _WORDS = re.compile(r"[a-z0-9_]+")
 
 def _required_spec_fields(pack: str) -> list[str]:
     try:
-        craft = pack_path(pack).parent / "references" / "craft.md"
-        text = craft.read_text(encoding="utf-8")
+        text = craft_path(pack).read_text(encoding="utf-8")
     except (AdapterError, OSError, UnicodeDecodeError) as error:
         raise GradeError(str(error)) from error
     match = _SPEC_FIELDS_HEADING.search(text)
