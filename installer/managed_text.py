@@ -199,7 +199,7 @@ def upsert_marked_block(text: str, block_text: str, start_marker: str, end_marke
 def _marked_span(text: str, start_marker: str, end_marker: str):
     """Locate the one managed block. ``(lines, start_i, end_i)``, or ``None``
     when neither marker is present. Duplicate, unbalanced and inverted pairs
-    raise -- both removals below share this one reading."""
+    raise -- the removal below reads the span through here."""
 
     lines = text.splitlines(keepends=True)
     starts = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == start_marker]
@@ -211,16 +211,9 @@ def _marked_span(text: str, start_marker: str, end_marker: str):
     return lines, starts[0], ends[0]
 
 
-def without_marked_block(text: str, start_marker: str, end_marker: str) -> str:
-    span = _marked_span(text, start_marker, end_marker)
-    if span is None:
-        return text
-    lines, start_i, end_i = span
-    return "".join(lines[:start_i] + lines[end_i + 1 :])
-
-
 def without_owned_block(text: str, start_marker: str, end_marker: str, owned) -> str:
-    """``without_marked_block`` for a file the target's own host also edits.
+    """Lift the installer's managed block back out of a file the target's own
+    host also edits.
 
     There the marker pair is not a safe identity for what the installer wrote.
     A TOML editor appends a table at the end of the *document body*, and a
@@ -247,28 +240,23 @@ def without_owned_block(text: str, start_marker: str, end_marker: str, owned) ->
     return "".join(lines[:start_i] + body[foreign:] + lines[end_i + 1 :])
 
 
-def upsert_import_line(text: str, import_line: str, legacy_start_marker: str, legacy_end_marker: str) -> tuple[str, str]:
-    """Idempotently ensure ``import_line`` appears as its own line in ``text``,
-    after stripping any legacy inline marker block left by an older install.
+def upsert_import_line(text: str, import_line: str) -> tuple[str, str]:
+    """Idempotently ensure ``import_line`` appears as its own line in ``text``.
     Returns ``(updated_text, install_action)`` where ``install_action`` is one
-    of ``created-file`` | ``migrated-from-block`` | ``added-import`` |
-    ``already-present``."""
+    of ``created-file`` | ``added-import`` | ``already-present``."""
 
     existed = bool(text)
-    had_legacy_block = legacy_start_marker in text and legacy_end_marker in text
-    cleaned = without_marked_block(text, legacy_start_marker, legacy_end_marker)
-    if any(line.rstrip("\r\n") == import_line for line in cleaned.splitlines()):
-        return cleaned, "already-present"
-    if not cleaned:
+    if any(line.rstrip("\r\n") == import_line for line in text.splitlines()):
+        return text, "already-present"
+    if not text:
         updated = import_line + "\n"
-    elif cleaned.endswith("\n\n") or cleaned.endswith("\r\n\r\n"):
-        updated = cleaned + import_line + "\n"
-    elif cleaned.endswith("\n") or cleaned.endswith("\r\n"):
-        updated = cleaned + "\n" + import_line + "\n"
+    elif text.endswith("\n\n") or text.endswith("\r\n\r\n"):
+        updated = text + import_line + "\n"
+    elif text.endswith("\n") or text.endswith("\r\n"):
+        updated = text + "\n" + import_line + "\n"
     else:
-        updated = cleaned + "\n\n" + import_line + "\n"
-    action = "migrated-from-block" if had_legacy_block else ("added-import" if existed else "created-file")
-    return updated, action
+        updated = text + "\n\n" + import_line + "\n"
+    return updated, ("added-import" if existed else "created-file")
 
 
 def render_claude_settings(text: str) -> tuple[str, dict]:

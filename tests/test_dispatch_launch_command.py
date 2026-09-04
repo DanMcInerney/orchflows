@@ -194,9 +194,11 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(1, prompt.count(state["assignment_seal"]))
         self.assertEqual(1, prompt.count(str(friction)))
         self.assertEqual(1, prompt.count(str(skill)))
-        # the craft's quoted scope is the one scope statement: the standing
-        # gate line yields to it rather than restating the same law
-        self.assertNotIn("run it here only if this ticket is the gate", prompt)
+        # the standing gate line is the one scope statement, rendered once
+        # for every dispatch: no craft carries a second wording of it
+        self.assertEqual(
+            1, prompt.count("run it here only if this ticket is the gate")
+        )
 
     def test_no_lane_asks_a_child_for_a_verdict_token(self):
         """A command verdict is an exit code and a check's verdict is its
@@ -210,7 +212,7 @@ class DispatchLaunchTest(unittest.TestCase):
     def assignment_facts() -> dict:
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
-            "craft": None, "craft_scope": None, "dependencies": [],
+            "craft": None, "dependencies": [],
             "dispatch_id": "D1", "executor": "orch-judge",
             "executor_script": None, "id": "R1.gate.critique.code",
             "lease_expires_at": "2099-01-01T00:00:00Z", "pack": "orch-code-pack",
@@ -282,7 +284,7 @@ class DispatchLaunchTest(unittest.TestCase):
         # escape hatch: it names no skill, so it declares no role.
         text = tickets._set_frontmatter_field(
             self.ticket_path().read_text(encoding="utf-8"),
-            "executor", "script:scripts/cutcheck.py",
+            "executor", "script:scripts/harvest.py",
         )
         self.ticket_path().write_text(text, encoding="utf-8")
         before = self.ticket_path().read_text(encoding="utf-8")

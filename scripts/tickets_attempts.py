@@ -140,12 +140,10 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
                 (attempt for attempt in attempts if attempt.get("dispatch_id") == dispatch_id),
                 None,
             )
-            # contracts/dispatch.md's attempt precedence, which `_commit_record`
-            # already keeps: an exact replay of an opened dispatch_id returns
-            # its stored success first, and only an unseen open may then be
-            # classified assignment-mismatch. Graded the other way round, a
-            # retry of the very call that opened the attempt was refused for
-            # the seal it had itself been opened against.
+            # contracts/dispatch.md's attempt precedence, which
+            # `_commit_record` already keeps: an exact replay of an opened
+            # dispatch_id returns its stored success first, and only an
+            # unseen open may then be classified assignment-mismatch.
             if same is not None:
                 prior = {key: same.get(key) for key in request}
                 if prior == request:
@@ -196,14 +194,7 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
         return {"error": f"unable to open dispatch attempt: {error}"}
 
 def _record_response(run: str, ticket_id: str, dispatch_id: str, record_id: str) -> dict:
-    """The stored success for one committed record: its identity alone.
-
-    Not the content. Every record already stores that once, as the
-    canonical string the `(dispatch_id, record_id)` idempotency
-    comparison is made against, and the second copy under this success
-    was ~73% of a gate ticket's bytes -- 275 KB on the largest one.
-    A caller that wants the content reads the record.
-    """
+    """The stored success for one committed record: its identity alone."""
 
     return {"committed_record": {
         "protocol": PROTOCOL,
@@ -294,9 +285,8 @@ def _commit_record(
             ended = attempt.get("state") != "live" or expiry is None
             # A frame holds no lease to arbitrate (contracts/work-item.md):
             # its driver is the session that opened it, singular by
-            # construction, so nothing contends for the write and an expiry
-            # could only end a journal somebody is still writing. What ends a
-            # frame's attempt is its close, and `state` still says so.
+            # construction, so an expiry could only end a journal somebody
+            # is still writing. What ends a frame's attempt is its close.
             if require_live_lease and not is_frame(data):
                 ended = ended or now >= expiry
             if ended:
@@ -384,11 +374,9 @@ def _cmd_dispatch_retire(rest, *, _lock_held=False):
     }
 
     def retire(text, _data, attempt, _state_record):
-        # No state guard here: `_commit_record` refuses an unseen record on an
-        # attempt whose state is not live as `stale-attempt` before any mutate
-        # runs, and an exact replay returns its stored success without
-        # reaching this at all. A second copy of that rule could only ever
-        # disagree with the one that decides.
+        # No state guard here: `_commit_record` refuses an unseen record on
+        # an attempt whose state is not live before any mutate runs, and an
+        # exact replay returns its stored success without reaching this.
         retired_at = datetime.now(timezone.utc).strftime(UTC_STAMP)
         response = {"dispatch": {
             "protocol": PROTOCOL,

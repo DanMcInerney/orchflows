@@ -40,8 +40,8 @@ explicit manual cleanup.
 ## Observe
 
 The local UI shows the current workflow graph without changing it. From a
-checkout, start it with `uv run --no-project python scripts/ui.py`; an installed
-copy runs through the private Python environment. It binds only to
+checkout, start it with `uv run --no-project python reader/scripts/ui.py`; an
+installed copy runs through the private Python environment. It binds only to
 `127.0.0.1`, serves its prebuilt assets offline, and exposes metadata rather
 than prompts, tool output, or transcript contents. See the
 [UI platform](reader/docs/platform.md) for installed commands, routes, security
@@ -123,11 +123,7 @@ skills and workflows are ordinary repository work under
 [custom workflow authoring](docs/custom-workflow-authoring.md); they are not an installation scope. Uninstall:
 `python install.py --user --uninstall` removes only what it generated;
 `--dry-run` previews whether runtime apply will create, reuse, or repair.
-`--claude-adapters {all,four}` chooses how much of the library
-Claude gets first-class adapters for — `all` (the default) mints one per
-package and workflow, `four` mints only `orch-do` and
-`orch-judge` and leaves every other name to resolve at
-`by-name/`. Default model and effort per role, all three hosts:
+Default model and effort per role, all three hosts:
 [profiles.md](hosts/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
 and keep it by default.
@@ -139,7 +135,7 @@ and keep it by default.
 Every run auto-logs its friction — retries, missing inputs,
 workarounds — under an always-on law, and `trace.py` extracts each
 session's requests, narration and tool calls into one event record.
-the improvement workflow mines those logs into proposals you accept or
+The improvement workflow mines those logs into proposals you accept or
 reject, each scoped to where the change lands: your **environment** (a
 missing interpreter, a broken tool), your **project** (code or docs
 that keep causing friction), or the **workflows** themselves. Real
@@ -225,9 +221,10 @@ self-improvement wired into every run.
   Control flow is not a callable: loops, branches and retries are the
   calling workflow's own prose, and a `frame` ticket is the durable stack
   frame under them.
-- **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
-  worklog, pack-signature, result — are the only interfaces. Anything
-  that emits one plugs into anything that takes one.
+- **One stud pattern.** Eight contracts — bundle, dispatch,
+  pack-signature, result, sheet, verdict, work-item, worklog — are the
+  only interfaces. Anything that emits one plugs into anything that
+  takes one.
 - **One return shape.** Every ticket attempt closes through the dispatch
   outcome envelope: `assignment_seal`, `dispatch_id`, `outcome_record_id`,
   writer, and evidence. The durable result identity then feeds any
@@ -265,7 +262,7 @@ still there for recovery; nothing needs them on a healthy path.
 
     orchflows
     │
-    ├── Layer 0 · contracts/ — the narrow waist: hash-pinned data shapes, the only
+    ├── Layer 0 · contracts/ — the narrow waist: pure data shapes, the only
     │                         interface between everything above them
     ├── Layer 1 · skills/    — everything callable: kernel/ primitives that call no
     │                         skill, workflows/ assembled from them
@@ -282,13 +279,13 @@ this README does not keep a second copy of it.
     packs/
     ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-do
     │                        workspace: git, one worktree per work item
-    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-do, assembly stage
+    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-do
     │                        workspace: document tree with outline slots
-    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-do, assembly stage
+    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-do
     │                        workspace: git, datasets pinned by digest manifest
     ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-do
-    │                        workspace: git plus render (view × breakpoint × state)
-    └── orch-research-pack — delivers answers     · source evidence       · executor orch-do, assembly stage
+    │                        workspace: git, captures per view × breakpoint × state
+    └── orch-research-pack — delivers answers     · source evidence       · executor orch-do
                              workspace: evidence store of lane packets
 
 A pack is pure data — no control flow. It supplies the domain's

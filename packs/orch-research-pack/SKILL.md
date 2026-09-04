@@ -8,6 +8,4 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | cell | binding |
 | --- | --- |
 | adapter | evidence-store |
-| stages | [investigate, synthesize] |
-| assembly | synthesize |
 | craft | [references/craft.md](references/craft.md) |

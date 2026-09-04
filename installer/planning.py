@@ -10,19 +10,15 @@ from scripts import orchflows_home
 from .foundation import (
     CANONICAL_DIRS,
     HOST_ADAPTERS_DIR,
-    CLAUDE_ADAPTER_SETS,
     CLAUDE_CLI_CANDIDATES,
     CODEX_CLI_CANDIDATES,
     GROK_CLI_CANDIDATES,
     PROFILE_ROLES,
     REPO_ROOT,
-    SHARED_ADAPTER_NAMES,
     _bin_dir,
-    _claude_agents_dir,
     _claude_md_path,
-    _claude_scope_home,
     _claude_settings_path,
-    _codex_agents_dir,
+    _claude_user_home,
     _codex_agents_path,
     _codex_config_path,
     _codex_hooks_warnings,
@@ -98,23 +94,7 @@ def detect_hosts(home: Path | None = None) -> tuple[bool, bool, bool]:
     )
 
 
-def _mints_claude_adapter(name: str, claude_adapter_set: str) -> bool:
-    """Whether ``name`` gets a Claude skill adapter under this adapter set.
-
-    ``all`` mints one per canonical name; the bounded selector ``four`` mints only
-    ``SHARED_ADAPTER_NAMES``, leaving every other name as an explicit
-    ``by-name/`` invocation exactly as it already does on Codex. Nothing else in the
-    plan moves — the routing benchmark needs the two installs to differ in
-    this one surface alone.
-    """
-
-    if claude_adapter_set not in CLAUDE_ADAPTER_SETS:
-        raise ValueError(f"unknown Claude adapter set: {claude_adapter_set}")
-    return claude_adapter_set == "all" or name in SHARED_ADAPTER_NAMES
-
-
-def _build_user_plan(
-    claude_adapter_set: str = "all",
+def build_plan(
     codex_limits_renderer=render_codex_agent_limits,
     script_name_discoverer=None,
     grok_limits_renderer=render_grok_subagent_limits,
@@ -123,9 +103,9 @@ def _build_user_plan(
     def item_path(host, item, root, **values):
         return host_item_path(host, item, root, host_adapters, **values)
 
-    lib_home = _lib_home("user", None)
-    scope_home = _scope_home("user", None)
-    bin_dir = _bin_dir("user", None)
+    lib_home = _lib_home()
+    scope_home = _scope_home()
+    bin_dir = _bin_dir()
     home = Path.home()
     # Unpacked in full, never sliced: a slice here would discard the third
     # signal silently, and no check would fail. Every patched stand-in must
@@ -133,8 +113,6 @@ def _build_user_plan(
     claude_enabled, codex_enabled, grok_enabled = detect_hosts(home)
     if not (claude_enabled or codex_enabled or grok_enabled):
         return Plan(
-            scope="user",
-            project_root=None,
             lib_home=lib_home,
             scope_home=scope_home,
             bin_dir=bin_dir,
@@ -177,7 +155,7 @@ def _build_user_plan(
         if _script_source(name).is_file()
     ]
 
-    claude_scope_home = _claude_scope_home("user", None)
+    claude_home = _claude_user_home()
     codex_user_home = _codex_user_home()
     claude_adapters = []
     codex_prompts = []
@@ -203,10 +181,10 @@ def _build_user_plan(
                 by_name_pointer_text(frontmatter, role, lib_skill_md),
             )
         )
-        if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
+        if claude_enabled:
             claude_adapters.append(
                 (
-                    item_path("claude", "skill", claude_scope_home, name=name),
+                    item_path("claude", "skill", claude_home, name=name),
                     claude_role_adapter_text(frontmatter, lib_skill_md),
                 )
             )
@@ -273,10 +251,10 @@ def _build_user_plan(
             "is invoked by name only.\n"
         )
         by_name.append((lib_home / "by-name" / name / "SKILL.md", pointer))
-        if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
+        if claude_enabled:
             claude_adapters.append(
                 (
-                    item_path("claude", "skill", claude_scope_home, name=name),
+                    item_path("claude", "skill", claude_home, name=name),
                     manual_only_frontmatter(frontmatter)
                     + workflow_adapter_body(name, lib_workflow_dir, frontmatter),
                 )
@@ -333,7 +311,7 @@ def _build_user_plan(
         if claude_enabled:
             claude_agents.append(
                 (
-                    item_path("claude", "role_agent", claude_scope_home, profile=name),
+                    item_path("claude", "role_agent", claude_home, profile=name),
                     render_claude_agent(name, profile),
                 )
             )
@@ -358,7 +336,7 @@ def _build_user_plan(
     configs = []
     warnings = _codex_hooks_warnings(codex_user_home) if codex_enabled else []
     if claude_enabled:
-        claude_settings_path = _claude_settings_path("user", None)
+        claude_settings_path = _claude_settings_path()
         claude_settings_text = (
             claude_settings_path.read_text(encoding="utf-8") if claude_settings_path.is_file() else ""
         )
@@ -373,7 +351,7 @@ def _build_user_plan(
             )
         )
     if codex_enabled:
-        codex_config_path = _codex_config_path("user", None)
+        codex_config_path = _codex_config_path()
         codex_config_text = codex_config_path.read_text(encoding="utf-8") if codex_config_path.is_file() else ""
         codex_config, codex_details = codex_limits_renderer(codex_config_text)
         if not codex_details["toml_checked"]:
@@ -416,19 +394,17 @@ def _build_user_plan(
     grok_rules_plan = None
     if claude_enabled:
         host_block_path = scope_home / "host-block.md"
-        claude_md_path = _claude_md_path("user", None)
+        claude_md_path = _claude_md_path()
         preflight_instruction_target("claude", claude_md_path, host_block,
                                      host_block_path.resolve(), host_adapters)
         host_block_plan = ConfigPlan(host_block_path, host_block, "host-block", "Host instruction block")
         claude_import_plan = ImportPlan(
             claude_md_path,
             host_block_path.resolve(),
-            start_marker,
-            end_marker,
             "Claude Code instruction import",
         )
     if codex_enabled:
-        codex_agents_path = _codex_agents_path("user", None)
+        codex_agents_path = _codex_agents_path()
         preflight_instruction_target("codex", codex_agents_path, host_block,
                                      adapters=host_adapters)
         blocks.append(
@@ -451,12 +427,10 @@ def _build_user_plan(
         )
 
     return Plan(
-        scope="user",
-        project_root=None,
         lib_home=lib_home,
         scope_home=scope_home,
         bin_dir=bin_dir,
-        runtime_dirs=_runtime_dirs("user", None),
+        runtime_dirs=_runtime_dirs(),
         lib_copies=lib_copies,
         scripts=scripts,
         frontend_home=frontend_home,
@@ -486,30 +460,11 @@ def _build_user_plan(
     )
 
 
-def build_plan(
-    scope: str,
-    project_root: Path | None,
-    claude_adapter_set: str = "all",
-    codex_limits_renderer=render_codex_agent_limits,
-    script_name_discoverer=None,
-    grok_limits_renderer=render_grok_subagent_limits,
-) -> Plan:
-    if scope != "user":
-        raise ValueError("installation supports user scope only")
-    return _build_user_plan(
-        claude_adapter_set,
-        codex_limits_renderer,
-        script_name_discoverer,
-        grok_limits_renderer,
-    )
-
-
 def plan_entry_count(plan: Plan) -> int:
     """Every directory, file and managed edit the plan would produce.
 
     ``--dry-run`` prints this so a green run states whether it planned the
-    install or planned nothing at all; the bare 0 it used to return read the
-    same either way.
+    install or planned nothing at all.
     """
 
     return (
@@ -531,9 +486,5 @@ def plan_entry_count(plan: Plan) -> int:
         + (1 if plan.claude_import is not None else 0)
         + (1 if plan.grok_rules is not None else 0)
         + (1 if plan.home_ring is not None else 0)
-        + (
-            1
-            if plan.scope == "user" and plan.runtime_action in ("create", "repair")
-            else 0
-        )
+        + (1 if plan.runtime_action in ("create", "repair") else 0)
     )

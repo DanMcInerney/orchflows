@@ -126,7 +126,7 @@ class TestHostAutoDetection(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             self.assertTrue(plan.claude_enabled)
             self.assertFalse(plan.codex_enabled)
@@ -146,7 +146,7 @@ class TestHostAutoDetection(unittest.TestCase):
             home = Path(tmp)
             (home / ".codex").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             self.assertFalse(plan.claude_enabled)
             self.assertTrue(plan.codex_enabled)
@@ -164,7 +164,7 @@ class TestHostAutoDetection(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
                 buffer = io.StringIO()
                 with redirect_stdout(buffer):
                     install.print_plan(plan)
@@ -201,13 +201,13 @@ class TestHostAutoDetection(unittest.TestCase):
     def _other_host_paths(self) -> tuple:
         return (
             foundation._claude_user_home(),
-            foundation._claude_agents_dir("user", None),
-            foundation._claude_md_path("user", None),
-            foundation._claude_settings_path("user", None),
+            foundation._claude_agents_dir(),
+            foundation._claude_md_path(),
+            foundation._claude_settings_path(),
             foundation._codex_user_home(),
-            foundation._codex_agents_dir("user", None),
-            foundation._codex_agents_path("user", None),
-            foundation._codex_config_path("user", None),
+            foundation._codex_agents_dir(),
+            foundation._codex_agents_path(),
+            foundation._codex_config_path(),
         )
 
     def test_grok_home_relocates_the_grok_paths_and_only_those(self):
@@ -314,8 +314,6 @@ class DryRunOracleTest(unittest.TestCase):
         # break. The wrong result is a stub Plan, never a mutation of the
         # tree under test.
         empty = install.Plan(
-            scope="user",
-            project_root=None,
             lib_home=Path("unused") / "lib",
             scope_home=Path("unused") / "scope",
             bin_dir=Path("unused") / "bin",

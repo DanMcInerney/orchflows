@@ -42,9 +42,7 @@ def admission_failure(path, text: str, data: dict, run: str, ticket_id: str):
     # A never-promoted ticket is the common half of this refusal and the only
     # half with a mechanical remedy: it holds the pending placeholder because
     # nothing has admitted it yet, and promotion is `dispatch`'s own first
-    # step now that `ready` is no longer a command of its own. This is the
-    # command a claim on a pending ticket actually reaches -- the status
-    # check further down never sees it -- so the remedy is named here.
+    # step. This is the command a claim on a pending ticket actually reaches.
     if stored == ADMISSION_PENDING:
         return classification(
             "admission-mismatch",
@@ -75,14 +73,7 @@ def live_attempt_failure(attempts, now):
 
 def undeclared_supersession_failure(attempt, now, *, declared: bool):
     """Refuse replacing work that is still inside the lease it was opened
-    under, unless the caller says that is what it means to do.
-
-    A caller cannot observe a child think.  Quiet is not evidence that the
-    child stopped -- the bound the attempt was opened under is the only
-    evidence this protocol has -- so superseding still-authorized work is a
-    declaration the caller makes, never one the transition infers from
-    silence.  Past the lease the attempt is stale and crosses freely.
-    """
+    under, unless the caller says that is what it means to do."""
 
     if declared:
         return None

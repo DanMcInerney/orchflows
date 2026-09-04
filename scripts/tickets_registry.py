@@ -1,9 +1,8 @@
 """The closed callable tier and review discriminators.
 
-Ticket executors are deliberately a small, explicit vocabulary.  Pack data
-selects craft and stages; it never adds a callable.  Scripts remain an
-explicit ``script:`` escape hatch for mechanical state operations and are
-validated by their path rather than this registry.
+Ticket executors are a small, explicit vocabulary. Pack data selects craft
+and stages; it never adds a callable. Scripts remain an explicit
+``script:`` escape hatch, validated by path rather than by this registry.
 """
 
 from __future__ import annotations
@@ -16,30 +15,20 @@ except ImportError:
 
 # Keep this order stable: it is the user-facing registry artifact and is
 # rendered in refusal messages and help/test projections.
-#
-# `orch-slice` retired in W4a together with `tickets.py instantiate`, its
-# only minter of decomposed roots: with nothing left to mint one, the
-# decomposed-root discriminator ROOT_EXECUTOR (scripts/tickets_format.py)
-# is gone too, and the two minting commands are the whole callable tier.
 CALLABLE_EXECUTORS = (
     "orch-do",
     "orch-judge",
 )
 
 # ``files_findings`` marks the verb whose product is a findings file rather
-# than an artifact: it is what the launch prompt reads to ask for the second
-# verbatim machine line, so the judging verb is named once here instead of
-# in the prompt composer.
+# than an artifact: the launch prompt reads it to ask for the second
+# verbatim machine line, so the judging verb is named once here.
 EXECUTOR_REGISTRY = {
     "orch-do": {"role": "worker", "requires_pack": True},
     "orch-judge": {"role": "planner", "requires_pack": True, "files_findings": True},
 }
 
-# `orch-outline` and `orch-slice` both retired toward this living remedy: a
-# planning `do` -- goal a frozen root or a cut -- making toward the pack
-# craft's `## Lens` entry for that kind in `do`'s stead. Their own
-# predecessor intake verbs (`orch-spec`, `orch-decompose`) point at the same
-# remedy rather than at a retired name that itself refuses, so no refusal
+# The living remedy a superseded planning verb points at, so no refusal
 # chains through a name with no binding left to offer.
 _PLANNING_DO_REMEDY = (
     "a planning `do` making a `root` or `cut` toward the pack craft's "
@@ -52,42 +41,22 @@ _PLANNING_DO_REMEDY = (
 # name has a mechanical remedy instead of a registry list to guess from.
 # A successor that is itself a registered verb is offered as a binding;
 # any other successor is a mechanism, named as the remedy it is.
-#
-# Each entry's trailing comment dates its retirement: the commit (short
-# hash) that first added the name to this dict, from ``git log --follow``
-# over this file -- real history, not a guess.  None of the current
-# entries predate this registry: this file's own creation commit
-# (a68eeabe, 2026-08-29) held no ``SUPERSEDED_EXECUTORS`` dict at all, so
-# every name below was retired after the registry already existed to
-# record it; a future entry whose retirement predates the registry says
-# so here instead of dating a commit that only re-recorded it.
-#
-# Expiry policy, stated once here because this dict is the fact's one
-# owner (unrestated in rules/ or docs/): a tombstone whose refusal has
-# not fired within ninety days of its retired-on date is deleted --
-# registry entry and the tests asserting its refusal together -- because
-# a name nobody has attempted to dispatch in that long is spending a
-# registry line, a refusal branch, and test coverage on a caller that no
-# longer exists.  Ninety days is this policy's initial value, proposed
-# rather than measured (no prior expiry history exists yet to derive one
-# from); revising the horizon, and the first deletions under it, are a
-# later run's call, not this comment's.
 SUPERSEDED_EXECUTORS = {
-    "orch-execute": "orch-do",  # retired-on 2026-08-31 (34341e5d)
-    "orch-check": "orch-judge",  # retired-on 2026-08-31 (34341e5d)
-    "orch-outline": _PLANNING_DO_REMEDY,  # retired-on 2026-08-31 (34341e5d)
-    "orch-spec": _PLANNING_DO_REMEDY,  # retired-on 2026-08-30 (fa7c2fa1)
-    "orch-slice": _PLANNING_DO_REMEDY,  # retired-on 2026-08-31 (338c1678)
-    "orch-decompose": _PLANNING_DO_REMEDY,  # retired-on 2026-08-31 (15bea6aa)
-    "orch-loop": (  # retired-on 2026-08-30 (30651e8f)
+    "orch-execute": "orch-do",
+    "orch-check": "orch-judge",
+    "orch-outline": _PLANNING_DO_REMEDY,
+    "orch-spec": _PLANNING_DO_REMEDY,
+    "orch-slice": _PLANNING_DO_REMEDY,
+    "orch-decompose": _PLANNING_DO_REMEDY,
+    "orch-loop": (
         "a prose loop in the calling workflow over repeated `do` callables, with "
         "the ticket `done` predicate evaluated by tickets.py land"
     ),
-    "orch-frontier": (  # retired-on 2026-08-31 (17f04765)
+    "orch-frontier": (
         "the driver loop is mechanical: `tickets.py dispatch` emits the launch, "
         "`tickets.py land` evaluates done, integrates, and prints the ready frontier"
     ),
-    "orch-integrate": (  # retired-on 2026-08-31 (17f04765)
+    "orch-integrate": (
         "land evaluates the done predicate; a predicate-less ticket is accepted "
         "by the driver with `land --status`"
     ),

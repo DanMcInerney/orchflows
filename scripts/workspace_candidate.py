@@ -3,35 +3,24 @@
 ``workspace.py`` is the CLI facade; this module owns what a candidate
 workspace *is* for one work item -- the tree it gets, the branch that tree
 stands on, and the observation its ticket is stamped from. What becomes of
-that tree afterwards -- the merge that carries its commits out and the
-removal that ends it -- is ``workspace_return``'s. It never imports
-that facade, nor ``tickets``: the owning modules are imported directly, the
-way ``workspace_git`` imports them.
+that tree afterwards is ``workspace_return``'s. It imports the owning
+modules directly, never that facade and never ``tickets``.
 
-Two lanes, and the ticket's own ``isolation`` decides which. An item that
-declares ``required`` gets a tree of its own, created here at the path
-``state_root.candidate_paths`` derives from its run and its id -- never a
-tree a caller named, because a caller naming the tree is how two siblings
-came to be dispatched into one directory and how a launch came to carry
-another item's workspace. Everything else is observed rather than created:
-the caller stands somewhere, and what it is standing in is recorded.
+Two lanes, and the ticket's own ``isolation`` decides which. An item
+declaring ``required`` gets a tree of its own at the path
+``state_root.candidate_paths`` derives from its run and id -- never a tree a
+caller named, because a caller naming the tree is how two siblings come to
+be dispatched into one directory. Everything else is observed rather than
+created.
 
-Creation happens before the run lock is taken and never inside it. The
+Creation happens before the run lock is taken and never inside it: the
 derived path belongs to exactly one ticket of one run, so no other writer
-can be racing for it, and the seconds ``git worktree add`` costs are
-seconds no sibling has to wait through. The stamp that follows is the
-locked half, and it is written against the ticket's bytes as they were
-read -- a write that landed in between is reported, never absorbed.
-
-``prepare`` is the same argument taken to its end: installing what the
-tree declares costs a package manager's minutes and writes no ticket at
-all, so it is its own verb, run against the tree the attempt records
-after the establishment's lock has been let go.
+can be racing for it. The stamp that follows is the locked half, written
+against the ticket's bytes as they were read.
 
 Nothing here records a success it did not achieve. A refused establishment
-leaves the ticket exactly as it was found, and never falls back to the
-shared tree the item was dispatched from: an unisolated item that believes
-it is isolated writes its work into somebody else's checkout.
+leaves the ticket as it was found and never falls back to the shared tree
+the item was dispatched from.
 """
 
 from __future__ import annotations
@@ -86,12 +75,7 @@ def _validate_write_paths(entries, root: Path) -> None:
 
 
 def _loaded(run: str, ticket_id: str):
-    """The ticket, its data, and the bytes every stamp below derives from.
-
-    The snapshot is taken here and not after the git work: those calls are
-    the seconds a concurrent ``set-status`` lands in, and a snapshot taken
-    past them absorbs the write the compare exists to report.
-    """
+    """The ticket, its data, and the bytes every stamp below derives from."""
 
     path = state_root.tickets_root() / run / f"{ticket_id}.md"
     if not path.is_file():
@@ -110,14 +94,7 @@ def _adapter(data: dict):
 
 
 def _unisolated(run, ticket_id, path, prior_text, adapter, held, seams, where) -> dict:
-    """Record the workspace of a lane that gives no item a tree of its own.
-
-    Two such lanes, one act: a research lane's workspace is the run-scoped
-    evidence store, created here because nothing else creates it, and a
-    document lane's is the tree its caller already stands in. Branch and
-    baseline go in as ``None`` -- a document revision is no commit, and a
-    stamped HEAD would hand the join a Git grade for work Git never carried.
-    """
+    """Record the workspace of a lane that gives no item a tree of its own."""
 
     if adapter.workspace_strategy == EVIDENCE_STRATEGY:
         root = (state_root.state_root() / "research" / run).resolve()
@@ -136,14 +113,7 @@ def _unisolated(run, ticket_id, path, prior_text, adapter, held, seams, where) -
 
 
 def _observed(run, ticket_id, path, data, prior_text, held, seams, where):
-    """Record the Git tree the caller is standing in, and grade its sharing.
-
-    What ``start`` has always done, unchanged: ``start`` never creates a
-    tree, and an item whose isolation is not ``required`` has no tree of its
-    own to create. Exit 7 stays reachable here and only here -- a shared
-    directory is a fact about a tree somebody else chose, and an item given
-    its derived candidate cannot be standing in one.
-    """
+    """Record the Git tree the caller is standing in, and grade its sharing."""
 
     git_out = seams["git_out"]
     root, located = workspace_git._locate(run, ticket_id, where)
@@ -156,9 +126,8 @@ def _observed(run, ticket_id, path, data, prior_text, held, seams, where):
     # Write-once: ``tickets_assignment.py`` feeds this stamp to ``cutcheck.py
     # --baseline``, so it goes on naming the revision the item was cut from,
     # never the moved tree a re-establishment stands in. The observation is
-    # reported under its own key instead of recorded: a second stamp would
-    # have to be a key ``contracts/work-item.md`` declares. Computed either
-    # way, because it also refuses a dirty path no comma-joined frontmatter
+    # reported under its own key instead of recorded. Computed either way,
+    # because it also refuses a dirty path no comma-joined frontmatter
     # scalar could carry unambiguously.
     observed = workspace_git._baseline(head, dirty)
     stamped = str(data.get(BASELINE_KEY) or "").strip()
@@ -190,12 +159,7 @@ def _observed(run, ticket_id, path, data, prior_text, held, seams, where):
 
 
 def _standing(source, target: Path):
-    """The branch the worktree registered at ``target`` stands on, or ``None``.
-
-    ``None`` means git knows no worktree there, which is not the same as
-    nothing being there: a directory git has never heard of is answered for
-    by the caller, which refuses it rather than asking git to overwrite it.
-    """
+    """The branch the worktree registered at ``target`` stands on, or ``None``."""
 
     for entry in workspace_git._worktrees(workspace_git._git_out(source)):
         recorded = entry.get("worktree")
@@ -223,18 +187,7 @@ def _add(source, argv) -> None:
 
 
 def _create(source, target: Path, branch: str, baseline: str, claimed: bool) -> None:
-    """Put this item's own tree at its derived path, or refuse to.
-
-    Three ways the path can already be taken, and only one of them is this
-    item's. A directory git does not know is a foreign tree: creating over
-    it would either fail obscurely or bury whatever is in it. A branch that
-    already exists and that no record of this item claims belongs to
-    something else at that name, and adopting it would grade a stranger's
-    commits as this item's work. A branch this item's own ticket already
-    records is its own earlier work -- its tree was retired, its commits
-    were not -- so the tree is put back on it rather than cut again from a
-    baseline that would orphan them.
-    """
+    """Put this item's own tree at its derived path, or refuse to."""
 
     if target.exists() and any(target.iterdir()):
         raise Refused(
@@ -256,24 +209,7 @@ def _create(source, target: Path, branch: str, baseline: str, claimed: bool) -> 
 
 
 def _fixes_integration_target(data: dict, named: bool) -> bool:
-    """Whether this establishment may fix where the run's work is integrated.
-
-    The target is write-once and run-wide, so its first writer decides every
-    landing after it, and the 2026-09-02 ladder dogfood is what a wrong
-    first writer costs: a call that named no tree established its candidate
-    in whatever directory the driver happened to be standing in, the run's
-    target was fixed there, and every wave after it -- all cut from the
-    repository the run was actually building -- landed `absent` at exit 0
-    and merged nothing.
-
-    Two conditions, both about whether this call is a declaration. The
-    caller has to have named the tree: a source defaulted to the process's
-    own directory is a guess, and a guess is not a run saying where its work
-    belongs. And the item has to be one that delivers into it: a judging
-    item's candidate carries a findings file, read at whatever tree the
-    judge was pointed at, and where a run's *work* belongs is not its to
-    say.
-    """
+    """Whether this establishment may fix where the run's work is integrated."""
 
     if not named:
         return False
@@ -283,19 +219,7 @@ def _fixes_integration_target(data: dict, named: bool) -> bool:
 
 
 def _derived(run, ticket_id, path, data, prior_text, held, source, seams, named):
-    """Create -- or replay -- the tree this item's identity derives.
-
-    The run's integration target is recorded here, on the first establishing
-    call that ``_fixes_integration_target`` admits: this call knows the
-    checkout the run is being driven from and the branch that checkout
-    stands on, and by the time `land` merges, that checkout may have been
-    moved to something else entirely. Reading it live is exactly how a run's
-    commits reached an unrelated branch of the user's own checkout.
-    Write-once and never corrected, for the same reason
-    ``workspace_baseline`` is. An establishment that may not fix it reports
-    whatever is already recorded instead, so a driver reads one answer to
-    "what will `land` merge into" whichever call it asked.
-    """
+    """Create -- or replay -- the tree this item's identity derives."""
 
     candidate = state_root.candidate_paths(run, ticket_id)
     target, branch = candidate["path"], candidate["branch"]
@@ -325,8 +249,8 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams, named)
     observed_branch, head = workspace_git._head_and_branch(workspace_git._git_out(target))
     dirty = sorted(set(workspace_git.dirty_paths(str(target))))
     # never restamped: the baseline names the revision this item was cut
-    # from, and a re-establishment that rewrote it would move the revision
-    # every later grade measures the item's own change against
+    # from, and rewriting it would move the revision every later grade
+    # measures the item's own change against
     baseline = stamped or workspace_git._baseline(head, dirty)
     outcome = seams["record"](
         path, prior_text, observed_branch, baseline, str(target), run=run, lock_held=held
@@ -364,9 +288,9 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams, named)
 def _establishment(run, ticket_id, key, held, seams, source, where, named=False):
     path, data, prior_text = _loaded(run, ticket_id)
     adapter = _adapter(data)
-    # The item's isolation before the adapter's strategy, never after. Judged
-    # the other way round, a document lane refused at the dispatch trunk over
-    # a tree of its own -- which only an explicit override ever asks it for.
+    # The item's isolation before the adapter's strategy, never after. The
+    # other way round refuses a document lane over a tree of its own, which
+    # only an explicit override ever asks for.
     isolation = tickets_adapters.derived_isolation(data.get(ISOLATION_KEY), data.get("pack"))
     if isolation == REQUIRED and not adapter.establishes_isolation:
         raise Refused(f"adapter-not-establishable: {adapter.key} does not "
@@ -390,14 +314,7 @@ def observe(run: str, ticket_id: str, *, held: bool, seams: dict):
 
 def establish(run: str, ticket_id: str, *, source, held: bool, seams: dict,
               named: bool = False):
-    """``establish``: give an isolation-required item the tree it derives.
-
-    ``named`` is whether the caller aimed this call at ``source`` or the
-    facade filled it in from the process's own directory. It decides one
-    thing only -- whether this call may fix the run's integration target --
-    and it is passed rather than inferred here, because only the command
-    that read the arguments can tell a named tree from a defaulted one.
-    """
+    """``establish``: give an isolation-required item the tree it derives."""
 
     return _establishment(
         run, ticket_id, ESTABLISH_KEY, held, seams, source, source, named,
@@ -405,21 +322,7 @@ def establish(run: str, ticket_id: str, *, source, held: bool, seams: dict,
 
 
 def prepare(run: str, ticket_id: str):
-    """Install what this item's recorded tree declares, holding no lock.
-
-    Separated from ``establish`` because of what it costs: a cold
-    ``pnpm install`` is minutes, and while it ran inside the dispatch
-    facade's critical section every sibling of the run waited it out for a
-    tree that was not theirs. Nothing here writes a ticket or a stamp, so
-    there is no lock to take -- it reads the established tree the
-    establishment already recorded and works in that directory.
-
-    The preparation's verdict is reported, never raised: a tree that cannot
-    be prepared is still a workspace whose branch and baseline the join has
-    to be able to read. Only a workspace that was never recorded refuses,
-    because there is then no directory to prepare and the caller has skipped
-    a step rather than hit one that failed.
-    """
+    """Install what this item's recorded tree declares, holding no lock."""
 
     path, data, _ = _loaded(run, ticket_id)
     recorded = str(workspace_record.attempt_workspace(data) or "").strip()

@@ -35,13 +35,13 @@ reader. Human legibility is welcome; it is never the design driver.
 
 ## Structure → constraint
 
-- **A narrow, hash-pinned waist (`contracts/`).** N workflows, M
-  packs, and H hosts meet in six data shapes, including dispatch:
-  N+M+H mutual
-  understandings instead of N×M×H. Hash-pinned because the reader
-  drifts shapes helpfully — renaming a field to a nicer synonym reads
-  as a favor and breaks every consumer silently; the pin turns drift
-  into a failing test (search is memory; cheap generation).
+- **A narrow waist (`contracts/`).** N workflows, M packs, and H hosts
+  meet in eight data shapes: N+M+H mutual understandings instead of
+  N×M×H. Each contract's field table is rendered from
+  `contracts/shapes.json` and `tools/regen.py` refuses drift, because the
+  reader drifts shapes helpfully — renaming a field to a nicer synonym
+  reads as a favor and breaks every consumer silently (search is memory;
+  cheap generation).
 - **Skills wear function anatomy.** Require / procedure / Never /
   Return gives a contract the reader can pattern-match instead of
   prose it must infer; body budgets with overflow to `references/`
@@ -55,10 +55,6 @@ reader. Human legibility is welcome; it is never the design driver.
   workflow. One generic body reading domain facts through cells means
   a domain is added by writing data, not by editing control flow
   (search is memory; diluted attention).
-- **Compositions are the stdlib.** A named workflow is a data file —
-  steps, edges, invariants, done check — admitted like any skill and
-  invocable by name (see "Why the named tier is ticket-set templates"
-  below).
 - **Tickets and worklogs are markdown on disk.** Files are the only
   memory every context shares and the only store the reader can
   search with native tools. An external tracker is state an amnesiac
@@ -90,52 +86,9 @@ reader. Human legibility is welcome; it is never the design driver.
 - **Authoring scope is data.** Canonical, user, and project items differ
   in landing zone and available oracles, recorded in
   [custom workflow authoring](docs/custom-workflow-authoring.md), while
-  the work itself takes the ordinary smallest-first code route. Custom
-  workflows instantiate from compositions, the named-workflow tier, so
-  reuse never mints new control flow; an item's scope never exceeds the
-  host surface that resolves its call edges, or the item would dangle
-  (search is memory).
-
-## Why the named tier is ticket-set templates
-
-Since 2026-08-16 (P4 of the ticket-set redesign; the 2026-08-06
-two-entrypoints spec was the intermediate step, and git history owns
-both migrations). Routing once enumerated named "shapes of done" whose
-bodies were mostly sequencing, and every recurring shape grew the
-routing table — the one surface every session pays for on every
-request. The replacement:
-
-- **The routing table stays fixed while the named tier grows.** A fixed
-  small set of lanes and one closed rule: everything else runs only when
-  named — named answer, single, graph, and the intake verb since renamed
-  outline at this design's writing; the 2026-08-31 routing redesign
-  renamed them again to act, brick, frame, and outline
-  (`docs/vocabulary.md`'s routing-shape entry owns the current mapping).
-  Recurring shapes accumulate as templates under `example-workflows/`,
-  never in the dispatch prose (diluted attention: the always-paid cost
-  never grows).
-- **A template was tickets, not a second grammar.** A demoted pattern's
-  law rode its stubs' Goal and Context; the combinators were the ticket
-  graph's own — a `depends_on` edge, parallel stubs, a loop stub — and
-  `tickets.py instantiate` wrote the run mechanically, with no engine,
-  contract or step file of its own to keep in step with the ticket
-  contract (cheap generation: the gate was the same graded ticket shape
-  every other item had). That command retired with the decomposed-root
-  concept it served (W4a): a named workflow is now prose that opens a
-  frame and calls callables directly, no materializing step between them —
-  "Why two callables, frames, and prose" below is that design.
-- **The envelope closes the algebra.** Every ticket attempt closes through
-  the dispatch outcome envelope, fenced to its assignment, attempt, reserved
-  outcome identity, writer, and evidence. Its accepted durable result
-  identity becomes successor evidence with no per-pair glue (search is memory:
-  one return shape, one name).
-
-Its open decisions closed as: ticket sets drained by orch-frontier,
-proven on the `fix` fixture; Claude keeps all skill adapters — measured
-2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
-the delegation contract merged into `work-item.md`; orch-delegate (the
-skill) deleted; the domain instances and the loop engine kept (the
-engine since absorbed into the driver as the ticket `loop` field, 2026-08-30).
+  the work itself takes the ordinary smallest-first code route. An item's
+  scope never exceeds the host surface that resolves its call edges, or
+  the item would dangle (search is memory).
 
 ## Why documentation is designed this way
 
@@ -156,8 +109,8 @@ and how review reads; none bound what its domain's terms mean or what
 good shape is at write time. Undefined judged terms resolve differently
 in every fresh judge context, so gate verdicts churn, and executors
 write to an unstated bar the one gate then pays for in rework. The cell
-that closes it is each pack's `references/craft.md` — **Vocabulary**
-and **Shape** — defined by
+that closes it is each pack's `references/craft.md` — **Vocabulary**,
+**Workspace**, **Spec fields** and **Lens** — defined by
 [contracts/pack-signature.md](contracts/pack-signature.md) and carried
 to every executor through the ticket's `pack` stamp.
 
@@ -170,7 +123,7 @@ Why this shape:
   signature leak.
 - **One file, not vocabulary and design separately.** A good craft
   term is a compressed principle — "skim layer" names a thing and
-  instructs you to build one. The two halves are consumed together at
+  instructs you to build one. The sections are consumed together at
   write and review time; splitting doubles every child's reads.
 - **Per pack, not central.** `docs/vocabulary.md` is the library's
   own namespace and stays domain-free; a central domain glossary
@@ -184,14 +137,11 @@ Why this shape:
   vocabulary — an exit code means the same thing in every context.
   Judged oracles are rubrics executed by fresh instances of the same
   weights: an undefined dimension is re-invented per judge. Craft
-  vocabulary is to judged verdicts what hash pins are to contracts —
-  what makes independent readings converge.
+  vocabulary is to judged verdicts what a rendered field table is to
+  contracts — what makes independent readings converge.
 
 Craft is bounded — a non-empty-line budget the validator enforces
-(`common.py`'s `CRAFT_BUDGET`), and a closed
-consumer test that makes an unconsumed term a defect, both owned by
-the cell's definition in
-[contracts/pack-signature.md](contracts/pack-signature.md) — because
+(`common.py`'s `CRAFT_BUDGET`) — because
 reference material that grows without consumers is exactly the
 diluted-attention failure the body budgets exist to prevent.
 Workspace style stays with the workspace's standards owner.
@@ -201,9 +151,8 @@ Workspace style stays with the workspace's standards owner.
 The craft files own their text — `packs/*/references/craft.md`; this
 file owns only why each list earned its lines.
 
-- **Code** terms name the executor's discipline (seam, tracer,
-  tautological check, idiom); the shape section is the reader's cost
-  model applied to code.
+- **Code** terms name the executor's discipline (seam, tracer, idiom);
+  its Lens entries are the reader's cost model applied to code.
 - **Content** terms are genre-free: each names a decision every
   document makes — a tweet, a README, and a chapter all have a hook,
   a throughline, an arc, a skim layer, a landing. The voice contract
@@ -275,7 +224,7 @@ logging resolves the user-scope sink through
 project-pinned lib version was never implemented (its receipt recorded
 no source commit). The user install resolves every call edge. Project
 authoring scope remains a distinct landing zone for custom skills and
-compositions under `<repo>/.orchflows`; it is not an installer scope.
+workflows under `<repo>/.orchflows`; it is not an installer scope.
 
 ## Why session tracing is post-hoc
 
@@ -423,8 +372,7 @@ one the join will grade. That is the test for what belongs in code.
   the child's first filed record already proves the same identity the
   receipt echoed back, because `result` validates
   `(dispatch_id, assignment_seal, --by)` on every write. The evidence and
-  the full disposition are `research/subagent-simplification-design-2026-08-30.md`;
-  the law is `contracts/dispatch.md`'s supersession record.
+  the full disposition are `research/subagent-simplification-design-2026-08-30.md`.
 
 - **The packet as a wire object, superseded 2026-08-31.** Of its
   twenty-one fields, the two a child could not obtain any other way —
@@ -460,21 +408,6 @@ one the join will grade. That is the test for what belongs in code.
   is the one channel without exception now. The test is the amnesia test
   again: a perfect model still cannot guess the file you already read, and
   still gains nothing from being told which heading to file a fact under.
-- **A verb is only a verb if a model has to judge something.** The library
-  shipped six callables; two of them were the driver and the join, and by
-  the time `dispatch` emitted a complete launch and `land` evaluated the
-  done predicate, integrated the candidate and printed the ready frontier,
-  neither had any judgment left to spend a whole child's context on. So the
-  engines tier dies with orch-frontier, orch-integrate dies with the
-  handshake it used to adjudicate, and what is callable is exactly the four
-  things a model still has to decide: freeze a root, cut it, build a unit,
-  challenge one. Everything they used to say that was mechanical is a
-  command; everything that was law moved to the rule that already owned the
-  question — `rules/delegation.md` §5 for how a driver grades a return,
-  `rules/verification.md` §§7, 9 for which independence path a ticket walks
-  and what a clean gate skips. The test is the amnesia test once more: a
-  perfect model cannot guess a run's ready set, and gains nothing from being
-  handed a skill body that tells it to ask `land` for one.
 
 ## Why two callables, frames, and prose
 
@@ -577,17 +510,6 @@ default is to drive it in a spawned frame agent.
 - **Workspace style guides** — the standards owner already exists and
   outranks; restating it would create the library's first two-owner
   fact.
-- **A generic orch-unit executor.** The generic unit endpoint is
-  `tickets.py dispatch` and `tickets.py land` over one ticket; executors
-  are the domain leaves a
-  pack binds by exact
-  name, and [rules/delegation.md](rules/delegation.md) §8 forbids
-  splitting a named executor into a generic shell plus a method file —
-  a cut proposed once and ruled fatal. Red-green stays inside the code pack
-  because proving a check can fail is cheap exactly where oracles are
-  executable; its universal core — an oracle must be able to fail —
-  moved to [rules/verification.md](rules/verification.md) §8, where
-  every domain inherits it.
 - **A benchmarks pack, and an executor for oracle-bearing artifacts.**
   Both refused 2026-08-08, against the signature's admission line.
   No new oracle class: discrimination runs a check and compares an exit
@@ -596,8 +518,7 @@ default is to drive it in a spawned frame agent.
   semantics either, and the reason is stronger than "one consumer":
   the library already defines visibility constraints in four places — typed check
   verdicts, candidate-blind evaluation, research lanes, and canary withheld
-  anchors — in their pack or composition
-  contracts, never in a `workspace` cell. Protected evidence policy names
+  anchors — in their pack contracts, never in a `workspace` cell. Protected evidence policy names
   the held-back files. The
   paired executor was refused with it: its claimed ground — that an
   oracle's counterexample is constructible only after the oracle exists
@@ -607,10 +528,10 @@ default is to drive it in a spawned frame agent.
   [rules/verification.md](rules/verification.md) §8, which is where the
   bullet above already put this. Reversal needs a deliverable whose
   visibility partition cannot be expressed through an existing skill or
-  composition contract.
+  pack contract.
 - **A new-cell appetite.** The signature grows only when a generic
   skill needs judgment no cell promises, read strictly. Craft was
-  admitted because orch-outline's noun source had no owner — not
+  admitted because the planning noun source had no owner — not
   because more reference material seemed nice. The next cell must
   clear the same bar.
 - **A generated Claude Code plugin.** Audited 2026-07-16 against a

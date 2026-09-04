@@ -102,11 +102,10 @@ class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
     def test_every_adapter_owns_the_properties_machinery_reads(self):
         for key, adapter in sorted(tickets_mod.ADAPTER_REGISTRY.items()):
             self.assertEqual(key, adapter.key)
-            self.assertTrue(adapter.identity_form)
             self.assertIn(adapter.artifact_kind, {"git", "doc", "evidence"})
             self.assertIsInstance(adapter.establishes_isolation, bool)
             self.assertIsInstance(adapter.deterministic_gate, bool)
-            self.assertTrue(adapter.conflict_semantics)
+            self.assertIsInstance(adapter.commits_in_place, bool)
             self.assertIn(adapter.workspace_strategy, {"git", "evidence-store", "document-tree"})
 
     def test_no_pack_keyed_workspace_registry_survives(self):

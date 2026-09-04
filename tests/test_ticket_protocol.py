@@ -79,10 +79,9 @@ class TicketProtocolTest(unittest.TestCase):
         ):
             self.assertIn(token, dispatch)
         # The handshake half rode out with its machinery: no survivor keeps
-        # its vocabulary alive in the contract that used to own it. Read
-        # against the normative prose alone -- a supersession record's whole
-        # job is to name what it retired, so it names these on purpose.
-        normative = dispatch.partition("T0 supersession record")[0]
+        # its vocabulary alive in the contract that used to own it, and the
+        # supersession records that named what they retired are gone, so the
+        # whole file is the surface this reads.
         for retired in (
             "`dispatch-receive`", "`dispatch-receipt`", "`receipt-required`",
             "`authority-mismatch`", "`profile-mismatch`",
@@ -90,7 +89,7 @@ class TicketProtocolTest(unittest.TestCase):
             "`reply_to`", "`reference`", "`admission`", "`independence`",
             "`dispatch-packet`", "`durability`", "`review_kind`",
         ):
-            self.assertNotIn(retired, normative)
+            self.assertNotIn(retired, dispatch)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
         profiles = (root / "hosts" / "profiles.md").read_text(encoding="utf-8")
         tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
@@ -118,7 +117,7 @@ class TicketProtocolTest(unittest.TestCase):
         ):
             self.assertNotIn(obsolete, tickets)
         for current in (
-            "absolute lease", "`dispatch-join`", "outside-independence path",
+            "absolute lease", "`dispatch-join`", "`tickets.py land`",
         ):
             self.assertIn(current, tickets)
         self.assertIn("committed launch", delegation)
@@ -134,9 +133,18 @@ class TicketProtocolTest(unittest.TestCase):
         vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
         worklog = (root / "contracts" / "worklog.md").read_text(encoding="utf-8")
 
+        # The count is read off `contracts/`, never recalled: this case
+        # spelled "six" while the tree already carried eight contracts, so
+        # it convicted the projection that had started telling the truth.
+        contracts = sorted(path.stem for path in (root / "contracts").glob("*.md"))
+        spelled = (
+            "zero one two three four five six seven eight nine ten"
+        ).split()[len(contracts)]
         for projection in (readme, design):
-            self.assertIn("six", projection.lower())
+            self.assertIn(spelled, projection.lower())
             self.assertIn("dispatch", projection.lower())
+        for name in contracts:
+            self.assertIn(name, readme)
         for field in (
             "assignment_seal", "dispatch_id", "outcome_record_id", "evidence",
         ):
@@ -168,8 +176,6 @@ class TicketProtocolTest(unittest.TestCase):
         for projection in (host, dispatch):
             self.assertIn("workspace", projection.lower())
         self.assertIn("tickets.py land", host)
-        work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
-        self.assertIn("evidence store", work_item.lower())
         self.assertIn('LIVE_CLAIM_STATUSES = ("claimed",)', ui_model)
         self.assertNotIn("Parked claims stay live", dispatch)
         self.assertNotIn("holds the lease", ui_model)

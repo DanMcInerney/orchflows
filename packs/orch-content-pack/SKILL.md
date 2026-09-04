@@ -8,6 +8,4 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | cell | binding |
 | --- | --- |
 | adapter | document-tree |
-| stages | [draft, edit] |
-| assembly | edit |
 | craft | [references/craft.md](references/craft.md) |

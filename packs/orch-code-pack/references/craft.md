@@ -112,8 +112,6 @@ finding.
 - Checks answer to Goal, never to the code: each acceptance behavior
   carries a check derived from the ticket's Goal, its failing reading
   recorded — authored at any point, weakened at none.
-- Run the narrow affected checks; the full suite is the gate's row,
-  never a unit's.
 - For conflict or repair work, read both candidate diffs and the accepted
   blocker ledger; resolve only evidence-backed overlap and record the
   resulting identity.

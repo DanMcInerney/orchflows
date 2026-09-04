@@ -4,12 +4,10 @@
 
 Nothing here is a second scheduler: it turns a comma-separated write scope
 into the subset of already-discovered modules that ``affected_tests`` says
-can observe it, and hands that list back to the one runner. With that it
-owns what the invocation admits, because both answer one question -- which
-sources is this run deciding over. Every way the branch could quietly
-answer a narrower question than the caller asked is a refusal here: an
-oracle may return a smaller answer, never a smaller question wearing the
-same summary line.
+can observe it. With that it owns what the invocation admits, because both
+answer one question -- which sources is this run deciding over. An oracle
+may return a smaller answer, never a smaller question wearing the same
+summary line.
 """
 
 from __future__ import annotations
@@ -32,14 +30,7 @@ def paths(scope: str) -> list:
 
 
 def refuse_positional(scope, modules) -> None:
-    """Refuse a scope a shell split into trailing MODULE arguments.
-
-    ``--scope a b c`` binds ``a`` and leaves ``b c`` as positional modules,
-    which the scope selection then overwrites outright. The run decides on
-    ``a`` alone and prints OK: measured once at 2 modules and 19 tests where
-    the comma spelling ran 22 and surfaced a red. One separator is the whole
-    difference, so the spelling is refused rather than interpreted.
-    """
+    """Refuse a scope a shell split into trailing MODULE arguments."""
 
     if not (scope and modules):
         return None
@@ -50,14 +41,7 @@ def refuse_positional(scope, modules) -> None:
 
 
 def size_report_paths(scope, modules, default_tests_dir: bool):
-    """Return the paths the source-size report covers, or None for none.
-
-    An empty list is the whole tracked tree. A scoped run is reported over
-    the sources it named and no others: while the report still blocked, a
-    sibling's over-cap file elsewhere on a shared branch was measured
-    failing every unit's scoped oracle regardless of what that unit had
-    changed; the same coverage keeps a warning about this run's sources.
-    """
+    """Return the paths the source-size report covers, or None for none."""
 
     if not default_tests_dir:
         return None
@@ -82,15 +66,7 @@ def named_shard(rel, discovered):
 
 
 def carries(root, discovery, path) -> bool:
-    """Whether the revision a selection came from carries one scope path.
-
-    ``None`` from git is "cannot be asked", which is not evidence of absence
-    and leaves the resolver's own reading standing. An empty listing is the
-    revision answering that it holds no such path, and then "no affected
-    module" is a fact about a file nothing ever read rather than about the
-    tests -- the shape a sibling measured over two files it had just
-    created, one of them its own test module, at exit 0.
-    """
+    """Whether the revision a selection came from carries one scope path."""
 
     tree = discovery.get("tree")
     if discovery.get("source") != "git" or not tree:
@@ -100,19 +76,7 @@ def carries(root, discovery, path) -> bool:
 
 
 def select(scope: str, tests_dir, discovered) -> list:
-    """Return the discovered modules a comma-separated scope reaches.
-
-    The resolver answers from the committed revision and the runner
-    discovers from disk. Where the two cannot be reconciled the selection is
-    a sample of a tree nobody is deciding -- how one revision reported 28
-    modules and 1918 tests once and 29 and 1927 the next time -- so the
-    selection names the revision it came from and refuses the two readings
-    that are silently somebody else's tree.
-
-    Exits 0 when the scope reaches nothing: a scope whose modules all
-    resolved away must never fall through to running the whole suite, and
-    "no test covers this path" is an answer, not a failure.
-    """
+    """Return the discovered modules a comma-separated scope reaches."""
 
     tests_dir = Path(tests_dir)
     root = tests_dir.parent
@@ -145,17 +109,7 @@ def select(scope: str, tests_dir, discovered) -> list:
         raise SystemExit(0)
     return selected
 def shard(selector, ordered: list) -> list:
-    """Return the ``K-of-N`` slice of an already-scheduled order, or all of it.
-
-    Round-robin over the schedule, never a contiguous block. The order this
-    receives is longest-first, so every N-th module hands each shard one of
-    each size class and the shards land together; a contiguous half would
-    take every long module into the first one and finish no sooner than the
-    whole suite did.
-
-    ``K-of-N`` and not ``K/N`` because CI carries this value into a cache key
-    and an artifact name, and an artifact name cannot hold a slash.
-    """
+    """Return the ``K-of-N`` slice of an already-scheduled order, or all of it."""
 
     if not selector:
         return ordered

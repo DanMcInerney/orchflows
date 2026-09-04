@@ -15,7 +15,6 @@ import tools.validate as validate  # noqa: E402
 
 VALIDATE = ROOT / "tools" / "validate.py"
 CONTRACTS = ROOT / "contracts"
-PINS = ROOT / "tests" / "pins.json"
 
 # Compiled once: the isolated-tree tests execute this body per run, in a
 # namespace whose __file__ points at their own copy.
@@ -47,19 +46,14 @@ class _Result:
 
 
 class _IsolatedTree(unittest.TestCase):
-    """A synthetic repo tree -- contracts/, tools/validate.py, the
-    committed pins, plus whatever the test writes -- with validate.py run
-    against it.
+    """A synthetic repo tree -- contracts/, tools/validate.py, plus
+    whatever the test writes -- with validate.py run against it.
 
-    Two spawns per test bought nothing. The pin spawn is gone because the
-    contract bytes here are copied verbatim from the tree pins.json is
-    pinned to (TestPinFlagRoundTrip.test_pin_matches_committed_pins_json
-    is the proof), so copying the file is the same fixture. The run itself
-    is in process because validate.py derives ROOT from its own __file__,
-    so executing its body in a namespace rooted at the copy is the run the
-    subprocess made. The CLI boundary -- argv, exit status, a real
-    interpreter -- stays covered by TestValidatorAgainstRepo and
-    TestPinFlagRoundTrip, which still spawn.
+    Two spawns per test bought nothing. The run is in process because
+    validate.py derives ROOT from its own __file__, so executing its body
+    in a namespace rooted at the copy is the run the subprocess made. The
+    CLI boundary -- argv, exit status, a real interpreter -- stays covered
+    by TestValidatorAgainstRepo, which still spawns.
     """
 
     def setUp(self):
@@ -73,7 +67,6 @@ class _IsolatedTree(unittest.TestCase):
         (self.tmp_path / "scripts").mkdir()
         shutil.copy(ROOT / "scripts" / "doclint.py", self.tmp_path / "scripts" / "doclint.py")
         (self.tmp_path / "tests").mkdir()
-        shutil.copy(PINS, self.tmp_path / "tests" / "pins.json")
 
     def _run(self, *args):
         namespace = {

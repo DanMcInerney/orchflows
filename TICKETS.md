@@ -152,26 +152,15 @@ claimant observations and its `## Report`, but it has no live attempt.
 
 ## Review
 
-Three moments use readers who did not produce the fixed artifact
-([rules/verification.md](rules/verification.md) §7):
+One moment uses a reader who did not produce the fixed artifact; the join
+reads every return ([rules/verification.md](rules/verification.md) §7):
 
-    plan ─▶ CUT CHECK ─▶ callables under the frame ─▶ JUDGE ─▶ LAND
-            before units        one outside path      a callable, runs the
-                                                       then a do  done
-                                                       to repair  predicate
+    callables under the frame ─▶ JUDGE ─▶ LAND
+      one outside path           a callable, runs the
+                                  then a do  done
+                                  to repair  predicate
 
-1. **Cut check** — before any unit is dispatched, a checker reads the
-   issued ticket set as data and returns blockers to the planner before a
-   replacement generation is sealed. It is
-   accepted when [scripts/cutcheck.py](scripts/cutcheck.py) exits 0.
-   Once a unit dispatch opens, cut correction is refused.
-2. **Ticket independence** — the caller's own join (`tickets.py land`) reads
-   Goal and Context against the fixed artifact and evidence; that is now
-   the ordinary outside-independence path's one shape. The distinct
-   `<id>.check` review ticket, its `orch-judge` dispatch, and `tickets.py
-   check <run> <id> --stage <id>.check`'s anchor onto `checked_by` retired:
-   no live command ever built the ledger that reader required.
-3. **Critique and repair** — a critique is a `judge` ticket over the artifacts
+1. **Critique and repair** — a critique is a `judge` ticket over the artifacts
    it is handed and the repair answering it a `do` ticket, sequenced by the
    calling workflow's prose; no command emits a lensed family for either, and
    each returns the ordinary way — the executor's `## Report` and the

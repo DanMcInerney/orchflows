@@ -1,5 +1,8 @@
 """Row-level validation regression cases."""
 
+import sys
+import types
+
 from tests import test_validate_measures as common
 from tests.test_validate_measures import (
     DECLARED_BOUND,
@@ -9,7 +12,6 @@ from tests.test_validate_measures import (
     Path,
     RecordCase,
     World,
-    ast,
     contextlib,
     copy,
     entry_text,
@@ -267,14 +269,26 @@ STDLIB = frozenset(
 
 class TestCheckerShape(unittest.TestCase):
     def test_checker_imports_only_the_standard_library(self):
-        tree = ast.parse((REPO_ROOT / "tools" / "validate_measures.py").read_text(encoding="utf-8"))
-        imported = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                imported.update(alias.name.split(".")[0] for alias in node.names)
-            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-                imported.add(node.module.split(".")[0])
-        self.assertEqual(imported - STDLIB, set())
+        """Read off the imported checker, not off its source text.
+
+        An import binds a module object in the importing namespace, and
+        where a module was loaded from is its own fact -- so "did this
+        checker reach outside the standard library" is answered by walking
+        what it bound and asking each name where it lives. The frozen
+        `STDLIB` set names what it may bind; the location reading is the
+        half that cannot be satisfied by a same-named local file.
+        """
+
+        imported = {
+            value.__name__.split(".")[0]
+            for value in vars(vm).values()
+            if isinstance(value, types.ModuleType)
+        }
+        self.assertEqual(set(), imported - STDLIB)
+        for name in sorted(imported):
+            location = getattr(sys.modules[name], "__file__", None) or ""
+            with self.subTest(name):
+                self.assertNotIn("site-packages", location)
 
     def test_clean_record_prints_nothing_at_all(self):
         path = WORLD.write_record(full())

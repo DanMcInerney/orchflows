@@ -2,14 +2,13 @@
 """A bundle's own manifest: `BUNDLE.md` beside its item directories.
 
 The file `contracts/bundle.md` owns -- a bundle's name, the revision of it
-this is, and the pinned bundles it requires -- and nothing else.  Reading
+this is, and the pinned bundles it requires -- and nothing else. Reading
 one fetches nothing and trusts nothing: it produces references, and
-`scripts/orchflows_home.py`'s pin law decides which of them may be
-followed and what the closure they describe becomes.
+`scripts/orchflows_home.py`'s pin law decides which may be followed.
 
 Separate from that module because this is knowledge of a file format and
-that is the ring's use of it: the manifest arrives from a remote, so the
-parser it goes through is small, one-directional, and readable entire.
+that is the ring's use of it: the manifest arrives from a remote, so its
+parser is small, one-directional, and readable entire.
 """
 
 from __future__ import annotations
@@ -30,11 +29,7 @@ def manifest_path(bundle: Path) -> Path:
 
 
 def clone_bundle_dir(clone: Path) -> Path:
-    """The bundle directory inside a cloned bundle repository.
-
-    The same path `rings.py` reads that clone's items through, so a
-    manifest is never looked for where an item would not be found.
-    """
+    """The bundle directory inside a cloned bundle repository."""
 
     return Path(clone) / rings.BUNDLE_DIR
 
@@ -47,12 +42,7 @@ def _scalar(value: str) -> str:
 
 
 def _manifest_fields(text: str) -> Dict[str, object]:
-    """The manifest's frontmatter: scalars, plus a list where one is written.
-
-    Deliberately small -- three fields, two list spellings (``[a, b]`` and a
-    block of ``- `` items) and no other YAML. This parser runs over a file
-    that just arrived from a remote, so it is one a reader can hold entire.
-    """
+    """The manifest's frontmatter: scalars, plus a list where one is written."""
 
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
@@ -88,14 +78,7 @@ def _manifest_fields(text: str) -> Dict[str, object]:
 
 
 def read_manifest(bundle: Path) -> Optional[dict]:
-    """One bundle's manifest, or ``None`` where it carries none.
-
-    A bundle without a manifest is a bundle with no requirements -- every
-    bundle published before the manifest existed is one -- so an absent
-    file is a fact here and never a refusal. A `requires` that is not a
-    list is a different thing: a malformed declaration, refused loudly
-    rather than read as an empty one.
-    """
+    """One bundle's manifest, or ``None`` where it carries none."""
 
     path = manifest_path(bundle)
     try:

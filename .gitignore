@@ -1,9 +1,5 @@
-# Runtime state: everything in .orch/ except the tracked canary fixture.
-# Canary scratch is a run-output area; only its .gitkeep is tracked.
+# Runtime state: everything in .orch/.
 .orch/*
-!.orch/canary/
-.orch/canary/scratch/*
-!.orch/canary/scratch/.gitkeep
 
 # Session-local host state.
 .claude/worktrees/

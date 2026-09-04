@@ -1,14 +1,7 @@
 """Open the generation lifecycle on one root and its declared cut.
 
-`stamp-generation` used to sit beside `instantiate` as its hand-authored
-twin: one sealed a graph it rendered, the other opened the lifecycle on a
-graph somebody wrote. `instantiate` and the template layer it read are
-gone -- callables mint their own graphs at runtime now -- so only the
-second half survives, here alone.
-
-It is dead as a public subcommand (W3a removed the command from the
-dispatch table) and alive as an internal call: `tickets_mint.py`'s
-parentless-root path calls it directly to open the one-member cut a
+Not a public subcommand: it is an internal call, and `tickets_mint.py`'s
+parentless-root path is its one caller, opening the one-member cut a
 standalone `do`/`judge` callable takes on itself.
 """
 
@@ -40,17 +33,7 @@ STAMP_GENERATION_USAGE = "stamp-generation <run> <root-id>"
 
 
 def _cmd_stamp_generation(rest):
-    """Open the generation lifecycle on one root and its declared cut.
-
-    The identity comes from the exact snapshot, so a stamp is reproducible
-    from what it stamped. Root kind is independent of its executor: direct
-    and decomposed roots enter the same lifecycle.
-
-    Refused on a cut any member of which is already taken up -- a stamp
-    rewrites the assignment a member is graded against, and doing that
-    under a working executor is the moving target rules/verification.md §3
-    forbids.
-    """
+    """Open the generation lifecycle on one root and its declared cut."""
     args = list(rest)
     if len(args) != 2:
         return {'error': f'usage: {STAMP_GENERATION_USAGE}'}

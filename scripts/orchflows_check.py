@@ -5,31 +5,21 @@
 here well formed? -- and a ring holds the same kinds of item under a user's
 own directory. So this asks that question by calling those functions: the
 refusal a ring author reads is the same sentence, from the same line, a
-contributor reads from the compiler. No bound and no wording lives here.
+contributor reads. No bound and no wording lives here.
 
-Two things differ between a ring and the library, and only two.
+Two things differ. A ring keeps one flat directory per kind
+(`scripts/rings.py`'s `RING_DIRS`) where the library keeps skill tiers and
+two workflow homes, so discovery is this module's. And a ring item's
+`orch-` call edges point into the library, so the names an edge may
+resolve to are every name that resolves from here, not the ring's own.
 
-A ring keeps one flat directory per kind (`scripts/rings.py`'s `RING_DIRS`)
-where the library keeps skill tiers and two workflow homes, so discovery is
-this module's and the checks are told where to look.
-
-A ring item's `orch-` call edges point out of the ring and into the library,
-so the names an edge may resolve to are every name that resolves from here,
-not the ring's own -- grading a ring against itself alone would refuse
-`orch-do`.
-
-What is *not* asked is as deliberate. A ring skill is an applied skill: a
-host's own artifact a kernel verb wraps as its method, not a kernel-tier
-skill. The library's Require/Never/Return anatomy and its tier word budget
-are therefore not its law -- `orchflows new skill` writes neither, and the
-home ring's own `super-research` body is 672 words against a 450-word tier
-budget. Its frontmatter is graded, because a name that does not match its
-folder is an item the host reads under a name nothing resolves; and its
-`role` is graded against the two an applied skill may declare, because
-`--skill` reads that field to establish the child and a ring skill without
-one would pass here and be refused at dispatch. A ring pack, workflow and
-sheet are the same kinds of thing the library ships and take the library's
-checks whole.
+A ring skill is an applied skill, so the library's Require/Never/Return
+anatomy and its tier word budget are not its law. Its frontmatter is
+graded, because a name that does not match its folder resolves nothing;
+and its `role` is graded against the two an applied skill may declare,
+because `--skill` reads that field and a ring skill without one would pass
+here and be refused at dispatch. A ring pack, workflow and sheet take the
+library's checks whole.
 """
 
 from __future__ import annotations
@@ -47,16 +37,7 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 
 
 def support():
-    """`(bundle, names, packages, sheets, structure, tooling)`, checkout or install.
-
-    One package under two parents. `scripts/rings.py` already owns which
-    library this process reads -- a checkout, else the installed `lib/` --
-    and the package sits inside it either way: under `tools/` in a
-    checkout, directly under `lib/` in an install
-    (`installer/planning_support.py` puts it there). Every import inside it
-    is relative, so the two names are the same modules and neither is a
-    copy of the other.
-    """
+    """`(bundle, names, packages, sheets, structure, tooling)`, checkout or install."""
 
     library = str(rings.lib_root())
     if library not in sys.path:
@@ -73,12 +54,7 @@ def support():
 
 
 def ring_at(argument=None) -> Path:
-    """The ring to grade: the directory named, else this project's, else home.
-
-    A named directory that is not itself a ring but holds one resolves to
-    the bundle inside it. That is what a person standing in their own
-    repository types, and `<repo>` and `<repo>/.orchflows` name one ring.
-    """
+    """The ring to grade: the directory named, else this project's, else home."""
 
     if not argument:
         bundle = rings.project_ring()
@@ -93,12 +69,7 @@ def ring_at(argument=None) -> Path:
 
 
 def items(ring: Path, kind: str):
-    """Every `(directory, manifest)` of one kind in this ring, by name.
-
-    A directory without the kind's manifest is data rather than an item,
-    the same reading `tools/validate_support/packages.py` gives a tier
-    directory that holds only references.
-    """
+    """Every `(directory, manifest)` of one kind in this ring, by name."""
 
     directory = ring / rings.RING_DIRS[kind]
     if not directory.is_dir():
@@ -133,12 +104,7 @@ def _roots(ring: Path, kind: str):
 
 
 def resolvable_names(ring: Path) -> set:
-    """Every item name a call edge in this ring may resolve to.
-
-    The ring's own items and everything else `scripts/rings.py` resolves
-    from here, which is the set a dispatch will resolve against: a ring
-    item calls the library by name, and the library never calls back.
-    """
+    """Every item name a call edge in this ring may resolve to."""
 
     found = set()
     for kind in rings.KINDS:
@@ -166,12 +132,7 @@ def _package(directory: Path, manifest: Path, kind: str) -> dict:
 
 
 def _folded(path) -> str:
-    """One spelling of a path, for comparing two a caller spelled differently.
-
-    `ring_at` resolves the directory it is handed and `rings.home_ring`
-    does not, and on Windows an unresolved temporary directory can still
-    carry its short name, so neither side is compared as it arrives.
-    """
+    """One spelling of a path, for comparing two a caller spelled differently."""
 
     try:
         return str(Path(path).resolve()).casefold()
@@ -180,14 +141,7 @@ def _folded(path) -> str:
 
 
 def _imported(ring: Path) -> bool:
-    """Whether `imports.lock` pins this bundle.
-
-    `orchflows sync` never asks the ledger about an import: the pin is the
-    acceptance, which is what `rings._trust_state` calls inherent and what
-    `rings.resolve` means by "you pinned the third". A directory sitting
-    under `imports/` that the lock does not name resolves nowhere at that
-    door, so it is a stranger at this one too.
-    """
+    """Whether `imports.lock` pins this bundle."""
 
     home = rings.home_ring()
     folded = _folded(ring)
@@ -198,19 +152,7 @@ def _imported(ring: Path) -> bool:
 
 
 def _untrusted(ring: Path):
-    """The ring, unless this is content its user has already accepted.
-
-    Reading a declaration is inert and resolving a name on `PATH` runs
-    nothing, but a `::` probe is the item's own command, so the question
-    here is the one `orchflows trust` exists for: has this user accepted
-    this ring's content? Two rings answer yes without the ledger, and for
-    the same reason `orchflows sync` does not ask it about them: the home
-    ring is the user's own directory, and an import is pinned. Every other
-    directory is the ledger's to answer -- the project ring, and any bundle
-    at all, cloned or copied from anywhere, that `check` was handed -- so
-    the grant `orchflows sync`'s own remedy asks for, printed here rather
-    than in a second sentence, is the grant that makes this probe run.
-    """
+    """The ring, unless this is content its user has already accepted."""
 
     if _folded(ring) == _folded(rings.home_ring()):
         return None
@@ -220,16 +162,7 @@ def _untrusted(ring: Path):
 
 
 def _tooling(ring: Path, diag, declaring, packages) -> None:
-    """Every declared tool or variable this machine is missing, with its line.
-
-    The grammar half is the library's, already reported by
-    `tooling.validate_tools_declarations`. This is the other half, and it is
-    the half a ring author came for: `orchflows sync` resolves each
-    declaration before a run, and a `check` that stayed silent about a tool
-    that is not here would pass a ring no run can use. The resolver is
-    `sync`'s, so the sentence and the line a reader gets are the same at
-    both doors; only the surrounding format is each door's own.
-    """
+    """Every declared tool or variable this machine is missing, with its line."""
 
     untrusted = _untrusted(ring)
     for kind, directory in declaring:
@@ -296,8 +229,7 @@ def _grade(ring: Path, diag, bundle, names, packages, sheets, structure, tooling
     structure.validate_call_graph(graded, diag, known=resolvable_names(ring))
     # A `tools.txt` is a declaration `orchflows sync` reads before a run; a
     # line its parser cannot read is a tool nobody is told is missing. The
-    # ring keeps no tiers, so the directories walked above are handed over
-    # rather than rediscovered.
+    # ring keeps no tiers, so the directories walked above are handed over.
     tooling.validate_tools_declarations(
         diag, item_dirs=[directory for _kind, directory in declaring],
     )
@@ -308,13 +240,7 @@ def _grade(ring: Path, diag, bundle, names, packages, sheets, structure, tooling
 
 
 def check(ring: Path):
-    """`(diagnostics, counts)` for one ring, graded by the library's checks.
-
-    The check functions read a module-level root, which is the seam
-    `tools/validate.py` uses to point them at a tree; it is bound to the
-    ring for the duration and restored, so every file label a finding
-    carries is relative to the ring the reader asked about.
-    """
+    """`(diagnostics, counts)` for one ring, graded by the library's checks."""
 
     bundle, names, packages, sheets, structure, tooling = support()
     modules = (bundle, names, packages, sheets, structure, tooling)

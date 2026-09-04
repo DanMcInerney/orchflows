@@ -36,8 +36,10 @@ class GoalEvidenceContractTest(unittest.TestCase):
     def test_execute_consumes_pack_craft_and_records_post_work_evidence(self):
         execute = read("skills/kernel/orch-do/SKILL.md")
         self.assertIn("whole craft document", execute)
-        self.assertRegex(execute, r"Details prescribes[\s\S]*deviate and\s+report")
-        self.assertRegex(execute, r"Stream the\s+executor record")
+        # The Details prescribe/deviate rule is contracts/work-item.md's and
+        # the launch prompt's; a third copy here was the same law thrice.
+        self.assertNotIn("Details prescribes", execute)
+        self.assertRegex(execute, r"Stream the\s+executor\s+record")
         self.assertIn("reserved outcome", execute)
         result_contract = " ".join(read("contracts/result.md").split())
         self.assertIn("do not change the semantic assignment digest", result_contract)
@@ -183,7 +185,7 @@ class BlockingLawOwnershipTest(unittest.TestCase):
     The two halves were one paragraph in `orch-code-pack`'s `### git`
     entry, which left the four other packs' judges with a field to fill
     and nothing to read for it. The law is now `rules/verification.md`
-    §10 and no craft restates it.
+    §9 and no craft restates it.
     """
 
     # Anchors, not sentences: each is a backticked field value or a
@@ -211,8 +213,8 @@ class BlockingLawOwnershipTest(unittest.TestCase):
 
     def test_the_rule_owns_the_law_and_no_craft_restates_it(self):
         rule = " ".join(read("rules/verification.md").split())
-        clause = re.search(r"(?s)\b10\. (.*?)(?=\s\d{1,2}\. |\Z)", rule)
-        self.assertIsNotNone(clause, "rules/verification.md carries no clause 10")
+        clause = re.search(r"(?s)\b9\. (.*?)(?=\s\d{1,2}\. |\Z)", rule)
+        self.assertIsNotNone(clause, "rules/verification.md carries no clause 9")
         for anchor in self.LAW_ANCHORS:
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, clause.group(1))
@@ -225,7 +227,7 @@ class BlockingLawOwnershipTest(unittest.TestCase):
 
     def test_the_judge_points_at_the_clause_that_carries_the_law(self):
         body = " ".join(read("skills/kernel/orch-judge/SKILL.md").split())
-        self.assertIn("`rules/verification.md` §10", body)
+        self.assertIn("`rules/verification.md` §9", body)
 
     def test_every_deliverable_lens_entry_weighs_its_findings_once(self):
         """The kind comes from the pack's own adapter, so the entry this

@@ -22,7 +22,7 @@ GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha2
 # seal, it fails admission rather than silently renaming the Lens entry the
 # child works against.
 ASSIGNMENT_SYSTEM_FIELDS = (
-    "bound", "done", "independence", "isolation", MAKES_FIELD, "pack",
+    "bound", "done", "isolation", MAKES_FIELD, "pack",
     "pack_digest", "profile", "sheet_digests", "sheets", "skill",
     "skill_digest",
 )
@@ -200,16 +200,16 @@ def _failure_identity(findings) -> str:
     )
     return "sha256:" + _digest(normalized)
 
-def correction_decision(findings, history, bound: int = 1) -> dict:
-    """Spend one bounded correction generation, or suspend deterministically."""
+CORRECTION_BOUND = 1
 
-    if isinstance(bound, bool) or not isinstance(bound, int) or bound <= 0:
-        raise GenerationError("correction bound must be a finite positive integer")
+def correction_decision(findings, history) -> dict:
+    """Spend the one correction generation, or suspend deterministically."""
+
     prior = list(history or [])
     identity = _failure_identity(findings)
     if identity in prior:
         return {"disposition": "suspend", "reason": "recurring-validation-failure", "failure_identity": identity, "history": prior}
-    if len(prior) >= bound:
+    if len(prior) >= CORRECTION_BOUND:
         return {"disposition": "suspend", "reason": "correction-bound-exhausted", "failure_identity": identity, "history": prior}
     updated = prior + [identity]
     return {"disposition": "new-generation", "failure_identity": identity, "history": updated, "next_ordinal": len(updated) + 1}

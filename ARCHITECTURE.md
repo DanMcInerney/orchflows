@@ -1,14 +1,13 @@
 # Architecture
 
 Ceiling: 945 whitespace-delimited words. Terms are
-[the vocabulary](docs/vocabulary.md)'s; raised from 850 for the ring
-family's owner modules and again for T2's second directory.
+[the vocabulary](docs/vocabulary.md)'s.
 
 ## Four tiers
 
 - **T0 — [`contracts/`](contracts/):** the narrow waist. Each contract
-  owns one pure data shape, hash-pinned: a field or enum change breaks
-  it even when the prose meaning holds.
+  owns one pure data shape, whose generated table renders from
+  [`contracts/shapes.json`](contracts/shapes.json).
   [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns the
   two callables; `workflows/` the reusable domain-blind workflows.
@@ -40,17 +39,13 @@ family's owner modules and again for T2's second directory.
   `tickets_markdown.py` semantic payload parsing and byte preservation;
   `tickets_admission.py` receipt lifecycle; `tickets_generations.py` immutable
   generation and seal identities; `tickets_project.py` run-project binding;
-  `tickets_dispatch_schema.py` dispatch-grammar validation; `tickets_attempts.py`
-  mutates atomically;
-  `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
-  `tickets_emission.py` emission grading; `tickets_issue_render.py`
-  issuance markdown; `tickets_mint.py` and `tickets_frame.py` the callable
-  and frame minting commands; `tickets_shape_line.py` shape-line grammar;
-  `tickets_dispatch_launch.py` the host binding,
-  `tickets_dispatch_launch_lines.py` the prompt's lines. `cutcheck.py`
-  owns structural graph validation.
-  Cutcheck imports those owners directly, never the tickets facade;
-  admission and cutcheck never import each other.
+  `tickets_dispatch_schema.py` dispatch-grammar validation;
+  `tickets_attempts.py` mutates atomically; `tickets_join.py` reserved outcome
+  import and outcome-fenced lifecycle joins; `tickets_emission.py` emission
+  grading; `tickets_issue_render.py` issuance markdown; `tickets_mint.py` and
+  `tickets_frame.py` the callable and frame minting commands;
+  `tickets_shape_line.py` shape-line grammar; `tickets_dispatch_launch.py` the
+  host binding, `tickets_dispatch_launch_lines.py` the prompt's lines.
 - [`scripts/workspace.py`](scripts/workspace.py) owns a candidate worktree's
   whole life: `establish` creates and records it, `prepare` installs what it
   declares, `retire` removes it. [`scripts/state_root.py`](scripts/state_root.py)
@@ -102,14 +97,17 @@ family's owner modules and again for T2's second directory.
   shared`, with one named reuse edge: the Now view renders the Workflows-owned
   [`SummaryFlow`](reader/web/src/features/workflows/view/SummaryFlow.tsx)
   flowchart and stylesheet.
+- [`hosts/`](hosts/) owns host records and the role bindings
+  [roles.md](rules/roles.md) §3 resolves against.
+- [`benchmarks/`](benchmarks/) owns evidence corpora, not library machinery.
+- [`.orchflows/`](.orchflows/) owns this repository's own project ring.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale; [`README.md`](README.md)
   is the human entry surface, not an owner of agent law.
 
 ## Runtime routing pins
 
-Helper membership derives from code. Two
-non-derivable facts: `scripts/cutcheck.py` owns cut-defect
-detection over issued ticket sets; `scripts/tickets.py` owns
+Helper membership derives from code. One
+non-derivable fact: `scripts/tickets.py` owns
 the public ticket facade, the one root,
 immutable run identity (`opened_at`, installed version, source commit),
 immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
@@ -132,8 +130,8 @@ readiness facts and causal explanations.
   failure behavior: [visibility §6](rules/visibility.md). Resolver:
   [`scripts/state_root.py`](scripts/state_root.py). Research evidence lives in
   the sink's `research/` tree.
-- `.orch/` holds tracked `canary/` fixtures and legacy generated `bin/`
-  scripts named by project receipts, cleaned up through uninstall.
+- `.orch/` holds legacy generated `bin/` scripts named by project
+  receipts, cleaned up through uninstall.
 
 ## Dependency direction
 

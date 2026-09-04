@@ -1,1 +1,0 @@
-{"name":"t0-rule-pin","mutation":"change:rules/a.md","edge":{"from":{"operation":"change","path":"rules/a.md"},"requires":[{"operation":"change","path":"tests/rule-pins.json"}],"reason":"declared rule pin"}}

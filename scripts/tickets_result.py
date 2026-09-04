@@ -62,14 +62,7 @@ def _cmd_result(rest):
 
 
 def _result_under_run_lock(rest):
-    """Commit one attributed report record and its replay receipt together.
-
-    There is one section and one mode: every filing appends to `## Report` as
-    the work is produced. The flags that chose between five sections, and the
-    pair that chose between writing over a prefilled `[]` and adding after it,
-    are gone with the sections they sorted -- nothing downstream reads which
-    heading a fact arrived under, so nothing asks the child to pick one.
-    """
+    """Commit one attributed report record and its replay receipt together."""
     args = list(rest)
     assignment_seal = _extract_flag(args, '--assignment-seal')
     dispatch_id = _extract_flag(args, '--dispatch-id')
@@ -155,37 +148,14 @@ def _result_under_run_lock(rest):
         record_kind="result",
     )
 def _is_terminal_heading(line: str) -> bool:
-    """Whether one line closes a run's notes.
-
-    Case-insensitive, and the prefix must end the word: ``## terminal`` and
-    ``## terminal: complete`` close, ``## terminals`` is an ordinary
-    heading. A note that would read as one is refused rather than written,
-    so nothing but ``--terminal`` can ever put this marker in the file.
-    """
+    """Whether one line closes a run's notes."""
     stripped = line.strip()
     if not stripped.lower().startswith(TERMINAL_HEADING):
         return False
     remainder = stripped[len(TERMINAL_HEADING):]
     return remainder == '' or remainder.startswith(':')
 def _append_one_line(path: Path, block: str) -> None:
-    """Append in one write, serialised where the platform does not do it.
-
-    POSIX ``O_APPEND`` places a write at end-of-file atomically, so append mode
-    alone is the whole guarantee there. The Windows CRT emulates append with a
-    seek and then a write, and those are two steps: two writers take the same
-    offset and one whole line disappears -- seen here as seven notes of eight
-    surviving, every survivor intact, on a job that had passed the run before.
-    A torn line would have been obvious; a missing one reads like a writer that
-    never ran.
-
-    So Windows locks and POSIX does not, and byte zero is the mutex: every
-    appender contends on the same byte. Every ``msvcrt`` mode is a mandatory
-    range lock, not an advisory one, so an append blocks another append and
-    any reader that touches byte zero -- which on this file is every reader,
-    since they all read from the start. A reader refused here retries; it has
-    not found the file unreadable. Nothing here read-modify-writes. The lock
-    serialises the seek the platform hides inside ``write``.
-    """
+    """Append in one write, serialised where the platform does not do it."""
     with open(path, 'a', encoding='utf-8', newline='\n') as handle:
         if msvcrt is None:
             handle.write(block)
@@ -193,10 +163,7 @@ def _append_one_line(path: Path, block: str) -> None:
         handle.seek(0)
         # `_lock_windows_byte`, not `LK_LOCK`: that mode stops retrying after
         # ten attempts and then raises, and eight appenders contending on one
-        # runner outlast it -- a note refused as `unwritable run state:
-        # [Errno 13] Permission denied` on a job that had passed the run
-        # before. The run lock left this mode for the same reason; this was
-        # the last site still on it.
+        # runner outlast it. The run lock left this mode for the same reason.
         _lock_windows_byte(handle)
         try:
             handle.write(block)
@@ -210,8 +177,7 @@ def _event_host() -> str:
     rather than an import: the two streams' provenance heads differ (no
     ``project_source``, ``workspace``, ``cwd`` or ``skill`` here), and the
     identity plumbing worth sharing -- project resolution -- already is,
-    through ``tickets_project.recorded_project``.
-    """
+    through ``tickets_project.recorded_project``."""
     env = os.environ
     if env.get('CLAUDECODE') or any(key.startswith('CLAUDE_') for key in env):
         return 'claude-code'
@@ -232,26 +198,12 @@ def _event_project(run: str) -> dict:
     """The project an event's ``run`` belongs to: recorded first, the
     caller's own checkout otherwise -- ``friction.py:_provenance``'s
     precedence, read through the tickets modules' own identity plumbing
-    rather than a second copy of it.
-    """
+    rather than a second copy of it."""
     return recorded_project(run) or _writer_identity()[0]
 
 
 def _append_event(run: str, ticket_id: str, event: str, fields: dict) -> None:
-    """Append one terminal machine event to ``<sink>/events/<yyyy-mm>.jsonl``.
-
-    Best-effort and silent to its caller: a write that cannot reach the sink
-    costs the event, never the transition that produced it. ``friction.py``
-    holds this exact bar (its module docstring: "must NEVER block, prompt,
-    or raise") and this mirrors its remedy too -- swallow, then name the
-    failure on stderr, so a host reading only stdout's one JSON document
-    never sees it and a human watching the terminal does.
-
-    The provenance head matches ``friction.py``'s: ``sink_convention``,
-    ``ts``, ``project``, ``run``, ``ticket``, ``host``, ``session`` --
-    the fields a reader needs to slice one workflow's events from every
-    other project's, kept identical across both sink streams on purpose.
-    """
+    """Append one terminal machine event to ``<sink>/events/<yyyy-mm>.jsonl``."""
     try:
         now = datetime.now(timezone.utc)
         entry = {
@@ -274,17 +226,7 @@ def _append_event(run: str, ticket_id: str, event: str, fields: dict) -> None:
 
 def _notes_terminal(path: Path):
     """``(state, error)``: the state a run's notes closed with, ``None``
-    while open, and the read failure when that could not be told.
-
-    A read, never a read-modify-write: the note that follows is still one
-    append in one call, so a line another workspace added in between
-    survives untouched. Missing is open -- the first note creates the file.
-    Refused is not: ``_append_one_line``'s byte-zero lock is mandatory, so a
-    concurrent appender refuses this read on Windows, and reading that
-    refusal as "open" was how a note landed past a terminal section (F F4).
-    The refusal is waited out like ``_read_identity``'s and, if it stays,
-    returned as the error it is.
-    """
+    while open, and the read failure when that could not be told."""
     try:
         text = _waiting_out_windows(lambda: path.read_text(encoding='utf-8'))
     except (FileNotFoundError, NotADirectoryError):
@@ -312,33 +254,7 @@ def _cmd_run_state(rest):
     except OSError as error:
         return {'error': f'unwritable run state: {error}'}
 def _run_state_under_run_lock(rest):
-    """Write this run's state into the one user-scope state sink.
-
-    The channel rules/visibility.md §6 names. The root is resolved the way
-    every other subcommand resolves it — ``scripts/state_root.py``, an
-    environment variable and a home directory, no subprocess — so a child in
-    its own workspace, in any repository or none, reaches the run's state
-    without a git call it may not be allowed to make.
-
-    ``--note`` appends to one shared log, so it opens in append mode with an
-    explicit ``newline`` (``scripts/friction.py``) and writes one line in one
-    call through ``_append_one_line``, which serialises that call on the
-    platform where append is not itself atomic: two workspaces write one
-    run's notes concurrently and neither may read-modify-write them.
-    ``--artifact`` is whole-file, which is safe only because the run id
-    partitions it.
-
-    One sink holds every project's runs, so a run says which project it is:
-    the first write stamps ``run.json`` beside the notes, a later write
-    from another workspace of the same project appends itself to it, and a
-    write from a *different* project is refused by name. Without that, two
-    projects that pick one run id interleave into one log and neither can
-    tell which line is whose.
-
-    There is no fallback. A write that cannot reach that root is reported as
-    an error and lands nowhere else: a run-state write that silently
-    succeeds in the caller's own tree is the loss this channel exists to end.
-    """
+    """Write this run's state into the one user-scope state sink."""
     args = list(rest)
     note = _extract_flag(args, '--note')
     artifact = _extract_flag(args, '--artifact')

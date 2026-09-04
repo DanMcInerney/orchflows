@@ -158,11 +158,10 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
     if kind == "launch":
         if not _closed(content, set(DISPATCH_LAUNCH_RECORD_FIELDS)) or not isinstance(content["launch"], dict):
             return _invalid("committed launch content has an invalid shape")
-        # The launch object closes `contracts/dispatch.md`'s declared shape and
-        # carries no identity of its own: it is the invocation, and what binds
-        # it to this attempt is the stored success below, the same anchor every
-        # other record is held to. A launch that restated the seal and the
-        # dispatch id would be a second home for both.
+        # The launch object closes `contracts/dispatch.md`'s declared shape
+        # and carries no identity of its own: it is the invocation, and what
+        # binds it to this attempt is the stored success below. A launch
+        # that restated the seal and the dispatch id would be a second home.
         if not _closed(content["launch"], set(DISPATCH_LAUNCH_FIELDS)):
             return _invalid("committed launch has unknown or missing fields")
         return _committed_success_failure(
@@ -244,8 +243,7 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             return _invalid(f"join record '{record_id}' has invalid stored success")
         # The disposition is the join's own. The outcome is still required
         # to exist -- its existence is what closed the attempt -- but it no
-        # longer carries a status for this to check itself against, so the
-        # grade is that the joining authority recorded a lawful one.
+        # longer carries a status for this to check itself against.
         if joined.get("status") not in JOIN_STATUSES:
             return _invalid(f"join record '{record_id}' records an invalid disposition")
         expected_join = {
@@ -297,22 +295,7 @@ def state(data: dict):
 
 
 def status_ownership_returned(data: dict) -> bool:
-    """Whether this ticket's dispatch lifecycle ever took its status.
-
-    A ticket wedged on 2026-08-31 asked the question: its one attempt was
-    opened and self-retired before any launch, and after that nothing
-    could move it. `set-status` refused `dispatch-join-required`,
-    `dispatch-retire` refused `stale-attempt` on the ended attempt, and no
-    join could exist because there was no outcome for one to consume. The
-    lifecycle owns a status it never started executing.
-
-    The exception is exactly as wide as that: one attempt, ended, carrying
-    nothing but its own lifecycle records. A launch record, a result, an
-    outcome or a join is real execution evidence, and a ticket holding any
-    of them keeps its status with the join that has to read them --
-    including a second attempt, whose existence says something was retried
-    rather than never begun.
-    """
+    """Whether this ticket's dispatch lifecycle ever took its status."""
 
     parsed, failure = stored_state(data)
     if failure is not None or not isinstance(parsed, dict):
@@ -327,11 +310,7 @@ def status_ownership_returned(data: dict) -> bool:
 
 
 def attempt_window(data: dict):
-    """Return the current attempt's immutable clock from validated state.
-
-    It reads the clock `state` has just validated, so it belongs beside that
-    reader rather than beside the operations that consume the window.
-    """
+    """Return the current attempt's immutable clock from validated state."""
 
     validated, failure = state(data)
     if failure is not None or validated is None:

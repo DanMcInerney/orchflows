@@ -39,10 +39,9 @@ FAILED_STATUS = "failed"
 TERMINAL_STATUSES = ("complete", "blocked", "stalled", "limited", "failed")
 UNREADABLE = "unreadable"
 
-# `research/orchflows-speed-spec-2026-08-23.md` §1: a run family is the
-# name stem after the timestamp and any one of these retry markers. Both
-# sets are the specification's verbatim, not a generalisation of it -- a
-# wider suffix set would merge families the baseline counted apart.
+# A run family is the name stem after the timestamp and any one of these
+# retry markers. Both sets are fixed, not a generalisation: a wider suffix
+# set would merge families the baseline counted apart.
 RUN_STAMP_RE = re.compile(r"^(?:\d{8}T\d{6}Z|\d{8}|\d{4}-\d{2}-\d{2})-")
 RUN_SUFFIX_RE = re.compile(
     r"-(?:v2|v3|retry|restart|corrected|direct|final|cut-ready|edge-ready|runnable|replacement)$"

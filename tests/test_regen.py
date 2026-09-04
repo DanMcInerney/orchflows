@@ -277,15 +277,41 @@ class TestInputClosureMemo(unittest.TestCase):
 class TestValidateGate(unittest.TestCase):
     """The acceptance: a stale derived artifact fails one of the five checks."""
 
-    def _findings(self, root: Path) -> list:
+    def _findings(self, root: Path, names=None) -> list:
         prior = validate.ROOT
         try:
             validate.ROOT = root
             diag = validate.Diagnostics()
-            validate.validate_regenerated_artifacts(diag)
+            if names is None:
+                validate.validate_regenerated_artifacts(diag)
+            else:
+                validate.validate_regenerated_artifacts(diag, names)
         finally:
             validate.ROOT = prior
         return diag, diag.lines()
+
+    def _shapes_tree(self, declare_a_field: bool) -> Path:
+        """contracts/ plus the generated validator, optionally with one
+        field added to the declaration and nothing re-rendered."""
+
+        directory = tempfile.TemporaryDirectory(prefix="regen-shapes-gate-")
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        shutil.copytree(ROOT / "contracts", root / "contracts")
+        (root / "scripts").mkdir()
+        shutil.copyfile(
+            ROOT / "scripts" / "tickets_shapes.py", root / "scripts" / "tickets_shapes.py"
+        )
+        if declare_a_field:
+            source = root / "contracts" / "shapes.json"
+            document = json.loads(source.read_text(encoding="utf-8"))
+            declaration = document["shapes"][0]
+            declaration["fields"].append("an_undeclared_field")
+            source.write_text(
+                json.dumps(document, indent=2, sort_keys=True) + chr(10),
+                encoding="utf-8",
+            )
+        return root
 
     def test_a_stale_serial_manifest_fails_validate_and_names_the_command(self):
         fixture = ManifestFixture(self, fresh=False)
@@ -302,6 +328,31 @@ class TestValidateGate(unittest.TestCase):
         fixture = ManifestFixture(self, fresh=True)
 
         diag, lines = self._findings(fixture.root)
+
+        self.assertFalse(diag.has_errors, lines)
+
+    def test_a_field_added_to_shapes_json_without_re_rendering_fails_validate(self):
+        """The one structural check the T0 pin apparatus left behind: the
+        declaration is the source, every contract table and the generated
+        validator are rendered from it, and an unrendered edit is refused
+        by name with the command that repairs it."""
+
+        root = self._shapes_tree(declare_a_field=True)
+
+        diag, lines = self._findings(root, ("t0-shapes",))
+
+        self.assertTrue(diag.has_errors, lines)
+        stale = [line for line in lines if line.startswith("ERROR")]
+        self.assertTrue(stale, lines)
+        self.assertIn("tools/render_shapes.py --write", stale[0])
+
+    def test_the_same_tree_re_rendered_draws_no_error(self):
+        """Can-fail reading for the case above: the gate answers to the
+        unrendered edit, not to the fixture tree's own shape."""
+
+        root = self._shapes_tree(declare_a_field=False)
+
+        diag, lines = self._findings(root, ("t0-shapes",))
 
         self.assertFalse(diag.has_errors, lines)
 

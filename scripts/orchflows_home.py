@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 """The home ring: its layout, its committed/regenerable boundary, its pins.
 
-``~/.orchflows`` is meant to be the user's own git repository -- their
-skills, packs, workflows, friction history and run ledgers in one place,
-cloned onto the next machine.  That only works if exactly one line is
-drawn and drawn here: nothing custom is ever written into ``lib/``, and
-nothing regenerable is ever committed.  ``ensure`` creates the ring's
-directories, records which library the ring expects, and writes the one
-managed block in the ring's ``.gitignore`` that draws the line.
+``~/.orchflows`` is meant to be the user's own git repository, cloned onto
+the next machine. That only works if exactly one line is drawn and drawn
+here: nothing custom is ever written into ``lib/``, and nothing regenerable
+is ever committed. ``ensure`` creates the ring's directories, records which
+library the ring expects, and writes the one managed ``.gitignore`` block
+that draws the line.
 
-``add`` and ``restore`` are the other half.  An external bundle is
-referenced and pinned, never copied into the home ring: a promoted copy is
-outside every lockfile and becomes one version for all projects (npm's
-global tier, the survey's cautionary tale).  ``imports.lock`` is the pin
-and ``imports/`` is regenerable from it, which is why the lock is
-committed and the clones are not.  A bundle declares what it needs in its
-own ``BUNDLE.md`` (contracts/bundle.md); ``add`` pins that whole closure
-and ``restore`` brings it back.
+``add`` and ``restore`` are the other half. An external bundle is referenced
+and pinned, never copied into the home ring: a promoted copy is outside
+every lockfile and becomes one version for all projects.
+``imports.lock`` is the pin and ``imports/`` is regenerable from it, which
+is why the lock is committed and the clones are not. A bundle declares what
+it needs in its own ``BUNDLE.md``; ``add`` pins that whole closure.
 """
 
 from __future__ import annotations
@@ -39,23 +36,19 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 LIB_VERSION_NAME = "lib.version"
 GITIGNORE_NAME = ".gitignore"
 # The installer's freshness record, read here and by every scope-home
-# consumer (`tickets_store`, and the installer's own doctor/planning/
-# uninstall) instead of respelling the filename.
+# consumer instead of respelling the filename.
 RECEIPT_FILENAME = "receipt.json"
 GITIGNORE_START = "# BEGIN ORCHFLOWS MANAGED IGNORES"
 GITIGNORE_END = "# END ORCHFLOWS MANAGED IGNORES"
 # Regenerable or machine-local, in that order: the installed library and its
-# runtime, the per-item environments `orchflows_envs.py` rebuilds from each
-# item's committed `requirements.txt`, the browser distribution, scratch
-# trees, the pinned clones the lock restores, the trust ledger that must
-# never travel (P2), and the state trees that are heavy or per-run rather
-# than history. `state/friction/` and
-# `state/runs/` are deliberately absent: they are the sync value.
-# The six sink subdirectory names are `state_root.py`'s owners -- its
-# `tickets_root` function for the one with a root already, its five new
-# `*_SUBPATH` constants for the rest -- imported rather than restated so
-# a renamed subdirectory there cannot drift silently out of what the
-# home ring ignores.
+# runtime, the per-item environments rebuilt from each item's committed
+# `requirements.txt`, the browser distribution, scratch trees, the pinned
+# clones the lock restores, the trust ledger that must never travel, and the
+# state trees that are heavy or per-run rather than history.
+# `state/friction/` and `state/runs/` are deliberately absent: they are the
+# sync value. The sink subdirectory names are `state_root.py`'s, imported
+# rather than restated so a rename there cannot drift silently out of what
+# the home ring ignores.
 SINK_MANAGED_SUBPATHS = (
     state_root.tickets_root().name,
     state_root.LOCKS_SUBPATH,
@@ -105,12 +98,7 @@ CYCLE_REQUIREMENT_REFUSAL = (
 
 
 def _write_lf(path: Path, text: str) -> None:
-    """Write UTF-8 with LF endings on every host.
-
-    Bytes, not `write_text(newline=...)`: that keyword arrived in 3.10 and
-    `install.py`'s floor is 3.9, and a text-mode write on Windows would put
-    CRLF in a file the ring owner then commits.
-    """
+    """Write UTF-8 with LF endings on every host."""
 
     path.write_bytes(text.encode("utf-8"))
 
@@ -128,13 +116,7 @@ def upsert_block(text: str, body: str) -> str:
 
 
 def lib_version(home: Optional[Path] = None) -> Dict[str, object]:
-    """Which library this ring expects, read off the installer's receipt.
-
-    A cloned home ring arrives without ``lib/``; this file is what tells the
-    next ``install.py`` which library identity to regenerate there. It is a
-    record of an installation, so an unreadable receipt records nulls rather
-    than a guess.
-    """
+    """Which library this ring expects, read off the installer's receipt."""
 
     root = home if home is not None else rings.home_ring()
     try:
@@ -152,12 +134,7 @@ def lib_version(home: Optional[Path] = None) -> Dict[str, object]:
 
 
 def ensure(home: Optional[Path] = None) -> Dict[str, object]:
-    """Create the home ring's directories and its two managed files.
-
-    Idempotent, and it never touches committed ring content: an existing
-    ``skills/`` is left exactly as it is, and the ``.gitignore`` is upserted
-    as one marked block so a ring owner's own ignores survive.
-    """
+    """Create the home ring's directories and its two managed files."""
 
     root = Path(home) if home is not None else rings.home_ring()
     created = []
@@ -183,13 +160,7 @@ def ensure(home: Optional[Path] = None) -> Dict[str, object]:
 
 
 def ensure_project_ignores(project: Path) -> Path:
-    """Upsert the managed block in one project's ``.gitignore``.
-
-    The same block, the same markers and the same upsert as the home ring's,
-    because it draws the same committed/regenerable line -- one owner, so a
-    ring whose ignores drift from a project's cannot happen. Only the lines
-    differ, and only because the two rings hold different regenerable trees.
-    """
+    """Upsert the managed block in one project's ``.gitignore``."""
 
     path = Path(project) / GITIGNORE_NAME
     before = path.read_text(encoding="utf-8-sig") if path.is_file() else ""
@@ -197,7 +168,6 @@ def ensure_project_ignores(project: Path) -> Path:
     return path
 
 
-# --- pinned imports ----------------------------------------------------
 
 
 def _git(*args, cwd=None):
@@ -228,12 +198,7 @@ def split_reference(reference: str):
 
 
 def resolve_pin(url: str, pin: str) -> str:
-    """Refuse a mutable ref, and return the pin to check out.
-
-    A full commit SHA is a pin by construction. Anything else is one only
-    when the remote publishes it as a tag; a branch, or a ref the remote
-    does not publish at all, is refused naming the remedy (FM-4).
-    """
+    """Refuse a mutable ref, and return the pin to check out."""
 
     if _SHA_RE.fullmatch(pin):
         return pin
@@ -279,7 +244,6 @@ def clone_at(url: str, pin: str, target: Path) -> None:
         )
 
 
-# --- bundle requirements and the closure ------------------------------
 
 
 def _clone_manifest(target: Path) -> Optional[dict]:
@@ -289,14 +253,7 @@ def _clone_manifest(target: Path) -> Optional[dict]:
 
 
 def requirement(entry: str, manifest: Path):
-    """``(url, pin as written)`` for one ``requires`` line.
-
-    Public because the shape half of this law is checked twice: here, where
-    an add follows the requirement, and in `tools/validate_support/bundle.py`,
-    where the author of the manifest reads the refusal. The pin half --
-    whether the remote publishes that pin -- stays `_requirement_pin`'s,
-    because it needs a network and a validator has none.
-    """
+    """``(url, pin as written)`` for one ``requires`` line."""
 
     try:
         return split_reference(entry)
@@ -320,11 +277,7 @@ def _requirement_pin(url: str, requested: str, entry: str, manifest: Path) -> st
 
 
 def _discard(target: Path) -> None:
-    """Remove a clone this call made, so a refused add leaves nothing pinned.
-
-    The chmod pass is Windows: git marks its object files read-only, and
-    ``rmtree`` there fails on exactly the tree an add most needs to undo.
-    """
+    """Remove a clone this call made, so a refused add leaves nothing pinned."""
 
     for path in sorted(target.rglob("*"), reverse=True):
         try:
@@ -335,15 +288,7 @@ def _discard(target: Path) -> None:
 
 
 def import_closure(root: Path, url: str, pin: str) -> List[dict]:
-    """Every bundle one add pins: the named one, then what it requires.
-
-    Depth-first, cloning as it goes, so each manifest is on disk before it
-    is read. The path walked is the cycle check: a requirement naming a
-    bundle already open on that path has no fixed point and is refused. A
-    bundle reached twice off different paths is a diamond, not a cycle, and
-    is cloned once. A refusal unwinds every clone this call made, so an add
-    pins its whole closure or pins nothing.
-    """
+    """Every bundle one add pins: the named one, then what it requires."""
 
     locked = {entry["name"]: entry for entry in read_lock(root)}
     pinned: Dict[str, dict] = {}
@@ -390,17 +335,10 @@ def import_closure(root: Path, url: str, pin: str) -> List[dict]:
     return list(pinned.values())
 
 
-# --- pinned imports, the two verbs -------------------------------------
 
 
 def add(reference: str, home: Optional[Path] = None) -> dict:
-    """Pin one external bundle, and what it requires, into the home ring.
-
-    Consent is the add, not the clone: an import trusted by this act needs
-    no first-use prompt, and only a change to its pin puts it back in front
-    of the user. A requirement is consented to by the same act, which is
-    why the whole closure is reported back and not only the name typed.
-    """
+    """Pin one external bundle, and what it requires, into the home ring."""
 
     root = Path(home) if home is not None else rings.home_ring()
     url, requested = split_reference(reference)
@@ -425,15 +363,7 @@ def add(reference: str, home: Optional[Path] = None) -> dict:
 
 
 def restore(home: Optional[Path] = None) -> List[dict]:
-    """Bring ``imports/`` back to the closure ``imports.lock`` implies.
-
-    Clone by clone, and then requirement by requirement: a lock naming one
-    bundle whose manifest needs a second restores both and grows to record
-    the second's pin. Restore is a recovery path, so a requirement it
-    cannot pin is reported against the bundle that declared it instead of
-    failing the sync, and a bundle already restored is never visited twice,
-    which is what makes a cycle terminate here. Refusing one is `add`'s.
-    """
+    """Bring ``imports/`` back to the closure ``imports.lock`` implies."""
 
     root = Path(home) if home is not None else rings.home_ring()
     queue = list(read_lock(root))
@@ -469,11 +399,7 @@ def restore(home: Optional[Path] = None) -> List[dict]:
 
 
 def _restored_requirements(target: Path, known) -> List[dict]:
-    """One restored bundle's requirements that the lock does not carry yet.
-
-    The pin is resolved only for a requirement that is new, so a settled
-    closure costs no remote reads at all on the next sync.
-    """
+    """One restored bundle's requirements that the lock does not carry yet."""
 
     manifest = _clone_manifest(target)
     found = []

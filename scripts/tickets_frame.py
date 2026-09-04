@@ -6,25 +6,20 @@ so the ticket tree is the call tree -- and its `## Report` is the driver's
 journal: one appended line per wave, re-read at the start of the next one.
 That last part is the point. The common failure of a prose driver is not
 death but degradation: a session whose context compacts mid-workflow
-paraphrases the verbatim lines it was trusted to relay, and no crash fires,
-so nothing recovers. Waves are pull-based for the living driver too, and
-this is what they pull from.
+paraphrases the verbatim lines it was trusted to relay, and no crash fires.
+Waves are pull-based for the living driver too, and this is what they pull
+from.
 
 A frame carries no executor and no pack, because nothing dispatches it: the
 orchestrator is a session, not a child. It carries no arbitrating lease for
-the same reason -- its driver is singular by construction, so there is
-nobody to arbitrate against, and an expiry could only end a journal
-somebody is still writing. What ends a frame's attempt is `frame-close`.
-The attempt exists at all because the journal rides the ordinary `result`
-command, which is fenced to one, and because that is the seam a recovering
-reader already knows how to read.
+the same reason -- its driver is singular by construction, so an expiry could
+only end a journal somebody is still writing. What ends a frame's attempt is
+`frame-close`. The attempt exists at all because the journal rides the
+ordinary `result` command, which is fenced to one.
 
 `frame-close` is a recording act rather than a launch, and it refuses one
 thing: a close over two or more `do` children whose subtree holds no judge
-and whose journal states no `unjudged: <reason>`. Composition-invisibility
-is an information-access problem -- nobody saw the pieces together -- so it
-is worth one mechanical check, which turns a silent under-review into a
-decision somebody wrote down.
+and whose journal states no `unjudged: <reason>`.
 """
 
 from __future__ import annotations
@@ -37,8 +32,7 @@ if __package__:
     from .tickets_attempts import OUTCOME_RECORD_ID
     from .tickets_bound import parse_bound
     from .tickets_mint import (
-        MINT_INDEPENDENCE, DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint,
-        _run_dir, _sealed_root,
+        DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint, _run_dir, _sealed_root,
     )
     from .tickets_format import (
         FRAME_MARKER, REPORT_SECTION, TERMINAL_STATES, _executor_of,
@@ -68,8 +62,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_attempts import OUTCOME_RECORD_ID
     from tickets_bound import parse_bound
     from tickets_mint import (
-        MINT_INDEPENDENCE, DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint,
-        _run_dir, _sealed_root,
+        DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint, _run_dir, _sealed_root,
     )
     from tickets_format import (
         FRAME_MARKER, REPORT_SECTION, TERMINAL_STATES, _executor_of,
@@ -96,10 +89,8 @@ else:  # pragma: no cover - direct/installed flat script path
 
 # The three sentences a frame's driver has to hold for the whole run, printed
 # by the command that opens the frame rather than copied into each workflow
-# body. Eight bodies used to carry a paraphrase of them apiece, which is
-# eight chances for one to drift and no way for a reader to tell which
-# wording was the law. The trunk says it once, at the one moment every
-# driver passes through.
+# body: a paraphrase per body is a chance for each to drift with no way for a
+# reader to tell which wording was the law.
 FRAME_LAW = (
     "Before each call, re-read this frame's `## Report` and its children's "
     "states.",
@@ -136,7 +127,6 @@ def _frame_fields(run: str, parent, done, bound: str) -> dict:
     return {
         "run": run, "status": ADMISSION_PENDING, "admission": ADMISSION_PENDING,
         "frame": FRAME_MARKER,
-        "independence": MINT_INDEPENDENCE,
         "parent": parent or None,
         "isolation": "none", "bound": bound,
         "done": done,
@@ -144,12 +134,7 @@ def _frame_fields(run: str, parent, done, bound: str) -> dict:
 
 
 def _cmd_frame_open(rest):
-    """Mint one frame, seal its goal, and open the attempt its journal rides.
-
-    A run that does not exist yet is minted by this write: the first frame
-    of a workflow is what brings its run into being, and there is no
-    separate step that opens one.
-    """
+    """Mint one frame, seal its goal, and open the attempt its journal rides."""
 
     args = list(rest)
     goal_file = _extract_flag(args, "--goal-file")
@@ -236,13 +221,7 @@ def _cmd_frame_open(rest):
 
 
 def _workflow_path(workflow):
-    """The named workflow's body, or a refusal naming the rings searched.
-
-    Resolved at the door, before the run exists: a driver holding a name
-    that opens no body is about to improvise the workflow it was asked to
-    run, and the refusal has to say where it looked or the author cannot
-    tell a typo from a ring they never installed.
-    """
+    """The named workflow's body, or a refusal naming the rings searched."""
 
     if not workflow:
         return None, None
@@ -257,14 +236,7 @@ def _workflow_path(workflow):
 
 
 def _opened(run: str, frame_id: str, bound: str) -> dict:
-    """Promote the frame and open the one attempt its journal writes under.
-
-    The expiry handed to `dispatch-open` is nominal and the protocol's, not
-    a lease anybody reads: `_commit_record` does not fence a frame's records
-    on it, nothing retires a frame when it passes, and `resume` shows the
-    frame's age instead. It is derived from `bound` so the record says
-    something rather than nothing.
-    """
+    """Promote the frame and open the one attempt its journal writes under."""
 
     if __package__:
         from .tickets_attempts import _cmd_dispatch_open
@@ -305,12 +277,7 @@ def _done_refusal(done):
 
 
 def _children(run_dir, frame_id: str) -> dict:
-    """`{id: frontmatter}` for every ticket under one frame, and the frame's.
-
-    One directory read for the whole close and the whole resume row: the
-    A2 census, the open-child count and the live-lease count all ask about
-    the same tickets, and asking three times would let them disagree.
-    """
+    """`{id: frontmatter}` for every ticket under one frame, and the frame's."""
 
     loaded = {}
     for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
@@ -322,15 +289,7 @@ def _children(run_dir, frame_id: str) -> dict:
 
 
 def _census(frame_id: str, children: dict) -> dict:
-    """The counts amendment A2 refuses on: do-children, and subtree judges.
-
-    A `do` child is counted by parent link *and* executor, because the link
-    is what says whose call it was and the executor is what says it made
-    something. A judge is counted anywhere in the subtree by executor
-    alone: a judge minted under a child frame still read this frame's work,
-    and demanding it be a direct child would refuse the nested case the
-    design exists to make ordinary.
-    """
+    """The counts the close refuses on: do-children, and subtree judges."""
 
     return {
         "do": sorted(
@@ -347,7 +306,7 @@ def _census(frame_id: str, children: dict) -> dict:
 
 
 def _judgement_refusal(run: str, frame_id: str, census: dict, reason: str):
-    """Amendment A2, in one sentence, or ``None`` when the close may proceed."""
+    """The close refusal, in one sentence, or ``None`` when it may proceed."""
 
     if len(census["do"]) < 2 or census["judge"] or reason:
         return None
@@ -362,15 +321,7 @@ def _judgement_refusal(run: str, frame_id: str, census: dict, reason: str):
 
 
 def _closing_note(census: dict, reason: str, status: str, shape: str) -> str:
-    """The evidence the close appends: the plan, the census, and who read it.
-
-    The shape prints and never refuses. A wave plan is a statement of
-    intent written before the work, and work that finds a reason to differ
-    is the ordinary case, not a defect -- so the close puts the plan beside
-    what was actually minted and leaves the reading to the person who has
-    both. A refusal here would only teach drivers to write a shape they
-    already know they will satisfy.
-    """
+    """The evidence the close appends: the plan, the census, and who read it."""
 
     if not census["do"]:
         read = "no do-children"
@@ -495,15 +446,7 @@ def _cmd_frame_close(rest):
 
 def _closed_under_run_lock(run, frame_id, path, attempt, census, reason,
                            *, shape, status, done):
-    """Evaluate the gate, file the close, and join -- in that order.
-
-    The gate runs before anything is written, which is the one place this
-    differs from `land`: a callable's predicate is about the tree its candidate
-    was merged into, so the merge has to precede it, while a frame merges
-    nothing and a refused gate should leave the ledger exactly as it found
-    it. A frame whose gate refuses stays open, and closing it again after
-    the fix replays cleanly.
-    """
+    """Evaluate the gate, file the close, and join -- in that order."""
 
     tickets_done = _done_module()
     reading = None
@@ -583,15 +526,7 @@ def _open_children(frame_id: str, children: dict, now) -> tuple:
 
 
 def _project_runs(tickets_root):
-    """The run directories the invoking project owns, by the admission law.
-
-    Origin first, then main-checkout root -- `_same_project`, the predicate
-    the write commands refuse a foreign caller with -- so two worktrees of one
-    project see one another's runs and two projects never see each other's.
-    A run whose identity records no project is not listed: there is no
-    recorded fact to match it on, and guessing is the confusion the run
-    document exists to prevent.
-    """
+    """The run directories the invoking project owns, by the admission law."""
 
     writing, _workspace = _writer_identity()
     for run_dir in sorted(p for p in tickets_root.iterdir() if p.is_dir()):
@@ -601,25 +536,13 @@ def _project_runs(tickets_root):
 
 
 def resume_now(text):
-    """The instant `resume` reads ages against: the clock, or a stated one.
-
-    A stated instant is what makes a listing assertable and a hand
-    investigation repeatable; ``None`` back for a text that is not one
-    absolute time is the caller's refusal to make.
-    """
+    """The instant `resume` reads ages against: the clock, or a stated one."""
 
     return datetime.now(timezone.utc) if text is None else _parse_iso(text)
 
 
 def _journalled(journal: str) -> bool:
-    """Whether this frame's driver has written a wave down yet.
-
-    Not "is the journal non-empty": `frame-open` files the shape record
-    before any wave exists, so that reading would answer `yes` for every
-    open frame and tell a person scanning `resume` nothing. The shape line
-    and the attributions `result` adds are skipped; anything else is a
-    driver's own writing.
-    """
+    """Whether this frame's driver has written a wave down yet."""
 
     for line in str(journal or "").splitlines():
         text = line.strip()
@@ -632,14 +555,7 @@ def _journalled(journal: str) -> bool:
 
 
 def open_frames(now=None) -> list:
-    """Every open frame of the invoking project, newest first.
-
-    Pull-based and resident in nothing: it reads the sink the moment it is
-    asked and reports what it found. A stale frame is shown with its age
-    and the reader judges it -- nothing here decays an unknown into an
-    idle, because a driver that is merely slow and a driver that died look
-    identical from the sink and only a person can tell them apart.
-    """
+    """Every open frame of the invoking project, newest first."""
 
     now = datetime.now(timezone.utc) if now is None else now
     tickets_root = _tickets_root()

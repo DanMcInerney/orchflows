@@ -1,53 +1,37 @@
 """Cross-layer contract for the rendered observability experience substrate."""
 
-import hashlib
+import contextlib
+import io
 import json
+import re
 
 from reader.tests.test_ui_cases._web import *  # noqa: F401,F403
 
 import reader.scripts.ui_experience as experience
 import reader.scripts.ui_readiness as readiness
+import reader.tools.ui_frontend as ui_frontend
 from reader.scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
 
+def frontend_subcommands() -> set:
+    """The visual harness's subcommand names, taken from its own parser.
+
+    ``main`` with an empty argv exits on the missing positional and argparse
+    prints the choice list it derived from the subparsers -- so this reads
+    the program's answer rather than its source.
+    """
+
+    usage = io.StringIO()
+    with contextlib.redirect_stderr(usage), contextlib.redirect_stdout(io.StringIO()):
+        with contextlib.suppress(SystemExit):
+            ui_frontend.main([])
+    choices = re.search(r"\{([^}]+)\}", usage.getvalue())
+    if choices is None:  # loud, not a silently empty set
+        raise AssertionError("ui_frontend usage names no subcommands: " + usage.getvalue())
+    return set(choices.group(1).split(","))
+
+
 class ExperienceFoundationContractTests(unittest.TestCase):
-    def test_modularization_spec_is_the_accepted_content_with_locator_repairs(self):
-        path = ROOT / "reader" / "docs" / "modularization.md"
-        implemented = path.read_bytes()
-
-        self.assertNotIn(
-            b"../../web/src/features/session-graph/index.tsx)", implemented
-        )
-        self.assertEqual(
-            "A2B5BDABC873C3B376DC9A339AE0AAA441C7EDB94FFBDEA435A500AA6D5CF13E",
-            hashlib.sha256(implemented).hexdigest().upper(),
-        )
-
-    def test_workflows_spec_preserves_accepted_content_with_locator_repairs(self):
-        path = ROOT / "reader" / "docs" / "workflows.md"
-        implemented = path.read_bytes()
-
-        self.assertNotIn(b"](../../web/src/api/schema.ts)", implemented)
-        self.assertNotIn(b"](../../web/src/state/location.ts)", implemented)
-        reconstructed = implemented.replace(
-            b"`ExperienceSnapshot` schema (`web/src/api/schema.ts`)",
-            b"[`ExperienceSnapshot` schema](../../web/src/api/schema.ts)",
-        ).replace(
-            b"current routes (`web/src/state/location.ts`)",
-            b"[current routes](../../web/src/state/location.ts)",
-        ).replace(
-            b"schema (`web/src/api/schema.ts`)",
-            b"[schema](../../web/src/api/schema.ts)",
-        )
-        # Re-frozen 2026-08-31 over the workflows-convert tip's bytes: every
-        # library entry became a workflow skill, so the catalog rows name
-        # `SKILL.md` and the detail example is the prose loop rather than a
-        # stub graph. The locator repairs above still hold.
-        self.assertEqual(
-            "21BB18981ACAC7D0122E70BCF4E682CB4C81A377E9B61FD9AABB7D17844FC9FC",
-            hashlib.sha256(reconstructed).hexdigest().upper(),
-        )
-
     def test_architecture_names_live_ui_owners_and_workflow_routes(self):
         architecture = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
 
@@ -191,7 +175,6 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         shell = (ROOT / "reader" / "web" / "src" / "app" / "shell" / "Shell.tsx").read_text(encoding="utf-8")
         composition = (ROOT / "reader" / "web" / "src" / "app" / "shell" / "featureCatalog.ts").read_text(encoding="utf-8")
         application_catalog = (ROOT / "reader" / "web" / "src" / "app" / "catalog.ts").read_text(encoding="utf-8")
-        harness = (ROOT / "reader" / "tools" / "ui_frontend.py").read_text(encoding="utf-8")
         experience_harness = (ROOT / "reader" / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
         self.assertEqual('import { Shell } from "./app/shell/Shell";\n\nexport function ObserveApp() {\n  return <Shell />;\n}\n', app)
         self.assertIn('data-mode="observe"', shell)
@@ -218,8 +201,14 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             "/workflows/evolve/sources/src_campaign",
         ):
             self.assertTrue(experience.is_spa_path(path), path)
-        for command in ('add_parser("capture")', 'add_parser("audit")', 'add_parser("diff")'):
-            self.assertIn(command, harness)
+        # The visual harness's subcommands, read off the parser it builds
+        # rather than off its source: `main` with no command prints the
+        # choice list argparse itself derived, so a subcommand that was
+        # renamed or dropped changes this set instead of only this grep.
+        self.assertEqual(
+            {"verify-build", "audit-licenses", "smoke", "capture", "audit", "diff"},
+            frontend_subcommands(),
+        )
         for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):
             self.assertIn(scenario, experience_harness)
 

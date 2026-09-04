@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
 """One private Python environment per ring item that declares dependencies.
 
-The standard-library floor is the library's own: ``scripts/``, ``tools/``
-and the installer import nothing outside Python 3.9's standard library. A
-ring item -- a custom skill, pack or workflow -- is outside that floor and
-uses whatever libraries it needs. It declares them in one ``requirements.txt``
-beside its manifest, pip's own format, and this module builds the
-environment that file describes at ``~/.orchflows/envs/<kind>/<name>/``:
-created when absent, reused while the file's digest matches the stamp the
-build left, rebuilt when the file changes. An item that declares nothing
-runs on the interpreter this process already runs on -- the private runtime
-once installed -- exactly as before.
+The standard-library floor is the library's own. A ring item is outside it
+and declares what it needs in one ``requirements.txt`` beside its manifest,
+pip's own format; this module builds the environment that file describes at
+``~/.orchflows/envs/<kind>/<name>/``: created when absent, reused while the
+file's digest matches the stamp the build left, rebuilt when it changes. An
+item that declares nothing runs on this process's interpreter.
 
-Building an environment runs the item's content: pip resolves and executes
-what the file names. That is what trust grants, so an untrusted project
+Building an environment runs the item's content, so an untrusted project
 ring item is skipped here and named with its remedy rather than installed.
 
 Stdlib only, cross-platform, Python 3.9 and up. The only network reach is
@@ -116,13 +111,7 @@ def action(env: Path, requirements: Path) -> str:
 
 
 def build(env: Path, requirements: Path) -> None:
-    """Create the environment the way ``python -m venv`` would, then pip.
-
-    Symlinks on POSIX for the same reason the private runtime uses them: a
-    copied interpreter's ``libpython`` reference dangles. pip is bootstrapped
-    only when there is something to install, so a declaration that is all
-    comments costs a bare venv and no network.
-    """
+    """Create the environment the way ``python -m venv`` would, then pip."""
 
     lines = requirement_lines(requirements)
     venv.EnvBuilder(
@@ -157,11 +146,7 @@ def ensure(
     home=None,
     builder: Optional[Callable[[Path, Path], None]] = None,
 ) -> Dict[str, object]:
-    """Make one item's environment match its declaration, and say what happened.
-
-    A failed build leaves no stamp and no half-built directory behind, so the
-    next ``sync`` sees ``create`` rather than trusting a broken tree.
-    """
+    """Make one item's environment match its declaration, and say what happened."""
 
     kind = rings.kind_of(kind)
     name = rings.item_name(name)
@@ -198,13 +183,7 @@ def ensure(
 
 
 def resolve_interpreter(kind: str, name: str, *, home=None, **overrides) -> Dict[str, object]:
-    """The interpreter one item's scripts run through, resolved as dispatch would.
-
-    Its own environment when it declares one and that environment is built;
-    this process's interpreter when it declares nothing. A declared but
-    unbuilt environment is refused with the ``sync`` remedy rather than
-    answered with an interpreter that lacks what the item imports.
-    """
+    """The interpreter one item's scripts run through, resolved as dispatch would."""
 
     record = rings.resolve(kind, name, **overrides)
     item_dir = Path(str(record["dir"]))
@@ -238,13 +217,7 @@ def sync(
     home=None,
     builder: Optional[Callable[[Path, Path], None]] = None,
 ) -> List[Dict[str, object]]:
-    """Every declaring item in one inventory, built or named with its remedy.
-
-    ``records`` is ``rings.inventory``'s output: the same resolver dispatch
-    uses, so an environment built here is one a launch can reach, and a
-    reserved or shadowed item costs nothing. Untrusted project items are
-    reported, never built.
-    """
+    """Every declaring item in one inventory, built or named with its remedy."""
 
     outcomes = []
     for record in records:
@@ -270,17 +243,7 @@ def sync(
 
 
 def orphaned(env: Path, kind: str, name: str, claimed) -> bool:
-    """Whether one built environment's declaration is gone from the machine.
-
-    Not "absent from this inventory": environments are keyed machine-wide by
-    ``(kind, name)`` while an inventory is read from wherever ``sync`` was
-    run, so a project ring's items are in it only inside that project. The
-    stamp is what settles it -- it carries the ``requirements.txt`` that
-    built the environment, so a declaration still on disk means an item that
-    is still there, visible from this vantage or another one. Only an
-    environment with no stamp to read falls back to the inventory, which is
-    the one claim a half-built tree can carry.
-    """
+    """Whether one built environment's declaration is gone from the machine."""
 
     stamp = read_stamp(env)
     declared = stamp.get("requirements") if stamp is not None else None
@@ -292,18 +255,7 @@ def orphaned(env: Path, kind: str, name: str, claimed) -> bool:
 def prune(
     records: List[Dict[str, object]], *, home=None
 ) -> List[Dict[str, object]]:
-    """Remove the environment of every item that is gone from the machine.
-
-    An environment is derived from an item's declaration, so an item that
-    left the ring leaves nothing behind that is worth keeping -- and a
-    ``envs/`` that grows a directory per item ever installed is a machine
-    the user cannot reason about. What "left" means is ``orphaned``'s.
-
-    Only this module's own layout is touched: a directory under a kind name
-    orchflows knows, itself named like an item. A removal that fails raises
-    rather than being swallowed -- a directory that could not go is a
-    directory the next ``resolve_interpreter`` may still find.
-    """
+    """Remove the environment of every item that is gone from the machine."""
 
     root = (Path(home) if home is not None else rings.home_ring()) / ENVS_DIR
     if not root.is_dir():

@@ -8,13 +8,14 @@ pointer in every member whose work is governed by it.
 
 ## Rings
 
-A custom skill, pack, sheet, or workflow lives in one of three rings, and
+A custom skill, pack, sheet, or workflow lives in one of four rings, and
 `scripts/rings.py` reads them in one fixed order — nearest first:
 
 | ring | where | what it holds |
 | --- | --- | --- |
 | project | `<repo>/.orchflows/` | items this repository ships to whoever clones it |
-| home | `~/.orchflows/` | your own items, plus `imports/<name>/` for pinned external bundles |
+| home | `~/.orchflows/` | your own items |
+| imports | `~/.orchflows/imports/<name>/` | pinned external bundles |
 | lib | the installed library | `skills/kernel/`, `skills/workflows/`, `packs/`, `sheets/`, and the `example-workflows/` gallery |
 
 One bundle shape everywhere: a directory named `.orchflows` holding the
@@ -237,8 +238,7 @@ one is [composition](../rules/composition.md) §13's.
    [pack authoring](pack-authoring.md) and the
    [pack signature](../contracts/pack-signature.md), which owns the four
    cells and every craft section — `## Lens`'s `### root` entry included, so
-   a custom pack a planner freezes a root against fills it like any other. A T0 shape change is a
-   supersession change and follows its contract's pinning procedure.
+   a custom pack a planner freezes a root against fills it like any other.
 4. For a workflow, write it step by step rather than from a template. For
    each step ask the four questions in *Which work earns a callable* above:
    none of the four and the step is a sentence in your prose, one or more

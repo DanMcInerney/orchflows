@@ -267,7 +267,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), patch.object(
                 install.shutil, "which", return_value="claude"
             ):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
         roles = {}
         for skill_md in install.discover_packages():

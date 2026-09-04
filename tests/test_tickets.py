@@ -101,10 +101,10 @@ class AdapterRegistryTest(unittest.TestCase):
 
             self.assertEqual("git", tickets_mod.adapter_id("widget-pack", root=root))
             adapter = tickets_mod.adapter_spec("widget-pack", root=root)
-            self.assertEqual("git-commit", adapter.identity_form)
+            self.assertEqual("git", adapter.artifact_kind)
             self.assertTrue(adapter.establishes_isolation)
             self.assertTrue(adapter.deterministic_gate)
-            self.assertEqual("git-overlap", adapter.conflict_semantics)
+            self.assertEqual("git", adapter.workspace_strategy)
 
     def test_an_untrusted_project_pack_refuses_before_its_adapter_is_read(self):
         with self._project() as root:
@@ -157,11 +157,9 @@ class AdapterRegistryTest(unittest.TestCase):
     def test_consumers_branch_on_properties_not_the_adapter_key(self):
         adapter = tickets_mod.Adapter(
             key="synthetic",
-            identity_form="git-commit",
             artifact_kind="git",
             establishes_isolation=True,
             deterministic_gate=True,
-            conflict_semantics="synthetic-overlap",
             workspace_strategy="git",
             commits_in_place=True,
         )

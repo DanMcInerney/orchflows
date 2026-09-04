@@ -12,7 +12,6 @@ the event, never the transition that produced it.
 
 from __future__ import annotations
 
-import ast
 import io
 import json
 import os
@@ -27,6 +26,7 @@ from tests._candidate_checkout import git_checkout, record_established_workspace
 from tests import _retired_commands as retired_commands
 from scripts import state_root
 from scripts import tickets
+from scripts import tickets_result
 from scripts.tickets_format import parse_canonical_json
 
 from tests._repo_root import ROOT
@@ -393,22 +393,31 @@ class LandEventFailureIsSwallowedTest(_LandEventTestCase):
         self.assertEqual([], self.events())
 
 
-class AppendEventUsesTheLockedIdiomTest(unittest.TestCase):
-    """`_append_event` writes through `_append_one_line`, never a second open."""
+class AppendEventUsesTheLockedIdiomTest(_EventSinkTestCase):
+    """`_append_event` writes through `_append_one_line`, never a second open.
+
+    Graded by running it rather than by reading its source. The shared
+    locked writer is replaced by a recorder that writes nothing, so an
+    emitter that opened the events file itself would leave a line on disk
+    and no recording behind it -- and the three readings below name that
+    exact swap, in both directions.
+    """
 
     def test_append_event_calls_the_shared_locked_writer(self):
-        source = ast.parse(
-            (ROOT / "scripts" / "tickets_result.py").read_text(encoding="utf-8")
-        )
-        target = next(
-            node for node in ast.walk(source)
-            if isinstance(node, ast.FunctionDef) and node.name == "_append_event"
-        )
-        called = {
-            node.func.id for node in ast.walk(target)
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-        }
-        self.assertIn("_append_one_line", called)
+        recorded = []
+        stderr = io.StringIO()
+        with mock.patch.object(
+            tickets_result, "_append_one_line",
+            side_effect=lambda path, block: recorded.append((Path(path), block)),
+        ), mock.patch("sys.stderr", stderr):
+            tickets_result._append_event("r-1", "T-1", "probe", {"status": "complete"})
+
+        self.assertEqual("", stderr.getvalue())
+        self.assertEqual(1, len(recorded), recorded)
+        path, block = recorded[0]
+        self.assertEqual(self.events_path(), path)
+        self.assertEqual("probe", json.loads(block)["event"])
+        self.assertEqual([], self.events())
 
 
 if __name__ == "__main__":

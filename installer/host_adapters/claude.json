@@ -47,7 +47,7 @@
     "managed_markers": {
       "host_instructions": {
         "end": "<!-- END ORCHFLOWS -->",
-        "mode": "import-legacy",
+        "mode": "import",
         "start": "<!-- BEGIN ORCHFLOWS (managed block \u2014 do not edit inside; reinstall to update) -->",
         "target": "CLAUDE.md"
       }
@@ -71,5 +71,5 @@
     "schema_version": 1
   },
   "source": "hosts/claude.json",
-  "source_sha256": "4c9cc0a564f554213a3cbdcbb10c8448b660fad8875262667ae3ce4aedec6709"
+  "source_sha256": "98c0dcdf603230e90b5dd29acf9ffacaef28532e8860d83e76b938b5d06dc70a"
 }

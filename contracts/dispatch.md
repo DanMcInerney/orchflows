@@ -113,8 +113,7 @@ verbatim line. The digest a `doc` identity carries is declared, not verified:
 the child computes it, and no command yet recomputes it.
 
 Dispatch refuses `state-inaccessible` when the sink holding the ticket cannot
-be read, `review-invalid` when the ticket's review ledger does not admit this
-lane, and `workspace-unestablished` or `workspace-mismatch` when the named
+be read, and `workspace-unestablished` or `workspace-mismatch` when the named
 tree is not the candidate the establishment recorded.
 
 A dispatched child proves who it is the same way on its first write as on
@@ -146,22 +145,9 @@ joined disposition, including suspension, retires its attempt; suspension
 retains claimant observations for handoff but leaves no live dispatch.
 The join reads the tree the item was executed in off the attempt. It
 adjudicates nothing and binds no findings, accepted subset, or fixed
-artifact identity of its own: the mechanical checker/repair selector that
-used to do that on `--findings-file`/`--accepted-file`/`--artifact` retired
-with the gate-stage ids -- `.gate.critique.<lens>`, `.gate.repair`, `.check`
--- it selected between, minted by no live command. A worker's own fixed
-artifact identity reaches its ticket the same way any other closing fact
-does: printed verbatim in the outcome evidence the launch prompt asks for,
-never through a join flag.
-
-`review_v1`, its `GatePlan`/`CritiqueAdjudication`/`RepairOutcome` chain,
-`checked_by`/`review_stage`, and `check <run> <id> --stage <id>.check` --
-the one surviving reader the gate-stage census above left standing -- are
-themselves retired: no live command ever built the chain that reader required,
-so its one input was hand-edited state, which the host block forbids. A
-critique is a `judge` ticket and its repair a `do` ticket, sequenced by the
-calling workflow's prose, and both return the ordinary way -- the
-executor's `## Report` and the disposition this join records.
+artifact identity of its own. A worker's own fixed artifact identity reaches
+its ticket the same way any other closing fact does: printed verbatim in the
+outcome evidence the launch prompt asks for, never through a join flag.
 
 ## Cutover
 
@@ -170,133 +156,6 @@ dual reader. A claimed or suspended ticket without this record is
 `claim-without-dispatch`: a live claim exists only as a dispatch-v1 attempt,
 and the attempt's `owner` and `opened_at` are the lease — the ticket carries
 no projection of them. History is never inferred or rewritten.
-
-T0 supersession record sha256:e6fb8d96d9fb66051be6abd8a773369a4939b8a0ba896ac0c66604b446870b42:
-artifact identities become typed per adapter, and the prompt gains the three
-lines that make a parent's relay mechanical: commit inside the candidate
-before closing, one verbatim `artifact:` line whose kind the adapter fixes,
-and for a judging lane one verbatim `findings:` line. Every door that bound a
-Git identity now grades the adapter's own prefix instead of accepting any
-non-empty string outside the Git lane. A `doc` identity's digest is declared
-by the child and recomputed nowhere.
-
-T0 supersession record sha256:82cecc2a7e182409496a6ed451f9121bfb990ab0bf7ca9e69012073093f8be67:
-persisted dispatch semantics now close every record kind and stored success,
-require explicit expiry transitions, retire suspension, and materialize only
-unstreamed outcome evidence; receiver acceptance is a reserved durable attempt
-record required before result, outcome, or join; packet carriage is canonical
-ASCII output plus UTF-8 file or standard input, and unauthenticated offline
-inline receipt is refused.
-
-T0 supersession record sha256:008949dad0a49ab76c5bf65645081a895add5e2d2116032c653061c0b0aeafde:
-review-stage joins bind the accepted blocker subset and exact repair or
-verification artifact through the ticket's predecessor-linked review ledger.
-
-T0 supersession record sha256:fc3cbeefa9b42ca373758739a79cb092ea5512cd850e09bb6d3d6b32e380691b:
-packet projections carry one typed review-lane selector; execute and check
-routing consumes the resolved pack cells for that lane, with no legacy
-checker aliases.
-
-T0 supersession record sha256:69b9e37a924419da4aa7a549a611d1ed14c478228b4b702b50f08c1e9a3c7a68:
-the T0 shape is declared in contracts/shapes.json and renders this contract
-section and its validator consumer.
-
-T0 supersession record sha256:7d04c3500b8d99d51df777df123d2f31e01e5af2b18a196337f78a98bcd2ea7c:
-the generated section wording is kept distinct from lifecycle prose while
-remaining a deterministic declaration-to-consumer gate.
-
-T0 supersession record sha256:e26b5916a54fd4b95c20790abb7aa55173782d0454576b8cf77cf0e0edbe46ac:
-the generated T0 section now uses declaration-specific wording.
-
-T0 supersession record sha256:8b9d58a02911955ff011275988aba554c8b502557348009f7fe1bf268414e0a5:
-the receipt handshake and the inline packet form are removed. The `receipt`
-record kind, the `dispatch-receipt` reserved id, and the refusals that
-existed only for the handshake ride out with them; a child's first filed
-record is its acceptance, proved by the `(dispatch_id, assignment_seal,
---by)` every write already carries, and the one surviving ordering rule is
-that a committed packet precedes every execution record. The wire keeps
-twelve fields: `form`, `inline`, `reference`, `reply_to`, `admission`,
-`independence`, `isolation`, `executor`, `profile`, and
-`outcome_record_id` had no reader left, and `durability` declares only
-`ticket`. The attempt gains the `workspace_path` its establishment records
-and becomes that path's sole owner. A committed record's content is stored
-once, and a review lane's packet names its ledger by ticket path and tip
-identity rather than copying the chain.
-
-T0 supersession record sha256:441bc5276a8ba5e7f92a76163d7deedcf764781f13ad94c60f4fed89824f9f5a:
-the packet is not a wire object any more; it is not an object at all. The
-`dispatch_packet` shape, its twelve remaining fields, the `dispatch-packet`
-verb, and the `--packet-file` carriage are removed, and the `packet` record
-kind is renamed `launch` and reshaped to the emitted invocation: `host`,
-`verb`, `agent`, `model`, `effort`, native `fields`, and the generated
-`prompt`. `dispatch` is the one operation that commits it, under one run
-lock, and replaying that call returns the committed launch unchanged. The
-prompt becomes the whole child-facing instruction surface and carries, once
-each, the facts a child cannot derive: its ticket's absolute path, the
-established workspace, this host's verified interpreter, the resolved pack
-craft and that craft's verification-scope sentence, a review lane's root
-ticket path, the assigned name, the lease deadline, the filled filing and
-closing commands, and the turn-completion rule for every check. The launch
-record carries no identity of its own: its stored success binds it to the
-attempt, and the join reads the executed tree off the attempt's
-`workspace_path` rather than off any record.
-
-T0 supersession record sha256:6c60b8402bfe79e2ed262b91c512471c2b850d5fca73403ce8c9a73ae7309308:
-the closing envelope no longer names a disposition. `status` leaves the
-`dispatch_outcome` shape and the whole typed-close flag it selected, so an
-outcome's existence closes the attempt and says nothing more; `Handoff`
-stops being coupled to a disposition the envelope cannot carry and is
-simply optional evidence. `dispatch-join` takes the disposition it records
-through a required `--status`, and `dispatch_join_success` is that value's
-one declaring home. The review chain ends at `RepairOutcome`: the
-`Verification` record kind, its shape, the `verify` review kind, and the
-`PASS`/`FAIL`/`UNVERIFIED` verdict token the join used to parse out of a
-child's prose are all removed, and the prompt teaches no token in their
-place. The fresh outside check is the landed ticket's own `done` predicate,
-run by `land` in the tree it has just merged the candidate into.
-
-T0 supersession record sha256:83bebaf00635c6cb8e2b6f6681024c6ea7f8ca35196b5e3efcfff69dc006ff15:
-the return has one channel. `dispatch_outcome_evidence` is gone: `evidence` is
-one non-empty string, the child's closing note, and the five typed close flags
-become `--note` and `--note-file` while `--file` keeps relaying a whole
-canonical envelope. Nothing parses that note, so the delta rule that refused a
-repeat of already-streamed evidence is gone with the sections it compared.
-`dispatch_result_record` and `dispatch_result_projection` lose `section` and
-`mode` for the same reason -- one section, one mode, both constants restated on
-the wire. A critique's complete findings reach `dispatch-join` through
-`--findings-file <path|->` beside the accepted subset's `--accepted-file`,
-rather than being read back out of the records the child streamed. The prompt
-names what a report is expected to carry and teaches no filing taxonomy.
-
-T0 supersession record sha256:8fc01dea94eedb0fc5f38751fd986ab6deecabf3b7fdb852cabb652eedfe520d:
-the join stops adjudicating. Its typed review-lane selector chose between a
-composite gate's lensed critique and its repair, and the census behind the
-routing design found every id that selector read -- `.gate.critique.<lens>`,
-`.gate.repair`, `.check` -- minted by no live door: test fixtures hand-built
-them, and test-only reachability was never liveness. `--findings-file`,
-`--accepted-file`, and `--artifact` retire from `dispatch-join` and `land`
-with it, since none had an ordinary-join meaning to fall back to; a caller
-that still passes one now refuses on argument shape, before either command
-reads or mutates a tree. A fixed artifact identity reaches its ticket the
-one way every other closing fact does -- printed verbatim in the outcome
-evidence -- never through a join flag. The predecessor-linked review ledger
-this section otherwise describes, and `check <run> <id> --stage <id>.check`'s
-reading of it, are unchanged; that reachability question is a separate
-census this supersession does not reach. `land` also gains a second, ordinary
-fix here: every argument-shape refusal `dispatch-join` itself would raise --
-a malformed `--dispatch-id` or `--by`, the reserved `--outcome-record-id`
-mismatch -- is checked before `workspace-integrate` merges the candidate, not
-after, so a refused join never leaves the target tree mutated behind it.
-
-T0 supersession record sha256:58f3520506dcaf2f0d113cec1c29e934b65dd6d5e4a6e4ff53730ec85ae04bb5:
-the reachability question the prior supersession left open is answered: no
-live door ever builds a `GatePlan`-then-`CritiqueAdjudication` chain, so the
-predecessor-linked review ledger and `check <run> <id> --stage <id>.check`,
-its one surviving reader, retire together with `checked_by`/`review_stage`.
-A critique is a `judge` brick and its repair a `do` brick, both returning
-the ordinary way -- the executor's `## Report` and the disposition this
-join records -- and `dispatch_join_success` drops the `review_identity`
-field nothing produces any more.
 
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape

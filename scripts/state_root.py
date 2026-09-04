@@ -1,33 +1,16 @@
 #!/usr/bin/env python3
 """The one resolver for durable run state. Stdlib-only, cross-platform.
 
-Every run's state and every improvement evidence stream resolve to one
-user-scope sink, not to the repository work happens in. The root is the
-sink env var (``scripts._bootstrap.ENV_VAR``, named in prose at
-``rules/visibility.md`` section 6) when that is set to a non-empty value,
-else ``~/.orchflows/state``. It is read at call time, never cached at
-import, so a test may point it at a temporary directory after this
-module is already loaded.
-
-A record carries the project it arose in as a field. ``find_repo_root``
-is here for that reason and no other: it answers *which project*, never
-*where the record goes*. A linked worktree's ``.git`` pointer file is
-dereferenced when the pointer parses and can be read, so every worktree
-of a repository reports one project identity; an unparseable or
-unreadable pointer names the worktree, and the record then carries that
-directory as the project rather than the checkout above it.
-
-Where a work item's own candidate worktree goes is the third fact, and
-it lives here for the same reason: derived from the run and the ticket
-id alone, by one function, so two siblings of one run cannot be handed
-one tree and no caller can spell the same tree a second way. Whether a
-path lies in the host's system temp root is the fourth, asked by a
-checker in ``tools/`` and a harness in ``scripts/`` that cannot import
-each other.
-
-This module is the single owner of all four facts. ``tickets.py``,
-``friction.py``, ``workspace.py``, ``isolate.py`` and
-``tools/verify_at.py`` call it; none of them reimplements it.
+Four facts, one owner. The sink root is the sink env var
+(``scripts._bootstrap.ENV_VAR``, named in prose at ``rules/visibility.md``
+section 6) when set non-empty, else ``~/.orchflows/state``, read at call
+time so a test may move it after import. ``find_repo_root`` answers *which
+project* a record arose in, never where the record goes; a linked
+worktree's ``.git`` pointer is dereferenced so every worktree of a
+repository reports one identity. ``candidate_paths`` derives a work item's
+worktree from the run and ticket id alone, by one function, so two
+siblings cannot be handed one tree. ``in_temp_root`` answers whether a
+path lies under the host's system temp root.
 """
 
 from __future__ import annotations
@@ -49,10 +32,9 @@ WORKTREES_SUBPATH = "worktrees"
 WORKTREE_BRANCH_PREFIX = "wt"
 MAX_WALK_UP = 64
 
-# Sink subdirectory names with no root above yet -- `runs`, `tickets`,
-# `friction` and `improvement` already have one, their `*_root` function.
-# `orchflows_home.py`'s `MANAGED_IGNORES` imports these five plus
-# `tickets_root().name` rather than restate any of them.
+# Sink subdirectory names with no root above yet. `orchflows_home.py`'s
+# `MANAGED_IGNORES` imports these five plus `tickets_root().name` rather
+# than restate any of them.
 LOCKS_SUBPATH = "locks"
 SCRATCH_SUBPATH = "scratch"
 WORKSPACES_SUBPATH = "workspaces"
@@ -71,9 +53,8 @@ def state_root() -> Path:
 
 def runs_root() -> Path:
     # Literal join, not `RUNS_SUBPATH`: `tools/validate_support/friction.py`
-    # (and any sibling check shaped like it) reads this family's return
-    # expression by AST, matching a `<root> / "name"` join -- a `Name`
-    # reference would read as zero matches instead of one.
+    # reads this family's return expression by AST, matching a
+    # `<root> / "name"` join -- a `Name` reference would read as no match.
     return state_root() / "runs"
 
 
@@ -90,25 +71,13 @@ def improvement_root() -> Path:
 
 
 def orchflows_home() -> Path:
-    """The user-scope home the sink sits inside, resolved through the sink.
-
-    One resolution, not two: the sink env var moves the sink for a
-    test or a host, and everything user-scope beside it -- the installer
-    receipt, the installed library, the derived worktrees -- has to move
-    with it or a test would reach into the real home to find them.
-    """
+    """The user-scope home the sink sits inside, resolved through the sink."""
 
     return state_root().parent
 
 
 def worktrees_root() -> Path:
-    """Where every derived candidate worktree lives, a sibling of ``state``.
-
-    ``$ORCHFLOWS_WORKTREES_HOME`` overrides it for a host whose derived
-    trees belong on another volume. Outside the sink's own trees on
-    purpose: a worktree is a checkout, not run state, and a sink walker
-    that met one would read a whole second repository as records.
-    """
+    """Where every derived candidate worktree lives, a sibling of ``state``."""
 
     override = os.environ.get(WORKTREES_ENV_VAR, "").strip()
     if override:
@@ -117,18 +86,7 @@ def worktrees_root() -> Path:
 
 
 def segment_defect(kind: str, value):
-    """Why ``value`` is not one path segment under a sink root, else ``None``.
-
-    The one-segment rule is this module's because every path built out of a
-    run id or a ticket id is built here or from here: the sink trees, the
-    derived worktree, and the ticket file the store opens. It was stated
-    twice -- once as a raised ``ValueError`` beside ``candidate_paths`` and
-    once as a returned payload in ``tickets_store._segment_error`` -- and the
-    two sentences had already drifted apart, so a caller reading one of them
-    learned a different rule from a caller reading the other. The store's
-    refusal now delegates here; this module depends on nothing, which is why
-    the predicate lives at this end of the edge rather than the other.
-    """
+    """Why ``value`` is not one path segment under a sink root, else ``None``."""
 
     text = str(value or "")
     if not text.strip():
@@ -142,19 +100,7 @@ def segment_defect(kind: str, value):
 
 
 def candidate_paths(run: str, ticket_id: str) -> dict:
-    """The one derivation of a work item's candidate worktree and branch.
-
-    Pure, and derived from the identity alone: two siblings of one run
-    derive two paths without consulting each other, which is what makes
-    creating the tree outside the run lock safe. Nothing else may compute
-    either value -- a second spelling is how a launch came to carry
-    another ticket's workspace.
-
-    The segments are refused here rather than trusted, because the run
-    and the id are what the path is built out of: a separator or a ``..``
-    in either would name a tree outside the root this function exists to
-    keep every candidate inside. The rule itself is ``segment_defect``'s.
-    """
+    """The one derivation of a work item's candidate worktree and branch."""
 
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
         defect = segment_defect(kind, value)
@@ -167,23 +113,7 @@ def candidate_paths(run: str, ticket_id: str) -> dict:
 
 
 def candidate_identity(path) -> dict:
-    """The ``{run, id}`` whose candidate worktree ``path`` lies in, or ``None``.
-
-    The exact inverse of ``candidate_paths``, and here for the same reason
-    the forward derivation is: a caller standing in a derived tree that
-    spelled the answer for itself would be a second owner of the layout,
-    and the two would drift the first time the layout moved. Ancestors
-    count, because an item works far below its workspace root.
-
-    Path shape alone. Whether the named item exists is a different
-    question, asked of the sink by the caller that cares.
-
-    Containment is decided on the folded spelling and the identity is read
-    off the unfolded one -- so this is not ``_one_spelling``'s single
-    answer, it is that answer for the comparison only: a run id is a
-    timestamp carrying a capital ``T`` and ``Z``, and an identity that had
-    been through ``normcase`` would name no run in the sink on Windows.
-    """
+    """The ``{run, id}`` whose candidate worktree ``path`` lies in, or ``None``."""
 
     try:
         root = os.path.realpath(os.fspath(worktrees_root()))
@@ -195,7 +125,7 @@ def candidate_identity(path) -> dict:
         parts = Path(os.path.relpath(standing, root)).parts
     except (OSError, TypeError, ValueError):
         # ValueError is the ordinary Windows answer for two different
-        # drives, which is simply "not inside", not a failure to report.
+        # drives, which is "not inside" rather than a failure to report.
         return None
     if len(parts) < 2:
         return None
@@ -209,22 +139,7 @@ def _one_spelling(path) -> str:
 
 
 def inside_temp_root(candidate) -> bool:
-    """Whether ``candidate`` lies inside this host's system temp root.
-
-    A fact about a path, so it lives beside the other three, and it lives
-    at *this* end of the edge for the reason ``segment_defect`` does: two
-    callers in two layers ask it -- the checker that refuses to build a
-    worktree there (``tools/verify_at.py``) and the harness that warns when
-    it built an isolated tree there (``scripts/isolate.py``) -- and ``tools``
-    may import ``scripts`` while the reverse is forbidden, so only this end
-    is reachable from both.
-
-    Why anyone asks: a checkout under the system temp root is not merely
-    untidy. ``tools/run_tests.py``'s ``meaningful_sys_path`` reads paths
-    there as dead scratch, so a suite run inside one reads differently
-    about itself, and a red that means only "you ran me in the temp root"
-    is indistinguishable from a real one.
-    """
+    """Whether ``candidate`` lies inside this host's system temp root."""
 
     root = _one_spelling(tempfile.gettempdir())
     try:
@@ -235,9 +150,7 @@ def inside_temp_root(candidate) -> bool:
 
 def main_checkout_root(git_file: Path):
     """Resolve a .git pointer file (worktree/submodule) to its main root,
-    or ``None`` -- which ``find_repo_root`` reads as "name the worktree",
-    the outcome the module docstring states, for a pointer that will not
-    parse and for one that will not read alike."""
+    or ``None`` -- which ``find_repo_root`` reads as "name the worktree"."""
 
     try:
         for line in git_file.read_text(encoding="utf-8", errors="replace").splitlines():

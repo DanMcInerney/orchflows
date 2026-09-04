@@ -6,7 +6,7 @@ import json
 import os
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -81,8 +81,6 @@ class DoctorFixture:
 
         receipt_path = installed / "receipt.json"
         self.plan = Plan(
-            scope="user",
-            project_root=None,
             lib_home=installed / "lib",
             scope_home=installed,
             bin_dir=installed / "bin",
@@ -138,8 +136,6 @@ class DoctorFixture:
             claude_import=ImportPlan(
                 self.claude_surface,
                 self.host_block.resolve(),
-                "<!-- BEGIN ORCHFLOWS -->",
-                "<!-- END ORCHFLOWS -->",
                 "Claude instructions",
             ),
         )
@@ -398,22 +394,30 @@ class TestInstallDoctor(unittest.TestCase):
             )["findings"]
         })
 
-    def test_both_cli_forms_print_the_same_report_and_exit_by_status(self):
-        for argv in (["doctor"], ["--doctor"]):
-            with self.subTest(argv=argv), patch.object(
-                install, "build_plan", return_value=self.fixture.plan
-            ), patch.object(
-                install, "resolve_source_commit", return_value="abc123"
-            ):
-                output = io.StringIO()
-                with redirect_stdout(output):
-                    exit_code = install.main(argv)
+    def test_the_one_cli_form_prints_the_report_and_exits_by_status(self):
+        """``doctor`` is the whole spelling: the ``--doctor`` flag it used to
+        share the surface with is refused by the parser."""
 
-                self.assertEqual(0, exit_code)
-                self.assertEqual(
-                    {"findings": [], "status": "coherent"},
-                    json.loads(output.getvalue()),
-                )
+        with patch.object(
+            install, "build_plan", return_value=self.fixture.plan
+        ), patch.object(
+            install, "resolve_source_commit", return_value="abc123"
+        ):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = install.main(["doctor"])
+
+        self.assertEqual(0, exit_code)
+        self.assertEqual(
+            {"findings": [], "status": "coherent"},
+            json.loads(output.getvalue()),
+        )
+
+        parser = install.build_arg_parser()
+        self.assertNotIn("--doctor", parser.format_help())
+        with self.assertRaises(SystemExit) as raised, redirect_stderr(io.StringIO()):
+            parser.parse_args(["--doctor"])
+        self.assertEqual(2, raised.exception.code)
 
         self.fixture.by_name.write_text("drifted pointer\n", encoding="utf-8")
         with patch.object(

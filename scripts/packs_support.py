@@ -23,15 +23,12 @@ except ImportError:
 RESOLVER_VERSION = "orchflows.pack-resolver.v2"
 PACK_CELLS = (
     "adapter",
-    "stages",
-    "assembly",
     "craft",
 )
-TYPED_CELLS = frozenset(("adapter", "stages", "assembly"))
+TYPED_CELLS = frozenset(("adapter",))
 _CELL_SET = frozenset(PACK_CELLS)
 _PACK_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ADAPTER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
-_STAGE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _CELL_ROW_RE = re.compile(r"^\s*\|\s*([^|]+?)\s*\|\s*(.*?)\s*\|\s*$")
 _LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 _FRONTMATTER_NAME_RE = re.compile(r"(?m)^name:\s*([^\r\n]+?)\s*$")
@@ -93,14 +90,7 @@ def _roots(
     project_root: Optional[Path],
     user_root: Optional[Path],
 ) -> List[Tuple[str, Path]]:
-    """Return the ring roots for packs, nearest first.
-
-    The order and the paths are ``scripts/rings.py``'s, not this module's:
-    a pack resolver that spelled its own roots is one half of the two-
-    resolver divergence that let admission and execution read different
-    files as "the pack". The three keyword roots stay as overrides for the
-    CLI and the tests, and are handed to the one resolver as such.
-    """
+    """Return the ring roots for packs, nearest first."""
 
     return rings.item_roots(
         "pack",
@@ -121,14 +111,7 @@ def _parse_rows(
     *,
     require_all: bool = True,
 ) -> Dict[str, str]:
-    """Parse the one cell table and reject unknown/repeated cell names.
-
-    The complete resolver requires every declared cell.  A few boundary
-    validators need to inspect one typed leaf before a complete pack is
-    available (for example, a workspace adapter during admission), so they
-    may request a partial row set while still using this one parser.  Partial
-    parsing never weakens row, name, or duplicate checks.
-    """
+    """Parse the one cell table and reject unknown/repeated cell names."""
 
     rows: Dict[str, str] = {}
     saw_header = False
@@ -176,14 +159,7 @@ def _parse_rows(
 
 
 def _declared_cell(path: Path, cell: str) -> str:
-    """Read one declared cell through the resolver's sole table parser.
-
-    This is intentionally private: callers that need a content-addressed
-    pack must use :func:`resolve_pack`; the leaf seam exists only for the
-    adapter registry's early admission check, where synthetic or incomplete
-    pack fixtures are still useful.  It shares byte normalization and table
-    validation with the complete resolver, so no second pack parser can drift.
-    """
+    """Read one declared cell through the resolver's sole table parser."""
 
     if cell not in _CELL_SET:
         raise PackError("pack-cell-invalid", f"unknown pack cell: {cell}")
@@ -216,34 +192,6 @@ def _typed_cells(rows: Dict[str, str], path: Path) -> Dict[str, object]:
     if adapter not in ADAPTER_REGISTRY:
         raise PackError("pack-shape-invalid", f"adapter cell names an unregistered key: {adapter!r}")
     cells["adapter"] = adapter
-
-    stages_raw = rows["stages"].strip()
-    if not (stages_raw.startswith("[") and stages_raw.endswith("]")):
-        raise PackError("pack-shape-invalid", "stages cell must be a bracketed list")
-    stages: List[str] = []
-    inside = stages_raw[1:-1].strip()
-    if inside:
-        for item in inside.split(","):
-            raw_stage = item.strip()
-            if raw_stage.startswith("`") or raw_stage.endswith("`"):
-                raise PackError("pack-shape-invalid", f"stages cell must use plain stage names: {raw_stage!r}")
-            stage = raw_stage
-            if not stage or not _STAGE_RE.fullmatch(stage):
-                raise PackError("pack-shape-invalid", f"stages cell has invalid stage: {stage!r}")
-            if stage in stages:
-                raise PackError("pack-shape-invalid", f"stages cell repeats stage: {stage}")
-            stages.append(stage)
-    cells["stages"] = stages
-
-    assembly = _atom(rows["assembly"], "assembly", path)
-    if assembly != "none" and not _STAGE_RE.fullmatch(assembly):
-        raise PackError("pack-shape-invalid", f"assembly cell has invalid value: {assembly!r}")
-    # ``none`` may coexist with ordinary execution stages when no terminal
-    # assembly item exists. A named assembly is a stage name, never a skill
-    # binding.
-    if assembly != "none" and assembly not in stages:
-        raise PackError("pack-shape-invalid", f"assembly is not a declared stage: {assembly}")
-    cells["assembly"] = assembly
     return cells
 
 
@@ -280,15 +228,7 @@ def _read_references(rows: Dict[str, str], pack_dir: Path) -> List[Dict[str, obj
 
 
 def _signature_digest() -> Optional[str]:
-    """Hash the library's signature contract -- never the pack's own copy.
-
-    The bytes come from lib and only lib. The pack-relative lookup this
-    used to try first (``<pack>/../../contracts/pack-signature.md``) was the
-    self-supply hole: a project ring shipping its own signature contract
-    fed its own pack's identity, so the document that decides whether a
-    pack is well-formed was readable from the pack (FM-2, mise
-    CVE-2026-35533's class). A ring that ships one now changes nothing.
-    """
+    """Hash the library's signature contract -- never the pack's own copy."""
 
     candidate = rings.lib_root() / "contracts" / "pack-signature.md"
     if candidate.is_file():

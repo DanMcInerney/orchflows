@@ -50,9 +50,9 @@ else:
         _sections, _set_frontmatter_field, _write_section, dequote,
         quote_filed_body, unquote_filed_body,
     )
-# The bound grammar is `tickets_bound`'s, read here so every holder
-# gets the one spelling.
-# Reached by name in the sibling branch: the import census is pinned.
+# The bound grammar is `tickets_bound`'s, read here so every holder gets the
+# one spelling. Reached by name in the sibling branch: the import census is
+# pinned.
 if __package__:
     from .tickets_bound import DEFAULT_BOUND_MINUTES, _parse_bound_minutes
 else:
@@ -61,8 +61,8 @@ else:
 VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
 # The one value the `frame` marker takes, read off the declared shape rather
 # than spelled twice. A frame is the durable record of one workflow
-# invocation; the marker is what tells every reader that the ticket in front
-# of it binds no executor because nothing dispatches it.
+# invocation, and the marker tells every reader that the ticket binds no
+# executor because nothing dispatches it.
 FRAME_MARKER = TICKET_FRONTMATTER_VALUES['frame'][0]
 # The field a planning `do` records its artifact kind under, named here and
 # nowhere else, its two values read off the declared shape. A craft's
@@ -91,36 +91,31 @@ TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
 # honest accounting; both file the evidence the next item is written against.
 # `blocked`, `failed` and `stalled` filed no such artifact, so a dependent
 # admitted over them would be reading an absence. Beside the states it is
-# drawn from rather than in one of its two readers: `tickets_admission`
-# grades a sealed assignment against it and `tickets_readiness` answers the
-# reader's promotion question with it, and the two disagreed -- readiness
-# went on requiring `complete` after admission stopped.
+# drawn from rather than in one of its two readers, `tickets_admission` and
+# `tickets_readiness`, which had drifted apart while each held a copy.
 RESULT_BEARING_STATES = (DELIVERED_STATE, 'limited')
 # The ids the round machinery mints after a cut is already sealed, and the
 # one grammar that names them. A landing whose `done` command refused arms
 # its `<id>.repair.NN` round, and the `check` done form mints a
-# `<round>.done` judge beside one. Two readers have to agree on which ids
-# those are -- the advance and the sealed-admission command -- and while the
-# grammar was spelled inside the lane that minted them, that command
-# answered by never asking: it read every armed round as an assignment the
-# seal did not name and refused the whole lane at its first dispatch.
+# `<round>.done` judge beside one. The advance and the sealed-admission
+# command have to agree on which ids those are, or the second reads every
+# armed round as an assignment the seal did not name.
 REPAIR_MARKER = 'repair'
 DONE_TICKET_SUFFIX = '.done'
 ROUND_ID_RE = re.compile(
     f'^(?P<parent>.+)\\.{REPAIR_MARKER}\\.(?P<number>\\d+)$'
 )
-# The auto id grammar of the two minting commands. A runtime child is
-# minted under the ticket that called it -- `<parent>.<n>` -- and a
-# parentless one roots its own tree as `B<n>`, so the id alone says where
-# in the call tree a ticket hangs. Ordinals are per parent and never reused
-# inside one run: the command mints under the run lock, which is what
-# makes two concurrent `do` calls under one parent disagree about nothing.
+# The auto id grammar of the two minting commands. A runtime child is minted
+# under the ticket that called it -- `<parent>.<n>` -- and a parentless one
+# roots its own tree as `B<n>`, so the id alone says where in the call tree a
+# ticket hangs. Ordinals are per parent and never reused inside one run: the
+# command mints under the run lock.
 MINT_ROOT_ID_RE = re.compile('^B(?P<number>\\d+)$')
 MINT_CHILD_ID_RE = re.compile('^(?P<parent>.+)\\.(?P<number>\\d+)$')
 ESCAPED_NEWLINE_RE = re.compile('\\\\n')
-# A literal backslash then the letter 'n' -- the two-character escape a
-# shell or a hand can type in place of the one byte it was meant to stand
-# for. A real newline never matches this: it is one byte, not two.
+# A literal backslash then the letter 'n' -- the two-character escape a shell
+# or a hand can type in place of the one byte it stands for. A real newline
+# never matches this: it is one byte, not two.
 _PATH_RUN_RE = re.compile('(?:\\\\[^\\s\\\\]*)+')
 _DRIVE_LETTER_RE = re.compile('[A-Za-z]:')
 _INLINE_CODE_RE = re.compile('`[^`]*`')
@@ -141,14 +136,7 @@ def parse_canonical_json(encoded: str):
     """Parse the portable canonical JSON grammar shared by ticket fields."""
     return json.loads(encoded, object_pairs_hook=_json_object, parse_constant=_nonfinite_json)
 def _windows_path_spans(line: str) -> list:
-    """Character spans in ``line`` that read as a Windows path, not prose.
-
-    A drive letter or a UNC's doubled backslash roots a path outright, so
-    even its first segment counts. Unrooted needs two real (2+ character)
-    segments, so a doubled escape (``\\n\\n``) is never misread as the
-    two one-letter segments of a path nothing names -- the exact shape a
-    collapsed multi-bullet ``--context`` value takes.
-    """
+    """Character spans in ``line`` that read as a Windows path, not prose."""
     spans = []
     for match in _PATH_RUN_RE.finditer(line):
         run = match.group()
@@ -161,22 +149,11 @@ def _windows_path_spans(line: str) -> list:
             spans.append(match.span())
     return spans
 def _inline_code_spans(line: str) -> list:
-    """Character spans in ``line`` between paired single backticks.
-
-    A fenced block already reads as code, never prose; this is the same
-    exemption for the inline case -- the repository's own idiom for naming
-    a newline in running text, as in `newline=` or "rstrip of a newline".
-    An unpaired backtick protects nothing: only a closed span counts.
-    """
+    """Character spans in ``line`` between paired single backticks."""
     return [match.span() for match in _INLINE_CODE_RE.finditer(line)]
 def _section_has_escaped_newline(body) -> bool:
     """Whether one section body carries a literal backslash-n outside code
-    and outside a Windows path -- fenced lines are read as code, never
-    prose, via the same ``_fence_run`` tracking `_scan_sections` uses to
-    find the next heading. An inline single-backtick span is the same
-    exemption for one unfenced line, the idiom prose uses to name the
-    escape without writing it.
-    """
+    and outside a Windows path."""
     lines, fence = str(body or '').split('\n'), None
     for line in lines:
         run = _fence_run(line)
@@ -205,36 +182,22 @@ def format_policy_defects(text, data, sections):
             )
     return defects
 def _read_utf8(path, subject: str='ticket', encoding: str='utf-8'):
-    """One file's text as ``(text, None)``, or ``(None, {"error": ...})``.
-    Both exceptions in one place because they are one failure to a caller --
-    the file is there and its bytes cannot be read -- and because they are
-    not one exception to Python: ``UnicodeDecodeError`` is a ``ValueError``,
-    not an ``OSError``, so a handler written for unreadable files let
-    non-UTF-8 bytes through as a traceback on a channel whose whole contract
-    is one JSON document. Every read site in this script goes through here,
-    so the next one cannot be written with half the handler.
-    """
+    """One file's text as ``(text, None)``, or ``(None, {"error": ...})``."""
     reader = path if hasattr(path, 'read_text') else Path(path)
     try:
         return (reader.read_text(encoding=encoding), None)
     except (OSError, UnicodeDecodeError) as error:
         return (None, {'error': f'unreadable {subject}: {error}'})
 def ticket_defects(text: str) -> list:
-    """Every way ``text`` is not a ticket per contracts/work-item.md.
-    A file with no frontmatter is that one defect and no other: every check
-    below reads the frontmatter or the body it heads, so listing what a
-    non-ticket also lacks says nothing a reader can act on.
-    """
+    """Every way ``text`` is not a ticket per contracts/work-item.md."""
     data = _parse_frontmatter(text)
     if not data:
         return ["no frontmatter: a ticket opens with a '---' block (contracts/work-item.md)"]
     defects = []
     required = REQUIRED_TICKET_KEYS + REQUIRED_LIFECYCLE_KEYS
     # `executor` is required of every ticket a command may dispatch, and a
-    # frame is the one kind no command may: its driver is the session that
-    # opened it.
-    # Exempted here rather than dropped from the declared shape, because
-    # every other ticket still owes the field.
+    # frame is the one kind no command may. Exempted here rather than dropped
+    # from the declared shape, because every other ticket still owes it.
     if is_frame(data):
         required = tuple(key for key in required if key != 'executor')
     for key in ('id', 'run', 'status', 'executor', 'depends_on', 'bound'):
@@ -274,14 +237,7 @@ def ticket_defects(text: str) -> list:
     defects.extend(done_defects(data.get('done')))
     return defects
 def lease_of(data):
-    """(owner, opened_at) of the ticket's current dispatch attempt.
-
-    The dispatch record owns the lease (contracts/dispatch.md); the ticket
-    carries no claimed_by/claimed_at projection beside it. This is the
-    light display/ordering read: the live attempt if one exists, else the
-    latest attempt, else ('', ''). Lease-law decisions read the validated
-    window in tickets_dispatch_schema instead.
-    """
+    """(owner, opened_at) of the ticket's current dispatch attempt."""
     raw = str(data.get('dispatch_v1') or '').strip()
     if not raw:
         return '', ''
@@ -301,25 +257,13 @@ def lease_of(data):
         return '', ''
     return str(attempt.get('owner') or ''), str(attempt.get('opened_at') or '')
 def round_of(ticket_id):
-    """`(parent_id, number)` when an id names one bounded round, else None.
-
-    The round itself, never the `.done` judge minted beside one: a judge is
-    read *against* a round and is not one, and what counts rounds -- the
-    stall rule -- would count each round twice if it were.
-    """
+    """`(parent_id, number)` when an id names one bounded round, else None."""
     match = ROUND_ID_RE.fullmatch(str(ticket_id or ''))
     if match is None:
         return None
     return match.group('parent'), int(match.group('number'))
 def round_parent(ticket_id):
-    """The ticket whose post-seal round machinery minted this id, or None.
-
-    A round names its parent, and the `.done` judge minted for a round names
-    the same parent that round does. Both are the machinery's ids rather
-    than an author's, so both bind through the one sealed ticket they
-    descend from; this answers *whose*, and the caller answers whether that
-    ticket is the kind whose machinery may mint them.
-    """
+    """The ticket whose post-seal round machinery minted this id, or None."""
     text = str(ticket_id or '')
     if text.endswith(DONE_TICKET_SUFFIX):
         text = text[:-len(DONE_TICKET_SUFFIX)]
@@ -327,13 +271,7 @@ def round_parent(ticket_id):
     return None if parsed is None else parsed[0]
 def mint_ordinal(ticket_id, parent=None):
     """The ordinal an auto-minted callable id carries under ``parent``, or
-    None.
-
-    ``parent`` empty asks the root question instead: `B3` is ordinal 3 and
-    nothing else is a root callable. A round id (`X.repair.2`) answers None
-    under parent `X`, because its own parent group is `X.repair` -- the two
-    grammars share a suffix and never share an id.
-    """
+    None."""
     text = str(ticket_id or '')
     if not str(parent or ''):
         match = MINT_ROOT_ID_RE.fullmatch(text)
@@ -343,12 +281,7 @@ def mint_ordinal(ticket_id, parent=None):
         return None
     return int(match.group('number'))
 def next_mint_id(parent, ticket_ids) -> str:
-    """The next unused auto id under ``parent``, or the next root `B<n>`.
-
-    One past the highest ordinal already present rather than the first gap:
-    a retired or renamed id must never be handed to a second ticket, and the
-    run directory is the whole of what is consulted.
-    """
+    """The next unused auto id under ``parent``, or the next root `B<n>`."""
     ordinals = [
         number for number in (
             mint_ordinal(ticket_id, parent) for ticket_id in ticket_ids or ()
@@ -360,24 +293,10 @@ def declared_parent(data) -> str:
     """The ticket this one was minted under at runtime, or ''."""
     return dequote(data.get('parent'))
 def is_frame(data) -> bool:
-    """Whether this ticket is one call-stack frame rather than dispatched work.
-
-    Read off the marker alone. A frame is also pack-less and executor-less,
-    but those are consequences the marker licenses rather than a second way
-    of recognising one: an ordinary ticket that merely lost its `executor`
-    is a defect, and reading it as a frame is how a defect becomes a
-    feature.
-    """
+    """Whether this ticket is one call-stack frame rather than dispatched work."""
     return dequote(data.get('frame')) == FRAME_MARKER
 def frame_defects(value, executor, pack) -> list:
-    """Shape defects for one frontmatter ``frame`` marker, or [].
-
-    The marker takes exactly one value, and what it marks is a ticket that
-    nothing executes: the orchestrator session drives its own frame, and the
-    frame is a journal rather than craft-governed work. So a frame binds no
-    executor and stamps no pack, and either one present is the marker
-    claiming a child and a craft the frame does not have.
-    """
+    """Shape defects for one frontmatter ``frame`` marker, or []."""
     raw = dequote(value)
     if not raw:
         return []
@@ -395,17 +314,13 @@ def frame_defects(value, executor, pack) -> list:
              'a frame is a journal, not craft-governed work'),
         ) if present
     ]
-# The one line a driver writes into a frame's journal to close over
-# unjudged work (the 2026-08-31 design's amendment A2). One prefix, owned
-# here beside the id grammar, because the close reads it and the contract
-# names it and two spellings would let a stated reason go unread.
+# The one line a driver writes into a frame's journal to close over unjudged
+# work. One prefix, owned here beside the id grammar, because the close reads
+# it and the contract names it and two spellings would let a stated reason go
+# unread.
 UNJUDGED_PREFIX = 'unjudged:'
 def unjudged_reason(journal) -> str:
-    """The stated reason a frame's journal closes over unjudged work, or ''.
-
-    A prefix match on one line, and the reason is the rest of it: an
-    `unjudged:` with nothing after it states no reason, so it buys nothing.
-    """
+    """The stated reason a frame's journal closes over unjudged work, or ''."""
     for line in str(journal or '').splitlines():
         text = line.strip()
         if text.startswith(UNJUDGED_PREFIX):
@@ -414,11 +329,7 @@ def unjudged_reason(journal) -> str:
                 return reason
     return ''
 def parse_done(data):
-    """The parsed frontmatter ``done`` predicate of one ticket, or None.
-
-    One home and one grammar: `tickets.py land` runs it over the integrated
-    tree, and nothing else reads it.
-    """
+    """The parsed frontmatter ``done`` predicate of one ticket, or None."""
     raw = str(data.get('done') or '').strip()
     if not raw:
         return None
@@ -428,13 +339,7 @@ def parse_done(data):
         return None
     return done if isinstance(done, dict) else None
 def done_binding_defects(done, subject: str) -> list:
-    """Shape defects for one ``{form, value}`` done binding, or [].
-
-    contracts/work-item.md's done_binding shape, and the sole owner of that
-    grammar. One field, one reading -- `tickets.py land` over the integrated
-    tree -- and one owner: a second copy is how the two spellings of a
-    closed form drift.
-    """
+    """Shape defects for one ``{form, value}`` done binding, or []."""
     if not isinstance(done, dict):
         return [f'{subject} must be one JSON object']
     defects = []

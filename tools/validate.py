@@ -2,7 +2,7 @@
 """The orchflows compiler.
 
 Enforces package anatomy, frontmatter, call-graph acyclicity, pack
-signature completeness, T0 hash pins, the
+signature completeness, the
 ticket-template contract (whose shape law is scripts/tickets.py's, read
 from there rather than restated), the result-envelope lead, and the
 duplication checks -- per pack cell and across tiers -- that replaced
@@ -48,6 +48,7 @@ from tools.validate_support import packages as _packages_module
 from tools.validate_support import sheets as _sheets_module
 from tools.validate_support import structure as _structure_module
 from tools.validate_support import tooling as _tooling_module
+from tools.validate_support import vocabulary as _vocabulary_module
 from tools.validate_support.common import *
 from tools.validate_support.bundle import *
 from tools.validate_support.carriage import *
@@ -57,6 +58,7 @@ from tools.validate_support.lifecycle_literals import *
 from tools.validate_support.packages import *
 from tools.validate_support.sheets import *
 from tools.validate_support.tooling import *
+from tools.validate_support.vocabulary import *
 from tools.validate_support.duplication import *
 from tools.validate_support.structure import *
 from tools.validate_support.lint import *
@@ -68,9 +70,10 @@ _SUPPORT_MODULES = (
     _packages_module,
     _duplication_module, _structure_module, _lint_module, _names_module,
     _lifecycle_literals_module, _sheets_module, _tooling_module,
+    _vocabulary_module,
 )
 _ROOT_BINDINGS = (
-    "ROOT", "CONTRACTS_DIR", "PINS_FILE", "FRICTION_OWNER", "NAME_CHECK_MARKER",
+    "ROOT", "CONTRACTS_DIR", "FRICTION_OWNER", "NAME_CHECK_MARKER",
 )
 
 
@@ -88,18 +91,15 @@ def _restore_support(state) -> None:
 
 
 def _bind_root(root: Path) -> None:
-    global ROOT, CONTRACTS_DIR, PINS_FILE, FRICTION_OWNER, NAME_CHECK_MARKER
+    global ROOT, CONTRACTS_DIR, FRICTION_OWNER, NAME_CHECK_MARKER
     ROOT = root
     CONTRACTS_DIR = root / "contracts"
-    PINS_FILE = root / "tests" / "pins.json"
     FRICTION_OWNER = root / "scripts" / "state_root.py"
     NAME_CHECK_MARKER = root / "ARCHITECTURE.md"
     for module in _SUPPORT_MODULES:
         module.ROOT = root
         if hasattr(module, "CONTRACTS_DIR"):
             module.CONTRACTS_DIR = CONTRACTS_DIR
-        if hasattr(module, "PINS_FILE"):
-            module.PINS_FILE = PINS_FILE
         if hasattr(module, "FRICTION_OWNER"):
             module.FRICTION_OWNER = FRICTION_OWNER
         if hasattr(module, "NAME_CHECK_MARKER"):
@@ -164,7 +164,13 @@ try:
 except ImportError:  # pragma: no cover - a checkout without the installer
     _INSTALLED_LIB_DIRS = None
 
-DOC_PATH_CHECKED_TREES = tuple(_INSTALLED_LIB_DIRS or ())
+# The installed roster, plus the one shipped-adjacent tree a reader also
+# follows paths out of. `reader/` installs its distribution but not its
+# prose, so its documents are graded as checkout paths (below).
+DOC_PATH_CHECKED_TREES = tuple(_INSTALLED_LIB_DIRS or ()) + ("reader/docs",)
+# The root orientation documents, which are files rather than trees and so
+# cannot ride the roster above.
+DOC_PATH_CHECKED_FILES = ("README.md", "TICKETS.md", "ARCHITECTURE.md", "DESIGN.md")
 # Checkout mechanics never land under lib/. UI, benchmark, and research
 # documents may instead point into their checked-out source trees.
 SOURCE_ONLY_DIRS = ("tools", "tests", "installer")
@@ -175,30 +181,29 @@ STATE_PATH_HEADS = ("tickets", "runs", "friction", "improvement", "references")
 # A path, not a command: no spaces, at least one separator. `tickets.py new`
 # and skill executors are not paths and never reach the resolver.
 DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-]+/?)*)`")
-# Non-navigation occurrences and not-yet-materialized UI design paths. Keyed
-# by the sentence that carries the token, never by its line number: an
-# insertion anywhere above an exempt site silently moved the key off it and
-# the exemption then covered whatever line had taken the number. The marker
-# is a distinctive fragment of the carrying sentence, so the same token on
-# another line is still graded and a reworded sentence fails loudly here
-# rather than quietly widening the exemption.
+# Non-navigation occurrences: a lone segment whose parent the carrying
+# sentence supplies rather than the resolver. ARCHITECTURE's `kernel/` hangs
+# off `skills/`, its `bin/` off a ring root, DESIGN's `imports/` off the
+# install root -- a sibling of the `lib/` tree resolved here, not a path
+# under it. Each is recorded rather than exempted as a class, so the same
+# spelling anywhere else -- including a genuinely dead pointer -- still
+# fails. Keyed by the sentence that carries the token, never by its line
+# number: an insertion anywhere above an exempt site silently moved the key
+# off it and the exemption then covered whatever line had taken the number.
+# The marker is a distinctive fragment of the carrying sentence, so the same
+# token on another line is still graded and a reworded sentence fails loudly
+# here rather than quietly widening the exemption.
 DOC_PATH_EXEMPT_SITES = frozenset({
-    ("contracts/pack-signature.md", "tests/pins.json",
-     "share the same contract"),
-    ("reader/docs/modularization.md", "reader/web/src/api/client.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "reader/web/src/api/schema.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "reader/web/src/app/registry.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "reader/web/src/feed.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "reader/web/src/state/location.ts",
-     "remain separate central seams"),
-    ("reader/docs/modularization.md", "app/catalog.ts",
-     "Array order is rail/display order only"),
-    ("reader/docs/modularization.md", "reader/web/src/state/location.ts",
-     "There is no second registration or routing owner"),
+    ("ARCHITECTURE.md", "kernel/", "callable packages"),
+    ("ARCHITECTURE.md", "workflows/", "reusable domain-blind workflows"),
+    ("ARCHITECTURE.md", "scripts/", "owns its `SKILL.md`"),
+    ("ARCHITECTURE.md", "scripts/", "owns repository automation"),
+    ("ARCHITECTURE.md", "scripts/", "package `scripts/`"),
+    ("ARCHITECTURE.md", "tests/", "owns regression evidence"),
+    ("ARCHITECTURE.md", "installer/", "installation compatibility facade"),
+    ("ARCHITECTURE.md", "bin/", "carried in two layouts"),
+    ("ARCHITECTURE.md", "bin/", "holds legacy generated"),
+    ("DESIGN.md", "imports/", "is regenerable from it"),
 })
 
 
@@ -250,6 +255,21 @@ def _documented_path_finding(token: str, source: Path, root: Path):
     )
 
 
+def _documented_path_sources(root: Path):
+    """Every markdown file the path check grades, trees then named files."""
+
+    for tree in DOC_PATH_CHECKED_TREES:
+        node = root / tree
+        if node.is_dir():
+            for source in sorted(node.rglob("*.md")):
+                if source.is_file():
+                    yield source
+    for name in DOC_PATH_CHECKED_FILES:
+        source = root / name
+        if source.is_file():
+            yield source
+
+
 def validate_documented_paths(diag: Diagnostics) -> None:
     """Grade the root currently exposed by this compatibility facade."""
 
@@ -272,22 +292,27 @@ def _validate_documented_paths_impl(diag: Diagnostics) -> None:
     if _INSTALLED_LIB_DIRS is None:
         diag.warn("installer", SKIPPED)
         return
-    for tree in DOC_PATH_CHECKED_TREES:
-        node = root / tree
-        if not node.is_dir():
-            continue
-        for source in sorted(node.rglob("*.md")):
-            if not source.is_file():
-                continue
-            text = _read_source(source)
-            for line in text.splitlines():
-                for match in DOCUMENTED_PATH_RE.finditer(line):
-                    token = match.group(1)
-                    if _doc_path_exempt(rel(source), token, line):
-                        continue
-                    finding = _documented_path_finding(token, source, root)
-                    if finding is not None:
-                        diag.error(rel(source), finding)
+    for source in _documented_path_sources(root):
+        text = _read_source(source)
+        for line in text.splitlines():
+            for match in DOCUMENTED_PATH_RE.finditer(line):
+                token = match.group(1)
+                if _doc_path_exempt(rel(source), token, line):
+                    continue
+                finding = _documented_path_finding(token, source, root)
+                if finding is not None:
+                    diag.error(rel(source), finding)
+
+
+def validate_vocabulary_consumers(diag: Diagnostics) -> None:
+    """Grade the root currently exposed by this compatibility facade."""
+
+    state = _support_state()
+    try:
+        _bind_root(ROOT)
+        _vocabulary_module.validate_vocabulary_consumers(diag)
+    finally:
+        _restore_support(state)
 
 
 def _run_validation_impl() -> Diagnostics:
@@ -335,8 +360,8 @@ def _run_validation_impl() -> Diagnostics:
     validate_section_citations(diag)
     validate_regenerated_artifacts(diag)
     validate_documented_paths(diag)
+    validate_vocabulary_consumers(diag)
     validate_surface_budgets(diag)
-    validate_pins(diag)
     validate_friction_locations(diag)
     return diag
 
@@ -358,23 +383,7 @@ def _main_impl(argv=None) -> int:
     except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
         pass
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--pin",
-        action="store_true",
-        help="rewrite tests/pins.json from the current contracts/*.md bytes",
-    )
-    args = parser.parse_args(argv)
-
-    if args.pin:
-        diag = Diagnostics()
-        validate_pin_supersessions(diag)
-        if diag.has_errors:
-            for line in diag.lines():
-                print(line)
-            return 1
-        pins = write_pins()
-        print(f"wrote {len(pins)} pin(s) to {rel(PINS_FILE)}")
-        return 0
+    parser.parse_args(argv)
 
     diag = run_validation()
     for line in diag.lines():

@@ -1,15 +1,12 @@
 """The two commands that open and close one assignment generation.
 
-`tickets_generations` is the algebra -- what a draft is, what validates it,
-what a seal writes.  This is the pair of subcommands that run it against
-the sink: `draft-validate` persists one content-addressed receipt, and
-`seal` compare-and-swaps exactly that receipt's draft onto the run.
-
-They live beside the algebra rather than inside it because that module is
-at its source ceiling, and because a seal does two things the algebra never
-does: it writes, and it repairs what its own write invalidated -- the
-admission receipts of members already promoted under the previous
-generation.
+`tickets_generations` is the algebra; this is the pair of subcommands that
+run it against the sink: `draft-validate` persists one content-addressed
+receipt, and `seal` compare-and-swaps exactly that receipt's draft onto the
+run. They live beside the algebra rather than inside it because a seal does
+two things the algebra never does: it writes, and it repairs what its own
+write invalidated -- the admission receipts of members already promoted
+under the previous generation.
 """
 
 from __future__ import annotations
@@ -45,9 +42,6 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import (
         binding_findings, dependency_order_findings,
     )
-
-DRAFT_VALIDATE_USAGE = "draft-validate <run> <root-id> [--correction-bound N]"
-SEAL_USAGE = "seal <run> <root-id> --cut-generation <identity>"
 
 
 def _store_bindings():
@@ -150,34 +144,27 @@ def _failure_path(run: str, root_id: str) -> Path:
     return _generation_dir(run) / f"{root_id}.failures.json"
 
 
-def _record_failure(run: str, root_id: str, findings: list, bound: int, write_atomically) -> dict:
+def _record_failure(run: str, root_id: str, findings: list, write_atomically) -> dict:
     path = _failure_path(run, root_id)
     history = []
     if path.is_file():
         value = json.loads(path.read_text(encoding="utf-8-sig"))
         history = list(value.get("history") or []) if isinstance(value, dict) else []
-    decision = correction_decision(findings, history, bound)
+    decision = correction_decision(findings, history)
     path.parent.mkdir(parents=True, exist_ok=True)
-    write_atomically(path, canonical_json({"bound": bound, "history": decision.get("history") or history}) + "\n")
+    write_atomically(path, canonical_json({"history": decision.get("history") or history}) + "\n")
     return decision
 
 
 def _cmd_draft_validate(rest) -> dict:
     args = list(rest)
-    bound_value = _extract(args, "--correction-bound")
     if len(args) != 2:
-        return {"error": f"usage: {DRAFT_VALIDATE_USAGE}"}
+        return {"error": "usage: draft-validate <run> <root-id>"}
     run, root_id = args
     _, _, _, segment_error, _, _ = _store_bindings()
     for kind, value in (("run id", run), ("ticket id", root_id)):
         refusal = segment_error(kind, value)
         if refusal is not None: return refusal
-    try:
-        bound = 1 if bound_value is None else int(bound_value)
-        if bound <= 0:
-            raise ValueError
-    except ValueError:
-        return {"error": "--correction-bound must be a finite positive integer"}
     _, run_lock, _, _, _, write_atomically = _store_bindings()
     try:
         with run_lock(run):
@@ -186,7 +173,7 @@ def _cmd_draft_validate(rest) -> dict:
                 return {"error": f"root ticket not found in exact snapshot: {root_id}"}
             findings = _draft_findings(root_id, snapshot)
             if findings:
-                decision = _record_failure(run, root_id, findings, bound, write_atomically)
+                decision = _record_failure(run, root_id, findings, write_atomically)
                 return {"error": "draft validation failed", "findings": findings, "correction": decision}
             draft = _next_draft(run, root_id, snapshot)
             receipt = validate_draft(root_id, snapshot, draft)
@@ -207,7 +194,7 @@ def _cmd_seal(rest) -> dict:
     args = list(rest)
     cut_generation = _extract(args, "--cut-generation")
     if len(args) != 2 or cut_generation is None:
-        return {"error": f"usage: {SEAL_USAGE}"}
+        return {"error": "usage: seal <run> <root-id> --cut-generation <identity>"}
     run, root_id = args
     _, run_lock, _, segment_error, _, write_atomically = _store_bindings()
     for kind, value in (("run id", run), ("ticket id", root_id)):
@@ -244,10 +231,9 @@ def _cmd_seal(rest) -> dict:
                 write_atomically(sealed_path, canonical_json(record) + "\n")
                 # The sealed record is on disk, so the grader can resolve it:
                 # every member this seal just re-generationed is re-graded and
-                # its receipt rewritten inside this same transaction. A member
-                # promoted under the previous generation otherwise holds a
-                # receipt only the previous generation computes, and its next
-                # dispatch is refused for staleness the seal itself introduced.
+                # its receipt rewritten inside this same transaction, or it
+                # would hold a receipt only the previous generation computes
+                # and its next dispatch would be refused for staleness.
                 refreshed = refresh_admissions(
                     run, run_dir, sealed, write_atomically,
                 )
@@ -260,12 +246,4 @@ def _cmd_seal(rest) -> dict:
     return {"assignment_seal": {"cut_generation": cut_generation, "root_generation": draft["root_generation"], "state": "sealed", "path": str(sealed_path), "refreshed_admissions": refreshed}}
 
 
-GENERATION_SUBCOMMANDS = {
-    "draft-validate": (DRAFT_VALIDATE_USAGE, "Grade one exact assignment snapshot and persist its content-addressed validation receipt.", _cmd_draft_validate),
-    "seal": (SEAL_USAGE, "Compare-and-swap seal only the exact validated cut generation, making its units eligible for admission.", _cmd_seal),
-}
-
-__all__ = (
-    "DRAFT_VALIDATE_USAGE", "GENERATION_SUBCOMMANDS", "SEAL_USAGE",
-    "_cmd_draft_validate", "_cmd_seal",
-)
+__all__ = ("_cmd_draft_validate", "_cmd_seal")

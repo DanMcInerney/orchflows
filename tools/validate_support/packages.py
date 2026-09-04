@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from . import common as __dep_common
 ALLOWED_FRONTMATTER_KEYS = __dep_common.ALLOWED_FRONTMATTER_KEYS
-ASSEMBLY_NONE_FORM_RE = __dep_common.ASSEMBLY_NONE_FORM_RE
-ASSEMBLY_SKILL_FORM_RE = __dep_common.ASSEMBLY_SKILL_FORM_RE
 BODY_BUDGET = __dep_common.BODY_BUDGET
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
 CRAFT_ROW_RE = __dep_common.CRAFT_ROW_RE
@@ -18,7 +16,6 @@ PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
 PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
 PACK_TYPED_CELLS = __dep_common.PACK_TYPED_CELLS
 PACK_ADAPTER_RE = __dep_common.PACK_ADAPTER_RE
-PACK_STAGE_RE = __dep_common.PACK_STAGE_RE
 PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
 Path = __dep_common.Path
 REQUIRE_RE = __dep_common.REQUIRE_RE
@@ -52,11 +49,6 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
     from tickets_format import dequote
 
 CONTRACTS_DIR = ROOT / "contracts"
-PINS_FILE = ROOT / "tests" / "pins.json"
-PIN_MESSAGE = (
-    "T0 contract changed; if intentional, re-pin via: "
-    "python tools/validate.py --pin"
-)
 
 
 def rel(path: Path) -> str:
@@ -312,12 +304,9 @@ def validate_routing_block(text: str, label: str, diag: Diagnostics, limit: int 
     scan here -- it is exercised directly, by synthetic text, the same way
     tests/test_architecture_owners.py's `CEILING_RE` exercises its
     can-fail direction against a padded copy rather than a second tree
-    (rules/verification.md Section 8). This checker is deliberately ahead
-    of its surface: it is the enforcement half of the render surface the
-    "Host-block root/child split" Deferred item in
-    research/architecture-repair-spec-2026-09-01.md will create, so a
-    dead-code sweep must not delete it for lacking a caller today -- it
-    gets wired in there once that split lands."""
+    (rules/verification.md Section 8). It is deliberately ahead of its
+    surface -- the enforcement half of a render surface not yet built -- so a
+    dead-code sweep must not delete it for lacking a caller today."""
 
     n = body_words(text)
     if n > limit:
@@ -355,36 +344,6 @@ def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
             file_label,
             f"adapter cell must be one registered mechanism key, got: {cells['adapter']!r}",
         )
-    stages = []
-    if "stages" in cells:
-        raw_stages = cells["stages"].strip()
-        if not (raw_stages.startswith("[") and raw_stages.endswith("]")):
-            diag.error(file_label, f"stages cell must be a bracketed list, got: {raw_stages!r}")
-        else:
-            stages = [dequote(part) for part in raw_stages[1:-1].split(",") if part.strip()]
-            if any(not PACK_STAGE_RE.fullmatch(stage) for stage in stages):
-                diag.error(file_label, f"stages cell has an invalid stage, got: {raw_stages!r}")
-            if len(stages) != len(set(stages)):
-                diag.error(file_label, "stages cell repeats a stage")
-    if "assembly" in cells:
-        raw_assembly = cells["assembly"].strip()
-        assembly = dequote(raw_assembly)
-        if raw_assembly != assembly or (
-            assembly != "none" and (
-                not PACK_STAGE_RE.fullmatch(assembly)
-                or (stages and assembly not in stages)
-            )
-        ):
-            diag.error(file_label, f"assembly cell must be none or a declared stage, got: {cells['assembly']!r}")
-
-
-def assembly_form_ok(binding: str, stages=None) -> bool:
-    """Return whether one typed assembly value is closed and stage-backed."""
-    raw = binding.strip()
-    value = dequote(raw)
-    if value == "none":
-        return raw == "none"
-    return raw == value and bool(PACK_STAGE_RE.fullmatch(value)) and (not stages or value in stages)
 
 
 def cell_clauses(text: str) -> list:
@@ -466,12 +425,12 @@ def cell_clauses(text: str) -> list:
 # that the cost is paid consciously, and what reopens it.
 
 __all__ = (
-    'CONTRACTS_DIR', 'PINS_FILE', 'PIN_MESSAGE', 'rel',
+    'CONTRACTS_DIR', 'rel',
     '_read_source', 'Diagnostics', 'workflow_tiers', 'discover_packages',
     'parse_frontmatter',
     'APPLIED_ROLE_VALUES',
     'validate_frontmatter', 'validate_role', 'validate_anatomy', 'body_words',
     '_split_frontmatter', 'validate_surface_budgets', 'validate_routing_block',
     'validate_budget', 'validate_pack_signature',
-    'assembly_form_ok', 'cell_clauses',
+    'cell_clauses',
 )

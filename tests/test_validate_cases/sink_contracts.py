@@ -45,8 +45,8 @@ SINK_PATHS = {
 }
 
 # The `.orch` references allowed to survive anywhere in `contracts/`.
-# Enumerated, not counted: after the supersession no contract composes a
-# run-state path from the repository, so the allow-list is empty.
+# Enumerated, not counted: no contract composes a run-state path from
+# the repository, so the allow-list is empty.
 ALLOWED_ORCH_REFERENCES = ()
 
 # Every field `run.json` carries, from the writer's own recorded shape
@@ -171,8 +171,10 @@ class TestWorklogStatesRunIdentity(unittest.TestCase):
     cannot drift in either direction."""
 
     def block(self):
-        text = (ROOT / "scripts" / "tickets.py").read_text(encoding="utf-8")
-        docstring = text.split('"""', 2)[1]
+        # The module's own docstring, not its file read back as text: the
+        # statement graded here is an attribute of the loaded writer, and
+        # reading it that way keeps this check off the `.py` bytes.
+        docstring = tickets_mod.__doc__ or ""
         self.assertIn(RUN_JSON_MARKER, docstring, "tickets.py's docstring does not state run.json's path")
         return docstring.split(RUN_JSON_MARKER, 1)[1].replace("``", "`")
 

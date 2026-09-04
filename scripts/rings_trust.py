@@ -2,23 +2,16 @@
 """The trust ledger for project-ring bundles: content-keyed, never portable.
 
 A project ring rides somebody's repository, so cloning it must not put
-skills, packs, or workflows in front of an agent.  The ledger records which
-bundles the user allowed and at which content digest.  It lives at
-``~/.orchflows/trust.json`` -- outside every repository, and gitignored by
-the home ring's own ``.gitignore`` -- because a repo that could grant itself
-trust is the whole failure mode (a config file that trusted its own path is
-how mise CVE-2026-35533 worked).  No trust or resolution policy is ever read
-from a project file.
+skills, packs, or workflows in front of an agent. The ledger records which
+bundles the user allowed and at which content digest. It lives at
+``~/.orchflows/trust.json`` -- outside every repository, gitignored by the
+home ring -- because a repository that could grant itself trust is the whole
+failure mode. No trust or resolution policy is ever read from a project file.
 
-Two grants, Nix's two-step: ``once`` is a single-use token this module spends
-the first time a resolution consumes it, leaving no standing record;
-``trusted`` is the standing entry, valid until the bundle's digest changes.
-
-The digest covers the bundle's three ring directories and nothing else, so
-ordinary edits elsewhere in the repository never re-prompt.  It is this
-module's own fact, not a pack digest: a pack's identity is its declared
-cells and their references, while a bundle's is every byte a ring could put
-in front of an agent.
+Two grants: ``once`` is a single-use token this module spends the first time
+a resolution consumes it; ``trusted`` is the standing entry, valid until the
+bundle's digest changes. The digest covers the bundle's ring directories and
+nothing else, so ordinary edits elsewhere never re-prompt.
 """
 
 from __future__ import annotations
@@ -49,11 +42,7 @@ def _folded(path) -> str:
 
 
 def bundle_digest(bundle) -> str:
-    """Hash every file the bundle's ring directories hold, path and bytes.
-
-    Text is compared with newlines normalized, so a checkout that arrived
-    with CRLF is the same bundle as the one that produced the grant.
-    """
+    """Hash every file the bundle's ring directories hold, path and bytes."""
 
     root = Path(bundle).expanduser()
     digest = hashlib.sha256()
@@ -152,11 +141,7 @@ def state(bundle, *, home: Optional[Path] = None) -> dict:
 
 
 def consume(bundle, *, home: Optional[Path] = None) -> dict:
-    """``state``, and spend a one-shot grant if that is what allowed it.
-
-    Spending is the whole difference between the two grants: a remembered
-    entry survives the read, a use-once token does not.
-    """
+    """``state``, and spend a one-shot grant if that is what allowed it."""
 
     verdict = state(bundle, home=home)
     if verdict["how"] != "once":

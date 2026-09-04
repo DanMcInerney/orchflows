@@ -34,8 +34,8 @@ Framework specifics live with the workspace's standards owner.
 
 ## Workspace
 
-git plus render: identities are view identities; a candidate diff pairs
-with fresh captures at the exact viewport; render conflicts and contested
+git: a candidate diff pairs with fresh captures at the exact viewport,
+and the pair is the view identity; render conflicts and contested
 captures regenerate once at the join.
 
 ## Spec fields
@@ -85,9 +85,9 @@ stays unproven.
   breakpoints × its enumerated states), provable by capture and the
   ticket's deterministic checks; one view composing another is the
   only edge.
-- Each view item repeats verbatim its identity list, its render,
+- Each view item carries by pointer its identity list, its render,
   capture and diff commands, its accessibility bar and design
-  language, and the standards owner pointer.
+  language, and the standards owner — never a copy.
 
 ### git
 
@@ -121,6 +121,4 @@ than a dimension the others trade against.
   record layout, type, contrast and interaction-state deltas.
 - Regenerate only derived captures after a coherent change and keep their
   command, revision and dimensions with the evidence.
-- Run the narrow affected render checks; the full suite is the gate's row,
-  never a unit's.
 - Close with the capture inventory, measured checks, and remaining visual questions.

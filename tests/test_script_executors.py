@@ -38,7 +38,6 @@ status: pending
 admission: pending
 executor: {executor}
 pack: {pack}
-independence: checker
 depends_on: []
 write_scope:
   - scripts/a.py

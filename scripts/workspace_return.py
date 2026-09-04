@@ -1,16 +1,11 @@
 """Integrate and retire one work item's candidate workspace.
 
-The return half of the candidate's life. ``workspace_candidate`` owns what
-a candidate *is* -- the tree it gets, the branch that tree stands on, the
-stamp its ticket carries -- and this owns what becomes of it once the item
-has run: the merge that carries its commits into the checkout the run is
-being driven from, and the removal of the tree afterwards.
-
-The two live together because their order is the whole point. Integration
-happens before retirement: after retirement the branch survives but the
-tree that named it does not, and a merge that ran second would be merging
-a branch no worktree stands in. Neither reads or writes a ticket, which is
-why they sit apart from the establishment lanes that do nothing else.
+The return half of the candidate's life: the merge that carries its
+commits into the checkout the run is driven from, and the removal of the
+tree afterwards. Integration happens before retirement -- after retirement
+the branch survives but the tree that named it does not, and a merge that
+ran second would be merging a branch no worktree stands in. Neither reads
+nor writes a ticket.
 """
 
 from __future__ import annotations
@@ -31,49 +26,7 @@ EXIT_OK = workspace_git.EXIT_OK
 
 
 def integrate(run: str, ticket_id: str, workspace, branch, baseline=None):
-    """Merge this item's candidate branch into the run's own checkout.
-
-    The step `land` used to leave for hand git, which is how a run once
-    reported a landed item whose commits never reached the checkout anyone
-    read. One merge, before the worktree is retired: after retirement the
-    branch survives but the tree that named it does not, and the ordering
-    is the whole reason this lives beside `retire` rather than after it.
-
-    The tree and the branch are the establishment's own records, handed in
-    rather than re-derived here. `retire` may re-derive because a spent path
-    answers for an archived ticket; a merge may not, because the only branch
-    it is lawful to merge is the one this attempt actually stood on. Where
-    it is merged *to* is a record for the same reason: read live off
-    whatever the repository had checked out, this once wrote a run's whole
-    result onto an unrelated branch of the user's own checkout, and ran the
-    `done` predicate in that tree. A checkout that has moved off the
-    recorded branch since is refused, never followed.
-
-    A conflict is refused, not resolved and not left half-applied: the merge
-    is aborted so the run's own checkout is never handed back mid-merge, and
-    the refusal names the conflicted paths and the one remedy -- resolve
-    them in the candidate, then land again. Replaying is free: git answers
-    an already-merged branch with an unchanged HEAD, which is reported as a
-    replay rather than as a second merge -- unless the branch never advanced
-    past its own `workspace_baseline` and the candidate is holding
-    uncommitted work, which is no replay at all but a delivery that was
-    never committed, and is refused. A branch that has carried real commits
-    is a lawful replay regardless of whatever scratch a worker's candidate
-    is still holding: that dirt is graded by `check` at the join, not here.
-
-    There are two `absent` answers and they are not the same finding. A
-    candidate the records do not resolve to a linked worktree of a readable
-    repository is nothing this looked anywhere for -- an item that ran in
-    the caller's own checkout, or one whose tree a previous landing already
-    retired -- and it answers `absent` bare, which is how a second landing
-    of a retired candidate stays a replay. A candidate that does resolve,
-    against a run that recorded a target which does not carry its branch,
-    is the 2026-09-02 ladder defect: the candidate was cut from one
-    repository and the run integrates into another. That `absent` carries
-    the repository and branch it looked for and the sentence saying so, and
-    `land` stops on it rather than reporting a landed item whose commits
-    reached no checkout anybody reads.
-    """
+    """Merge this item's candidate branch into the run's own checkout."""
 
     target = Path(str(workspace or "")).expanduser() if workspace else None
     branch = str(branch or "").strip()
@@ -118,19 +71,16 @@ def integrate(run: str, ticket_id: str, workspace, branch, baseline=None):
             + (", ".join(paths) if paths else err.strip())
             + f". Resolve them in the candidate at {target}, commit there, then "
             f"land {run}/{ticket_id} again",
-            # carried, not re-parsed out of the sentence above: the join
-            # files these paths into the item's own `## Report`, and a
-            # reader of that record is entitled to the list git gave rather
-            # than to whatever a regex could recover from prose
+            # carried, not re-parsed out of the sentence above: a reader of
+            # the item's `## Report` is entitled to the list git gave
             conflicted=paths, into=into, root=str(root),
         )
     after = read_root("rev-parse", "HEAD")
     return {"integrate": dict(
         body, outcome="replayed" if after == before else "merged",
         into=into, main_root=str(root), revision=after,
-        # the candidate's own identity beside the tree's: after a conflict
-        # was resolved, which revision the resolution delivered is the half
-        # of the answer the integrated tip does not carry
+        # the candidate's own identity beside the tree's: which revision a
+        # resolution delivered is what the integrated tip does not carry
         tip=workspace_git._branch_tip(root, branch),
     )}, EXIT_OK
 
@@ -147,22 +97,7 @@ def _absent_detail(run, ticket_id, root, into, branch, target) -> str:
 
 
 def _recorded_target(run: str, ticket_id: str):
-    """``(root, branch)`` the run's first establishment named, or refuse.
-
-    A run that recorded none is a run whose candidates were established
-    before there was anywhere to record it. There is no second place to
-    read the answer out of -- the checkout's incumbent branch is exactly
-    the guess this exists to end -- so the refusal names the establishment
-    that records it, which replays against an existing tree and writes the
-    target on its way through.
-
-    The remedy names ``--repo``, and has to: only an establishment that
-    *names* its tree fixes the target, so the flagless command this refusal
-    used to prescribe replays at exit 0 and records nothing -- a refusal
-    whose one way out is a dead end. Only a delivering item's establishment
-    fixes it either, a judging item's never does, and that condition is
-    named here rather than derived: this module reads no ticket.
-    """
+    """``(root, branch)`` the run's first establishment named, or refuse."""
 
     recorded = tickets_store.integration_target(run)
     if recorded is None:
@@ -184,26 +119,7 @@ def _recorded_target(run: str, ticket_id: str):
 
 
 def _refuse_uncommitted_delivery(run, ticket_id, root, target, branch, baseline) -> None:
-    """Refuse a candidate that would merge as a replay while holding work.
-
-    Two members of one run landed `complete` on branches carrying zero
-    commits: each worker closed without committing, the merge was a no-op,
-    and integration reported `replayed` -- the one word that reads exactly
-    like a lawful second landing, so nothing downstream looked again. The
-    tell used to be read off ancestry -- whether the branch tip was already
-    merged into the checkout's HEAD -- but a branch replayed after a real
-    delivery is *also* already merged, and a worker's own compliant scratch
-    (the `.orch-outcome-*`/`.orch-report-*` note files the launch prompt
-    tells every worker to write) then read as the same "never committed"
-    delivery a second, differently-named time. The tell that actually
-    distinguishes them is whether the branch ever advanced past the
-    revision `workspace.py establish` cut it from: a branch still standing
-    at its own write-once `workspace_baseline` delivered nothing, no matter
-    what commits already sit on the main checkout's own history; a branch
-    past its baseline has carried something, replayed or not, and whatever
-    scratch its candidate still holds beside that is the worker's business,
-    graded by `check` at the join rather than here.
-    """
+    """Refuse a candidate that would merge as a replay while holding work."""
 
     if not target.is_dir():
         return
@@ -226,21 +142,7 @@ def _refuse_uncommitted_delivery(run, ticket_id, root, target, branch, baseline)
 
 
 def retire(run: str, ticket_id: str, *, force: bool = False):
-    """Remove the derived tree, leaving every stamp that names it in place.
-
-    The ticket is not read and not written. Its ``workspace_branch`` and
-    ``workspace_baseline`` are what the join grades the item by, long after
-    the tree they were observed in is gone, and a retirement that cleared
-    them would grade the work as never isolated. The path is derived, so
-    this answers for an item whose ticket has already been archived.
-
-    A tree that was never created is not a failure, and a tree git cannot
-    remove is not quietly left behind: the refusal names what to do next.
-    Never ``--force``. The flag exists for a caller who has looked at the
-    tree and decided, and a refusal that prescribed it stood between a
-    worker's only uncommitted copy and its deletion. What the refusal names
-    instead is the act that preserves those bytes.
-    """
+    """Remove the derived tree, leaving every stamp that names it in place."""
 
     candidate = state_root.candidate_paths(run, ticket_id)
     target, branch = candidate["path"], candidate["branch"]
@@ -264,19 +166,7 @@ def retire(run: str, ticket_id: str, *, force: bool = False):
 
 
 def _retirement_refusal(run, ticket_id, main, target, argv, err) -> str:
-    """Why a tree was not removed, its bytes first.
-
-    Uncommitted work is the common cause and the only one where the
-    obvious command destroys something: those bytes are somebody's
-    delivery, and the remedy is to land it, not to overrule the refusal
-    that saved it. Git's own words are dropped in that case rather than
-    quoted -- git ends them by naming ``--force``, and a reader scanning a
-    refusal for a command finds whatever command the refusal contains.
-
-    Anything else is a tree this cannot speak for. There git's words are
-    the evidence and are kept, and the reader is sent to look at the tree
-    before running the removal by hand.
-    """
+    """Why a tree was not removed, its bytes first."""
 
     try:
         dirty, _emitted = workspace_git.emission_split(

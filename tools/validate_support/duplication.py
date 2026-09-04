@@ -12,7 +12,6 @@ CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
 CELL_REFERENCE_LINK_RE = __dep_common.CELL_REFERENCE_LINK_RE
 CELL_SIMILARITY_THRESHOLD = __dep_common.CELL_SIMILARITY_THRESHOLD
 CRAFT_CELLS_BY_POINTER = __dep_common.CRAFT_CELLS_BY_POINTER
-MANDATED_FORM_RES = __dep_common.MANDATED_FORM_RES
 PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
 PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
 ROOT = __dep_common.ROOT
@@ -38,31 +37,7 @@ CELL_DUPLICATION_ALLOWLIST = (
         # Normalized clauses, matched exactly.
         "clauses": (
             "document tree: identities are document revisions",
-            "git plus render: identities are view identities",
             "evidence store: identities are evidence packets",
-        ),
-    },
-    {
-        "family": "verification-scope anchor",
-        "reason": (
-            "scripts/tickets_assignment.py's _craft_scope() reads a pack's "
-            "own verification-scope sentence out of its `## Stages` (or "
-            "`## Lens`) section by the literal anchor \"gate's row\", so "
-            "the one-suite law (research/routing-design-2026-08-31.md "
-            "\"The one-suite law\") reaches every pack the same way: "
-            "children run their own narrow affected checks, and the full "
-            "required suite is the closing `done`'s alone. Every pack "
-            "carries this sentence by that mandate, not by drift -- each "
-            "names its own check vocabulary, and the closing clause "
-            "states the shared law itself, which has exactly one wording."
-        ),
-        "clauses": (
-            "Run the narrow affected checks",
-            "Run the narrow affected document checks",
-            "Run the narrow affected computation replay",
-            "Run the narrow affected render checks",
-            "Run the narrow affected source verification",
-            "the full suite is the gate's row, never a unit's",
         ),
     },
 )
@@ -86,12 +61,7 @@ CRAFT_SECTION_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
 
 
 def _craft_sections(text: str) -> dict:
-    """{section name: body} for one craft document's `##` sections.
-
-    `###` subsections stay inside their parent's body; the fold made the
-    craft document the one prose owner, so the `##` heading is the unit
-    the signature's craft-section table names and the linter compares.
-    """
+    """{section name: body} for one craft document's `##` sections."""
     sections = {}
     matches = list(CRAFT_SECTION_RE.finditer(text))
     for i, match in enumerate(matches):
@@ -101,11 +71,9 @@ def _craft_sections(text: str) -> dict:
 
 
 def free_content(clause: str) -> str:
-    """`clause` minus every span MANDATED_FORM_RES names -- what is left
-    is the pack's own. A remainder under CELL_CLAUSE_MIN_WORDS words is
-    the floor's case exactly: a label, not content."""
-    for pattern in MANDATED_FORM_RES:
-        clause = pattern.sub(" ", clause)
+    """`clause` collapsed to the words compared. A remainder under
+    CELL_CLAUSE_MIN_WORDS words is the floor's case exactly: a label,
+    not content."""
     return re.sub(r"\s+", " ", clause).strip()
 
 
@@ -174,18 +142,18 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                             )
 
 
-# --- Cross-tier duplication (REVIEW-2026-08-15 T2) --------------------
+# --- Cross-tier duplication ------------------------------------------
 #
 # The same clause comparison as validate_cell_duplication, run across the
 # library's tiers instead of across the packs of one signature cell. It is
 # what replaces keeping copies in sync: a clause carried by both a rule and
 # a skill body is a fact with two owners, and the compiler names both sites
-# rather than holding the two spellings equal (REVIEW-2026-08-15 T2).
+# rather than holding the two spellings equal.
 #
-# WARN for exactly one phase. The tree still carries the copies P3 deletes,
-# and a compiler that refuses its own tree cannot be run; the finding is
-# the inventory P3 works from. At P3's close this flips to "ERROR" and
-# tests/test_cell_linter.py's CROSS_TIER_WARNING_CEILING reaches 0.
+# WARN while the tree still carries copies: a compiler that refuses its own
+# tree cannot be run, and the finding is the inventory the deletions work
+# from. It flips to "ERROR" once tests/test_cell_linter.py's
+# CROSS_TIER_WARNING_CEILING reaches 0.
 CROSS_TIER_DUPLICATE_LEVEL = "WARN"
 # The pairing index is `doclint.DISTINCTIVE_MAX`'s, and this corpus is
 # where its value was measured: every pair an exhaustive comparison
@@ -278,14 +246,7 @@ LICENSED_COPIES = (
 
 
 def _workflow_home_prefixes():
-    """Every library workflow home, as a label prefix.
-
-    ``scripts/rings.py`` owns where a workflow lives and
-    ``structure.workflow_roots`` is where this validator reads that list,
-    so a home the resolver knows is a home this pairing rule knows.
-    Imported on first use, like ``_doclint``: an isolated fixture carrying
-    no ``scripts/`` still runs every other check.
-    """
+    """Every library workflow home, as a label prefix."""
 
     from .structure import workflow_roots
 
@@ -307,13 +268,7 @@ def _flat(text: str) -> str:
 
 
 def _idiom_fragments():
-    """Every clause of every idiom the owner words, flattened.
-
-    Read from the owner's ``## Idioms`` section rather than listed here:
-    an idiom added or reworded there is licensed by the same act that
-    words it, and a list of copies kept beside the owner would be the
-    second wording this check exists to find.
-    """
+    """Every clause of every idiom the owner words, flattened."""
 
     path = ROOT / IDIOM_OWNER
     if not path.is_file():
@@ -330,14 +285,7 @@ def _idiom_fragments():
 
 
 def _licensed_idiom_quote(labels: set, left_clause: str, right_clause: str) -> bool:
-    """Whether this pair is a workflow body quoting an idiom at its owner.
-
-    The two sides are the owner and a workflow body, and both carry the
-    same fragment of one idiom: that is the quote composition.md 13
-    ordered, and reporting it would ask the body to reword the one
-    sentence that must never be reworded. Any other pair -- two bodies, or
-    a body against some other clause of the owner -- is still the finding.
-    """
+    """Whether this pair is a workflow body quoting an idiom at its owner."""
 
     if IDIOM_OWNER not in labels or len(labels) != 2:
         return False
@@ -411,9 +359,7 @@ def cross_tier_documents(packages):
 
 
 def _cross_tier_clauses(packages):
-    """Every comparable clause, as (tier, label, clause, free_content).
-    Same splitter and same mandated-form stripping as the pack linter, plus
-    the citation exemption above."""
+    """Every comparable clause, as (tier, label, clause, free_content)."""
     entries = []
     for tier, label, text in cross_tier_documents(packages):
         for clause in cell_clauses(text):
@@ -497,12 +443,7 @@ RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
 
 
 def _generated_value_sets(root=None) -> dict:
-    """Every ratcheted value set, keyed by the set, named by its owner.
-
-    Read from `contracts/shapes.json` rather than the generated module, so
-    the ratchet grades a script against the contract itself and one read
-    answers for every script below.
-    """
+    """Every ratcheted value set, keyed by the set, named by its owner."""
 
     import json
 
@@ -529,12 +470,7 @@ def _generated_value_sets(root=None) -> dict:
 
 
 def _module_string_sets(text: str):
-    """Every module-level assignment of a literal set of strings.
-
-    A collection built out of names is not a restatement -- it is already
-    reading its values from somewhere -- so only literals are collected,
-    and the one wrapping call a frozenset needs is looked through.
-    """
+    """Every module-level assignment of a literal set of strings."""
 
     import ast
 
@@ -567,13 +503,7 @@ def _module_string_sets(text: str):
 
 
 def validate_generated_enum_copies(diag: Diagnostics, root=None) -> None:
-    """Refuse a script that restates a value set a generated shape owns.
-
-    The duplicated-facts class this ratchet closes: an enum lives in
-    `contracts/shapes.json`, the generated module exposes it, and a script
-    then spells the same members inline. The two agree until the contract
-    moves, and the one that did not move is the one a caller was reading.
-    """
+    """Refuse a script that restates a value set a generated shape owns."""
 
     root = ROOT if root is None else root
     owned = _generated_value_sets(root)

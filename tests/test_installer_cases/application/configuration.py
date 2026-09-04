@@ -83,7 +83,7 @@ class TestCodexHooksPreflight(unittest.TestCase):
             )
 
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             dangling = dangling_path_warnings(plan)
             self.assertEqual(1, len(dangling), plan.warnings)
@@ -99,7 +99,7 @@ class TestCodexHooksPreflight(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis(
                 "codex"
             ), patch.object(install, "tomllib", None):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             self.assertTrue(
                 any("tomllib" in warning for warning in plan.warnings),
@@ -120,7 +120,7 @@ class TestCodexHooksPreflight(unittest.TestCase):
             (home / ".codex").mkdir(parents=True)
 
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             self.assertEqual([], plan.warnings)
 class TestClaudeConfigDir(unittest.TestCase):
@@ -156,7 +156,7 @@ class TestClaudeConfigDir(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), patch.dict(
                 os.environ, {"CLAUDE_CONFIG_DIR": "  "}
             ), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             for dest, _ in plan.claude_adapters:
                 self.assertEqual(home / ".claude" / "skills", dest.parent.parent)
@@ -203,7 +203,7 @@ class TestCodexHome(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), patch.dict(
                 os.environ, {"CODEX_HOME": str(codex_home)}
             ), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             dangling = dangling_path_warnings(plan)
             self.assertEqual(1, len(dangling), plan.warnings)
@@ -217,7 +217,7 @@ class TestCodexHome(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), patch.dict(
                 os.environ, {"CODEX_HOME": "  "}
             ), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
+                plan = install.build_plan()
 
             for dest, _ in plan.codex_skills:
                 self.assertEqual(home / ".codex" / "skills", dest.parent.parent)

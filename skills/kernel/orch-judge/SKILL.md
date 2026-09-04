@@ -1,6 +1,6 @@
 ---
 name: orch-judge
-description: Judge one fixed artifact through the stamped pack's craft and return its durable review envelope.
+description: Invoke when a ticket judges fixed artifacts under a stamped pack.
 role: planner
 ---
 
@@ -13,7 +13,7 @@ criteria and the proof they demand, and you may challenge either. Apply
 it to the fixed artifact and the executor record. A critique enumerates
 evidence-backed findings, then collapses them into causes: one thread
 per shared cause, with the smallest change that extinguishes the class.
-`rules/verification.md` §10 fixes when a finding is `blocking`; that Lens
+`rules/verification.md` §9 fixes when a finding is `blocking`; that Lens
 entry only weighs findings against one another.
 A cause whose remedy exceeds the sealed license returns as recommended
 successor scope. Write the findings to one JSON file and print

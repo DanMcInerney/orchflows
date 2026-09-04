@@ -20,9 +20,9 @@ from tests._repo_root import ROOT
 SCRIPTS = ROOT / "scripts"
 
 from scripts import tickets_bound  # noqa: F401
-from scripts import isolate, tickets_dispatch_identity, tickets_format  # noqa: E402
+from scripts import tickets_dispatch_identity, tickets_format  # noqa: E402
 from scripts import tickets_assignment, tickets_markdown  # noqa: E402
-from scripts import tickets_transitions, workspace_git  # noqa: E402
+from scripts import tickets_transitions  # noqa: E402
 from tools.validate_support import duplication, packages  # noqa: E402
 
 
@@ -105,11 +105,6 @@ class TestOneOwnerPerEnumAndMapping(unittest.TestCase):
         ):
             with self.subTest(kind=kind, record_id=record_id):
                 self.assertIs(expected, owner(kind, record_id))
-
-    def test_the_dirty_path_walk_has_one_owner(self):
-        self.assertIs(workspace_git.dirty_paths, isolate._walk_dirty_paths)
-        source = inspect.getsource(isolate.dirty_paths)
-        self.assertNotIn("--porcelain", source)
 
 
 class TestTheGeneratedEnumRatchet(unittest.TestCase):

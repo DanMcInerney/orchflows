@@ -1,11 +1,10 @@
 """The ticket's `done` predicate, read and run by `land` and nowhere else.
 
-Done is a checked condition, not a recorded claim. A ticket may carry the
-same closed `{form, value}` binding a loop stub carries for its iterations
-(contracts/work-item.md), and `tickets.py land` is the one caller that
-evaluates it: a deterministic command whose exit 0 is the verdict, or a
-frozen criterion no oracle covers, judged by one minted `orch-judge`
-ticket. A ticket that carries neither is graded the way it always was, by
+Done is a checked condition, not a recorded claim. A ticket may carry a
+closed `{form, value}` binding (contracts/work-item.md), and `tickets.py
+land` is the one caller that evaluates it: a deterministic command whose
+exit 0 is the verdict, or a frozen criterion no oracle covers, judged by
+one minted `orch-judge` ticket. A ticket that carries neither is graded by
 the driver, through `land --status`.
 
 The command form is the one outside execution `rules/verification.md`
@@ -16,12 +15,9 @@ candidate's commits in it, which is why `land` merges before it asks.
 A refused command does not wedge the run and does not close the ticket. It
 arms the next `<id>.repair.NN` round through the advance rules below, and
 `land` run again after that round re-runs the predicate against the
-further-integrated tree. Round two is a lawful slot, not hand surgery.
+further-integrated tree.
 
-The round machinery lives here because `land` is its one reader. It was
-written inside the loop lane, whose iterations advanced by the same three
-rules; the lane is gone and the rules moved to the command that still asks
-them.
+The round machinery lives here because `land` is its one reader.
 """
 
 from __future__ import annotations
@@ -75,12 +71,7 @@ STALL_WINDOW = 2
 
 
 def rounds(run_dir, parent_id, marker: str = REPAIR_MARKER):
-    """(number, id, data) for every round ticket, ordered by number.
-
-    The `.done` check tickets minted beside a round are not rounds -- they
-    judge one -- and the grammar `round_of` owns does not read them as
-    one.
-    """
+    """(number, id, data) for every round ticket, ordered by number."""
 
     found = []
     for path in sorted(run_dir.glob(f"{parent_id}.{marker}.*.md")):
@@ -95,12 +86,7 @@ def rounds(run_dir, parent_id, marker: str = REPAIR_MARKER):
 
 
 def _result_reading(run_dir, round_id):
-    """What one round left behind, as the stall rule compares it.
-
-    The whole report, because the report is the whole of what a round filed:
-    two rounds that produced byte-identical reports converged on nothing,
-    which is the reading `advance_action` closes `stalled` on.
-    """
+    """What one round left behind, as the stall rule compares it."""
 
     try:
         text = (run_dir / f"{round_id}.md").read_text(encoding="utf-8")
@@ -110,15 +96,7 @@ def _result_reading(run_dir, round_id):
 
 
 def advance_action(run_dir, parent_id: str, marker: str, done: bool) -> dict:
-    """The advance decision for one done reading, over one round marker.
-
-    Three rules and no scheduler: a met done closes `complete`; two
-    consecutive delivered rounds with no result delta converge on nothing
-    and close `stalled`, as does a latest round that left no result to build
-    on; anything else arms the next round. The bound is the dispatching
-    caller's -- an effort-shaped bound is not a clock this can read. No
-    prior round is a reason to arm rather than a reason to give up.
-    """
+    """The advance decision for one done reading, over one round marker."""
 
     numbered = rounds(run_dir, parent_id, marker)
     if done:
@@ -145,23 +123,14 @@ def advance_action(run_dir, parent_id: str, marker: str, done: bool) -> dict:
 
 def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
                context, *, depends_on: str, lock_held: bool = False):
-    """Create -- or replay -- the one `orch-judge` ticket judging a criterion.
-
-    The single minter for the `check` done form: a landing whose predicate
-    names a criterion no oracle covers. A second minter would be a second
-    place the check's shape could drift from contracts/work-item.md, and the
-    check is the surface whose measured yield bought this form its place.
-
-    It binds no typed review lane: it is ordinary judging work, and its
-    verdict is the status its join records rather than a token in its prose.
-    """
+    """Create -- or replay -- the one `orch-judge` ticket judging a criterion."""
 
     path = run_dir / f"{check_id}.md"
     fields = {
         "id": check_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": "orch-judge",
         "pack": dequote(source.get("pack")) or None,
-        "independence": "gate", "depends_on": [depends_on],
+        "depends_on": [depends_on],
         "isolation": "none", "bound": source.get("bound"),
         "root_generation": source.get("root_generation"),
     }
@@ -199,13 +168,7 @@ def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
 
 def check_reading(run: str, run_dir, check_id: str, source: dict, goal: str,
                   context, *, depends_on: str, lock_held: bool = False):
-    """`(reading, refusal)` for the `check` done form's minted judge.
-
-    A verdict here is the check ticket's own joined status: `complete` is
-    met and any other terminal state is not. Nothing parses a token out of
-    prose -- the child files findings, and the authority that joins the
-    check is what records the disposition.
-    """
+    """`(reading, refusal)` for the `check` done form's minted judge."""
 
     path = run_dir / f"{check_id}.md"
     if not path.is_file():
@@ -230,14 +193,7 @@ def check_reading(run: str, run_dir, check_id: str, source: dict, goal: str,
 
 
 def predicate(data: dict):
-    """`(binding, refusal)` for one ticket's `done` field, or `(None, None)`.
-
-    Graded here rather than trusted: the lint that grades a ticket's bytes
-    runs at issue, and a hand-edited frontmatter reaching `land` with a
-    malformed predicate must refuse rather than be read as absent -- an
-    absent predicate means the driver grades, and silently promoting a
-    broken one into that is the failure this whole stage exists against.
-    """
+    """`(binding, refusal)` for one ticket's `done` field, or `(None, None)`."""
 
     raw = str(data.get("done") or "").strip()
     if not raw:
@@ -249,23 +205,7 @@ def predicate(data: dict):
 
 
 def _spawnable(word: str):
-    """`(the file to spawn, refusal)` for a done command's first word.
-
-    A spawn is not a shell. ``CreateProcess`` searches ``PATH`` but appends
-    only ``.exe``, never the rest of ``PATHEXT``, so a bare ``pnpm`` cannot
-    start on Windows, where node's package managers ship as ``pnpm.CMD``
-    shims that ``PATH`` resolves perfectly well -- and the predicate died
-    with a ``[WinError 2]`` no reader could tell from a missing script.
-    Spawning what ``PATH`` already resolved starts the same file on every
-    platform. ``scripts/orchflows_tools.executable`` carries this same fact
-    for the tooling probes, under the opposite failure contract: it hands a
-    name it cannot resolve back to the spawn, because a probe's answer is
-    "absent" either way. A done predicate has no such answer, so an
-    unresolvable word is refused here, by name.
-
-    Only a bare name is resolved. A first word carrying a directory is
-    already a path, and ``PATH`` was never going to be searched for it.
-    """
+    """`(the file to spawn, refusal)` for a done command's first word."""
 
     if os.sep in word or (os.altsep and os.altsep in word):
         return word, None
@@ -317,19 +257,7 @@ def verification_line(reading: dict) -> str:
 
 
 def record_verification(path, reading: dict, by: str):
-    """Write the predicate's own evidence into the ticket, attributed to land.
-
-    Into `## Report`, beside what the child filed, because there is one
-    channel and this is one more thing worth reading about the item. System-
-    written and attributed to the driver that landed, never to a child: no
-    child ran this, and evidence whose writer is wrong is evidence a reader
-    cannot weigh. Filed once -- a re-landed ticket whose predicate answers
-    the same way finds its own line already in the section and leaves it
-    there rather than stacking a second copy. The filing itself is
-    `tickets_report_note`'s, shared with the landing's own two notes so one
-    module answers for what a system-written note in that section looks
-    like.
-    """
+    """Write the predicate's own evidence into the ticket, attributed to land."""
 
     return file_once(path, by, verification_line(reading), "done evidence")
 
@@ -346,7 +274,7 @@ def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict
         "id": repair_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": "orch-do",
         "pack": dequote(source.get("pack")) or None,
-        "independence": "gate", "depends_on": [],
+        "depends_on": [],
         "isolation": "none", "bound": source.get("bound"),
         "root_generation": source.get("root_generation"),
     }, [
@@ -383,15 +311,7 @@ def _ungraded_refusal(run: str, ticket_id: str) -> dict:
 
 
 def ungraded(run: str, ticket_id: str, data: dict, driver_status):
-    """That refusal, or ``None``, asked without an integrated tree.
-
-    `resolve` runs after the candidate is merged, because the predicate's
-    claim is about the integrated tree. This one question is not about the
-    tree at all -- it reads the ticket's own frontmatter -- so `land` asks
-    it first, and a call refused for it leaves no merge commit behind. A
-    `predicate` that does not parse is deliberately not answered here: that
-    refusal keeps the ordering it had, and `resolve` raises it.
-    """
+    """That refusal, or ``None``, asked without an integrated tree."""
 
     binding, refusal = predicate(data)
     if refusal is not None or binding is not None or driver_status is not None:
@@ -401,11 +321,7 @@ def ungraded(run: str, ticket_id: str, data: dict, driver_status):
 
 def resolve(run: str, ticket_id: str, run_dir, path, data: dict, tree,
             driver_status, by: str):
-    """`(decision, refusal)` -- what this landing records, and why.
-
-    `status` is the disposition the join will write, or `None` when there is
-    nothing to join yet: a check still out, or a repair round just armed.
-    """
+    """`(decision, refusal)` -- what this landing records, and why."""
 
     binding, refusal = predicate(data)
     if refusal is not None:
