@@ -1,0 +1,149 @@
+{
+  "schema": "orchflows.judgement.v1",
+  "ticket": "B1.5",
+  "run": "20260904T034500Z-trunk-defects",
+  "judged_at": "2026-09-04",
+  "lens": "packs/orch-code-pack/references/craft.md ## Lens ### git",
+  "spec": "research/trunk-defects-spec-2026-09-03.md",
+  "joined_tip": "8f5ffdf009819334c504cfe7fad1265be91cf275",
+  "units": [
+    {"unit": "U1", "ticket": "B1.2", "artifact": "git:3d432bd81d3e901af209ff92f8c320a092ef285b", "details": "research/trunk-defects-tickets/U1.details.md"},
+    {"unit": "U2", "ticket": "B1.3", "artifact": "git:395ef57b0ce3166fd35dec5a9ab3c2238d37222d", "details": "research/trunk-defects-tickets/U2.details.md"},
+    {"unit": "U3", "ticket": "B1.1", "artifact": "git:c43e93ab8114d5651873ac21eaff31ecf0aae860", "details": "research/trunk-defects-tickets/U3.details.md"},
+    {"unit": "U4", "ticket": "B1.4", "artifact": "git:55dac117ba62fe43acaac8b571aa94739e1e2490", "details": "research/trunk-defects-tickets/U4.details.md"}
+  ],
+
+  "verdict": "no blocking finding",
+  "blocking_count": 0,
+  "nonblocking_count": 5,
+
+  "gate_readings": [
+    {"command": "uv run --no-project python tools/run_required.py --no-cache", "exit": 0, "detail": "validate 0, run_tests 0, run_serial_compat 0, install.py --dry-run 0, git diff --check 0; tree 3b2ed61425f0"},
+    {"command": "uv run --no-project python tools/regen.py --check", "exit": 0, "detail": "derived artifacts are current: t0-shapes, lifecycle, ci-topology, host-adapters, serial-compat-manifest"},
+    {"command": "git diff --check", "exit": 0, "detail": "clean"},
+    {"command": "uv run --no-project python tools/validate.py", "exit": 0, "detail": "15 WARN, none naming a file the four units changed"},
+    {"command": "uv run --no-project python install.py --dry-run (HEAD)", "exit": 0, "detail": "planned entries: 359"},
+    {"command": "uv run --no-project python install.py --dry-run (c6bc9d39, via git archive into scratch)", "exit": 0, "detail": "planned entries: 359 -- frozen-goal parity holds"}
+  ],
+
+  "frozen_goal_section_1": [
+    {"clause": "a ticket carrying an unnamed frontmatter field seals and its dispatch write is admitted, proven by a check with a recorded failing reading", "held": true, "evidence": "tests/test_staleness_and_remedies.py TestAFieldTheTrunkNoLongerNamesStillSeals, 4 cases; mutant M1 reproduces the recorded failing reading byte-for-byte"},
+    {"clause": "a claimed ticket whose lone launched attempt was retired takes set-status, and the pre-retirement refusal names dispatch-retire", "held": true, "evidence": "TestARetiredChildCanBeGraded, 2 cases; mutants M2+M3 fail both; the ast probe shows tickets_join.py now yields ('tickets','dispatch-retire') and ('tickets','set-status') to test_every_named_command_is_routed"},
+    {"clause": "the manifest discovery object holds exactly one key, identities, and --write-manifest drops a vanished sentinel", "held": true, "evidence": "discovery keys ['identities']; 2133 identities sorted-unique; 12 sentinels, 0 stale; no count/sha256 key in the file; mutant M4 fails the prune case"},
+    {"clause": "FRAME_LAW states the cadence, the joined-tip grep names no second owner, and frame-open's payload carries the law", "held": true, "evidence": "mutant M5 gives 'AssertionError: 4 != 3'; test_a_called_frame_is_handed_the_law_too still asserts list(FRAME_LAW) == child['law']; see finding F3 for the scan's blind spot"},
+    {"clause": "install.py --dry-run plans the same entry count as at c6bc9d39", "held": true, "evidence": "359 at both, measured separately"}
+  ],
+
+  "section_2_shapes": [
+    {"name": "UNSEALED_FIELDS", "matches": true, "note": "spelled with BASELINE_KEY/BRANCH_KEY imported from scripts/workspace_git.py:43-44 rather than bare literals; the tuple's value is byte-identical to section 2's. Forced by tools/validate_support/lifecycle_literals.py, reported by U1 as deviation 1. Not a shape difference."},
+    {"name": "status_ownership_returned", "matches": true, "note": "one attempt, not live, and either state == retired or every record kind lifecycle -- implemented exactly. See F2 for the consequence."},
+    {"name": "tickets_transitions.py condition string", "matches": true, "note": "'no dispatch-v1 record, or a lone attempt that never launched or was retired', verbatim"},
+    {"name": "serial_manifest.discovery()", "matches": true, "note": "returns {'identities': [...]}; load_manifest keeps only the non-empty sorted-unique check; write_manifest prints len(identities) at print time"},
+    {"name": "FRAME_LAW fourth sentence", "matches": true, "note": "appended verbatim, last; the comment above the constant says four"}
+  ],
+
+  "join_integrity": {
+    "diff_7ecf064b_to_HEAD": "19 files, 397 insertions, 196 deletions",
+    "sum_of_unit_commits_plus_pointer_commit": "393+4 insertions / 192+4 deletions",
+    "conclusion": "the tip is exactly the four unit commits plus the judge-pointer commit; no merge added or removed a line, so there is no evil merge and no conflict-resolution content in d9bfa562, 86f5f466, c391d4ac or 259f9440",
+    "seams_read": [
+      {"seam": "tests/serial_compat_manifest.json", "result": "clean", "detail": "2125 baseline +2 (U3) +4 (U1) +2 (U2) +0 (U4 net rename) = 2133, matching all four reports; regen --check reports no drift, so the merged file is what regeneration at the tip would write"},
+      {"seam": "tests/test_staleness_and_remedies.py", "result": "clean", "detail": "U1's and U2's classes land in different places; U1's new SealedRunTest.before_stamp() hook is a no-op for U2's class"},
+      {"seam": "docs/lifecycle.md", "result": "clean", "detail": "90 rows before and after; 63 set-status condition cells changed; every anchor unchanged because _anchor derives from event/source/target, not the condition"}
+    ]
+  },
+
+  "mutation_screen": {
+    "method": "git archive HEAD into a scratch copy; the tree under test was never mutated",
+    "baseline": {"selection": "the four new/changed check classes", "result": "18 tests OK", "exit": 0},
+    "mutants": [
+      {"id": "M1", "unit": "U1", "mutation": "assignment_payload's system restored to the deleted 11-name roster", "result": "FAILED failures=1", "exit": 1, "detail": "test_dropping_the_field_moves_the_digest: 'sha256:46483a902fd230fc1a66c84d4adcfd67e0412b819b603ebb195eb21c2d7b6093' == itself -- byte-identical to U1's recorded failing reading"},
+      {"id": "M2", "unit": "U2", "mutation": "the two-line retired->True widening removed", "result": "FAILED", "exit": 1, "detail": "dispatch-join-required, with M3 in the same run"},
+      {"id": "M3", "unit": "U2", "mutation": "the outcome-record-mismatch remedy sentence removed", "result": "FAILED failures=2 (with M2)", "exit": 1, "detail": "'`tickets.py dispatch-retire`' not found in \"record_id 'outcome' is not the committed executor outcome\""},
+      {"id": "M4", "unit": "U3", "mutation": "prune_sentinels made a no-op", "result": "FAILED", "exit": 1, "detail": "roster ['test_one','test_two'] != ['test_one'], with M5 in the same run"},
+      {"id": "M5", "unit": "U4", "mutation": "FRAME_LAW's fourth sentence deleted", "result": "FAILED failures=2 (with M4)", "exit": 1, "detail": "AssertionError: 4 != 3"},
+      {"id": "M6", "unit": "U2", "mutation": "the trailing all(record.kind == 'lifecycle') replaced by return False", "result": "OK", "exit": 0, "detail": "119 tests green across test_dispatch_v1, test_staleness_and_remedies, test_lifecycle_render, test_ticket_done_predicate; control run identical. This is finding F2."}
+    ],
+    "conclusion": "every check the four units added or changed bites at the merged tip; one pre-existing branch does not (F2)"
+  },
+
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "non-blocking",
+      "class": "a claim in a report that no command output supports",
+      "unit": "U3",
+      "cause": "U3's report states 'tools/run_serial_compat.py is not split. 519 -> 514 physical lines'. The file grew instead: the deleted derived comparisons were outweighed by _require_discovery's new docstring and widened drift message.",
+      "evidence": "git show 7ecf064b:tools/run_serial_compat.py | wc -l -> 519; wc -l tools/run_serial_compat.py at the tip -> 523; git diff c43e93ab HEAD -- tools/run_serial_compat.py is empty, so 523 is U3's own candidate. tools/validate.py exits 0 and emits no line-count warning, so nothing machine-enforced moved.",
+      "impact": "The spec's section 6 defers 'tools/run_serial_compat.py's 519 lines' and decision 7 says 'D3's deletions reduce it'. Both are now wrong by 9 lines in the wrong direction. A successor sizing that split would start from a number no command produces.",
+      "smallest_change": "No code change. Correct the number where the run carries it forward -- the frame journal's deferred-item line and any successor note -- to 519 -> 523."
+    },
+    {
+      "id": "F2",
+      "severity": "non-blocking",
+      "class": "a branch that no check can reach",
+      "unit": "U2",
+      "cause": "The widening's `if state == \"retired\": return True` short-circuits every case that used to reach the trailing all(record.kind == 'lifecycle'). A lone attempt can only be live (refused by the first line) or retired (returned by the second): the only other state, 'replaced', is written at scripts/tickets_attempts.py:483 in the same mutation that appends the replacement, so a replaced attempt is never lone and len(attempts) != 1 refuses first.",
+      "evidence": "ATTEMPT_STATES is ['live','replaced','retired']. Mutant M6 (trailing expression -> return False) leaves 119 tests green across every module that reaches the predicate, with an identical control run; grep shows scripts/tickets_lifecycle.py:222 is the predicate's only production caller and tests/test_dispatch_v1.py and tests/test_staleness_and_remedies.py its only test readers. test_an_attempt_that_never_launched_hands_its_status_back (test_dispatch_v1.py:743), which U2 names as grading 'the other arm of the or', retires the attempt at :753 and so takes the retired branch too.",
+      "impact": "Behaviour is correct; the cost is that the predicate now carries a limb a reader cannot exercise, and the 'never launched' arm of the stated law has no independent check.",
+      "smallest_change": "None inside this run. Collapsing the predicate to `len(attempts) == 1 and attempts[0].get('state') != 'live'` would differ from the shape section 2 fixes, and section 0 says a unit reports against a closed decision rather than reversing it. Carry to the planner as a successor: either narrow section 2's shape, or add one comment line beside the branch naming the shape it holds."
+    },
+    {
+      "id": "F3",
+      "severity": "non-blocking",
+      "class": "the one-owner check cannot see part of the tree it is for",
+      "unit": "U4",
+      "cause": "FrameLawOwnerTest builds its corpus from (ROOT / 'example-workflows').glob('*/SKILL.md') and asserts exactly 8 bodies. The two shipped workflow bodies under skills/workflows/ (bakeoff, checkpointed-build) are outside that glob, so no check would catch one of them restating the law.",
+      "evidence": "tests/test_ticket_frames.py FrameLawOwnerTest.setUp; ls skills/workflows -> bakeoff, checkpointed-build; grep -rn 'joined tip' over the seven roster directories returns four lines, all in skills/workflows/checkpointed-build/SKILL.md (3, 40, 56, 61).",
+      "impact": "U4's ruling on those four lines -- that they are the workflow's own plan steps (its **Judge** call, its Never: clause, its Return: line) and a conforming instance rather than a statement of the cadence -- is one I read the body and agree with. The gap is that the ruling is a human one no check now backs, in exactly the directory the new fourth sentence makes most likely to drift.",
+      "smallest_change": "Widen FrameLawOwnerTest's corpus to both globs and move its count assertion to the combined total (8 + 2). Deliberately not done here: it is outside every unit's Details and this pass has no mandate to edit."
+    },
+    {
+      "id": "F4",
+      "severity": "non-blocking",
+      "class": "a shipped file names a retired count",
+      "unit": "U4",
+      "cause": "FRAME_LAW went from three sentences to four; tests/test_ticket_frames.py:674 still reads 'Eight bodies each carried their own wording of the same three sentences.' U4 rewrote FrameLawTest's docstring and missed FrameLawOwnerTest's.",
+      "evidence": "grep -n 'three' tests/test_ticket_frames.py scripts/tickets_frame.py returns exactly that one line at the tip.",
+      "impact": "Low. The sentence reads as history and is true of the past, but it sits in a present-tense paragraph beside 'The trunk prints them now', so a reader counting sentences is told three.",
+      "smallest_change": "One word: 'three' -> 'four', or drop the count and say 'the same law'."
+    },
+    {
+      "id": "F5",
+      "severity": "non-blocking",
+      "class": "an open ticket whose stated condition does not reproduce",
+      "unit": "frame",
+      "cause": "state/tickets/20260904T034500Z-trunk-defects/B1.2.repair.1.md is status: ready with an empty ## Report. Its Goal is \"Make B1.2's done predicate pass on the integrated tree: uv run --no-project python tools/run_required.py exits 1 there now.\" The condition cleared without the ticket being graded.",
+      "evidence": "B1.2's ## Report carries two B1-written records in order: 'done command ... exited 1' then 'done command ... exited 0' in the same integrated tree. I observed exit 0 for the full required suite at the joined tip. U2 and U3 each independently reported one unattributable red from tools/run_tests.py inside run_required that cleared on re-run at an identical tree hash, and each logged it as friction.",
+      "impact": "A ready child left in the run at close, and a second sighting of the same intermittent red. The red itself is unattributable because run_required.py prints only the per-leg exit column and writes no per-leg log -- which is what both units filed friction about.",
+      "smallest_change": "The driver grades B1.2.repair.1 (tickets.py set-status) before frame-close, naming the exit-0 record on B1.2 as the reason. No code change in this run."
+    }
+  ],
+
+  "observations": [
+    {
+      "subject": "U3's two self-declared judge questions",
+      "ruling": "both resolved in U3's favour, no change. (a) The run observation record's discovery: {'count': len(cases)} is written to .orch/serial-compat.json, committed nowhere and compared to nothing, and its sibling sentinels: {'count': len(entries)} is the same shape; B1.1's Goal clause 'no committed or computed count' reaches the manifest, not the per-run record. (b) The 'sentinels before: N after: N' report line and the plan_regeneration sentinels key are two lines that make a prune of a chosen roster loud, which is the point of decision 6's one addition rather than an addition beside it."
+    },
+    {
+      "subject": "U3's narrowing of plan_regeneration's guard",
+      "ruling": "sound. The guard now renders the regenerated manifest with the committed roster restored and requires the committed roster bytes back, so it still catches a roster whose committed spelling is not what regeneration writes -- test_a_roster_regeneration_would_respell_aborts_the_write proves that with a whitespace perturbation, and U3 recorded its can-fail reading. 'A row added or altered' is unreachable by construction because prune_sentinels is a pure filter over the committed rows; U3 says so. load_manifest's REQUIRED_CATEGORIES subset check at tools/run_serial_compat.py:72 is untouched, so a prune that empties a category is still loudly red."
+    },
+    {
+      "subject": "U2's rewrite of tests/test_dispatch_v1.py:761",
+      "ruling": "a reconciliation, not a weakening. The case asserted the exact behaviour decision 2 reverses, so it had to move; U2 renamed it to the live-attempt branch, kept every other line, and pointed its docstring at the class that now grades the positive direction. It is outside U2's Details and U2 reported it with the reason and with why it declined to close limited."
+    },
+    {
+      "subject": "U4's observation about mid-run judges",
+      "ruling": "carry it. example-workflows/browser-game/SKILL.md:58 opens a mid-run Checkpoint judge and example-workflows/evolve/SKILL.md:33-47 judges per generation. Neither is a wave frame and nothing refuses them -- section 6 defers enforcement deliberately -- but a reader holding the new fourth sentence beside those bodies sees judges that are not at the end. Out of every unit's Details; correctly left alone."
+    },
+    {
+      "subject": "stale prose the units named and left",
+      "ruling": "agreed, decision 7. tests/test_staleness_and_remedies.py's module docstring opens 'Six wedges of one shape' over what is now twelve classes; it was already wrong at the baseline. tools/validate.py's 15 WARN lines include the pre-existing 0.96 near-duplicate between skills/workflows/checkpointed-build/SKILL.md and docs/custom-workflow-authoring.md on 'two rounds is the bound', which is a real second spelling of bounded-repair and is decision 7's territory, not this run's."
+    },
+    {
+      "subject": "U1's landing constraint",
+      "ruling": "restated here because it governs the close. The new algebra invalidates every assignment seal open when it is installed, and there is still no resealing subcommand. Reinstall only after frame-close -- the hazard reaches a second host, a checkout's own scripts/, and the git archive <base> scripts recovery trunk, all of which recompute."
+    }
+  ]
+}

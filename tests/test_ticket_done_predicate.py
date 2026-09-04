@@ -74,9 +74,25 @@ class DonePredicateGrammarTest(unittest.TestCase):
         """`done` says what completion means, so a changed one is a changed
         assignment."""
 
-        from scripts import tickets_generations
+        from scripts.tickets_format import _set_frontmatter_field
+        from scripts.tickets_generations import assignment_digest
+        from scripts.tickets_issue_render import _render_ticket
 
-        self.assertIn("done", tickets_generations.ASSIGNMENT_SYSTEM_FIELDS)
+        text = _render_ticket(
+            {
+                "id": "T1", "run": "r", "status": "pending",
+                "executor": "orch-do", "depends_on": [], "bound": "60m",
+                "done": '{"form":"command","value":"pytest -q"}',
+            },
+            [("Goal", "Deliver."), ("Context", "[]"), ("Report", "")],
+        )
+        moved = _set_frontmatter_field(
+            text, "done", '{"form":"command","value":"pytest -x"}',
+        )
+
+        self.assertNotEqual(
+            assignment_digest("T1", text), assignment_digest("T1", moved),
+        )
 
 
 class LandDonePredicateTest(unittest.TestCase):

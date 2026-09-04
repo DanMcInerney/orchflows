@@ -10,7 +10,6 @@ of this suite a guard over the real manifest rather than over a fixture.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
 import sys
@@ -71,10 +70,6 @@ RULED_BASELINE = {
 }
 
 
-def digest(identities) -> str:
-    return hashlib.sha256("\n".join(identities).encode("utf-8")).hexdigest()
-
-
 class _Case:
     """The one thing the generator asks of a discovered case."""
 
@@ -88,11 +83,7 @@ class _Case:
 def fixture_manifest(identities, owners) -> dict:
     return {
         "schema": "orchflows.serial-compat.v1",
-        "discovery": {
-            "count": len(identities),
-            "identities": list(identities),
-            "sha256": digest(identities),
-        },
+        "discovery": {"identities": list(identities)},
         "mutation_owners": list(owners),
         "sentinels": [
             {
@@ -129,11 +120,9 @@ class TestRegeneration(unittest.TestCase):
                 lambda tests_dir: [],
             )
             written = json.loads(manifest.read_text(encoding="utf-8"))
-        self.assertEqual(written["discovery"]["identities"], live)
-        self.assertEqual(written["discovery"]["count"], 2)
-        self.assertEqual(written["discovery"]["sha256"], digest(live))
-        self.assertEqual(report["before"], {"count": 1, "sha256": digest(live[:1])})
-        self.assertEqual(report["after"], {"count": 2, "sha256": digest(live)})
+        self.assertEqual(written["discovery"], {"identities": live})
+        self.assertEqual(report["before"], {"identities": live[:1]})
+        self.assertEqual(report["after"], {"identities": live})
 
     def test_the_sentinels_block_survives_regeneration_byte_for_byte(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -142,7 +131,8 @@ class TestRegeneration(unittest.TestCase):
             serial_manifest.regenerate(
                 manifest,
                 Path(tmp),
-                lambda tests_dir: [_Case("test_fixture.Fixture.test_two")],
+                lambda tests_dir: [_Case("test_fixture.Fixture.test_one"),
+                                   _Case("test_fixture.Fixture.test_two")],
                 lambda tests_dir: [{"module": "m", "owner": "o", "seams": ["cwd"]}],
             )
             after = manifest.read_text(encoding="utf-8")
@@ -152,6 +142,46 @@ class TestRegeneration(unittest.TestCase):
             serial_manifest.sentinels_block(after),
             serial_manifest.sentinels_block(before),
         )
+
+    def test_regeneration_drops_a_sentinel_whose_id_no_longer_discovers(self):
+        """A test that no longer exists is not a judgment a reviewer has to make."""
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = Path(tmp, "manifest.json")
+            write_fixture_manifest(manifest, ["test_fixture.Fixture.test_one"])
+            serial_manifest.regenerate(
+                manifest,
+                Path(tmp),
+                lambda tests_dir: [_Case("test_fixture.Fixture.test_one")],
+                lambda tests_dir: [],
+            )
+            written = json.loads(manifest.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [entry["id"] for entry in written["sentinels"]],
+            ["test_fixture.Fixture.test_one"],
+        )
+
+    def test_a_roster_regeneration_would_respell_aborts_the_write(self):
+        """Dropping a vanished id is the one edit; carrying a row is byte-exact.
+
+        Every row regeneration keeps is rendered from the committed bytes it was
+        parsed from, so a roster those bytes spell any other way is a rewrite the
+        write refuses rather than a reformatting it performs.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = Path(tmp, "manifest.json")
+            text = write_fixture_manifest(manifest, ["test_fixture.Fixture.test_one"])
+            block = serial_manifest.sentinels_block(text)
+            respelled = block.replace('"module": "test_fixture"', '"module":  "test_fixture"')
+            self.assertNotEqual(block, respelled)
+            manifest.write_bytes(text.replace(block, respelled).encode("utf-8"))
+            with self.assertRaisesRegex(ValueError, "rewrite the sentinel roster"):
+                serial_manifest.regenerate(
+                    manifest,
+                    Path(tmp),
+                    lambda tests_dir: [_Case("test_fixture.Fixture.test_one"),
+                                       _Case("test_fixture.Fixture.test_two")],
+                    lambda tests_dir: [],
+                )
 
     def test_a_prior_owner_keeps_its_restoration_and_a_new_owner_is_marked(self):
         previous = [
@@ -254,8 +284,8 @@ class TestWriteManifestFlag(unittest.TestCase):
             after_text = manifest.read_text(encoding="utf-8")
 
         both = one + ["test_fixture.Fixture.test_two"]
-        self.assertIn("discovery before: 1 %s" % digest(one), written.stdout)
-        self.assertIn("discovery after: 2 %s" % digest(both), written.stdout)
+        self.assertIn("discovery before: 1 identities", written.stdout)
+        self.assertIn("discovery after: 2 identities", written.stdout)
         self.assertEqual(json.loads(after_text)["discovery"]["identities"], both)
         self.assertEqual(
             serial_manifest.sentinels_block(after_text),

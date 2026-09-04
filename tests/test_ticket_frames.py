@@ -412,9 +412,9 @@ class FrameCloseTest(FrameSinkTest):
             "frame framerun/B1 closes over 2 do-children (B1.1, B1.2) and its "
             "subtree holds no judge: nobody has read those artifacts together, "
             "and this close would record that silently. Open one "
-            "`tickets.py judge` under this frame, or write one "
-            "`unjudged: <reason>` line into its journal (## Report) and close "
-            "again. Nothing was recorded.",
+            "`tickets.py judge` under this frame over the joined tip, or "
+            "write one `unjudged: <reason>` line into its journal "
+            "(## Report) and close again. Nothing was recorded.",
             refused["error"],
         )
         self.assertEqual("claimed", _parse_frontmatter(self.ticket_text("B1"))["status"])
@@ -618,30 +618,22 @@ class ResumeTest(FrameSinkTest):
 class FrameLawTest(FrameSinkTest):
     """What `frame-open` prints for the driver it just opened a journal for.
 
-    The three law lines and the workflow body's path are the two things a
+    The law lines and the workflow body's path are the two things a
     driver cannot derive: the first because a paraphrase of a rule reads
     exactly like the rule, the second because a name resolves through four
     rings and only one of them is the library.
     """
 
-    def test_the_open_prints_the_three_law_lines_the_driver_owes(self):
+    def test_the_open_prints_every_law_line_the_driver_owes(self):
+        """The count is the pin, not the prose: re-spelling the sentences
+        here would only prove the constant equals itself, while a line
+        dropped from the driver's copy -- or a fifth added without one --
+        is what a reader could not tell. The sibling below pins that the
+        printed lines are the constant's."""
+
         opened = self.frame()
 
-        self.assertEqual(
-            [
-                "Before each call, re-read this frame's `## Report` and its "
-                "children's states.",
-                "After each call, append the decision with `tickets.py result "
-                "<run> <frame> --by <frame>`; keep every returned `artifact:` "
-                "and `findings:` line verbatim and hand the line itself to the "
-                "next goal file.",
-                "Close with `tickets.py frame-close <run> <frame> --done "
-                "<command>` run outside the children; a close over two or more "
-                "`do` children needs a judging child or an `unjudged: <reason>` "
-                "line.",
-            ],
-            opened["law"],
-        )
+        self.assertEqual(4, len(opened["law"]))
 
     def test_a_called_frame_is_handed_the_law_too(self):
         """A workflow invoked under another is a driver of its own: the
@@ -679,18 +671,21 @@ class FrameLawTest(FrameSinkTest):
 class FrameLawOwnerTest(unittest.TestCase):
     """The law has one owner, and the shipped bodies are not it.
 
-    Eight bodies each carried their own wording of the same three
-    sentences. The trunk prints them now, so a body that restates the
-    journal command is a second owner of a fact the first one already
-    spells differently.
+    Eight bodies each carried their own wording of the same law. The
+    trunk prints it now, so a body that restates the journal command is
+    a second owner of a fact the first one already spells differently.
+    The corpus is every shipped workflow body, `skills/workflows/` as
+    well as `example-workflows/`: a glob short of one of them is a
+    directory in which this check cannot see the drift it exists for.
     """
 
     def setUp(self):
         self.bodies = {
             path.parent.name: path.read_text(encoding="utf-8")
-            for path in sorted((ROOT / "example-workflows").glob("*/SKILL.md"))
+            for shipped in ("example-workflows", "skills/workflows")
+            for path in sorted((ROOT / shipped).glob("*/SKILL.md"))
         }
-        self.assertEqual(8, len(self.bodies))
+        self.assertEqual(8 + 2, len(self.bodies))
 
     def test_no_body_restates_the_journal_command(self):
         self.assertEqual([], sorted(_relaying(self.bodies)))

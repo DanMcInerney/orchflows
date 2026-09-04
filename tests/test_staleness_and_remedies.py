@@ -29,9 +29,11 @@ from scripts import tickets
 from scripts import tickets_admission, tickets_join, tickets_seal, tickets_store
 from scripts import tickets_dispatch_launch as launch_module
 from scripts.tickets_format import (
-    _parse_frontmatter, _section_body, _sections, _set_frontmatter_field,
-    _write_section, canonical_json,
+    ALLOWED_TICKET_KEYS, _parse_frontmatter, _remove_frontmatter_field,
+    _section_body, _sections, _set_frontmatter_field, _write_section,
+    canonical_json,
 )
+from scripts.tickets_generations import assignment_digest, seal_findings
 from scripts.tickets_lifecycle import _snapshot_matches
 from scripts.tickets_markdown import quote_filed_body, unquote_filed_body
 
@@ -92,6 +94,7 @@ class SealedRunTest(SinkTest):
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",
         )
+        self.before_stamp()
         self.dispatch("stamp-generation", "run", "T")
         self.seal(self.dispatch("draft-validate", "run", "T"))
         self.dispatch("ready", "--run", "run")
@@ -104,6 +107,14 @@ class SealedRunTest(SinkTest):
         )
         self.candidate = git_checkout(self.home / "candidate")
         self.stamp_workspace()
+
+    def before_stamp(self):
+        """The ticket as issued, before any generation is stamped on it.
+
+        A case that needs the ticket's own text changed overrides this: the
+        seal and the admission receipt are both computed downstream of here,
+        so a later edit would only stale one of them.
+        """
 
     def seal(self, validated):
         return self.dispatch(
@@ -222,6 +233,54 @@ class TestARecutRepairsTheReceiptsItInvalidated(SealedRunTest):
         self.seal(validated)
         again = self.seal(validated)["assignment_seal"]
         self.assertEqual([], again["refreshed_admissions"])
+
+
+class TestARetiredChildCanBeGraded(SealedRunTest):
+    """A child the driver stopped mid-flight had no terminal status left.
+
+    `B1.10` of `20260903T155153Z-library-cleanup`: a judge that launched,
+    filed nothing, and was stopped. `land` refuses because no executor
+    outcome was ever committed, relaying one refuses `stale-attempt` once
+    the lease ends, and `dispatch-retire` -- which does succeed -- leaves
+    `status: claimed` behind, so `set-status` refused
+    `dispatch-join-required`. The ticket was wedged terminal-less.
+    """
+
+    def retire(self):
+        return self.dispatch(
+            "dispatch-retire", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--record-id", "lifecycle:retire-1",
+        )
+
+    def test_a_retired_attempt_hands_its_status_back_whatever_it_launched(self):
+        self.assertNotIn("error", self.launch())
+        self.retire()
+
+        moved = retired_commands.run(["set-status", "run", "T", "stalled"])
+
+        self.assertNotIn("error", moved)
+        self.assertEqual("stalled", self.frontmatter("T")["status"])
+
+    def test_the_wall_the_driver_hits_first_names_the_way_out(self):
+        """The remedy is named where it is needed, not in a document.
+
+        A driver reaches `land` before it reaches the retirement, so the
+        refusal for a never-committed outcome is where `dispatch-retire`
+        and `set-status` have to be readable.
+        """
+
+        self.assertNotIn("error", self.launch())
+        refused = retired_commands.run([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join", "--status", "stalled",
+        ])
+
+        self.assertEqual("outcome-record-mismatch", refused["code"])
+        for command in ("`tickets.py dispatch-retire`", "`tickets.py set-status`"):
+            self.assertIn(command, refused["error"])
 
 
 class TestTheCompareAndSwapIsScopedToTheGrade(unittest.TestCase):
@@ -885,6 +944,71 @@ class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):
         self.assertIn("--replacement-dispatch-id", conflict["error"])
         self.assertNotIn("--record-id", conflict["error"])
         self.assertNotIn("fresh --dispatch-id", conflict["error"])
+
+
+class TestAFieldTheTrunkNoLongerNamesStillSeals(SealedRunTest):
+    """The seal is computed from the ticket, so a forgotten field is sealed.
+
+    `20260903T155153Z-library-cleanup` deleted one field name from the seal's
+    inclusion roster. The reinstalled trunk recomputed every open ticket's
+    digest without it, and every further dispatch write was refused
+    `assignment-mismatch` -- with no resealing subcommand, recovery was to
+    run the old `scripts/` out of `git archive`. The partition is stated as
+    its complement now: what the ticket carries is sealed, so a field the
+    code has stopped naming moves no digest.
+    """
+
+    FIELD = "carried-by-no-constant"
+
+    def before_stamp(self):
+        """What a trunk that still named the field would have written."""
+
+        path = self.ticket_path("T")
+        path.write_text(
+            _set_frontmatter_field(
+                path.read_text(encoding="utf-8"), self.FIELD, "yes",
+            ),
+            encoding="utf-8",
+        )
+
+    def test_no_trunk_constant_names_the_field(self):
+        """The precondition: this name is in none of the trunk's own code."""
+
+        self.assertNotIn(self.FIELD, ALLOWED_TICKET_KEYS)
+        naming = [
+            path.name for path in sorted(SCRIPTS.glob("*.py"))
+            if any(
+                isinstance(node, ast.Constant) and node.value == self.FIELD
+                for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+            )
+        ]
+        self.assertEqual([], naming)
+
+    def test_the_carried_field_seals(self):
+        text = self.ticket_path("T").read_text(encoding="utf-8")
+
+        self.assertIn(self.FIELD, _parse_frontmatter(text))
+        self.assertEqual([], seal_findings("T", text))
+
+    def test_a_dispatch_write_against_that_seal_is_admitted(self):
+        self.launch()
+
+        committed = self.dispatch(
+            "result", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--record-id", "r1", "--by", "worker",
+            "--text", "delivered",
+        )
+
+        self.assertEqual("r1", committed["result"]["record_id"])
+
+    def test_dropping_the_field_moves_the_digest(self):
+        text = self.ticket_path("T").read_text(encoding="utf-8")
+
+        self.assertNotEqual(
+            assignment_digest("T", text),
+            assignment_digest("T", _remove_frontmatter_field(text, self.FIELD)),
+        )
 
 
 if __name__ == "__main__":

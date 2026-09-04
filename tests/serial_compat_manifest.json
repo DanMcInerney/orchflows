@@ -1,6 +1,5 @@
 {
  "discovery": {
-  "count": 2125,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -166,10 +165,10 @@
    "test_dispatch_v1.DispatchV1Test.test_a_claim_without_a_dispatch_record_is_refused",
    "test_dispatch_v1.DispatchV1Test.test_a_join_commits_after_the_workers_lease_expires",
    "test_dispatch_v1.DispatchV1Test.test_a_join_still_refuses_a_lease_past_attempt_with_no_committed_outcome",
+   "test_dispatch_v1.DispatchV1Test.test_a_live_attempt_that_launched_keeps_its_status_with_the_join",
    "test_dispatch_v1.DispatchV1Test.test_a_non_root_join_leaves_the_runs_terminal_timing_unwritten",
    "test_dispatch_v1.DispatchV1Test.test_a_second_attempt_keeps_its_status_with_the_join",
    "test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins",
-   "test_dispatch_v1.DispatchV1Test.test_an_attempt_that_launched_keeps_its_status_with_the_join",
    "test_dispatch_v1.DispatchV1Test.test_an_attempt_that_never_launched_hands_its_status_back",
    "test_dispatch_v1.DispatchV1Test.test_an_exact_reopen_replays_before_the_assignment_seal_is_graded",
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
@@ -926,6 +925,8 @@
    "test_serial_manifest.TestCommittedManifest.test_the_loader_accepts_the_committed_file_and_names_what_it_refuses",
    "test_serial_manifest.TestCommittedManifest.test_the_policy_names_every_ruling_the_loader_accepts",
    "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_is_marked",
+   "test_serial_manifest.TestRegeneration.test_a_roster_regeneration_would_respell_aborts_the_write",
+   "test_serial_manifest.TestRegeneration.test_regeneration_drops_a_sentinel_whose_id_no_longer_discovers",
    "test_serial_manifest.TestRegeneration.test_regeneration_replaces_stale_discovery_with_the_live_multiset",
    "test_serial_manifest.TestRegeneration.test_the_marker_is_a_restoration_the_loader_can_never_accept",
    "test_serial_manifest.TestRegeneration.test_the_rendered_manifest_keeps_key_order_indent_and_lf_newlines",
@@ -954,6 +955,10 @@
    "test_source_sizes.SourceSizeCheckerTest.test_an_oversized_source_warns_without_blocking",
    "test_source_sizes.SourceSizeCheckerTest.test_explicit_directory_covers_six_suffixes_and_hidden_files",
    "test_source_sizes.SourceSizeCheckerTest.test_git_reader_is_nul_safe_and_keeps_hidden_paths",
+   "test_staleness_and_remedies.TestAFieldTheTrunkNoLongerNamesStillSeals.test_a_dispatch_write_against_that_seal_is_admitted",
+   "test_staleness_and_remedies.TestAFieldTheTrunkNoLongerNamesStillSeals.test_dropping_the_field_moves_the_digest",
+   "test_staleness_and_remedies.TestAFieldTheTrunkNoLongerNamesStillSeals.test_no_trunk_constant_names_the_field",
+   "test_staleness_and_remedies.TestAFieldTheTrunkNoLongerNamesStillSeals.test_the_carried_field_seals",
    "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_a_cut_section_is_left_exactly_as_authored",
    "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_the_body_survives_the_round_trip",
    "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_the_headings_do_not_become_ticket_sections",
@@ -969,6 +974,8 @@
    "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_a_non_canonical_file_names_the_dump_that_writes_one",
    "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_a_wrong_identity_names_the_field_and_the_expected_value",
    "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_an_extra_field_names_the_exact_required_set",
+   "test_staleness_and_remedies.TestARetiredChildCanBeGraded.test_a_retired_attempt_hands_its_status_back_whatever_it_launched",
+   "test_staleness_and_remedies.TestARetiredChildCanBeGraded.test_the_wall_the_driver_hits_first_names_the_way_out",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_complete_and_limited_carry_a_result",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_the_result_bearing_set_is_stated_once",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_the_states_that_filed_nothing_still_refuse",
@@ -1094,7 +1101,7 @@
    "test_ticket_frames.FrameLawTest.test_a_named_workflow_resolves_to_the_body_the_driver_reads",
    "test_ticket_frames.FrameLawTest.test_an_improvised_frame_names_no_workflow_path",
    "test_ticket_frames.FrameLawTest.test_an_unresolvable_workflow_is_refused_before_the_run_exists",
-   "test_ticket_frames.FrameLawTest.test_the_open_prints_the_three_law_lines_the_driver_owes",
+   "test_ticket_frames.FrameLawTest.test_the_open_prints_every_law_line_the_driver_owes",
    "test_ticket_frames.FrameShapeLineTest.test_a_called_frame_is_already_a_wave_of_its_callers_plan",
    "test_ticket_frames.FrameShapeLineTest.test_a_lawful_line_of_every_construct_opens_the_frame",
    "test_ticket_frames.FrameShapeLineTest.test_a_plan_the_work_outgrew_prints_and_never_refuses",
@@ -2127,8 +2134,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_a_pure_lf_ticket_is_still_pure_lf_after_the_stamp",
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
-  ],
-  "sha256": "6e44d208d14f12f55dc55be5c9aecab776c991ef7e63f2a596c7b60d28cc8d69"
+  ]
  },
  "mutation_owners": [
   {

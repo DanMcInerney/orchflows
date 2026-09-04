@@ -5,9 +5,11 @@
 fills one-read size on its own, so the generator lives here and the runner
 keeps only the flag that reaches it.
 
-Two facts in the manifest are derived and one is not. The discovery block
-(count, identities, sha256) and the mutation-owner inventory are what the
-tree says today, so a hand-edited count is a number nobody recomputed.
+Two facts in the manifest are derived and one is not. The discovery block's
+identities and the mutation-owner inventory are what the tree says today, so a
+hand-edited roster is a list nobody rediscovered. The identities are the whole
+fact: a count or a digest beside them is a function of them, and a scalar line
+every regeneration rewrites is one two concurrent branches always collide on.
 A mutation owner's `restoration` is a *classification* a reviewer made about
 how the seam is returned; no scan can recover it, so regeneration carries it
 across by (module, owner) and marks a newly-appeared owner `unclassified` for
@@ -15,14 +17,15 @@ a reviewer to rule on. That marker is one the runner's loader refuses, so the
 command that wrote it must not report success: it names every owner awaiting
 a ruling and exits non-zero, leaving the regenerated file in place so the
 ruling is made on the marked row rather than on hand-written derived facts.
-The sentinel roster is chosen, never derived, and this file proves it survived
-byte-for-byte rather than merely round-tripped.
+The sentinel roster is chosen, never derived. Regeneration may drop a row whose
+id no longer discovers -- a test that no longer exists is not a judgment left for
+a reviewer -- and may do nothing else to it: every row it carries is proved to
+survive byte-for-byte rather than merely round-tripped.
 
 Stdlib only, Python 3.9+, POSIX and Windows.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import sys
 from pathlib import Path
@@ -50,13 +53,8 @@ def sentinels_block(text: str) -> str:
 
 
 def discovery(cases) -> dict:
-    """The exact discovered identity multiset, as the runner hashes it."""
-    identities = sorted(case.id() for case in cases)
-    return {
-        "count": len(identities),
-        "identities": identities,
-        "sha256": hashlib.sha256("\n".join(identities).encode("utf-8")).hexdigest(),
-    }
+    """The exact discovered identity multiset, and nothing derived from it."""
+    return {"identities": sorted(case.id() for case in cases)}
 
 
 def merge_owners(previous, scanned) -> list:
@@ -84,7 +82,14 @@ def unruled(owners) -> list:
 
 def _identity(block) -> dict:
     block = block if isinstance(block, dict) else {}
-    return {"count": block.get("count"), "sha256": block.get("sha256")}
+    identities = block.get("identities")
+    return {"identities": list(identities) if isinstance(identities, list) else []}
+
+
+def prune_sentinels(entries, identities) -> list:
+    """The chosen roster, minus every row whose id the tree no longer discovers."""
+    discovered = set(identities)
+    return [row for row in entries or [] if row.get("id") in discovered]
 
 
 def plan_regeneration(manifest_path, tests_dir, discover, scan):
@@ -100,8 +105,16 @@ def plan_regeneration(manifest_path, tests_dir, discover, scan):
     after = dict(before)
     after["discovery"] = discovery(discover(tests_dir))
     after["mutation_owners"] = merge_owners(before.get("mutation_owners"), scan(tests_dir))
+    after["sentinels"] = prune_sentinels(
+        before.get("sentinels"), after["discovery"]["identities"]
+    )
     after_text = render(after)
-    if sentinels_block(after_text) != sentinels_block(before_text):
+    # The prune is the only edit, and it is a filter over the committed rows, so
+    # what is left to prove is that a carried row is carried verbatim: render the
+    # regenerated manifest with the committed roster restored and require the
+    # committed bytes back. A roster spelled any other way is a rewrite.
+    carried = render(dict(after, sentinels=before.get("sentinels") or []))
+    if sentinels_block(carried) != sentinels_block(before_text):
         raise ValueError("regeneration would rewrite the sentinel roster")
     return before_text, after_text, {
         "manifest": str(path),
@@ -110,6 +123,10 @@ def plan_regeneration(manifest_path, tests_dir, discover, scan):
         "owners": {
             "before": len(before.get("mutation_owners") or []),
             "after": len(after["mutation_owners"]),
+        },
+        "sentinels": {
+            "before": len(before.get("sentinels") or []),
+            "after": len(after["sentinels"]),
         },
         "unruled": unruled(after["mutation_owners"]),
     }
@@ -130,8 +147,10 @@ def write_manifest(manifest_path, tests_dir, discover, scan, out=None) -> int:
     report = regenerate(manifest_path, tests_dir, discover, scan)
     lines = [
         "serial manifest: %s" % report["manifest"],
-        "discovery before: %s %s" % (report["before"]["count"], report["before"]["sha256"]),
-        "discovery after: %s %s" % (report["after"]["count"], report["after"]["sha256"]),
+        "discovery before: %d identities" % len(report["before"]["identities"]),
+        "discovery after: %d identities" % len(report["after"]["identities"]),
+        "sentinels before: %d after: %d"
+        % (report["sentinels"]["before"], report["sentinels"]["after"]),
         "mutation owners before: %d after: %d"
         % (report["owners"]["before"], report["owners"]["after"]),
     ]
