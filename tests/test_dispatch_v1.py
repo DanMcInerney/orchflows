@@ -758,13 +758,18 @@ class DispatchV1Test(unittest.TestCase):
         self.assertNotIn("error", moved)
         self.assertEqual("suspended", _parse_frontmatter(self.ticket_text())["status"])
 
-    def test_an_attempt_that_launched_keeps_its_status_with_the_join(self):
-        """The other branch of that condition, so it stays exactly one case wide."""
+    def test_a_live_attempt_that_launched_keeps_its_status_with_the_join(self):
+        """The other branch of that condition, so it stays exactly one case wide.
+
+        Retirement is what returns the status, not the absence of a launch:
+        `tests/test_staleness_and_remedies.py`'s `TestARetiredChildCanBeGraded`
+        grades the launched-then-retired direction. What still refuses is an
+        attempt that has not ended, whatever it has committed.
+        """
 
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         self.commit_launch()
-        self.assertNotIn("error", self.retire())
         before = self.ticket_text()
 
         refusal = retired_commands.run(["set-status", "run", "T", "suspended"])

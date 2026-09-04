@@ -215,9 +215,9 @@ def _set_status_under_run_lock(rest, *, ticket_path=None):
     if failure is not None:
         return failure
     data = _parse_frontmatter(text)
-    # The one exception is a lifecycle that never started executing: a lone
-    # attempt opened and retired before any launch owns a status it has no
-    # way to release, and the ticket is wedged. Its width is
+    # The one exception is a lone attempt with no join left to come: it was
+    # retired -- whatever it launched -- or it never launched at all, and
+    # nothing else can release the status it holds. Its width is
     # `status_ownership_returned`'s, beside the records it reads.
     if data.get('dispatch_v1') and not status_ownership_returned(data):
         return _classification(

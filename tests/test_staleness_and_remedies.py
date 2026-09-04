@@ -235,6 +235,54 @@ class TestARecutRepairsTheReceiptsItInvalidated(SealedRunTest):
         self.assertEqual([], again["refreshed_admissions"])
 
 
+class TestARetiredChildCanBeGraded(SealedRunTest):
+    """A child the driver stopped mid-flight had no terminal status left.
+
+    `B1.10` of `20260903T155153Z-library-cleanup`: a judge that launched,
+    filed nothing, and was stopped. `land` refuses because no executor
+    outcome was ever committed, relaying one refuses `stale-attempt` once
+    the lease ends, and `dispatch-retire` -- which does succeed -- leaves
+    `status: claimed` behind, so `set-status` refused
+    `dispatch-join-required`. The ticket was wedged terminal-less.
+    """
+
+    def retire(self):
+        return self.dispatch(
+            "dispatch-retire", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--record-id", "lifecycle:retire-1",
+        )
+
+    def test_a_retired_attempt_hands_its_status_back_whatever_it_launched(self):
+        self.assertNotIn("error", self.launch())
+        self.retire()
+
+        moved = retired_commands.run(["set-status", "run", "T", "stalled"])
+
+        self.assertNotIn("error", moved)
+        self.assertEqual("stalled", self.frontmatter("T")["status"])
+
+    def test_the_wall_the_driver_hits_first_names_the_way_out(self):
+        """The remedy is named where it is needed, not in a document.
+
+        A driver reaches `land` before it reaches the retirement, so the
+        refusal for a never-committed outcome is where `dispatch-retire`
+        and `set-status` have to be readable.
+        """
+
+        self.assertNotIn("error", self.launch())
+        refused = retired_commands.run([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join", "--status", "stalled",
+        ])
+
+        self.assertEqual("outcome-record-mismatch", refused["code"])
+        for command in ("`tickets.py dispatch-retire`", "`tickets.py set-status`"):
+            self.assertIn(command, refused["error"])
+
+
 class TestTheCompareAndSwapIsScopedToTheGrade(unittest.TestCase):
     """A promotion loses only to a write it actually read.
 

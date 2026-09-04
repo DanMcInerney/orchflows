@@ -303,6 +303,8 @@ def status_ownership_returned(data: dict) -> bool:
     attempts = parsed.get("attempts") or []
     if len(attempts) != 1 or attempts[0].get("state") == "live":
         return False
+    if attempts[0].get("state") == "retired":
+        return True
     return all(
         record.get("kind") == "lifecycle"
         for record in attempts[0].get("records") or []
