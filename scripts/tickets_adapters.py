@@ -116,6 +116,20 @@ def craft_path(pack, *, root=None) -> Path:
 ADAPTER_FIELD_RE = re.compile(r"(?m)^adapter:\s*([^\r\n]+?)\s*$")
 
 
+def adapter_in_frontmatter(text: str) -> str:
+    """The adapter key one standard's frontmatter names, or `''` for none.
+
+    The one reader of that field. `scripts/packs_support.py` resolves a
+    standard whose bytes it has already read and calls this rather than
+    carrying a second regex for one spelling; whether the key is
+    *registered* stays `adapter_for_key`'s, one door further on.
+    """
+
+    parts = text.split("---", 2)
+    match = ADAPTER_FIELD_RE.search(parts[1]) if len(parts) > 2 else None
+    return dequote(match.group(1)) if match else ""
+
+
 def declared_adapter(pack, *, root=None) -> str:
     """The stable adapter key one standard declares in its frontmatter.
 
@@ -131,9 +145,7 @@ def declared_adapter(pack, *, root=None) -> str:
         raise AdapterError(
             "adapter-declaration-invalid", f"unreadable standard {path}: {error}",
         ) from error
-    parts = text.split("---", 2)
-    match = ADAPTER_FIELD_RE.search(parts[1]) if len(parts) > 2 else None
-    normalized = dequote(match.group(1)) if match else ""
+    normalized = adapter_in_frontmatter(text)
     if not normalized:
         raise AdapterError(
             "adapter-declaration-invalid",
@@ -178,6 +190,6 @@ def adapter_id(pack, *, root=None) -> str:
 
 __all__ = (
     "ADAPTER_REGISTRY", "Adapter", "AdapterError", "adapter_for_key",
-    "adapter_id", "adapter_spec", "craft_path", "declared_adapter",
-    "derived_isolation", "pack_path",
+    "adapter_id", "adapter_in_frontmatter", "adapter_spec", "craft_path",
+    "declared_adapter", "derived_isolation", "pack_path",
 )

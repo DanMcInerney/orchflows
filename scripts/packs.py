@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Resolve pack data and return the four cells every verb reads.
+"""Resolve one standard and return what every verb reads off it.
 
-Pack files are Markdown at the authoring boundary, but the resolved value
-is one closed JSON object, and this resolver is the only reader of a pack.
-A digest is derived from the resolved cells, every local reference's bytes,
-the signature contract, and this resolver's version. Scope and filesystem
-paths are observations, not part of identity, so identical project and
-canonical packs resolve to one digest.
+A standard is one Markdown manifest at the authoring boundary, but the
+resolved value is one closed JSON object, and this resolver is its only
+reader. A digest is derived from the standard's whole directory tree --
+each file's directory-relative path and its bytes -- plus the declared
+adapter, `contracts/standard.md`, and this resolver's version. Scope and
+filesystem paths are observations, not part of identity, so identical
+project and canonical standards resolve to one digest.
 
 Stdlib-only, and works both from ``scripts/`` in a checkout and from the
 flat ``bin/`` directory ``install.py`` produces.
@@ -30,8 +31,6 @@ else:  # pragma: no cover - direct/installed script path
 
 # Public exports keep the checkout and installed import seams flat.
 RESOLVER_VERSION = _support.RESOLVER_VERSION
-PACK_CELLS = _support.PACK_CELLS
-TYPED_CELLS = _support.TYPED_CELLS
 PackError = _support.PackError
 ADAPTER_REGISTRY = _support.ADAPTER_REGISTRY
 STANDARD_DEPTH_LIMIT = _support.STANDARD_DEPTH_LIMIT
@@ -74,7 +73,7 @@ def cells_for(
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
 ) -> Dict[str, object]:
-    """Return one resolved digest's cells through the same-family implementation."""
+    """Return what one resolved digest identifies, same-family."""
 
     return _support.cells_for(
         digest,
@@ -103,7 +102,7 @@ def _parser() -> argparse.ArgumentParser:
     resolve.add_argument("pack")
     cells = subparsers.add_parser(
         "cells",
-        help="return the cells of a resolved digest",
+        help="return the standard one resolved digest identifies",
         allow_abbrev=False,
     )
     cells.add_argument("digest")

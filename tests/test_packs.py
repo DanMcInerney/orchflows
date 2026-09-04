@@ -1,4 +1,9 @@
-"""Pack resolution and the content-addressed four-cell shape."""
+"""Pack resolution and the content-addressed collapsed-standard shape.
+
+One manifest, `adapter` in frontmatter, identity over the directory tree.
+The retired two-row cells table and the second file its `craft` cell named
+are gone, and a manifest still carrying that table refuses here.
+"""
 
 from __future__ import annotations
 
@@ -54,11 +59,18 @@ def _copy_pack(source: Path, target: Path) -> None:
 
 
 def _copy_pack_with_contract(source: Path, target: Path, root: Path) -> None:
+    """Copy one pack and give its *ring* a copy of the standard contract.
+
+    The copy lands beside the ring's item directories, never inside one, so
+    it is exactly the self-supplied well-formedness document FM-2 refuses to
+    let feed identity.
+    """
+
     _copy_pack(source, target)
     del root
-    destination = target.parent.parent / "contracts" / "pack-signature.md"
+    destination = target.parent.parent / "contracts" / "standard.md"
     destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(ROOT / "contracts" / "pack-signature.md", destination)
+    shutil.copyfile(ROOT / "contracts" / "standard.md", destination)
 
 
 class PackResolutionTests(unittest.TestCase):
@@ -68,67 +80,71 @@ class PackResolutionTests(unittest.TestCase):
         self.assertEqual("packs_support", packs._support.resolve_pack.__module__.split(".")[-1])
 
     def test_public_facade_does_not_reexport_private_support_names(self):
-        private_support_names = {
-            "_canonical_json",
-            "_sha256",
-            "_canonicalize_bytes",
-            "_read_bytes",
-            "_pack_name",
-            "_PACK_NAME_RE",
-            "_ADAPTER_RE",
-            "_STAGE_RE",
-            "_CELL_ROW_RE",
-            "_LINK_RE",
-            "_FRONTMATTER_NAME_RE",
-            "_SHA_RE",
-            "_CELL_SET",
-            "_root_is_packs",
-            "_canonical_default",
-            "_project_default",
-            "_scope_root",
-            "_roots",
-            "_candidate_path",
-            "_frontmatter_name",
-            "_parse_rows",
-            "_atom",
-            "_typed_cells",
-            "_reference_paths",
-            "_read_references",
-            "_signature_digest",
-            "_resolved",
-            "_available_names",
-        }
-        self.assertTrue(private_support_names.isdisjoint(vars(packs)))
+        """Derived rather than listed: a private name added to the support
+        module joins this ratchet without anyone remembering to add it."""
 
-    def test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings(self):
+        private = {
+            name for name in vars(packs._support)
+            if name.startswith("_") and not name.startswith("__")
+        }
+
+        self.assertTrue(private, "the support module carries no private names")
+        self.assertEqual(set(), private & set(vars(packs)))
+
+    def test_a_real_standard_resolves_to_one_frontmatter_adapter(self):
+        """The collapsed shape: no cells table, no second file, and the
+        adapter is the one typed leaf the resolver reports."""
+
         result = packs.resolve_pack("orch-code-pack", canonical_root=PACKS)
 
         self.assertEqual("orch-code-pack", result["pack"])
         self.assertEqual("lib", result["scope"])
-        self.assertEqual({"adapter", "craft"}, set(result["cells"]))
-        self.assertNotIn("executor", result["cells"])
+        self.assertEqual("git", result["adapter"])
+        self.assertNotIn("cells", result)
+        self.assertNotIn("references", result)
         self.assertRegex(result["digest"], r"^sha256:[0-9a-f]{64}$")
-        self.assertEqual("git", result["cells"]["adapter"])
 
-    def test_a_referenced_byte_changes_the_digest(self):
+    def test_every_way_the_directory_tree_can_move_moves_the_digest(self):
+        """The digest is SHA-256 over the standard's directory tree
+        (contracts/standard.md rule 5), so a changed byte, a file added and
+        a file deleted are each a different identity."""
+
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             pack_root = root / "packs"
-            _copy_pack_with_contract(PACKS / "orch-code-pack", pack_root / "sample-pack", root)
-            skill = pack_root / "sample-pack" / "SKILL.md"
-            skill.write_text(
-                skill.read_text(encoding="utf-8").replace("name: orch-code-pack", "name: sample-pack"),
-                encoding="utf-8",
-            )
-            before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+            standard = pack_root / "sample-pack"
+            _copy_pack_with_contract(PACKS / "orch-code-pack", standard, root)
+            _named_pack(standard, "sample-pack")
+            before = packs.resolve_pack("sample-pack", canonical_root=pack_root)["digest"]
 
-            craft = pack_root / "sample-pack" / "references" / "craft.md"
-            craft.write_bytes(craft.read_bytes() + b"\nchanged\n")
-            after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+            manifest = standard / "SKILL.md"
+            original = manifest.read_bytes()
+            manifest.write_bytes(original + b"\nchanged\n")
+            changed = packs.resolve_pack("sample-pack", canonical_root=pack_root)["digest"]
+            manifest.write_bytes(original)
 
-            self.assertNotEqual(before["digest"], after["digest"])
+            added = standard / "references" / "notes.md"
+            added.parent.mkdir(parents=True, exist_ok=True)
+            added.write_bytes(b"a file the standard did not carry\n")
+            grown = packs.resolve_pack("sample-pack", canonical_root=pack_root)["digest"]
+            added.unlink()
+            added.parent.rmdir()
+            restored = packs.resolve_pack("sample-pack", canonical_root=pack_root)["digest"]
 
-    def test_the_library_signature_contract_byte_changes_the_digest(self):
+            self.assertNotEqual(before, changed)
+            self.assertNotEqual(before, grown)
+            self.assertNotEqual(changed, grown)
+            self.assertEqual(before, restored)
+
+    def test_the_library_standard_contract_byte_changes_the_digest(self):
+        """The library's own well-formedness contract is in the identity, so
+        the digest moves when it does. `_signature_digest()` returning
+        `None` -- what it did once `contracts/pack-signature.md` was deleted
+        -- would make two `None`s compare equal and this check vacuous, so
+        the live reading is asserted non-empty first."""
+
+        self.assertIsNotNone(packs._support._signature_digest())
+
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
             pack_root = root / "packs"
@@ -136,20 +152,21 @@ class PackResolutionTests(unittest.TestCase):
             _named_pack(pack_root / "sample-pack", "sample-pack")
             library = root / "lib"
             (library / "contracts").mkdir(parents=True)
-            contract = library / "contracts" / "pack-signature.md"
-            shutil.copyfile(ROOT / "contracts" / "pack-signature.md", contract)
+            contract = library / "contracts" / "standard.md"
+            shutil.copyfile(ROOT / "contracts" / "standard.md", contract)
 
             with patch.object(rings, "lib_root", return_value=library):
+                self.assertIsNotNone(packs._support._signature_digest())
                 before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
                 contract.write_bytes(contract.read_bytes() + b"\ncontract change\n")
                 after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
 
             self.assertNotEqual(before["digest"], after["digest"])
 
-    def test_a_pack_relative_signature_contract_feeds_no_digest(self):
-        """FM-2: the document that decides whether a pack is well formed is
-        never readable from the pack. A ring shipping its own copy of the
-        signature contract used to feed its own pack's identity."""
+    def test_a_ring_relative_standard_contract_feeds_no_digest(self):
+        """FM-2: the document that decides whether a standard is well formed
+        is never readable from the standard's own ring. A ring shipping its
+        own copy of that contract used to feed its own item's identity."""
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
@@ -158,7 +175,7 @@ class PackResolutionTests(unittest.TestCase):
             _named_pack(pack_root / "sample-pack", "sample-pack")
             before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
 
-            contract = root / "contracts" / "pack-signature.md"
+            contract = root / "contracts" / "standard.md"
             contract.write_bytes(contract.read_bytes() + b"\nself-supplied\n")
             after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
 
@@ -273,15 +290,15 @@ class PackResolutionTests(unittest.TestCase):
                 packs.resolve_pack(
                     "sample-pack", canonical_root=PACKS, project_root=project,
                 )
-                craft = project_pack / "references" / "craft.md"
-                craft.write_bytes(craft.read_bytes() + b"\nchanged\n")
+                manifest = project_pack / "SKILL.md"
+                manifest.write_bytes(manifest.read_bytes() + b"\nchanged\n")
                 with self.assertRaises(packs.PackError) as raised:
                     packs.resolve_pack(
                         "sample-pack", canonical_root=PACKS, project_root=project,
                     )
             self.assertEqual("pack-untrusted", raised.exception.code)
 
-    def test_text_reference_line_endings_do_not_change_pack_identity(self):
+    def test_line_endings_across_the_tree_do_not_change_standard_identity(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             left = root / "left"
@@ -303,39 +320,40 @@ class PackResolutionTests(unittest.TestCase):
                 packs.resolve_pack("sample-pack", canonical_root=right)["digest"],
             )
 
-    def test_cells_returns_every_cell_of_the_resolved_digest(self):
-        """One projection: every verb reads the same two cells and the
-        whole craft document behind them — there is no lane to omit a
-        section from."""
+    def test_cells_projects_the_standard_the_resolved_digest_identifies(self):
+        """One projection: every verb reads the same manifest, so what a
+        digest projects to is the standard and its one adapter — there is no
+        lane to omit a section from and no second file to point at."""
 
         resolved = packs.resolve_pack("orch-code-pack", canonical_root=PACKS)
 
         projected = packs.cells_for(resolved["digest"], canonical_root=PACKS)
 
-        self.assertEqual({"adapter", "craft"}, set(projected["cells"]))
+        self.assertEqual(
+            {"pack", "scope", "digest", "adapter"}, set(projected),
+        )
         self.assertEqual("orch-code-pack", projected["pack"])
         self.assertEqual(resolved["digest"], projected["digest"])
-        self.assertNotIn("for", projected)
-        self.assertIn("references/craft.md", projected["cells"]["craft"])
+        self.assertEqual("git", projected["adapter"])
 
-    def test_every_pack_resolves_a_distinct_root_lens_entry(self):
-        """Prose earns a section only when its content differs between packs
-        (contracts/pack-signature.md, Admission). The root taste that was
-        `## Outline` is now `## Lens`'s `### root` entry, and the same
-        admission applies to it one level down."""
+    def test_every_standard_resolves_a_distinct_root_lens_entry(self):
+        """Prose earns a section only when its content differs between
+        standards (contracts/standard.md, Admission). The `### root` entry is
+        read off the manifest now: the collapse folded the craft document
+        into it, so there is one document to read and one place to differ."""
 
         import re
 
         bodies = {}
         for name in sorted(path.parent.name for path in PACKS.glob("*/SKILL.md")):
             resolved = packs.resolve_pack(name, canonical_root=PACKS)
-            self.assertIn("references/craft.md", resolved["cells"]["craft"])
-            text = (PACKS / name / "references" / "craft.md").read_text(encoding="utf-8")
+            self.assertTrue(resolved["adapter"], f"{name} declares no adapter")
+            text = (PACKS / name / "SKILL.md").read_text(encoding="utf-8")
             self.assertNotIn("\n## Outline", text)
             lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", text)
-            self.assertIsNotNone(lens, f"{name} craft carries no ## Lens section")
+            self.assertIsNotNone(lens, f"{name} carries no ## Lens section")
             match = re.search(r"(?ms)^### root\s*$(.*?)(?=^### |\Z)", lens.group(1))
-            self.assertIsNotNone(match, f"{name} craft carries no `### root` entry")
+            self.assertIsNotNone(match, f"{name} carries no `### root` entry")
             bodies[name] = match.group(1).strip()
             self.assertTrue(bodies[name], f"{name} `### root` entry is empty")
         self.assertEqual(5, len(bodies))
@@ -360,10 +378,7 @@ class PackResolutionTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(0, projected.returncode, projected.stderr)
-        self.assertEqual(
-            {"adapter", "craft"},
-            set(json.loads(projected.stdout)["cells"]),
-        )
+        self.assertEqual("git", json.loads(projected.stdout)["adapter"])
         lane = subprocess.run(
             command + [
                 "cells", payload["digest"], "--for", "check",
@@ -396,7 +411,11 @@ class PackResolutionTests(unittest.TestCase):
 
 
 class PackShapeRefusalTests(unittest.TestCase):
-    def test_old_skill_binding_cell_is_refused(self):
+    def test_a_manifest_still_carrying_the_retired_cells_table_is_refused(self):
+        """The half-migrated shape: `adapter` moved to frontmatter and the
+        table was deleted, so a manifest still carrying one is refused
+        rather than resolved as if the rows were not there."""
+
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "packs"
             _copy_pack_with_contract(PACKS / "orch-code-pack", root / "bad-pack", Path(tmp))
@@ -405,11 +424,53 @@ class PackShapeRefusalTests(unittest.TestCase):
                 skill.read_text(encoding="utf-8").replace(
                     "name: orch-code-pack", "name: bad-pack"
                 ).replace(
-                    "| adapter | git |", "| executor | `orch-tdd` |\n| adapter | git |"
+                    "## Making",
+                    "| Cell | Binding |\n| --- | --- |\n| adapter | git |\n"
+                    "| craft | [craft](references/craft.md) |\n\n## Making",
+                    1,
                 ),
                 encoding="utf-8",
             )
-            with self.assertRaisesRegex(packs.PackError, "unknown pack cell"):
+            with self.assertRaises(packs.PackError) as raised:
+                packs.resolve_pack("bad-pack", canonical_root=root)
+
+            self.assertEqual("pack-shape-invalid", raised.exception.code)
+            self.assertIn("| Cell | Binding |", raised.exception.detail)
+
+    def test_the_retired_cells_table_is_refused_on_the_chain_walk_too(self):
+        """The chain walk is the live door -- `tickets_pins` pins through it
+        -- so the refusal has to bite there and not only in `resolve_pack`."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "packs"
+            _copy_pack(PACKS / "orch-code-pack", root / "bad-pack")
+            skill = root / "bad-pack" / "SKILL.md"
+            skill.write_text(
+                skill.read_text(encoding="utf-8").replace(
+                    "name: orch-code-pack", "name: bad-pack"
+                ) + "\n| Cell | Binding |\n| --- | --- |\n| adapter | git |\n",
+                encoding="utf-8",
+            )
+            with self.assertRaises(packs.PackError) as raised:
+                packs.resolve_chain(["bad-pack"], lib_dir=root)
+
+            self.assertEqual("pack-shape-invalid", raised.exception.code)
+
+    def test_a_frontmatter_adapter_naming_an_unregistered_key_is_refused(self):
+        """Registration is `tickets_adapters.adapter_for_key`'s, called from
+        the resolver rather than re-tested there."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "packs"
+            _copy_pack(PACKS / "orch-code-pack", root / "bad-pack")
+            skill = root / "bad-pack" / "SKILL.md"
+            skill.write_text(
+                skill.read_text(encoding="utf-8")
+                .replace("name: orch-code-pack", "name: bad-pack")
+                .replace("adapter: git", "adapter: quantum-tree"),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(packs.PackError, "unregistered adapter"):
                 packs.resolve_pack("bad-pack", canonical_root=root)
 
     def test_unknown_digest_and_consumer_are_closed_refusals(self):

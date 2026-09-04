@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
 import re
@@ -12,25 +11,29 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 try:
     from scripts import rings
-    from scripts.tickets_adapters import ADAPTER_REGISTRY
+    from scripts.tickets_adapters import (
+        ADAPTER_REGISTRY, AdapterError, adapter_for_key, adapter_in_frontmatter,
+    )
     from scripts.tickets_markdown import _parse_frontmatter, dequote
 except ImportError:
     import rings
-    from tickets_adapters import ADAPTER_REGISTRY
+    from tickets_adapters import (
+        ADAPTER_REGISTRY, AdapterError, adapter_for_key, adapter_in_frontmatter,
+    )
     from tickets_markdown import _parse_frontmatter, dequote
 
 
-RESOLVER_VERSION = "orchflows.pack-resolver.v2"
-PACK_CELLS = (
-    "adapter",
-    "craft",
-)
-TYPED_CELLS = frozenset(("adapter",))
-_CELL_SET = frozenset(PACK_CELLS)
+# v3 reads the collapsed standard: one manifest, `adapter` in frontmatter,
+# identity over the directory tree. v2 read a two-row cells table and the
+# second file its `craft` cell named, and neither exists. The version rides
+# in the identity so a resolver that reads differently cannot agree with
+# itself across the change.
+RESOLVER_VERSION = "orchflows.pack-resolver.v3"
 _PACK_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ADAPTER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
-_CELL_ROW_RE = re.compile(r"^\s*\|\s*([^|]+?)\s*\|\s*(.*?)\s*\|\s*$")
-_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+# The retired signature table's header row. A manifest still carrying it is
+# half-migrated, and accepting it silently is how such an item survives.
+_RETIRED_TABLE_RE = re.compile(r"(?mi)^\s*\|\s*cell\s*\|\s*binding\s*\|\s*$")
 _FRONTMATTER_NAME_RE = re.compile(r"(?m)^name:\s*([^\r\n]+?)\s*$")
 _SHA_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -105,156 +108,116 @@ def _frontmatter_name(text: str, path: Path) -> Optional[str]:
     return dequote(match.group(1)) if match else None
 
 
-def _parse_rows(
-    text: str,
-    path: Path,
-    *,
-    require_all: bool = True,
-) -> Dict[str, str]:
-    """Parse the one cell table and reject unknown/repeated cell names."""
+def _manifest_text(path: Path) -> str:
+    """One standard's manifest as text -- the resolver's sole document."""
 
-    rows: Dict[str, str] = {}
-    saw_header = False
-    saw_delimiter = False
-    in_table = False
-    for line in text.splitlines():
-        match = _CELL_ROW_RE.match(line)
-        if not match:
-            if in_table:
-                in_table = False
-            continue
-        key, value = match.groups()
-        key = key.strip()
-        if key.lower() == "cell" and value.lower() == "binding":
-            if saw_header:
-                raise PackError("pack-shape-invalid", f"pack signature table repeated in {path}")
-            saw_header = True
-            continue
-        if not saw_header:
-            continue
-        if not saw_delimiter:
-            if re.fullmatch(r"[-: ]+", key) and re.fullmatch(r"[-: ]+", value):
-                saw_delimiter = True
-                in_table = True
-                continue
-            raise PackError("pack-shape-invalid", f"pack signature table missing delimiter in {path}")
-        if re.fullmatch(r"[-: ]+", key) and re.fullmatch(r"[-: ]+", value):
-            in_table = True
-            continue
-        if not in_table:
-            continue
-        if key not in _CELL_SET:
-            raise PackError("pack-shape-invalid", f"unknown pack cell {key!r} in {path}")
-        if key in rows:
-            raise PackError("pack-shape-invalid", f"pack cell repeated: {key}")
-        if not value.strip():
-            raise PackError("pack-shape-invalid", f"pack cell is empty: {key}")
-        rows[key] = value.strip()
-    if saw_header and not saw_delimiter:
-        raise PackError("pack-shape-invalid", f"pack signature table missing delimiter in {path}")
-    missing = [cell for cell in PACK_CELLS if cell not in rows]
-    if require_all and missing:
-        raise PackError("pack-shape-invalid", f"pack signature missing cell(s): {', '.join(missing)}")
-    return rows
-
-
-def _declared_cell(path: Path, cell: str) -> str:
-    """Read one declared cell through the resolver's sole table parser."""
-
-    if cell not in _CELL_SET:
-        raise PackError("pack-cell-invalid", f"unknown pack cell: {cell}")
-    raw = _read_bytes(path, "pack")
+    raw = _read_bytes(path, "standard")
     try:
-        text = raw.decode("utf-8")
+        return raw.decode("utf-8-sig")
     except UnicodeDecodeError as error:
-        raise PackError("pack-unreadable", f"unreadable pack {path}: {error}") from error
-    rows = _parse_rows(text, path, require_all=False)
-    value = rows.get(cell)
-    if value is None:
-        raise PackError("pack-shape-invalid", f"pack signature missing cell: {cell}")
-    return value
+        raise PackError("pack-unreadable", f"unreadable standard {path}: {error}") from error
 
 
-def _atom(value: str, cell: str, path: Path) -> str:
-    normalized = value.strip()
-    if normalized.startswith("`") or normalized.endswith("`"):
-        raise PackError("pack-shape-invalid", f"{cell} cell must not bind a skill-style name in {path}")
-    if not normalized or "\n" in normalized:
-        raise PackError("pack-shape-invalid", f"{cell} cell must be one value in {path}")
-    return normalized
+def declared_adapter_of(text: str, path: Path) -> str:
+    """The workspace mechanism this standard declares, or `''` for none.
+
+    Frontmatter is the one place it is declared since the collapse, and
+    `tickets_adapters.adapter_in_frontmatter` is the one reader of that
+    field -- this passes the manifest bytes it already holds rather than
+    resolving the name a second time. A standard carrying no `adapter:` is
+    a fact the resolved-set check reads, not an error to swallow here.
+    """
+
+    declared = adapter_in_frontmatter(text).strip()
+    if not declared:
+        return ""
+    if not _ADAPTER_RE.fullmatch(declared):
+        raise PackError(
+            "pack-shape-invalid", f"adapter has invalid key {declared!r} in {path}",
+        )
+    # Whether the key is *registered* is `tickets_adapters`', at the one door
+    # that turns a key into a mechanism. Counted here as declared either way,
+    # so a set carrying one unregistered adapter is refused as unregistered
+    # rather than as carrying none.
+    return declared
 
 
-def _typed_cells(rows: Dict[str, str], path: Path) -> Dict[str, object]:
-    cells: Dict[str, object] = dict(rows)
-    adapter = _atom(rows["adapter"], "adapter", path)
-    if not _ADAPTER_RE.fullmatch(adapter):
-        raise PackError("pack-shape-invalid", f"adapter cell has invalid key: {adapter!r}")
-    if adapter not in ADAPTER_REGISTRY:
-        raise PackError("pack-shape-invalid", f"adapter cell names an unregistered key: {adapter!r}")
-    cells["adapter"] = adapter
-    return cells
+def _refuse_retired_table(text: str, path: Path) -> None:
+    """Refuse a manifest still carrying the retired signature table.
+
+    The collapse moved `adapter` into frontmatter and deleted the table
+    outright. Reading such a manifest and ignoring the rows would let a
+    half-migrated standard resolve as if it were whole, which is exactly
+    the state this refusal exists to make loud.
+    """
+
+    if _RETIRED_TABLE_RE.search(text):
+        raise PackError(
+            "pack-shape-invalid",
+            f"standard still carries the retired '| Cell | Binding |' table: "
+            f"{path}. The adapter is frontmatter now (contracts/standard.md).",
+        )
 
 
-def _reference_paths(value: str) -> List[str]:
-    references = []
-    for target in _LINK_RE.findall(value):
-        target = target.strip().split("#", 1)[0].split("?", 1)[0].strip()
-        if not target or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", target):
+def _tree(directory: Path) -> List[Dict[str, object]]:
+    """Every file under one standard's directory, sorted, path and bytes.
+
+    The path is relative to the standard's directory rather than to the
+    repository, so identical bytes in two rings are one identity -- the
+    scope a standard resolved from is an observation, never part of it.
+    Bytes enter as their own SHA-256; adding a file, deleting one, renaming
+    one and changing a byte each move the list, and so the digest over it.
+    """
+
+    entries: List[Dict[str, object]] = []
+    for path in directory.rglob("*"):
+        if not path.is_file():
             continue
-        if target.startswith("/"):
-            raise PackError("pack-reference-invalid", f"pack reference is absolute: {target}")
-        references.append(target)
-    return references
-
-
-def _read_references(rows: Dict[str, str], pack_dir: Path) -> List[Dict[str, object]]:
-    result: List[Dict[str, object]] = []
-    seen = set()
-    for cell in PACK_CELLS:
-        for target in _reference_paths(rows[cell]):
-            resolved = (pack_dir / target).resolve()
-            normalized_target = target.replace("\\", "/")
-            marker = (normalized_target, str(resolved).casefold())
-            if marker in seen:
-                continue
-            seen.add(marker)
-            data = _read_bytes(resolved, "pack reference")
-            result.append({
-                "path": normalized_target,
-                "sha256": _sha256(data),
-                "bytes": base64.b64encode(data).decode("ascii"),
-            })
-    return sorted(result, key=lambda item: str(item["path"]))
+        entries.append({
+            "path": path.relative_to(directory).as_posix(),
+            "sha256": _sha256(_read_bytes(path, "standard file")),
+        })
+    return sorted(entries, key=lambda entry: str(entry["path"]))
 
 
 def _signature_digest() -> Optional[str]:
-    """Hash the library's signature contract -- never the pack's own copy."""
+    """Hash the library's own well-formedness contract for a standard.
 
-    candidate = rings.lib_root() / "contracts" / "pack-signature.md"
+    `contracts/standard.md` is that document since the collapse retired
+    `contracts/pack-signature.md`. It is read from the library root and
+    never from the standard's own ring: a ring supplying the document its
+    items are judged against would be grading itself.
+    """
+
+    candidate = rings.lib_root() / "contracts" / "standard.md"
     if candidate.is_file():
-        return _sha256(_read_bytes(candidate, "pack signature"))
+        return _sha256(_read_bytes(candidate, "standard contract"))
     return None
 
 
 def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
-    raw = _read_bytes(path, "pack")
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise PackError("pack-unreadable", f"unreadable pack {path}: {error}") from error
+    """One standard's observations and its content-addressed identity."""
+
+    text = _manifest_text(path)
+    _refuse_retired_table(text, path)
     declared = _frontmatter_name(text, path)
     if not declared:
         raise PackError("pack-shape-invalid", f"pack has no declared name: {path}")
     if declared != name:
         raise PackError("pack-shape-invalid", f"pack name {declared!r} does not match path {name!r}")
-    rows = _parse_rows(text, path)
-    cells = _typed_cells(rows, path)
-    references = _read_references(rows, path.parent)
+    adapter = declared_adapter_of(text, path)
+    if adapter:
+        # Registration is `tickets_adapters`', at the one door that turns a
+        # key into a mechanism; called here rather than re-tested.
+        try:
+            adapter_for_key(adapter)
+        except AdapterError as error:
+            raise PackError("pack-shape-invalid", error.detail) from error
     identity = {
         "resolver": RESOLVER_VERSION,
         "pack": name,
-        "cells": cells,
-        "references": references,
+        "adapter": adapter,
+        "tree": _tree(path.parent),
         "signature_sha256": _signature_digest(),
     }
     digest = "sha256:" + _sha256(_canonical_json(identity))
@@ -262,8 +225,7 @@ def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
         "pack": name,
         "scope": scope,
         "path": str(path),
-        "cells": cells,
-        "references": references,
+        "adapter": adapter,
         "digest": digest,
     }
 
@@ -330,7 +292,12 @@ def cells_for(
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
 ) -> Dict[str, object]:
-    """Find a resolved digest and return its four cells."""
+    """Find a resolved digest and return the standard it identifies.
+
+    The name survives the collapse; the cells table it was named for does
+    not, so what a digest projects to is the standard's observations and
+    its one declared adapter. `scripts/standards.py` renames both under U3.
+    """
 
     requested = str(digest or "").strip()
     if not _SHA_RE.fullmatch(requested):
@@ -356,7 +323,7 @@ def cells_for(
             "pack": resolved["pack"],
             "scope": resolved["scope"],
             "digest": requested,
-            "cells": dict(resolved["cells"]),
+            "adapter": resolved["adapter"],
         }
     raise PackError("digest-unresolved", f"pack digest does not resolve: {requested}")
 
@@ -411,42 +378,10 @@ def _standard_record(name: str, requested: str, depth: int, **overrides):
     )
 
 
-def _manifest_text(path: Path) -> str:
-    raw = _read_bytes(path, "standard")
-    try:
-        return raw.decode("utf-8-sig")
-    except UnicodeDecodeError as error:
-        raise PackError("pack-unreadable", f"unreadable standard {path}: {error}") from error
-
-
 def declared_narrows(text: str) -> str:
     """The one parent a standard's frontmatter names, or `''` for a root."""
 
     return dequote(_parse_frontmatter(text).get("narrows"))
-
-
-def declared_adapter_of(text: str, path: Path) -> str:
-    """The workspace mechanism this standard declares, or `''` for none.
-
-    Frontmatter is read first and the cells table second: the frontmatter
-    `adapter:` is where the collapsed manifest declares it, and the table is
-    where every shipped root still does. Both are declarations rather than
-    fallbacks -- a standard carrying neither declares no adapter, which is a
-    fact the resolved-set check reads, not an error to swallow here.
-    """
-
-    frontmatter = dequote(_parse_frontmatter(text).get("adapter"))
-    declared = frontmatter or _parse_rows(text, path, require_all=False).get("adapter", "")
-    if not declared:
-        return ""
-    adapter = _atom(declared, "adapter", path)
-    if not _ADAPTER_RE.fullmatch(adapter):
-        raise PackError("pack-shape-invalid", f"adapter has invalid key: {adapter!r}")
-    # Whether the key is *registered* is `tickets_adapters`', at the one door
-    # that turns a key into a mechanism. Counted here as declared either way,
-    # so a set carrying one unregistered adapter is refused as unregistered
-    # rather than as carrying none.
-    return adapter
 
 
 def _chain(name: str, **overrides) -> List[Dict[str, object]]:
@@ -467,6 +402,7 @@ def _chain(name: str, **overrides) -> List[Dict[str, object]]:
         record, kind = _standard_record(current, requested, depth, **overrides)
         path = Path(str(record["path"]))
         text = _manifest_text(path)
+        _refuse_retired_table(text, path)
         links.append({
             "name": current,
             "kind": kind,
