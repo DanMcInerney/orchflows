@@ -11,10 +11,10 @@ Unit details, each the assignment its child answered:
 
 Artifacts, pasted verbatim from each unit's closing note before this ticket was issued:
 
-- U1 artifact: <PASTE U1'S artifact: LINE HERE, VERBATIM>
-- U2 artifact: <PASTE U2'S artifact: LINE HERE, VERBATIM>
-- U3 artifact: <PASTE U3'S artifact: LINE HERE, VERBATIM>
-- U4 artifact: <PASTE U4'S artifact: LINE HERE, VERBATIM>
+- U1 artifact: git:3d432bd81d3e901af209ff92f8c320a092ef285b
+- U2 artifact: git:395ef57b0ce3166fd35dec5a9ab3c2238d37222d
+- U3 artifact: git:c43e93ab8114d5651873ac21eaff31ecf0aae860
+- U4 artifact: git:55dac117ba62fe43acaac8b571aa94739e1e2490
 
 Read the four together, not one at a time: the reason this pass runs once, at the end, is that a defect where two units meet is invisible to a per-unit judge. Three seams to read first — `tests/serial_compat_manifest.json`, which every unit's new check rewrites and which U3 reshapes; `tests/test_staleness_and_remedies.py`, which U1 and U2 both append to; and `docs/lifecycle.md`, which U2 regenerates and whose row count must not have moved.
 
