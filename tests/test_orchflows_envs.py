@@ -163,7 +163,7 @@ class SyncTests(unittest.TestCase):
         with _world() as world:
             _item(world["home"] / "skills", "skill", "fetcher", "requests==2.32.3\n")
             _item(world["home"] / "skills", "skill", "quiet")
-            _item(world["home"] / "packs", "pack", "tabular", "pandas==2.2.3\n")
+            _item(world["home"] / "standards", "standard", "tabular", "pandas==2.2.3\n")
             calls = []
 
             outcomes = orchflows_envs.sync(
@@ -172,7 +172,7 @@ class SyncTests(unittest.TestCase):
             )
 
             self.assertEqual(
-                [("pack", "tabular", "create"), ("skill", "fetcher", "create")],
+                [("skill", "fetcher", "create"), ("standard", "tabular", "create")],
                 sorted((o["kind"], o["name"], o["action"]) for o in outcomes),
             )
             self.assertEqual(2, len(calls))

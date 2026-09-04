@@ -32,9 +32,9 @@ CARRIAGE_QUALIFIERS = __dep_common.CARRIAGE_QUALIFIERS
 CARRIAGE_REQUIRE_BLOCK_RE = __dep_common.CARRIAGE_REQUIRE_BLOCK_RE
 CARRIAGE_SENTENCE_SPLIT_RE = __dep_common.CARRIAGE_SENTENCE_SPLIT_RE
 CARRIAGE_WORD_RE = __dep_common.CARRIAGE_WORD_RE
-PACK_SLICING_RE = __dep_common.PACK_SLICING_RE
-PACK_STORE_RE = __dep_common.PACK_STORE_RE
-PACK_WORKSPACE_RE = __dep_common.PACK_WORKSPACE_RE
+STANDARD_SLICING_RE = __dep_common.STANDARD_SLICING_RE
+STANDARD_STORE_RE = __dep_common.STANDARD_STORE_RE
+STANDARD_WORKSPACE_RE = __dep_common.STANDARD_WORKSPACE_RE
 RETURN_TEXT_RE = __dep_common.RETURN_TEXT_RE
 TICKET_FILING_RE = __dep_common.TICKET_FILING_RE
 
@@ -163,16 +163,16 @@ def _carriage_flag(diag: Diagnostics, file_label: str, key: tuple, message: str)
 
 def validate_carriage(packages, diag: Diagnostics) -> None:
     """Rule 10: (a) each call edge A -> B carries every item of B's
-    Require in A's body; (b)+(c) each pack's executor/assembly Require
-    carries in the pack craft's slicing, and its Return names the
-    ticket/work-item filing per work-item.md's filing law (or the pack's
+    Require in A's body; (b)+(c) each standard's executor/assembly Require
+    carries in the standard's slicing, and its Return names the
+    ticket/work-item filing per work-item.md's filing law (or the standard's
     workspace names a store, the law's other filing destination)."""
     by_name = {pkg["path"].name: pkg for pkg in packages}
     graph = build_call_graph(packages, Diagnostics())  # unresolved-ref errors already reported once, by validate_call_graph
 
     for a_name in sorted(graph):
         a_pkg = by_name.get(a_name)
-        if a_pkg is None or a_pkg["is_pack"]:
+        if a_pkg is None or a_pkg["is_standard"]:
             continue
         a_stems = _carriage_body_stems(a_pkg["body"])
         file_label = rel(a_pkg["skill_md"])
@@ -191,14 +191,14 @@ def validate_carriage(packages, diag: Diagnostics) -> None:
                 _carriage_flag(diag, file_label, ("edge", a_name, b_name, head_noun), message)
 
     for pkg in packages:
-        if pkg["is_pack"]:
-            _validate_pack_carriage(pkg, by_name, diag)
+        if pkg["is_standard"]:
+            _validate_standard_carriage(pkg, by_name, diag)
 
 
-def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None:
-    """Packs own their craft and check cells; no executor body is carried.
+def _validate_standard_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None:
+    """Standards own their standard and check cells; no executor body is carried.
 
-    Pack references are the authoritative craft carrier, and shared ticket
+    Standard references are the authoritative standard carrier, and shared ticket
     filing is enforced by the callable contract.
     """
     del pkg, by_name, diag
@@ -223,5 +223,5 @@ def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None
 __all__ = (
     '_carriage_clean', '_carriage_stem_variants', '_carriage_body_stems', 'CARRIAGE_ELABORATION_LEADS',
     '_carriage_segments', '_carriage_segment_nouns', '_carriage_require_items', '_carriage_item_carried',
-    '_carriage_flag', 'validate_carriage', '_validate_pack_carriage',
+    '_carriage_flag', 'validate_carriage', '_validate_standard_carriage',
 )

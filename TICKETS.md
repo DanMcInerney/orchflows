@@ -19,7 +19,7 @@ context in any checkout resumes a run mid-flight.
     ┌─ B1.2.md ───────────────────────────────────────────────────┐
     │ ---                                                         │
     │ id, run, status, admission, dispatch_v1                    │
-    │ executor: orch-do        pack: orch-code-pack              │
+    │ executor: orch-do        standard: orch-code              │
     │ parent: B1                <- the call edge                  │
     │ depends_on: [B1.1]        <- optional graph edge            │
     │ bound: 45m                <- time budget                    │
@@ -92,7 +92,7 @@ driver writes and re-reads — and hangs its callables underneath:
 
     <state sink>/tickets/<run>/
     ├── 00-root.md          the whole job
-    ├── B1.md               a frame: goal, journal, no executor, no pack
+    ├── B1.md               a frame: goal, journal, no executor, no standard
     ├── B1.1.md   ┐
     ├── B1.2.md   │ callables, one bounded work item each, minted under B1
     └── B1.3.md   ┘
@@ -140,7 +140,7 @@ The frontmatter carries three related mechanisms:
 
 **Admission** is the entry point into work: `tickets.py` grades the ticket
 against a snapshot of the whole run — dependencies complete, executor
-bound by the stamped pack, workspace policy, inputs resolvable, and for a
+bound by the stamped standard, workspace policy, inputs resolvable, and for a
 runtime child its parent's own seal — and
 stamps a hash **receipt**. `dispatch-open` atomically records
 the claim and absolute lease, and the launch is committed

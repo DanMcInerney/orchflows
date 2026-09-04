@@ -59,7 +59,7 @@ class TestArchitecture(unittest.TestCase):
         it moved."""
         campaign = template_text(EVOLVE).partition("Generations,")[2]
         self.assertIn("search_plan.py advance", campaign)
-        self.assertIn("do --pack orch-code-pack", campaign)
+        self.assertIn("do --standard orch-code", campaign)
 
     def test_planner_is_evaluation_mode_agnostic(self):
         protocol = read(SEARCH_PROTOCOL)
@@ -103,7 +103,7 @@ class TestArchitecture(unittest.TestCase):
         )
 
         unresolved = evolve.replace(
-            "judge --pack orch-code-pack", "do --pack orch-code-pack", 1
+            "judge --standard orch-code", "do --standard orch-code", 1
         )
         self.assertIn(
             "eligibility-unit",

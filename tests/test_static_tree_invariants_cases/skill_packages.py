@@ -1,4 +1,4 @@
-"""Static invariants owned by skill and pack package structure."""
+"""Static invariants owned by skill and standard package structure."""
 import unittest
 
 from ._support import ROOT, frontmatter_name, packages, split_document, validate
@@ -25,13 +25,13 @@ ROLE_TABLE = {
 
 class TestFrozenRoleTable(unittest.TestCase):
     def test_table_covers_exactly_every_skill(self):
-        skill_names = {pkg["path"].name for pkg in packages() if not pkg["is_pack"]}
+        skill_names = {pkg["path"].name for pkg in packages() if not pkg["is_standard"]}
         self.assertEqual(skill_names, set(ROLE_TABLE))
 
     def test_each_skill_declares_its_frozen_role(self):
         diag = validate.Diagnostics()
         for pkg in packages():
-            if pkg["is_pack"]:
+            if pkg["is_standard"]:
                 continue
             text = validate._read_source(pkg["skill_md"])
             fm, _ = validate.parse_frontmatter(text, validate.rel(pkg["skill_md"]), diag)
@@ -74,17 +74,17 @@ class TestPackageNamesMatchFolders(unittest.TestCase):
                     f"{skill_md} name {name!r} != folder {pkg_dir.name!r}",
                 )
 
-    def test_every_pack_folder_matches_its_frontmatter_name(self):
-        packs_dir = ROOT / "packs"
-        if not packs_dir.is_dir():
-            self.skipTest("no packs/ directory")
-        for pkg_dir in sorted(p for p in packs_dir.iterdir() if p.is_dir()):
-            skill_md = pkg_dir / "SKILL.md"
-            self.assertTrue(skill_md.is_file(), f"{pkg_dir} has no SKILL.md")
-            name = frontmatter_name(skill_md)
+    def test_every_standard_folder_matches_its_frontmatter_name(self):
+        standards_dir = ROOT / "standards"
+        if not standards_dir.is_dir():
+            self.skipTest("no standards/ directory")
+        for pkg_dir in sorted(p for p in standards_dir.iterdir() if p.is_dir()):
+            manifest = pkg_dir / "STANDARD.md"
+            self.assertTrue(manifest.is_file(), f"{pkg_dir} has no STANDARD.md")
+            name = frontmatter_name(manifest)
             self.assertEqual(
                 name, pkg_dir.name,
-                f"{skill_md} name {name!r} != folder {pkg_dir.name!r}",
+                f"{manifest} name {name!r} != folder {pkg_dir.name!r}",
             )
 
 
@@ -93,7 +93,7 @@ class TestSkillAnatomyOrder(unittest.TestCase):
 
     def test_every_skill_body_orders_require_then_never_then_return(self):
         for pkg in packages():
-            if pkg["is_pack"]:
+            if pkg["is_standard"]:
                 continue
             with self.subTest(skill=pkg["path"].name):
                 _, body = split_document(pkg["skill_md"])

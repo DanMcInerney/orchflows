@@ -16,8 +16,8 @@ SHARED_READER_MODULES = (
     # dependency, imported before anything else is safe to import.
     "_bootstrap.py",
     "console.py",
-    "packs.py",
-    "packs_support.py",
+    "standards.py",
+    "standards_support.py",
     "rings.py",
     "rings_trust.py",
     "state_root.py",

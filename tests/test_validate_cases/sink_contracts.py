@@ -12,7 +12,7 @@ Its third half is ``tools/validate.py``'s two remaining owned-literal
 checks and the cross-tier duplication check that replaced ``validate_sync``
 (REVIEW-2026-08-15 T2). ``tests/test_sync.py`` held
 them until the sync check it was named for was deleted; what survived it —
-``scripts/tickets.py``'s ``PACK_WORKSPACE_MECHANISMS`` against the packs'
+``scripts/tickets.py``'s ``STANDARD_WORKSPACE_MECHANISMS`` against the standards'
 own cells, and the friction log's one location against every copy of it —
 lives here now, because a copy checked against its owner is the same
 subject as a copy the compiler refuses outright.
@@ -32,7 +32,7 @@ if str(ROOT) not in sys.path:
 import scripts.tickets as tickets_mod  # noqa: E402
 
 VALIDATE = ROOT / "tools" / "validate.py"
-PACKS = ROOT / "packs"
+STANDARDS = ROOT / "standards"
 TEMPLATES = ROOT / "templates"
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
 

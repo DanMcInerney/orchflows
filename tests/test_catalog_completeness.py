@@ -12,7 +12,7 @@ So the check runs in both directions and takes its expectation from the
 registries that own the names rather than from a list of its own:
 
 - the callable verb registry (``scripts/tickets_registry.py``),
-- the pack tree, and
+- the standard tree, and
 - the composition manifests that declare an ``entry``.
 
 Each host catalog is then required to carry all of them, and the name is
@@ -165,7 +165,7 @@ class CatalogCompletenessTests(unittest.TestCase):
         # Graded before anything is compared: an expectation that came back
         # empty would make every containment below vacuously true.
         self.assertIn("orch-do", expected)
-        self.assertNotIn("orch-code-pack", expected)
+        self.assertNotIn("orch-code", expected)
         self.assertGreaterEqual(len(expected), 11)
 
         found = catalog_names(self._plan())
@@ -201,7 +201,7 @@ class CatalogCompletenessTests(unittest.TestCase):
         """
 
         stamped = stamped_names()
-        self.assertIn("orch-code-pack", stamped)
+        self.assertIn("orch-code", stamped)
         self.assertIn("market-brief", stamped)
 
         found = catalog_names(self._plan())

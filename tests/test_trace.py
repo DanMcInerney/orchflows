@@ -263,14 +263,14 @@ class TestTraceV2(unittest.TestCase):
                  "payload": {"id": "thread-1", "source": {}}},
                 {"type": "response_item", "timestamp": "2026-01-01T00:00:01Z",
                  "payload": {"type": "message", "role": "assistant", "content": [
-                     {"type": "output_text", "text": "Decomposing under the code pack now."},
+                     {"type": "output_text", "text": "Decomposing under the code standard now."},
                  ]}},
             ]
             rollout.write_text("\n".join(json.dumps(l) for l in lines), encoding="utf-8")
             result = trace.extract_codex(rollout)
             narrations = [e for e in result["events"] if e["type"] == "narration"]
             self.assertEqual(1, len(narrations))
-            self.assertIn("code pack", narrations[0]["text"])
+            self.assertIn("code standard", narrations[0]["text"])
 
 
 class TestTraceHarvestsSinkPaths(unittest.TestCase):

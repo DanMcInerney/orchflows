@@ -1,6 +1,6 @@
 # BenchMaker protocol
 
-Benchmark craft for a domain with no pack: what the calls of
+Benchmark standard for a domain with no standard: what the calls of
 [the benchmaker workflow](../benchmaker/SKILL.md) make, and nothing
 they, a contract, or a rule already state.
 

@@ -225,7 +225,7 @@ class TestWorkspaceStampsUnderTheRunLock(unittest.TestCase):
         self.ticket = ticket_at(
             sink_root() / "tickets" / "testrun", "T1", status="claimed",
             extra=(
-                ("standards", "[" + ", ".join(standards_field("orch-research-pack")) + "]"),
+                ("standards", "[" + ", ".join(standards_field("orch-research")) + "]"),
                 ("dispatch_v1", attempt),
             ),
         )

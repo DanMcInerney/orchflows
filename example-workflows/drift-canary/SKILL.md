@@ -15,11 +15,11 @@ model-invokes.
 
 **Re-run the set**:
 
-    tickets.py do <run> --pack orch-research-pack --parent <frame>
+    tickets.py do <run> --standard orch-research --parent <frame>
       --goal-file <rerun-goal> --bound "<= 60 tool calls"
 
 Its goal: for each item in the read-only `canary_set`, one `tickets.py do
---pack <item-pack> --goal-file <item-goal> [--details-file <item-details>]`
+--standard <item-standard> --goal-file <item-goal> [--details-file <item-details>]`
 re-issue under a nested run of its own, each copy
 carrying its own result at one recorded model id, effort level and host
 binding — and the golden set byte-identical to its input identity when the
@@ -27,7 +27,7 @@ call closes.
 
 **Read the delta**:
 
-    tickets.py judge <run> --pack orch-content-pack --parent <frame>
+    tickets.py judge <run> --standard orch-content --parent <frame>
       --artifacts <rerun-artifact-line> --goal-file <diff-goal>
 
 One verdict per canary item against its golden result. A divergence is a
@@ -37,7 +37,7 @@ findings file is the per-item verdict set.
 
 **File the signal**, once, only for the divergences the judge named:
 
-    tickets.py do <run> --pack orch-content-pack --parent <frame>
+    tickets.py do <run> --standard orch-content --parent <frame>
       --goal-file <friction-goal> --bound "<= 40 tool calls"
 
 Its goal quotes the judge's `findings: <path>` line verbatim and asks for

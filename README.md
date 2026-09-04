@@ -31,7 +31,7 @@ This is a user install, the only installation scope. It creates or reuses
 environment used by installed commands even when installation starts from
 an active project environment. Runtime dependencies are declared in
 `requirements-runtime.txt`, with exact hashes for the local UI server and its
-transitive closure. A custom skill, pack or workflow declares its own in a
+transitive closure. A custom skill, standard or workflow declares its own in a
 `requirements.txt` beside it, and `orchflows sync` builds each one its own
 environment.
 Dry runs create nothing, and user uninstall retains the private runtime for
@@ -69,7 +69,7 @@ memorize.
 
     > browser-game this incomplete cooperative puzzle-game brief
     # a versioned program record, evidence-bound checkpoint, and
-    # pack-stamped successor plan without invented product defaults
+    # standard-stamped successor plan without invented product defaults
 
 Small requests stay small; medium and large work earn structure only when
 their graph does. Those sizes are explanatory, never fields on the work.
@@ -151,7 +151,7 @@ Chain any callables and put the improvement workflow last and you have a
 workflow that upgrades itself:
 
     > my release workflow: investigate what merged since the last
-      tag → a root ticket for the release notes under the content pack
+      tag → a root ticket for the release notes under the content standard
       → improvement proposal
 
 The coolest part: it runs on itself. I run the improvement workflow across
@@ -173,7 +173,7 @@ the same loop to the library's own skills.
 ### Visualize anything
 
 `orch-do` renders a supplied subject as a verified visual page when
-the design pack is stamped, choosing diagrams, panels, or charts from its
+the design standard is stamped, choosing diagrams, panels, or charts from its
 relationships. This delivery view points to
 [`orch-do`](skills/kernel/orch-do/SKILL.md), which both plans the root and
 builds each unit; [verification](rules/verification.md) owns acceptance.
@@ -183,8 +183,8 @@ details:
 ```mermaid
 flowchart TD
     frame["tickets.py frame-open — the invocation's journal"] --> plan["orch-do (planning) — freeze one root ticket"]
-    plan --> pack{"stamp a domain pack per call"}
-    pack --> callable["tickets.py do / judge — one launch per call"]
+    plan --> standard{"stamp a domain standard per call"}
+    standard --> callable["tickets.py do / judge — one launch per call"]
     callable --> exec["the child"]
     exec --> join["tickets.py land — each return crosses once"]
     join --> accepted["accepted result"]
@@ -209,7 +209,7 @@ Skill libraries break the same four ways:
 
 orchflows answers each in structure: tiny composable skills where
 every word fights for its life; autorouting instead of memorized
-chains; domain-blind workflows retargeted by data packs; and
+chains; domain-blind workflows retargeted by data standards; and
 self-improvement wired into every run.
 
 ### Legos
@@ -221,10 +221,9 @@ self-improvement wired into every run.
   Control flow is not a callable: loops, branches and retries are the
   calling workflow's own prose, and a `frame` ticket is the durable stack
   frame under them.
-- **One stud pattern.** Eight contracts — bundle, dispatch,
-  pack-signature, result, sheet, verdict, work-item, worklog — are the
-  only interfaces. Anything that emits one plugs into anything that
-  takes one.
+- **One stud pattern.** Seven contracts — bundle, dispatch, result,
+  standard, verdict, work-item, worklog — are the only interfaces.
+  Anything that emits one plugs into anything that takes one.
 - **One return shape.** Every ticket attempt closes through the dispatch
   outcome envelope: `assignment_seal`, `dispatch_id`, `outcome_record_id`,
   writer, and evidence. The durable result identity then feeds any
@@ -242,10 +241,10 @@ then import, join, and clean up afterwards. Each of those is now one command.
 
 `tickets.py do` (and `judge`, its read-only twin) is the whole outbound
 half in one transaction: it mints the ticket under its parent, seals it,
-pins the pack, creates the isolated worktree the child will work in,
+pins the standard, creates the isolated worktree the child will work in,
 opens the attempt, and hands back one `launch` object naming the exact
 agent, model and effort, and carrying the whole prompt the child is given
-— the ticket's path, its workspace, the interpreter, the pack's craft, the
+— the ticket's path, its workspace, the interpreter, the standard's, the
 filing commands. The orchestrator's job is to invoke it verbatim. `tickets.py land` is the whole inbound
 half: import the result, adjudicate it at the join, retire the worktree,
 and report what became ready to dispatch next. A ticket you wrote by hand
@@ -266,7 +265,7 @@ still there for recovery; nothing needs them on a healthy path.
     │                         interface between everything above them
     ├── Layer 1 · skills/    — everything callable: kernel/ primitives that call no
     │                         skill, workflows/ assembled from them
-    ├── Layer 2 · packs/     — per-domain data (code, content, research, design, data),
+    ├── Layer 2 · standards/     — per-domain data (code, content, research, design, data),
     │                         never control flow
     └── Layer 3 · example-workflows/ — named workflows, callable like any skill
 
@@ -274,33 +273,35 @@ Four layers, dependencies pointing one way. `ARCHITECTURE.md` is the
 codemap — what lives where, who owns it — and `ls` is the current list;
 this README does not keep a second copy of it.
 
-### Packs
+### Standards
 
-    packs/
-    ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-do
+    standards/
+    ├── orch-code     — delivers code        · tests and checks       · executor orch-do
     │                        workspace: git, one worktree per work item
-    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-do
+    ├── orch-content  — delivers documents   · artifact evidence     · executor orch-do
     │                        workspace: document tree with outline slots
-    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-do
+    ├── orch-data     — delivers analyses    · reproduction evidence · executor orch-do
     │                        workspace: git, datasets pinned by digest manifest
-    ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-do
+    ├── orch-design   — delivers rendered UI · capture evidence      · executor orch-do
     │                        workspace: git, captures per view × breakpoint × state
-    └── orch-research-pack — delivers answers     · source evidence       · executor orch-do
+    └── orch-research — delivers answers     · source evidence       · executor orch-do
                              workspace: evidence store of lane packets
 
-A pack is pure data — no control flow. It supplies the domain's
+A standard is pure prose — no control flow. It supplies the domain's
 vocabulary, artifact evidence, workspace rules, and design principles,
-all satisfying one frozen pack-signature, so everything the library
-builds inside a domain stays cohesive. Stamp a different pack on the
-root ticket and the identical pipeline ships code, documents, research,
-analyses, or UI.
+all under one frozen contract, so everything the library builds inside a
+domain stays cohesive. Stamp a different standard on the root ticket and
+the identical pipeline ships code, documents, research, analyses, or UI.
+A standard may narrow exactly one other, which is how a house style or a
+single framework tightens a domain without forking it.
 
-Each pack is read three ways through two callables — its **making** taste when
+Each standard is read three ways through two callables — its **making** taste when
 `orch-do` produces work, its **planning** taste when `orch-do` freezes a
 root instead, telling the planner what a well-formed one looks like in
 that domain and which questions are worth asking before sealing it, and
-its **review** taste when `orch-judge` challenges the result. Same data,
-three projections; the signature says which sections each reads.
+its **review** taste when `orch-judge` challenges the result. Same prose,
+three projections; the artifact kind on the call names the `## Lens` entry
+each one reads.
 
 ### Advantages over Anthropic's Dynamic Workflows
 

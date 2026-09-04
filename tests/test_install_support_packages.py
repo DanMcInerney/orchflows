@@ -13,7 +13,7 @@ import install
 FACADE_PREFIXES = (
     "tickets",
     "ui",
-    "packs",
+    "standards",
     "search_plan",
     "trace",
     "workspace",

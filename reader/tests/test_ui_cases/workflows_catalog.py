@@ -63,7 +63,7 @@ class WorkflowCatalogTests(unittest.TestCase):
         self.assertEqual("workflow-skill", by_id["browser-game"]["type"])
         self.assertEqual("callable", by_id["browser-game"]["entry"])
         self.assertEqual(
-            "Turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.",
+            "Turn an incomplete browser-game brief into evidence-bound checkpoints and standard-stamped successor delivery.",
             by_id["browser-game"]["description"],
         )
         self.assertEqual("workflow-skill", by_id["orch-do"]["type"])

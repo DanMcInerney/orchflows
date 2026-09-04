@@ -75,7 +75,7 @@ SUBCOMMAND_SUMMARY = {
     "judge": "Mint, seal, establish, and launch one read-only callable over the typed artifacts it is handed.",
     "frame-open": "Open one call-stack frame for a workflow invocation: sealed goal, parent link, and the journal its driver appends to.",
     "frame-close": "Record what one frame's invocation became, refusing a close over two or more do-children nobody judged.",
-    "grade": "Report deterministic width, shape, pack coverage, and adapter capability.",
+    "grade": "Report deterministic width, shape, standard coverage, and adapter capability.",
     "list": "List tickets.",
     "show": "Inspect one ticket's parsed identity and sections without mutation.",
     "dispatch": "Atomically ready, establish, open, and emit the one launch that starts this ticket's child.",
@@ -99,7 +99,7 @@ HELP_FLAGS = frozenset({"--help", "-h"})
 HELP_COMMANDS = HELP_FLAGS | {"help"}
 VALUE_FLAGS = frozenset({
     "--run", "--by", "--executor", "--goal", "--context", "--details",
-    "--depends-on", "--bound", "--pack", "--makes",
+    "--depends-on", "--bound", "--standard", "--makes",
     "--profile", "--isolation",
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
     "--tree", "--workspace", "--proposal", "--covered",

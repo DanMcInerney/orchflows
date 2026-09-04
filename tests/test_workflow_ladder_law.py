@@ -1,12 +1,12 @@
 """The ladder's facts, each read at its one owner's anchor.
 
-The five rungs -- applied skill, sheet, reusable workflow, glue workflow,
+The five rungs -- applied skill, standard, reusable workflow, glue workflow,
 idiom -- are stated once each, in the file that owns the fact, and linked
 from everywhere else. The failure this pins is placement drift: a fact
 restated in a second file agrees with the first until one copy moves, and a
 fact deleted from its owner leaves every link pointing at nothing.
 
-Anchors, not sentences (`packs/orch-code-pack/SKILL.md`): each
+Anchors, not sentences (`standards/orch-code/STANDARD.md`): each
 fact is read inside a stable anchor -- a `##` heading, a numbered clause of a
 rules file, a kernel body's Require/Never/Return anatomy -- and every case is
 shown failing against an in-memory copy with the fact dropped and the anchor
@@ -83,7 +83,7 @@ def clause(text: str, number: int) -> str:
 CASES = {
     "vocabulary defines the five rungs": (
         "docs/vocabulary.md", ("section", "## Structure"),
-        ("- **applied skill** —", "- **sheet** —", "- **reusable workflow** —",
+        ("- **applied skill** —", "- **standard** —", "- **reusable workflow** —",
          "- **glue workflow** —", "- **idiom** —"),
     ),
     "composition owns the stamping sentence": (
@@ -104,13 +104,15 @@ CASES = {
         ("every-dispatch units next", "stamped standard as",
          "`BODY_BUDGET`, `STANDARD_BUDGET`"),
     ),
-    "architecture places the two directories": (
+    "architecture places the tiers and the one standards directory": (
         "ARCHITECTURE.md", ("section", "## Four tiers"),
-        ("`workflows/` the reusable domain-blind workflows", "`sheets/` narrows it"),
+        ("`workflows/` the reusable domain-blind workflows",
+         "a narrowing names one other standard in `narrows:` and only tightens it"),
     ),
-    "pack authoring states the pack-versus-sheet admission": (
-        "docs/pack-authoring.md", ("clause", 1),
-        ("is a sheet stamped beside that pack", "not a pack"),
+    "standard authoring states the root-versus-narrowing admission": (
+        "docs/standard-authoring.md", ("clause", 1),
+        ("earns a narrowing rather than a second root",
+         "carries none of the three sections the section table reserves for a root"),
     ),
     "authoring names the three dependency classes and their files": (
         "docs/custom-workflow-authoring.md", ("section", "## Dependencies"),
@@ -127,22 +129,22 @@ CASES = {
         ("ask the four questions in *Which work earns a callable*",
          "picks the rung"),
     ),
-    "design states why sheets and applied skills exist": (
+    "design states why standards and applied skills exist": (
         "DESIGN.md", ("section", "## Why two callables, frames, and prose"),
-        ("**Why sheets and applied skills.**",
+        ("**Why standards and applied skills.**",
          "pass the perfect-model test from the other side"),
     ),
-    "the maker's kernel binds it to every stamped sheet and to its method": (
+    "the maker's kernel binds it to every stamped standard and to its method": (
         "skills/kernel/orch-do/SKILL.md", ("anatomy", None),
-        ("Read whole each sheet the prompt hands you, at the digest it names",
-         "relaxes none of them",
+        ("Read whole every further standard the prompt hands you, at the digest it names",
+         "adds requirements and relaxes none",
          "An applied skill the prompt names supplies the method only",
          "nothing in it loosens the Require, Never or Return here"),
     ),
-    "the judge's kernel checks every sheet and reports a loosening": (
+    "the judge's kernel checks every standard and reports a loosening": (
         "skills/kernel/orch-judge/SKILL.md", ("anatomy", None),
-        ("Every sheet the ticket stamps is checked beside that entry",
-         "file that loosening as a `sheet-defect` finding",
+        ("Every further standard the ticket stamps is checked beside that entry",
+         "file the loosening as a `standard-defect` finding",
          "Where the ticket pins an applied skill, judge by it as method",
          "the Require, Never and Return stated here still govern this review"),
     ),

@@ -66,9 +66,9 @@ class BrowserGameCompositionTests(unittest.TestCase):
         _, text, _ = self._workflow()
         for call in (
             "tickets.py frame-open",
-            "do --pack orch-content-pack",
-            "do --pack orch-research-pack",
-            "judge --pack orch-content-pack",
+            "do --standard orch-content",
+            "do --standard orch-research",
+            "judge --standard orch-content",
             "tickets.py frame-close",
         ):
             self.assertIn(call, text)
@@ -104,7 +104,7 @@ class BrowserGameCompositionTests(unittest.TestCase):
         for field in (
             "artifact identity",
             "artifact kind",
-            "pack",
+            "standard",
             "run/root identities",
             "dependencies",
             "status",

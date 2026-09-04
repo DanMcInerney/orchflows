@@ -103,13 +103,10 @@ def _relative(path: Path, root: Path) -> str:
         return ""
 
 
-SHEET_MANIFEST_FILE = "SHEET.md"
-# Where the library keeps its standards today, with the manifest name each
-# directory carries. Roots still live under `packs/` with `SKILL.md` and
-# narrowings under `sheets/` with `SHEET.md`; the rename to one directory
-# and one manifest is its own change, and this pairing is what lets one
-# by-name loop mint both in the meantime.
-STANDARD_HOMES = (("packs", "SKILL.md"), ("sheets", SHEET_MANIFEST_FILE))
+STANDARD_MANIFEST_FILE = "STANDARD.md"
+# One directory and one manifest for every standard, root and narrowing
+# alike: `narrows:` is what tells them apart, never where they sit.
+STANDARD_DIR = "standards"
 
 
 def _discover_standards_under(root: Path, directory: str, manifest_name: str):
@@ -143,10 +140,7 @@ def discover_standards(root: Path = REPO_ROOT):
     data rather than a name -- it still reaches the installed lib copy.
     """
 
-    standards = []
-    for directory, manifest_name in STANDARD_HOMES:
-        standards.extend(_discover_standards_under(root, directory, manifest_name))
-    return standards
+    return _discover_standards_under(root, STANDARD_DIR, STANDARD_MANIFEST_FILE)
 
 
 WORKFLOW_SKILL_FILE = "SKILL.md"

@@ -50,7 +50,7 @@ class WorkflowSkillTests(unittest.TestCase):
             for edge in detail["edges"]
         }
         self.assertIn(
-            ("script-call", "workflow:orch-do", "script:bin/packs.py"),
+            ("script-call", "workflow:orch-do", "script:bin/standards.py"),
             edge_tuples,
         )
         # A kernel skill calls no skill (rules/composition.md 1): orch-do's
@@ -66,11 +66,11 @@ class WorkflowSkillTests(unittest.TestCase):
             detail["relations"],
         )
 
-    def test_a_library_workflow_projects_its_pack_and_its_scripts(self):
+    def test_a_library_workflow_projects_its_standard_and_its_scripts(self):
         """`example-workflows/<name>/SKILL.md` is the second canonical home
-        for a workflow skill. The pack a callable call stamps resolves like any
-        other canonical name -- it ships in `packs/` -- so a workflow that
-        names its own pack is not an unresolved reference."""
+        for a workflow skill. The standard a callable call stamps resolves like any
+        other canonical name -- it ships in `standards/` -- so a workflow that
+        names its own standard is not an unresolved reference."""
 
         detail = skills.project_workflow_skill(ROOT, "evolve")
 
@@ -79,7 +79,7 @@ class WorkflowSkillTests(unittest.TestCase):
         self.assertEqual(
             {
                 "workflow:evolve",
-                "skill:orch-code-pack",
+                "skill:orch-code",
                 "script:bin/search_plan.py",
                 "script:bin/tickets.py",
             },
@@ -92,8 +92,8 @@ class WorkflowSkillTests(unittest.TestCase):
             by_id["workflow:evolve"]["source_id"],
         )
         self.assertEqual(
-            identity.source_id("lib/packs/orch-code-pack/SKILL.md"),
-            by_id["skill:orch-code-pack"]["source_id"],
+            identity.source_id("lib/standards/orch-code/STANDARD.md"),
+            by_id["skill:orch-code"]["source_id"],
         )
         self.assertEqual(
             sorted(

@@ -86,10 +86,10 @@ verbatim and hand-adds nothing; a caller who lost it replays the same
 The prompt names, once each, what a child cannot derive: the applied skill's
 resolved file, the ticket's absolute path inside the established workspace,
 that workspace and the instruction to run from inside it, this host's
-verified interpreter, the resolved pack craft, the artifact kind and its Lens
+verified interpreter, the resolved standard, the artifact kind and its Lens
 entry, the review lane's root ticket
 path, the assigned name, the lease deadline, the filled filing and closing
-commands, the craft's verification scope, what a report is expected to carry,
+commands, the standard's verification scope, what a report is expected to carry,
 and that every check runs to completion in the turn it starts with an
 explicit timeout longer than the check and any backgrounded command killed
 once superseded. It teaches no verdict token and no filing taxonomy: a child
@@ -97,8 +97,8 @@ files evidence into one channel, never a disposition and never a heading of
 the protocol's choosing. It names the one mechanism for entering the applied
 skill — the host's Skill tool, with the whole prompt forwarded verbatim as
 the arguments, so the skill's fork arrives holding the assignment and a
-child already running as the skill works in place — and names no pack for
-the child to resolve: it hands the craft path. The
+child already running as the skill works in place — and names no standard for
+the child to resolve: it hands the standard path. The
 public command emits ASCII-escaped canonical JSON, preserving every prompt
 character independently of the subprocess code page.
 
@@ -106,7 +106,7 @@ Three of those lines exist so a parent can read a child's answer without
 paraphrasing it. The child is told to commit its work inside the candidate
 before closing and to name that commit in the closing note; it is told to
 print one verbatim artifact line, `artifact: <kind>:<identity>`, whose kind
-the stamped pack's adapter fixes — `git` a full commit id, `doc` a
+the stamped standard's adapter fixes — `git` a full commit id, `doc` a
 `<path>@sha256:<digest>` over the document bytes at close, `evidence` a store
 id; and a review lane is told to print `findings: <path>` as a second
 verbatim line. The digest a `doc` identity carries is declared, not verified:

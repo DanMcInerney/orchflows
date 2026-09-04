@@ -39,7 +39,7 @@ _split_frontmatter = __dep_packages._split_frontmatter
 body_words = __dep_packages.body_words
 parse_frontmatter = __dep_packages.parse_frontmatter
 rel = __dep_packages.rel
-def validate_craft_budget(manifest, diag: Diagnostics) -> None:
+def validate_standard_budget(manifest, diag: Diagnostics) -> None:
     """One manifest against `STANDARD_BUDGET` (contracts/standard.md rule 4).
 
     The one ceiling for both kinds: a root and a narrowing are one format
@@ -94,7 +94,7 @@ def build_call_graph(packages, diag: Diagnostics, known=None):
             if token in ROLE_PROFILES:
                 continue
             if token not in names:
-                diag.error(file_label, f"backtick reference `{token}` does not resolve to any skill or pack")
+                diag.error(file_label, f"backtick reference `{token}` does not resolve to any skill or standard")
                 continue
             graph[pkg["path"].name].add(token)
     return graph
@@ -144,14 +144,14 @@ def validate_call_graph(packages, diag: Diagnostics, known=None) -> None:
 
 
 def validate_domain_blindness(packages, diag: Diagnostics) -> None:
-    """Reject pack-owned names in executable machinery.
+    """Reject standard-owned names in executable machinery.
 
-    Pack directories are the data owner for both their canonical identity and
+    Standard directories are the data owner for both their canonical identity and
     their executor/assembly names.  Reading those names from the discovered
-    pack signatures keeps this check extensible: adding a pack automatically
+    standard signatures keeps this check extensible: adding a standard automatically
     expands the invariant without editing validator code.
     """
-    names = {pkg["path"].name for pkg in packages if pkg["is_pack"]}
+    names = {pkg["path"].name for pkg in packages if pkg["is_standard"]}
     if not names:
         return
     for directory_name in ("scripts", "tools"):
@@ -165,7 +165,7 @@ def validate_domain_blindness(packages, diag: Diagnostics) -> None:
                 diag.error(
                     rel(path),
                     f"domain-specific name `{name}` appears in machinery; "
-                    "select behavior through pack data",
+                    "select behavior through standard data",
                 )
 
 
@@ -427,7 +427,7 @@ def validate_templates(diag: Diagnostics, roots=None) -> None:
 # "iteration", so noun mentions carry no bound obligation (review thread T7).
 
 __all__ = (
-    'validate_craft_budget', 'validate_reference_links', 'build_call_graph', 'find_cycle',
+    'validate_standard_budget', 'validate_reference_links', 'build_call_graph', 'find_cycle',
     'validate_call_graph', 'validate_domain_blindness', '_envelope_first_clause', '_envelope_missing',
     'validate_envelope', 'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
     'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE',

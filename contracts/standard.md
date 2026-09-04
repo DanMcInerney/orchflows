@@ -128,7 +128,10 @@ its own.
 ## Identity
 
 Rule 5's digest covers every file in the standard's directory: each
-file's repository-relative path, sorted, with its bytes. The ticket pins
+file's path relative to that directory, sorted, with its bytes. Relative
+to the directory and never to the repository, because the path a standard
+was found at is an observation: one shipped in two rings must digest the
+same, or the pin refuses the shadow it exists to catch. The ticket pins
 that digest at issue and every later door re-derives it, so a standard
 that changed under a sealed assignment — or a nearer ring that came to
 shadow it — is a refusal rather than a substitution.

@@ -25,7 +25,7 @@ connect this law to each authorized dispatch event and predecessor record.
    crosses exactly one join owned by the dispatching caller. There is no
    sideways handoff of control — only call/return and suspension.
 4. A child executes its exact named skill directly
-   or pack stage in that stated order, one witness in this one
+   or standard stage in that stated order, one witness in this one
    context at the one role [roles.md](roles.md) §4 resolves — and never
    re-dispatches that primary work. A child identity stops at the ticket
    boundary and is never reused by another ticket. Critique and repair are
@@ -49,7 +49,7 @@ connect this law to each authorized dispatch event and predecessor record.
 8. Dispatch names carry behavioral weight through the closed callable
    registry [work-item.md](../contracts/work-item.md)
    lists; what a stage name is instead is
-   [pack-signature.md](../contracts/pack-signature.md)'s. A superseded name is
+   [standard.md](../contracts/standard.md)'s. A superseded name is
    never revived or aliased: the dispatch refuses, naming its successor. No verb
    is split into a generic shell plus a method file.
 9. The caller retires a child the moment its result crosses the join

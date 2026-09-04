@@ -63,9 +63,9 @@ class TestWorkflowSkills(unittest.TestCase):
                 self.assertNotIn("placeholders", fields)
 
     def test_every_workflow_opens_a_frame_calls_or_nests_and_closes(self):
-        """A workflow either stamps a pack on a callable call of its own, or
+        """A workflow either stamps a standard on a callable call of its own, or
         nests another workflow's frame under its own; `skill-tournament` is
-        the second shape, and packs bind per callable, never per workflow."""
+        the second shape, and standards bind per callable, never per workflow."""
 
         registered = set(CALLABLE_EXECUTORS)
         for directory in workflow_directories():
@@ -74,7 +74,7 @@ class TestWorkflowSkills(unittest.TestCase):
                 self.assertIn("tickets.py frame-open", body)
                 self.assertIn("tickets.py frame-close", body)
                 self.assertTrue(
-                    "--pack " in body or "frame-open <run> --parent" in body,
+                    "--standard " in body or "frame-open <run> --parent" in body,
                     f"{directory.name} neither calls a callable nor nests a frame",
                 )
                 # No retired callable survives the conversion: every name

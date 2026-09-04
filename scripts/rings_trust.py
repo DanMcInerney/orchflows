@@ -2,7 +2,7 @@
 """The trust ledger for project-ring bundles: content-keyed, never portable.
 
 A project ring rides somebody's repository, so cloning it must not put
-skills, packs, or workflows in front of an agent. The ledger records which
+skills, standards, or workflows in front of an agent. The ledger records which
 bundles the user allowed and at which content digest. It lives at
 ``~/.orchflows/trust.json`` -- outside every repository, gitignored by the
 home ring -- because a repository that could grant itself trust is the whole
@@ -117,7 +117,7 @@ def refusal(bundle, digest: str) -> str:
 
     return (
         f"project bundle {bundle} is not trusted at its current content "
-        f"digest {digest}. A project ring's skills, packs and workflows reach "
+        f"digest {digest}. A project ring's skills, standards and workflows reach "
         "your agents, so orchflows reads one only after you say so. Use it "
         f"once, recording nothing: orchflows trust --once {bundle}. Remember "
         f"it until the bundle's content changes: orchflows trust {bundle}. "

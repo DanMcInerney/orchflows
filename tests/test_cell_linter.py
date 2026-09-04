@@ -1,6 +1,6 @@
 """Compatibility seam for the cell-linter behavioral collection."""
 
-from tests.test_cell_linter_cases.pack_cells import (
+from tests.test_cell_linter_cases.standard_cells import (
     TestAllowlist,
     TestCellClauseSplitter,
     TestCellDuplication,

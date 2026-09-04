@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from .pack_cells import (
+from .standard_cells import (
     BASELINE_WARNINGS,
     CLONE_SKIPS,
     CROSS_TIER,
@@ -31,12 +31,12 @@ def ceiling_breach(count, ceiling=None, kind=NEAR):
 
 
 class WarningCeilingTest(unittest.TestCase):
-    # One clause packs/orch-code-pack/SKILL.md's `## Lens`
-    # already owns -- its `### cut` entry -- restated in a third pack's
+    # One clause standards/orch-code/STANDARD.md's `## Lens`
+    # already owns -- its `### cut` entry -- restated in a third standard's
     # same-named section with a single noun changed. This is what a
     # regression here looks like: not a new kind of finding, one more copy
     # of a clause that has an owner. The clause carries no span
-    # MANDATED_FORM_RES strips, so the plant is the pack's own content and
+    # MANDATED_FORM_RES strips, so the plant is the standard's own content and
     # the ratio is measured over all of it. The linter compares `##`
     # sections, so the plant goes under the `##` heading the owner's entry
     # sits beneath, not under the `###` key.
@@ -93,7 +93,7 @@ class WarningCeilingTest(unittest.TestCase):
         tree_report = validate_the_real_tree().stdout
         held = warning_lines(tree_report, NEAR)
         clone = self._clone_beside_the_tree()
-        planted = clone / "packs" / "orch-research-pack" / "SKILL.md"
+        planted = clone / "standards" / "orch-research" / "STANDARD.md"
         text = planted.read_text(encoding="utf-8")
         self.assertIn("## Lens\n", text)
         planted.write_text(

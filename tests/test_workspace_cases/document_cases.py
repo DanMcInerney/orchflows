@@ -3,7 +3,7 @@
 ``document-tree`` gives no item a tree of its own -- its
 ``establishes_isolation`` is False, so the item's derived isolation is
 ``none`` -- and the establishment used to judge the adapter's strategy before
-it read that. Every content-pack ticket therefore refused at the dispatch
+it read that. Every content-standard ticket therefore refused at the dispatch
 trunk with ``adapter-not-establishable``, which is the refusal a live run hit
 and which nothing here had ever driven. What the lane records instead is the
 tree its caller stands in, carrying no branch and no baseline, and the return
@@ -23,11 +23,11 @@ REFUSAL = (
     "adapter-not-establishable: document-tree does not establish a "
     "candidate workspace"
 )
-CONTENT_PACK = "orch-content-pack"
+CONTENT_STANDARD = "orch-content"
 
 
 def document_fixture(tmp: Path, isolation=None):
-    """A sealed content-pack work item, and the plain tree it is dispatched in.
+    """A sealed content-standard work item, and the plain tree it is dispatched in.
 
     The tree is no checkout, deliberately: the whole claim of this lane is
     that a document workspace needs no Git, and a fixture that handed it one
@@ -39,7 +39,7 @@ def document_fixture(tmp: Path, isolation=None):
     run_dir.mkdir(parents=True)
     prose = tmp / "prose"
     prose.mkdir()
-    ticket = make_ticket(run_dir, "T1", pack=CONTENT_PACK, isolation=isolation)
+    ticket = make_ticket(run_dir, "T1", standard=CONTENT_STANDARD, isolation=isolation)
     return ticket, prose
 
 
@@ -90,7 +90,7 @@ class TestTheDocumentLaneObservesTheTreeItStandsIn(unittest.TestCase):
 
 class TestTheTrunkDispatchesAndLandsADocumentItem(unittest.TestCase):
     """The path the field repro took, end to end: `tickets.py dispatch` on a
-    content-pack ticket, and then the return that has to answer for a tree
+    content-standard ticket, and then the return that has to answer for a tree
     nothing cut and nothing can retire."""
 
     def setUp(self):
@@ -119,12 +119,12 @@ class TestTheTrunkDispatchesAndLandsADocumentItem(unittest.TestCase):
         state = parse_canonical_json(data["dispatch_v1"])
         return state["attempts"][0]["assignment_seal"]
 
-    def test_a_content_pack_ticket_dispatches_and_lands_unisolated(self):
+    def test_a_content_standard_ticket_dispatches_and_lands_unisolated(self):
         self.command(
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the document.",
             "--context", "The brief is authoritative.",
-            "--pack", CONTENT_PACK,
+            "--standard", CONTENT_STANDARD,
         )
         self.command("stamp-generation", "run", "T")
         validated = self.command("draft-validate", "run", "T")

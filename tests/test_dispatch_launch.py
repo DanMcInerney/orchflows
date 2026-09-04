@@ -48,10 +48,10 @@ class LaunchResolutionTest(unittest.TestCase):
 
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
-            "craft": None, "dependencies": [],
+            "standard": None, "dependencies": [],
             "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "id": "T", "lease_expires_at": "2099-01-01T00:00:00Z",
-            "pack": None, "role": role,
+            "standard": None, "role": role,
             "run": "run", "ticket_path": "/sink/run/T.md",
             "workspace": "/tree",
         }
@@ -181,7 +181,7 @@ class LandTest(unittest.TestCase):
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.run_command("stamp-generation", "run", "T")
         validated = self.run_command("draft-validate", "run", "T")

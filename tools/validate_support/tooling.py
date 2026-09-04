@@ -70,7 +70,7 @@ def validate_tools_declarations(diag, item_dirs=None) -> None:
     """
 
     if item_dirs is None:
-        marker = ROOT / "packs"
+        marker = ROOT / "standards"
         if not marker.is_dir():
             diag.warn(rel(marker), SKIPPED)
             return

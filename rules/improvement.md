@@ -12,7 +12,7 @@
    human-reviewed merge activates a change, and only a later matching
    run verifies it.
 3. Every finding routes to exactly one causal owner — a library file
-   (skill, rule, contract, pack cell, reference, script, workflow,
+   (skill, rule, contract, standard, reference, script, workflow,
    or the host block template), a custom workflow file, a project
    file, or a named host-environment defect (interpreter, tool, or
    configuration). The owner fixes the proposal's scope:
@@ -37,7 +37,7 @@
    proposed for merge. A proposal that cannot replay says so.
 6. The library improves through the same delivery machinery it provides.
    Scope routes activation: an accepted `workflow` proposal is a root
-   ticket delivered under the code pack with the validator and tests as
+   ticket delivered under the code standard with the validator and tests as
    oracles, whose last act appends the proposal's covered line through
    `tickets.py improvement --covered`; a `project` proposal, the same
    machinery in its own repository under its own oracles; an

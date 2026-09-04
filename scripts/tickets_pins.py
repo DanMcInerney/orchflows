@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Digest pins for the ring items a ticket stamps.
 
-Two kinds pin here: the standards a ticket stamps as its craft
+Two kinds pin here: the standards a ticket stamps as its standard
 (`contracts/standard.md`) and the applied skill its executor enters as its
 method. Both are ordinary ring items resolving through `scripts/rings.py`'s
 one order, so both carry one hazard: a *name* resolves to whatever bytes
@@ -12,7 +12,7 @@ is still a draft, and re-derive it at every later door. Identity is a hash
 over the item's directory tree, which is one rule for a root standard, a
 narrowing, and an applied skill alike.
 
-A stamped standard is not one item but a chain. `scripts/packs.py` walks
+A stamped standard is not one item but a chain. `scripts/standards.py` walks
 `narrows:` to the root and checks the resolved set; this module turns that
 chain into the one ordered `(name, digest)` list the ticket carries.
 """
@@ -24,12 +24,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 try:
-    from scripts import packs_support, rings
+    from scripts import standards_support, rings
     from scripts.tickets_markdown import (
         STANDARDS_FIELD, STANDARD_SEPARATOR, dequote,
     )
 except ImportError:  # pragma: no cover - direct/installed flat script path
-    import packs_support
+    import standards_support
     import rings
     from tickets_markdown import STANDARDS_FIELD, STANDARD_SEPARATOR, dequote
 
@@ -38,10 +38,10 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 # hash skips. A standard carries prose and nothing else, so nothing is
 # skipped for either directory one still lives in. A skill may carry its own
 # tests and installed dependencies, and neither is what the ticket stamped.
-PINNED_KINDS = ("pack", "sheet", "skill")
+PINNED_KINDS = ("standard", "standard", "skill")
 SKIPPED_DIRS = {
-    "pack": frozenset(),
-    "sheet": frozenset(),
+    "standard": frozenset(),
+    "standard": frozenset(),
     "skill": frozenset(("tests", "__pycache__", "node_modules")),
 }
 # The one hashed-tree format version. It prefixes the digest input so a
@@ -154,12 +154,12 @@ def resolved_standards(names: Sequence[str], **overrides) -> List[Dict[str, obje
     """One stamped set's whole chain, broad to narrow, each level digested.
 
     Resolution -- the `narrows:` walk, the cycle, depth and parent refusals,
-    and the one-adapter check -- belongs to `packs_support` and raises
-    `PackError`. What is added here is the pin: the tree digest of every
+    and the one-adapter check -- belongs to `standards_support` and raises
+    `StandardError`. What is added here is the pin: the tree digest of every
     level, taken once, at the last moment the assignment is still a draft.
     """
 
-    chain = packs_support.resolve_chain(list(names), **overrides)
+    chain = standards_support.resolve_chain(list(names), **overrides)
     for link in chain:
         link["digest"] = tree_digest(str(link["kind"]), Path(str(link["dir"])))
     return chain
@@ -194,15 +194,15 @@ def adapter_standard(data: dict, **overrides) -> str:
     if not names:
         return ""
     try:
-        return packs_support.adapter_standard(names, **overrides)
-    except packs_support.PackError:
+        return standards_support.adapter_standard(names, **overrides)
+    except standards_support.StandardError:
         return ""
 
 
 def declared_domain(link: Dict[str, object]) -> List[str]:
     """The domains one narrowing declares it may be stamped under.
 
-    `packs:` is the pre-`narrows:` spelling of one rule -- a narrowing
+    `standards:` is the pre-`narrows:` spelling of one rule -- a narrowing
     tightens the domain it was written against and says nothing about one it
     was not -- and it survives only while an item can still carry it. Once a
     narrowing names its parent, the parent *is* the declaration and the two
@@ -214,20 +214,20 @@ def declared_domain(link: Dict[str, object]) -> List[str]:
         text = Path(str(link["path"])).read_text(encoding="utf-8-sig")
     except OSError as error:
         raise PinError("item-unreadable", f"unreadable standard {link['path']}: {error}")
-    data = packs_support._parse_frontmatter(text)
+    data = standards_support._parse_frontmatter(text)
     if dequote(data.get("narrows")):
         return []
-    return names_of(data.get("packs"))
+    return names_of(data.get("standards"))
 
 
 def domain_refusal(name: str, domain: str, declared: Sequence[str]) -> str:
     """The one sentence a narrowing says when it is stamped off its domain."""
 
     return (
-        f"standard '{name}' declares packs {list(declared)} and this callable "
-        f"stamps '{domain}': a narrowing tightens a craft it was written "
+        f"standard '{name}' declares standards {list(declared)} and this callable "
+        f"stamps '{domain}': a narrowing tightens a standard it was written "
         f"against and says nothing about one it was not. Stamp '{name}' "
-        f"beside a domain it names, or add '{domain}' to its `packs:` if it "
+        f"beside a domain it names, or add '{domain}' to its `standards:` if it "
         "really governs that domain."
     )
 
@@ -257,7 +257,7 @@ def pin_fields(standards: Sequence[str], skill, **overrides):
             if refusal is not None:
                 return None, {"error": refusal}
             fields[STANDARDS_FIELD] = encode_standards(chain)
-        except (packs_support.PackError, PinError) as error:
+        except (standards_support.StandardError, PinError) as error:
             return None, {"error": error.detail}
     applied = names_of(skill)
     if applied:
@@ -315,7 +315,7 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
     elif levels:
         try:
             chain = resolved_standards([name for name, _digest in levels], **overrides)
-        except (packs_support.PackError, PinError) as error:
+        except (standards_support.StandardError, PinError) as error:
             chain = None
             findings.append(finding(error.code, STANDARDS_FIELD, error.detail))
         if chain is not None:

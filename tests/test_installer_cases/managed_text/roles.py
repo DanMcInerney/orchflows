@@ -21,7 +21,7 @@ _GROK_WORKER_FRONTMATTER = (
     "name: orch-tdd\n"
     "description: Implement one code ticket through red-green slices.\n"
     "role: worker\n"
-    "pack: orch-code-pack\n"
+    "standard: orch-code\n"
     "---\n"
 )
 _GROK_GLUE_FRONTMATTER = (
@@ -243,7 +243,7 @@ class TestRoleAgentInstructions(unittest.TestCase):
 
         self.assertIn("name: orch-tdd", frontmatter)
         self.assertIn("description: Implement one code ticket", frontmatter)
-        for ignored in ("role:", "pack:", "context:", "agent:"):
+        for ignored in ("role:", "standard:", "context:", "agent:"):
             self.assertNotIn(ignored, frontmatter)
 
     def test_a_declared_role_that_the_profile_contradicts_refuses(self):

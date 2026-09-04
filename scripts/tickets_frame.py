@@ -10,7 +10,7 @@ paraphrases the verbatim lines it was trusted to relay, and no crash fires.
 Waves are pull-based for the living driver too, and this is what they pull
 from.
 
-A frame carries no executor and no pack, because nothing dispatches it: the
+A frame carries no executor and no standard, because nothing dispatches it: the
 orchestrator is a session, not a child. It carries no arbitrating lease for
 the same reason -- its driver is singular by construction, so an expiry could
 only end a journal somebody is still writing. What ends a frame's attempt is
@@ -126,7 +126,7 @@ def _done_module():
 
 
 def _frame_fields(run: str, parent, done, bound: str) -> dict:
-    """The frontmatter one frame carries: the marker, and no craft binding."""
+    """The frontmatter one frame carries: the marker, and no standard binding."""
 
     return {
         "run": run, "status": ADMISSION_PENDING, "admission": ADMISSION_PENDING,
@@ -275,7 +275,7 @@ def _done_refusal(done):
             "a frame's done is a command: exit 0 is the verdict, run in the "
             "checkout the driver is standing in. A criterion no command "
             "covers is a `tickets.py judge` ticket under this frame, which "
-            "brings the pack a frame does not have"
+            "brings the standard a frame does not have"
         )}
     return None
 

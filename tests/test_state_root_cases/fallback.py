@@ -208,8 +208,8 @@ class TestThereIsNoFallback(SinkFixture):
         flat = self.tmp / "bin"
         flat.mkdir()
         names = ["_bootstrap.py", "console.py", "friction.py",
-                 "orchflows_bundle.py", "orchflows_home.py", "packs.py",
-                 "packs_support.py", "rings.py", "rings_trust.py",
+                 "orchflows_bundle.py", "orchflows_home.py", "standards.py",
+                 "standards_support.py", "rings.py", "rings_trust.py",
                  "state_root.py", "workspace_git.py", "workspace_record.py"] + [
             path.name for path in SCRIPTS_DIR.glob("tickets*.py")
         ]

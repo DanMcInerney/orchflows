@@ -6,7 +6,7 @@ child's seal comes through its parent rather than through a cut that closed
 before it existed; and the launch carries the three lines a parent needs to
 relay a child's answer without paraphrasing it -- a commit instruction for
 every adapter whose identity commits in place (the one two of four workers
-skipped on 2026-08-31; evidence-store alone gets its own craft's workspace
+skipped on 2026-08-31; evidence-store alone gets its own standard's workspace
 line instead, having no commit behind its identity), the typed artifact
 line, and the judge's findings line.
 
@@ -37,13 +37,13 @@ from tests._candidate_checkout import git_checkout, record_established_workspace
 from scripts import state_root
 from scripts import tickets
 from scripts import tickets_mint
-from scripts.tickets_adapters import craft_path
+from scripts.tickets_adapters import manifest_path
 from scripts.tickets_assignment import _workspace_line, commits_in_place, git_candidate
 from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonical_json
 
-CODE_PACK = "orch-code-pack"
-DOC_PACK = "orch-content-pack"
-RESEARCH_PACK = "orch-research-pack"
+CODE_STANDARD = "orch-code"
+DOC_STANDARD = "orch-content"
+RESEARCH_STANDARD = "orch-research"
 
 
 def standards_field(*names) -> list:
@@ -62,10 +62,10 @@ def standards_field(*names) -> list:
         raise AssertionError(refusal["error"])
     return fields[tickets_pins.STANDARDS_FIELD]
 GOAL = "Deliver the widget and prove it runs.\n"
-DETAILS = "Read the craft first; report every exit code.\n"
-# The marker the research craft's root entry owns, written the way a real
+DETAILS = "Read the standard first; report every exit code.\n"
+# The marker the research standard's root entry owns, written the way a real
 # goal writes it: one heading carrying `sub-questions`, one numbered item
-# per lane. Fixtures, not the craft's prose -- the door counts goal text.
+# per lane. Fixtures, not the standard's prose -- the door counts goal text.
 ONE_LANE_GOAL = (
     "Map the workflow surface hosts install.\n"
     "\n"
@@ -228,7 +228,7 @@ class CallableIdGrammarTest(CallableSinkTest):
     """Ids are minted, and the mint is what the run lock arbitrates."""
 
     def test_a_parentless_callable_roots_its_own_tree_and_seals_itself(self):
-        answer = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        answer = self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
 
         self.assertEqual("B1", answer["do"]["id"])
         self.assertIsNone(answer["do"]["parent"])
@@ -243,10 +243,10 @@ class CallableIdGrammarTest(CallableSinkTest):
         self.assertEqual(GOAL.strip(), _sections(self.ticket_text("B1"))["Goal"].strip())
 
     def test_a_child_is_minted_under_its_parent_and_sealed_through_it(self):
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
 
         answer = self.callable(
-            "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
+            "do", "--standard", CODE_STANDARD, "--parent", "B1", "--isolation", "required",
             "--details-file", str(self.details_file),
         )
 
@@ -263,13 +263,13 @@ class CallableIdGrammarTest(CallableSinkTest):
         self.assertIn("- parent: B1", _sections(self.ticket_text("B1.1"))["Context"])
         # the second child takes the next ordinal under the same parent
         second = self.callable(
-            "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
+            "do", "--standard", CODE_STANDARD, "--parent", "B1", "--isolation", "required",
         )
         self.assertEqual("B1.2", second["do"]["id"])
         # and the next parentless callable roots a second tree
         self.assertEqual(
             "B2", self.callable(
-                "do", "--pack", CODE_PACK, "--isolation", "required",
+                "do", "--standard", CODE_STANDARD, "--isolation", "required",
             )["do"]["id"],
         )
 
@@ -283,13 +283,13 @@ class CallableIdGrammarTest(CallableSinkTest):
         standing there after every suite run -- failing the next one.
         """
 
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
         answers, start = [], threading.Barrier(2)
 
         def call():
             start.wait()
             answers.append(tickets._dispatch(self.callable_arguments(
-                "do", "--pack", CODE_PACK, "--parent", "B1",
+                "do", "--standard", CODE_STANDARD, "--parent", "B1",
                 "--isolation", "required",
             )))
 
@@ -306,14 +306,14 @@ class CallableIdGrammarTest(CallableSinkTest):
         self.assertEqual(["B1.1", "B1.2"], minted)
 
     def test_a_child_of_an_unsealed_parent_is_refused_with_its_remedy(self):
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
         tickets._dispatch([
             "new", self.RUN, "L", "--executor", "orch-do",
-            "--goal", "Unsealed.", "--context", "[]", "--pack", CODE_PACK,
+            "--goal", "Unsealed.", "--context", "[]", "--standard", CODE_STANDARD,
         ])
 
         refused = self.callable(
-            "do", "--pack", CODE_PACK, "--parent", "L", expect_error=True,
+            "do", "--standard", CODE_STANDARD, "--parent", "L", expect_error=True,
         )
 
         self.assertIn("is not sealed", refused["error"])
@@ -334,12 +334,12 @@ class CallableAdmissionTest(CallableSinkTest):
         return {item["code"] for item in grade["findings"]}
 
     def test_parent_and_child_both_admit_and_the_parent_owns_no_members(self):
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
         self.callable(
-            "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
+            "do", "--standard", CODE_STANDARD, "--parent", "B1", "--isolation", "required",
         )
         self.callable(
-            "judge", "--pack", CODE_PACK, "--parent", "B1",
+            "judge", "--standard", CODE_STANDARD, "--parent", "B1",
             "--artifacts", "git:" + "a" * 40, "--isolation", "none",
         )
 
@@ -347,9 +347,9 @@ class CallableAdmissionTest(CallableSinkTest):
             self.assertEqual(set(), self._codes(ticket_id), ticket_id)
 
     def test_a_child_edited_after_it_was_minted_is_bound_by_nothing(self):
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
         self.callable(
-            "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
+            "do", "--standard", CODE_STANDARD, "--parent", "B1", "--isolation", "required",
         )
         path = self.run_dir() / "B1.1.md"
         path.write_text(
@@ -360,9 +360,9 @@ class CallableAdmissionTest(CallableSinkTest):
         self.assertIn("sealed-assignment-mismatch", self._codes("B1.1"))
 
     def test_a_child_whose_parent_the_seal_does_not_name_is_refused(self):
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
         self.callable(
-            "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
+            "do", "--standard", CODE_STANDARD, "--parent", "B1", "--isolation", "required",
         )
         parent = self.run_dir() / "B1.md"
         parent.write_text(tickets._set_frontmatter_field(
@@ -377,7 +377,7 @@ class CallablePromptTest(CallableSinkTest):
     """The three lines the launch gained, and the adapter that types them."""
 
     def test_a_git_callable_is_told_to_commit_and_to_print_a_git_line(self):
-        answer = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        answer = self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
 
         prompt = self.prompt(answer)
         self.assertIn("Commit your work inside this candidate before you close", prompt)
@@ -385,7 +385,7 @@ class CallablePromptTest(CallableSinkTest):
         self.assertNotIn("findings: <path>", prompt)
 
     def test_a_document_callable_is_told_to_print_a_doc_line(self):
-        answer = self.callable("do", "--pack", DOC_PACK)
+        answer = self.callable("do", "--standard", DOC_STANDARD)
 
         prompt = self.prompt(answer)
         self.assertIn(
@@ -398,16 +398,16 @@ class CallablePromptTest(CallableSinkTest):
         git candidate to merge: the launch keeps the commit clause and
         drops the sentence naming a candidate branch nothing was isolated
         to merge (finding F4; the prior law here was wrong -- it told this
-        child its pack commits nothing). The clause's own noun follows
+        child its standard commits nothing). The clause's own noun follows
         `git_candidate` too, so it never names a candidate this lane does
         not have (A2)."""
 
-        self.assertTrue(commits_in_place(DOC_PACK))
-        self.assertFalse(git_candidate(DOC_PACK))
-        self.assertTrue(commits_in_place(CODE_PACK))
-        self.assertTrue(git_candidate(CODE_PACK))
+        self.assertTrue(commits_in_place(DOC_STANDARD))
+        self.assertFalse(git_candidate(DOC_STANDARD))
+        self.assertTrue(commits_in_place(CODE_STANDARD))
+        self.assertTrue(git_candidate(CODE_STANDARD))
 
-        answer = self.callable("do", "--pack", DOC_PACK)
+        answer = self.callable("do", "--standard", DOC_STANDARD)
 
         prompt = self.prompt(answer)
         self.assertIn(
@@ -418,13 +418,13 @@ class CallablePromptTest(CallableSinkTest):
         self.assertNotIn(
             "the landing merges the candidate, not your working tree.", prompt,
         )
-        self.assertNotIn("Your stamped pack commits nothing", prompt)
+        self.assertNotIn("Your stamped standard commits nothing", prompt)
 
     def test_a_judge_prints_the_findings_line_beside_its_artifact_line(self):
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
 
         answer = self.callable(
-            "judge", "--pack", CODE_PACK, "--parent", "B1",
+            "judge", "--standard", CODE_STANDARD, "--parent", "B1",
             "--artifacts", "git:" + "b" * 40, "--isolation", "none",
         )
 
@@ -440,10 +440,10 @@ class CallablePromptTest(CallableSinkTest):
         )
 
     def test_an_untyped_artifact_is_refused_before_anything_is_written(self):
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
 
         refused = self.callable(
-            "judge", "--pack", CODE_PACK, "--parent", "B1",
+            "judge", "--standard", CODE_STANDARD, "--parent", "B1",
             "--artifacts", "the draft I made earlier", expect_error=True,
         )
 
@@ -482,7 +482,7 @@ class RepairRoundAdmissionTest(CallableSinkTest):
         done = json.dumps({"form": "command", "value": command}, sort_keys=True)
 
         callable_id = self.callable(
-            "do", "--pack", CODE_PACK, "--parent", frame_id,
+            "do", "--standard", CODE_STANDARD, "--parent", frame_id,
             "--isolation", "none", "--done", done,
         )["do"]["id"]
         seal = parse_canonical_json(
@@ -513,7 +513,7 @@ class RepairRoundAdmissionTest(CallableSinkTest):
 
 
 class CallableLandingTest(CallableSinkTest):
-    """`do` to `land`, once over a git pack and once over a document tree.
+    """`do` to `land`, once over a git standard and once over a document tree.
 
     The whole chain the command is meant to fold: one command mints, seals,
     establishes and emits; the child files a result and closes its reserved
@@ -548,11 +548,11 @@ class CallableLandingTest(CallableSinkTest):
         ])
 
     def _assert_three_lines(
-        self, answer: dict, artifact_form: str, findings: bool, *, pack: str = CODE_PACK,
+        self, answer: dict, artifact_form: str, findings: bool, *, standard: str = CODE_STANDARD,
     ):
         prompt = self.prompt(answer)
-        if commits_in_place(pack):
-            if git_candidate(pack):
+        if commits_in_place(standard):
+            if git_candidate(standard):
                 self.assertIn(
                     "Commit your work inside this candidate before you close", prompt,
                 )
@@ -563,7 +563,7 @@ class CallableLandingTest(CallableSinkTest):
                 )
         else:
             self.assertNotIn("Commit your work inside this candidate", prompt)
-            self.assertIn(_workspace_line(craft_path(pack)), prompt)
+            self.assertIn(_workspace_line(manifest_path(standard)), prompt)
         self.assertIn(artifact_form, prompt)
         self.assertEqual(findings, "findings: <path>" in prompt)
 
@@ -575,7 +575,7 @@ class CallableLandingTest(CallableSinkTest):
             sort_keys=True,
         )
         answer = self.callable(
-            "do", "--pack", CODE_PACK, "--isolation", "none", "--done", done,
+            "do", "--standard", CODE_STANDARD, "--isolation", "none", "--done", done,
         )
         self._assert_three_lines(answer, "artifact: git:<full-commit-id>", False)
 
@@ -590,10 +590,10 @@ class CallableLandingTest(CallableSinkTest):
         )["Report"])
 
     def test_a_document_callable_lands_on_the_drivers_grade(self):
-        answer = self.callable("do", "--pack", DOC_PACK)
+        answer = self.callable("do", "--standard", DOC_STANDARD)
         self._assert_three_lines(
             answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", False,
-            pack=DOC_PACK,
+            standard=DOC_STANDARD,
         )
 
         attempt = self._filed_and_closed("B1", "doc:notes.md@sha256:" + "e" * 64)
@@ -603,16 +603,16 @@ class CallableLandingTest(CallableSinkTest):
         self.assertEqual("complete", landed["land"]["status"])
 
     def test_a_judge_under_a_landed_callable_carries_both_machine_lines(self):
-        self.callable("do", "--pack", DOC_PACK)
+        self.callable("do", "--standard", DOC_STANDARD)
 
         answer = self.callable(
-            "judge", "--pack", DOC_PACK, "--parent", "B1",
+            "judge", "--standard", DOC_STANDARD, "--parent", "B1",
             "--artifacts", "doc:notes.md@sha256:" + "e" * 64,
         )
 
         self._assert_three_lines(
             answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", True,
-            pack=DOC_PACK,
+            standard=DOC_STANDARD,
         )
         attempt = self._filed_and_closed("B1.1", "doc:review.md@sha256:" + "f" * 64)
         landed = self._land("B1.1", attempt, "--status", "complete")
@@ -633,7 +633,7 @@ class GenerationArtifactTest(CallableSinkTest):
     def sealed_root(self) -> dict:
         """A parentless `do`, which stamps and seals both generations."""
 
-        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
         return _parse_frontmatter(self.ticket_text("B1"))
 
     def judge(self, *artifacts, expect_error=False):
@@ -641,7 +641,7 @@ class GenerationArtifactTest(CallableSinkTest):
         for artifact in artifacts:
             lines.extend(("--artifacts", artifact))
         return self.callable(
-            "judge", "--pack", CODE_PACK, "--parent", "B1",
+            "judge", "--standard", CODE_STANDARD, "--parent", "B1",
             *lines, "--isolation", "none", expect_error=expect_error,
         )
 
@@ -706,17 +706,17 @@ class ResearchLaneDoorTest(CallableSinkTest):
 
     Run 20260902T140000Z-hn-workflows minted one research `do` whose goal
     carried five numbered sub-questions; the child answered from one source
-    and called its own packet single-lane. The research craft's cut rule
+    and called its own packet single-lane. The research standard's cut rule
     already said a lane is one independently answerable sub-question, so
     what was missing was a door, not a rule.
     """
 
     def research(self, goal_text, *arguments, expect_error=False):
-        """One `do` on the research pack, driven against a goal fixture."""
+        """One `do` on the research standard, driven against a goal fixture."""
 
         self.goal_file.write_text(goal_text, encoding="utf-8")
         return self.callable(
-            "do", "--pack", RESEARCH_PACK, *arguments, expect_error=expect_error,
+            "do", "--standard", RESEARCH_STANDARD, *arguments, expect_error=expect_error,
         )
 
     def test_two_sub_questions_are_refused_before_the_run_exists(self):
@@ -748,10 +748,10 @@ class ResearchLaneDoorTest(CallableSinkTest):
 
         self.assertEqual("B1.1", answer["do"]["id"])
 
-    def test_another_packs_parentless_do_takes_the_same_goal_unchanged(self):
+    def test_another_standards_parentless_do_takes_the_same_goal_unchanged(self):
         self.goal_file.write_text(TWO_LANE_GOAL, encoding="utf-8")
 
-        answer = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        answer = self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
 
         self.assertEqual("B1", answer["do"]["id"])
 

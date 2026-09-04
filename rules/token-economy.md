@@ -8,7 +8,7 @@
    model will soon have is never encoded; specificity enters through the
    spec or the user's prompt.
 3. Integration detail — endpoints, flags, auth, version pins — lives in
-   scripts and pack references, never in a skill body. It rots on its
+   scripts and standard references, never in a skill body. It rots on its
    own schedule regardless of model quality.
 4. A repeated deterministic step becomes `executor: script:<path>` — a
    tested script as a graph node
@@ -21,10 +21,10 @@
    ([composition.md](composition.md) §11); everything else that survives
    §1 — method, checklists, host mechanics, worked detail, domain data —
    sits behind one link in the owning package's `references/` or the
-   stamped pack's cell, placed at the call site where it is first needed
+   stamped standard's cell, placed at the call site where it is first needed
    (§7). Test per passage: would an executor that never followed the
    link still meet every Require, Never and Return? Yes → reference.
-   The cells [contracts/pack-signature.md](../contracts/pack-signature.md)
+   The cells [contracts/standard.md](../contracts/standard.md)
    mandates are the standing exception.
 7. A link states at its call site when to follow it. Copy or cite is
    [visibility.md](visibility.md) §3's call.
@@ -37,11 +37,11 @@
     one unit owning one concern end to end; depth only behind a
     contract strong enough that readers never descend past it; shape
     for the evidence that demonstrates the Goal — live in this clause, never in a
-    pack's craft Shape. A metered, search-navigating reader pays the
-    same cost in every domain; a copy per pack only adds a place to
+    standard's Shape. A metered, search-navigating reader pays the
+    same cost in every domain; a copy per standard only adds a place to
     drift.
 11. Budgets bound what is loaded whether or not it is needed, and only
-    that: a router block, an agent file, a `SKILL.md` body, a pack's
+    that: a router block, an agent file, a `SKILL.md` body, a standard's
     cells. What a link makes available on demand
     is unbudgeted — it answers to §1 sentence by sentence and to any
     contract mandating its content. Ceilings order by load frequency,

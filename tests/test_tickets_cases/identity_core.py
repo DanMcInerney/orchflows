@@ -85,7 +85,7 @@ class TestRunIdentity(unittest.TestCase):
             )
             run_cmd(
                 tmp / "repo", "new", "from-new", "T1", "--executor", "orch-do",
-                "--pack", "orch-code-pack", "--isolation", "required",
+                "--standard", "orch-code", "--isolation", "required",
                 "--goal", "one", "--context", "the sealed run snapshot",
             )
             self.assertEqual(

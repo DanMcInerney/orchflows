@@ -1,6 +1,6 @@
 # Visibility
 
-1. Shared library packages live under `skills/`, `packs/`. A
+1. Shared library packages live under `skills/`, `standards/`. A
    project-only package lives at the owner path named in the project's
    explicit binding when one exists, else the generic project default
    owned by [custom-workflow-authoring.md](../docs/custom-workflow-authoring.md).
@@ -23,7 +23,7 @@
    it. This clause governs every directory the sink holds, not only
    `runs/` and `tickets/`. A run writes on two
    channels and they never cross: content is written with file tools
-   inside the workspace and leaves it only by the channel the pack craft's
+   inside the workspace and leaves it only by the channel the standard's
    `## Workspace` section names; run state is written only through the installed
    scripts, which resolve one user-scope state sink —
    `$ORCHFLOWS_STATE_HOME`, else `~/.orchflows/state` — from any

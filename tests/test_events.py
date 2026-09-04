@@ -124,7 +124,7 @@ class _FrameEventTestCase(_EventSinkTestCase):
 
     def callable(self, verb, frame_id, *arguments) -> str:
         answer = self.call(
-            verb, self.RUN, "--pack", "orch-content-pack",
+            verb, self.RUN, "--standard", "orch-content",
             "--goal-file", str(self.goal_file), "--parent", frame_id, *arguments,
         )
         return answer[verb]["id"]
@@ -290,7 +290,7 @@ class _LandEventTestCase(_EventSinkTestCase):
             "new", self.RUN, "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "none",
+            "--standard", "orch-code", "--isolation", "none",
         )
         if done is not None:
             path = self.ticket_path()

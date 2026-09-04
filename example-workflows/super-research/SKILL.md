@@ -15,7 +15,7 @@ Open the frame, its goal the answered question:
 **Acquisition** — *fan-out*: "One `do` per named item, launched together
 under the frame; the shape line lists them as one wave."
 
-    tickets.py do <run> --pack orch-research-pack --skill research-acquire
+    tickets.py do <run> --standard orch-research --skill research-acquire
       --parent <frame> --goal-file <source-goal> --bound "<= 40 tool calls"
 
 Each goal names one source, the window, the `as_of` and the cap. Time-bounding
@@ -26,7 +26,7 @@ rather than a silence.
 
 **Coverage loop, at most two rounds.**
 
-    tickets.py judge <run> --pack orch-research-pack --parent <frame>
+    tickets.py judge <run> --standard orch-research --parent <frame>
       --artifacts evidence:<id> [--artifacts ...] --goal-file <coverage-goal>
 
 The coverage goal asks one thing: which sub-questions no record answers,
@@ -39,8 +39,8 @@ defect."
 
 **Report, one call, the frame's last.**
 
-    tickets.py do <run> --pack orch-content-pack --parent <frame>
-      --sheet html-dossier --goal-file <report-goal> --bound "<= 40 tool calls"
+    tickets.py do <run> --standard orch-content --parent <frame>
+      --standard html-dossier --goal-file <report-goal> --bound "<= 40 tool calls"
 
 Its goal asks for one dossier answering the question first, then each
 source's evidence dated and cited from its `normalized_locator`, every typed

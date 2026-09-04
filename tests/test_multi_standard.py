@@ -1,4 +1,4 @@
-"""Deterministic proof that one run can span isolated pack adapters."""
+"""Deterministic proof that one run can span isolated standard adapters."""
 
 import json
 import re
@@ -18,10 +18,10 @@ from tests.test_workspace_cases.common import (
 
 
 from tests._repo_root import ROOT
-FIXTURE = ROOT / "tests" / "fixtures" / "multi_pack_run.json"
+FIXTURE = ROOT / "tests" / "fixtures" / "multi_standard_run.json"
 
 
-class MultiPackTopologyTest(unittest.TestCase):
+class MultiStandardTopologyTest(unittest.TestCase):
     def test_topology_names_the_join_as_the_only_adapter_boundary(self):
         topology = (ROOT / "rules" / "topology.md").read_text(encoding="utf-8")
         self.assertIn(
@@ -31,10 +31,10 @@ class MultiPackTopologyTest(unittest.TestCase):
         )
 
 
-class MultiPackRunFixtureTest(unittest.TestCase):
+class MultiStandardRunFixtureTest(unittest.TestCase):
     def test_fixture_carries_three_closed_adapters_and_distinct_workspaces(self):
         fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        self.assertEqual("multi-pack-run", fixture["run"])
+        self.assertEqual("multi-standard-run", fixture["run"])
         entries = fixture["tickets"]
         self.assertEqual(3, len(entries))
         self.assertEqual(
@@ -43,7 +43,7 @@ class MultiPackRunFixtureTest(unittest.TestCase):
         )
         self.assertEqual(3, len({item["workspace"] for item in entries}))
         for item in entries:
-            adapter = tickets.adapter_spec(item["pack"])
+            adapter = tickets.adapter_spec(item["standard"])
             self.assertEqual(adapter.key, item["adapter"])
             self.assertEqual(adapter.artifact_kind, item["artifact_kind"])
 
@@ -86,13 +86,13 @@ class MultiPackRunFixtureTest(unittest.TestCase):
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
-class MultiPackWorkspaceTest(unittest.TestCase):
+class MultiStandardWorkspaceTest(unittest.TestCase):
     def test_different_adapters_cannot_record_one_candidate_workspace(self):
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
             main, run_dir = make_repo(tmp)
-            make_ticket(run_dir, "T-code", pack="orch-code-pack")
-            make_ticket(run_dir, "T-render", pack="orch-design-pack")
+            make_ticket(run_dir, "T-code", standard="orch-code")
+            make_ticket(run_dir, "T-render", standard="orch-design")
             candidate = add_worktree(main, "candidate", tmp / "candidate")
 
             first = run_workspace(candidate, "start", "testrun", "T-code")

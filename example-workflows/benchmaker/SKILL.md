@@ -7,8 +7,8 @@ disable-model-invocation: true
 Require: `target` and `outcome` — the identity and its intended observable
 outcome, which stay opaque to every call — `sources` (the source policy),
 `rigor` (the confidence each load-bearing claim must reach, stated as the
-evidence that must exist for it), `pack` (the construction calls' stamp)
-and `package` (where the benchmark is written). Construction craft that no
+evidence that must exist for it), `standard` (the construction calls' stamp)
+and `package` (where the benchmark is written). Construction standard that no
 rule or contract owns is [the protocol](../references/benchmaker-protocol.md);
 the manifest's field set is [its own](../references/benchmaker-manifest.md);
 acquisition's lane cut is [the charter's](../references/benchmaker-research.md).
@@ -17,23 +17,23 @@ acquisition's lane cut is [the charter's](../references/benchmaker-research.md).
 
 
 Three making calls, each on the one before it. **Acquire**, `do` with
-`--pack orch-research-pack`: one converged synthesis about `target` and its
+`--standard orch-research`: one converged synthesis about `target` and its
 class, frozen with its sources at one identity, carrying every artifact the
-charter names. **Design**, `do --pack <pack>`: one evaluation frozen at one
+charter names. **Design**, `do --standard <standard>`: one evaluation frozen at one
 package-owned identity — case specifications with their execution tiers and
 anchors, measurable criteria and evidence classifications, scoring and
 aggregation, intended coverage, expected execution cost. **Materialize**,
-`do --pack <pack> --isolation required`: every specification the frozen
+`do --standard <standard> --isolation required`: every specification the frozen
 design names, materialized exactly into `package` as runnable cases, runner,
 scoring data and provenance, each at a preserved identity.
 
 Then three read-only calls, and independence is what the chain is for.
-**Qualify**, `judge --pack <pack>` over the materialized artifact in a
+**Qualify**, `judge --standard <standard>` over the materialized artifact in a
 delivery disjoint from every builder: oracle failability, coverage,
 discrimination, reproducibility, redundancy, provenance and execution cost
 each checked independently, a verdict per required criterion. **Audit**,
 `judge` over the package and that qualification in a context disjoint from
-both: every evidence-backed blocker under the pack's lens. **Measure**,
+both: every evidence-backed blocker under the standard's lens. **Measure**,
 `judge`: the manifest recorded and the measurement pass beside it — what the
 candidates scored over the candidate-accessible scope at the declared rungs,
 on [§Measurement pass](../references/benchmaker-protocol.md#measurement-pass)'s

@@ -44,7 +44,7 @@ class DispatchV1Test(unittest.TestCase):
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--standard", "orch-code", "--isolation", "required",
         )
         self.dispatch("stamp-generation", "run", "T")
         validated = self.dispatch("draft-validate", "run", "T")

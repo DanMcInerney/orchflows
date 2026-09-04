@@ -7,7 +7,7 @@ Eight ring verbs over ``scripts/rings.py``'s one resolution order, plus
     orchflows sync [--project]         make a ring whole, render its adapters,
                                        settle every item's declared dependencies
     orchflows add <git-url>@<pin>      pin one external bundle
-    orchflows new {skill|pack|sheet|workflow} <name>
+    orchflows new {skill|standard|standard|workflow} <name>
     orchflows new bundle [<name>]      the manifest of the ring at hand
     orchflows list [--kind K]          every item resolvable from here
     orchflows check [<ring-dir>]       grade a ring's items, exit 1 on a refusal
@@ -70,7 +70,7 @@ def cmd_list(args) -> int:
     kinds = (args.kind,) if args.kind else rings.KINDS
     records = rings.inventory(kinds)
     if not records:
-        print("no skills, packs or workflows resolve from here")
+        print("no skills, standards or workflows resolve from here")
         return 0
     rows = [
         (

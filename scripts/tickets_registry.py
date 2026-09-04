@@ -1,6 +1,6 @@
 """The closed callable tier and review discriminators.
 
-Ticket executors are a small, explicit vocabulary. Pack data selects craft
+Ticket executors are a small, explicit vocabulary. Standard data selects standard
 and stages; it never adds a callable. Scripts remain an explicit
 ``script:`` escape hatch, validated by path rather than by this registry.
 """
@@ -24,14 +24,14 @@ CALLABLE_EXECUTORS = (
 # than an artifact: the launch prompt reads it to ask for the second
 # verbatim machine line, so the judging verb is named once here.
 EXECUTOR_REGISTRY = {
-    "orch-do": {"role": "worker", "requires_pack": True},
-    "orch-judge": {"role": "planner", "requires_pack": True, "files_findings": True},
+    "orch-do": {"role": "worker", "requires_standard": True},
+    "orch-judge": {"role": "planner", "requires_standard": True, "files_findings": True},
 }
 
 # The living remedy a superseded planning verb points at, so no refusal
 # chains through a name with no binding left to offer.
 _PLANNING_DO_REMEDY = (
-    "a planning `do` making a `root` or `cut` toward the pack craft's "
+    "a planning `do` making a `root` or `cut` toward the standard's "
     "`## Lens` entry for that kind"
 )
 

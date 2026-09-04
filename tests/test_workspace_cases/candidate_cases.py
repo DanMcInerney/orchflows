@@ -266,7 +266,7 @@ class TestEstablishCreatesTheDerivedCandidate(unittest.TestCase):
             self.assertFalse(derived["path"].exists())
 
     def test_an_item_with_no_isolation_field_derives_the_git_adapters_default(self):
-        """Absent ``isolation`` is not ``none``: a git-adapter pack still
+        """Absent ``isolation`` is not ``none``: a git-adapter standard still
         establishes a tree of the item's own (``contracts/work-item.md``,
         ``scripts/tickets_adapters.derived_isolation``). Established through
         the shared source tree instead is the defect this proves against."""
@@ -325,7 +325,7 @@ class TestEstablishCreatesTheDerivedCandidate(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             main, run_dir = make_repo(tmp)
-            make_ticket(run_dir, "T1", pack="orch-research-pack")
+            make_ticket(run_dir, "T1", standard="orch-research")
             sink = Path(os.environ[STATE_HOME_ENV_VAR])
 
             done = self.establish(tmp, main)

@@ -13,7 +13,7 @@
   itself — the commit is the record; no trace, no act. A `role: none`
   root never acts: derived deterministic commands only. **worker** —
   isolation, a fresh context, or a checked landing takes
-  `tickets.py do <run> --pack <pack> --goal-file <f> [--parent <frame>]
+  `tickets.py do <run> --standard <standard> --goal-file <f> [--parent <frame>]
   [--workspace <tree>]`, or `judge` over artifacts; invoke the emitted `launch`
   verbatim, then `tickets.py land`: it reads `done`,
   integrates. Undeclared grades `land --status`. **team** — children,
@@ -26,7 +26,7 @@
   `orch-do`; the planner never drives. Tripwires promote, never
   predict: a second concern mid-direct enters worker; splitting scope
   enters team; an unknown cause investigates before any edit.
-  Skill/workflow/pack/contract/router work carries
+  Skill/workflow/standard/contract/router work carries
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context.
   `install.py doctor` diagnoses dispatch; `evolve`/`benchmaker` run
   when named.

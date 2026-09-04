@@ -1,7 +1,7 @@
-"""The typed pack cells and the cross-pack cell linter.
+"""The typed standard cells and the cross-standard cell linter.
 
 Every wrong result is built in an isolated tree beside the real one
-(rules/verification.md §8): the real packs/ are never mutated to prove a
+(rules/verification.md §8): the real standards/ are never mutated to prove a
 branch.
 """
 import re
@@ -46,7 +46,7 @@ def validate_the_real_tree():
         )
     return _REAL_TREE_RUN
 
-PACK_TEMPLATE = """---
+STANDARD_TEMPLATE = """---
 name: {name}
 description: synthetic standard built beside the tree to exercise one branch.
 adapter: git
@@ -56,7 +56,7 @@ adapter: git
 # A root's required sections, in the contract's order. Every default a
 # synthetic standard supplies is under the clause floor, so a test compares
 # only the content it writes itself.
-CRAFT_SECTION_ORDER = (
+STANDARD_SECTION_ORDER = (
     "Making",
     "Vocabulary",
     "Workspace",
@@ -65,11 +65,11 @@ CRAFT_SECTION_ORDER = (
 )
 
 # `## Lens`'s `###` entries: the two library kinds plus the one
-# PACK_TEMPLATE's `adapter: git` frontmatter emits. The linter compares `##`
+# STANDARD_TEMPLATE's `adapter: git` frontmatter emits. The linter compares `##`
 # sections, so every entry here lands in one "Lens" bucket -- which is why a
 # test that wants two standards compared under a made-up section writes into
 # an entry, not a new heading.
-CRAFT_LENS_ORDER = ("root", "cut", "git")
+STANDARD_LENS_ORDER = ("root", "cut", "git")
 
 
 _TEMPLATE_DIR = None
@@ -82,7 +82,7 @@ def setUpModule():
     Every `_IsolatedTree` case starts from the same two, and building them
     per test copied a tree that is byte-identical every time. Built once
     here and copied per test, so each case still owns a private, mutable
-    tree to write its synthetic packs into. Same hoist as
+    tree to write its synthetic standards into. Same hoist as
     tests/test_cutcheck.py:828, at module scope because three classes
     share it."""
     global _TEMPLATE_DIR, _TEMPLATE
@@ -102,8 +102,8 @@ def tearDownModule():
 
 
 class _IsolatedTree(unittest.TestCase):
-    """contracts/ + tools/validate.py + whatever packs the test writes.
-    The real packs/ and skills/ trees are absent, so only the synthetic
+    """contracts/ + tools/validate.py + whatever standards the test writes.
+    The real standards/ and skills/ trees are absent, so only the synthetic
     packages reach the checks under test. Every default the template
     supplies is under the clause floor, so a test compares only the
     content it writes itself."""
@@ -123,16 +123,16 @@ class _IsolatedTree(unittest.TestCase):
             text=True,
         )
 
-    def _write_pack(self, name, workspace="inline: none",
+    def _write_standard(self, name, workspace="inline: none",
                     sections=None, entries=None, lead=""):
-        """One synthetic standard: a `SKILL.md`
+        """One synthetic standard: a `STANDARD.md`
         carrying every mandatory section and every `## Lens` entry
-        (validate_craft_sections errors on a missing one, and on a Lens key
+        (validate_standard_sections errors on a missing one, and on a Lens key
         the standard's adapter never emits). `sections` overrides a
         section's body by `##` heading and `entries` a Lens entry's by
         artifact kind; `lead` is the paragraph before the first heading."""
-        pack_dir = self.tmp_path / "packs" / name
-        pack_dir.mkdir(parents=True)
+        standard_dir = self.tmp_path / "standards" / name
+        standard_dir.mkdir(parents=True)
         bodies = {
             "Making": "Make one %s well." % name,
             "Vocabulary": "Only %s terms." % name,
@@ -147,35 +147,35 @@ class _IsolatedTree(unittest.TestCase):
             "git": "criteria; one %s method." % name,
         }
         lens.update(entries or {})
-        craft = PACK_TEMPLATE.format(name=name) + "\n# %s\n\n" % name
+        standard = STANDARD_TEMPLATE.format(name=name) + "\n# %s\n\n" % name
         if lead:
-            craft += lead.rstrip("\n") + "\n\n"
-        for heading in CRAFT_SECTION_ORDER:
-            craft += "## %s\n\n" % heading
+            standard += lead.rstrip("\n") + "\n\n"
+        for heading in STANDARD_SECTION_ORDER:
+            standard += "## %s\n\n" % heading
             body = bodies[heading].rstrip("\n")
             if body:
-                craft += "%s\n\n" % body
+                standard += "%s\n\n" % body
             if heading != "Lens":
                 continue
-            for kind in CRAFT_LENS_ORDER:
-                craft += "### %s\n\n%s\n\n" % (kind, lens[kind].rstrip("\n"))
-        (pack_dir / "SKILL.md").write_text(craft, encoding="utf-8")
+            for kind in STANDARD_LENS_ORDER:
+                standard += "### %s\n\n%s\n\n" % (kind, lens[kind].rstrip("\n"))
+        (standard_dir / "STANDARD.md").write_text(standard, encoding="utf-8")
 
 
 class CurrentWorkspaceBindingTest(unittest.TestCase):
     EXPECTED = {
-        "orch-code-pack": (
+        "orch-code": (
             "git",
             ("git:", "identities are commits", "ordinary diffs", "Git conflicts"),
         ),
-        "orch-content-pack": (
+        "orch-content": (
             "document-tree",
             (
                 "document tree:", "identities are document revisions",
                 "actual candidate changes", "section overlap",
             ),
         ),
-        "orch-data-pack": (
+        "orch-data": (
             "git",
             (
                 "git:", "committed manifests pin dataset bytes by digest",
@@ -183,14 +183,14 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
                 "re-materializes any derived output in contention",
             ),
         ),
-        "orch-design-pack": (
+        "orch-design": (
             "git",
             (
                 "git:", "the pair is the view identity",
                 "fresh captures", "render conflicts",
             ),
         ),
-        "orch-research-pack": (
+        "orch-research": (
             "evidence-store",
             (
                 "evidence store:", "identities are evidence packets",
@@ -202,19 +202,24 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
     WORKSPACE_SECTION = re.compile(r"(?ms)^## Workspace\s*$(.*?)(?=^## |\Z)")
 
     def test_every_shipped_workspace_binds_the_current_ticket_protocol(self):
-        packs = {}
-        for path in sorted((ROOT / "packs").glob("*/SKILL.md")):
+        standards = {}
+        for path in sorted((ROOT / "standards").glob("*/STANDARD.md")):
             text = path.read_text(encoding="utf-8")
             declared = dict(
                 re.findall(r"(?m)^([a-z_]+):\s*(.+?)\s*$", text.split("---", 2)[1])
             )
+            # Roots only: `## Workspace` is one of the three sections the
+            # section table refuses a narrowing, so a narrowing carrying one
+            # would be the defect, not the absence.
+            if "narrows" in declared:
+                continue
             match = self.WORKSPACE_SECTION.search(text)
             self.assertIsNotNone(match, path.parent.name)
-            packs[path.parent.name] = (declared, " ".join(match.group(1).split()))
-        self.assertEqual(set(self.EXPECTED), set(packs))
-        for pack, (adapter, substrate) in self.EXPECTED.items():
-            with self.subTest(pack=pack):
-                declared, workspace = packs[pack]
+            standards[path.parent.name] = (declared, " ".join(match.group(1).split()))
+        self.assertEqual(set(self.EXPECTED), set(standards))
+        for standard, (adapter, substrate) in self.EXPECTED.items():
+            with self.subTest(standard=standard):
+                declared, workspace = standards[standard]
                 self.assertEqual(adapter, declared["adapter"])
                 for fragment in substrate:
                     self.assertIn(fragment, workspace)
@@ -250,9 +255,9 @@ class TestCellClauseSplitter(unittest.TestCase):
         )
 
     def test_headings_and_short_labels_are_not_content(self):
-        self.assertEqual([], validate.cell_clauses("## Shape\n\nTerms per [craft](craft.md).\n"))
+        self.assertEqual([], validate.cell_clauses("## Shape\n\nTerms per [standard](standard.md).\n"))
 
-    def test_a_clause_citing_an_owner_outside_the_pack_is_not_content(self):
+    def test_a_clause_citing_an_owner_outside_the_standard_is_not_content(self):
         self.assertEqual(
             [],
             validate.cell_clauses(
@@ -262,7 +267,7 @@ class TestCellClauseSplitter(unittest.TestCase):
         )
 
     def test_a_pointer_clause_keeps_its_exemption_after_the_split(self):
-        """packs/orch-code-pack/SKILL.md's `## Making` verbatim: one
+        """standards/orch-code/STANDARD.md's `## Making` verbatim: one
         sentence whose citation sits in the first semicolon half and whose
         stated deviation sits in the second. Cutting at the ';' before the
         exemption is applied throws away the half carrying the citation and
@@ -280,22 +285,22 @@ class TestCellClauseSplitter(unittest.TestCase):
 
 class TestCellDuplication(_IsolatedTree):
     # Synthetic, and deliberately so: the linter's subject is any clause two
-    # packs both carry, so the case needs a clause of that shape and length
+    # standards both carry, so the case needs a clause of that shape and length
     # and no shipped sentence in particular. A real cell copied in here
     # would read as a claim about the tree, and would go stale the day its
-    # pack reworded it.
+    # standard reworded it.
     SHARED = (
         "each widget batch gets its own bench cleared from the bay's "
         "current stock at handoff"
     )
 
-    def test_a_verbatim_clause_in_two_packs_is_an_error(self):
-        self._write_pack("alphapack", workspace="git: %s" % self.SHARED)
-        self._write_pack("betapack", workspace="git: %s" % self.SHARED)
+    def test_a_verbatim_clause_in_two_standards_is_an_error(self):
+        self._write_standard("alphastandard", workspace="git: %s" % self.SHARED)
+        self._write_standard("betastandard", workspace="git: %s" % self.SHARED)
         out = self._run().stdout
         self.assertIn(VERBATIM, out)
-        self.assertIn("packs/alphapack/SKILL.md", out)
-        self.assertIn("packs/betapack/SKILL.md", out)
+        self.assertIn("standards/alphastandard/STANDARD.md", out)
+        self.assertIn("standards/betastandard/STANDARD.md", out)
         self.assertIn(self.SHARED, out)
 
     def test_a_verbatim_clause_wrapped_differently_is_still_an_error(self):
@@ -304,22 +309,22 @@ class TestCellDuplication(_IsolatedTree):
             "each widget batch gets its own bench cleared\n  from the bay's "
             "current stock at handoff"
         )
-        self._write_pack("wrapapack", entries={"cut": body % self.SHARED})
-        self._write_pack("wrapbpack", entries={"cut": body % wrapped})
+        self._write_standard("wrapapack", entries={"cut": body % self.SHARED})
+        self._write_standard("wrapbpack", entries={"cut": body % wrapped})
         self.assertIn(VERBATIM, self._run().stdout)
 
     def test_near_duplicate_clauses_warn_naming_both_sites(self):
-        self._write_pack("nearapack", workspace="the workspace's linter or validator decides standards shape")
-        self._write_pack("nearbpack", workspace="the workspace's linter or formatter decides standards shape")
+        self._write_standard("nearastandard", workspace="the workspace's linter or validator decides standards shape")
+        self._write_standard("nearbstandard", workspace="the workspace's linter or formatter decides standards shape")
         out = self._run().stdout
         self.assertIn(NEAR, out)
-        self.assertIn("packs/nearapack/SKILL.md", out)
-        self.assertIn("packs/nearbpack/SKILL.md", out)
+        self.assertIn("standards/nearastandard/STANDARD.md", out)
+        self.assertIn("standards/nearbstandard/STANDARD.md", out)
         self.assertNotIn(VERBATIM, out)
 
     def test_unrelated_clauses_are_not_reported(self):
-        self._write_pack("farapack", workspace="identities are document revisions inside one outline")
-        self._write_pack("farbpack", workspace="every claim carries the provenance of its evidence")
+        self._write_standard("farapack", workspace="identities are document revisions inside one outline")
+        self._write_standard("farbpack", workspace="every claim carries the provenance of its evidence")
         out = self._run().stdout
         self.assertNotIn(VERBATIM, out)
         self.assertNotIn(NEAR, out)
@@ -330,9 +335,9 @@ class TestCellDuplication(_IsolatedTree):
             "| --- | --- | --- |\n"
             "| %s |\n"
         )
-        self._write_pack("hdrapack", entries={"git": table % (
+        self._write_standard("hdrapack", entries={"git": table % (
             "code | derived tests | red and green results")})
-        self._write_pack("hdrbpack", entries={"git": table % (
+        self._write_standard("hdrbpack", entries={"git": table % (
             "document | audience reading | fit observations")})
         self.assertNotIn(VERBATIM, self._run().stdout)
 
@@ -341,29 +346,29 @@ class TestCellDuplication(_IsolatedTree):
         headings would convict the section table itself. The finding
         compares same-named sections of the two manifests and names them."""
         shared = "The unit is a module at roughly one-read size, understood in one sitting."
-        self._write_pack("ptrapack", sections={"Vocabulary": shared})
-        self._write_pack("ptrbpack", sections={"Vocabulary": shared})
+        self._write_standard("ptrastandard", sections={"Vocabulary": shared})
+        self._write_standard("ptrbstandard", sections={"Vocabulary": shared})
         out = self._run().stdout
         self.assertIn(VERBATIM, out)
-        self.assertIn("packs/ptrapack/SKILL.md", out)
-        self.assertIn("packs/ptrbpack/SKILL.md", out)
+        self.assertIn("standards/ptrastandard/STANDARD.md", out)
+        self.assertIn("standards/ptrbstandard/STANDARD.md", out)
         self.assertIn("Vocabulary: standard section duplicated", out)
 
     def test_the_same_clause_under_different_sections_is_not_compared(self):
         """The section heading scopes the comparison the way the cell name
-        did: one pack's slicing taste showing up in another's vocabulary is
+        did: one standard's slicing taste showing up in another's vocabulary is
         not the same fact twice."""
         shared = "The unit is a module at roughly one-read size, understood in one sitting."
-        self._write_pack("secapack", sections={"Vocabulary": shared})
-        self._write_pack("secbpack", sections={"Spec fields": shared})
+        self._write_standard("secapack", sections={"Vocabulary": shared})
+        self._write_standard("secbpack", sections={"Spec fields": shared})
         out = self._run().stdout
         self.assertNotIn(VERBATIM, out)
         self.assertNotIn(NEAR, out)
 
-    def test_identical_rows_over_different_craft_content_are_clean(self):
-        self._write_pack("difapack", sections={
+    def test_identical_rows_over_different_standard_content_are_clean(self):
+        self._write_standard("difapack", sections={
             "Vocabulary": "A module is the unit of code review here."})
-        self._write_pack("difbpack", sections={
+        self._write_standard("difbpack", sections={
             "Vocabulary": "Evidence packets carry provenance for every claim."})
         out = self._run().stdout
         self.assertNotIn(VERBATIM, out)
@@ -371,11 +376,11 @@ class TestCellDuplication(_IsolatedTree):
 
 
 class TestOutsideCitationExemption(_IsolatedTree):
-    """An echo that cites an owner outside the pack, so two packs carrying
+    """An echo that cites an owner outside the standard, so two standards carrying
     it carry it by obligation. The pair below has the real tree's shape
     with the domain noun swapped for a synthetic one."""
 
-    # packs/*/SKILL.md's shared opener: a sentence citing the owner outside
+    # standards/*/STANDARD.md's shared opener: a sentence citing the owner outside
     # the standard (`](../`), which every standard may carry once the fact
     # moved to one owner.
     CITATION = (
@@ -384,9 +389,9 @@ class TestOutsideCitationExemption(_IsolatedTree):
     )
 
     def test_the_outside_citation_is_exempt(self):
-        self._write_pack("openerapack",
+        self._write_standard("openerapack",
                          sections={"Vocabulary": self.CITATION % "alpha"})
-        self._write_pack("openerbpack",
+        self._write_standard("openerbpack",
                          sections={"Vocabulary": self.CITATION % "beta"})
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
