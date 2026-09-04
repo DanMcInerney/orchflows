@@ -36,11 +36,18 @@ observation in `## Report` and continues.
    without duplicating itself or claiming a workspace mechanism it has no
    opinion about. Rejected: adapter-on-roots-only, which forces one house
    style per domain.
-4. **No chain budget.** Each file keeps the sheet contract's ceiling of 100
-   non-empty lines. Rejected: a budget on the resolved chain, and a scaffold
-   sub-budget tightened as a ratchet — real mechanisms, but they buy
-   pressure an author can apply by hand today, and depth is already bounded
-   by every level being a file someone had to write.
+4. **No chain budget, and the two existing per-file ceilings are kept
+   apart.** A root takes `CRAFT_BUDGET`, 130 non-empty lines; a narrowing
+   takes `SHEET_BUDGET`, 100. The 30-line gap is not an accident of history:
+   `tools/validate_support/common.py:77` states its purpose — a narrowing
+   that grew a domain's worth of law would be a second, unregistered domain,
+   so its ceiling sits under its parent's. Rejected: one flat ceiling for
+   both, which would delete that mechanism and break `orch-design` on
+   contact, its craft being exactly 100 lines today. Rejected: a budget on
+   the resolved chain, and a scaffold sub-budget tightened as a ratchet —
+   real mechanisms, but they buy pressure an author can apply by hand, and
+   depth is already bounded by every level being a file someone had to
+   write.
 5. **`## Scaffolding` is the only marked durability class.** Everything
    outside it is permanent by default, so a fact can never be lost by
    forgetting to tag it. The author's test, per sentence, is
@@ -149,7 +156,7 @@ CLI and ticket:
 
 Write `contracts/standard.md` as the one owner of everything in section 2:
 the kind, its location and anatomy, the frontmatter, the section table, the
-six rules below, the 100-line budget and the digest. Delete
+six rules below, the two per-file ceilings and the digest. Delete
 `contracts/pack-signature.md` and `contracts/sheet.md`, carrying every clause
 of theirs that survives — the tighten-only rule and its finding, the digest
 over the directory tree re-derived at every door, the refusal of `scripts/`,
@@ -165,7 +172,11 @@ The rules, stated once here:
 2. Exactly one adapter across a ticket's resolved standards.
 3. `narrows:` resolves to a standard in a reachable ring, never revisits a
    name, and terminates within eight hops.
-4. At most 100 non-empty lines per manifest.
+4. At most 130 non-empty lines in a root's manifest and 100 in a
+   narrowing's, frontmatter counted — today's `CRAFT_BUDGET` and
+   `SHEET_BUDGET`, unchanged in value and in reason. A narrowing's ceiling
+   sits under its parent's so that a narrowing cannot grow into an
+   unregistered domain.
 5. The digest is SHA-256 over the directory tree, pinned at issue and
    re-derived at every door.
 6. Routing resolves roots only; a narrowing arrives because an author named
@@ -327,6 +338,10 @@ Then `install.py --accepted-source <tip>` and `orchflows sync`.
   optional adapter is what makes it possible later; nothing here needs it.
 - **The chain budget and the scaffold ratchet.** Decision 4. Revisit when a
   real chain runs deep enough to hurt.
-- **Splitting the shipped roots.** `orch-code`'s craft is 94 non-empty lines
-  against a 100-line ceiling. It fits, but barely, and the first narrowing
-  someone wants to promote into it will not.
+- **Splitting the shipped roots.** Nothing is near a ceiling: against 130,
+  the five crafts run 100 (`orch-design`), 94, 91, 83 and 82, and the
+  collapse adds only frontmatter. Authoring a narrowing costs its parent no
+  lines at all, since a narrowing is its own file with its own budget — the
+  pressure only appears when someone wants to *promote* a narrowing's
+  content up into a root, and `orch-design` is the one with least room for
+  that.
