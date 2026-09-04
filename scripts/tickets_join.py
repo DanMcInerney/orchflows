@@ -114,7 +114,10 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         ):
             return text, None, _classification(
                 "outcome-record-mismatch",
-                f"record_id '{outcome_record_id}' is not the committed executor outcome",
+                f"record_id '{outcome_record_id}' is not the committed executor outcome. "
+                "A child that will never commit one is retired with "
+                "`tickets.py dispatch-retire`, and the retired ticket is then "
+                "graded with `tickets.py set-status`",
             )
         outcome = outcome_success["outcome"]
         if outcome.get("dispatch_id") != dispatch_id:
