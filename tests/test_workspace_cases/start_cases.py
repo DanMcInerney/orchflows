@@ -20,7 +20,7 @@ class TestStartEstablishesEvidenceStore(unittest.TestCase):
             ticket = make_ticket(
                 run_dir,
                 "T1",
-                extra=(("pack", "orch-research-pack"),),
+                pack="orch-research-pack",
             )
 
             done = run_workspace(tmp, "start", "testrun", "T1")

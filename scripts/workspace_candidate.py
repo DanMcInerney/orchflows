@@ -28,13 +28,15 @@ from __future__ import annotations
 from pathlib import Path
 
 try:
-    from . import state_root, tickets_adapters, tickets_format, tickets_store
+    from . import state_root, tickets_adapters, tickets_format, tickets_pins
+    from . import tickets_store
     from . import workspace_git, workspace_prepare, workspace_record
     from .tickets_registry import EXECUTOR_REGISTRY
 except ImportError:  # a flat ``bin`` layout, where these are top-level modules
     import state_root
     import tickets_adapters
     import tickets_format
+    import tickets_pins
     import tickets_store
     import workspace_git
     import workspace_prepare
@@ -88,7 +90,7 @@ def _loaded(run: str, ticket_id: str):
 
 def _adapter(data: dict):
     try:
-        return tickets_adapters.adapter_spec(data.get("pack"))
+        return tickets_adapters.adapter_spec(tickets_pins.adapter_standard(data))
     except tickets_adapters.AdapterError as error:
         raise Refused(f"{error.code}: {error.detail}") from error
 
@@ -291,7 +293,9 @@ def _establishment(run, ticket_id, key, held, seams, source, where, named=False)
     # The item's isolation before the adapter's strategy, never after. The
     # other way round refuses a document lane over a tree of its own, which
     # only an explicit override ever asks for.
-    isolation = tickets_adapters.derived_isolation(data.get(ISOLATION_KEY), data.get("pack"))
+    isolation = tickets_adapters.derived_isolation(
+        data.get(ISOLATION_KEY), tickets_pins.adapter_standard(data),
+    )
     if isolation == REQUIRED and not adapter.establishes_isolation:
         raise Refused(f"adapter-not-establishable: {adapter.key} does not "
                       "establish a candidate workspace")

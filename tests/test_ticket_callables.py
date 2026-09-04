@@ -44,6 +44,23 @@ from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonica
 CODE_PACK = "orch-code-pack"
 DOC_PACK = "orch-content-pack"
 RESEARCH_PACK = "orch-research-pack"
+
+
+def standards_field(*names) -> list:
+    """The `standards:` frontmatter value a ticket stamping `names` carries.
+
+    Fixtures elsewhere hand-write ticket frontmatter, and the field is an
+    ordered `<name>@<digest>` list whose digests only the resolver knows, so
+    every such fixture builds it here rather than pinning a literal that
+    goes stale the moment an item is edited.
+    """
+
+    from scripts import tickets_pins
+
+    fields, refusal = tickets_pins.pin_fields(list(names), None)
+    if refusal is not None:  # pragma: no cover - a broken fixture, not a case
+        raise AssertionError(refusal["error"])
+    return fields[tickets_pins.STANDARDS_FIELD]
 GOAL = "Deliver the widget and prove it runs.\n"
 DETAILS = "Read the craft first; report every exit code.\n"
 # The marker the research craft's root entry owns, written the way a real

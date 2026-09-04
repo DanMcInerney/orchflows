@@ -149,8 +149,8 @@
       "name": "ticket_frontmatter",
       "contract": "work-item.md",
       "fields": [
-        "id", "run", "status", "admission", "executor", "pack",
-        "pack_digest", "sheets", "sheet_digests", "skill", "skill_digest",
+        "id", "run", "status", "admission", "executor", "standards",
+        "skill", "skill_digest",
         "profile", "parent", "depends_on", "isolation", "bound",
         "frame", "done", "makes",
         "root_generation", "cut_generation", "assignment_seal",
