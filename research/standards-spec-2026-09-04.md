@@ -89,6 +89,9 @@ tools/run_required.py --no-cache` passes and:
   refuses a cycle, a chain deeper than eight, an unresolvable parent, and a
   resolved set carrying zero or two adapters — each proven by a check whose
   failing reading is recorded;
+- one `STANDARD_BUDGET` of 1200 words is the only ceiling on a standard,
+  `CRAFT_BUDGET` and `SHEET_BUDGET` name nothing, and every one of the eight
+  manifests is under it — the eight counts recorded;
 - no shipped file names `pack`, `sheet` or `craft` as a library term, proven
   by a grep whose output is in the frame journal;
 - `install.py --dry-run` plans fewer entries than the base commit's 359, and
