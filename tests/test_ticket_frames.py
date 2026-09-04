@@ -671,18 +671,21 @@ class FrameLawTest(FrameSinkTest):
 class FrameLawOwnerTest(unittest.TestCase):
     """The law has one owner, and the shipped bodies are not it.
 
-    Eight bodies each carried their own wording of the same three
-    sentences. The trunk prints them now, so a body that restates the
-    journal command is a second owner of a fact the first one already
-    spells differently.
+    Eight bodies each carried their own wording of the same law. The
+    trunk prints it now, so a body that restates the journal command is
+    a second owner of a fact the first one already spells differently.
+    The corpus is every shipped workflow body, `skills/workflows/` as
+    well as `example-workflows/`: a glob short of one of them is a
+    directory in which this check cannot see the drift it exists for.
     """
 
     def setUp(self):
         self.bodies = {
             path.parent.name: path.read_text(encoding="utf-8")
-            for path in sorted((ROOT / "example-workflows").glob("*/SKILL.md"))
+            for shipped in ("example-workflows", "skills/workflows")
+            for path in sorted((ROOT / shipped).glob("*/SKILL.md"))
         }
-        self.assertEqual(8, len(self.bodies))
+        self.assertEqual(8 + 2, len(self.bodies))
 
     def test_no_body_restates_the_journal_command(self):
         self.assertEqual([], sorted(_relaying(self.bodies)))
