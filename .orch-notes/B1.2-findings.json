@@ -1,0 +1,219 @@
+{
+  "protocol": "orchflows.review-findings.v1",
+  "review": {
+    "run": "20260905-browser-game-spec",
+    "ticket": "B1.2",
+    "dispatch_id": "B1.2:d1",
+    "assignment_seal": "sha256:cf9aab9f6583054a477b53cd70aa41d692944e6a09e1b376beedd484b89e22b9",
+    "assigned_name": "B1.2",
+    "resolved_profile": {
+      "host": "codex",
+      "agent": "orch_planner",
+      "model": "gpt-5.6-sol",
+      "effort": "ultra"
+    }
+  },
+  "fixed_artifact": {
+    "identity": "git:82f5a970e36c4b30b65402d3398769ba603508fb",
+    "parent": "a7f19004d595fa09ab1aeda685f70002af2388fd",
+    "path": "research/browser-game-workflow-spec-2026-09-05.md",
+    "blob": "ded5f6dca9aecddcb0651146d700a461ecac472d",
+    "integrated_workspace_revision_observed": "0e4cc2295d6436568da677b2b970b575827ad634",
+    "integrated_blob_observed": "ded5f6dca9aecddcb0651146d700a461ecac472d",
+    "scope": "The commit adds only the specification document. The review did not edit that artifact."
+  },
+  "assignment_evidence": {
+    "goal_owner": "C:/Users/danhm/.orchflows/state/tickets/20260905-browser-game-spec/B1.md",
+    "review_ticket": "C:/Users/danhm/.orchflows/state/tickets/20260905-browser-game-spec/B1.2.md",
+    "mandatory_authoring_owner": "C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md",
+    "reviewed_goal": "A thoughtful, implementable specification for a composable browser-game workflow covering high-quality 2D/3D production, declared-hardware 60 fps, actual agent play, independent discriminating judgment, and bounded repair.",
+    "document_budget_words_excluding_compact_source_list": 6500,
+    "observed_words_excluding_compact_source_list": 5560
+  },
+  "standards": [
+    {
+      "name": "orch-code",
+      "path": "C:/Users/danhm/.orchflows/lib/standards/orch-code/STANDARD.md",
+      "pinned": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+      "observed": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+      "lens": "git"
+    },
+    {
+      "name": "orch-content",
+      "path": "C:/Users/danhm/.orchflows/lib/standards/orch-content/STANDARD.md",
+      "pinned": "sha256:9f779922cfbac540742b77833922b0f67a314459f651867e895ec4e1a81c92f4",
+      "observed": "sha256:9f779922cfbac540742b77833922b0f67a314459f651867e895ec4e1a81c92f4",
+      "lens": "doc"
+    }
+  ],
+  "blocking_rule": "rules/verification.md section 9: blocking is true only where a frozen completion criterion is false or a correctness finding exists at the fixed identity.",
+  "criteria": [
+    {
+      "id": "C1",
+      "criterion": "The proposed stages compose into resolvable workflow calls under the updated package rules.",
+      "verdict": "FAIL",
+      "findings": ["F1"]
+    },
+    {
+      "id": "C2",
+      "criterion": "Research, engine choice, concept, 2D/3D art and asset production, level design, mechanics, and the worked survivor-game invocation have explicit inputs, outputs, gates, and evidence.",
+      "verdict": "PASS",
+      "evidence": "Stage table plus Stages 0-4, asset branches, and the worked invocation cover each requested area and preserve current-versus-proposed distinctions."
+    },
+    {
+      "id": "C3",
+      "criterion": "Actual play uses ordinary input and current visual feedback, stays distinct from scripted/simulated evidence, and feeds a fresh maker-independent judge with a broad capture matrix and play accounts.",
+      "verdict": "PASS",
+      "evidence": "The harness boundary, three evidence classes, two maker-independent sessions, complete win/loss/restart coverage, and at least 18 state-separated captures per declared viewport are explicit."
+    },
+    {
+      "id": "C4",
+      "criterion": "The declared-hardware 60 fps gate cannot accept a run that fails to present frames at the target cadence.",
+      "verdict": "FAIL",
+      "findings": ["F2"]
+    },
+    {
+      "id": "C5",
+      "criterion": "Judgment, failure, invalidation, resumption, repair termination, and outside close are bounded and evidence-bound.",
+      "verdict": "PASS",
+      "evidence": "The fixed-revision fan-out, exact bounded-repair idiom, two-round exhaustion path, failure table, package-digest refusal, journal resume, and outside probe close the control flow."
+    },
+    {
+      "id": "C6",
+      "criterion": "The document is usable by the workflow designer and future implementer within its voice and length contract.",
+      "verdict": "PASS except for F1/F2",
+      "evidence": "The hook and landing share one complete-game throughline; headings and first sentences form a coherent skim layer; 5,560 words are below the 6,500-word budget; requirements, gates, evidence, and failure behavior are concrete."
+    },
+    {
+      "id": "C7",
+      "criterion": "Material current capability claims are labeled, dated, and supported by primary sources.",
+      "verdict": "PASS on sampled claims",
+      "evidence": "Official PlayCanvas, Blender, Playwright, Chrome, OpenAI, Godot, and Khronos pages were sampled. The sampled engine/backend, Blender automation/MCP, ordinary-input/fake-clock, frame-analysis, and image-generation claims matched their linked sources."
+    },
+    {
+      "id": "C8",
+      "criterion": "The git revision is scoped, mechanically clean, and carries no incidental artifact changes.",
+      "verdict": "PASS",
+      "evidence": "82f5a970 adds only the requested Markdown file; git diff --check passed; repository validation passed with warnings unrelated to the new document; scoped-test selection found no affected module."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": true,
+      "class": "correctness/contract-fidelity",
+      "cause": "RC1",
+      "title": "The recommended public checkpointed-build handoff cannot resolve browser-game's required private standards",
+      "evidence": {
+        "artifact": [
+          "research/browser-game-workflow-spec-2026-09-05.md:47 recommends that playable-increment making reuse the public checkpointed-build workflow.",
+          "research/browser-game-workflow-spec-2026-09-05.md:49 requires every making call to name its applicable package-private standard and correctly notes that a call to public checkpointed-build opens that workflow's own package scope.",
+          "research/browser-game-workflow-spec-2026-09-05.md:255 requires literal names to resolve under the updated package rules."
+        ],
+        "owners": [
+          "custom-workflow-authoring.md, Workflow packages: a public top-level workflow starts its own package scope; a private helper keeps the enclosing public scope.",
+          "custom-workflow-authoring.md: a path, dictionary, or private name cannot grant package scope.",
+          "installed tickets_frame.py::_workflow_record: a public workflow starts its own package scope and returns that public owner as inherited workflow context.",
+          "installed tickets_mint.py::_cmd_do_or_judge: child do/judge calls resolve standards with owner=workflow_context['workflow'].",
+          "skills/workflows/checkpointed-build/SKILL.md: its standard and narrowing names are consumed by do/judge calls parented to its own frame."
+        ],
+        "consequence": "Inside checkpointed-build, browser-game-code, browser-game-visual, and browser-game-playtest are looked up under checkpointed-build's package rather than browser-game's. They are private to browser-game and therefore do not resolve. Passing a path or caller-owner dictionary is intentionally not a supported escape."
+      },
+      "why_blocking": "The frozen Goal requires composable, implementable workflows. Following the document's declared composition and standard-stamping rules reaches an admission refusal before an increment can be made.",
+      "smallest_change": "Keep playable-increment's standard-stamped do/judge calls inside browser-game package scope and remove the public checkpointed-build reuse recommendation. Quote the shared bounded-repair and outside-close idioms there. Only move a browser-game standard to a public ring if it has independently justified callers and ownership."
+    },
+    {
+      "id": "F2",
+      "blocking": true,
+      "class": "correctness",
+      "cause": "RC2",
+      "title": "The 60 fps hard gate measures callback cadence but leaves presented-frame failures without a rejecting threshold",
+      "evidence": {
+        "artifact": [
+          "research/browser-game-workflow-spec-2026-09-05.md:187 makes metric and threshold part of each performance cell.",
+          "research/browser-game-workflow-spec-2026-09-05.md:189 defines hard thresholds only for requestAnimationFrame callback rate/intervals and unexplained stalls.",
+          "research/browser-game-workflow-spec-2026-09-05.md:191 requires a Chrome trace to record dropped and partially presented frames but calls it corroboration and states no pass/fail threshold or contradiction rule.",
+          "research/browser-game-workflow-spec-2026-09-05.md:201 passes on every declared performance cell, so the callback-only thresholds can remain green despite adverse trace evidence."
+        ],
+        "primary_source": {
+          "url": "https://developer.chrome.com/docs/devtools/performance/reference",
+          "observation": "Chrome documents green frames as rendered in time, partially presented frames as only some visual updates arriving in time, and dropped frames as not rendered in reasonable time."
+        },
+        "consequence": "A GPU/compositor-bound game can keep main-thread requestAnimationFrame callbacks near 60 Hz while missing visual presentation deadlines. The specified cell can therefore pass while the game does not deliver the declared frame rate."
+      },
+      "why_blocking": "The frozen Goal requires a valid declared-hardware 60 fps target. The present hard gate can accept a false 60 fps claim at the fixed specification identity.",
+      "smallest_change": "Add an explicit presented-frame metric and threshold from the browser trace (including how partial and dropped frames are counted), and state that a callback/trace contradiction fails the cell until attributed and resolved. Bind that result into the outside evidence-index probe."
+    }
+  ],
+  "causes": [
+    {
+      "id": "RC1",
+      "findings": ["F1"],
+      "cause": "The design treats a reusable public workflow as though it can consume package-private identities from its caller after package ownership has intentionally changed.",
+      "repair_scope": "Specification document only. No runtime or resolver change is warranted."
+    },
+    {
+      "id": "RC2",
+      "findings": ["F2"],
+      "cause": "The performance contract equates the scheduling cadence visible to requestAnimationFrame with delivered visual-frame cadence, while leaving the independent presentation trace qualitative.",
+      "repair_scope": "Specification document only."
+    }
+  ],
+  "nonblocking_findings": [],
+  "source_sample": [
+    {
+      "claim_area": "PlayCanvas graphics backends",
+      "url": "https://developer.playcanvas.com/user-manual/graphics/",
+      "observation": "The current manual lists WebGPU beta, WebGL 2, a null backend, and automatic WebGPU-to-WebGL fallback."
+    },
+    {
+      "claim_area": "Blender background/Python automation",
+      "url": "https://docs.blender.org/manual/en/5.1/advanced/command_line/arguments.html",
+      "observation": "The manual documents background execution and the --python option."
+    },
+    {
+      "claim_area": "Blender glTF export",
+      "url": "https://docs.blender.org/api/main/bpy.ops.export_scene.html",
+      "observation": "The API documents bpy.ops.export_scene.gltf and its mesh, material, animation, skin, morph, and format options."
+    },
+    {
+      "claim_area": "Blender Lab MCP",
+      "url": "https://www.blender.org/lab/mcp-server/",
+      "observation": "The official page requires Blender 5.1+, add-on/client/server components, warns that generated code runs without guards, and recommends isolation."
+    },
+    {
+      "claim_area": "ordinary versus programmatic browser input and fake time",
+      "url": "https://playwright.dev/docs/input",
+      "observation": "The actions guide distinguishes actionability-checked clicks from dispatchEvent and documents focus and keyboard input."
+    },
+    {
+      "claim_area": "clock invalidation",
+      "url": "https://playwright.dev/docs/clock",
+      "observation": "The clock guide says installed clock control overrides requestAnimationFrame and performance."
+    },
+    {
+      "claim_area": "image generation capability",
+      "url": "https://developers.openai.com/api/docs/guides/image-generation",
+      "observation": "The guide documents generation, editing, multi-turn editing, dimensions, and model/format-dependent transparent output."
+    }
+  ],
+  "verification": {
+    "artifact_diff_check": "exit 0",
+    "repository_validator": "exit 0; only pre-existing cross-tier and dated browser-game allowlist warnings",
+    "scoped_tests": "exit 0; no affected module for the documentation path",
+    "whitespace_can_fail_probe": "expected exit 1 on an in-memory patch with deliberate trailing whitespace; the tree was not mutated",
+    "workspace_clean_before_review": true,
+    "full_required_suite": "not run by this unit; the parent owns the gate"
+  },
+  "uncovered": [
+    "This is acceptance of a specification only; no workflow package or game exists to execute.",
+    "No render is applicable to this Markdown-only artifact.",
+    "The initial direct fetch of two Blender pages returned HTTP 402; official-domain search results resolved and exposed the cited content. The acquisition friction was logged.",
+    "The installed custom-workflow-authoring guide points to a missing installed-root ARCHITECTURE.md. The repository's canonical ARCHITECTURE.md was used and the broken link was logged as friction."
+  ],
+  "deliberately_not_done": [
+    "The specification artifact was not edited because a judge is read-only.",
+    "The full repository gate was not rerun because this ticket is a unit; the parent owns the integrated gate.",
+    "No workflow, game, art, Blender install, or runtime admission campaign was created because the parent requested only the specification."
+  ]
+}
