@@ -1,265 +1,268 @@
-# Browser-game workflow rebuild specification
+# Three.js and Blender browser-game workflow specification
 
-The current `browser-game` workflow can decide what should happen next, but it cannot yet earn the claim that it built a complete game. The rebuilt workflow earns that claim only when a fixed revision survives playable vertical increments, coherent asset production, ordinary-input play by agents that can actually see and control the game, and independent acceptance on declared hardware. This document specifies that workflow; it does not implement it or a game.
+The rebuilt `browser-game` workflow has one production route: a 3D browser game implemented with a pinned Three.js dependency and assets authored in a pinned Blender executable. It earns a complete-game claim only when one fixed revision survives playable vertical increments, inspected Blender-to-GLB handoffs, ordinary-input play by agents that can see and control the game, measured presented-frame performance on declared hardware, and maker-independent judgment. This document specifies that reusable workflow; it does not implement the workflow or build a game.
 
-All **MUST**, **SHOULD**, and **MAY** statements below are recommended workflow policy. Statements labeled **Current fact** report primary documentation checked on 2026-09-05. A future run must recheck facts whose tool, engine, browser, or model identity has changed.
+All **MUST**, **SHOULD**, and **MAY** statements are proposed workflow policy. Statements labeled **Current fact** report primary documentation checked on 2026-09-05. A run rechecks facts whose pinned Blender, Three.js, browser, graphics backend, or model identity has changed. Recommendations are defaults to test, not guarantees about an unmeasured project.
 
 ## Outcome and completion contract
 
-The public workflow remains `browser-game`. Its invocation takes `brief`, the user's complete natural-language request, and `workspace`, the target git repository. Options embedded in the brief are authoritative. The workflow may derive routine implementation defaults, but it must not silently create a product promise about supported hardware, browsers, accessibility, licensing, monetization, telemetry, or public release.
+The public workflow remains `browser-game`. It takes `brief`, the user's complete natural-language request, and `workspace`, the target git repository. Three.js and Blender are fixed by this workflow. The brief remains authoritative for the game, and the workflow must not silently create promises about browser support, hardware, accessibility, licensing, monetization, telemetry, or release.
 
 A successful return contains:
 
 - `artifact: git:<commit>` for the accepted game revision;
-- an evidence-index identity binding the brief revision, research packets, concept revision, asset manifest, playable-increment ledger, play sessions, captures, performance traces, judge findings, and repair history;
+- an evidence-index identity binding the brief, research, concept, asset manifests, playable increments, play sessions, captures, performance traces, judgments, and repairs;
 - the exact outside probe and its passing observation at that commit; and
-- `gaps: []`, or a non-success disposition with every remaining gap.
+- `gaps: []`.
 
-The complete-game gate requires a browser-served production build that a player can start without developer tools; documented controls; a coherent core loop; the promised level and progression; reachable win and loss states; pause where applicable; restart from both terminal states; final production assets rather than undisclosed placeholders; no blocking console or asset-load errors; actual play evidence; and the declared 60 fps performance contract. A prototype, automated state simulation, screenshot gallery, or locally green unit suite cannot satisfy this gate by itself.
+A non-success return names the fixed artifact reached, all evidence gathered, and every remaining gap. The complete-game gate requires a browser-served production build that starts without developer tools; documented controls; a coherent core loop and promised progression; reachable win, loss, and restart paths; final assets with closed provenance; no blocking console, network, or load errors; actual play evidence; independent acceptance; and every declared presented-frame performance cell passing. A prototype, scripted state transition, screenshot gallery, or green unit suite cannot satisfy the gate by itself.
 
-The workflow ends at an accepted repository revision. Publishing, buying assets, accepting licenses, installing system software without standing authorization, and making commercial or support promises are separate user-authorized actions.
+Publishing, buying or accepting licensed assets, installing Blender or other system software, and making commercial or support promises remain separate user-authorized actions.
 
-## Baseline and migration
+## Baseline and deliberate replacement
 
-The specification was derived from clean repository revision `a7f19004d595fa09ab1aeda685f70002af2388fd`. At that revision, the [public workflow](../example-workflows/browser-game/SKILL.md) makes a program record, an evidence packet, a checkpoint, and possibly a kind-separated successor plan. Its [intake policy](../example-workflows/references/browser-game-intake-policy.json) usefully separates user-only decisions from empirical ones; its validator binds evidence and invalidation identities. It does not make assets or code, open playable increments, perform actual play, gather frame evidence, or accept a complete game.
+This revision was derived from clean repository revision `bbdc7effbf00ed8f7d58eff1b422513bb9d1b9b2`. The earlier draft covered 2D and 3D routes, compared engines, and treated MCP as a possible Blender path. This revision supersedes those choices. Discovery proves that the fixed tools are usable; it does not reopen engine selection or route around a missing Blender installation with another DCC.
 
-The updated authoring contract at `C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md` permits a public workflow package to own private workflows, skills, standards, references, scripts, and dependencies under its directory, all pinned by one package digest. The rebuild MUST use that package shape. It SHOULD preserve four ideas from the current design: two invocation inputs, atomic authority, immutable evidence identities, and explicit invalidation. It SHOULD replace the fixed Q-01–Q-12 ceremony with a smaller run record driven by this workflow's gates. It MUST migrate browser-game-specific references and validators into the package before removing the current validator allowlist; compatibility tests stay green until that migration lands.
+The current public [browser-game workflow](../example-workflows/browser-game/SKILL.md) already records a program, evidence, a checkpoint, and a successor plan. It does not make assets or code, open playable increments, perform actual play, gather presentation evidence, or judge a complete game. The rebuilt package SHOULD preserve its atomic authority, immutable evidence identities, and explicit invalidation while replacing its fixed questionnaire with the smaller gates below.
 
-The current records migrate by responsibility rather than by copying their schemas. Product-brief cells become the brief audit and open-decision list. Decision, risk, and experiment entries become the discovery ledger, retained only when they change a downstream gate. Asset and performance contracts become the manifest and measurement cells defined below. QA-oracle entries become the frozen acceptance matrix. The successor plan becomes the ordered playable-increment ledger. Release-policy fields are created only when the brief actually asks the workflow to prepare a release; they do not burden an ordinary local game build.
+Current package law permits one public workflow to own private helper workflows, applied skills, standards, references, scripts, and dependency declarations under its directory. All private items share one package digest. The migration therefore moves useful browser-game references and validators behind that owner before retiring legacy allowlists. It migrates responsibilities, not old schemas: brief cells become the brief audit; decisions become a compact decision ledger; asset and performance claims become manifests and measurement cells; and the successor plan becomes the playable-increment ledger.
 
-## Package and reusable composition
+## Package shape and ownership
 
-The public `SKILL.md` must stay short enough to expose control flow at a skim. Domain knowledge and executable checks belong in private standards, references, and scripts.
+Only `browser-game` is public. The following proposed paths are private to `example-workflows/browser-game/` (or to the corresponding project/user ring package if authored there):
 
-| Package path | One owner and purpose |
+| Package path | Responsibility |
 | --- | --- |
-| `SKILL.md` | Public `browser-game` contract and ordered stage calls. |
-| `workflows/discovery/SKILL.md` | Brief audit, capability inventory, parallel research, synthesis, and concept-ready gate. |
-| `workflows/playable-increment/SKILL.md` | One durable build/check/play/judge checkpoint, invoked once per planned vertical increment. |
-| `workflows/final-acceptance/SKILL.md` | Fixed-revision evidence fan-out, discriminating judgment, bounded repair, and re-judgment. |
-| `standards/browser-game-code/STANDARD.md` | Narrowing of `orch-code`: runtime states, input boundary, deterministic lab mode, production build, game probes, and performance instrumentation. |
-| `standards/browser-game-visual/STANDARD.md` | Narrowing of `orch-design`: art direction, asset budgets, capture states, readability, feedback, and visual coherence. |
-| `standards/browser-game-playtest/STANDARD.md` | Narrowing of `orch-research`: ordinary-input session protocol, player account, provenance, confidence, and gaps. |
-| `references/` | Lean contracts for the run record, asset manifest, evidence index, rubrics, capture matrix, and worked 3D example. |
-| `scripts/` | Deterministic capability, evidence, asset, and outside-probe checks only; generation judgment stays in agents. |
-| `tools.txt`, optional `package.json` and lockfile | Only tools and Node packages that package scripts themselves execute. Game dependencies remain in the target workspace and its lockfile. |
+| `SKILL.md` | Public contract, stage order, frame ownership, and close behavior. |
+| `workflows/discovery/SKILL.md` | Brief audit, capability probes, focused research, concept freeze, and increment plan. |
+| `workflows/blender-asset/SKILL.md` | One asset batch through source edit, inspection, render, export, validation, judgment, and handoff. |
+| `workflows/playable-increment/SKILL.md` | One build/check/land/play/judge checkpoint from the prior accepted commit. |
+| `workflows/final-acceptance/SKILL.md` | Fixed-revision evidence fan-out, independent judgment, bounded repair, and re-judgment. |
+| `skills/blender-bpy/SKILL.md` | Reusable method for job-driven `bpy`/BMesh creation, editing, inspection, rendering, and export. |
+| `standards/browser-game-3d-asset/STANDARD.md` | Private 3D game-asset root: source authority, budgets, manifest, previews, runtime handoff, and artifact evidence. |
+| `standards/blender-game-asset/STANDARD.md` | Blender-specific narrowing of `browser-game-3d-asset`. |
+| `standards/threejs-browser-game/STANDARD.md` | Three.js game-code narrowing of `orch-code`. |
+| `standards/browser-game-interface/STANDARD.md` | Rendered canvas, menu, HUD, focus, and accessibility narrowing of `orch-design`. |
+| `standards/browser-game-playtest/STANDARD.md` | Ordinary-input session and provenance narrowing of `orch-research`. |
+| `references/` | Run-record, job, asset-manifest, evidence-index, capture-matrix, rubric, and worked-example contracts. |
+| `scripts/` | Capability probes, Blender process launcher and worker, manifest/GLB checks, capture indexing, and outside probe. |
+| `tools.txt`, optional `requirements.txt`, `package.json`, lockfile | Tools and libraries used by package scripts only. Game dependencies stay in the target workspace. |
 
-The public workflow opens one frame with `tickets.py frame-open <run> --goal-file <goal> --workflow browser-game`. It calls `discovery`, then freezes the resulting research and concept inputs before any production candidate exists. Art-direction alternatives SHOULD use the existing public `bakeoff` workflow when more than one credible direction remains; that call intentionally enters `bakeoff`'s own package scope and carries no browser-game-private standard. Each planned vertical increment calls the private `playable-increment`; its making stays in `browser-game` package scope, so every standard-stamped `do`/`judge` call resolves `browser-game-code`, `browser-game-visual`, and `browser-game-playtest` there. It does not call public `checkpointed-build`; the private workflow owns its wave plan and close behavior and quotes the shared idioms: **Where the judge blocks, one repair `do` is handed the `findings:` line verbatim, then one re-judge; two rounds is the bound.** **Close on a command run outside every child; never on a child's own claim.** The final fixed revision calls `final-acceptance`.
+The standard bases are deliberate:
 
-Only `tickets.py do` makes artifacts and only `tickets.py judge` judges fixed artifacts. Every making call names the target workspace, isolation, bound, and applicable package-private standard. Calls in one parallel wave land before the next wave opens. Parents relay `artifact:` and `findings:` lines verbatim and read each frame journal at the start of the next wave. Package-private literal names resolve in `browser-game` scope. The public `bakeoff` call is an intentional cross-package composition and opens `bakeoff`'s own package scope; it does not receive browser-game-private standards. No browser-game standard moves to a public ring without independently justified callers and ownership.
+- `threejs-browser-game` MUST declare `narrows: orch-code`. Its artifact is executable repository code with ordinary git identity and code seams. A second generic game-code layer has no independent caller in this fixed-stack package and would duplicate ownership. If another engine later creates a real shared caller, that is the time to extract a common narrowing.
+- `browser-game-3d-asset` MUST be a private root with the git adapter. A `.blend` source, GLB export, manifest, structural inspection, and rendered review require materially different evidence from code even though they land in the same repository. That satisfies the root admission rule without broadening the library. `blender-game-asset` MUST name that root as its one `narrows:` base and add only Blender-specific criteria.
+- `browser-game-interface` MAY narrow `orch-design` for rendered interface evidence: canvas states, menus, HUD, focus, keyboard reach, breakpoints, and captures. It MUST NOT own mesh, material, rig, or animation quality; `orch-design` is a rendered-interface domain, not a generic 3D-asset base.
+- `browser-game-playtest` MAY narrow `orch-research` because its artifact is a traceable evidence packet rather than a git candidate.
 
-This split earns its context cost. Discovery has independent research lanes and must survive interruption. Each playable increment needs an isolated candidate, evidence-bound landing, and a journal. Final acceptance needs eyes independent of the makers. Small deterministic operations remain scripts or prose rather than new agents.
+Each standard contains domain knowledge only. It contains no stage order, delegation, stop condition, or return contract. `blender-bpy` carries reusable technique. Helper workflow prose orders calls. Package scripts own deterministic process and file boundaries. A standard has no scripts or dependencies.
 
-The stage contracts are closed before implementation:
+A narrowing has one base. A ticket may list orthogonal standards only when they address the same coherent artifact and resolve to one adapter; a list is not a substitute for splitting different domains and handing identities across. This design normally keeps the calls separate:
 
-| Stage | Inputs | Outputs | Gate to the next stage |
-| --- | --- | --- | --- |
-| 0. Brief and capabilities | Brief, workspace, baseline, host/tool access | Brief-audit revision, open decisions, capability inventory, declared development hardware | No hidden material gap; every missing capability or user decision has a route. |
-| 1. Research and route | Stage 0 identities, bounded research questions | Independent evidence packets, engine spikes, synthesis, selected/pinned production route | Primary support or declared gap for every load-bearing claim; route identity frozen. |
-| 2. Concept and art direction | Brief revision, research identity, selected route | Game concept contract, level/wave/boss plan, acceptance matrix, winning art direction and style bible | Whole game is buildable and falsifiable; content and asset budgets close. |
-| 3. Asset-pipeline proof | Style bible, representative asset contracts, tool identities, engine import proof | One approved representative 2D or 3D set plus a costed production backlog and source/export/preview evidence | The pipeline validates and renders in engine within budget. Mass production remains closed until I1 proves the fun loop. |
-| 4. Playable increments | Frozen concept, accepted prior commit, applicable assets, increment goal | Ordered accepted git commits and increment evidence ledger | Each commit builds, plays through its promised slice with ordinary input, passes checks, and resolves blocking findings before its successor opens. |
-| 5. Final evidence and judgment | One frozen release-candidate commit and closed acceptance matrix | Functional results, capture inventory, play accounts, compatibility logs, physical-device traces, independent findings | Every hard gate passes and every quality score reaches the stated floor, or findings enter bounded repair. |
-| 6. Repair and close | Findings line, fixed evidence, repair-round count | At most two scoped repair commits and re-judgments; final evidence index; outside-probe observation | Outside probe passes at the joined commit, or the run returns fixed remaining blocks and gaps without a complete-game claim. |
+1. an asset-making `do` stamps `blender-game-asset` and the applied `blender-bpy` skill;
+2. an asset `judge` stamps the identical asset-standard chain against its fixed git revision and manifest;
+3. after landing, the parent relays the asset's `artifact: git:<commit>` and manifest identity into a Three.js integration `do` stamped `threejs-browser-game`;
+4. separate fixed-revision judges apply `threejs-browser-game` and, where relevant, `browser-game-interface`; and
+5. actual-play calls stamp `browser-game-playtest` and hand evidence-packet identities to final acceptance.
+
+All calls using these private names MUST occur in `browser-game` itself or one of its private helpers, which preserves the enclosing package scope. Calling another public workflow changes package scope, so that callee cannot resolve the caller's private standards. The rebuild needs no new public workflow, command registry, or generic workflow engine.
 
 ## Run record, authority, and invalidation
 
-One compact run record is the index, not a transcript. It MUST version and identify:
+One compact run record indexes rather than transcribes the work. It identifies the brief and open decisions; target-workspace baseline; host, Blender, Three.js, browser, hardware, and backend capabilities; research packets; concept and acceptance matrix; every asset source/export manifest; each increment's input and output commit, checks, play evidence, findings, and disposition; and final evidence, repairs, and gaps.
 
-1. the brief and open decisions;
-2. host, tool, engine, model, browser, hardware, and target-workspace capabilities;
-3. research claims and evidence packets;
-4. the concept contract and its frozen acceptance matrix;
-5. the asset manifest and production provenance;
-6. each playable increment's goal, input commit, output commit, checks, play evidence, findings, and disposition; and
-7. final acceptance evidence, repairs, and gaps.
+Every decision records its owner, evidence identity, revision, and invalidation trigger. Product intent and promises are `kind: user-only`. Exact installed versions, renderer/backend choice, collision route, asset budgets, and test mechanics are empirical decisions. An unrelated user-only gap parks only its dependent work.
 
-Every decision records its owner, rationale, evidence identity, revision, and invalidation trigger. Product intent and promises are `kind: user-only`; the root relays one such question verbatim when the missing answer would materially change scope or acceptance. Engine choice, renderer/backend choice, implementation structure, and tool route are empirical decisions resolved by documented capability checks or experiments. An unrelated user-only gap must not stop independent research or making.
+The brief revision, pinned dependencies, concept, art direction, target hardware, control map, asset contracts, and acceptance matrix freeze before production. A contradiction creates a new evidence and decision revision, names every invalidated descendant, and resumes at the earliest affected gate. It never silently rewrites a build ticket.
 
-The concept revision, selected engine and lockfile, art-direction identity, target hardware matrix, asset budgets, control map, and acceptance matrix are frozen inputs to production. A later contradiction does not get smuggled into a build ticket: it creates a new evidence packet and decision revision, names every invalidated descendant, and resumes at the earliest affected gate. This keeps all research in the research stage while allowing an explicit research resumption when reality disproves a premise.
+## Stages and literal gates
 
-## Stage 0 — audit the brief and prove capabilities
+The workflow opens one frame. It reads the journal at the start of every wave, lands each completed wave before opening its successor, and relays typed artifact and findings lines verbatim.
 
-Discovery first asks itself what is missing. The audit covers game fantasy and audience; 2D/3D; core loop and comparable mechanics; session length; level, wave, boss, progression, and terminal states; controls and input devices; target hardware/browser/display; visual and audio direction; asset and license constraints; accessibility promises; delivery boundary; existing repository conventions; and the user's definition of quality. It records supplied answers, derivable repository facts, reversible workflow defaults, empirical questions, and user-only questions separately.
+| Stage | Inputs | Output and gate |
+| --- | --- | --- |
+| 0. Audit | Brief, workspace, baseline | Brief audit, capability inventory, target hardware. Every missing material capability or user decision has an owner and route. |
+| 1. Freeze | Stage 0 identities, focused evidence | Game contract, art direction, asset budgets, increment plan, acceptance/capture/performance matrices. A reader can build and falsify the whole game without selecting another engine. |
+| 2. Prove pipelines | Frozen contract, representative asset jobs | I0 control tracer plus one Blender-to-GLB representative set imported through `GLTFLoader`. Production build, ordinary input, renders, validation, and in-engine scale/material/animation checks pass. |
+| 3. Grow vertically | Prior accepted commit, next increment goal, accepted assets | Ordered playable commits I1–I4. Each commit builds, plays, is captured, and resolves blocking judgment before its successor opens. |
+| 4. Accept | One frozen release-candidate commit and closed matrices | Maker-independent functional, asset, visual, play, compatibility, and performance evidence. Every hard gate and quality floor passes or returns findings. |
+| 5. Repair and close | Verbatim findings, fixed evidence, round count | At most two scoped repair/re-judge rounds, then an outside probe over the joined tip or an honest return of remaining blocks. |
 
-The capability inventory MUST observe rather than assume:
+Discovery research is bounded to decisions still open inside the fixed stack: mechanics and comparables; Three.js architecture and browser/backend capability; Blender production feasibility and budgets; and play/performance measurement on the actual host. It uses current primary sources and targeted spikes. It does not compare engines or DCCs.
 
-- clean/dirty workspace state, baseline commit, package manager, lockfile, build and test commands;
-- exact CPU, GPU, memory, OS, display refresh, viewport, device-pixel ratio, power mode, browser/version, and graphics backend available for performance work;
-- whether the agent can receive current visual feedback; focus the canvas; click; hold and release multiple keys; sustain composite keyboard/mouse input in real time; recover focus; satisfy a user-gesture gate; use pointer lock when the design needs it; capture screenshots/video/traces; and read console/network failures;
-- whether image generation can generate, edit, retain references across turns, and deliver the required transparency and dimensions with the currently available model/tool;
-- for 3D, the exact Blender executable/version, background Python execution, render and glTF export, and whether an MCP server is installed and callable; and
-- whether the target repository can serve a production-like build and the harness can reach it without privileged application calls.
+## Stage 0 — audit the brief and prove the fixed tools
 
-**Policy:** Blender is the default 3D authoring application, not an assumed capability. If it is missing, discovery records the gap. With prior authorization, a separate preparation action may install and pin it, then repeat the capability checks. Without authorization, the 3D asset branch pauses for one user decision; it must not quietly switch DCCs or claim that generated primitive geometry is production art.
+The audit covers the game fantasy and audience; core and session loops; level, wave, boss, progression, and terminal states; camera and controls; target hardware/browser/display; art, audio, and accessibility scope; asset and license constraints; delivery boundary; repository conventions; and the user's quality bar. It separates supplied facts, repository facts, reversible defaults, empirical questions, and user-only questions.
 
-**Gate:** the audit has no hidden material gaps; every required tool is observed or routed; at least one credible engine/asset/playtest path is testable; and a physical development target is declared for 60 fps. If no available agent can both see and control fast real-time gameplay, discovery records that actual play requires a compatible external lane. It does not downgrade scripted simulation into playtesting.
+The capability inventory observes:
 
-## Stage 1 — concentrate research and select the production route
+- clean/dirty workspace state, baseline, package manager, lockfile, build/test/serve commands, and installed Three.js identity;
+- exact CPU, GPU, memory, OS, display refresh, viewport, device-pixel ratio, power mode, browser/version, and available WebGL/WebGPU backend;
+- whether an agent can receive current visual feedback; focus the canvas; click; hold and release composite keyboard/mouse input; recover focus; pass user-gesture and pointer-lock gates; capture images/video/traces; and read console/network failures;
+- the absolute Blender executable, version output, executable identity, background Python execution, render engines/devices, glTF exporter, and package script compatibility; and
+- whether a production-like build can be served and reached without privileged game-state calls.
 
-All planned external research runs here, in parallel lanes under `orch-research`. Each lane dates atomic claims, uses current primary sources, searches for disconfirming evidence, and returns explicit gaps. Synthesis begins only after the lanes land.
+Missing Blender is a capability gap. Installation occurs only under existing user authority and outside this workflow run, followed by a fresh probe. The workflow neither changes DCC nor treats primitives as final art. There is no MCP, custom RPC service, or persistent Blender daemon to probe or operate.
 
-| Lane | Required questions and evidence |
-| --- | --- |
-| Mechanics and comparables | What makes the requested loop readable and fun; how comparable games pace threat, rewards, build choices, level pressure, bosses, loss, and replay; direct gameplay or developer material for every cited behavior. |
-| Engine and browser | Current 2D/3D engine fit, license, browser/backend support, repository integration, build size, input, audio, physics, asset loading, debugging, automation, and maintenance; a pinned minimal spike for each finalist. |
-| Art and asset pipeline | Feasible style, production volume, 2D/3D branch, image-generation capability, Blender/automation route, interchange, compression, animation, provenance, licensing, and validation. |
-| Playtest and performance | Host control limits, ordinary versus privileged input, deterministic test mode, trace/capture methods, target hardware scenarios, metrics, thresholds, and failure attribution. |
+## Native Blender job boundary
 
-Current documentation supports these starting facts and policies:
+**Current fact:** Blender's command line can run without a UI, execute a Python file with `--python`, turn an uncaught command-line script exception into a chosen nonzero status with `--python-exit-code`, and pass following arguments untouched after `--`. Blender evaluates arguments in order ([command-line arguments](https://docs.blender.org/manual/en/5.1/advanced/command_line/arguments.html)).
 
-| Current fact (checked 2026-09-05) | Workflow policy it informs |
-| --- | --- |
-| Phaser describes itself as a browser-first **2D** framework using JavaScript/TypeScript with WebGL and Canvas renderers ([Phaser docs](https://docs.phaser.io/)). | Start a 2D selection with Phaser unless the workspace or brief establishes a stronger candidate. |
-| PlayCanvas supports standalone Vite/TypeScript projects; its current engine requires WebGL 2, offers WebGPU in beta with WebGL 2 fallback, and exposes a null backend for headless use ([standalone](https://developer.playcanvas.com/user-manual/engine/standalone/), [graphics](https://developer.playcanvas.com/user-manual/graphics/), [browser support](https://developer.playcanvas.com/user-manual/engine/supported-browsers/)). | Start a code-first 3D selection with PlayCanvas standalone and a WebGL 2 acceptance baseline. Treat WebGPU as a separately measured backend. Compare Babylon.js when its integrated game features reduce project risk; use Three.js only when the team deliberately accepts assembling more game systems. |
-| Godot 4 web export currently requires WebAssembly and WebGL 2, has no C# web export, defaults to a more compatible single-thread export, and requires cross-origin isolation for threaded export ([Godot web export](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html)). | Admit Godot only when editor workflow or native portability is valuable and a browser export spike passes the actual host, headers, payload, audio, and automation gates. |
-| Blender exposes background command execution and Python glTF export; Blender's glTF exporter covers meshes, PBR materials, textures, skinning, animation, and related features ([CLI](https://docs.blender.org/manual/en/5.1/advanced/command_line/arguments.html), [Python export API](https://docs.blender.org/api/main/bpy.ops.export_scene.html), [glTF add-on](https://docs.blender.org/manual/en/dev/addons/scene_gltf2.html)). | Make checked-in or generated `bpy` scripts plus background Blender runs the reproducible production route. |
-| Blender's official Lab MCP requires Blender 5.1 or newer and external components, executes model-generated code without guards, and recommends isolation ([Blender Lab MCP](https://www.blender.org/lab/mcp-server/)); community servers add different bridges and capabilities ([community example](https://github.com/MCPBlender/blender-mcp)). | MCP is an optional interactive inspection route after an exact capability, version, network, and trust probe. Pin it, isolate it, save before use, and reproduce accepted asset changes through the deterministic Blender script/export path. |
-| glTF is a runtime delivery format rather than an authoring format, and Khronos publishes a validator that emits machine-readable issues and exits nonzero on errors ([glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html), [validator](https://github.com/KhronosGroup/glTF-Validator)). | Keep `.blend` or other source identity beside exported `.glb`; validate every export and test it in the selected engine. Optimize only after visual and runtime comparison. |
-| Playwright distinguishes ordinary-condition clicks from programmatic `dispatchEvent`, can hold/release keyboard input, and its clock overrides `requestAnimationFrame` and `performance` ([actions](https://playwright.dev/docs/input), [keyboard](https://playwright.dev/docs/api/class-keyboard), [clock](https://playwright.dev/docs/clock)). | Use browser-level actions and an unmodified clock for actual play and FPS. Fake time and direct state hooks are deterministic functional evidence only. |
-| Chrome's Performance panel records runtime activity, screenshots, frame duration, partially presented frames, and dropped frames ([performance reference](https://developer.chrome.com/docs/devtools/performance/reference), [runtime guide](https://developer.chrome.com/docs/devtools/performance)). | Bind raw real-time metrics to a browser trace on the declared device; a game-owned FPS counter alone cannot close performance. |
-| OpenAI's current image guide documents generation, editing, and multi-turn reference editing; output options such as transparency depend on the selected model and parameters ([image generation guide](https://developers.openai.com/api/docs/guides/image-generation)). | Probe the available image tool/model at run time. Use it for concept exploration and only for production assets whose consistency, transparency, dimensions, rights, and in-engine result pass their asset contract. |
+The default route MUST launch the absolute, capability-probed Blender executable as a fresh subprocess for one job. The host-side package runner builds an argument array rather than interpolating a shell string. An illustrative launch is:
 
-Each engine finalist spike MUST boot from a pinned lockfile, import one representative asset, accept ordinary input, expose the proposed observation-only harness, produce a production build, and run the peak-density micro-scenario on the declared device. Synthesis records why the winner won and what would invalidate it. Popularity, model familiarity, or an unrun template is not evidence.
+```text
+<BLENDER_EXE> --background --factory-startup --python-exit-code 23 --python <PACKAGE>/scripts/blender_asset_job.py -- <JOB_DIR>/job.json
+```
 
-**Gate:** one engine/backend, language, package/version lock, rendering strategy, physics/collision approach, 2D/3D asset route, test harness, target device matrix, and performance protocol are selected. Load-bearing claims have primary evidence or a declared gap. No production call opens before the research identity and decision revision are fixed.
+The executable path and version are pinned by the run's capability identity; `<PACKAGE>` is fixed by the workflow-package digest. The runner sets an explicit wall timeout and owns process-tree termination. The worker gets all variable input from `job.json`; it does not receive generated Python through `--python-expr` or open a socket.
 
-## Stage 2 — freeze the concept and visual system
+Every job has a never-reused directory and id. The input file records schema version, job id, asset id, source mode, exact input hashes, expected source hash, seed, unit/axis/pivot contract, collection and object allowlists, mesh/material/texture/rig/animation budgets, render cameras, engine/device/sample settings, export options, and expected output paths. Paths resolve inside the job or declared workspace roots. One Blender process owns one `.blend` state. CPU jobs run under a measured process cap; GPU renders are serialized per GPU by default and widen only after a resource probe. Concurrent jobs never share a writable source or output path.
 
-Conceptualization turns the brief and research into one buildable game contract. It MUST define the player fantasy; moment-to-moment and session loops; controls; camera; game-state machine; combat verbs; damage and invulnerability rules; enemy and upgrade taxonomies; progression economy; loss, win, and restart; session length; level topology; wave pacing; boss phases and counterplay; HUD and feedback; audio cues; accessibility scope; content budget; and measurable acceptance examples. Tunable content lives in data rather than being scattered through engine code.
+Source authority is explicit:
 
-Level design begins as a graybox evidence problem. For each level, the contract fixes traversable bounds, camera behavior, landmarks, spawn and exclusion zones, obstacle readability, density limits, hazard/relief rhythm, and the path from opening safety through peak pressure to boss space. A wave table names time/trigger, enemy composition, spawn rule, intensity purpose, reward beat, performance budget, and boss transition. The final boss has readable telegraphs, distinct phases, a reachable defeat condition, and a terminal-state handoff.
+- **Procedural:** the generator/edit script, job JSON, and pinned reference inputs are authoritative. The `.blend`, GLB, and previews are derived and must rebuild from those identities.
+- **Edited:** the pinned `.blend` is authoritative. A one-purpose Python edit job asserts its input hash, saves a new source revision, and records the edit script/job as provenance; it does not claim that earlier manual modeling is reproducible from code. Later validation/render/export jobs never mutate that accepted source.
 
-Art direction begins with a reference board and three sufficiently different concept directions unless the brief already fixes one. When image generation is available, it MAY make concept boards and turnarounds under a recorded model/tool identity, prompts, inputs, and edit lineage. `bakeoff` selects against a frozen rubric: silhouette readability at play distance, originality, palette and material coherence, production feasibility, animation needs, UI compatibility, and target-device cost. The winner becomes a style bible with approved shapes, palette, materials, lighting, camera, scale, VFX density, UI rules, and forbidden drift.
+Generated images MAY guide silhouettes, materials, or turnarounds when their model, prompt, inputs, and rights are recorded. They are references, not proof of a runtime asset. The accepted object is the inspected `.blend` plus its validated runtime export and in-engine evidence.
 
-**Gate:** a reader can implement and falsify the game without inventing its loop; the whole session, level, waves, and boss are represented; the capture matrix and quality rubric are closed; asset counts and budgets fit the chosen route; and concept art proves direction rather than masquerading as runtime production.
+### Python method inside Blender
 
-## Stage 3 — prove the asset pipeline, then produce against accepted play
+The worker prefers `bpy.data` and BMesh for deterministic object, mesh, material, collection, transform, and topology edits. Blender documents that operators depend on implicit UI context and may fail their poll where a direct API would give clearer access, while BMesh can be created, modified, written back, and freed without Edit Mode ([operator limitations](https://docs.blender.org/api/current/info_gotchas_operators.html), [BMesh API](https://docs.blender.org/api/current/bmesh.html)). The applied `blender-bpy` method therefore requires explicit names and direct references rather than selection-driven mutation.
 
-Every asset has one manifest entry: stable id and gameplay role; source and license/provenance; style tags; dimensions or world scale; pivot/origin; silhouette target; animation/state list; collider and attachment rules; geometry, texture, material, atlas, draw-call, and memory budgets as applicable; source identity; runtime export identity; preview captures; validation output; and in-engine observation. Generated or downloaded material with unresolved rights remains a gap and cannot enter the accepted build.
+Operators remain deliberate boundaries when they are the supported operation: open a pinned `.blend`, save a new `.blend`, bake materials, render, and export glTF. Before each operator, the worker sets and asserts scene, view layer, mode, active object, selection, render engine, device, frame, and output path as applicable; it checks the returned status and then validates the observable file or data change. Version-specific keyword support is capability-probed rather than inferred from moving `main`/`current` API pages.
 
-The 2D branch SHOULD make a small representative atlas before fan-out. It fixes pixel density, working and runtime color space, palette, transparency, trim, pivot, padding/extrusion, filtering, animation cadence, naming, and fallback rules. A script checks dimensions, alpha, duplicate names, atlas bounds, and manifest coverage; a visual judge checks animation, play-distance silhouette, palette, and in-engine compositing.
+Structural inspection records object/collection names; dependency and external-file references; unit scale; transforms, origin, forward marker, bounds, and ground contact; mesh triangle/vertex counts after evaluated modifiers; UVs, normals, tangents where required, non-manifold and degenerate geometry; material slots and texture dimensions/color roles; armatures, bone influences, actions, clip names/ranges, root motion, and sampled poses; cameras/lights used only for review; and every budget verdict. Seeds cover procedural choices, but the record does not promise byte-identical GPU renders across drivers or devices. It binds Blender/executable, OS/driver/backend, scene, script, job, source, export, and render identities and uses numeric and visual tolerances where bytes may vary.
 
-The 3D branch uses Blender by default. It SHOULD create one representative character, enemy, environment kit, and effect before parallel production. Accepted source changes must be reproducible from a pinned `.blend` identity and/or checked-in `bpy` script. Exported `.glb` files pass the Khronos validator, engine import, scale/orientation, transform, skin, animation, material/texture, collider, and preview checks. Optimization produces a new identity and must show both size/performance gain and no blocking visual regression. MCP-created work is provisional until saved, manifested, and reproduced or normalized by the deterministic export path.
+### Render, inspect, export, and promote
 
-The representative set proves feasibility before mechanics harden around bad assets, but mass production MAY fan out only after both that set and I1's fun-loop gate pass. Production then runs alongside the content-bearing increments, with each lane receiving the frozen style bible and asset contract rather than another lane's improvisation. A terminal integration pass inspects the assembled cast and level because individually attractive assets can still disagree in scale, palette, lighting, or density.
+The worker renders the asset from the actual gameplay camera and lighting contract, not only a flattering studio angle. It also emits a fixed turntable and, for animated assets, representative clip frames or a review animation that exposes silhouette, deformation, foot contact, looping, and attachments. The asset maker and judge MUST actually view these renders with a visual-capable tool and record which files and frames they inspected. A file's existence is not visual evidence.
 
-## Stage 4 — build in playable vertical increments
+The source uses a small glTF-compatible Principled metal/rough material vocabulary. Procedural or unsupported Blender shader networks are baked deliberately to the agreed base-color, metallic/roughness, normal, occlusion, and emissive textures; color textures and data textures retain distinct color-space roles. The export contract fixes whether modifiers are applied, because applying them can conflict with shape keys, and fixes action/NLA handling, clip names, sampling, skin influence limits, morph targets, textures, extras, and extensions. Blender's exporter supports meshes, metal/rough materials, textures, skinning, shape keys, and animation, but Blender and glTF material systems are not identical ([Blender glTF manual](https://docs.blender.org/manual/en/5.1/addons/import_export/scene_gltf2.html), [versioned export API](https://docs.blender.org/api/5.1/bpy.ops.export_scene.html)). The workflow verifies the chosen subset; it never assumes the viewport look survives export.
 
-The plan cuts the game into the smallest sequence whose every revision is bootable and playable. Each `playable-increment` starts from the last landed commit and follows the same contract:
+The handoff uses `.glb` for runtime delivery and keeps `.blend` as source. Its manifest fixes meters, exported +Y up, the model's gameplay-forward vector, pivot/origin, transform policy, bounds, collider/attachment metadata, material and texture roles, animation names/ranges, skeleton and morph budgets, required loader extensions/decoders, and hashes. Three.js recommends glTF for runtime assets and exposes glTF scenes, cameras, and animation clips through `GLTFLoader` ([Three.js loading guide](https://threejs.org/manual/en/loading-3d-models.html), [`GLTFLoader`](https://threejs.org/docs/pages/GLTFLoader.html)).
 
-1. make the scoped mechanics/content/assets in an isolated candidate;
-2. run deterministic seam checks and a production build;
-3. land only the checked commit;
-4. serve that exact commit and perform a short ordinary-input play session;
-5. capture the increment's new and regression states;
-6. judge the fixed commit against code, visual, play, and increment criteria; and
-7. repair a blocking finding within the increment before opening its successor.
+Blender writes candidate outputs and a worker-result manifest inside the unique job directory, with the manifest last. The host runner accepts nothing unless the process exits zero; the echoed job id and input digest match; every expected output is new, contained, nonempty, and hash-matched; structural and render evidence is complete; and the pinned Khronos validator produces a machine-readable report with no errors. The validator documents JSON reports and a nonzero CLI status on errors ([glTF Validator](https://github.com/KhronosGroup/glTF-Validator)). The runner then imports the GLB through the pinned Three.js production path, checks scale, orientation, materials, clip playback, bounds/collider alignment, load errors, and representative-device cost, and only then promotes source/export/manifest files into the candidate commit.
 
-The default milestone shape is:
+A timeout, nonzero exit, missing manifest, mismatched nonce/hash, validator error, stale path, partial file, or in-engine mismatch keeps the job directory as failed evidence and promotes nothing. There is no automatic retry. Diagnosis names the failed boundary; a new attempt gets a new job id and records its relationship to the failure.
+
+**Qualified alternative:** Blender publishes a pip-installable `bpy` module, but its official documentation notes one active `.blend` per process, unsupported module reload, different startup/preferences, unavailable CLI-controlled functions, different signal handling, and possible GPU conflicts ([Blender as a Python module](https://docs.blender.org/api/current/info_advanced_blender_as_bpy.html)). A run MAY use embedded `bpy` only after pinning a distribution compatible with the required Blender version and passing the same render/export/signal/timeout probes. It still uses one disposable worker process and the same job/result files. It is not installed into or assumed compatible with the Orchflows interpreter. The executable subprocess remains the default because it preserves Blender's tested CLI, add-on, render, crash, and isolation behavior.
+
+## Three.js runtime contract
+
+Three.js supplies scene, rendering, loading, and animation primitives; it does not choose the game's architecture. Before I0, the concept assigns each system to an explicit module and seam:
+
+- normal-clock loop and fixed/variable simulation timing, pause, visibility loss, and catch-up limits;
+- ordinary input action map, focus/pointer lock, movement, aiming, collision/physics, and camera;
+- game-state machine for boot, menu, play, upgrade, pause, loss, win, and restart;
+- entities, waves, rewards, boss phases, seeded randomness, lifecycle/pooling, and read-only diagnostics;
+- `GLTFLoader` registry, progress, cancellation, error presentation, decoders/extensions, and fallback behavior;
+- `AnimationMixer`/clip ownership, transitions, root-motion policy, skeleton budgets, and animation cleanup;
+- renderer, scene, lights/shadows, materials, color management, culling, LOD, instancing, particles, and post-processing;
+- audio unlock, mixing, pause/disposal, and observable failure; and
+- DOM/canvas UI, HUD, accessibility, resize/DPR policy, and resource disposal.
+
+The target workspace pins Three.js and every runtime decoder or physics dependency in its own lockfile. The workflow package owns none of them. A manifest using Draco, Meshopt, or KTX2 names the corresponding loader setup and decoder identity; omission or load failure is fatal. Load errors are visible game states and test seams. Removal disposes geometries, materials, textures/image bitmaps, render targets, skeletons, mixers, listeners, and audio according to ownership; Three.js warns that loader-created image bitmaps need special disposal handling ([`GLTFLoader`](https://threejs.org/docs/pages/GLTFLoader.html), [disposal guide](https://threejs.org/manual/en/how-to-dispose-of-objects.html)).
+
+Renderer choice remains an empirical decision within Three.js. The default acceptance baseline SHOULD use pinned `WebGLRenderer` on WebGL 2. `WebGPURenderer` MAY replace it only when the exact Three.js revision, materials/post-processing, fallback behavior, browsers, captures, and performance cells pass; the current Three.js guide calls it experimental and documents material/post-processing differences and a WebGL 2 fallback ([renderer guide](https://threejs.org/manual/en/webgpurenderer)). A backend change invalidates visual and performance evidence.
+
+Color inputs, working space, output transform, tone mapping, environment maps, and post-processing output are explicit. Three.js uses Linear-sRGB as its working space and requires correct annotations for color versus data textures ([color management](https://threejs.org/manual/en/color-management.html)). The imported asset test catches washed-out base color, incorrect normal/roughness treatment, lighting mismatch, and missing output conversion.
+
+Instancing is admitted only for compatible shared geometry/material and a measured draw-call win. Animated crowds receive a declared strategy and peak-scenario proof; an ordinary `InstancedMesh` is not assumed to solve skeletal animation. Skeleton/bone/influence, active mixer, morph, particle, light/shadow, triangle, texture-memory, and draw-call limits come from the representative asset and peak-density measurements. They are budgets, not fashionable constants.
+
+The production input boundary also serves testing. Browser automation may focus the canvas and press, hold, move, and release ordinary inputs. A lab build may select a seed, load a scenario, control simulation time, or expose a read-only snapshot; those controls are absent from production and never count as actual play or normal-clock performance.
+
+## Playable vertical increments
+
+Each `playable-increment` starts from the last accepted commit and performs one bounded sequence: make in an isolated candidate, run seam checks and a production build, land the checked commit, serve that exact identity, play with ordinary input, capture new and regression states, judge the fixed revision, and resolve any blocking finding before its successor opens.
 
 | Increment | Required playable proof |
 | --- | --- |
-| I0 control tracer | Production build boots; menu/start, focus, movement/aim, pause if promised, loss, win stub, and restart use the final input boundary. Graybox visuals are explicit. |
-| I1 fun-loop slice | Several minutes of representative combat include one weapon, damage/feedback, enemy pressure, rewards, an upgrade choice, death, and restart. One representative production asset set proves the visual pipeline. |
-| I2 full-session skeleton | The complete level, all wave timings, progression topology, boss phases, win/loss, and restart are reachable with placeholder content clearly inventoried. Peak-density and boss stress seeds run. |
-| I3 production-content candidate | Approved assets, animation, VFX, UI, audio in scope, enemy/upgrade variety, balance, pacing, and boss polish replace every placeholder. The asset manifest has no unowned entry. |
-| I4 release candidate | Full ordinary-input sessions, capture matrix, compatibility checks, target-device traces, clean production build, and final outside probe pass at one revision. |
+| I0 control tracer | Production build boots; menu/start, canvas focus, movement/aim, camera, pause if promised, loss, win stub, and restart cross the final input/state boundaries. A representative GLB loads through the production path. |
+| I1 fun-loop slice | Several minutes of combat include one attack, damage/feedback, enemy pressure, reward and upgrade choice, death, and restart. Representative hero, enemy, environment, animation, VFX, UI, and audio establish the quality bar. |
+| I2 full-session skeleton | The complete level and wave topology, progression, boss phases, win/loss, and restart are reachable. Every placeholder is identified. Peak-wave and boss stress seeds run. |
+| I3 production-content candidate | Approved Blender assets, animation, VFX, UI/audio, enemy/upgrade variety, balance, pacing, and boss polish replace every placeholder. Asset manifests and disposal checks close. |
+| I4 release candidate | Full ordinary-input sessions, capture matrix, compatibility checks, clean production build, declared-hardware traces, and outside-probe preparation bind one commit. |
 
-Mechanics MUST expose seams that support both play quality and diagnosis: explicit game states; an input action map separated from simulation; seeded randomness; stable time-step policy; data-driven waves, enemies, upgrades, and boss phases; bounded entity/particle/audio lifecycles; and observable counters for state, entities, draw calls, frame timing, and errors. The chosen collision, pooling, instancing, culling, and spatial-query strategies are settled by the peak scenario, not prescribed by fashion.
+Mass asset production begins only after the representative pipeline and I1 fun loop pass. Thereafter asset batches and code increments may run in parallel from explicit baselines, but asset commits land and hand manifests to the integration increment before that increment is judged. A final assembly view checks cast-wide scale, palette, lighting, density, animation, and camera readability because separately approved assets can still conflict in a scene.
 
-A deterministic lab build MAY select a seed, load a scenario, advance controlled time, or expose a read-only snapshot. Those controls are disabled or inaccessible in the production build. They accelerate functional and balance tests but never replace ordinary-input play or normal-clock performance evidence.
+## Actual agent playtesting
 
-## Actual agent playtesting and the harness boundary
+The target carries a small browser harness that can start/stop the server and browser, focus the game, issue ordinary keyboard/pointer actions, wait on a normal clock, return a current screenshot plus a compact read-only state snapshot, and start/stop evidence capture. It may adapt [Playwright's ordinary input APIs](https://playwright.dev/docs/input) or an equivalent host. It never invokes game methods to move, damage, choose rewards, defeat the boss, or set a terminal state.
 
-The target repository SHOULD carry a small, engine-neutral play harness so Codex, Claude Code, or another capable agent can use the same protocol. It provides commands to launch/close the server and browser, focus the game, press/hold/release ordinary keys or pointer buttons, wait in real time, observe a current screenshot plus a compact read-only state snapshot, and start/stop evidence capture. The harness adapts to Playwright or a host's equivalent; it does not call game methods to move, damage, choose upgrades, kill a boss, or set a win state.
+Evidence uses three labels:
 
-Evidence is labeled in three classes:
+- **actual play:** a player receives current visual feedback, sustains ordinary input on a normal clock, and adapts later input to observations;
+- **scripted input:** a fixed ordinary-input sequence runs without adaptive observation; and
+- **simulated:** fake time, scenario jumps, direct state mutation, bots, or headless/null rendering.
 
-- **actual play:** the agent receives current visual feedback, issues sustained ordinary browser input on a normal clock, and can adapt actions from observations;
-- **scripted input:** a fixed ordinary-input sequence runs without adaptive observation; useful for regression, weaker for play quality; and
-- **simulated:** fake clock, scenario jump, direct state mutation, bot policy, or headless/null rendering; useful for mechanics and scale, inadmissible as actual play.
+Only the first supports play-quality and complete-game claims. A session records artifact commit, harness/browser/device/backend, seed, real start/end time, input mode, checkpoints/captures, upgrades, damage/death/win state, control problems, pacing, readability, feedback, fun/frustration observations, console/network errors, and confidence limits.
 
-An actual full-session account records artifact commit, harness and browser versions, device/backend, seed, start/end time, input mode, checkpoints/screenshots, build choices, damage/death/win state, control problems, pacing dead zones, unreadable threats, confusing feedback, fun/frustration observations, console errors, and confidence limits. At least two maker-independent agents or contexts MUST play the release candidate; together they cover a complete win through the final boss, a loss, and restart from both outcomes. At least one session traverses the normal menu and tutorial/control disclosure. If no available host can sustain the game in real time, the workflow returns `actual-play: unverified` and cannot claim completeness.
+At least two maker-independent agents or contexts play I4. Together they cover one normal-menu full win through the final boss, a loss, and restart from both outcomes. At least one traverses control/tutorial disclosure. If no available agent can both see and control real-time play, the workflow returns `actual-play: unverified` and cannot claim completion; scripted and simulated evidence retain their narrower labels.
 
-## Declared-hardware 60 fps contract
+## Real presented-frame performance
 
-“60 fps” is a measurement cell, not an adjective. Each cell binds exact device/CPU/GPU/RAM, OS and power mode, browser/version, graphics backend, display refresh, viewport and device-pixel ratio, quality settings, production-build commit, scenario and seed, warm/cold state, duration, instrumentation, raw sample path, metric definition, threshold, result, and invalidation rule.
+“60 fps” is a measurement cell. Each cell binds device/CPU/GPU/RAM, OS and power mode, browser/version, renderer/backend, display refresh, viewport/DPR, quality settings, commit, scenario/seed, warm/cold state, duration, instrumentation, raw paths, metric definitions, thresholds, and invalidation rule.
 
-Required scenarios are idle/menu, representative play, peak wave density, boss with its heaviest promised effects, and one full actual-play session. The default protocol on a 60 Hz target is three 60-second warm runs per stress scenario after a documented warm-up. Each run must average at least 59 animation-frame callbacks per second, keep at least 99% of foreground normal-clock callback intervals at or below 18.33 ms, and have no unexplained stall above 100 ms. The same run record also requires a Chrome trace to classify every display opportunity as fully presented, partially presented, or dropped. Let `F` be fully presented opportunities divided by elapsed seconds and `M` be (partially presented + dropped) divided by all classified opportunities; each trace run must have `F >= 59` and `M <= 1%`. A partially presented frame counts as zero fully presented frames because some visual updates missed the deadline; a dropped frame counts as zero and remains a miss. Missing or unclassified opportunities, incomplete trace coverage, or unavailable presentation counts fail the run. A project MAY set a stricter contract; changing a failing threshold or quality setting creates a new decision revision rather than turning red evidence green.
+Required scenarios are idle/menu, representative play, peak wave, heaviest boss effects, and one full actual-play session. The default 60 Hz development contract uses three 60-second warm runs for each stress scenario after a recorded warm-up. In each run, foreground normal-clock `requestAnimationFrame` evidence averages at least 59 callbacks per second, at least 99% of callback intervals are at most 18.33 ms, and no unexplained stall exceeds 100 ms.
 
-Game-owned `requestAnimationFrame` samples provide distributions and scenario markers. A separate Chrome performance recording at the same commit, scenario, seed, device/backend, and duration supplies the required presented-frame counts alongside frame duration, dropped or partially presented frames, main-thread work, GPU/render activity where exposed, memory trend, console failures, and screenshots. Because tracing and screenshots add overhead, the record keeps instrumented and minimally instrumented runs separate. Any callback/trace contradiction (one source passes its thresholds while the other fails, or their run markers cannot be reconciled) fails the cell until the cause is attributed and a matching rerun resolves it; passing callback metrics cannot override a failing presented-frame trace. Fake-clock runs, background tabs, DevTools CPU throttling, null renderers, and synthetic scenario fast-forward are diagnostic evidence, never the physical-device pass.
+Callback cadence does not prove display presentation. A Chrome performance trace for the same commit, scenario, seed, device/backend, and duration classifies display opportunities as fully presented, partially presented, or dropped; current Chrome tooling exposes frame duration and dropped/partially presented frames ([Performance panel reference](https://developer.chrome.com/docs/devtools/performance/reference)). Let `F` be fully presented opportunities divided by elapsed seconds and `M` be partially presented plus dropped opportunities divided by all classified opportunities. Each trace run requires `F >= 59` and `M <= 1%`. Partial and dropped frames contribute zero fully presented frames. Missing/unclassified opportunities or incomplete trace coverage fail the cell.
 
-Failure starts with attribution: CPU simulation, garbage collection, GPU/draw calls, fill rate, asset decode/upload, memory growth, or harness overhead. One repair targets the measured bottleneck and reruns the same scenario. The workflow cannot silently lower resolution, enemy count, effects, browser cohort, or hardware target; those are visible product/quality decisions.
+Instrumented and minimally instrumented runs stay separate because traces and captures add overhead. Any contradiction fails: if callbacks pass while presented frames fail, presented frames govern; if the trace passes while callback markers, scenario identity, or timing cannot be reconciled, the cell remains unverified. A matching rerun closes a contradiction only after its cause is recorded. Fake clocks, background tabs, throttling, null renderers, synthetic fast-forward, and dev builds are diagnostic evidence, never the physical-device pass.
 
-## Final evidence fan-out and discriminating judgment
+Failure attribution distinguishes simulation/main-thread work, garbage collection, draw calls, GPU/fill rate, shader compilation, asset decode/upload, animation/skinning, memory growth, and harness overhead. One repair targets the measured bottleneck and repeats the identical cell. Lowering resolution, content density, effects, browser cohort, or hardware target requires a visible decision revision; it cannot recolor a failure.
 
-Final acceptance freezes one candidate commit before review. Independent lanes gather: deterministic build/mechanics evidence; asset/provenance/manifest evidence; visual captures; ordinary-input play accounts; compatibility/console/network evidence; and physical-device performance traces. Evidence collectors may not edit the candidate. The final judge runs in a fresh maker-independent context and receives the fixed Goal, artifact identity, rubric, and evidence index rather than the makers' conversational history.
+## Fixed-revision judgment, repair, and close
 
-The capture matrix MUST include, at every declared viewport, boot/loading, menu/control disclosure, opening play, first reward choice, representative early and mid pressure, peak density, low-health/readability stress, pause/settings if promised, boss entrance, each boss phase, loss, win, and restart. The worked 3D example uses at least 18 distinct view × state captures, separated by state or meaningful play time rather than near-duplicate bursts. Each capture binds commit, viewport, DPR, browser/backend, state, seed, and timestamp. The judge inspects the full matrix and every playtester account, not a curated highlight reel.
+Final acceptance freezes one release-candidate commit before review. Maker-independent lanes gather deterministic build/mechanics results, asset/provenance manifests, visual captures, ordinary-input play accounts, compatibility/console/network results, and physical-device traces. Collectors do not edit the candidate. Judges receive the Goal, fixed artifact identity, their one stamped lens, and the evidence index rather than maker conversation.
 
-Hard gates are binary: production boot; ordinary controls and focus; promised content; complete win/loss/restart paths; final boss; no undisclosed placeholders; no blocking errors; manifest/provenance closure; actual-play minimum; and every declared 60 fps cell, including both callback and presented-frame metrics and their agreement verdict. Quality is then scored 0–4 for core-loop clarity, control feel, combat feedback, threat and reward readability, pacing, meaningful build choices, level pressure, boss telegraph/counterplay, art coherence, UI/audio support, and polish. Passing requires every hard gate, no quality score below 3, and an evidence-backed rationale for each score. An average cannot hide one core failure.
+The capture matrix covers every declared viewport at boot/loading, menu/control disclosure, opening play, first reward, representative early/mid pressure, peak density, low-health readability, pause/settings when promised, boss entrance and each phase, loss, win, and both restarts. Each capture binds commit, viewport/DPR, browser/backend, state, seed, and timestamp. Asset-specific gameplay-camera and turntable/animation renders remain linked rather than substituted for in-engine captures.
 
-The judge returns blocking findings as observable complaints tied to evidence and a responsible seam, for example “boss phase-two ground tell is lost under peak-wave particles in captures C14/C15 and caused both players to take unavoidable damage,” not “needs polish.” It distinguishes a defect, an unverified claim, and a preference.
+Hard gates are production boot; ordinary controls/focus; promised content; complete win/loss/restart and boss paths; zero undisclosed placeholders; no blocking errors; source/export/provenance closure; actual-play minimum; and every performance cell, including callback/presentation agreement. Quality is scored 0–4 for loop clarity, control feel, combat feedback, threat/reward readability, pacing, build choices, level pressure, boss counterplay, 3D art coherence, animation, camera, UI/audio support, and polish. Passing requires every hard gate and no score below 3. An average cannot hide a core failure.
 
-The workflow quotes the library idiom exactly: **Where the judge blocks, one repair `do` is handed the `findings:` line verbatim, then one re-judge; two rounds is the bound.** A repair goal lists the allowed complaint set, affected evidence, and regression matrix; it does not grant a general redesign. Re-judgment repeats all affected hard gates and quality criteria plus a smoke subset of unaffected paths. After two blocked rounds, the frame closes with the fixed artifact identity, findings, completed evidence, and unresolved gaps; it does not loop or claim success.
+Findings are observable complaints tied to evidence and a responsible seam. They distinguish defects, unverified claims, and preferences. **Where the judge blocks, one repair `do` is handed the `findings:` line verbatim, then one re-judge; two rounds is the bound.** A repair goal names only the accepted complaints, affected evidence, and regression subset. Re-judgment repeats affected gates and a smoke subset of unaffected paths.
 
-The final close uses an outside command against the joined tip. The probe MUST build from the lockfile, serve the production output, exercise boot/start/win-or-loss/restart through the admitted smoke path, validate evidence-index identities and asset coverage, and verify that every required acceptance cell has passing callback and presented-frame records, their raw counts and thresholds, and an agreement verdict; a missing, unclassified, or contradictory trace fails the probe. It runs outside every child and prints the exact accepted git identity.
+**Close on a command run outside every child; never on a child's own claim.** The outside probe checks the joined commit, installs/builds from the workspace lockfile, serves production output, exercises boot/start/terminal/restart through ordinary input, validates evidence/manifest identities and asset coverage, and verifies raw callback and presentation counts, thresholds, and agreement verdicts for every required cell. It prints the exact accepted git identity. After two blocked rounds or any unclosed hard gate, the workflow returns the fixed revision and gaps without claiming completion.
 
-## Failure and resumption behavior
+## Failure and resumption
 
-| Event | Required behavior and resume point |
+| Event | Required behavior |
 | --- | --- |
-| Missing product promise | File one `kind: user-only` question verbatim. Park only dependent branches; resume after recording the answer as a new brief revision. |
-| Missing or changed tool | Record observed capability and expected requirement. Install only when authorized. Re-probe and resume at capability inventory; version change invalidates dependent evidence. |
-| Research gap or contradiction | Return partial packets and gaps. If discovered later, open an explicit research resumption, revise the decision, and invalidate concept/build descendants named by identity. |
-| Maker/check failure | Keep the candidate unlanded, record command/output and partial artifact identity, and retry only the scoped unit within its bound. |
-| Asset generation/export failure | Preserve source, prompt/script, tool version, and validator output. Placeholders may keep an early increment playable but remain blocking in I3/I4. |
-| Agent cannot see/control real-time play | Label its evidence scripted or simulated, dispatch a capable actual-play lane if available, otherwise close completeness as unverified. |
-| Performance miss | Preserve raw samples and trace, isolate the bottleneck, and repair the responsible seam. A target/quality change requires a visible decision revision. |
-| Judge block | Apply the two-round bounded-repair rule, then return the remaining blocks without another loop. |
-| Crash or context loss | Use `orchflows resume`, read the open frame journal, resolve recorded artifact lines and package digest, land completed outcomes, and reopen only missing/expired dispatches. Never reconstruct state from memory. |
-| Package changed mid-run | Refuse stale dispatch/admission, open a successor run against the new package digest, and cite the predecessor evidence rather than mixing contracts. |
+| Missing product promise | File one `kind: user-only` question verbatim; park only dependent work and revise the brief on answer. |
+| Missing/changed Blender, browser, or tool | Record observed and required capability; install only with authority; re-probe and invalidate dependent evidence on identity change. |
+| Blender job failure | Preserve job, source, script/package identity, stdout/stderr, partial outputs, and diagnosis; promote nothing; retry only as a new job. |
+| Three.js load/runtime failure | Keep candidate unlanded, bind console/network/manifest evidence, and repair the responsible loader, asset, or runtime seam. |
+| Agent cannot see/control play | Preserve narrower scripted/simulated evidence; dispatch a capable lane or return actual play unverified. |
+| Performance miss/contradiction | Preserve raw callbacks and trace, attribute, repair one seam, and repeat the same cell. |
+| Judge block | Apply the two-round rule, then return remaining blocks. |
+| Crash/context loss | Use `orchflows resume`, read the frame journal, resolve recorded identities/package digest, land completed outcomes, and reopen only absent or expired dispatches. |
+| Package changes mid-run | Refuse stale admission and start a successor run citing predecessor evidence; never mix package contracts. |
 
 ## Worked invocation: one-level 3D survivor game
-
-The user invokes:
 
 ```text
 /browser-game build me a 3d vampire survivors-like game with 1 level but many waves that ends in a final boss fight
 ```
 
-Discovery treats “3D,” one level, many waves, and a final boss as fixed intent. It audits omitted session length, control/device scope, target hardware, art direction, audio/accessibility, and delivery. As reversible workflow defaults it proposes a 12-minute local-development run, keyboard movement with automatic attacks, original rather than imitative visual identity, and the exact available development machine plus current Chromium/WebGL 2 as the first declared 60 fps cell. A broader support claim remains a user-owned decision.
+Discovery treats 3D, one level, many waves, and a final boss as fixed intent; Three.js and Blender come from the workflow contract. It audits session length, controls, target hardware/browser, art/audio/accessibility, asset rights, and delivery. A reversible proposal might be a 12-minute local run, keyboard movement with automatic attacks, an original stylized low-poly direction, and the available development machine plus pinned Chromium/WebGL 2 as the first 60 Hz cell. Broader support remains user-owned.
 
-Research compares current PlayCanvas standalone and Babylon.js with a many-entity spike, keeping Three.js or Godot only if repository facts justify them. The spike imports one Blender-authored animated enemy, drives normal input, spawns the peak target, builds production output, and records traces. Blender background Python/GLB is the default asset path; MCP is used only if the capability and isolation probe passes. Concept bakeoff selects an original stylized low-poly direction with silhouettes readable from the fixed top-down camera.
+Focused research studies comparable pacing and boss counterplay, proves the installed Three.js/renderer path with a many-entity spike, and costs Blender geometry/material/animation production. There is no engine or DCC bakeoff. Concept work fixes an arena with landmarks and spawn exclusions; grace, escalation, relief, peak, and boss beats; melee/ranged/fast/tank/elite pressures; upgrade choices; readable damage/telegraphs; and a multi-phase final boss. Exact counts and timings come from evidence and play, not this example.
 
-The frozen concept defines one arena with landmarks and spawn exclusions; an opening grace beat; data-driven waves that introduce melee, ranged, fast, tank, and elite pressures; reward/upgrade choices; intensity valleys; a peak swarm; and a boss with entrance, two or more telegraphed phases, adds or arena pressure, defeat, reward, and win transition. Counts, timings, upgrades, and exact boss mechanics are settled in research/concept evidence rather than copied from this example.
+The representative Blender set contains hero, enemy, environment kit, one effect mesh/material, and named clips. Each runs through a unique file job, gameplay-camera and turntable/animation review, GLB validation, and `GLTFLoader` import before I1. The vertical plan is:
 
-The increment plan is concrete:
+1. I0 proves production boot, focus, movement, camera, damage, terminal states, restart, and representative GLB loading.
+2. I1 proves a three-minute combat/reward loop with the representative production set.
+3. I2 makes the full 12-minute wave and boss skeleton playable, inventories placeholders, and runs peak/boss stress seeds.
+4. I3 replaces every placeholder and closes animation, VFX, UI/audio, balance, pacing, disposal, and asset manifests.
+5. I4 gathers two independent ordinary-input accounts, full win/loss/restart coverage, the capture matrix, and three-run callback/presentation cells for representative, peak, and boss scenarios.
 
-1. I0 boots the production shell and proves movement, camera, focus, damage, death, win stub, and restart in a graybox.
-2. I1 proves a three-minute combat/reward loop with representative hero, enemy, arena, UI, animation, and VFX assets.
-3. I2 makes the entire 12-minute wave schedule and boss completable with explicit placeholder inventory, then runs peak-wave and boss stress seeds.
-4. I3 lands all production assets, enemy/upgrade variety, audio/feedback, balance, wave pacing, and boss polish; placeholder count becomes zero.
-5. I4 gathers two independent full ordinary-input play accounts, loss/win/restart coverage, at least 18 matrix captures per declared viewport set, and three-run performance cells with callback/presented-frame agreement for representative, peak-wave, and boss scenarios.
+Final judgment blocks on incomplete boss play, unreadable peak action, hollow upgrades, focus failure, asset/scale/material drift, unviewed renders, actual-play gaps, or any failed or contradictory 60 fps cell. The workflow gets two scoped repair/re-judge rounds. The outside probe alone closes the joined revision.
 
-Final judgment blocks on any missing boss completion, unreadable peak state, hollow upgrade choice, control/focus failure, asset drift, actual-play gap, or failed 60 fps cell. Two scoped repair/re-judge rounds are available. The outside probe closes only over the accepted joined commit.
+## Implementation acceptance for the future rebuild
 
-## Implementation acceptance for the workflow rebuild
+The future workflow implementation is complete when the package has one public entry and the private structure above; all literal private names resolve inside its package scope; a scratch run journals discovery, pipeline proof, at least two vertical increments, actual play, independent judgments, bounded repair, and outside close; missing-tool, user-only, Blender-failure, unplayable-host, performance-contradiction, and repair-exhaustion paths return closed evidence; validators check identities and shapes rather than sentences; target dependencies remain in the target lockfile; and the repository's full required gate passes at the implementation commit.
 
-The future implementation of this specification is complete when:
+## Compact primary-source list
 
-- the package has one public workflow and the private structure above, with literal names resolving under the updated package rules;
-- the old record/checkpoint evidence that remains useful migrates behind package ownership and the legacy allowlist can be removed without weakening tests;
-- a scratch invocation produces a durable frame tree whose journals show discovery, frozen concept, at least two playable increments, actual play, independent judgment, bounded repair behavior, and outside close;
-- capability failure, one user-only question, research resumption, an unplayable host, an FPS miss, and repair-bound exhaustion each have a tested closed outcome;
-- the target game's dependencies remain in its own lockfile while package-only dependencies and tool probes are declared by the workflow package;
-- validators check identities and evidence shapes rather than prose sentences;
-- repository validation, affected tests, adapter/routing tests, deterministic scratch admission, and the full required gate pass at the implementation commit; and
-- the public help text can explain what evidence earns “complete game” without duplicating the private standards.
+Internal owners: [custom workflow authoring](../docs/custom-workflow-authoring.md), [standard authoring](../docs/standard-authoring.md), [standard contract](../contracts/standard.md), [composition](../rules/composition.md), [vocabulary](../docs/vocabulary.md), [architecture](../ARCHITECTURE.md), and [repository checks](../AGENTS.md).
 
-## Compact source list
-
-Internal owners: [custom workflow authoring](../docs/custom-workflow-authoring.md), [composition](../rules/composition.md), [vocabulary](../docs/vocabulary.md), [architecture](../ARCHITECTURE.md), [repository checks](../AGENTS.md), [current browser-game workflow](../example-workflows/browser-game/SKILL.md), [checkpointed-build](../skills/workflows/checkpointed-build/SKILL.md), [bakeoff](../skills/workflows/bakeoff/SKILL.md), [code standard](../standards/orch-code/STANDARD.md), [design standard](../standards/orch-design/STANDARD.md), and [research standard](../standards/orch-research/STANDARD.md).
-
-External primary sources are linked beside the claims they support in Stage 1. They were checked on 2026-09-05; engine, browser, Blender/MCP, Playwright, and image-model facts must be refreshed when their pinned identities change.
+External primary sources: [Blender command-line arguments](https://docs.blender.org/manual/en/5.1/advanced/command_line/arguments.html), [Blender as a Python module](https://docs.blender.org/api/current/info_advanced_blender_as_bpy.html), [operator limitations](https://docs.blender.org/api/current/info_gotchas_operators.html), [BMesh](https://docs.blender.org/api/current/bmesh.html), [Blender glTF manual](https://docs.blender.org/manual/en/5.1/addons/import_export/scene_gltf2.html), [Blender 5.1 export API](https://docs.blender.org/api/5.1/bpy.ops.export_scene.html), [Three.js model loading](https://threejs.org/manual/en/loading-3d-models.html), [`GLTFLoader`](https://threejs.org/docs/pages/GLTFLoader.html), [Three.js color management](https://threejs.org/manual/en/color-management.html), [Three.js renderer guide](https://threejs.org/manual/en/webgpurenderer), [Three.js disposal](https://threejs.org/manual/en/how-to-dispose-of-objects.html), [Khronos glTF Validator](https://github.com/KhronosGroup/glTF-Validator), [Playwright input](https://playwright.dev/docs/input), and [Chrome performance reference](https://developer.chrome.com/docs/devtools/performance/reference). Claims were checked on 2026-09-05; moving API pages describe current capability only, while each run pins and probes the versions it actually invokes.
