@@ -8,7 +8,7 @@ This stage makes the current `do`/`judge`/`land` path sufficient to qualify late
 
 ## Owners and changes
 
-`installer/packages.py` and `install.py` make `--accepted-source` optional on mutating installs. When supplied, it must be non-empty, the checkout commit must be readable, and the values must match. When omitted, installation uses and records the observed source commit. Help and documentation say plainly that the flag asserts checkout identity; it does not attest that tests passed, that the tree is clean, or that no run is active. Existing wrapper argument forwarding stays unchanged.
+`installer/packages.py` and `install.py` make `--accepted-source` optional on mutating installs. When supplied, it must be non-empty, the checkout commit must be readable, and the values must match case-insensitively. When omitted, installation makes no assertion and records the observed source commit, including `null` when it cannot resolve one. Help and documentation say plainly that the flag asserts checkout identity; it does not attest that tests passed, that the tree is clean, or that no run is active. Existing wrapper argument forwarding stays unchanged.
 
 `standards_support` and `tickets_pins` share one canonical standard tree-digest calculation and record shape. The public `standards.py resolve` output uses the same digest a ticket pins. Necessary legacy ticket reads remain, but no public command publishes another digest for the same standard tree. `docs/standard-authoring.md` points authors to the canonical resolver and describes the identity it covers.
 
@@ -34,6 +34,6 @@ tickets.py judge <run> --standard orch-code --goal-file <review> --artifacts git
 # invoke the judge launch, record findings, then land/close as the current help directs
 ```
 
-Run the outside probe and repository checks from that checkout, record `git rev-parse HEAD` as the accepted source, and wait for active consumers of the previous installation to finish. Install from that same stable checkout. Supplying `--accepted-source <recorded-head>` is useful as a final identity assertion, but it does not replace the checks. Retain the previous source identity and receipt so an operator can reinstall it if the new runtime fails.
+Run the outside probe from that checkout and record `git rev-parse HEAD` as the accepted source for integration. Supplying `--accepted-source <recorded-head>` is useful as a final identity assertion, but it does not replace the checks. Retain the previous source identity and receipt so an operator can reinstall it if the new runtime fails.
 
-The stage is accepted when the focused installer, standard-resolution, ticket-pin, and help tests pass, the source-based `do`/`judge`/`land` exercise produces durable artifact and findings lines, and the repository required checks pass once at the accepted tip.
+The slice is ready to integrate when its focused installer, standard-resolution, ticket-pin, and help tests pass. A source-backed integration test exercises the `do`/`judge`/`land` path and an outside probe; durable live-host artifact and findings lines are recorded only when a host is actually available.

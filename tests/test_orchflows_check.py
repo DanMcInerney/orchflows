@@ -116,7 +116,9 @@ class CheckTests(unittest.TestCase):
             self.assertIn(f"ring: {home}", output)
             self.assertIn("skill 1, standard 2, workflow 1", output)
 
-    def test_a_narrowing_carrying_a_root_only_section_is_refused(self):
+    def test_a_narrowing_may_use_a_workspace_heading(self):
+        """Heading names do not mechanically partition root and narrowing prose."""
+
         with _home() as home:
             self._ring(home)
             manifest = home / "standards" / "market-brief" / "STANDARD.md"
@@ -127,9 +129,8 @@ class CheckTests(unittest.TestCase):
 
             code, output = self._check(home, str(home))
 
-            self.assertEqual(1, code, output)
-            self.assertIn("standards/market-brief/STANDARD.md", output)
-            self.assertIn("'## Workspace' is a root's", output)
+            self.assertEqual(0, code, output)
+            self.assertNotIn("'## Workspace' is a root's", output)
 
     def test_a_workflow_body_over_the_tier_budget_is_refused(self):
         with _home() as home:
@@ -172,6 +173,152 @@ class CheckTests(unittest.TestCase):
                 "backtick reference `orch-nonesuch` does not resolve", output,
             )
             self.assertNotIn("`orch-do` does not resolve", output)
+
+    def _private_workflow(self, package: Path, name: str) -> Path:
+        manifest = package / "workflows" / name / "SKILL.md"
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_bytes(dict(
+            orchflows_scaffold.files_for("workflow", name)
+        )["SKILL.md"].encode("utf-8"))
+        return manifest
+
+    def test_a_workflow_package_accepts_private_items_and_resources(self):
+        with _home() as home:
+            self._ring(home)
+            package = home / "workflows" / "team-flow"
+            self._private_workflow(package, "helper")
+            skill = package / "skills" / "method" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_bytes(dict(
+                orchflows_scaffold.files_for("skill", "method")
+            )["SKILL.md"].encode("utf-8"))
+            local = package / "standards" / "local-brief" / "STANDARD.md"
+            local.parent.mkdir(parents=True)
+            local.write_text(
+                NARROWING.replace("market-brief", "local-brief"),
+                encoding="utf-8",
+            )
+            (package / "references").mkdir()
+            (package / "references" / "case.json").write_text(
+                '{"expected":"ok"}\n', encoding="utf-8",
+            )
+            (package / "scripts").mkdir()
+            (package / "scripts" / "probe.py").write_text(
+                "print('ok')\n", encoding="utf-8",
+            )
+            public = package / "SKILL.md"
+            public.write_text(
+                public.read_text(encoding="utf-8").replace(
+                    "Never:",
+                    "    tickets.py frame-open <run> --parent <frame> "
+                    "--goal-file <goal> --workflow helper\n\n"
+                    "    tickets.py do <run> --standard local-brief "
+                    "--parent <frame> --goal-file <goal>\n\nNever:",
+                )
+                + "\n[Fixture](references/case.json) and "
+                  "[probe](scripts/probe.py).\n",
+                encoding="utf-8",
+            )
+
+            code, output = self._check(home, str(home))
+
+            self.assertEqual(0, code, output)
+            self.assertNotIn("ERROR", output)
+            self.assertIn("dynamic or implied prose calls are unchecked", output)
+
+    def test_an_obsolete_literal_workflow_flag_is_refused(self):
+        with _home() as home:
+            self._ring(home)
+            manifest = home / "workflows" / "team-flow" / "SKILL.md"
+            manifest.write_text(
+                manifest.read_text(encoding="utf-8").replace(
+                    "tickets.py do", "python scripts/tickets.py do",
+                ).replace(
+                    "--standard <standard>", "--pack old-pack",
+                )
+                + "\nRun `tickets.py do <run> --sheet old-sheet "
+                  "--goal-file <goal>` only as a migration example.\n",
+                encoding="utf-8",
+            )
+
+            code, output = self._check(home, str(home))
+
+            self.assertEqual(1, code, output)
+            self.assertIn("obsolete flag --pack", output)
+            self.assertIn("obsolete flag --sheet", output)
+
+    def test_an_unresolved_literal_private_name_is_refused(self):
+        with _home() as home:
+            self._ring(home)
+            manifest = home / "workflows" / "team-flow" / "SKILL.md"
+            manifest.write_text(
+                manifest.read_text(encoding="utf-8").replace(
+                    "Never:",
+                    "    tickets.py frame-open <run> --parent <frame> "
+                    "--goal-file <goal> --workflow absent-helper\n\nNever:",
+                ),
+                encoding="utf-8",
+            )
+
+            code, output = self._check(home, str(home))
+
+            self.assertEqual(1, code, output)
+            self.assertIn("literal --workflow name does not resolve", output)
+            self.assertIn("absent-helper", output)
+
+    def test_a_literal_private_workflow_cycle_is_refused(self):
+        with _home() as home:
+            self._ring(home)
+            package = home / "workflows" / "team-flow"
+            left = self._private_workflow(package, "left")
+            right = self._private_workflow(package, "right")
+            for manifest, target in ((left, "right"), (right, "left")):
+                manifest.write_text(
+                    manifest.read_text(encoding="utf-8").replace(
+                        "Never:",
+                        "    tickets.py frame-open <run> --parent <frame> "
+                        f"--goal-file <goal> --workflow {target}\n\nNever:",
+                    ),
+                    encoding="utf-8",
+                )
+
+            code, output = self._check(home, str(home))
+
+            self.assertEqual(1, code, output)
+            self.assertIn("literal workflow call cycle", output)
+            self.assertIn("workflows/left/SKILL.md", output.replace("\\", "/"))
+
+    def test_a_package_link_cannot_escape_its_public_owner(self):
+        with _home() as home:
+            self._ring(home)
+            manifest = home / "workflows" / "team-flow" / "SKILL.md"
+            manifest.write_text(
+                manifest.read_text(encoding="utf-8")
+                + "\n[escape](../outside.md)\n",
+                encoding="utf-8",
+            )
+
+            code, output = self._check(home, str(home))
+
+            self.assertEqual(1, code, output)
+            self.assertIn("workflow package link escapes its public owner", output)
+
+    def test_a_private_manifest_link_cannot_escape_its_public_owner(self):
+        with _home() as home:
+            self._ring(home)
+            package = home / "workflows" / "team-flow"
+            skill = package / "skills" / "method" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                dict(orchflows_scaffold.files_for("skill", "method"))["SKILL.md"]
+                + "\n[escape](../../../../outside.md)\n",
+                encoding="utf-8",
+            )
+
+            code, output = self._check(home, str(home))
+
+            self.assertEqual(1, code, output)
+            self.assertIn("workflow package link escapes its public owner", output)
 
     def test_the_ring_defaults_to_this_project_then_the_home_ring(self):
         with _home() as home, tempfile.TemporaryDirectory() as raw:

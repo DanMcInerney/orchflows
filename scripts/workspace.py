@@ -66,6 +66,7 @@ if _SIBLING_DIR not in sys.path:
 import console  # noqa: E402  the console discipline every entrypoint takes first
 import state_root  # noqa: E402  the sink resolver, imported and never copied
 import tickets  # noqa: E402  frontmatter and isolation, imported and never copied
+tickets_adapters = __import__("tickets_adapters")
 
 # Literal sibling imports work in the source tree and in the flat installed
 # ``bin`` layout after the directory above has joined ``sys.path``.
@@ -266,8 +267,14 @@ def _cmd_check(rest):
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     reported = {"run": run, "id": ticket_id, "ticket": str(path)}
 
+    try:
+        selected_adapter = tickets_adapters.adapter_for_ticket(
+            data, target=workspace_record.attempt_workspace(data) or _GIT_CWD,
+        )
+    except tickets_adapters.AdapterError as error:
+        raise Refused(error.detail) from error
     isolation = tickets.derived_isolation(
-        data.get(ISOLATION_KEY), tickets.adapter_standard(data),
+        data.get(ISOLATION_KEY), selected_adapter.key,
     )
     if isolation != REQUIRED:
         # read-only lanes and unisolated-by-design items never reach git

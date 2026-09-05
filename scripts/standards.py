@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Resolve one standard and return what every verb reads off it.
 
-A standard is one Markdown manifest at the authoring boundary, but the
-resolved value is one closed JSON object, and this resolver is its only
-reader. A digest is derived from the standard's whole directory tree --
-each file's directory-relative path and its bytes -- plus the declared
-adapter, `contracts/standard.md`, and this resolver's version. Scope and
-filesystem paths are observations, not part of identity, so identical
-project and canonical standards resolve to one digest.
+A standard is one Markdown manifest at the authoring boundary. Its digest is
+the canonical ticket pin over the whole directory tree: framed relative paths
+and normalized bytes. Scope, adapter hints, filesystem paths, the resolver
+version, and the library contract are observations rather than identity, so
+identical project and canonical standards resolve to one digest.
 
 Stdlib-only, and works both from ``scripts/`` in a checkout and from the
 flat ``bin/`` directory ``install.py`` produces.

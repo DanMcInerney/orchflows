@@ -81,6 +81,10 @@ disable-model-invocation: true
 
 Require: what the caller supplies before {name} can start.
 
+Keep package-only helper workflows, applied skills, standards, references,
+and scripts in their conventional folders beside this public body. Call
+private items by name; call another public workflow by its top-level name.
+
     tickets.py frame-open <run> --goal-file <goal> --workflow {name}
 
 Re-read the frame's `## Report` and its children before each wave, then

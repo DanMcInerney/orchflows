@@ -18,7 +18,8 @@ from pathlib import Path
 if __package__:
     from . import rings
     from .tickets_adapters import (
-        AdapterError, adapter_spec, manifest_path, derived_isolation,
+        ADAPTER_REGISTRY, Adapter, AdapterError, adapter_for_key,
+        adapter_for_ticket, adapter_spec, derived_isolation,
     )
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_dispatch_launch import resolved_role_profile
@@ -38,7 +39,8 @@ if __package__:
 else:
     import rings
     from tickets_adapters import (
-        AdapterError, adapter_spec, manifest_path, derived_isolation,
+        ADAPTER_REGISTRY, Adapter, AdapterError, adapter_for_key,
+        adapter_for_ticket, adapter_spec, derived_isolation,
     )
     from tickets_context import graded_admission, run_snapshot
     from tickets_dispatch_launch import resolved_role_profile
@@ -79,14 +81,13 @@ def _attempt_workspace(data: dict):
 def workspace_establishment_finding(data: dict, workspace):
     """Return the refusal code/detail for a non-established workspace."""
 
-    standard = adapter_standard(data)
-    if not standard:
-        return None
     try:
-        adapter = adapter_spec(standard)
+        adapter = adapter_for_ticket(data, target=workspace)
     except AdapterError as error:
         return error.code, error.detail
-    required = derived_isolation(data.get("isolation"), standard) == "required"
+    if adapter is None:
+        return None
+    required = derived_isolation(data.get("isolation"), adapter.key) == "required"
     if not required:
         return None
     recorded = _attempt_workspace(data)
@@ -153,18 +154,15 @@ def _workspace_line(path: Path):
 
 
 def _manifest(standard):
-    """`(manifest path, workspace line)` for one stamped standard, or `(None, None)`."""
+    """`(manifest path, workspace line)` for one resolved pinned standard."""
 
-    if not str(standard or "").strip():
+    if not standard:
         return None, None
-    try:
-        path = manifest_path(standard)
-    except AdapterError:
-        return None, None
+    path = Path(str(standard["path"]))
     return str(path), _workspace_line(path)
 
 
-def _skill_path(executor):
+def _skill_path(executor, *, owner=None):
     """The applied skill's own manifest, resolved through the one ring
     resolver -- the same guarantee `manifest_path` already gives the standard."""
 
@@ -172,7 +170,7 @@ def _skill_path(executor):
     if not name:
         return None
     try:
-        return str(rings.resolve("skill", name)["path"])
+        return str(rings.resolve("skill", name, owner=owner)["path"])
     except rings.RingError:
         return None
 
@@ -197,7 +195,10 @@ def _applied_skill(loaded: dict):
     if not name:
         return None
     try:
-        record = rings.resolve("skill", name, trust=False)
+        record = rings.resolve(
+            "skill", name, trust=False,
+            owner=dequote(loaded.get("workflow")) or None,
+        )
     except rings.RingError:
         return {"name": name, "path": None, "environment": False}
     return {
@@ -220,14 +221,14 @@ def _declares_environment(item_dir) -> bool:
     return orchflows_envs.requirements_of(item_dir) is not None
 
 
-def _standards(loaded: dict) -> list:
+def _standards(loaded: dict):
     """`[{"name", "path", "digest"}]` for every level this ticket stamped.
 
     Broad to narrow, at the pinned digests rather than at whatever resolves
     now: a launch that handed the child a fresher file than the one its seal
     covers would be the substitution the pin exists to prevent. A level that
-    no longer resolves is dropped here and refused at the admission door,
-    which is where a drifted pin is graded.
+    no longer resolves returns a classified refusal as a second value. This
+    keeps direct assignment readers fail closed even if admission changes.
     """
 
     if __package__:
@@ -236,21 +237,39 @@ def _standards(loaded: dict) -> list:
         from standards_support import StandardError, resolve_chain
     levels = standards_of(loaded.get(STANDARDS_FIELD))
     if not levels:
-        return []
+        return [], None
     try:
         chain = {
             str(link["name"]): link
-            for link in resolve_chain([name for name, _digest in levels])
+            for link in resolve_chain(
+                [name for name, _digest in levels],
+                owner=dequote(loaded.get("workflow")) or None,
+            )
         }
-    except StandardError:
-        return []
+    except StandardError as error:
+        return [], {"error": error.detail, "code": error.code}
     stamped = []
     for name, digest in levels:
         link = chain.get(name)
         if link is None:
-            continue
-        stamped.append({"name": name, "path": str(link["path"]), "digest": digest})
-    return stamped
+            return [], {
+                "error": f"pinned standard '{name}' no longer resolves in its stamped chain",
+                "code": "standard-chain-changed",
+            }
+        stamped.append({
+            "name": name, "path": str(link["path"]), "digest": digest,
+            "adapter": str(link.get("adapter") or ""),
+        })
+    return stamped, None
+
+
+def _adapter(value):
+    if isinstance(value, Adapter):
+        return value
+    named = dequote(value)
+    if named in ADAPTER_REGISTRY:
+        return adapter_for_key(named)
+    return adapter_spec(named)
 
 
 def git_candidate(standard) -> bool:
@@ -260,7 +279,7 @@ def git_candidate(standard) -> bool:
     if not str(standard or "").strip():
         return False
     try:
-        return adapter_spec(standard).workspace_strategy == "git"
+        return _adapter(standard).workspace_strategy == "git"
     except AdapterError:
         return False
 
@@ -272,7 +291,7 @@ def commits_in_place(standard) -> bool:
     if not str(standard or "").strip():
         return False
     try:
-        return adapter_spec(standard).commits_in_place
+        return _adapter(standard).commits_in_place
     except AdapterError:
         return False
 
@@ -283,13 +302,13 @@ def artifact_kind(standard):
     if not str(standard or "").strip():
         return None
     try:
-        return adapter_spec(standard).artifact_kind
+        return _adapter(standard).artifact_kind
     except AdapterError:
         return None
 
 
-def lens_key(loaded: dict, sections: dict):
-    """The `## Lens` entry this child's work is measured against, or None."""
+def lens_keys(loaded: dict, sections: dict, adapter=None) -> list:
+    """The artifact kinds this child makes or reviews, in stable order."""
 
     # Only the verb whose product is a findings file is keyed by the
     # identities on its Context; for every other executor an artifact line
@@ -301,8 +320,21 @@ def lens_key(loaded: dict, sections: dict):
             if line.strip().startswith(ARTIFACT_CLAUSE)
         })
         if kinds:
-            return kinds[0] if len(kinds) == 1 else None
-    return dequote(loaded.get(MAKES_FIELD)) or artifact_kind(adapter_standard(loaded))
+            return kinds
+    made = dequote(loaded.get(MAKES_FIELD))
+    if made:
+        return [made]
+    if adapter is None:
+        adapter = adapter_standard(loaded)
+    kind = artifact_kind(adapter)
+    return [kind] if kind else []
+
+
+def lens_key(loaded: dict, sections: dict, adapter=None):
+    """Compatibility projection for callers that still expect one kind."""
+
+    keys = lens_keys(loaded, sections, adapter)
+    return keys[0] if len(keys) == 1 else None
 
 
 def dispatch_assignment(rest, *, attempt=None):
@@ -353,34 +385,48 @@ def dispatch_assignment(rest, *, attempt=None):
     assigned_name = str(dispatched_name or lease_of(loaded)[0] or "").strip() or None
     if assigned_name is None:
         return {"error": "dispatch requires the child identity through --by when it differs from the dispatch attempt owner"}
-    role, _profile = resolved_role_profile(executor, loaded.get("profile"))
-    stamped = _standards(loaded)
-    declaring = adapter_standard(loaded)
-    manifest, workspace_line = _manifest(declaring)
+    role, profile = resolved_role_profile(executor, loaded.get("profile"))
+    stamped, standard_refusal = _standards(loaded)
+    if standard_refusal is not None:
+        return standard_refusal
+    try:
+        adapter = adapter_for_ticket(loaded, target=workspace)
+    except AdapterError as error:
+        return {"error": error.detail, "code": error.code}
+    primary = stamped[0] if stamped else None
+    manifest, workspace_line = _manifest(primary)
+    legacy_workspace = next((
+        level for level in stamped
+        if str(level.get("adapter") or "") == adapter.key
+    ), None)
+    if legacy_workspace is not None:
+        _legacy_manifest, workspace_line = _manifest(legacy_workspace)
     applied = _applied_skill(loaded)
     return {"assignment": {
         "applied_skill": None if applied is None else applied["name"],
         "applied_skill_environment": bool(applied and applied["environment"]),
-        "artifact_kind": artifact_kind(declaring),
+        "artifact_kind": adapter.artifact_kind,
         "assigned_name": assigned_name,
         "assignment_seal": None if attempt is None else attempt["assignment_seal"],
-        "commits_in_place": commits_in_place(declaring),
+        "commits_in_place": adapter.commits_in_place,
         "dependencies": _dependency_paths(loaded, ticket_path),
         "dispatch_id": None if attempt is None else attempt["dispatch_id"],
         "executor": executor,
         "executor_script": _executor_script(executor),
-        "git_candidate": git_candidate(declaring),
+        "git_candidate": adapter.workspace_strategy == "git",
         "id": loaded["id"],
         "kernel_contract": None if applied is None else _kernel_contract(executor),
         "lease_expires_at": None if attempt is None else attempt["lease_expires_at"],
-        "lens_key": lens_key(loaded, sections),
+        "lens_key": lens_key(loaded, sections, adapter),
+        "lens_keys": lens_keys(loaded, sections, adapter),
         "manifest": manifest,
         "other_standards": [
-            level for level in stamped if level["name"] != declaring
+            level for level in stamped if primary is None or level["name"] != primary["name"]
         ],
+        "profile": profile,
         "role": role,
         "run": str(loaded.get("run") or run),
-        "standard": declaring,
+        "standard": None if primary is None else primary["name"],
         "standards": stamped,
         "skill_path": (
             applied["path"] if applied is not None else _skill_path(executor)
@@ -394,5 +440,5 @@ def dispatch_assignment(rest, *, attempt=None):
 __all__ = (
     "ASSIGNMENT_SECTIONS", "BY_NAME_DIR",
     "_claim_is_stale", "artifact_kind", "commits_in_place", "dispatch_assignment",
-    "git_candidate", "lens_key", "workspace_establishment_finding",
+    "git_candidate", "lens_key", "lens_keys", "workspace_establishment_finding",
 )

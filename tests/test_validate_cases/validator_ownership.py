@@ -69,7 +69,7 @@ class TestSyncCheckIsGone(unittest.TestCase):
 
 
 def workspace_adapter(skill_md: Path) -> str:
-    """The registered adapter key one standard declares in its frontmatter.
+    """The optional legacy adapter hint in one standard's frontmatter.
 
     Read independently of `tickets_adapters.declared_adapter` so the
     standard's data and the parser cannot agree by sharing one
@@ -88,7 +88,7 @@ def workspace_adapter(skill_md: Path) -> str:
         if not key:
             raise AssertionError(f"{skill_md}: `adapter` field is empty")
         return key
-    raise AssertionError(f"{skill_md}: no `adapter` field")
+    return ""
 
 
 def is_narrowing(directory: Path) -> bool:
@@ -99,19 +99,17 @@ def is_narrowing(directory: Path) -> bool:
 
 
 class TestStandardWorkspaceTableAgainstStandards(unittest.TestCase):
-    """Standard data selects only mechanisms the adapter registry implements."""
+    """Present legacy adapter hints name implemented mechanisms."""
 
     def test_every_root_declares_a_registered_adapter(self):
-        """Roots only: a narrowing declares no adapter of its own, because
-        the one adapter across a resolved chain is the introducing
-        standard's (contracts/standard.md rule 2)."""
+        """An omitted hint is clean; every declared hint is registered."""
 
         declared = {
             workspace_adapter(path / "STANDARD.md")
             for path in STANDARDS.iterdir()
             if (path / "STANDARD.md").is_file() and not is_narrowing(path)
         }
-        self.assertLessEqual(declared, set(tickets_mod.ADAPTER_REGISTRY))
+        self.assertLessEqual(declared - {""}, set(tickets_mod.ADAPTER_REGISTRY))
 
     def test_every_adapter_owns_the_properties_machinery_reads(self):
         for key, adapter in sorted(tickets_mod.ADAPTER_REGISTRY.items()):
@@ -152,19 +150,16 @@ class TestStandardAdmissionRegistryAgainstStandards(unittest.TestCase):
     def test_frontmatter_declares_only_registered_adapter_keys(self):
         """No data path binds an executor or a skill: a standard's
         frontmatter is `name`, `description`, `narrows` and `adapter`, and
-        the adapter is a key the registry implements."""
+        a present adapter is a registered legacy hint."""
 
         standards = {path.name for path in STANDARDS.iterdir() if (path / "STANDARD.md").is_file()}
         for standard in sorted(standards):
             declared = self.frontmatter(STANDARDS / standard / "STANDARD.md")
             self.assertNotIn("executor", declared, standard)
             self.assertNotIn("skill", declared, standard)
-            if "narrows" in declared:
-                # A narrowing names its parent instead: the chain carries one
-                # adapter, declared by whichever standard introduces the domain.
-                self.assertNotIn("adapter", declared, standard)
-                continue
-            self.assertIn(declared.get("adapter"), tickets_mod.ADAPTER_REGISTRY, standard)
+            adapter = declared.get("adapter", "")
+            if adapter:
+                self.assertIn(adapter, tickets_mod.ADAPTER_REGISTRY, standard)
 
 
 CROSS_TIER = "cross-tier near-duplicate"

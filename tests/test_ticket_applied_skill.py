@@ -2,10 +2,9 @@
 
 U2. `--skill` hands a child somebody else's skill to work *through*, which
 raises two questions U0's pin does not answer. Which skill may be applied --
-never a kernel verb, and never one declaring the other role, because the
-launch binding (agent, model, effort) is chosen off the verb's role and a
-planner-role method entered by a worker agent is a child running a prompt
-written for someone else. And what the child is still bound by once its
+never a kernel verb, and only one declaring the resolved profile's role,
+because a planner-role method entered under a worker profile is a child running
+a prompt written for someone else. And what the child is still bound by once its
 first line names a skill that is not `orch-do`: the verb's Require, Never
 and Return, which the prompt now names at the flat `by-name/` path every
 host resolves, plus the private interpreter that skill's own scripts run
@@ -23,6 +22,7 @@ from pathlib import Path
 from unittest import mock
 
 from scripts import rings, tickets_assignment
+from scripts.tickets_format import _parse_frontmatter
 
 from tests.test_ticket_callables import CODE_STANDARD, CallableSinkTest
 from tests.test_ticket_pins import _skill
@@ -126,6 +126,40 @@ class AppliedSkillRefusalTest(AppliedSkillTest):
     def test_a_matching_role_mints_on_each_verb(self):
         self.assertNotIn("error", self.do("--skill", WORKER_SKILL))
         self.assertNotIn("error", self.judge("--skill", PLANNER_SKILL))
+
+    def test_an_explicit_profile_allows_either_operation(self):
+        planned = self.do("--profile", "orch-planner", "--skill", PLANNER_SKILL)
+        worked = self.judge("--profile", "orch-worker", "--skill", WORKER_SKILL)
+
+        self.assertNotIn("error", planned)
+        self.assertNotIn("error", worked)
+        self.assertEqual(
+            "orch-planner",
+            _parse_frontmatter(self.ticket_text(planned["do"]["id"]))["profile"],
+        )
+        self.assertEqual(
+            "orch-worker",
+            _parse_frontmatter(self.ticket_text(worked["judge"]["id"]))["profile"],
+        )
+
+    def test_an_applied_skill_must_match_the_explicit_profile(self):
+        answer = self.do(
+            "--profile", "orch-planner", "--skill", WORKER_SKILL,
+            expect_error=True,
+        )
+
+        self.assertIn("orch-planner", answer["error"])
+        self.assertIn("planner", answer["error"])
+        self.assertIn("worker", answer["error"])
+        self.assertFalse(self.run_dir().exists())
+
+    def test_an_unknown_decorative_profile_refuses_before_mint(self):
+        answer = self.do("--profile", "house-profile", expect_error=True)
+
+        self.assertIn("house-profile", answer["error"])
+        self.assertIn("orch-planner", answer["error"])
+        self.assertIn("orch-worker", answer["error"])
+        self.assertFalse(self.run_dir().exists())
 
     def test_a_library_workflow_is_refused_as_the_workflow_it_is(self):
         """`skills/workflows` sits inside the skills tier, so a body there

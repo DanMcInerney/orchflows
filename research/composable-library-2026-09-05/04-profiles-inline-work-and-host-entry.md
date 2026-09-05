@@ -22,8 +22,8 @@ Do not add personas, model names to generic workflow prose, per-step tickets, a 
 
 ## Observable proof
 
-Focused tests cover default behavior, explicit planner-do, explicit worker-judge, missing host binding, unsupported native field, unchanged legacy calls, and prompt/launch agreement. A host matrix records available surfaces and marks unavailable ones as untested rather than successful.
+Focused source-backed tests cover default behavior, explicit planner-do, explicit worker-judge, missing host binding, unsupported native field, unchanged legacy calls, and adapter prompt/launch agreement. A live host is exercised only when available; unavailable surfaces are recorded as untested, and no dispatch evidence is manufactured.
 
-For inline work, mint one ordinary assignment whose prose makes a small code-and-document artifact, checks it locally, and applies different subsets from an already pinned orthogonal standard list. Observe one dispatch, one context, one derived workspace, and one result. Then give the landed identities to a fresh ordinary judge under the other profile. The first result may report local findings; only the second is independent acceptance.
+For inline work, a source-backed fixture mints one ordinary assignment whose prose makes a small code-and-document artifact, checks it locally, and applies different subsets from an already pinned orthogonal standard list. It observes one dispatch record, one context, one derived workspace, and one result, then drives the landed identities through the other profile's judge boundary. The first result may report local findings; only a live fresh judge, when available, supplies independent acceptance.
 
-Acceptance requires the focused mint, roles, kernel, dispatch, host-adapter, result, and workspace tests, the sequential-work dogfood, and the repository required checks once at the stage tip.
+The slice is ready to integrate when the focused mint, roles, kernel, dispatch, host-adapter, result, and workspace tests and the sequential-work outside probe pass.

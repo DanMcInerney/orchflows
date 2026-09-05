@@ -385,7 +385,10 @@ class CallablePromptTest(CallableSinkTest):
         self.assertNotIn("findings: <path>", prompt)
 
     def test_a_document_callable_is_told_to_print_a_doc_line(self):
-        answer = self.callable("do", "--standard", DOC_STANDARD)
+        answer = self.callable(
+            "do", "--standard", DOC_STANDARD,
+            "--workspace-adapter", "document-tree",
+        )
 
         prompt = self.prompt(answer)
         self.assertIn(
@@ -393,32 +396,26 @@ class CallablePromptTest(CallableSinkTest):
         )
         self.assertNotIn("artifact: git:", prompt)
 
-    def test_a_document_tree_adapter_commits_without_a_branch_merge_sentence(self):
-        """The document-tree adapter commits in place but establishes no
-        git candidate to merge: the launch keeps the commit clause and
-        drops the sentence naming a candidate branch nothing was isolated
-        to merge (finding F4; the prior law here was wrong -- it told this
-        child its standard commits nothing). The clause's own noun follows
-        `git_candidate` too, so it never names a candidate this lane does
-        not have (A2)."""
+    def test_a_document_tree_adapter_requires_no_impossible_commit(self):
+        """A non-Git directory preserves document bytes without a commit."""
 
-        self.assertTrue(commits_in_place(DOC_STANDARD))
+        self.assertFalse(commits_in_place(DOC_STANDARD))
         self.assertFalse(git_candidate(DOC_STANDARD))
         self.assertTrue(commits_in_place(CODE_STANDARD))
         self.assertTrue(git_candidate(CODE_STANDARD))
 
-        answer = self.callable("do", "--standard", DOC_STANDARD)
+        answer = self.callable(
+            "do", "--standard", DOC_STANDARD,
+            "--workspace-adapter", "document-tree",
+        )
 
         prompt = self.prompt(answer)
-        self.assertIn(
-            "Commit your work in the tree you are standing in before you close",
-            prompt,
-        )
+        self.assertNotIn("Commit your work", prompt)
         self.assertNotIn("this candidate", prompt)
         self.assertNotIn(
             "the landing merges the candidate, not your working tree.", prompt,
         )
-        self.assertNotIn("Your stamped standard commits nothing", prompt)
+        self.assertIn("artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", prompt)
 
     def test_a_judge_prints_the_findings_line_beside_its_artifact_line(self):
         self.callable("do", "--standard", CODE_STANDARD, "--isolation", "required")
@@ -590,7 +587,10 @@ class CallableLandingTest(CallableSinkTest):
         )["Report"])
 
     def test_a_document_callable_lands_on_the_drivers_grade(self):
-        answer = self.callable("do", "--standard", DOC_STANDARD)
+        answer = self.callable(
+            "do", "--standard", DOC_STANDARD,
+            "--workspace-adapter", "document-tree",
+        )
         self._assert_three_lines(
             answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", False,
             standard=DOC_STANDARD,
@@ -603,11 +603,15 @@ class CallableLandingTest(CallableSinkTest):
         self.assertEqual("complete", landed["land"]["status"])
 
     def test_a_judge_under_a_landed_callable_carries_both_machine_lines(self):
-        self.callable("do", "--standard", DOC_STANDARD)
+        self.callable(
+            "do", "--standard", DOC_STANDARD,
+            "--workspace-adapter", "document-tree",
+        )
 
         answer = self.callable(
             "judge", "--standard", DOC_STANDARD, "--parent", "B1",
             "--artifacts", "doc:notes.md@sha256:" + "e" * 64,
+            "--workspace-adapter", "document-tree",
         )
 
         self._assert_three_lines(
@@ -719,12 +723,13 @@ class ResearchLaneDoorTest(CallableSinkTest):
             "do", "--standard", RESEARCH_STANDARD, *arguments, expect_error=expect_error,
         )
 
-    def test_two_sub_questions_are_refused_before_the_run_exists(self):
-        refused = self.research(TWO_LANE_GOAL, expect_error=True)
+    def test_sequential_sub_questions_can_share_one_child(self):
+        answer = self.research(TWO_LANE_GOAL, "--isolation", "required")
 
-        self.assertIn("2 sub-questions are 2 lanes", refused["error"])
-        self.assertIn("--shape", refused["error"])
-        self.assertFalse(self.run_dir().exists(), "a refusal left a run directory")
+        self.assertEqual("B1", answer["do"]["id"])
+        self.assertEqual(
+            TWO_LANE_GOAL.strip(), _sections(self.ticket_text("B1"))["Goal"].strip(),
+        )
 
     def test_one_sub_question_is_minted_unchanged(self):
         answer = self.research(ONE_LANE_GOAL, "--isolation", "required")
@@ -755,23 +760,8 @@ class ResearchLaneDoorTest(CallableSinkTest):
 
         self.assertEqual("B1", answer["do"]["id"])
 
-    def test_the_count_moves_with_the_marker_and_with_the_items(self):
-        """The can-fail direction: copies beside the tree, never the tree.
-
-        Four of the cases above are absence assertions, and an absence
-        assertion is worth exactly what the counter's sensitivity is worth.
-        One item added to the passing goal lifts it over the door's line,
-        and a heading that drops the marker word drops the count to zero.
-        """
-
-        self.assertEqual(1, tickets_mint.subquestion_count(ONE_LANE_GOAL))
-        self.assertEqual(2, tickets_mint.subquestion_count(TWO_LANE_GOAL))
-        self.assertEqual(
-            0,
-            tickets_mint.subquestion_count(
-                TWO_LANE_GOAL.replace("Sub-questions", "Coverage")
-            ),
-        )
+    def test_no_goal_text_heuristic_decides_callable_cardinality(self):
+        self.assertFalse(hasattr(tickets_mint, "subquestion_count"))
 
 
 class TypedArtifactGrammarTest(unittest.TestCase):

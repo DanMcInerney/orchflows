@@ -107,14 +107,6 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                           'fields': ('name', 'description', 'narrows', 'adapter'),
                           'required': ('name', 'description'),
                           'values': {}},
- 'standard_narrowing_sections': {'contract': 'standard.md',
-                                 'fields': ('Making', 'Lens', 'Vocabulary', 'Scaffolding'),
-                                 'required': ('Making', 'Lens'),
-                                 'values': {}},
- 'standard_root_sections': {'contract': 'standard.md',
-                            'fields': ('Making', 'Lens', 'Vocabulary', 'Scaffolding', 'Workspace', 'Spec fields', 'Stages'),
-                            'required': ('Making', 'Lens', 'Vocabulary', 'Workspace', 'Spec fields'),
-                            'values': {}},
  'ticket_assignment_sections': {'contract': 'work-item.md', 'fields': ('Goal', 'Context', 'Details'), 'required': ('Goal', 'Context'), 'values': {}},
  'ticket_frontmatter': {'contract': 'work-item.md',
                         'fields': ('id',
@@ -129,10 +121,14 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                                    'parent',
                                    'depends_on',
                                    'isolation',
+                                   'workspace_adapter',
                                    'bound',
                                    'frame',
                                    'done',
                                    'makes',
+                                   'workflow',
+                                   'workflow_digest',
+                                   'workflow_entry',
                                    'root_generation',
                                    'cut_generation',
                                    'assignment_seal',
@@ -255,14 +251,6 @@ WORKLOG_VIEW_VALUES = SHAPES['worklog_view']['values']
 STANDARD_FRONTMATTER_FIELDS = tuple(SHAPES['standard_frontmatter']['fields'])
 STANDARD_FRONTMATTER_REQUIRED = frozenset(SHAPES['standard_frontmatter']['required'])
 STANDARD_FRONTMATTER_VALUES = SHAPES['standard_frontmatter']['values']
-
-STANDARD_ROOT_SECTIONS_FIELDS = tuple(SHAPES['standard_root_sections']['fields'])
-STANDARD_ROOT_SECTIONS_REQUIRED = frozenset(SHAPES['standard_root_sections']['required'])
-STANDARD_ROOT_SECTIONS_VALUES = SHAPES['standard_root_sections']['values']
-
-STANDARD_NARROWING_SECTIONS_FIELDS = tuple(SHAPES['standard_narrowing_sections']['fields'])
-STANDARD_NARROWING_SECTIONS_REQUIRED = frozenset(SHAPES['standard_narrowing_sections']['required'])
-STANDARD_NARROWING_SECTIONS_VALUES = SHAPES['standard_narrowing_sections']['values']
 
 def fields(name: str) -> tuple:
     """Return the declared field order for one shape."""

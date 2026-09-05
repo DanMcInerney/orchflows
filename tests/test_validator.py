@@ -370,7 +370,7 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self.assertIn("workflow 'probe'", errors[0])
         self.assertIn("workflow-named script machinery", errors[0])
 
-    def test_authoring_standard_states_the_protocol_boundary_and_exception(self):
+    def test_authoring_standard_states_the_protocol_boundary_and_probe_limits(self):
         text = (ROOT / "docs" / "custom-workflow-authoring.md").read_text(
             encoding="utf-8"
         )
@@ -379,12 +379,11 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self.assertEqual(2, len(admission), "missing Workflow admission section")
         for term in (
             "schema",
-            "fixture format",
             "script",
-            "workflow-named",
-            "browser-game",
-            "2026-08-28",
-            "warning",
+            "references/",
+            "trusted probe",
+            "unchecked",
+            "disposable project",
         ):
             with self.subTest(term=term):
                 self.assertIn(term, admission[1])

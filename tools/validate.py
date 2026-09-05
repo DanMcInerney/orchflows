@@ -2,7 +2,7 @@
 """The orchflows compiler.
 
 Enforces package anatomy, frontmatter, call-graph acyclicity, standard
-signature completeness, the
+guidance and compatibility structure, the
 ticket-template contract (whose shape law is scripts/tickets.py's, read
 from there rather than restated), the result-envelope lead, and the
 duplication checks -- per standard section and across tiers -- that replaced
@@ -196,7 +196,6 @@ DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-
 DOC_PATH_EXEMPT_SITES = frozenset({
     ("ARCHITECTURE.md", "kernel/", "callable packages"),
     ("ARCHITECTURE.md", "workflows/", "reusable domain-blind workflows"),
-    ("ARCHITECTURE.md", "scripts/", "owns its `SKILL.md`"),
     ("ARCHITECTURE.md", "scripts/", "owns repository automation"),
     ("ARCHITECTURE.md", "scripts/", "package `scripts/`"),
     ("ARCHITECTURE.md", "tests/", "owns regression evidence"),

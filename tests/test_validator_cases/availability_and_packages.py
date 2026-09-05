@@ -343,14 +343,13 @@ class TestWorkflowLibraryHomes(_IsolatedTree):
 
 
 class TestStandardAnatomy(_IsolatedTree):
-    """A narrowing is graded against `contracts/standard.md`, at the seam.
+    """A narrowing is graded as prose with optional compatibility structure.
 
     Every case writes one synthetic `standards/<name>/STANDARD.md` beside one
     synthetic root and runs the whole validator, so what is checked is the
     ERROR/exit-code contract a run reads, not a helper called in isolation.
     The root is written rather than copied because two of the checks are
-    *about* it: which standard a narrowing may tighten, and which
-    `## Lens` keys its adapter makes readable.
+    *about* it: which standard a narrowing may tighten.
     """
 
     STANDARD = "orch-widget-standard"
@@ -416,9 +415,7 @@ class TestStandardAnatomy(_IsolatedTree):
         self.assertEqual(0, result.returncode, result.stdout)
 
     def test_a_root_only_section_inside_a_narrowing_is_refused(self):
-        """`## Workspace` states identities and isolation -- a fact about the
-        domain, which the root owns. A narrowing carrying it is a second
-        owner."""
+        """Narrowing prose has no mechanically reserved heading names."""
 
         self._write_root()
         self._write_narrowing("market-brief", self._standard_text(
@@ -428,11 +425,8 @@ class TestStandardAnatomy(_IsolatedTree):
 
         result = self._run()
 
-        self.assertEqual(1, result.returncode)
-        self.assertTrue(
-            any("## Workspace" in line for line in self._errors(result.stdout, "market-brief")),
-            result.stdout,
-        )
+        self.assertEqual([], self._errors(result.stdout, "market-brief"))
+        self.assertEqual(0, result.returncode, result.stdout)
 
     def test_a_scripts_directory_inside_a_standard_is_refused(self):
         """A standard carries prose and nothing executable, so it declares no
@@ -479,8 +473,7 @@ class TestStandardAnatomy(_IsolatedTree):
         )
 
     def test_a_lens_entry_keyed_by_a_kind_the_named_standard_never_emits_is_refused(self):
-        """The key selects the entry a child is sent to. An entry under a
-        kind that standard's adapter does not emit is criteria nothing reads."""
+        """Lens labels guide readers and make no artifact-support claim."""
 
         self._write_root()
         self._write_narrowing("market-brief", self._standard_text(
@@ -489,16 +482,11 @@ class TestStandardAnatomy(_IsolatedTree):
 
         result = self._run()
 
-        self.assertEqual(1, result.returncode)
-        self.assertTrue(
-            any("### doc" in line for line in self._errors(result.stdout, "market-brief")),
-            result.stdout,
-        )
+        self.assertEqual([], self._errors(result.stdout, "market-brief"))
+        self.assertEqual(0, result.returncode, result.stdout)
 
     def test_a_named_standard_whose_kind_no_lens_entry_carries_is_refused(self):
-        """The other direction of the same fact. A narrowing keyed for a
-        kind its own root never emits hands that root's verb an entry that
-        does not exist, so the stamp adds nothing it can read."""
+        """A base adapter does not constrain a narrowing's Lens labels."""
 
         self._write_root("orch-paper-standard", adapter="document-tree", kind="doc")
         self._write_narrowing("market-brief", self._standard_text(
@@ -509,12 +497,8 @@ class TestStandardAnatomy(_IsolatedTree):
 
         result = self._run()
 
-        self.assertEqual(1, result.returncode)
-        errors = self._errors(result.stdout, "market-brief")
-        self.assertTrue(
-            any("orch-paper-standard" in line and "### doc" in line for line in errors),
-            result.stdout,
-        )
+        self.assertEqual([], self._errors(result.stdout, "market-brief"))
+        self.assertEqual(0, result.returncode, result.stdout)
 
     def test_a_standard_over_the_budget_is_refused(self):
         """One ceiling, in words over the whole manifest: the same number a
@@ -537,13 +521,14 @@ class TestStandardAnatomy(_IsolatedTree):
 
     def test_a_missing_required_section_is_refused(self):
         self._write_root()
-        self._write_narrowing("market-brief", self._standard_text(
-            "market-brief", sections=[],
-        ).replace("## Lens", "## Vocabulary"))
+        self._write_narrowing(
+            "market-brief",
+            "---\nname: market-brief\ndescription: When to stamp it.\n"
+            f"narrows: {self.STANDARD}\n---\n\n# market-brief\n\n## Notes\n",
+        )
 
         result = self._run()
 
         self.assertEqual(1, result.returncode)
         errors = " ".join(self._errors(result.stdout, "market-brief"))
-        self.assertIn("## Making", errors)
-        self.assertIn("## Lens", errors)
+        self.assertIn("carries no domain guidance", errors)

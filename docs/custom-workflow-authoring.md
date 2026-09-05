@@ -37,6 +37,42 @@ path, rather than shadowing a library verb or silently never running. Any
 other collision resolves to the nearest ring and prints one shadow notice
 naming both paths.
 
+## Workflow packages
+
+A top-level workflow is the package's public name. Its directory may carry
+these conventional private parts without another manifest or export list:
+
+| path below `workflows/<public-name>/` | use |
+| --- | --- |
+| `workflows/<helper>/SKILL.md` | a prose helper workflow called by name |
+| `skills/<method>/SKILL.md` | an applied skill named with `--skill` |
+| `standards/<name>/STANDARD.md` | a root standard or narrowing stamped with `--standard` |
+| `references/` | fixtures and material the package prose or scripts read |
+| `scripts/<file>` | concrete machine boundaries and optional probes |
+
+Only the ordinary item at the ring's top-level `workflows/<public-name>` is
+public. `orchflows list`, global name lookup, and generated host adapters do
+not expose the nested items. A call owned by the public workflow resolves a
+name in its private folders first and then continues through the caller's
+ordinary project, home, imports, and library rings. Calling another public
+top-level workflow starts that workflow's package scope. Calling a private
+helper keeps the enclosing public scope. This convention composes workflows
+without a path namespace or another workflow notation.
+
+Every named frame records the public owner, a digest of the whole package,
+and the contained workflow entry it read. Its callable children inherit those
+fields. Later admission and dispatch doors resolve the public name again,
+recheck project trust, contain the entry below that owner, and compare the
+package digest before resolving private standards or skills. A change to a
+script, fixture, reference, helper, or manifest therefore invalidates an
+already sealed package identity. A path, dictionary, or private name cannot
+grant package scope.
+
+Files and relative links stay below the public package directory. A manifest
+may also link to canonical library law under `contracts/`, `docs/`, or
+`rules/`; those are citations, not package resources. Put any other material
+the package needs in its own `references/` directory.
+
 ## Scope and landing
 
 Author in a git-backed workspace under the code standard. Scope chooses the
@@ -101,6 +137,13 @@ declares one, else the interpreter the library's own scripts use. Write that
 command into the item's prose, never a path — an environment is
 machine-local, regenerable, ignored by the home ring's `.gitignore`, and
 never installed under `~/.orchflows/lib/`.
+
+For a workflow package, the public workflow is the declaring item: place its
+`requirements.txt`, lockfile, and `tools.txt` beside the public `SKILL.md`, and
+run package scripts through `orchflows env workflow <public-name>`. Private
+helpers share that package declaration. This keeps one trusted environment
+and one dependency identity for the scripts and resources the public workflow
+owns.
 
 An item's **non-Python tooling** — ffmpeg, node, a browser, an API key — goes
 in `tools.txt` beside the manifest, one requirement per line, or `env <NAME>`
@@ -227,6 +270,12 @@ one is [composition](../rules/composition.md) §13's.
 
 ## Procedure
 
+Before writing, answer six questions in the prose and review: what is the one
+public workflow, what stays private to it, which literal names must resolve,
+what package code runs, what observable evidence shows the package works, and
+which dependency and package identities must remain pinned. They guide the
+artifact; they are not required headings or a step schema.
+
 1. Route existing machinery first. If a stamped spec, skill, or workflow
    already expresses the request, use it instead of minting another item.
 2. Fix the intended contract, target tier, scope, owner path, and observable
@@ -253,7 +302,10 @@ one is [composition](../rules/composition.md) §13's.
    workflow runs. A multi-stage standard's stages run at one role,
    [roles.md](../rules/roles.md)
    §4's alone. Invoking the finished body against a scratch run, and reading
-   the tickets it opened, is its deterministic admission.
+   the tickets it opened, is its deterministic admission. Keep a repeated
+   internal orchestration in its private helper-workflow folder; call an
+   independently useful public workflow by its ordinary top-level name so it
+   establishes its own package scope.
 5. Build host integrations from the top-level [host records](../hosts/). Use
    the selected record's installed-item template, legal frontmatter, launch
    verb and native fields, role profile, and capability classification. The
@@ -269,27 +321,37 @@ one is [composition](../rules/composition.md) §13's.
 6. Run the target repository's required checks. In this library that means
    tools/validate.py, affected tests,
    adapter/routing/role tests when host surfaces change, and the full required
-   checks before acceptance. Install only the accepted source identity.
+   checks before acceptance. `install.py --accepted-source COMMIT` is an
+   optional identity assertion: when supplied it requires the checkout's
+   observed commit to match, case-insensitively, and the receipt records the
+   observed identity. Omitting it makes no assertion. It does not prove a gate
+   ran, so install only the source identity whose checks you accepted.
 
 ## Workflow admission
 
-A workflow carries its `SKILL.md` body and the references beside it. It
-carries no schema, validator, fixture format, or script. Repository admission
-refuses those artifacts inside a workflow, schema or fixture-format artifacts
-named for it under [shared references](../example-workflows/references/), and any
-workflow-named module under scripts. It also grades the body as a skill's:
-the name matches its directory, the description is present and inside budget,
-the body fits the workflow tier's word budget, and the manual-invocation flag
-[composition](../rules/composition.md) §1 requires is declared. Validation a
-workflow needs instead
-belongs to standard data when it is domain standard or to a T0 contract when machinery
-branches on it; a workflow that needs another shape exposes that missing
-owner.
+`orchflows check [<ring-dir>]` grades the public workflow body and any private
+workflow, skill, or standard manifests with their existing validators. It
+contains package files and local links below the public owner, allowing only
+canonical library-law citations outside it. It also reads recognizable
+literal Orchflows commands: a command at the start of a line, a
+`python .../tickets.py` form, or a complete command in a Markdown code span.
+It resolves literal `--workflow`, `--standard`, and `--skill` names in package
+scope, rejects obsolete flags such as `--pack` and `--sheet`, and rejects a
+literal private workflow cycle.
 
-The already-shipped `browser-game` machinery is the sole exception, named in the
-validator's dated 2026-08-28 allowlist. The validator reports that exception as a
-warning; it admits neither another workflow nor an unnamed compatibility
-mode.
+Placeholders, computed names, branches, and natural-language implications are
+not execution facts. The checker reports once for each workflow body that
+these remain unchecked; it neither interprets arbitrary prose nor certifies
+that a branch ran. Prove runtime composition with the existing frame, `do`,
+`judge`, admission, pin, and `land` doors against a disposable project.
+
+A package may keep a small fixture in `references/`, a concrete boundary in
+its package script directory, and an optional trusted probe in the public
+workflow's `tools.txt` using its existing `<label> :: <probe command>` form.
+The probe must exit nonzero unless the observable output is present. `orchflows check`
+runs it only after the containing project bundle is trusted. This is an
+ordinary package-owned command; there is no universal fixture schema,
+mandatory probe, or simulated execution of prose.
 
 ## Authoring lens
 

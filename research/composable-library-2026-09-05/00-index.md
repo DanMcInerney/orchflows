@@ -1,8 +1,8 @@
 # Composable library implementation series
 
-Status: proposed implementation plan. Baseline: `a7f19004d595fa09ab1aeda685f70002af2388fd`, observed 2026-09-05. These documents describe work to implement; they do not claim the behavior already exists.
+Status: implementation delivered on this branch by live Sol High workers. Design baseline: `a7f19004d595fa09ab1aeda685f70002af2388fd`, observed 2026-09-05. Final verification is tracked by the required-check output and the deterministic integration test at `tests/test_composable_integration.py`; this index claims no result before those checks finish. The integration fixture exercises emitted launch records, not model execution, and unavailable native hosts remain untested.
 
-The series keeps the current library shape: prose workflows drive the existing `do`, `judge`, `land`, and frame operations; rings resolve named items; tickets pin inputs and preserve results; host adapters translate a resolved assignment into a native launch. The changes remove contradictions and join existing seams before adding package composition.
+The series keeps the current library shape: prose workflows drive the existing `do`, `judge`, `land`, and frame operations; rings resolve named items; tickets pin inputs and preserve results; host adapters translate a resolved assignment into a native launch. The stage documents remain the design rationale and acceptance requirements for the delivered implementation.
 
 ## Order
 
@@ -14,7 +14,7 @@ The series keeps the current library shape: prose workflows drive the existing `
 | 4. [Profiles, inline work, and host entry](04-profiles-inline-work-and-host-entry.md) | High-level calls expose existing profile choice, and one assignment may keep context for sequential work | ticket minting, role/kernel contracts, host adapters |
 | 5. [Routing, improvement evidence, and proof](05-routing-improvement-and-integrated-proof.md) | Routing says what it will do without inventing team syntax, and improvement evidence is described at its actual strength | host block, ticket routing, improvement docs and existing readers |
 
-Each stage starts from a stable accepted checkout. It runs focused tests while changing the seam and the repository's required checks once before acceptance. Installation happens only when a later phase needs the new runtime and after active consumers of the old runtime have finished. No implementation installs a new global library beneath its own running children.
+The numbered order describes dependencies, not a requirement to serialize independent slices. Owners may implement compatible slices in parallel and join them at one coherent integration tip. Each slice runs focused tests; the repository's required checks run once at that joined tip. Installation happens only when a later consumer needs the new runtime and after active consumers of the old runtime have finished. No implementation installs a new global library beneath its own running children.
 
 ## Decisions after the Fable review
 
