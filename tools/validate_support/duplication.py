@@ -24,11 +24,10 @@ CELL_DUPLICATION_ALLOWLIST = (
     {
         "family": "identity-term workspace naming",
         "reason": (
-            "contracts/standard.md's section table requires every Workspace "
-            "section to open by naming its adapter semantics and identity "
-            "unit -- 'X: identities are Y' -- so these clauses rhyme by "
-            "mandate, not by drift. Each names a different adapter and a "
-            "different identity unit; only the mandated skeleton matches."
+            "The existing document and research standards use parallel "
+            "identity openers for two different substrates. Each names a "
+            "different identity unit; only the explanatory sentence shape "
+            "matches."
         ),
         # Normalized clauses, matched exactly.
         "clauses": (

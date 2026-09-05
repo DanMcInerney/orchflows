@@ -18,7 +18,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import standards, rings, rings_trust, state_root
+from scripts import standards, rings, rings_trust, state_root, tickets_pins
 
 
 from tests._repo_root import ROOT
@@ -136,32 +136,14 @@ class StandardResolutionTests(unittest.TestCase):
             self.assertNotEqual(changed, grown)
             self.assertEqual(before, restored)
 
-    def test_the_library_standard_contract_byte_changes_the_digest(self):
-        """The library's own well-formedness contract is in the identity, so
-        the digest moves when it does. `_signature_digest()` returning
-        `None` -- what it did once `contracts/standard.md` was deleted
-        -- would make two `None`s compare equal and this check vacuous, so
-        the live reading is asserted non-empty first."""
+    def test_public_and_ticket_resolvers_share_one_standard_identity(self):
+        """Both public inspection and ticket sealing name the same bytes."""
 
-        self.assertIsNotNone(standards._support._signature_digest())
+        public = standards.resolve_standard("orch-code")
+        pinned = tickets_pins.resolved("standard", "orch-code")
 
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp).resolve()
-            standard_root = root / "standards"
-            _copy_standard(STANDARDS / "orch-code", standard_root / "sample-standard")
-            _named_standard(standard_root / "sample-standard", "sample-standard")
-            library = root / "lib"
-            (library / "contracts").mkdir(parents=True)
-            contract = library / "contracts" / "standard.md"
-            shutil.copyfile(ROOT / "contracts" / "standard.md", contract)
-
-            with patch.object(rings, "lib_root", return_value=library):
-                self.assertIsNotNone(standards._support._signature_digest())
-                before = standards.resolve_standard("sample-standard", canonical_root=standard_root)
-                contract.write_bytes(contract.read_bytes() + b"\ncontract change\n")
-                after = standards.resolve_standard("sample-standard", canonical_root=standard_root)
-
-            self.assertNotEqual(before["digest"], after["digest"])
+        self.assertEqual(public["path"], pinned["path"])
+        self.assertEqual(public["digest"], pinned["digest"])
 
     def test_a_ring_relative_standard_contract_feeds_no_digest(self):
         """FM-2: the document that decides whether a standard is well formed

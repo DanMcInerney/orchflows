@@ -350,6 +350,21 @@ class PinnedItemDoorTest(unittest.TestCase):
                 self._codes({"skill_digest": "sha256:" + "0" * 64}),
             )
 
+    def test_a_workflow_entry_must_stay_inside_its_pinned_package(self):
+        with self._world() as world:
+            package = world["lib"] / "skills" / "workflows" / "house-flow"
+            package.mkdir(parents=True)
+            (package / "SKILL.md").write_text(
+                "---\nname: house-flow\n---\n\nRun it.\n", encoding="utf-8",
+            )
+            data = {
+                "workflow": "house-flow",
+                "workflow_digest": tickets_pins.tree_digest("workflow", package),
+                "workflow_entry": "../outside.md",
+            }
+
+            self.assertEqual({"workflow-entry-invalid"}, self._codes(data))
+
 
 class StampedCallableTest(CallableSinkTest):
     """`do` and `judge` take the flags, pin them, and admit through them."""
@@ -441,8 +456,8 @@ class StampedCallableTest(CallableSinkTest):
         self.assertIn("no-such-standard", answer["error"])
         self.assertFalse(self.run_dir().exists())
 
-    def test_a_do_without_the_flags_carries_no_new_frontmatter_field(self):
-        """U0's own boundary: a ticket that stamps nothing gains nothing.
+    def test_a_do_stamps_its_selected_workspace_adapter(self):
+        """Workspace binding is sealed beside the standard pins.
 
         The frontmatter keys are pinned as a sequence, so a field appearing
         on a ticket that stamped nothing fails here rather than at whatever
@@ -459,11 +474,14 @@ class StampedCallableTest(CallableSinkTest):
         self.assertEqual(
             [
                 "id", "run", "status", "admission", "executor", "standards",
-                "isolation", "bound",
+                "workspace_adapter", "isolation", "bound",
                 "root_generation", "cut_generation", "assignment_seal",
                 "dispatch_v1", "workspace_branch", "workspace_baseline",
             ],
             list(_parse_frontmatter(self.ticket_text(plain["do"]["id"]))),
+        )
+        self.assertEqual(
+            "git", _parse_frontmatter(self.ticket_text(plain["do"]["id"]))["workspace_adapter"],
         )
 
     def test_a_root_only_do_prompt_names_no_further_standard(self):
@@ -507,9 +525,8 @@ class StampedCallableTest(CallableSinkTest):
         path, digest = self._resolved(STANDARD)
 
         self.assertEqual(
-            f"Read the standard `{STANDARD}` at {path} whole (sha256 {digest}). Its "
-            "`## Making` binds your making; its `## Lens` `### git` entry adds "
-            "to the standard's `### git` and never loosens it.",
+            f"Read the standard `{STANDARD}` at {path} whole (sha256 {digest}). "
+            "Apply its guidance beside every other applicable pinned standard.",
             self._standard_line(answer),
         )
 
@@ -524,10 +541,8 @@ class StampedCallableTest(CallableSinkTest):
         path, digest = self._resolved(STANDARD)
 
         self.assertEqual(
-            f"Read the standard `{STANDARD}` at {path} whole (sha256 {digest}). Its "
-            "`## Lens` `### git` entry adds criteria you check beside the "
-            "standard's; where it loosens the standard's, the standard wins and you "
-            "report the conflict as a `standard-defect` finding.",
+            f"Read the standard `{STANDARD}` at {path} whole (sha256 {digest}). "
+            "Apply its guidance beside every other applicable pinned standard.",
             self._standard_line(answer),
         )
 
@@ -554,21 +569,22 @@ class StampedCallableTest(CallableSinkTest):
                 lines,
             )
 
-    def test_a_narrowing_off_its_domain_refuses_through_narrows_too(self):
-        """The same door under the spelling that replaces it: naming a
-        parent in another domain puts two adapters in one resolved set,
-        which is the contradiction rather than a preference."""
+    def test_orthogonal_standard_chains_compose_under_one_workspace(self):
+        """Standard guidance does not decide workspace cardinality."""
 
         _narrowing(self.ring, "doc-narrowing", "Prose shape.", narrows="orch-content")
 
         answer = self.callable(
             "do", "--standard", CODE_STANDARD, "--isolation", "required",
-            "--standard", "doc-narrowing", expect_error=True,
+            "--standard", "doc-narrowing",
         )
 
-        self.assertIn("orch-content", answer["error"])
-        self.assertIn(CODE_STANDARD, answer["error"])
-        self.assertFalse(self.run_dir().exists())
+        ticket = _parse_frontmatter(self.ticket_text(answer["do"]["id"]))
+        self.assertEqual("git", ticket["workspace_adapter"])
+        self.assertEqual(
+            [CODE_STANDARD, DOC_STANDARD, "doc-narrowing"],
+            [entry.split("@", 1)[0] for entry in ticket["standards"]],
+        )
 
 
 class StandardChainTest(unittest.TestCase):
@@ -666,25 +682,21 @@ class StandardChainTest(unittest.TestCase):
             self.assertIn("nowhere", error.detail)
             self.assertIn("orphan", error.detail)
 
-    def test_a_resolved_set_carrying_two_adapters_refuses(self):
+    def test_a_resolved_set_may_carry_two_legacy_adapter_hints(self):
         with _rings() as world:
             _root(world["lib"], CODE_STANDARD)
             _root(world["lib"], DOC_STANDARD, adapter="document-tree")
 
-            error = self._refusal(world, CODE_STANDARD, DOC_STANDARD)
+            self.assertEqual(
+                [CODE_STANDARD, DOC_STANDARD],
+                self._names(world, CODE_STANDARD, DOC_STANDARD),
+            )
 
-            self.assertEqual("standard-adapter-conflict", error.code)
-            for fragment in (CODE_STANDARD, DOC_STANDARD, "git", "document-tree"):
-                self.assertIn(fragment, error.detail)
-
-    def test_a_resolved_set_carrying_no_adapter_refuses(self):
+    def test_a_resolved_set_may_carry_no_legacy_adapter_hint(self):
         with _rings() as world:
             _narrowing(world["lib"], "bare", "No domain.", narrows=None)
 
-            error = self._refusal(world, "bare")
-
-            self.assertEqual("standard-adapter-missing", error.code)
-            self.assertIn("bare", error.detail)
+            self.assertEqual(["bare"], self._names(world, "bare"))
 
 
 if __name__ == "__main__":  # pragma: no cover - direct invocation

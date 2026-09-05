@@ -36,8 +36,7 @@ if __package__:
         REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
-    from .tickets_adapters import derived_isolation
-    from .tickets_pins import adapter_standard
+    from .tickets_adapters import AdapterError, adapter_for_ticket, derived_isolation
     from .tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
     from .tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from .tickets_outcome import _cmd_dispatch_outcome
@@ -55,8 +54,7 @@ else:  # pragma: no cover - direct/installed flat script path
         REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
-    from tickets_adapters import derived_isolation
-    from tickets_pins import adapter_standard
+    from tickets_adapters import AdapterError, adapter_for_ticket, derived_isolation
     from tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
     from tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from tickets_outcome import _cmd_dispatch_outcome
@@ -142,9 +140,8 @@ def _ticket(run: str, ticket_id: str):
 def _derived_isolation(data: dict) -> bool:
     """Whether this item was given a derived worktree to integrate and retire."""
 
-    return derived_isolation(
-        data.get("isolation"), adapter_standard(data)
-    ) == REQUIRED_ISOLATION
+    adapter = adapter_for_ticket(data, target=_recorded_workspace(data))
+    return derived_isolation(data.get("isolation"), adapter.key) == REQUIRED_ISOLATION
 
 
 def _candidate(run: str, ticket_id: str):
@@ -172,7 +169,12 @@ def _integrate_workspace(run: str, ticket_id: str, data: dict, status, path, by)
 
     if status is not None and status not in INTEGRABLE:
         return {"step": "workspace-integrate", "outcome": SKIPPED, "reason": status}
-    if not _derived_isolation(data):
+    try:
+        isolated = _derived_isolation(data)
+    except AdapterError as error:
+        return {"step": "workspace-integrate", "outcome": "refused",
+                "code": error.code, "error": error.detail}
+    if not isolated:
         return {"step": "workspace-integrate", "outcome": SKIPPED, "reason": "not isolated"}
     try:
         candidate = _candidate(run, ticket_id)
@@ -220,7 +222,12 @@ def _retire_workspace(run: str, ticket_id: str, status: str, data: dict) -> dict
 
     if status not in TERMINAL_STATES:
         return {"step": "workspace-retire", "outcome": SKIPPED, "reason": status}
-    if not _derived_isolation(data):
+    try:
+        isolated = _derived_isolation(data)
+    except AdapterError as error:
+        return {"step": "workspace-retire", "outcome": "refused",
+                "code": error.code, "error": error.detail}
+    if not isolated:
         return {"step": "workspace-retire", "outcome": SKIPPED, "reason": "not isolated"}
     script = Path(__file__).with_name("workspace.py").resolve()
     try:

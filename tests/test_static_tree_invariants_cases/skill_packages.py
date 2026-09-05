@@ -12,8 +12,10 @@ SKILL_TIERS = ("kernel", "workflows")
 # role is declared -- `tools/validate_support/packages.py`'s
 # `validate_role` refuses one there.
 ROLE_TABLE = {
-    "orch-judge": "planner",
-    "orch-do": "worker",
+    # Kernel operations are launched in a resolved profiled child, but do not
+    # choose that profile themselves.
+    "orch-judge": "none",
+    "orch-do": "none",
     # A reusable workflow's `None` is its role decision: `validate_role`
     # refuses a role in a workflow home, because a workflow's prose is
     # driven in the orchestrator's own context and never forks, so there

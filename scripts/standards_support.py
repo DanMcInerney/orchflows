@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -23,12 +22,13 @@ except ImportError:
     from tickets_markdown import _parse_frontmatter, dequote
 
 
-# v3 reads the collapsed standard: one manifest, `adapter` in frontmatter,
-# identity over the directory tree. v2 read a two-row cells table and the
-# second file its `standard` cell named, and neither exists. The version rides
-# in the identity so a resolver that reads differently cannot agree with
-# itself across the change.
+# v3 reads the collapsed standard: one manifest and optional legacy `adapter`
+# frontmatter.  The version describes the reader, but is deliberately absent
+# from the standard identity: tickets and the public resolver pin the same
+# directory tree, independently of which reader reported it.
 RESOLVER_VERSION = "orchflows.standard-resolver.v3"
+TREE_VERSION = b"orchflows.item-tree.v1\n"
+DIGEST_PREFIX = "sha256:"
 # Roots and narrowings are one ring kind under one `standards/` directory: a
 # root is a standard with no `narrows:`, never a standard in a particular
 # place.
@@ -49,20 +49,6 @@ class StandardError(ValueError):
         super().__init__(detail)
         self.code = code
         self.detail = detail
-
-
-def _canonical_json(value: object) -> bytes:
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-        allow_nan=False,
-    ).encode("utf-8")
-
-
-def _sha256(value: bytes) -> str:
-    return hashlib.sha256(value).hexdigest()
 
 
 def _canonicalize_bytes(value: bytes) -> bytes:
@@ -163,40 +149,27 @@ def _refuse_retired_table(text: str, path: Path) -> None:
         )
 
 
-def _tree(directory: Path) -> List[Dict[str, object]]:
-    """Every file under one standard's directory, sorted, path and bytes.
+def tree_digest(directory: Path) -> str:
+    """The canonical identity of one standard directory.
 
-    The path is relative to the standard's directory rather than to the
-    repository, so identical bytes in two rings are one identity -- the
-    scope a standard resolved from is an observation, never part of it.
-    Bytes enter as their own SHA-256; adding a file, deleting one, renaming
-    one and changing a byte each move the list, and so the digest over it.
+    This is the same framed path-and-bytes format used by ticket item pins.
+    Keeping the implementation here lets the public resolver and ticket
+    pinning share one primitive without an import cycle.
     """
 
-    entries: List[Dict[str, object]] = []
-    for path in directory.rglob("*"):
-        if not path.is_file():
-            continue
-        entries.append({
-            "path": path.relative_to(directory).as_posix(),
-            "sha256": _sha256(_read_bytes(path, "standard file")),
-        })
-    return sorted(entries, key=lambda entry: str(entry["path"]))
-
-
-def _signature_digest() -> Optional[str]:
-    """Hash the library's own well-formedness contract for a standard.
-
-    `contracts/standard.md` is that document since the collapse retired
-    the contract it replaced. It is read from the library root and
-    never from the standard's own ring: a ring supplying the document its
-    items are judged against would be grading itself.
-    """
-
-    candidate = rings.lib_root() / "contracts" / "standard.md"
-    if candidate.is_file():
-        return _sha256(_read_bytes(candidate, "standard contract"))
-    return None
+    root = Path(directory)
+    digest = hashlib.sha256()
+    digest.update(TREE_VERSION)
+    digest.update(b"standard\n")
+    files = sorted(
+        (path.relative_to(root).as_posix(), path)
+        for path in root.rglob("*") if path.is_file()
+    )
+    for relative, path in files:
+        data = _read_bytes(path, "standard file")
+        digest.update(f"{relative}\n{len(data)}\n".encode("utf-8"))
+        digest.update(data)
+    return DIGEST_PREFIX + digest.hexdigest()
 
 
 def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
@@ -217,20 +190,12 @@ def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
             adapter_for_key(adapter)
         except AdapterError as error:
             raise StandardError("standard-shape-invalid", error.detail) from error
-    identity = {
-        "resolver": RESOLVER_VERSION,
-        "standard": name,
-        "adapter": adapter,
-        "tree": _tree(path.parent),
-        "signature_sha256": _signature_digest(),
-    }
-    digest = "sha256:" + _sha256(_canonical_json(identity))
     return {
         "standard": name,
         "scope": scope,
         "path": str(path),
         "adapter": adapter,
-        "digest": digest,
+        "digest": tree_digest(path.parent),
     }
 
 
@@ -425,9 +390,9 @@ def resolve_chain(names: Sequence[str], **overrides) -> List[Dict[str, object]]:
 
     Chains join in the order written and a standard reached twice is read
     once, at its first position, so a shared ancestor is not read -- or
-    charged for -- twice. The joined set carries exactly one adapter: with
-    none the ticket has no workspace mechanism, and with two it has a
-    contradiction no later door can resolve.
+    charged for -- twice. Legacy adapter declarations remain observations on
+    each link; workspace selection consumes them only as a compatibility hint
+    after the standards have composed.
     """
 
     resolved_links: List[Dict[str, object]] = []
@@ -440,29 +405,14 @@ def resolve_chain(names: Sequence[str], **overrides) -> List[Dict[str, object]]:
             resolved_links.append(link)
     if not resolved_links:
         raise StandardError("standard-unstamped", "no standard is stamped")
-    declaring = [link for link in resolved_links if link["adapter"]]
-    if not declaring:
-        raise StandardError(
-            "standard-adapter-missing",
-            "the resolved standards "
-            + ", ".join(f"'{link['name']}'" for link in resolved_links)
-            + " declare no adapter, so the ticket has no workspace mechanism",
-        )
-    if len(declaring) > 1:
-        raise StandardError(
-            "standard-adapter-conflict",
-            "the resolved standards declare "
-            + " and ".join(
-                f"'{link['name']}' -> {link['adapter']}" for link in declaring
-            )
-            + ": one ticket carries one adapter, so these do not compose",
-        )
     return resolved_links
 
 
 def adapter_standard(names: Sequence[str], **overrides) -> str:
-    """The name of the one resolved standard that declares the adapter."""
+    """The standard declaring one distinct legacy adapter hint, or ``''``."""
 
-    return next(
-        str(link["name"]) for link in resolve_chain(names, **overrides) if link["adapter"]
-    )
+    declaring = [link for link in resolve_chain(names, **overrides) if link["adapter"]]
+    keys = {str(link["adapter"]) for link in declaring}
+    if len(keys) != 1:
+        return ""
+    return str(declaring[0]["name"])

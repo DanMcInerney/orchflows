@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+import subprocess
 from pathlib import Path
 
 try:
@@ -42,7 +43,7 @@ ADAPTER_REGISTRY = {
         establishes_isolation=False,
         deterministic_gate=False,
         workspace_strategy="document-tree",
-        commits_in_place=True,
+        commits_in_place=False,
     ),
     "evidence-store": Adapter(
         key="evidence-store",
@@ -61,6 +62,8 @@ ADAPTER_REGISTRY = {
         commits_in_place=True,
     ),
 }
+
+WORKSPACE_ADAPTER_FIELD = "workspace_adapter"
 
 
 class AdapterError(ValueError):
@@ -166,6 +169,119 @@ def adapter_for_key(key: str) -> Adapter:
     return adapter
 
 
+def infer_adapter(target) -> Adapter:
+    """Select the workspace mechanism established by one concrete directory."""
+
+    path = Path(target).expanduser()
+    if not path.is_dir():
+        raise AdapterError(
+            "workspace-target-invalid", f"workspace target is not a directory: {path}",
+        )
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=False,
+        )
+    except OSError as error:
+        raise AdapterError(
+            "workspace-adapter-unavailable",
+            f"cannot inspect workspace target {path} with git: {error}",
+        ) from error
+    if result.returncode == 0 and result.stdout.strip() == "true":
+        return ADAPTER_REGISTRY["git"]
+    metadata = next(
+        (candidate / ".git" for candidate in (path, *path.parents)
+         if (candidate / ".git").exists()),
+        None,
+    )
+    if metadata is not None and result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or f"exit {result.returncode}"
+        raise AdapterError(
+            "workspace-git-invalid",
+            f"git metadata at {metadata} could not establish the workspace: {detail}",
+        )
+    return ADAPTER_REGISTRY["document-tree"]
+
+
+def legacy_adapter_hints(standards, **overrides) -> tuple:
+    """Distinct adapter keys still declared by resolved legacy standards."""
+
+    if not standards:
+        return ()
+    if __package__:
+        from .standards_support import StandardError, resolve_chain
+    else:  # pragma: no cover - direct/installed flat script path
+        from standards_support import StandardError, resolve_chain
+    try:
+        links = resolve_chain(standards, **overrides)
+    except StandardError as error:
+        raise AdapterError(error.code, error.detail) from error
+    return tuple(dict.fromkeys(
+        str(link.get("adapter") or "").strip()
+        for link in links if str(link.get("adapter") or "").strip()
+    ))
+
+
+def select_adapter(*, explicit=None, standards=(), target=None,
+                   target_supplied: bool = False, **overrides) -> Adapter:
+    """Select one execution workspace independently of standard composition.
+
+    An explicit binding wins.  A caller-supplied location is concrete enough
+    to choose Git versus an existing directory.  Without one, one distinct
+    legacy standard hint preserves old calls; otherwise the current concrete
+    directory decides.  Evidence-store therefore remains an explicit or
+    legacy-hinted choice because a directory alone cannot identify it.
+    """
+
+    named = dequote(explicit)
+    if named:
+        return adapter_for_key(named)
+    if target_supplied:
+        return infer_adapter(target)
+    hints = legacy_adapter_hints(standards, **overrides)
+    if len(hints) == 1:
+        return adapter_for_key(hints[0])
+    if len(hints) > 1:
+        raise AdapterError(
+            "workspace-adapter-ambiguous",
+            "resolved standards carry competing legacy workspace adapters "
+            f"({', '.join(hints)}); name --workspace-adapter with one "
+            f"of {', '.join(sorted(ADAPTER_REGISTRY))}",
+        )
+    if target is not None:
+        return infer_adapter(target)
+    raise AdapterError(
+        "workspace-adapter-ambiguous",
+        "workspace mechanism is ambiguous; name --workspace-adapter with one "
+        f"of {', '.join(sorted(ADAPTER_REGISTRY))}",
+    )
+
+
+def adapter_for_ticket(data: dict, *, target=None, **overrides) -> Adapter:
+    """Read a new ticket binding or derive the compatibility answer for an old one."""
+
+    explicit = data.get(WORKSPACE_ADAPTER_FIELD)
+    if WORKSPACE_ADAPTER_FIELD in data and not dequote(explicit):
+        raise AdapterError(
+            "workspace-adapter-invalid",
+            f"{WORKSPACE_ADAPTER_FIELD} is present but empty; name one of "
+            f"{', '.join(sorted(ADAPTER_REGISTRY))}",
+        )
+    try:
+        if __package__:
+            from .tickets_pins import STANDARDS_FIELD, standards_of
+        else:  # pragma: no cover - direct/installed flat script path
+            from tickets_pins import STANDARDS_FIELD, standards_of
+        standards = [name for name, _digest in standards_of(data.get(STANDARDS_FIELD))]
+    except ImportError:  # pragma: no cover - partial install
+        standards = []
+    return select_adapter(
+        explicit=explicit, standards=standards, target=target,
+        target_supplied=False, **overrides,
+    )
+
+
 def adapter_spec(standard, *, root=None) -> Adapter:
     return adapter_for_key(declared_adapter(standard, root=root))
 
@@ -179,7 +295,12 @@ def derived_isolation(declared, standard, *, root=None) -> str:
     if not dequote(standard):
         return "none"
     try:
-        return "required" if adapter_spec(standard, root=root).establishes_isolation else "none"
+        named = dequote(standard)
+        adapter = (
+            adapter_for_key(named) if named in ADAPTER_REGISTRY
+            else adapter_spec(named, root=root)
+        )
+        return "required" if adapter.establishes_isolation else "none"
     except AdapterError:
         return "required"
 
@@ -189,7 +310,9 @@ def adapter_id(standard, *, root=None) -> str:
 
 
 __all__ = (
-    "ADAPTER_REGISTRY", "Adapter", "AdapterError", "adapter_for_key",
-    "adapter_id", "adapter_in_frontmatter", "adapter_spec", "manifest_path",
-    "declared_adapter", "derived_isolation", "standard_path",
+    "ADAPTER_REGISTRY", "WORKSPACE_ADAPTER_FIELD", "Adapter", "AdapterError",
+    "adapter_for_key", "adapter_for_ticket", "adapter_id",
+    "adapter_in_frontmatter", "adapter_spec", "declared_adapter",
+    "derived_isolation", "infer_adapter", "legacy_adapter_hints",
+    "manifest_path", "select_adapter", "standard_path",
 )

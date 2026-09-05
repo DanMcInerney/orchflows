@@ -1,166 +1,102 @@
 # Standard contract
 
-A standard states what a good artifact carries in one domain: the terms,
-the workspace, the making guidance and the criteria a judge reads. It is
-the library's one unit of domain knowledge, with no second kind beside it
-and no second kind below it.
+A standard is nonempty prose describing quality in one domain. Makers and
+judges read its complete text, so its guidance may use any clear Markdown
+layout. Headings help people navigate; their presence or spelling does not
+decide whether the standard is complete.
 
-A standard with no `narrows:` is a **root**; one with `narrows:` is a
-**narrowing**, and it names exactly one broader standard. That is how
-specificity cascades: `three-js` narrows `javascript` narrows `code`. A
-ticket stamps one or more names; each resolves its own chain by walking
-`narrows:`, and the maker reads the resolved chain broad to narrow while
-the judge reads the identical chain at the identical digests. The two are
-one format under one set of rules and differ only in the sections the
-table below allows them.
+A standard with no `narrows:` is a **root**. One with `narrows:` is a
+**narrowing** and names one broader standard whose guidance it tightens. A
+ticket may stamp several standards as orthogonal guidance. Each named item
+expands its optional base broad to narrow, then the resolver concatenates the
+chains in the caller's order and removes repeated identities after their first
+appearance. The maker and judge read that same ordered set at the same digests.
 
-A standard is a ring item and nothing else: resolved through
-[rings.py](../scripts/rings.py)'s one order, digest-pinned on the ticket
-at issue, and read at that digest by the ticket's maker and by its judge.
-No host adapter is rendered for one, because nothing invokes one — a
-standard is stamped, never called.
+A standard is a ring item resolved through [rings.py](../scripts/rings.py)'s
+order, pinned when a ticket is issued, and rechecked at later doors. Nothing
+invokes it and no host adapter is rendered for it: a standard is stamped,
+never called.
 
 ## Location and anatomy
 
-Ring directory `standards`, library directory `standards`, manifest
-`STANDARD.md`, so a standard lives at `standards/<name>/STANDARD.md` in
-whichever ring carries it, and the installer mints the same
-`by-name/<name>/STANDARD.md` pointer it mints for every other kind. The
-`orch-` prefix is reserved here as it is for every other kind.
+The ring and library directory is `standards`; the manifest is `STANDARD.md`.
+A standard therefore lives at `standards/<name>/STANDARD.md` in whichever
+ring carries it. Its directory may include prose references for optional
+depth, but all guidance required for the assignment stays in the manifest
+passed to both roles.
 
-The directory holds that manifest and nothing else. A `scripts`
-directory, a `requirements.txt` and a `tools.txt` beside it are refused:
-a standard is prose, so it declares no dependencies, owns no environment,
-and never supplies the document its own well-formedness is judged
-against.
+Executable helpers and dependency declarations are invalid here. The
+validator refuses the conventional script and requirements locations. A
+standard owns no environment and never supplies the contract used to judge
+its own well-formedness.
 
 ## Frontmatter
 
-- `name` — the standard's name, equal to its directory name.
-- `description` — one sentence, at most 140 characters, saying when to
-  stamp it.
-- `narrows` — optional. The one broader standard this one tightens;
-  omitted by a root.
-- `adapter` — optional. One stable registered workspace mechanism key,
-  the typed leaf downstream machinery branches on. It is declared by
-  whichever standard introduces the domain, not necessarily the root, so
-  a domain-blind standard can sit above two domains without claiming a
-  workspace mechanism it has no opinion about.
+- `name` — required; equal to the directory name.
+- `description` — required; at most 140 characters, saying when to stamp it.
+- `narrows` — optional; the one broader standard this item tightens.
+- `adapter` — optional legacy workspace hint. If present, it names a
+  registered mechanism. Composition ignores this observation; workspace
+  selection consults it only when no explicit adapter or concrete target
+  settles the mechanism.
 
-## Sections
+## Guidance
 
-| section | roots | narrowings |
-| --- | --- | --- |
-| `## Making` | required | required |
-| `## Lens` | required | required |
-| `## Vocabulary` | required | optional |
-| `## Scaffolding` | optional | optional |
-| `## Workspace` | required | refused |
-| `## Spec fields` | required | refused |
-| `## Stages` | optional | refused |
+The manifest answers the domain questions that matter. Authors normally ask:
 
-Each `##` heading is a stable anchor, and each binds one thing:
+- Which terms need fixed meanings?
+- What result and constraints must an outline preserve?
+- What is the smallest useful slice?
+- Which craft practices lead a maker toward that result?
+- What evidence and defects should a reviewer examine?
 
-- `## Making` — what the maker does in this domain to reach a
-  well-formed artifact.
-- `## Lens` — one `###` entry per artifact kind the domain produces:
-  what a well-formed artifact of that kind carries, what proves it, and
-  which findings block.
-- `## Vocabulary` — the domain's terms, defined once for intake,
-  execution, and checking alike.
-- `## Scaffolding` — below.
-- `## Workspace` — identities, isolation, candidate diffs, and conflict
-  handling in this domain; the adapter key is declared separately.
-- `## Spec fields` — fields a spec must carry for decomposition to
-  accept it, read at intake as the checklist a root must satisfy before
-  seal.
-- `## Stages` — how work proceeds in this domain, as narrative.
+Those are authoring questions, not five required headings. A concise paragraph
+may answer all of them. A longer standard may use headings suited to its
+readers. Empty text or headings without substantive guidance are refused.
 
-The three refused sections are facts about a domain, and a narrowing
-that stated one again would own it twice.
-
-## Lens
-
-A root's `## Lens` carries exactly these `###` entries, in this order:
-`### root`, then `### cut`, then one entry per artifact kind the resolved
-set's one adapter produces — neither a missing kind nor a kind that
-adapter never emits; a narrowing keys only the entries it adds to. The
-keys are artifact kinds (`git`, `doc`, `evidence`), which the adapter
-registry maps from the workspace mechanism key, not the mechanism keys
-themselves. `root` is a frozen goal and `cut` a set of work items
-under one; both are library-owned, and the ticket already spells their
-identities `root:<id>:<n>:sha256:<digest>` and
-`cut:<id>:<n>:sha256:<digest>`.
-
-A making verb makes toward the entry its artifact kind names; a checking
-verb reads the same entry as its criteria. A narrowing's entry adds
-criteria beside the broader standard's entry of the same key, and a
-narrowing that keys no entry the stamp's kind matches adds nothing the
-ticket's verbs read. Every verb reads the whole resolved chain and acts
-under the sections its skill names.
+The optional legacy `## Lens` layout remains readable. When present, it
+appears once and contains uniquely named, nonempty `###` entries. Entry names
+help readers locate criteria; the validator does
+not infer semantic coverage, workspace selection, or supported artifact kinds
+from them. Makers and judges still read the full standard rather than a
+machine-selected subsection.
 
 ## Rules
 
-1. A narrowing may only tighten. Where its clause would permit what a
-   broader standard forbids, the broader wins and the judge reports
-   `standard-defect` — the standard is the defect, not the artifact.
-2. Exactly one adapter across a ticket's resolved standards.
-3. `narrows:` resolves to a standard in a reachable ring, never revisits
-   a name, and terminates within eight hops.
-4. At most `STANDARD_BUDGET` words per manifest, frontmatter counted,
-   whitespace-separated, equal for a root and a narrowing. Its value is
-   1200. Words rather than lines because a line ceiling is gamed by
-   writing longer lines.
-5. The digest is SHA-256 over the directory tree, pinned at issue and
-   re-derived at every door.
-6. Routing resolves roots only; a narrowing arrives because an author
-   named it.
-
-## Scaffolding
-
-`## Scaffolding` holds content a perfect executor would not need, and it
-can be deleted without changing what the standard means. Everything
-outside it is permanent by default, so no fact is lost by forgetting to
-tag it. Whether a sentence belongs there is
-[library-review.md](../docs/library-review.md) criterion 11's test,
-applied sentence by sentence; this file states no version of that test of
-its own.
+1. A narrowing only tightens. Where its guidance contradicts its base,
+   reviewers classify the narrower guidance itself as `standard-defect`.
+2. `narrows:` resolves to one standard in a reachable ring, never revisits a
+   name, and terminates within eight hops.
+3. Explicitly named standards are orthogonal guidance. Resolution preserves
+   caller order and deduplicates a shared base at its first appearance.
+4. Each manifest is at most `STANDARD_BUDGET` whitespace-separated words,
+   frontmatter included. `STANDARD_BUDGET` is 1200 for roots and narrowings.
+5. The digest is the canonical `standard` item-tree identity over every file
+   in the directory and is pinned at issue and re-derived at every door.
+6. Adapter hints are compatibility observations. Their absence, repetition,
+   or disagreement does not change the resolved standard set.
 
 ## Identity
 
-Rule 5's digest covers every file in the standard's directory: each
-file's path relative to that directory, sorted, with its bytes. Relative
-to the directory and never to the repository, because the path a standard
-was found at is an observation: one shipped in two rings must digest the
-same, or the pin refuses the shadow it exists to catch. The ticket pins
-that digest at issue and every later door re-derives it, so a standard
-that changed under a sealed assignment — or a nearer ring that came to
-shadow it — is a refusal rather than a substitution.
-[work-item.md](work-item.md) owns the ticket fields that carry the pins;
-[tickets_pins.py](../scripts/tickets_pins.py) is the one resolver, hasher
-and verifier for them.
+The canonical digest frames `standard` plus every file's directory-relative
+path, normalized bytes, and byte length in sorted path order. Repository and
+ring locations are observations outside the identity, so the same standard
+shipped in two rings has one digest. Adding, deleting, renaming, or changing a
+file moves the digest. [work-item.md](work-item.md) owns the ticket fields;
+[tickets_pins.py](../scripts/tickets_pins.py) re-derives their pins.
 
 ## Admission
 
-A domain earns a root for materially different artifact evidence or
-workspace semantics. It earns a narrowing when one assignment needs that
-domain tightened — a house style, a client's report shape, a family of
-checks a run wants applied — and the alternative would be forking the
-root or editing prose every other run reads. Prose earns a section only
-when its content differs between standards and no other section already
-owns that content.
+A domain earns a root when its quality guidance materially differs. It earns a
+narrowing when recurring work needs that guidance tightened, such as a house
+style or a client-specific review bar. Independent concerns remain separate
+standards that a ticket lists together.
 
-Purity: a standard body contains no delegation language, stop states,
-conditionals, or Return contract. The validator states its mechanical
-checks; the authoring guide owns the remaining judgment.
-
-Sharing constraints, checked at review:
-
-- Every candidate form emitted by slicing is expressible in
-  `## Workspace`.
-- Every domain term another section uses is defined once in a
-  `## Vocabulary` somewhere on the resolved chain, or inline in the
-  section that uses it.
+Purity: a standard body contains no delegation flow, stop states, or Return
+contract. Validation checks identity, consumed frontmatter, nonempty guidance,
+links, budget, optional Lens structure, and executable-file refusals. It does
+not decide whether prose covers a domain well; authors and reviewers own that
+judgment through [standard authoring](../docs/standard-authoring.md).
 
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
@@ -175,26 +111,5 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `description` | yes | — |
 | `narrows` | no | — |
 | `adapter` | no | — |
-
-### `standard_root_sections`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `Making` | yes | — |
-| `Lens` | yes | — |
-| `Vocabulary` | yes | — |
-| `Scaffolding` | no | — |
-| `Workspace` | yes | — |
-| `Spec fields` | yes | — |
-| `Stages` | no | — |
-
-### `standard_narrowing_sections`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `Making` | yes | — |
-| `Lens` | yes | — |
-| `Vocabulary` | no | — |
-| `Scaffolding` | no | — |
 
 <!-- END GENERATED T0 SHAPES -->

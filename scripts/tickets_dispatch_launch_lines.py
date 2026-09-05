@@ -7,8 +7,9 @@ rendered exactly once, and everything the ticket or the child's own harness
 already owns is left to them.
 
 Every group below takes the one graded assignment dict and returns its own
-lines; they share nothing else, which is the seam this module is cut at.
-`tickets_dispatch_launch.py` owns the order they are rendered in.
+lines; only the identity line also takes the selected host record because the
+entry mechanism must be truthful for that host. `tickets_dispatch_launch.py`
+owns the order they are rendered in.
 """
 
 from __future__ import annotations
@@ -39,7 +40,7 @@ def _command(*arguments) -> str:
     return shlex.join(values)
 
 
-def _identity_line(assignment: dict) -> str:
+def _identity_line(record: dict, assignment: dict) -> str:
     """The prompt's first fact: which skill, how to enter it, for which ticket."""
 
     skill_path = assignment.get("skill_path")
@@ -48,12 +49,26 @@ def _identity_line(assignment: dict) -> str:
         if skill_path else "Your ticket is "
     )
     entered = assignment.get("applied_skill") or assignment["executor"]
+    if assignment.get("executor_script") is not None:
+        entry = ""
+    elif record.get("id") == "claude":
+        entry = (
+            f"Call the Skill tool with skill `{entered}` and pass this entire "
+            "prompt, verbatim, as its arguments. Already running as that skill, "
+            "do the work here and never invoke it again. "
+        )
+    else:
+        entry = (
+            f"Read the `{entered}` skill file named below, then execute that "
+            "contract here with this entire prompt as your assignment; do not "
+            "spawn or invoke the skill by name. "
+            if skill_path else
+            f"Execute the `{entered}` contract here with this entire prompt as "
+            "your assignment; do not spawn or invoke it by name. "
+        )
     return (
-        f"Call the Skill tool with skill `{entered}` and pass "
-        "this entire prompt, verbatim, as its arguments. Already running as "
-        "that skill, do the work here and never invoke it again. "
-        f"{located}{assignment['ticket_path']}. Read that ticket whole: it is "
-        "your assignment, and there is no other copy of it."
+        f"{entry}{located}{assignment['ticket_path']}. Read that ticket whole: "
+        "it is your assignment, and there is no other copy of it."
     )
 
 
@@ -115,20 +130,22 @@ def _files_findings(assignment: dict) -> bool:
 
 
 def _manifest_lines(assignment: dict) -> list:
-    """The stamped standard, handed as a path, and the entry it is read at."""
+    """One applicable standard path and any artifact kinds it helps govern."""
 
     lines = []
     manifest = assignment.get("manifest")
     if manifest is not None:
-        lines.append(f"Read your stamped standard at {manifest}.")
-        key = assignment.get("lens_key")
-        if key:
+        lines.append(f"Read an applicable pinned standard whole at {manifest}.")
+        keys = assignment.get("lens_keys") or (
+            [assignment["lens_key"]] if assignment.get("lens_key") else []
+        )
+        for key in keys:
             lines.append(
-                f"You judge `{key}` artifacts: the standard's `## Lens` entry "
-                f"`### {key}` is your criteria."
+                f"You judge `{key}` artifacts: apply the whole pinned standards "
+                f"and any `## Lens` `### {key}` entries they carry."
                 if _files_findings(assignment) else
-                f"You make a `{key}`: the standard's `## Lens` entry `### {key}` "
-                "is what your artifact must satisfy."
+                f"You make a `{key}`: apply the whole pinned standards and any "
+                f"`## Lens` `### {key}` entries they carry."
             )
     lines.append(
         "The full required suite is the gate's row, never a unit's: run it "
@@ -139,11 +156,8 @@ def _manifest_lines(assignment: dict) -> list:
 
 def _other_standard_lines(assignment: dict) -> list:
     """One line per stamped standard beside the one the line above handed
-    over: where it is, at which digest, and how far it reaches into that one."""
+    over: where it is, at which digest, and that all its guidance applies."""
 
-    key = assignment.get("lens_key")
-    if not key:
-        return []
     lines = []
     for standard in assignment.get("other_standards") or ():
         digest = str(standard.get("digest") or "")
@@ -152,14 +166,8 @@ def _other_standard_lines(assignment: dict) -> list:
             f"(sha256 {digest.split(':', 1)[-1]})."
         )
         lines.append(
-            f"{opening} Its `## Lens` `### {key}` entry adds criteria you "
-            "check beside the standard's; where it loosens the standard's, the "
-            "standard wins and you report the conflict as a `standard-defect` "
-            "finding."
-            if _files_findings(assignment) else
-            f"{opening} Its `## Making` binds your making; its `## Lens` "
-            f"`### {key}` entry adds to the standard's `### {key}` and never "
-            "loosens it."
+            f"{opening} Apply its guidance beside every other applicable "
+            "pinned standard."
         )
     return lines
 

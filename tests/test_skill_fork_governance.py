@@ -197,8 +197,10 @@ class TheClauseStillSaysWhatItWasWrittenToSay(unittest.TestCase):
 class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
     """The clause renders on role-bearing surfaces and lives nowhere else."""
 
-    PLANNER = "skills/kernel/orch-judge/SKILL.md"
-    WORKER = "skills/kernel/orch-do/SKILL.md"
+    NEUTRAL_KERNELS = (
+        "skills/kernel/orch-judge/SKILL.md",
+        "skills/kernel/orch-do/SKILL.md",
+    )
     # No skill declares `role: none` any more: the driver loop stopped being
     # one. The role-less name surface left is a workflow body, and the same
     # composers render it. A workflow declares no role deliberately -- its
@@ -229,23 +231,22 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
                     "never produces the prompt-less arrival the clause governs",
                 )
 
-    def test_the_claude_adapter_reads_the_clause_before_the_include(self):
-        for relative in (self.PLANNER, self.WORKER):
+    def test_profile_neutral_kernel_adapters_do_not_claim_a_skill_fork(self):
+        for relative in self.NEUTRAL_KERNELS:
             with self.subTest(contract=relative):
                 text = claude_role_adapter_text(_frontmatter_of(relative), Path("X"))
-                self.assertIn(FORK_ARRIVAL_CLAUSE, text)
-                self.assertLess(
-                    text.index(FORK_ARRIVAL_CLAUSE), text.index("@"),
-                    "the clause must be the first body text a fork reads, "
-                    "above the @-include that pulls the contract in",
-                )
+                self.assertNotIn(FORK_ARRIVAL_CLAUSE, text)
+                self.assertNotIn("context: fork", text)
+                self.assertNotIn("agent: orch-", text)
         self.assertNotIn(
             FORK_ARRIVAL_CLAUSE,
             claude_role_adapter_text(_frontmatter_of(self.GLUE), Path("X")),
         )
 
     def test_the_by_name_pointer_carries_it_for_role_bearing_names(self):
-        pointed = by_name_pointer_text(_frontmatter_of(self.WORKER), "worker", Path("X"))
+        pointed = by_name_pointer_text(
+            "---\nname: house-work\nrole: worker\n---\n", "worker", Path("X"),
+        )
         self.assertIn(FORK_ARRIVAL_CLAUSE, pointed)
         clean = by_name_pointer_text(_frontmatter_of(self.GLUE), "none", Path("X"))
         self.assertNotIn(FORK_ARRIVAL_CLAUSE, clean)
@@ -254,7 +255,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
         self.assertIn(
             FORK_ARRIVAL_CLAUSE,
             codex_role_adapter_body(
-                "orch-do", "worker", install.load_role_profiles()["orch-worker"], Path("X")
+                "house-work", "worker", install.load_role_profiles()["orch-worker"], Path("X")
             ),
         )
 

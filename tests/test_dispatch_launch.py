@@ -51,7 +51,7 @@ class LaunchResolutionTest(unittest.TestCase):
             "standard": None, "dependencies": [],
             "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "id": "T", "lease_expires_at": "2099-01-01T00:00:00Z",
-            "standard": None, "role": role,
+            "standard": None, "role": role, "profile": f"orch-{role}" if role else None,
             "run": "run", "ticket_path": "/sink/run/T.md",
             "workspace": "/tree",
         }
@@ -127,7 +127,9 @@ class LaunchResolutionTest(unittest.TestCase):
 
     def test_an_unresolved_role_refuses_and_names_the_two_profiles(self):
         record, _ = launch.resolve_host("claude")
-        spec, failure = launch.launch_spec(record, dict(self.assignment("worker"), role=None))
+        spec, failure = launch.launch_spec(
+            record, dict(self.assignment("worker"), role=None, profile=None),
+        )
         self.assertIsNone(spec)
         self.assertEqual("role-unresolved", failure["code"])
         self.assertIn("orch-planner", failure["error"])
@@ -140,9 +142,8 @@ class LaunchResolutionTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {launch.HOST_ENV_VAR: ""}):
             self.assertEqual(launch.DEFAULT_HOST, launch.selected_host(None))
 
-    def test_the_profile_override_decides_the_role_the_skill_declared(self):
-        """rules/roles.md clause 4, through the one resolver both sides use:
-        an explicit profile wins over the applied skill's own declaration."""
+    def test_the_profile_override_decides_the_role_independently_of_operation(self):
+        """An explicit canonical profile wins over the operation default."""
 
         self.assertEqual(
             ("worker", "orch-worker"),
@@ -153,9 +154,55 @@ class LaunchResolutionTest(unittest.TestCase):
             launch.resolved_role_profile("orch-do", "orch-planner"),
         )
         self.assertEqual(
-            ("worker", "house-profile"),
+            (None, "house-profile"),
             launch.resolved_role_profile("orch-do", "house-profile"),
         )
+
+    def test_a_non_kernel_declared_role_needs_an_explicit_profile(self):
+        with mock.patch.object(launch, "declared_role", return_value="worker"):
+            self.assertEqual(
+                (None, None),
+                launch.resolved_role_profile("house-work", None),
+            )
+            self.assertEqual(
+                ("worker", "orch-worker"),
+                launch.resolved_role_profile("house-work", "orch-worker"),
+            )
+
+    def test_an_unknown_decorative_profile_refuses(self):
+        record, _ = launch.resolve_host("claude")
+        assignment = dict(
+            self.assignment("worker"), profile="house-profile",
+        )
+
+        spec, failure = launch.launch_spec(record, assignment)
+
+        self.assertIsNone(spec)
+        self.assertEqual("profile-unresolved", failure["code"])
+        self.assertIn("house-profile", failure["error"])
+
+    def test_assignment_role_and_profile_must_agree(self):
+        record, _ = launch.resolve_host("claude")
+        assignment = dict(
+            self.assignment("worker"), profile="orch-planner",
+        )
+
+        spec, failure = launch.launch_spec(record, assignment)
+
+        self.assertIsNone(spec)
+        self.assertEqual("profile-unresolved", failure["code"])
+        self.assertIn("not worker", failure["error"])
+
+    def test_a_host_profile_name_must_match_the_selected_profile(self):
+        record, _ = launch.resolve_host("claude")
+        moved = json.loads(json.dumps(record))
+        moved["role_profiles"]["worker"]["name"] = "house-profile"
+
+        spec, failure = launch.launch_spec(moved, self.assignment("worker"))
+
+        self.assertIsNone(spec)
+        self.assertEqual("profile-unresolved", failure["code"])
+        self.assertIn("orch-worker", failure["error"])
 
 
 class LandTest(unittest.TestCase):

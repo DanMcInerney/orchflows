@@ -21,17 +21,21 @@
    at any authoring scope.
    Blame classes recorded at joins (caller under-supplied vs child
    under-delivered) are the router.
-4. A proposal qualifies on recurrence — the same owner-assigned
-   cluster, grouped by observed-text similarity, at least three times,
-   or across two distinct sessions, where a differing run or host
-   counts when entries carry no session — or on a checked contradiction:
+4. The deterministic lexical clusters are navigation aids over their
+   bounded raw records. They prove neither a shared cause nor a causal owner;
+   an agent may merge or split them when assigning one owner. The harvester's
+   recurrence flag reports count arithmetic only. A proposal qualifies on
+   recurrence after agent judgment finds the same owner and obstruction at
+   least three times, or across two distinct sessions, where a differing run
+   or host counts when entries carry no session — or on a checked contradiction:
    an entry whose observed contradiction checks true against its owner's
-   current text qualifies alone. An `environment` cluster qualifies on
-   a probe — the exact command whose failure reproduces the defect;
-   the probe is its oracle. Other one-off friction is noise until
-   it repeats. A recurring cluster qualifies a `consolidate` proposal
+   current text qualifies alone. An `environment` owner-assigned group
+   qualifies on a probe — the exact command whose failure reproduces the
+   defect; the probe is its oracle. Other one-off friction remains evidence
+   but does not qualify until it repeats. A recurring owner-assigned group
+   qualifies a `consolidate` proposal
    instead, targeting bloat rather than incorrectness.
-5. Replay: a proposal whose friction cluster includes a replayable item
+5. Replay: a proposal whose evidence group includes a replayable item
    (its ticket and the run's frozen statement still present) must
    re-run that item against the amended owner and pass before it is
    proposed for merge. A proposal that cannot replay says so.
