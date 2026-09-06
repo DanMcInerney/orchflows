@@ -22,6 +22,20 @@ Every live result records `cell.scenario_id` and a top-level `measurement`:
 
 The positive browser fixture source is `threejs-default-renderer.html`. It pins
 Three.js `0.185.1` and constructs an ordinary `WebGLRenderer` without a
-`preserveDrawingBuffer` override. It is a minimal observation target, not a
-game acceptance sample. A live run still needs a headed browser and records
-the exact browser, backend, viewport, DPR, seed, and commit in its cell.
+`preserveDrawingBuffer` override. It alternates high-contrast clears on each
+animation callback so a timestamp alias cannot manufacture a false frame-floor
+failure. The live positive probe measured `N=600`, `C=600`, `callbacks=600`,
+`preserve_drawing_buffer=false`, and zero readback errors over 10 seconds.
+
+The collector takes one central `1x1` `webgl.readPixels` sample after each
+instrumented callback and records the sample duration. This keeps the same
+read-only default-buffer seam while bounding observation work; the 10-second
+probe's maximum sample duration was `5.5 ms` (p99 `4.8 ms`).
+
+`threejs-stalled-canvas-other-layer.html` is a live negative probe. Its default
+Three.js canvas is cleared once and left unchanged while a separate promoted
+DOM layer moves from an active `requestAnimationFrame` callback. The repaired
+collector recorded `120` callbacks and `120` samples with one canvas hash,
+then rejected the result with `missing-canvas-attribution` and
+`canvas-frame-floor` (`C=0/2`). A live run still needs a headed browser and
+records the exact browser, backend, viewport, DPR, seed, and commit in its cell.
