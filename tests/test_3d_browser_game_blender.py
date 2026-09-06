@@ -166,7 +166,12 @@ class BlenderBoundaryTests(unittest.TestCase):
             report = {"issues": {"numErrors": 0, "numWarnings": 0}}
             report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
             return 0, json.dumps({"status": "pass", "errors": 0, "export_sha256": glb_hash, "report_sha256": digest(report_path) }).encode() + b"\n", b"", False
-        report = {"kind": "gltf-loader-evidence", "id": "test-loader", "artifact_commit": json.loads((Path(cwd) / "job.json").read_text(encoding="utf-8"))["artifact_commit"], "glb_hash": glb_hash, "source": "live-browser", "checks": {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}}
+        screenshot_path = report_path.with_name("gltf-loader-evidence.png")
+        screenshot_path.write_bytes(b"png-evidence")
+        screenshot_hash = digest(screenshot_path)
+        target_workspace = Path(json.loads((Path(cwd) / "job.json").read_text(encoding="utf-8"))["validation"]["target_workspace"])
+        three_root = target_workspace / "node_modules" / "three"
+        report = {"kind": "gltf-loader-evidence", "id": "test-loader", "artifact_commit": json.loads((Path(cwd) / "job.json").read_text(encoding="utf-8"))["artifact_commit"], "glb_hash": glb_hash, "source": "live-browser", "checks": {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}, "target_workspace": str(target_workspace), "target_three_root": {"path": "node_modules/three", "three_module_sha256": digest(three_root / "build" / "three.module.js"), "gltf_loader_sha256": digest(three_root / "examples" / "jsm" / "loaders" / "GLTFLoader.js")}, "target_probe": {"path": screenshot_path.name, "sha256": screenshot_hash}, "browser": {"screenshot_sha256": screenshot_hash}, "observed": {"meshes": 1, "materials": 1, "animations": 0}}
         report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         return 0, json.dumps({"status": "pass", "export_sha256": glb_hash, "evidence_sha256": digest(report_path)}).encode() + b"\n", b"", False
 

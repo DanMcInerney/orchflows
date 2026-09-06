@@ -3,15 +3,20 @@
  * recomputes performance/session facts; a stored `passed: true` never becomes
  * acceptance evidence by itself.
  */
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { readFileSync } from "node:fs";
+import { execFile as execFileCallback } from "node:child_process";
 import { resolve, relative, isAbsolute, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import Ajv from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { parseArgs, readJson, resultFromError, sha256, inputError, evidenceError, ensureContained, requireObject, nowIso, writeJsonAtomic, canonicalJson } from "./_common.mjs";
 import { qualifyPerformance } from "./trace_frames.mjs";
 import { validateCommand } from "./browser_harness.mjs";
+import { validateGateLineage, LineageError } from "./gate_lineage.mjs";
+
+const execFile = promisify(execFileCallback);
 
 const HEADER_KEYS = ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates"];
 
@@ -77,13 +82,18 @@ const schemaValidator = (() => {
   addFormats(ajv);
   const common = schemaJson("common.schema.json");
   ajv.addSchema(common);
+  const lineage = schemaJson("lineage.schema.json");
+  ajv.addSchema(lineage);
+  const runRecord = ajv.compile(schemaJson("run-record.schema.json"));
+  const traceability = ajv.compile(schemaJson("traceability.schema.json"));
   const play = ajv.compile(schemaJson("play-session.schema.json"));
+  const performanceCell = ajv.compile(schemaJson("performance-cell.schema.json"));
   const performancePlan = ajv.compile(schemaJson("performance-plan.schema.json"));
   const evidenceIndex = ajv.compile(schemaJson("evidence-index.schema.json"));
   const gateVerdict = ajv.compile(schemaJson("gate-verdict.schema.json"));
   const captureMatrix = ajv.compile(schemaJson("capture-matrix.schema.json"));
   const assetManifest = ajv.compile(schemaJson("asset-manifest.schema.json"));
-  return { play, performancePlan, evidenceIndex, gateVerdict, captureMatrix, assetManifest };
+  return { runRecord, traceability, play, performanceCell, performancePlan, evidenceIndex, gateVerdict, captureMatrix, assetManifest };
 })();
 
 function validateStoredSchema(document, validator, label, pointer = "/") {
@@ -115,6 +125,27 @@ async function hashPath(baseDir, path, pointer) {
   let bytes;
   try { bytes = await readFile(target); } catch (error) { throw evidenceError(`evidence file is missing: ${error.message}`, pointer); }
   return { target, path: normalized, hash: sha256(bytes), bytes };
+}
+
+async function hashContainedFile(rootDir, path, pointer) {
+  if (typeof rootDir !== "string" || !rootDir || !isAbsolute(rootDir)) throw evidenceError("target workspace must be an absolute path", pointer);
+  if (typeof path !== "string" || !path || isAbsolute(path)) throw evidenceError("target evidence path must be relative", pointer);
+  const root = resolve(rootDir);
+  const target = ensureContained(root, resolve(root, path));
+  let bytes;
+  try { bytes = await readFile(target); } catch (error) { throw evidenceError(`target evidence file is missing: ${error.message}`, pointer); }
+  return { target, path: relative(root, target).replaceAll("\\", "/"), hash: sha256(bytes), bytes };
+}
+
+async function resolveContainedDirectory(rootDir, path, pointer) {
+  if (typeof rootDir !== "string" || !rootDir || !isAbsolute(rootDir)) throw evidenceError("target workspace must be an absolute path", pointer);
+  if (typeof path !== "string" || !path || isAbsolute(path)) throw evidenceError("target evidence path must be relative", pointer);
+  const root = resolve(rootDir);
+  const target = ensureContained(root, resolve(root, path));
+  try {
+    if (!(await stat(target)).isDirectory()) throw new Error("path is not a directory");
+  } catch (error) { throw evidenceError(`target evidence directory is missing: ${error.message}`, pointer); }
+  return { target, path: relative(root, target).replaceAll("\\", "/") };
 }
 
 function parsedTime(value, pointer) {
@@ -209,6 +240,7 @@ function resultIdentity(value) {
 
 export async function validatePerformanceCell(document) {
   requireHeader(document, "performance-cell");
+  validateStoredSchema(document, schemaValidator.performanceCell, "performance cell");
   if (!document.cell || !document.trace || !Array.isArray(document.callbacks)) throw evidenceError("performance result must preserve cell, trace, and callback samples", "/");
   if (!["live-browser", "qualification-fixture"].includes(document.source)) throw evidenceError("performance result must declare live-browser or qualification-fixture source", "/source");
   if (document.cell.artifact_commit !== document.artifact_commit) throw evidenceError("performance cell and result are bound to different artifact commits", "/cell/artifact_commit");
@@ -265,7 +297,18 @@ export async function validateAssetManifest(manifest, { baseDir = process.cwd() 
   await runPinnedKhronosValidator(observed.bytes, "/validation/khronos");
   if (!loader || loader.status !== "pass" || !loader.evidence_id || !loader.artifact_commit || loader.artifact_commit !== manifest.artifact_commit || loader.glb_hash !== expectedHash) throw evidenceError("target GLTFLoader proof is missing, not passed, or bound to another GLB/artifact", "/validation/gltf_loader");
   const loaderEvidence = await readEvidenceJson(baseDir, loader.evidence_path, loader.evidence_sha256, "/validation/gltf_loader", "GLTFLoader evidence");
-  if (loaderEvidence.value.kind !== "gltf-loader-evidence" || loaderEvidence.value.source !== "live-browser" || loaderEvidence.value.id !== loader.evidence_id || loaderEvidence.value.artifact_commit !== manifest.artifact_commit || loaderEvidence.value.glb_hash !== expectedHash || typeof loaderEvidence.value.target_workspace !== "string" || !loaderEvidence.value.target_workspace || !loaderEvidence.value.target_probe?.path || !/^sha256:[0-9a-f]{64}$/i.test(loaderEvidence.value.target_probe?.sha256 || "")) throw evidenceError("GLTFLoader evidence identity is not bound to this artifact, exact GLB, and target browser probe", "/validation/gltf_loader/evidence_path");
+  const loaderDocument = loaderEvidence.value;
+  if (loaderDocument.kind !== "gltf-loader-evidence" || loaderDocument.source !== "live-browser" || loaderDocument.id !== loader.evidence_id || loaderDocument.artifact_commit !== manifest.artifact_commit || loaderDocument.glb_hash !== expectedHash || typeof loaderDocument.target_workspace !== "string" || !loaderDocument.target_workspace || !loaderDocument.target_probe?.path || !/^sha256:[0-9a-f]{64}$/i.test(loaderDocument.target_probe?.sha256 || "")) throw evidenceError("GLTFLoader evidence identity is not bound to this artifact, exact GLB, and target browser probe", "/validation/gltf_loader/evidence_path");
+  const targetProbe = await hashContainedFile(dirname(loaderEvidence.observed.target), loaderDocument.target_probe.path, "/validation/gltf_loader/target_probe/path");
+  if (targetProbe.hash !== loaderDocument.target_probe.sha256 || loaderDocument.browser?.screenshot_sha256 !== targetProbe.hash) throw evidenceError("GLTFLoader evidence screenshot hash does not match retained browser bytes", "/validation/gltf_loader/target_probe/sha256");
+  const targetRoot = loaderDocument.target_three_root;
+  if (!targetRoot || typeof targetRoot.path !== "string" || !/^sha256:[0-9a-f]{64}$/i.test(targetRoot.three_module_sha256 || "") || !/^sha256:[0-9a-f]{64}$/i.test(targetRoot.gltf_loader_sha256 || "")) throw evidenceError("GLTFLoader evidence lacks hash-bound target Three.js module identities", "/validation/gltf_loader/evidence_path");
+  const threeRoot = await resolveContainedDirectory(loaderDocument.target_workspace, targetRoot.path, "/validation/gltf_loader/target_three_root/path");
+  const threeModule = await hashContainedFile(threeRoot.target, "build/three.module.js", "/validation/gltf_loader/target_three_root/three_module_sha256");
+  const loaderModule = await hashContainedFile(threeRoot.target, "examples/jsm/loaders/GLTFLoader.js", "/validation/gltf_loader/target_three_root/gltf_loader_sha256");
+  if (threeModule.hash !== targetRoot.three_module_sha256 || loaderModule.hash !== targetRoot.gltf_loader_sha256) throw evidenceError("GLTFLoader evidence target module hashes do not match current target bytes", "/validation/gltf_loader/target_three_root");
+  const observedAsset = loaderDocument.observed;
+  if (!observedAsset || !Number.isInteger(observedAsset.meshes) || observedAsset.meshes < 1 || !Number.isInteger(observedAsset.materials) || observedAsset.materials < observedAsset.meshes || !Number.isInteger(observedAsset.animations) || observedAsset.animations < 0) throw evidenceError("GLTFLoader evidence lacks measured scene inspection counts", "/validation/gltf_loader/evidence_path");
   const checks = loader.checks || {};
   for (const key of ["scale", "material", "animation", "collider"]) if (checks[key] !== "pass") throw evidenceError(`GLTFLoader proof ${key} check is not passed`, `/validation/gltf_loader/checks/${key}`);
   const observedChecks = loaderEvidence.value.checks;
@@ -410,6 +453,9 @@ async function loadEntry(baseDir, entry, index) {
     if (entry.revision === "declared-ancestor" && !ancestors.includes(document.artifact_commit)) throw evidenceError(`entry ${identity} is from an undeclared artifact commit`, `/entries/${key}/source_commit`);
   }
   let facts = { status: "valid" };
+  if (document.kind === "run-record") { validateStoredSchema(document, schemaValidator.runRecord, "run record"); facts = { status: "schema-valid", kind: document.kind }; }
+  if (document.kind === "traceability") { validateStoredSchema(document, schemaValidator.traceability, "traceability"); facts = { status: "schema-valid", kind: document.kind }; }
+  if (document.kind === "gate-verdict") { validateStoredSchema(document, schemaValidator.gateVerdict, "gate verdict"); facts = { status: "schema-valid", kind: document.kind }; }
   if (document.kind === "play-session" || entry.kind === "play-session") facts = validatePlaySession(document);
   if (document.kind === "performance-cell" || entry.kind === "performance") facts = await validatePerformanceCell(document);
   if (document.kind === "asset-manifest" || entry.kind === "manifest" || entry.kind === "asset") facts = await validateAssetManifest(document, { baseDir: dirname(observed.target) });
@@ -439,6 +485,68 @@ function validationReceipt(index, loaded, required, kinds) {
     })).sort((left, right) => left.id.localeCompare(right.id)),
     required: required.map(item => typeof item === "string" ? { id: item } : { id: item.id, ...(item.kind ? { kind: item.kind } : {}) }).sort((left, right) => left.id.localeCompare(right.id)),
     required_kinds: [...kinds.entries()].map(([kind, count]) => ({ kind, count })).sort((left, right) => left.kind.localeCompare(right.kind)),
+  };
+}
+
+function documentFor(loaded, id, predicate = () => true, allowFallback = false) {
+  if (typeof id === "string") {
+    const exact = loaded.find(item => item.id === id && predicate(item.document, item));
+    if (exact) return exact.document;
+    return undefined;
+  }
+  if (!allowFallback) return undefined;
+  return loaded.find(item => predicate(item.document, item))?.document;
+}
+
+function lineageEvidenceIndex(index, loaded) {
+  return {
+    ...index,
+    entries: loaded.map(item => ({ ...item.entry, id: item.id, document: item.document })),
+  };
+}
+
+async function observedGitAncestor(baseDir, ancestor, descendant) {
+  const normalize = value => String(value).replace(/^git:/i, "");
+  try {
+    await execFile("git", ["-C", resolve(baseDir), "merge-base", "--is-ancestor", normalize(ancestor), normalize(descendant)], { timeout: 30000, windowsHide: true });
+    return true;
+  } catch (error) {
+    if (Number(error?.code) === 1) return false;
+    return undefined;
+  }
+}
+
+function lineageInputs(index, gate, loaded, record, baseDir) {
+  const fixed = record.fixed_inputs || {};
+  const runRecord = documentFor(loaded, fixed.run_record, document => document?.kind === "run-record" && document.artifact_commit === index.artifact_commit);
+  const traceability = documentFor(loaded, fixed.traceability, document => document?.kind === "traceability");
+  const brief = documentFor(loaded, undefined, document => document?.kind === "brief" || document?.kind === "program-brief" || document?.promises || document?.promise_ids, true);
+  const predecessorId = fixed.predecessor_run_record || runRecord?.lineage?.predecessor || runRecord?.predecessor;
+  const predecessorRunRecord = predecessorId ? documentFor(loaded, predecessorId, document => document?.kind === "run-record") : undefined;
+  const coreId = fixed.accepted_core_verdict || fixed.core_gate_verdict || fixed.core_verdict;
+  const coreGateVerdict = gate === "final"
+    ? documentFor(loaded, coreId, document => document?.kind === "gate-verdict" && document?.gate === "core")
+    : undefined;
+  const reproof = fixed.affected_core_reproof || fixed.core_reproof;
+  const coreReproof = reproof && typeof reproof === "object"
+    ? { ...reproof, verdict_record: documentFor(loaded, reproof.verdict, document => document?.kind === "gate-verdict" && document?.gate === "core") }
+    : undefined;
+  if (!runRecord) throw evidenceError("gate lineage requires an indexed typed run record", "/lineage/run_record");
+  if (!traceability) throw evidenceError("gate lineage requires an indexed typed traceability record", "/lineage/traceability");
+  if (!brief) throw evidenceError("gate lineage requires an indexed original brief record", "/lineage/brief");
+  if (gate === "final" && !coreGateVerdict) throw evidenceError("final gate lineage requires its indexed accepted core verdict", "/lineage/core_gate_verdict");
+  return {
+    gate,
+    runRecord,
+    predecessorRunRecord,
+    brief,
+    amendments: runRecord.amendments || [],
+    traceability,
+    evidenceIndex: lineageEvidenceIndex(index, loaded),
+    gateVerdict: record,
+    coreGateVerdict,
+    coreReproof,
+    sourceObservation: (ancestor, descendant) => observedGitAncestor(baseDir, ancestor, descendant),
   };
 }
 
@@ -553,7 +661,14 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   if (record.disposition !== "pass") throw evidenceError(`gate disposition is ${record.disposition}, not pass`, `/gates/${gate}/disposition`);
   if ((record.complaints || []).length || (record.gaps || []).length) throw evidenceError("gate has open complaints or gaps", `/gates/${gate}`);
   if (!index.promotion || index.promotion.validator !== "validate_evidence.mjs" || !index.promotion.result_identity) throw evidenceError("gate requires a validate_evidence.mjs promoted index", "/promotion");
-  return { status: "valid", gate, evidence_ids: evidence.ids, performance_coverage: performanceCoverage, disposition: "pass" };
+  let lineage;
+  try {
+    lineage = await validateGateLineage(lineageInputs(index, gate, evidence.entries, record, baseDir));
+  } catch (error) {
+    if (error instanceof LineageError) throw evidenceError(`${error.lineageCode}: ${error.message}`, error.pointer);
+    throw error;
+  }
+  return { status: "valid", gate, evidence_ids: evidence.ids, performance_coverage: performanceCoverage, lineage, disposition: "pass" };
 }
 
 async function main() {

@@ -74,7 +74,7 @@ class ThreeDBrowserGameAdmissionTest(unittest.TestCase):
                 self.assertEqual(">=24.15.0", package_json["engines"]["node"])
                 self.assertEqual(
                     {
-                        "ajv": "8.17.1",
+                        "ajv": "8.20.0",
                         "ajv-formats": "3.0.1",
                         "gltf-validator": "2.0.0-dev.3.10",
                         "playwright-core": "1.62.1",

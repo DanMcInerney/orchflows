@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { readFile, writeFile } from "node:fs/promises";
-import { extname, isAbsolute, relative, resolve } from "node:path";
+import { basename, extname, isAbsolute, relative, resolve } from "node:path";
 
 const EXIT_OK = 0;
 const EXIT_INVALID = 2;
@@ -155,7 +155,11 @@ try {
     await page.waitForFunction(() => window.__loaderResult !== undefined, { timeout: timeoutMs });
     raw = await page.evaluate(() => window.__loaderResult);
     const screenshot = await page.screenshot();
-    raw.browser = { product: browser.version(), executable: browserExecutable, headed: false, viewport: { width: 320, height: 240 }, device_scale_factor: 1, screenshot_sha256: sha256(screenshot) };
+    const screenshotPath = resolve(reportPath, "..", `${basename(reportPath, extname(reportPath))}.png`);
+    await writeFile(screenshotPath, screenshot, { flag: "wx" });
+    const screenshotHash = sha256(screenshot);
+    raw.browser = { product: browser.version(), executable: browserExecutable, headed: false, viewport: { width: 320, height: 240 }, device_scale_factor: 1, screenshot_sha256: screenshotHash };
+    raw.target_probe = { path: basename(screenshotPath), sha256: screenshotHash };
     raw.source = "live-browser";
   } finally {
     await browser?.close().catch(() => {});
@@ -164,7 +168,7 @@ try {
   if (!raw || typeof raw !== "object") throw new Error("package browser probe produced no result");
   const expectedChecks = { scale: "pass", material: "pass", animation: "pass", collider: "pass" };
   const valid = raw.source === "live-browser" && raw.checks && Object.keys(expectedChecks).every(key => raw.checks[key] === "pass");
-  const evidence = { schema_version: "1.0.0", kind: "gltf-loader-evidence", id: `${jobId}-gltf-loader`, artifact_commit: artifactCommit, glb_hash: glbHash, loader: { name: "three", version: String(raw.three_revision || "unknown"), entrypoint: "GLTFLoader" }, checks: expectedChecks, source: "live-browser", target_workspace: workspace, target_three_root: { path: threeRelative, three_module_sha256: sha256(threeBytes), gltf_loader_sha256: sha256(loaderBytes) }, browser: raw.browser, observed: { meshes: raw.meshes, materials: raw.materials, animations: raw.animations }, raw_probe_result: raw };
+  const evidence = { schema_version: "1.0.0", kind: "gltf-loader-evidence", id: `${jobId}-gltf-loader`, artifact_commit: artifactCommit, glb_hash: glbHash, loader: { name: "three", version: String(raw.three_revision || "unknown"), entrypoint: "GLTFLoader" }, checks: expectedChecks, source: "live-browser", target_workspace: workspace, target_three_root: { path: threeRelative, three_module_sha256: sha256(threeBytes), gltf_loader_sha256: sha256(loaderBytes) }, target_probe: raw.target_probe, browser: raw.browser, observed: { meshes: raw.meshes, materials: raw.materials, animations: raw.animations }, raw_probe_result: raw };
   if (!valid) { reportResult({ status: "fail", error: "package GLTFLoader browser observation did not pass", export_sha256: glbHash, checks: raw.checks || null }); process.exitCode = EXIT_EVIDENCE; return; }
   await overwriteJson(reportPath, evidence);
   const reportBytes = Buffer.from(`${JSON.stringify(evidence, null, 2)}\n`);
