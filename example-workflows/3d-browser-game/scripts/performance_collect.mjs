@@ -403,6 +403,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
             wait_duration_ms: item.wait_duration_ms || 0,
             copy_duration_ms: 0,
             queue_stages_ms: item.queue_stages_ms || {bind: 0, read_pixels: 0, fence: 0, flush: 0, other: 0},
+            copy_stages_ms: item.copy_stages_ms || {bind: 0, get_buffer_sub_data: 0, state_capture: 0, state_restore: 0, other: 0},
             completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
             duration_ms: item.queue_duration_ms || 0,
             error: String(error),
@@ -453,10 +454,16 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
             try {
               const pixels = new Uint8Array(item.coverage.bytes_per_sample);
               this.withState(gl, () => {
+                let stageStarted = performance.now();
                 gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+                item.copy_stages_ms.bind = performance.now() - stageStarted;
+                stageStarted = performance.now();
                 gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
-              });
+                item.copy_stages_ms.get_buffer_sub_data = performance.now() - stageStarted;
+              }, item.copy_stages_ms);
               const copyDuration = performance.now() - copyStarted;
+              const measuredCopyStages = Object.entries(item.copy_stages_ms).filter(([name]) => name !== "other").reduce((sum, [, value]) => sum + value, 0);
+              item.copy_stages_ms.other = Math.max(0, copyDuration - measuredCopyStages);
               this.readback.copy_duration_ms += copyDuration;
               this.readback.completed += 1;
               const completedAt = performance.now();
@@ -475,6 +482,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
                 wait_duration_ms: item.wait_duration_ms,
                 copy_duration_ms: copyDuration,
                 queue_stages_ms: item.queue_stages_ms,
+                copy_stages_ms: item.copy_stages_ms,
                 completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
                 duration_ms: item.queue_duration_ms + copyDuration,
               });
@@ -498,7 +506,8 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
             preserve_drawing_buffer: target.preserve_drawing_buffer,
             queue_duration_ms: 0,
             wait_duration_ms: 0,
-          queue_stages_ms: {bind: 0, read_pixels: 0, fence: 0, flush: 0, state_capture: 0, state_restore: 0, other: 0},
+            queue_stages_ms: {bind: 0, read_pixels: 0, fence: 0, flush: 0, state_capture: 0, state_restore: 0, other: 0},
+            copy_stages_ms: {bind: 0, get_buffer_sub_data: 0, state_capture: 0, state_restore: 0, other: 0},
           };
           if (this.pending.length >= this.max_pending || !this.available.length) {
             item.queue_duration_ms = performance.now() - started;
