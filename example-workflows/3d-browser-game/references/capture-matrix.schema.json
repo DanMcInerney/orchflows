@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/capture-matrix.schema.json",
+  "title": "3d-browser-game capture matrix",
+  "type": "object",
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "cells"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0.0"}, "kind": {"const": "capture-matrix"}, "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "created_at": {"type": "string", "format": "date-time"}, "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"}, "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"}, "environment": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"}, "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"}, "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"}, "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"},
+    "cells": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["id", "state", "viewport", "dpr", "required"], "additionalProperties": false, "properties": {"id": {"type": "string"}, "state": {"type": "string"}, "viewport": {"type": "object", "required": ["width", "height"], "additionalProperties": false, "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}}, "dpr": {"type": "number", "exclusiveMinimum": 0}, "required": {"type": "boolean"}, "capture_ids": {"type": "array", "items": {"type": "string"}}, "rationale": {"type": "string"}}}}
+  },
+  "additionalProperties": false
+}
