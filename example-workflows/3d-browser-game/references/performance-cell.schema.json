@@ -3,15 +3,116 @@
   "$id": "https://orchflows.local/3d-browser-game/performance-cell.schema.json",
   "title": "3d-browser-game performance cell",
   "type": "object",
-  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "cell", "trace", "callbacks", "qualification", "source"],
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "cell", "trace", "callbacks", "measurement", "qualification", "source"],
   "properties": {
-    "schema_version": {"type": "string", "const": "1.0.0"}, "kind": {"const": "performance-cell"}, "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "created_at": {"type": "string", "format": "date-time"}, "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"}, "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"}, "environment": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"}, "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"}, "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"}, "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"},
-    "cell": {"type": "object", "required": ["id", "artifact_commit", "window"], "properties": {"id": {"type": "string"}, "artifact_commit": {"type": "string"}, "window": {"type": "object", "required": ["start_ms", "end_ms"], "properties": {"start_ms": {"type": "number"}, "end_ms": {"type": "number"}}, "additionalProperties": false}}, "additionalProperties": true},
-    "trace": {"type": "object", "required": ["traceEvents", "completion"], "properties": {"traceEvents": {"type": "array"}, "completion": {"type": "object"}}, "additionalProperties": true},
-    "callbacks": {"type": "array"}, "qualification": {"type": "object", "required": ["status", "metrics", "failures"], "properties": {"status": {"enum": ["qualified", "unverified"]}, "metrics": {"type": "object"}, "failures": {"type": "array"}}, "additionalProperties": true},
+    "schema_version": {"type": "string", "const": "1.0.0"},
+    "kind": {"const": "performance-cell"},
+    "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"},
+    "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"},
+    "environment": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"},
+    "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"},
+    "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"},
+    "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"},
+    "cell": {
+      "type": "object",
+      "required": ["id", "artifact_commit", "scenario_id", "window"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "artifact_commit": {"type": "string", "minLength": 1},
+        "scenario_id": {"type": "string", "minLength": 1},
+        "seed": {"type": ["string", "number", "integer"]},
+        "warmup_seconds": {"type": "number", "minimum": 0},
+        "control_duration_ms": {"type": "number", "minimum": 250},
+        "warmup_duration_ms": {"type": "number", "minimum": 0},
+        "window": {
+          "type": "object",
+          "required": ["start_ms", "end_ms"],
+          "properties": {"start_ms": {"type": "number"}, "end_ms": {"type": "number"}},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "trace": {
+      "type": "object",
+      "required": ["traceEvents", "completion"],
+      "properties": {"traceEvents": {"type": "array"}, "completion": {"type": "object"}},
+      "additionalProperties": true
+    },
+    "callbacks": {"type": "array"},
+    "measurement": {
+      "type": "object",
+      "required": ["scenario_id", "observer", "presentation", "preserve_drawing_buffer", "warmup", "control", "instrumented", "perturbation"],
+      "properties": {
+        "scenario_id": {"type": "string", "minLength": 1},
+        "observer": {"type": "string", "minLength": 1},
+        "presentation": {"type": "string", "minLength": 1},
+        "preserve_drawing_buffer": {"type": ["boolean", "null"]},
+        "warmup": {"$ref": "#/$defs/phase"},
+        "control": {"$ref": "#/$defs/phase"},
+        "instrumented": {"$ref": "#/$defs/instrumented"},
+        "perturbation": {"$ref": "#/$defs/perturbation"}
+      },
+      "additionalProperties": false
+    },
+    "qualification": {"type": "object", "required": ["status", "metrics", "failures"], "properties": {"status": {"enum": ["qualified", "unverified"]}, "metrics": {"type": "object"}, "failures": {"type": "array"}}, "additionalProperties": true},
     "source": {"enum": ["live-browser", "qualification-fixture"]},
     "diagnostics": {"type": "object"},
     "observed_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "phase": {
+      "type": "object",
+      "required": ["status", "requested_ms", "observed_ms", "callbacks", "callback_rate_hz"],
+      "properties": {
+        "status": {"enum": ["observed", "fixture", "unverified"]},
+        "requested_ms": {"type": "number", "minimum": 0},
+        "start_ms": {"type": "number"},
+        "end_ms": {"type": "number"},
+        "observed_ms": {"type": "number", "minimum": 0},
+        "callbacks": {"type": "integer", "minimum": 0},
+        "callback_rate_hz": {"type": "number", "minimum": 0},
+        "max_callback_interval_ms": {"type": ["number", "null"], "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "instrumented": {
+      "type": "object",
+      "required": ["status", "requested_ms", "observed_ms", "callbacks", "callback_rate_hz", "samples", "readback_errors"],
+      "properties": {
+        "status": {"enum": ["observed", "fixture", "unverified"]},
+        "requested_ms": {"type": "number", "minimum": 0},
+        "start_ms": {"type": "number"},
+        "end_ms": {"type": "number"},
+        "observed_ms": {"type": "number", "minimum": 0},
+        "callbacks": {"type": "integer", "minimum": 0},
+        "callback_rate_hz": {"type": "number", "minimum": 0},
+        "max_callback_interval_ms": {"type": ["number", "null"], "minimum": 0},
+        "samples": {"type": "integer", "minimum": 0},
+        "readback_errors": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "perturbation": {
+      "type": "object",
+      "required": ["status", "basis", "control_callbacks", "instrumented_callbacks", "control_callback_rate_hz", "instrumented_callback_rate_hz", "callback_rate_delta_hz", "samples", "readback_errors"],
+      "properties": {
+        "status": {"enum": ["observed", "fixture", "unverified"]},
+        "basis": {"const": "control-vs-instrumented"},
+        "control_callbacks": {"type": "integer", "minimum": 0},
+        "instrumented_callbacks": {"type": "integer", "minimum": 0},
+        "control_callback_rate_hz": {"type": "number", "minimum": 0},
+        "instrumented_callback_rate_hz": {"type": "number", "minimum": 0},
+        "callback_rate_delta_hz": {"type": "number"},
+        "callback_interval_delta_ms": {"type": ["number", "null"]},
+        "samples": {"type": "integer", "minimum": 0},
+        "readback_errors": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

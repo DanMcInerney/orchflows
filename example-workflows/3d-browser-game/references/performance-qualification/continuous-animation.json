@@ -2,6 +2,7 @@
   "fixture": "continuous-animation",
   "cell": {
     "id": "fixture-continuous-animation",
+    "scenario_id": "continuous-animation",
     "artifact_commit": "git:fixture",
     "mode": "animation",
     "window": {
@@ -575,5 +576,4 @@
     "status": "qualified"
   }
 }
-
 

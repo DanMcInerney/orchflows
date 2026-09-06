@@ -5,9 +5,9 @@
  * FramesHandler (9f9f40ba5bca7e385be30535cdbf01a3a7e5ba44). Meta, Renderer,
  * and LayerTree facts are derived from the trace before the compositor queue
  * is consumed. A canvas layer's existence is only an attribution candidate;
- * native animation also needs read-only canvas pixel observations (or an
- * observed native update marker). This prevents rAF cadence or a static
- * layer from proving presentation.
+ * native animation also needs a read-only canvas observation taken by the
+ * host-owned render-callback seam (or an observed native update marker). This
+ * prevents rAF cadence or a static layer from proving presentation.
  */
 import {inputError, requireObject, requireString, sha256} from "./_common.mjs";
 
@@ -335,6 +335,7 @@ export function parseTracePayload(payload) {
     raw_stream_path: payload.raw_stream_path,
     canvas_samples: payload.canvas_samples || payload.metadata?.canvas_samples,
     canvas_instrumentation: payload.canvas_instrumentation || payload.metadata?.canvas_instrumentation,
+    measurement: payload.measurement || payload.metadata?.measurement,
   };
 }
 
@@ -579,6 +580,32 @@ function nativeTraceFailures(parsed, startMs, endMs) {
   if (typeof parsed.metadata?.window_start_ms !== "number" || parsed.metadata.window_start_ms > startMs
     || typeof parsed.metadata?.window_end_ms !== "number" || parsed.metadata.window_end_ms < endMs) {
     failures.push(failure("unpadded-window", "/trace/metadata", `window covers [${startMs}, ${endMs})`, parsed.metadata));
+  }
+  const instrumentation = parsed.canvas_instrumentation || {};
+  if (instrumentation.presentation !== "render-callback-post-callback" || instrumentation.read_only !== true
+      || instrumentation.preserve_drawing_buffer !== false) {
+    failures.push(failure("missing-native-presentation-observation", "/trace/canvas_instrumentation", "read-only render-callback observation with preserveDrawingBuffer:false", instrumentation));
+  }
+  const samples = Array.isArray(parsed.canvas_samples) ? parsed.canvas_samples : [];
+  if (!samples.some(item => item?.source === "render-callback-post-callback")) {
+    failures.push(failure("missing-render-callback-samples", "/trace/canvas_samples", "at least one post-callback sample", samples.length));
+  }
+  const perturbation = instrumentation.measurement_perturbation || parsed.measurement?.perturbation;
+  if (!perturbation || perturbation.status !== "observed" || perturbation.basis !== "control-vs-instrumented"
+      || !Number.isFinite(perturbation.callback_rate_delta_hz)
+      || !Number.isInteger(perturbation.control_callbacks) || !Number.isInteger(perturbation.instrumented_callbacks)
+      || !Number.isFinite(perturbation.control_callback_rate_hz) || !Number.isFinite(perturbation.instrumented_callback_rate_hz)) {
+    failures.push(failure("missing-measurement-perturbation", "/trace/canvas_instrumentation/measurement_perturbation", "observed control-vs-instrumented comparison", perturbation || null));
+  }
+  const warmup = parsed.measurement?.warmup;
+  if (!warmup || warmup.status !== "observed" || !Number.isFinite(warmup.observed_ms) || warmup.observed_ms <= 0) {
+    failures.push(failure("missing-observed-warmup", "/trace/measurement/warmup", "observed warm-up interval", warmup || null));
+  }
+  for (const [name, phase] of [["control", parsed.measurement?.control], ["instrumented", parsed.measurement?.instrumented]]) {
+    if (!phase || phase.status !== "observed" || !Number.isFinite(phase.observed_ms) || phase.observed_ms <= 0
+        || !Number.isInteger(phase.callbacks) || !Number.isFinite(phase.callback_rate_hz)) {
+      failures.push(failure(`missing-observed-${name}`, `/trace/measurement/${name}`, "observed callback phase", phase || null));
+    }
   }
   return failures;
 }
