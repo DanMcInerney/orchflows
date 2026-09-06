@@ -470,6 +470,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
                 queue_duration_ms: item.queue_duration_ms,
                 wait_duration_ms: item.wait_duration_ms,
                 copy_duration_ms: copyDuration,
+                queue_stages_ms: item.queue_stages_ms,
                 completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
                 duration_ms: item.queue_duration_ms + copyDuration,
               });
