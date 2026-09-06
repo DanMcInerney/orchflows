@@ -1,6 +1,36 @@
 {
  "discovery": {
   "identities": [
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_changed_authoring_module_digest_is_rejected",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_complete_outputs_require_hash_bound_external_validators",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_malformed_unknown_field_is_rejected",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_mismatched_job_digest_is_not_promoted",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_missing_validator_evidence_keeps_complete_worker_unverified",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_partial_output_is_preserved_but_not_promoted",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_stale_output_is_rejected_before_worker_starts",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_timeout_returns_exit_five_and_terminates_process",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_traversal_and_absolute_input_paths_are_rejected",
+   "test_3d_browser_game_blender.BlenderBoundaryTests.test_worker_output_path_traversal_is_preserved_without_promotion",
+   "test_3d_browser_game_contracts.ContractSchemaTests.test_commit_and_relative_path_shapes_reject_unpinned_values",
+   "test_3d_browser_game_contracts.ContractSchemaTests.test_common_header_and_each_concrete_schema_are_closed",
+   "test_3d_browser_game_contracts.ContractSchemaTests.test_concrete_kinds_and_gate_score_floor_are_declared",
+   "test_3d_browser_game_contracts.ContractSchemaTests.test_evidence_index_accepts_unpromoted_draft_but_requires_promotion_when_complete",
+   "test_3d_browser_game_contracts.ContractSchemaTests.test_traceability_rows_bind_both_verdicts_and_invalidation",
+   "test_3d_browser_game_contracts.ContractSchemaTests.test_unknown_top_level_field_and_missing_header_are_rejected",
+   "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_evidence_index_rehashes_entries_and_rejects_stale_bytes",
+   "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_fixture_collector_and_validator_preserve_hash_bound_record",
+   "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_input_label_cannot_be_spoofed_in_a_jsonl_command",
+   "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_loss_and_missing_canvas_attribution_fail_closed",
+   "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_native_snapshot_binds_canvas_to_same_renderer_frames",
+   "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_outside_probe_requires_current_ordinary_input",
+   "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_overlapping_dropped_and_partial_flags_count_once",
+   "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_the_four_qualification_boundaries_are_explicit",
+   "test_3d_browser_game_workflow.WorkflowPackageTests.test_gate_judging_criteria_are_reference_contracts",
+   "test_3d_browser_game_workflow.WorkflowPackageTests.test_literal_standard_names_resolve_inside_public_package",
+   "test_3d_browser_game_workflow.WorkflowPackageTests.test_literal_workflow_commands_preserve_stage_order",
+   "test_3d_browser_game_workflow.WorkflowPackageTests.test_private_bodies_have_no_workflow_edges_or_cycles",
+   "test_3d_browser_game_workflow.WorkflowPackageTests.test_private_workflows_are_not_global_names",
+   "test_3d_browser_game_workflow.WorkflowPackageTests.test_public_entry_and_private_members_have_expected_paths",
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
    "test_affected_tests.TestDiscoveryCache.test_the_first_resolve_records_discovery_and_the_second_is_served",
@@ -2216,6 +2246,54 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_blender",
+   "owner": "BlenderBoundaryTests.test_complete_outputs_require_hash_bound_external_validators",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_blender",
+   "owner": "BlenderBoundaryTests.test_mismatched_job_digest_is_not_promoted",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_blender",
+   "owner": "BlenderBoundaryTests.test_missing_validator_evidence_keeps_complete_worker_unverified",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_blender",
+   "owner": "BlenderBoundaryTests.test_partial_output_is_preserved_but_not_promoted",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_blender",
+   "owner": "BlenderBoundaryTests.test_stale_output_is_rejected_before_worker_starts",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_blender",
+   "owner": "BlenderBoundaryTests.test_worker_output_path_traversal_is_preserved_without_promotion",
+   "restoration": "selected-module-boundary",
+   "seams": [
     "monkeypatch"
    ]
   },

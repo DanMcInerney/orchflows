@@ -252,6 +252,7 @@ export async function runHarness(config) {
     const classification = classifyTranscript(transcript, { ...config, headed: true });
     const session = {
       ...makeHeader({ kind: "play-session", id: config.session_id || `session-${Date.now()}`, artifactCommit: config.artifact_commit || "unbound", producer: "browser_harness.mjs", inputs: { config: sha256(canonicalJson(config)) }, environment: { browser: browserConfig.type || "chromium", driver: browserConfig.package || "playwright-core" }, status: "complete" }),
+      source: "live-browser",
       classification,
       input_mode: classification,
       headed: true,
