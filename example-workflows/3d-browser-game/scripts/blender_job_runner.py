@@ -737,6 +737,29 @@ def _fresh_validator(
     required_checks = {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}
     if report.get("kind") != "gltf-loader-evidence" or report.get("source") != "live-browser" or report.get("glb_hash") != glb_digest or checks != required_checks:
         raise EvidenceError("validation/gltf-loader: fresh target browser report is incomplete")
+    target_probe = report.get("target_probe")
+    if not isinstance(target_probe, dict) or not isinstance(target_probe.get("path"), str) or not _is_digest(target_probe.get("sha256")):
+        raise EvidenceError("validation/gltf-loader: retained browser screenshot identity is missing")
+    target_probe_path = contained_path(report_path.parent, target_probe["path"], field="validation/gltf-loader/target_probe/path")
+    if not target_probe_path.is_file() or target_probe_path.stat().st_size == 0 or sha256_file(target_probe_path) != target_probe["sha256"]:
+        raise EvidenceError("validation/gltf-loader: retained browser screenshot bytes are missing or mismatched")
+    if report.get("browser", {}).get("screenshot_sha256") != target_probe["sha256"]:
+        raise EvidenceError("validation/gltf-loader: browser screenshot hash does not match retained bytes")
+    target_root = report.get("target_three_root")
+    if not isinstance(target_root, dict) or not isinstance(target_root.get("path"), str) or not _is_digest(target_root.get("three_module_sha256")) or not _is_digest(target_root.get("gltf_loader_sha256")):
+        raise EvidenceError("validation/gltf-loader: target Three.js module identities are missing")
+    expected_three_root = Path(job["validation"]["loader_probe"]["three_root"]).as_posix()
+    if Path(target_root["path"]).as_posix() != expected_three_root:
+        raise EvidenceError("validation/gltf-loader: target Three.js root does not match the job")
+    target_workspace = Path(job["validation"]["target_workspace"]).resolve()
+    target_three_root = contained_path(target_workspace, expected_three_root, field="validation/loader_probe/three_root")
+    three_module = contained_path(target_three_root, "build/three.module.js", field="validation/loader_probe/three_module")
+    loader_module = contained_path(target_three_root, "examples/jsm/loaders/GLTFLoader.js", field="validation/loader_probe/gltf_loader")
+    if sha256_file(three_module) != target_root["three_module_sha256"] or sha256_file(loader_module) != target_root["gltf_loader_sha256"]:
+        raise EvidenceError("validation/gltf-loader: target module bytes do not match evidence identities")
+    observed = report.get("observed")
+    if not isinstance(observed, dict) or not isinstance(observed.get("meshes"), int) or observed["meshes"] < 1 or not isinstance(observed.get("materials"), int) or observed["materials"] < observed["meshes"] or not isinstance(observed.get("animations"), int) or observed["animations"] < 0:
+        raise EvidenceError("validation/gltf-loader: actual scene inspection counts are missing")
     if summary.get("evidence_sha256") != observed_hash:
         raise EvidenceError("validation/gltf-loader: evidence hash does not match fresh bytes")
     if report.get("artifact_commit") != job["artifact_commit"] or not report.get("id"):

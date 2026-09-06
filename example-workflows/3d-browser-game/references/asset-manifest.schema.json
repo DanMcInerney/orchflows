@@ -43,7 +43,8 @@
     "material_roles": {"type": "object", "additionalProperties": {"type": "string"}},
     "animation_clips": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
     "required_extensions": {"type": "array", "items": {"type": "string"}},
-    "validation": {"$ref": "#/$defs/validation"}
+    "validation": {"$ref": "#/$defs/validation"},
+    "mechanics_changed": {"type": "array", "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}}
   },
   "$defs": {
     "digest": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"},

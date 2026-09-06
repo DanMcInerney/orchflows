@@ -5,21 +5,30 @@ original brief, amendments, accepted core baseline, and complete evidence
 index. Final art is evidence only when its provenance and runtime behavior
 are closed.
 
-Hard gates are production boot without developer tools; documented controls;
-every promised mechanic, progression path, terminal or continuing state, and
-re-entry path; approved production assets; no blocking console, network, or
-load errors; independent adaptive play; complete capture cells; and every
-declared performance cell. A failed or unverified hard gate blocks.
+The frozen hard-gate identities are `clean-production-boot`,
+`documented-controls-focus`, `all-prompt-concept-promises`,
+`mechanics-content-progression`, `terminal-continuing-behavior`,
+`replay-reentry`, `no-blocking-errors-placeholders`,
+`asset-provenance-disposal`, `complete-capture-adaptive-play`, and
+`performance-cell-coverage`. A failed or unverified hard gate blocks.
 
 Score each dimension from 0 to 4 with evidence IDs and a causal rationale:
 
-| Dimension | 0 | 2 | 4 |
+| Frozen dimension ID | 0 | 2 | 4 |
 | --- | --- | --- | --- |
-| Presentation | incoherent or unreadable | coherent with distracting drift | deliberate hierarchy, silhouette, materials, feedback, and density |
-| Play | core loop regressed or incomplete | complete but uneven in pressure or response | satisfying full session with fair challenge and strong re-entry |
-| Prompt fidelity | central promises absent | promises present with material gaps | every authority row is reachable and evidenced |
-| Performance and robustness | unmeasured or blocking failure | measured with bounded caveats | identical qualified cells pass with no unexplained loss or stall |
+| `prompt-fidelity` | central promises are absent | promises are present with material gaps | every authority row is reachable and evidenced |
+| `loop-purpose` | the loop is regressed, incomplete, or purposeless | the loop is complete but uneven in payoff | the full session has clear purpose and sustained payoff |
+| `controls-camera` | controls or camera prevent reliable play | controls and camera are usable with drift or ambiguity | controls and camera are precise, readable, and recoverable |
+| `feedback-readability-fairness` | feedback is unreadable or unfair | major feedback is readable with material ambiguity | feedback is immediate, readable, and fair under pressure |
+| `challenge-choice-pacing-engagement` | challenge, choices, or pacing collapse engagement | the session is complete but uneven in pressure or response | challenge, choice, pacing, and continued engagement reinforce one another |
+| `level-world-coherence` | world structure is incoherent or blocks progression | spaces and progression are understandable with gaps | topology, content breadth, and progression form a coherent journey |
+| `3d-art-animation-motion-coherence` | art, animation, or motion is broken or unreadable | presentation is coherent with distracting drift | silhouette, materials, animation, and motion form a deliberate hierarchy |
+| `promised-ui-audio-accessibility` | promised UI, audio, or accessibility support is absent | support is present with material gaps | promised UI, audio, and accessibility behavior is clear and usable |
+| `stability` | blocking errors, stalls, or unrecoverable states prevent play | the session completes with bounded instability | the fixed candidate is stable, recoverable, and free of blocking errors |
+| `polish` | presentation is incoherent or unfinished | presentation is coherent with visible roughness | hierarchy, detail, feedback, and density are deliberate and finished |
 
+Every applicable dimension has a documented floor of 3 on the 0–4 scale;
+anchors and evidence must be recorded for each score.
 Complaint IDs remain append-only. Findings name defect, unverified claim, or
 preference, causal seam, contrary evidence, expected visible improvement, and
 regression result. A performance contradiction repeats the identical cell after

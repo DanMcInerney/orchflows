@@ -36,8 +36,14 @@ Each candidate lands before the next increment and carries its fixed revision.
 Open `gameplay-gate` over the fixed I2 revision. It separates QA, adaptive
 play, and maker-independent judgment. A blocked verdict hands its complete
 `findings:` line to one bounded repair `do`, repeats affected QA and play,
-then re-judges; two rounds is the bound. `redesign` returns to discovery with
-named invalidations, and `unverified` records the missing capability or cell.
+then re-judges; two repair/re-judge rounds are the local batch bound. A still
+blocked batch opens one automatic successor with its complete complaint
+ledger and fixed criteria while authorized progress continues; no permission
+is needed for that successor. `fix` opens the next bounded repair,
+`redesign` returns to discovery with a new concept revision and named
+invalidations, and `unverified` opens missing-evidence acquisition or a
+capable execution context. Every route records findings, evidence, expected
+improvement, and exact resume state before continuing or stopping.
 
     tickets.py frame-open <run> --goal-file <core-gate-goal> --parent <frame> --workflow gameplay-gate
     tickets.py frame-close <run> <core-gate-frame> --done <core-gate-check>

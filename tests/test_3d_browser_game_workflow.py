@@ -94,8 +94,21 @@ class WorkflowPackageTests(unittest.TestCase):
     def test_gate_judging_criteria_are_reference_contracts(self):
         core = (PACKAGE / "references" / "core-rubric.md").read_text(encoding="utf-8")
         final = (PACKAGE / "references" / "final-rubric.md").read_text(encoding="utf-8")
-        self.assertIn("| Loop and fun |", core)
-        self.assertIn("| Presentation |", final)
+        self.assertIn("| `loop-purpose-clarity` |", core)
+        self.assertIn("| `3d-art-animation-motion-coherence` |", final)
+        for identity in [
+            "loop-purpose-clarity", "controls-camera-feel", "interaction-feedback-readability", "fairness-challenge",
+            "meaningful-choice-progression", "pacing-continued-engagement", "prompt-fidelity", "stability",
+        ]:
+            self.assertIn(f"| `{identity}` |", core)
+        for identity in [
+            "prompt-fidelity", "loop-purpose", "controls-camera", "feedback-readability-fairness",
+            "challenge-choice-pacing-engagement", "level-world-coherence", "3d-art-animation-motion-coherence",
+            "promised-ui-audio-accessibility", "stability", "polish",
+        ]:
+            self.assertIn(f"| `{identity}` |", final)
+        self.assertIn("documented floor of 3", core)
+        self.assertIn("documented floor of 3", final)
         gameplay = (PACKAGE / "workflows" / "gameplay-gate" / "SKILL.md").read_text(encoding="utf-8")
         acceptance = (PACKAGE / "workflows" / "final-acceptance" / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("../../references/core-rubric.md", gameplay)
