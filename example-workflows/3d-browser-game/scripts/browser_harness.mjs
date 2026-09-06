@@ -84,8 +84,9 @@ export function classifyTranscript(transcript, config = {}) {
 
 function commandArgs(config) {
   const server = config.server;
-  if (!server || !Array.isArray(server.command) || server.command.length === 0) throw inputError("config.server.command must be a non-empty argv array", "/server/command");
-  if (server.command.some(part => typeof part !== "string" || !part)) throw inputError("server command entries must be non-empty strings", "/server/command");
+  if (!server || typeof server !== "object") throw inputError("config.server is required", "/server");
+  if (server.external !== true && (!Array.isArray(server.command) || server.command.length === 0)) throw inputError("config.server.command must be a non-empty argv array", "/server/command");
+  if (server.command !== undefined && (!Array.isArray(server.command) || server.command.some(part => typeof part !== "string" || !part))) throw inputError("server command entries must be non-empty strings", "/server/command");
   if (typeof server.cwd !== "string" || !server.cwd) throw inputError("config.server.cwd is required", "/server/cwd");
   if (typeof server.url !== "string" || !/^https?:\/\//.test(server.url)) throw inputError("config.server.url must be an http(s) URL", "/server/url");
   const browser = config.browser || {};
@@ -158,12 +159,12 @@ export async function runHarness(config) {
   const startedAt = nowIso();
   const sessionId = config.session_id || `session-${Date.now()}`;
   const artifactCommit = config.artifact_commit || "unbound";
-  const child = spawn(server.command[0], server.command.slice(1), {
+  const child = server.external === true ? null : spawn(server.command[0], server.command.slice(1), {
     cwd: resolve(server.cwd), env: { ...process.env, ...(server.env || {}) },
     shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"], windowsHide: true,
   });
   const serverErrors = [];
-  child.stderr?.on("data", chunk => serverErrors.push(chunk.toString("utf8").slice(-4000)));
+  child?.stderr?.on("data", chunk => serverErrors.push(chunk.toString("utf8").slice(-4000)));
   const transcript = [];
   let sequence = 0;
   let closed = false;

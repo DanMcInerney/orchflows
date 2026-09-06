@@ -175,27 +175,28 @@ async function liveTrace(cell) {
           const timestamp = performance.now();
           const canvas = document.querySelector(target.selector);
           if (!canvas) {
-            this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: null, source: "render-callback-post-callback", error: "canvas selector did not resolve"});
+            this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: null, source: "render-callback-post-callback", duration_ms: performance.now() - timestamp, error: "canvas selector did not resolve"});
             return;
           }
           try {
             const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
             if (gl) {
-              const width = Math.min(4, canvas.width);
-              const height = Math.min(4, canvas.height);
+              const width = Math.min(1, canvas.width);
+              const height = Math.min(1, canvas.height);
               if (!width || !height) throw new Error("canvas drawing buffer has zero size");
               const maxX = Math.max(0, canvas.width - width);
               const maxY = Math.max(0, canvas.height - height);
-              const points = [[0, 0], [maxX, 0], [0, maxY], [maxX, maxY], [Math.floor(maxX / 2), Math.floor(maxY / 2)]];
-              const pixels = new Uint8Array(points.length * width * height * 4);
-              points.forEach(([x, y], pointIndex) => gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels.subarray(pointIndex * width * height * 4)));
+              const x = Math.floor(maxX / 2);
+              const y = Math.floor(maxY / 2);
+              const pixels = new Uint8Array(width * height * 4);
+              gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
               const attributes = gl.getContextAttributes?.() || {};
-              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(String.fromCharCode(...pixels)), source: "render-callback-post-callback", method: "webgl.readPixels", preserve_drawing_buffer: attributes.preserveDrawingBuffer === true});
+              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(String.fromCharCode(...pixels)), source: "render-callback-post-callback", method: "webgl.readPixels", preserve_drawing_buffer: attributes.preserveDrawingBuffer === true, duration_ms: performance.now() - timestamp});
             } else {
-              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(canvas.toDataURL("image/webp", 0.05)), source: "render-callback-post-callback", method: "canvas.toDataURL", preserve_drawing_buffer: null});
+              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(canvas.toDataURL("image/webp", 0.05)), source: "render-callback-post-callback", method: "canvas.toDataURL", preserve_drawing_buffer: null, duration_ms: performance.now() - timestamp});
             }
           } catch (error) {
-            this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: null, source: "render-callback-post-callback", error: String(error.message || error)});
+            this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: null, source: "render-callback-post-callback", duration_ms: performance.now() - timestamp, error: String(error.message || error)});
           }
         },
       };

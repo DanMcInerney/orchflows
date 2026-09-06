@@ -30,6 +30,18 @@
    "test_3d_browser_game_lineage.GateLineageTests.test_missing_core_and_pre_core_art_are_rejected",
    "test_3d_browser_game_lineage.GateLineageTests.test_prompt_coverage_is_exhaustive",
    "test_3d_browser_game_lineage.GateLineageTests.test_unrelated_source_ancestry_is_rejected",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_build_hashes_actual_output_and_binds_source_tree",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_build_refuses_git_metadata_and_tracked_source_output",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_build_rejects_head_drift_and_removes_new_output",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_build_timeout_removes_partial_output",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_failed_build_removes_previous_output",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_harness_capability_failure_returns_without_a_session",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_outside_config_rejects_missing_capture_and_nonordinary_scenario",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_package_command_rejects_caller_selected_helper",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_package_helper_command_is_fixed_to_package_node_and_script",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_run_timeout_kills_and_observes_a_package_child",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_static_server_rejects_stale_output_hash_before_bind",
+   "test_3d_browser_game_outside.OutsideProductionTests.test_static_server_reports_actual_bind_and_only_serves_output",
    "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_actual_play_requires_successful_causal_snapshots_and_accepts_harness_shape",
    "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_evidence_index_rehashes_entries_and_rejects_stale_bytes",
    "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_fixture_collector_and_validator_preserve_hash_bound_record",
@@ -2336,6 +2348,14 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_outside",
+   "owner": "OutsideProductionTests.test_static_server_reports_actual_bind_and_only_serves_output",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
    ]
   },
   {
