@@ -17,7 +17,7 @@
   },
   "server": {
     "command": ["C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe", "-m", "http.server", "8765"],
-    "cwd": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260906-3d-browser-game\\B1.18\\example-workflows\\3d-browser-game\\references\\performance-qualification",
+    "cwd": ".",
     "url": "http://127.0.0.1:8765/threejs-default-renderer.html",
     "startup_timeout_ms": 30000
   },

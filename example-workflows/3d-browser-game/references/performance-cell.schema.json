@@ -8,7 +8,7 @@
     "schema_version": {"type": "string", "const": "1.0.0"},
     "kind": {"const": "performance-cell"},
     "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
-    "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"},
     "created_at": {"type": "string", "format": "date-time"},
     "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"},
     "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"},
@@ -21,7 +21,7 @@
       "required": ["id", "artifact_commit", "scenario_id", "window"],
       "properties": {
         "id": {"type": "string", "minLength": 1},
-        "artifact_commit": {"type": "string", "minLength": 1},
+        "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"},
         "scenario_id": {"type": "string", "minLength": 1},
         "seed": {"type": ["string", "number", "integer"]},
         "warmup_seconds": {"type": "number", "minimum": 0},

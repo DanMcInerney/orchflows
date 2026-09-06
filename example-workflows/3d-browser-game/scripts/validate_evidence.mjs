@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import Ajv from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
-import { parseArgs, readJson, resultFromError, sha256, inputError, evidenceError, ensureContained, requireObject, nowIso, writeJsonAtomic, canonicalJson } from "./_common.mjs";
+import { parseArgs, readJson, resultFromError, sha256, inputError, evidenceError, ensureContained, requireObject, nowIso, writeJsonAtomic, canonicalJson, isCommitIdentity } from "./_common.mjs";
 import { qualifyPerformance } from "./trace_frames.mjs";
 import { validateCommand } from "./browser_harness.mjs";
 import { validateGateLineage, LineageError } from "./gate_lineage.mjs";
@@ -268,6 +268,7 @@ export async function validatePerformanceCell(document) {
   requireHeader(document, "performance-cell");
   validateStoredSchema(document, schemaValidator.performanceCell, "performance cell");
   if (!document.cell || !document.trace || !Array.isArray(document.callbacks)) throw evidenceError("performance result must preserve cell, trace, and callback samples", "/");
+  if (!isCommitIdentity(document.artifact_commit) || !isCommitIdentity(document.cell.artifact_commit)) throw evidenceError("performance result must use a full git artifact commit identity", "/artifact_commit");
   if (!["live-browser", "qualification-fixture"].includes(document.source)) throw evidenceError("performance result must declare live-browser or qualification-fixture source", "/source");
   if (document.cell.artifact_commit !== document.artifact_commit) throw evidenceError("performance cell and result are bound to different artifact commits", "/cell/artifact_commit");
   const measurement = document.measurement;

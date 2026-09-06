@@ -10,12 +10,14 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import {
   EXIT, capabilityError, inputError, makeHeader, nowIso, parseArgs,
   readJson, resultFromError, sha256, timeoutError, writeJsonAtomic, evidenceError,
+  isCommitIdentity,
 } from "./_common.mjs";
 import { collectCDPTrace, qualifyPerformance } from "./trace_frames.mjs";
 
 function validateCell(cell) {
   if (!cell || typeof cell !== "object" || Array.isArray(cell)) throw inputError("cell must be an object", "/cell");
   for (const key of ["id", "artifact_commit", "scenario_id"]) if (typeof cell[key] !== "string" || !cell[key]) throw inputError(`cell.${key} is required`, `/cell/${key}`);
+  if (!isCommitIdentity(cell.artifact_commit)) throw inputError("cell.artifact_commit must identify a full git revision", "/cell/artifact_commit");
   const window = cell.window || {};
   const duration = cell.duration_seconds ?? (cell.duration_ms !== undefined ? Number(cell.duration_ms) / 1000 : ((window.end_ms - window.start_ms) / 1000));
   if (!Number.isFinite(duration) || duration <= 0 || duration > 3600) throw inputError("cell duration_seconds must be finite and between 0 and 3600", "/cell/duration_seconds");
@@ -82,10 +84,10 @@ function validateSetupCommands(cell) {
   return commands;
 }
 
-function serverChild(server) {
+function serverChild(server, baseDir = process.cwd()) {
   if (!server || !Array.isArray(server.command) || !server.command.length) throw inputError("live cell server.command is required as argv", "/cell/server/command");
   if (!server.cwd) throw inputError("live cell server.cwd is required", "/cell/server/cwd");
-  return spawn(server.command[0], server.command.slice(1), { cwd: resolve(server.cwd), env: { ...process.env, ...(server.env || {}) }, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  return spawn(server.command[0], server.command.slice(1), { cwd: resolve(baseDir, server.cwd), env: { ...process.env, ...(server.env || {}) }, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
 }
 
 function stopChild(child) {
@@ -242,15 +244,27 @@ function fixtureMeasurement(cell) {
 
 async function canvasBackend(page, selector) {
   return page.evaluate(canvasSelector => {
-    const canvas = document.querySelector(canvasSelector);
-    if (!canvas) return {kind: "unknown", renderer: null};
-    for (const kind of ["webgl2", "webgl"]) {
-      const gl = canvas.getContext(kind);
-      if (gl) {
-        let renderer = null;
-        try { renderer = gl.getParameter(gl.RENDERER); } catch { /* masked renderer is still an observed backend */ }
-        return {kind, renderer};
-      }
+      const canvas = document.querySelector(canvasSelector);
+      if (!canvas) return {kind: "unknown", renderer: null};
+      for (const kind of ["webgl2", "webgl"]) {
+        const gl = canvas.getContext(kind);
+        if (gl) {
+          let vendor = null;
+          let renderer = null;
+          let unmaskedVendor = null;
+          let unmaskedRenderer = null;
+          let debugInfo = null;
+          try { vendor = gl.getParameter(gl.VENDOR); } catch { /* an unavailable vendor remains explicitly unknown */ }
+          try { renderer = gl.getParameter(gl.RENDERER); } catch { /* masked renderer is still an observed backend */ }
+          try { debugInfo = gl.getExtension("WEBGL_debug_renderer_info"); } catch { /* privacy masking may deny the extension */ }
+          if (debugInfo) {
+            try { unmaskedVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL); } catch {}
+            try { unmaskedRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL); } catch {}
+          }
+          const rendererText = [vendor, renderer, unmaskedVendor, unmaskedRenderer].filter(Boolean).join(" ");
+          const software = /swiftshader|software|llvmpipe|softpipe|mesa software/i.test(rendererText);
+          return {kind, vendor, renderer, unmasked_vendor: unmaskedVendor, unmasked_renderer: unmaskedRenderer, renderer_mode: software ? "software" : (unmaskedRenderer || renderer ? "hardware-or-masked" : "unknown"), debug_renderer_info: Boolean(debugInfo)};
+        }
     }
     return {kind: canvas.getContext("2d") ? "canvas2d" : "unknown", renderer: null};
   }, selector);
@@ -276,14 +290,14 @@ async function runSetup(page, canvas, commands) {
   return {commands: actions, observed_state: state, observed: true};
 }
 
-async function liveTrace(cell) {
+async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
   let playwright;
   const browserPackage = cell.browser?.package || "playwright-core";
   const packageSpecifier = /^(?:[A-Za-z]:[\\/]|[\\/])/.test(browserPackage) && !browserPackage.startsWith("file:")
     ? pathToFileURL(resolve(browserPackage)).href : browserPackage;
   try { playwright = await import(packageSpecifier); }
   catch (error) { throw capabilityError(`Playwright is unavailable: ${error.message}`, "/cell/browser/package"); }
-  const server = serverChild(cell.server);
+  const server = serverChild(cell.server, baseDir);
   const errors = [];
   server.stderr?.on("data", chunk => errors.push(chunk.toString("utf8").slice(-4000)));
   let browser;
@@ -322,14 +336,17 @@ async function liveTrace(cell) {
         // Save and restore mutable readback state around every WebGL call. The
         // observer samples the existing default framebuffer and must not alter
         // the renderer's framebuffer, pixel-store, or pack-buffer bindings.
-        withState(gl, operation) {
+        withState(gl, operation, timings = null) {
           const state = {};
           const read = name => {
             try { state[name] = gl.getParameter(gl[name]); } catch { state[name] = undefined; }
           };
+          const captureStarted = performance.now();
           for (const name of ["PIXEL_PACK_BUFFER_BINDING", "READ_FRAMEBUFFER_BINDING", "DRAW_FRAMEBUFFER_BINDING", "PACK_ALIGNMENT", "PACK_ROW_LENGTH", "PACK_SKIP_ROWS", "PACK_SKIP_PIXELS", "READ_BUFFER"]) read(name);
+          if (timings) timings.state_capture = performance.now() - captureStarted;
           try { return operation(); }
           finally {
+            const restoreStarted = performance.now();
             try { if (state.PIXEL_PACK_BUFFER_BINDING !== undefined) gl.bindBuffer(gl.PIXEL_PACK_BUFFER, state.PIXEL_PACK_BUFFER_BINDING); } catch {}
             try { if (state.READ_FRAMEBUFFER_BINDING !== undefined) gl.bindFramebuffer(gl.READ_FRAMEBUFFER, state.READ_FRAMEBUFFER_BINDING); } catch {}
             try { if (state.DRAW_FRAMEBUFFER_BINDING !== undefined) gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, state.DRAW_FRAMEBUFFER_BINDING); } catch {}
@@ -337,6 +354,7 @@ async function liveTrace(cell) {
               try { if (state[name] !== undefined) gl.pixelStorei(gl[name], state[name]); } catch {}
             }
             try { if (state.READ_BUFFER !== undefined) gl.readBuffer(state.READ_BUFFER); } catch {}
+            if (timings) timings.state_restore = performance.now() - restoreStarted;
           }
         },
         configure(target) {
@@ -396,6 +414,8 @@ async function liveTrace(cell) {
             queue_duration_ms: item.queue_duration_ms || 0,
             wait_duration_ms: item.wait_duration_ms || 0,
             copy_duration_ms: 0,
+            queue_stages_ms: item.queue_stages_ms || {bind: 0, read_pixels: 0, fence: 0, flush: 0, other: 0},
+            copy_stages_ms: item.copy_stages_ms || {bind: 0, get_buffer_sub_data: 0, state_capture: 0, state_restore: 0, other: 0},
             completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
             duration_ms: item.queue_duration_ms || 0,
             error: String(error),
@@ -446,10 +466,16 @@ async function liveTrace(cell) {
             try {
               const pixels = new Uint8Array(item.coverage.bytes_per_sample);
               this.withState(gl, () => {
+                let stageStarted = performance.now();
                 gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+                item.copy_stages_ms.bind = performance.now() - stageStarted;
+                stageStarted = performance.now();
                 gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
-              });
+                item.copy_stages_ms.get_buffer_sub_data = performance.now() - stageStarted;
+              }, item.copy_stages_ms);
               const copyDuration = performance.now() - copyStarted;
+              const measuredCopyStages = Object.entries(item.copy_stages_ms).filter(([name]) => name !== "other").reduce((sum, [, value]) => sum + value, 0);
+              item.copy_stages_ms.other = Math.max(0, copyDuration - measuredCopyStages);
               this.readback.copy_duration_ms += copyDuration;
               this.readback.completed += 1;
               const completedAt = performance.now();
@@ -467,6 +493,8 @@ async function liveTrace(cell) {
                 queue_duration_ms: item.queue_duration_ms,
                 wait_duration_ms: item.wait_duration_ms,
                 copy_duration_ms: copyDuration,
+                queue_stages_ms: item.queue_stages_ms,
+                copy_stages_ms: item.copy_stages_ms,
                 completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
                 duration_ms: item.queue_duration_ms + copyDuration,
               });
@@ -490,6 +518,8 @@ async function liveTrace(cell) {
             preserve_drawing_buffer: target.preserve_drawing_buffer,
             queue_duration_ms: 0,
             wait_duration_ms: 0,
+            queue_stages_ms: {bind: 0, read_pixels: 0, fence: 0, flush: 0, state_capture: 0, state_restore: 0, other: 0},
+            copy_stages_ms: {bind: 0, get_buffer_sub_data: 0, state_capture: 0, state_restore: 0, other: 0},
           };
           if (this.pending.length >= this.max_pending || !this.available.length) {
             item.queue_duration_ms = performance.now() - started;
@@ -499,17 +529,28 @@ async function liveTrace(cell) {
           const gl = this.gl;
           item.buffer = this.available.pop();
           try {
+            const operationStarted = performance.now();
             this.withState(gl, () => {
               const {x, y, width, height} = target.coverage.resolved_region;
+              let stageStarted = performance.now();
               gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
               gl.readBuffer(gl.BACK);
               gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+              item.queue_stages_ms.bind = performance.now() - stageStarted;
+              stageStarted = performance.now();
               gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+              item.queue_stages_ms.read_pixels = performance.now() - stageStarted;
+              stageStarted = performance.now();
               item.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
               if (!item.sync) throw new Error("WebGL2 could not create a readback fence");
+              item.queue_stages_ms.fence = performance.now() - stageStarted;
+              stageStarted = performance.now();
               gl.flush();
-            });
+              item.queue_stages_ms.flush = performance.now() - stageStarted;
+            }, item.queue_stages_ms);
             item.queue_duration_ms = performance.now() - started;
+            const measuredStages = Object.entries(item.queue_stages_ms).filter(([name]) => name !== "other").reduce((sum, [, value]) => sum + value, 0);
+            item.queue_stages_ms.other = Math.max(0, item.queue_duration_ms - measuredStages);
             this.readback.queue_duration_ms += item.queue_duration_ms;
             this.readback.queued += 1;
             this.pending.push(item);
@@ -574,6 +615,7 @@ async function liveTrace(cell) {
     const setupCommands = validateSetupCommands(cell);
     const initialSetup = await runSetup(page, canvas, setupCommands);
     const lifecycle = {
+      status: "observed",
       scenario_id: cell.scenario_id,
       seed: cell.seed ?? null,
       configured_url: cell.server.url,
@@ -697,9 +739,16 @@ async function liveTrace(cell) {
       rawStream: trace.rawStream,
       callbacks,
       window,
-      environment: { browser: type, browser_version: browser.version?.() || null, driver: cell.browser?.package || "playwright-core", renderer_backend: backend },
+      environment: {
+        browser: type,
+        browser_version: browser.version?.() || null,
+        driver: cell.browser?.package || "playwright-core",
+        renderer: backend.unmasked_renderer || backend.renderer || "unknown",
+        backend: backend.kind || "unknown",
+        tools: [],
+      },
       measurement,
-      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, measurement },
+      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, measurement },
     };
   } finally {
     await browser?.close().catch(() => {});
@@ -710,12 +759,13 @@ async function liveTrace(cell) {
 export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}) {
   validateCell(cell);
   const live = !(cell.trace || cell.trace_file);
-  const source = live ? await liveTrace(cell) : await fixtureTrace(cell, baseDir);
+  const source = live ? await liveTrace(cell, {baseDir}) : await fixtureTrace(cell, baseDir);
   const measurement = source.measurement || fixtureMeasurement(cell);
   const measuredCell = source.window ? {
     ...cell,
     window: source.window,
     game_canvas: { ...(cell.game_canvas || {}), canvas_selector: cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas" },
+    ...(measurement.sampling ? {sampling: measurement.sampling} : {}),
   } : cell;
   let traceForResult = source.trace;
   if (source.rawStream && outDir) traceForResult = {...source.trace, raw_stream_path: "trace.raw.json"};
