@@ -138,6 +138,13 @@ const DIMENSION_EVIDENCE_KINDS = Object.freeze({
   "promised-ui-audio-accessibility": ["increment", "concept", "play-session", "capture"],
   polish: ["increment", "asset", "manifest", "play-session", "capture"],
 });
+// Descriptive records can explain a judgment, but they do not observe the
+// behavior being judged.  A gate evidence list may include those records only
+// alongside at least one package-recomputed observation from the relevant
+// play, performance, asset, or capture validators below.
+const RECOMPUTED_OBSERVATION_DOCUMENT_KINDS = new Set([
+  "play-session", "performance-cell", "asset-manifest", "capture",
+]);
 
 // Stored evidence is admitted through the package schemas as well as the
 // semantic checks below.  The schemas are loaded from this package, so a
@@ -730,6 +737,12 @@ function gateEvidenceItem(evidence, id, allowedKinds, pointer, label) {
   return item;
 }
 
+function requireRecomputedObservation(items, pointer, label) {
+  if (!items.some(item => item.facts?.status === "valid" && RECOMPUTED_OBSERVATION_DOCUMENT_KINDS.has(item.document?.kind))) {
+    throw evidenceError(`${label} evidence must include a recomputed relevant observation; descriptive records may support but cannot substitute for one`, pointer);
+  }
+}
+
 function lineageInputs(index, gate, loaded, record, baseDir) {
   const fixed = record.fixed_inputs || {};
   const selectedCommit = gate === "core" && record?.artifact_commit ? record.artifact_commit : index.artifact_commit;
@@ -833,9 +846,9 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   for (const hard of hardGates) {
     if (!hard || typeof hard !== "object" || !Array.isArray(hard.evidence) || hard.evidence.length === 0) throw evidenceError("each hard gate needs evidence identities; booleans cannot self-qualify", `/gates/${gate}/hard_gates`);
     if (hard.result !== "pass") throw evidenceError(`hard gate ${hard.id} is not passed`, `/gates/${gate}/hard_gates/${hard.id}`);
-    for (const id of hard.evidence) {
-      gateEvidenceItem(evidence, id, HARD_EVIDENCE_KINDS[hard.id] || ["increment"], `/gates/${gate}/hard_gates/${hard.id}/evidence`, `hard gate ${hard.id}`);
-    }
+    const pointer = `/gates/${gate}/hard_gates/${hard.id}/evidence`;
+    const items = hard.evidence.map(id => gateEvidenceItem(evidence, id, HARD_EVIDENCE_KINDS[hard.id] || ["increment"], pointer, `hard gate ${hard.id}`));
+    requireRecomputedObservation(items, pointer, `hard gate ${hard.id}`);
   }
   const dimensions = record.scores;
   const requiredDimensions = gate === "core" ? CORE_DIMENSION_IDS : FINAL_DIMENSION_IDS;
@@ -845,7 +858,9 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   for (const dimension of dimensions) {
     if (!Number.isInteger(dimension.score) || dimension.score < 0 || dimension.score > 4 || dimension.score < CRITICAL_SCORE_FLOOR || (dimension.floor !== undefined && dimension.floor !== CRITICAL_SCORE_FLOOR)) throw evidenceError(`dimension ${dimension.dimension || "unknown"} is below the frozen floor of ${CRITICAL_SCORE_FLOOR}`, `/gates/${gate}/scores`);
     if (!Array.isArray(dimension.evidence) || dimension.evidence.length === 0) throw evidenceError(`dimension ${dimension.dimension} lacks bound typed evidence`, `/gates/${gate}/scores`);
-    for (const id of dimension.evidence) gateEvidenceItem(evidence, id, DIMENSION_EVIDENCE_KINDS[dimension.dimension] || ["increment"], `/gates/${gate}/scores/${dimension.dimension}/evidence`, `dimension ${dimension.dimension}`);
+    const pointer = `/gates/${gate}/scores/${dimension.dimension}/evidence`;
+    const items = dimension.evidence.map(id => gateEvidenceItem(evidence, id, DIMENSION_EVIDENCE_KINDS[dimension.dimension] || ["increment"], pointer, `dimension ${dimension.dimension}`));
+    requireRecomputedObservation(items, pointer, `dimension ${dimension.dimension}`);
   }
   const fixed = record.fixed_inputs || {};
   if (fixed.artifact_commit !== index.artifact_commit && !(historicalCore && fixed.artifact_commit === record.artifact_commit)) throw evidenceError("gate fixed inputs are bound to a different artifact commit", `/gates/${gate}/fixed_inputs/artifact_commit`);

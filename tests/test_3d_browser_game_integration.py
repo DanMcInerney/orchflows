@@ -106,13 +106,29 @@ class GateFixture:
             value["source_commit"] = source_commit
         return value
 
-    def asset_manifest(self, artifact_commit, directory):
+    def asset_manifest(self, artifact_commit, directory, identity="asset"):
         asset_dir = self.root / directory
         source = self.write_bytes(f"{directory}/source.blend", b"controlled source blend bytes\n")
         glb = self.write_bytes(f"{directory}/asset.glb", self.triangle_glb())
         self.write_json(f"{directory}/inspection.json", {"meshes": 1, "materials": 1, "animations": 0})
         self.write_bytes(f"{directory}/preview.png", b"controlled preview bytes\n")
         glb_hash = digest(glb.read_bytes())
+        semantic_contract = {
+            "coordinate_conversion": {"matrix": "Rx(-pi/2)", "mapping": "(x,y,z)->(x,z,-y)", "source_up": "+Z", "runtime_up": "+Y"},
+            "tolerance": 1e-4,
+            "source_coordinate_space": "blender-world",
+            "runtime_coordinate_space": "three-world",
+            "runtime_budget_fields": ["runtime_bytes", "draw_calls", "load_time_ms"],
+        }
+        job = {
+            "id": "controlled-asset-job", "artifact_commit": artifact_commit,
+            "scene": {"units": "meters", "unit_scale": 1, "up_axis": "+Y", "gameplay_forward": "+Z", "origin": "feet"},
+            "budgets": {}, "colliders": [], "attachments": [], "material_roles": {"body": "body"},
+            "animation_clips": [], "required_extensions": [],
+        }
+        job_bytes = canonical(job)
+        self.write_bytes(f"{directory}/job.json", job_bytes)
+        job_hash = digest(job_bytes)
         target = self.root / f"{directory}/target-three"
         self.write_bytes(f"{directory}/target-three/build/three.module.js", b"three module fixture\n")
         self.write_bytes(f"{directory}/target-three/examples/jsm/loaders/GLTFLoader.js", b"loader module fixture\n")
@@ -121,14 +137,38 @@ class GateFixture:
         screenshot = self.write_bytes(f"{directory}/loader.png", b"retained loader screenshot bytes\n")
         screenshot_hash = digest(screenshot.read_bytes())
         loader_id = f"loader-evidence-{directory.replace('/', '-')}"
+        manifest_declarations = {
+            "units": "meters", "unit_scale": 1, "up_axis": "+Y", "gameplay_forward": "+Z", "origin": "feet",
+            "colliders": [], "attachments": [], "material_roles": {"body": "body"}, "animation_clips": [],
+            "required_extensions": [], "semantic_contract": semantic_contract,
+        }
+        expectations_hash = digest(canonical({
+            "job_id": job["id"], "artifact_commit": artifact_commit,
+            "job_declarations": {"scene": job["scene"], "budgets": job["budgets"], "colliders": [], "attachments": [], "material_roles": {"body": "body"}, "animation_clips": [], "required_extensions": []},
+            "manifest_declarations": manifest_declarations,
+        }))
+        semantic_checks = {
+            "scale": {"status": "pass", "basis": "controlled fixture scene contains one loaded mesh"},
+            "bounds": {"status": "pass", "basis": "controlled fixture GLB has finite accessor bounds"},
+            "orientation": {"status": "pass", "basis": "controlled fixture binds the frozen Blender-to-Three contract"},
+            "material": {"status": "pass", "basis": "controlled fixture binds declared material role body"},
+            "attachments": {"status": "not_applicable", "basis": "job declared no attachments"},
+            "animation": {"status": "not_applicable", "basis": "job declared no animation clips"},
+            "extensions": {"status": "not_applicable", "basis": "job declared no required extensions"},
+            "collider": {"status": "not_applicable", "basis": "job declared no colliders"},
+            "cost": {"status": "pass", "basis": "controlled fixture declares no runtime cost limits"},
+        }
         loader_document = {
             "kind": "gltf-loader-evidence", "id": loader_id, "artifact_commit": artifact_commit,
             "source": "live-browser", "glb_hash": glb_hash, "target_workspace": str(target),
+            "job_sha256": job_hash, "expectations_hash": expectations_hash,
+            "coordinate_conversion": semantic_contract["coordinate_conversion"], "semantic_tolerance": 1e-4,
             "target_probe": {"path": "loader.png", "sha256": screenshot_hash},
             "browser": {"screenshot_sha256": screenshot_hash},
             "target_three_root": {"path": ".", "three_module_sha256": three_hash, "gltf_loader_sha256": loader_hash},
             "observed": {"meshes": 1, "materials": 1, "animations": 0},
             "checks": {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"},
+            "semantic_checks": semantic_checks,
         }
         loader_path = self.write_json(f"{directory}/loader.json", loader_document)
         khronos_document = {
@@ -136,15 +176,16 @@ class GateFixture:
             "orchflows": {"kind": "khronos-validation", "source": "package-owned-fresh-process", "artifact_commit": artifact_commit, "glb_hash": glb_hash},
         }
         khronos_path = self.write_json(f"{directory}/khronos.json", khronos_document)
-        manifest = header("asset-manifest", "asset", artifact_commit)
+        manifest = header("asset-manifest", identity, artifact_commit)
         manifest.update({
             "source_kind": "generated", "source_blend": "source.blend", "source_blend_sha256": digest(source.read_bytes()),
             "runtime_glb": "asset.glb", "exported_glb_sha256": glb_hash, "inspection": "inspection.json", "previews": ["preview.png"],
             "units": "meters", "unit_scale": 1, "up_axis": "+Y", "gameplay_forward": "+Z", "origin": "feet",
             "colliders": [], "attachments": [], "material_roles": {"body": "body"}, "animation_clips": [], "required_extensions": [],
+            "semantic_contract": semantic_contract,
             "validation": {
                 "khronos": {"status": "pass", "errors": 0, "export_sha256": glb_hash, "validator": "gltf-validator", "report_path": "khronos.json", "report_sha256": digest(khronos_path.read_bytes())},
-                "gltf_loader": {"status": "pass", "artifact_commit": artifact_commit, "evidence_id": loader_id, "glb_hash": glb_hash, "checks": {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}, "evidence_path": "loader.json", "evidence_sha256": digest(loader_path.read_bytes())},
+                "gltf_loader": {"status": "pass", "artifact_commit": artifact_commit, "evidence_id": loader_id, "glb_hash": glb_hash, "checks": {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}, "semantic_checks": semantic_checks, "coordinate_conversion": semantic_contract["coordinate_conversion"], "semantic_tolerance": 1e-4, "job_sha256": job_hash, "expectations_hash": expectations_hash, "evidence_path": "loader.json", "evidence_sha256": digest(loader_path.read_bytes())},
             },
         })
         self.write_json(f"{directory}/manifest.json", manifest)
@@ -190,7 +231,7 @@ class GateFixture:
         self.write_json(f"{receipt_dir}/{identity}.transcript.json", transcript)
         return value
 
-    def performance_cell(self, artifact_commit, scenario, cell_id, run_number):
+    def performance_cell(self, artifact_commit, scenario, cell_id, run_number, identity=None):
         fixture = json.loads(PERF_FIXTURE.read_text(encoding="utf-8"))
         trace = deepcopy(fixture["trace"])
         repeated_events = []
@@ -236,17 +277,21 @@ class GateFixture:
             "instrumented": {"status": "observed", "requested_ms": 60000, "observed_ms": 60000, "callbacks": 3600, "callback_rate_hz": 60, "samples": 3600, "readback_errors": 0},
             "perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 3600, "instrumented_callbacks": 3600, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "callback_interval_delta_ms": 0, "samples": 3600, "readback_errors": 0},
         }
-        value = header("performance-cell", f"{cell_id}-result-{run_number}", artifact_commit)
+        result_id = identity or f"{cell_id}-result-{run_number}"
+        value = header("performance-cell", result_id, artifact_commit)
         value.update({"cell": cell, "trace": trace, "callbacks": callbacks, "measurement": measurement, "qualification": {"status": "qualified", "metrics": {"duration_seconds": 60}, "failures": []}, "source": "live-browser", "diagnostics": {"controlled-test-fixture": True, "statement": "Synthetic trace used only to exercise gate admission; it is not game proof."}, "observed_at": "2026-09-06T00:01:00Z"})
         return value
 
     def run_record(self, artifact_commit, identity, relation, predecessor=None, predecessor_hash=None):
+        prefix = "core" if identity.startswith("core-") else "final"
+        brief_id = f"{prefix}-brief"
+        increment_id = f"{prefix}-increment"
         value = header("run-record", identity, artifact_commit)
         value.update({
-            "brief": {"identity": "brief", "revision": "original", "sha256": self.brief_hash}, "amendments": [],
+            "brief": {"identity": brief_id, "revision": "original", "sha256": self.brief_hash}, "amendments": [],
             "workspace": {"repository": "3d-browser-game", "baseline_commit": artifact_commit, "working_tree": "clean"},
             "package": {"name": "3d-browser-game", "digest": "sha256:" + "1" * 64}, "tools": [], "decisions": [], "freezes": [],
-            "increments": [{"id": "increment", "artifact_commit": artifact_commit, "status": "complete", "evidence": ["increment"]}],
+            "increments": [{"id": increment_id, "artifact_commit": artifact_commit, "status": "complete", "evidence": [increment_id]}],
             "jobs": [], "sessions": [], "captures": [], "cells": [], "verdicts": [], "complaints": [],
             "resume_cursor": {"stage": "gate", "cursor": identity, "next_action": "continue validation", "open_findings": []},
             "lineage": {"relation": relation, "predecessor": predecessor, "predecessor_sha256": predecessor_hash, "complaints": [], "changed_mechanics": []},
@@ -255,12 +300,15 @@ class GateFixture:
         return value
 
     def traceability(self, artifact_commit, gate_id, final=False):
+        prefix = gate_id
+        increment_id = f"{prefix}-increment"
+        session_id = f"{prefix}-session-a"
         value = header("traceability", f"trace-{gate_id}", artifact_commit)
         value.update({
-            "brief": {"identity": "brief", "sha256": self.brief_hash}, "promise_ids": ["promise-loop", "promise-terminal"],
+            "brief": {"identity": f"{prefix}-brief", "sha256": self.brief_hash}, "promise_ids": ["promise-loop", "promise-terminal"],
             "rows": [
-                {"prompt_promise": {"identity": "promise-loop", "text": "The player has a repeatable movement loop."}, "amendment_identity": None, "requirement": {"identity": "req-loop", "kind": "state", "text": "Movement and feedback remain playable."}, "playable_evidence_ids": ["increment"], "normal_input_path": "observe -> key -> observe", "core_gate_verdict": "core-gate", "final_gate_verdict": "final-gate" if final else None, "owner": "gameplay", "invalidation_trigger": "Loop state changes."},
-                {"prompt_promise": {"identity": "promise-terminal", "text": "The player can reach a terminal and continue or replay."}, "amendment_identity": None, "requirement": {"identity": "req-terminal", "kind": "content", "text": "Terminal and replay behavior are observable."}, "playable_evidence_ids": ["increment"], "normal_input_path": "observe -> key -> observe", "core_gate_verdict": "core-gate", "final_gate_verdict": "final-gate" if final else None, "owner": "gameplay", "invalidation_trigger": "Terminal behavior changes."},
+                {"prompt_promise": {"identity": "promise-loop", "text": "The player has a repeatable movement loop."}, "amendment_identity": None, "requirement": {"identity": "req-loop", "kind": "state", "text": "Movement and feedback remain playable."}, "playable_evidence_ids": [increment_id, session_id], "normal_input_path": "observe -> key -> observe", "core_gate_verdict": "core-gate", "final_gate_verdict": "final-gate" if final else None, "owner": "gameplay", "invalidation_trigger": "Loop state changes."},
+                {"prompt_promise": {"identity": "promise-terminal", "text": "The player can reach a terminal and continue or replay."}, "amendment_identity": None, "requirement": {"identity": "req-terminal", "kind": "content", "text": "Terminal and replay behavior are observable."}, "playable_evidence_ids": [increment_id, session_id], "normal_input_path": "observe -> key -> observe", "core_gate_verdict": "core-gate", "final_gate_verdict": "final-gate" if final else None, "owner": "gameplay", "invalidation_trigger": "Terminal behavior changes."},
             ],
         })
         return value
@@ -269,13 +317,20 @@ class GateFixture:
         ids = self.CORE_HARD if gate == "core" else self.FINAL_HARD
         dimensions = self.CORE_DIMS if gate == "core" else self.FINAL_DIMS
         value = header("gate-verdict", f"{gate}-gate", artifact_commit)
+        increment_id = f"{gate}-increment"
         fixed = {"artifact_commit": artifact_commit, "evidence_index": index_id, "traceability": trace_id, "rubric_revision": f"{gate}-rubric", "capture_matrix": matrix_id, "play_sessions": [f"{gate}-session-a", f"{gate}-session-b"], "performance_plan": plan_id, "performance_cells": cells, "run_record": run_id}
         if gate == "final":
-            fixed.update({"accepted_core_verdict": "core-gate", "concept_artifacts": ["concept"], "asset_manifests": ["asset"], "predecessor_run_record": "core-run"})
+            fixed.update({"accepted_core_verdict": "core-gate", "concept_artifacts": ["final-concept"], "asset_manifests": ["final-asset"], "predecessor_run_record": "core-run"})
+        def evidence_for(identity):
+            if identity in {"qualified-representative-performance", "performance-cell-coverage"}:
+                return [f"{gate}-representative-cell-result-1"]
+            if identity == "asset-provenance-disposal":
+                return ["final-asset"]
+            return [f"{gate}-session-a"]
         value.update({
             "gate": gate, "fixed_inputs": fixed,
-            "hard_gates": [{"id": identity, "name": identity, "result": "pass", "evidence": ["increment"]} for identity in ids],
-            "scores": [{"dimension": identity, "score": 4, "floor": 3, "evidence": ["increment"], "rationale": "The bound fixture covers this dimension."} for identity in dimensions],
+            "hard_gates": [{"id": identity, "name": identity, "result": "pass", "evidence": [increment_id, *evidence_for(identity)]} for identity in ids],
+            "scores": [{"dimension": identity, "score": 4, "floor": 3, "evidence": [increment_id, f"{gate}-session-a"], "rationale": "The bound fixture covers this dimension."} for identity in dimensions],
             "strengths": ["All required evidence identities are bound."], "complaints": [], "contrary_evidence": [], "confidence": 1, "disposition": "pass",
             "resume_state": {"stage": "accepted", "cursor": f"{gate}-gate", "open_complaint_ids": [], "next_action": "continue"},
         })
@@ -299,9 +354,11 @@ class GateFixture:
             self.write_json(relative, value)
             entries.append(self.entry(identity, relative, kind, artifact_commit, revision, source_commit))
 
-        brief = header("brief", "brief", artifact_commit)
+        brief_id = f"{gate}-brief"
+        increment_id = f"{gate}-increment"
+        brief = header("brief", brief_id, artifact_commit)
         brief.update({"sha256": self.brief_hash, "promises": ["promise-loop", "promise-terminal"]})
-        add("brief", "brief", brief, f"{prefix}/brief.json")
+        add(brief_id, "brief", brief, f"{prefix}/brief.json")
         run_id = f"{prefix}-run"
         predecessor = None if gate == "core" else "core-run"
         predecessor_hash = None if gate == "core" else digest((self.root / "core/run-record.json").read_bytes())
@@ -310,14 +367,16 @@ class GateFixture:
         trace_id = f"trace-{gate}"
         add(trace_id, "traceability", self.traceability(artifact_commit, gate, gate == "final"), f"{prefix}/traceability.json")
         add(f"{gate}-rubric", "research", {"kind": "rubric", "id": f"{gate}-rubric", "artifact_commit": artifact_commit}, f"{prefix}/rubric.json")
-        add("increment", "increment", {"kind": "increment", "id": "increment", "artifact_commit": artifact_commit}, f"{prefix}/increment.json")
+        add(increment_id, "increment", {"kind": "increment", "id": increment_id, "artifact_commit": artifact_commit}, f"{prefix}/increment.json")
         plan = self.performance_plan(artifact_commit)
-        add("performance-plan", "performance-plan", plan, f"{prefix}/performance-plan.json")
+        plan_id = f"{gate}-performance-plan"
+        plan["id"] = plan_id
+        add(plan_id, "performance-plan", plan, f"{prefix}/performance-plan.json")
         cells = []
         for scenario, cell_id in [("representative-animation", "representative-cell"), ("worst-case-animation", "worst-case-cell")]:
             for number in range(1, 4):
-                result_id = f"{cell_id}-result-{number}"
-                add(result_id, "performance", self.performance_cell(artifact_commit, scenario, cell_id, number), f"{prefix}/{result_id}.json")
+                result_id = f"{gate}-{cell_id}-result-{number}"
+                add(result_id, "performance", self.performance_cell(artifact_commit, scenario, cell_id, number, result_id), f"{prefix}/{result_id}.json")
                 cells.append(result_id)
         for suffix, operator, context in [("a", "operator-a", "context-a"), ("b", "operator-b", "context-b")]:
             identity = f"{gate}-session-{suffix}"
@@ -331,14 +390,31 @@ class GateFixture:
         matrix_id = f"{gate}-capture-matrix"
         add(matrix_id, "capture-matrix", matrix, f"{prefix}/capture-matrix.json")
         if gate == "final":
-            add("concept", "concept", {"kind": "concept", "id": "concept", "artifact_commit": artifact_commit}, "final/concept.json")
-            manifest_path, manifest_id = self.asset_manifest(artifact_commit, "final/assets")
+            add("final-concept", "concept", {"kind": "concept", "id": "final-concept", "artifact_commit": artifact_commit}, "final/concept.json")
+            manifest_path, manifest_id = self.asset_manifest(artifact_commit, "final/assets", "final-asset")
             entries.append(self.entry(manifest_id, manifest_path, "manifest", artifact_commit))
         gate_id = f"{gate}-gate"
-        verdict = self.gate_verdict(gate, artifact_commit, index_id, trace_id, "performance-plan", matrix_id, cells, run_id)
+        verdict = self.gate_verdict(gate, artifact_commit, index_id, trace_id, plan_id, matrix_id, cells, run_id)
         add(gate_id, "verdict", verdict, f"{prefix}/gate.json")
         if include_core:
-            for relative, identity, kind in [("core/run-record.json", "core-run", "run-record"), ("core/gate.json", "core-gate", "verdict")]:
+            core_entries = [
+                ("core/brief.json", "core-brief", "brief"),
+                ("core/run-record.json", "core-run", "run-record"),
+                ("core/traceability.json", "trace-core", "traceability"),
+                ("core/rubric.json", "core-rubric", "research"),
+                ("core/increment.json", "core-increment", "increment"),
+                ("core/performance-plan.json", "core-performance-plan", "performance-plan"),
+                ("core/core-session-a.json", "core-session-a", "play-session"),
+                ("core/core-session-b.json", "core-session-b", "play-session"),
+                ("core/core-capture.json", "core-capture", "capture"),
+                ("core/capture-matrix.json", "core-capture-matrix", "capture-matrix"),
+                ("core/gate.json", "core-gate", "verdict"),
+            ]
+            for scenario, cell_id in [("representative-animation", "representative-cell"), ("worst-case-animation", "worst-case-cell")]:
+                for number in range(1, 4):
+                    result_id = f"core-{cell_id}-result-{number}"
+                    core_entries.append((f"core/{result_id}.json", result_id, "performance"))
+            for relative, identity, kind in core_entries:
                 entries.append(self.entry(identity, relative, kind, artifact_commit, "declared-ancestor", self.core_commit))
         value = header("evidence-index", index_id, artifact_commit)
         value.update({"status": "draft", "declared_ancestors": [] if gate == "core" else [commit(self.core_commit)], "entries": entries, "required": [item["id"] for item in entries]})
@@ -374,6 +450,28 @@ class BrowserGameGateIntegrationTests(unittest.TestCase):
             self.assertEqual("core-gate", accepted["lineage"]["core_verdict_id"])
             self.assertEqual(2, len(accepted["performance_coverage"]))
             self.assertTrue(all(len(item["runs"]) == 3 for item in accepted["performance_coverage"]))
+
+            with tempfile.TemporaryDirectory(dir=ROOT, prefix="orchflows-descriptive-") as descriptive_root:
+                descriptive_directory = Path(descriptive_root) / "fixture"
+                shutil.copytree(directory, descriptive_directory)
+                descriptive_index = descriptive_directory / "final-index.json"
+                descriptive_value = json.loads(descriptive_index.read_text(encoding="utf-8"))
+                descriptive_gate = descriptive_directory / "final/gate.json"
+                descriptive_gate_value = json.loads(descriptive_gate.read_text(encoding="utf-8"))
+                for hard in descriptive_gate_value["hard_gates"]:
+                    hard["evidence"] = ["final-increment"]
+                for dimension in descriptive_gate_value["scores"]:
+                    dimension["evidence"] = ["final-increment"]
+                descriptive_gate.write_bytes(canonical(descriptive_gate_value))
+                next(item for item in descriptive_value["entries"] if item["id"] == "final-gate")["sha256"] = digest(descriptive_gate.read_bytes())
+                descriptive_value.pop("promotion", None)
+                descriptive_value["status"] = "draft"
+                descriptive_index.write_bytes(canonical(descriptive_value))
+                descriptive_promote = self.run_cli("--index", descriptive_index, "--promote")
+                self.assertEqual(0, descriptive_promote.returncode, descriptive_promote.stderr + descriptive_promote.stdout)
+                descriptive_result = self.run_cli("gate", "--index", descriptive_index, "--gate", "final")
+                self.assertEqual(4, descriptive_result.returncode, descriptive_result.stderr + descriptive_result.stdout)
+                self.assertIn("recomputed relevant observation", descriptive_result.stderr + descriptive_result.stdout)
 
             forged = Path(directory) / "forged-index.json"
             forged.write_bytes(Path(final_path).read_bytes())
