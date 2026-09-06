@@ -70,6 +70,21 @@ _JOB_FIELDS = _REQUIRED_HEADER | {
     "required_extensions",
 }
 
+_REQUIRED_BUDGETS = (
+    "mesh_vertices",
+    "mesh_polygons",
+    "materials",
+    "texture_bytes",
+    "animations",
+    "skeleton_bones",
+)
+_REQUIRED_OUTPUT_KINDS = {
+    "source": ".blend",
+    "inspection": ".json",
+    "runtime": ".glb",
+    "manifest": "asset-manifest.json",
+}
+
 
 class JobError(ValueError):
     """A job is malformed or requests an unsafe path."""
@@ -124,6 +139,153 @@ def contained_path(root: Path, relative: str | Path, *, field: str = "path") -> 
     return resolved
 
 
+def _require_mapping(value: Any, *, field: str) -> Mapping[str, Any]:
+    if not isinstance(value, dict):
+        raise JobError(f"{field}: expected object")
+    return value
+
+
+def _require_string(value: Any, *, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise JobError(f"{field}: expected a non-empty string")
+    return value
+
+
+def _validate_asset_contract(job: Mapping[str, Any], root: Path) -> None:
+    """Validate the closed asset contract before staging or starting Blender."""
+
+    scene = _require_mapping(job.get("scene"), field="job/scene")
+    for key in ("units", "unit_scale", "up_axis", "gameplay_forward", "origin"):
+        if key not in scene:
+            raise JobError(f"job/scene/{key}: is required")
+    _require_string(scene.get("units"), field="job/scene/units")
+    unit_scale = scene.get("unit_scale")
+    if not isinstance(unit_scale, (int, float)) or isinstance(unit_scale, bool) or unit_scale <= 0:
+        raise JobError("job/scene/unit_scale: expected a positive number")
+    if scene.get("up_axis") != "+Y":
+        raise JobError("job/scene/up_axis: expected +Y for runtime export")
+    _require_string(scene.get("gameplay_forward"), field="job/scene/gameplay_forward")
+    _require_string(scene.get("origin"), field="job/scene/origin")
+
+    allowlists = _require_mapping(job.get("allowlists"), field="job/allowlists")
+    allowed_allowlist_fields = {
+        "input_extensions", "output_extensions", "required_objects", "required_materials",
+        "required_actions", "required_normals", "required_uvs", "required_uv_layers",
+        "required_textures", "required_armature",
+    }
+    unknown_allowlists = set(allowlists) - allowed_allowlist_fields
+    if unknown_allowlists:
+        raise JobError(f"job/allowlists: unknown fields: {', '.join(sorted(unknown_allowlists))}")
+    for key in ("input_extensions", "output_extensions"):
+        values = allowlists.get(key)
+        if not isinstance(values, list) or not values or any(not isinstance(item, str) or not item.startswith(".") for item in values):
+            raise JobError(f"job/allowlists/{key}: expected a non-empty extension array")
+    for key in ("required_objects", "required_materials", "required_actions"):
+        values = allowlists.get(key, [])
+        if not isinstance(values, list) or any(not isinstance(item, str) or not item for item in values):
+            raise JobError(f"job/allowlists/{key}: expected an array of names")
+    for key in ("required_normals", "required_uvs", "required_textures"):
+        if key in allowlists and not isinstance(allowlists[key], bool):
+            raise JobError(f"job/allowlists/{key}: expected boolean")
+    if "required_uv_layers" in allowlists:
+        value = allowlists["required_uv_layers"]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise JobError("job/allowlists/required_uv_layers: expected a non-negative integer")
+
+    budgets = _require_mapping(job.get("budgets"), field="job/budgets")
+    for key in _REQUIRED_BUDGETS:
+        value = budgets.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise JobError(f"job/budgets/{key}: expected a non-negative integer")
+
+    cameras = job.get("cameras")
+    if not isinstance(cameras, list) or len(cameras) < 2:
+        raise JobError("job/cameras: at least gameplay and turntable cameras are required")
+    camera_outputs: set[str] = set()
+    labels: set[str] = set()
+    for index, camera in enumerate(cameras):
+        record = _require_mapping(camera, field=f"job/cameras/{index}")
+        _require_string(record.get("camera"), field=f"job/cameras/{index}/camera")
+        output = _relative_path(record.get("output"), field=f"job/cameras/{index}/output")
+        camera_outputs.add(output.as_posix())
+        label = _require_string(record.get("label"), field=f"job/cameras/{index}/label").lower()
+        labels.add(label)
+        if "gameplay" not in label and "turntable" not in label:
+            raise JobError(f"job/cameras/{index}/label: must identify gameplay or turntable coverage")
+    if not any("gameplay" in label for label in labels) or not any("turntable" in label for label in labels):
+        raise JobError("job/cameras: gameplay and turntable coverage are both required")
+
+    render = _require_mapping(job.get("render"), field="job/render")
+    _require_string(render.get("engine"), field="job/render/engine")
+    resolution = render.get("resolution")
+    if not isinstance(resolution, list) or len(resolution) != 2 or any(not isinstance(item, int) or isinstance(item, bool) or item < 1 for item in resolution):
+        raise JobError("job/render/resolution: expected positive [width, height]")
+    if not isinstance(render.get("percentage"), int) or isinstance(render.get("percentage"), bool) or not 1 <= render["percentage"] <= 100:
+        raise JobError("job/render/percentage: expected an integer from 1 to 100")
+    if render.get("format") not in {"PNG", "JPEG", "OPEN_EXR"}:
+        raise JobError("job/render/format: expected PNG, JPEG, or OPEN_EXR")
+    export = _require_mapping(job.get("export"), field="job/export")
+    if export.get("export_yup") is not True or not isinstance(export.get("animations"), bool):
+        raise JobError("job/export: export_yup must be true and animations must be explicit")
+
+    outputs = job.get("outputs")
+    if not isinstance(outputs, list):
+        raise JobError("job/outputs: expected an array")
+    output_by_kind: dict[str, list[Mapping[str, Any]]] = {}
+    for index, item in enumerate(outputs):
+        record = _require_mapping(item, field=f"job/outputs/{index}")
+        kind = _require_string(record.get("kind"), field=f"job/outputs/{index}/kind")
+        output_by_kind.setdefault(kind, []).append(record)
+        if "required" not in record or record.get("required") is not True:
+            raise JobError(f"job/outputs/{index}: every asset evidence output is required")
+    for kind, suffix in _REQUIRED_OUTPUT_KINDS.items():
+        records = output_by_kind.get(kind, [])
+        if len(records) != 1:
+            raise JobError(f"job/outputs: exactly one required {kind} output is required")
+        path = _relative_path(records[0].get("path"), field=f"job/outputs/{kind}/path")
+        normalized = path.as_posix().lower()
+        if kind == "manifest" and not normalized.endswith(suffix):
+            raise JobError("job/outputs/manifest/path: must end in asset-manifest.json")
+        if kind != "manifest" and not normalized.endswith(suffix):
+            raise JobError(f"job/outputs/{kind}/path: must end in {suffix}")
+    preview_records = output_by_kind.get("preview", [])
+    if len(preview_records) < 2:
+        raise JobError("job/outputs: at least gameplay and turntable previews are required")
+    preview_paths = {_relative_path(item.get("path"), field="job/outputs/preview/path").as_posix() for item in preview_records}
+    if not camera_outputs.issubset(preview_paths):
+        raise JobError("job/outputs: every camera preview must be a declared preview output")
+
+    validation = job.get("validation")
+    if not isinstance(validation, dict):
+        raise JobError("job/validation: target loader probe configuration is required")
+    if set(validation) - {"target_workspace", "loader_probe"}:
+        raise JobError("job/validation: verdict records are not accepted as job input")
+    target_workspace = _require_string(validation.get("target_workspace"), field="job/validation/target_workspace")
+    target_path = Path(target_workspace)
+    if not target_path.is_absolute():
+        raise JobError("job/validation/target_workspace: expected an absolute target workspace")
+    probe = _require_mapping(validation.get("loader_probe"), field="job/validation/loader_probe")
+    if set(probe) - {"three_root", "browser_executable"}:
+        raise JobError("job/validation/loader_probe: only target Three.js and browser paths may be declared")
+    three_root = _relative_path(probe.get("three_root"), field="job/validation/loader_probe/three_root")
+    if not three_root.parts or three_root.name == ".":
+        raise JobError("job/validation/loader_probe/three_root: expected a target-relative directory")
+    browser_executable = _require_string(probe.get("browser_executable"), field="job/validation/loader_probe/browser_executable")
+    if not Path(browser_executable).is_absolute():
+        raise JobError("job/validation/loader_probe/browser_executable: expected an absolute browser executable")
+
+    source = job.get("source")
+    if source is not None and isinstance(source, dict):
+        source_path = source.get("path")
+        if isinstance(source_path, str) and Path(source_path).suffix.lower() != ".blend":
+            raise JobError("job/source/path: source authority must be a .blend file")
+    authoring = job.get("authoring")
+    if authoring is not None and isinstance(authoring, dict):
+        module_path = authoring.get("module")
+        if isinstance(module_path, str) and Path(module_path).suffix.lower() != ".py":
+            raise JobError("job/authoring/module: authoring module must be a .py file")
+
+
 def load_job(path: Path) -> tuple[dict[str, Any], bytes, str]:
     """Load and validate a closed job document, returning its byte identity."""
 
@@ -154,7 +316,7 @@ def load_job(path: Path) -> tuple[dict[str, Any], bytes, str]:
     if not isinstance(value.get("inputs"), list):
         raise JobError("job/inputs: expected array of named SHA-256 identities")
     for index, item in enumerate(value["inputs"]):
-        if not isinstance(item, dict) or set(item) != {"name", "sha256"} or not isinstance(item["name"], str) or not _is_digest(item["sha256"]):
+        if not isinstance(item, dict) or set(item) != {"name", "sha256"} or not isinstance(item["name"], str) or not item["name"] or not _is_digest(item["sha256"]):
             raise JobError(f"job/inputs/{index}: expected name and sha256")
     if not isinstance(value.get("producer"), dict) or not isinstance(value["producer"].get("name"), str):
         raise JobError("job/producer: expected object with name")
@@ -213,6 +375,7 @@ def load_job(path: Path) -> tuple[dict[str, Any], bytes, str]:
     if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
         raise JobError("job/timeout_seconds: expected positive number")
     _validate_source_and_authoring(value, path.parent)
+    _validate_asset_contract(value, path.parent)
     return value, raw, sha256_bytes(raw)
 
 
@@ -364,49 +527,6 @@ def _read_worker_result(stage: Path) -> dict[str, Any]:
     return value
 
 
-def _verify_report(report: Any, *, glb_digest: str, name: str) -> None:
-    if not isinstance(report, dict):
-        raise EvidenceError(f"validation/{name}: expected object")
-    if report.get("status") != "pass":
-        raise EvidenceError(f"validation/{name}: status is not pass")
-    if report.get("export_sha256") != glb_digest:
-        raise EvidenceError(f"validation/{name}: exported hash is unrelated or stale")
-    if name == "khronos" and report.get("errors") != 0:
-        raise EvidenceError("validation/khronos: validator reported errors")
-    if name == "gltfloader" and report.get("checks") != {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}:
-        raise EvidenceError("validation/gltfloader: required production checks did not pass")
-
-
-def _verify_external_report(report: Mapping[str, Any], stage: Path, *, glb_digest: str, name: str) -> None:
-    """Verify an optional report file before its metadata reaches the manifest."""
-
-    path_key = "report_path" if name == "khronos" else "evidence_path"
-    hash_key = "report_sha256" if name == "khronos" else "evidence_sha256"
-    if path_key not in report and hash_key not in report:
-        return
-    if not isinstance(report.get(path_key), str) or not isinstance(report.get(hash_key), str):
-        raise EvidenceError(f"validation/{name}: external report path and hash are both required")
-    report_path = contained_path(stage, report[path_key], field=f"validation/{name}/{path_key}")
-    if not report_path.is_file() or report_path.stat().st_size == 0:
-        raise EvidenceError(f"validation/{name}: external report is missing or empty")
-    if sha256_file(report_path) != report[hash_key]:
-        raise EvidenceError(f"validation/{name}: external report hash does not match its bytes")
-    try:
-        value = json.loads(report_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise EvidenceError(f"validation/{name}: external report is not valid JSON: {exc}") from exc
-    if not isinstance(value, dict):
-        raise EvidenceError(f"validation/{name}: external report must be an object")
-    if name == "khronos":
-        if (value.get("issues") or {}).get("numErrors") != 0:
-            raise EvidenceError("validation/khronos: external report did not prove zero errors")
-    else:
-        if value.get("glb_hash", value.get("export_sha256")) != glb_digest:
-            raise EvidenceError("validation/gltfloader: external report is unrelated or stale")
-        if value.get("checks") != {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}:
-            raise EvidenceError("validation/gltfloader: external report checks did not pass")
-
-
 def _verify_promotion(job: Mapping[str, Any], stage: Path, result: Mapping[str, Any]) -> None:
     if result.get("status") != "complete":
         raise EvidenceError(f"worker status is {result.get('status')!r}")
@@ -414,6 +534,8 @@ def _verify_promotion(job: Mapping[str, Any], stage: Path, result: Mapping[str, 
         raise EvidenceError("worker job digest echo is missing or mismatched")
     if not _is_digest(result.get("job_sha256")):
         raise EvidenceError("worker job digest is not a sha256 identity")
+    if result.get("input_hashes") != job.get("inputs"):
+        raise EvidenceError("worker input identity echo is missing or mismatched")
     output_records = result.get("outputs")
     if not isinstance(output_records, list):
         raise EvidenceError("worker outputs inventory is missing")
@@ -432,6 +554,19 @@ def _verify_promotion(job: Mapping[str, Any], stage: Path, result: Mapping[str, 
     inspection_path = contained_path(stage, inspection["path"], field="worker/inspection/path")
     if not inspection_path.is_file() or inspection_path.stat().st_size == 0:
         raise EvidenceError("structural inspection evidence is missing or empty")
+    inspection_doc = _read_json_object(inspection_path, label="structural inspection")
+    if inspection_doc.get("kind") != "blender-structural-inspection" or inspection_doc.get("job_id") != job.get("id"):
+        raise EvidenceError("structural inspection is not bound to this job")
+    if inspection_doc.get("status") != "complete" or inspection_doc.get("gaps"):
+        raise EvidenceError("structural inspection did not prove complete measured state")
+    asset = inspection_doc.get("asset")
+    if not isinstance(asset, dict):
+        raise EvidenceError("structural inspection measured asset surface is missing")
+    for key in ("mesh_vertices", "mesh_polygons", "materials", "texture_bytes", "textures", "animation_clips", "skeleton_bones", "armatures", "mesh_normals", "mesh_uv_layers", "poses", "objects"):
+        if key not in asset:
+            raise EvidenceError(f"structural inspection is missing measured field {key}")
+    if inspection_doc.get("declared_budgets") != job.get("budgets"):
+        raise EvidenceError("structural inspection budget declaration is not bound to this job")
     previews = result.get("previews")
     if not isinstance(previews, list) or not previews:
         raise EvidenceError("render/turntable preview coverage is missing")
@@ -441,37 +576,28 @@ def _verify_promotion(job: Mapping[str, Any], stage: Path, result: Mapping[str, 
         preview_path = contained_path(stage, preview["path"], field="worker/preview/path")
         if not preview_path.is_file() or preview_path.stat().st_size == 0:
             raise EvidenceError(f"preview is missing or empty: {preview.get('path')}")
-    manifest_path = next((contained_path(stage, p, field="worker/manifest") for p in expected if p.endswith("asset-manifest.json")), None)
-    if manifest_path is not None:
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            raise EvidenceError(f"asset manifest is invalid: {exc}") from exc
-        if not isinstance(manifest, dict):
-            raise EvidenceError("asset manifest must be an object")
-        glb_path = next((contained_path(stage, p, field="worker/glb") for p in expected if p.lower().endswith(".glb")), None)
-        if glb_path is None:
-            raise EvidenceError("asset manifest has no runtime GLB output")
-        if manifest.get("source_blend_sha256") != result.get("source_blend_sha256"):
-            raise EvidenceError("asset manifest source identity does not match worker result")
-        if manifest.get("exported_glb_sha256") != sha256_file(glb_path):
-            raise EvidenceError("asset manifest GLB identity does not match output bytes")
-        validation = result.get("validation")
-        if not isinstance(validation, dict):
-            raise EvidenceError("validator/import evidence is missing")
-        glb_digest = sha256_file(glb_path)
-        khronos = validation.get("khronos")
-        loader = validation.get("gltf_loader") or validation.get("gltfloader")
-        _verify_report(khronos, glb_digest=glb_digest, name="khronos")
-        _verify_report(loader, glb_digest=glb_digest, name="gltfloader")
-        if isinstance(khronos, dict):
-            _verify_external_report(khronos, stage, glb_digest=glb_digest, name="khronos")
-        if isinstance(loader, dict):
-            _verify_external_report(loader, stage, glb_digest=glb_digest, name="gltfloader")
+    manifest_path = next((contained_path(stage, p, field="worker/manifest") for p in expected if p.lower().endswith("asset-manifest.json")), None)
+    if manifest_path is None:
+        raise EvidenceError("asset manifest output is required for promotion")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise EvidenceError(f"asset manifest is invalid: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise EvidenceError("asset manifest must be an object")
+    glb_path = next((contained_path(stage, p, field="worker/glb") for p in expected if p.lower().endswith(".glb")), None)
+    if glb_path is None:
+        raise EvidenceError("asset manifest has no runtime GLB output")
+    if manifest.get("source_blend_sha256") != result.get("source_blend_sha256"):
+        raise EvidenceError("asset manifest source identity does not match worker result")
+    if manifest.get("exported_glb_sha256") != sha256_file(glb_path):
+        raise EvidenceError("asset manifest GLB identity does not match output bytes")
+    if manifest.get("status") != "unverified" or not manifest.get("gaps"):
+        raise EvidenceError("worker manifest must remain unverified until fresh host validation")
 
 
-def _finalize_manifest(stage: Path, worker_result: dict[str, Any], glb_digest: str) -> None:
-    """Turn a worker's pending manifest into a complete, hash-bound record."""
+def _finalize_manifest(stage: Path, worker_result: dict[str, Any], glb_digest: str, validation: Mapping[str, Any], blender_identity: Mapping[str, Any]) -> None:
+    """Close a pending manifest with reports produced by fresh host processes."""
 
     manifests = sorted(stage.rglob("*asset-manifest.json"))
     if not manifests:
@@ -485,39 +611,154 @@ def _finalize_manifest(stage: Path, worker_result: dict[str, Any], glb_digest: s
         raise EvidenceError(f"asset manifest is invalid: {exc}") from exc
     if manifest.get("exported_glb_sha256") != glb_digest:
         raise EvidenceError("asset manifest GLB identity changed before promotion")
-    validation = worker_result.get("validation")
-    loader = validation.get("gltf_loader") if isinstance(validation, dict) else None
-    if isinstance(validation, dict) and loader is None:
-        loader = validation.get("gltfloader")
-    khronos = validation.get("khronos") if isinstance(validation, dict) else None
-    # The worker's validator result is the source of truth for promotion.  If
-    # it carries the complete target-loader provenance, copy one canonical
-    # closed shape into the manifest so downstream validators can re-hash the
-    # exact GLB without knowing worker-era aliases.  Incomplete legacy-shaped
-    # reports stay absent and are rejected by validate_evidence.mjs.
-    if isinstance(khronos, dict) and isinstance(loader, dict) and all(
-        isinstance(loader.get(key), str) and loader.get(key) for key in ("evidence_id", "artifact_commit", "evidence_path", "evidence_sha256")
-    ) and all(isinstance(khronos.get(key), str) and khronos.get(key) for key in ("report_path", "report_sha256")):
-        canonical_khronos = dict(khronos)
-        canonical_loader = dict(loader)
-        for value, path_key in ((canonical_khronos, "report_path"), (canonical_loader, "evidence_path")):
-            target = contained_path(stage, value[path_key], field=f"validation/{path_key}")
-            value[path_key] = target.relative_to(path.parent).as_posix()
-        manifest["validation"] = {
-            "khronos": canonical_khronos,
-            "gltf_loader": {
-                **canonical_loader,
-                "glb_hash": loader.get("glb_hash") or loader.get("export_sha256") or glb_digest,
-            },
-        }
+    environment = manifest.get("environment")
+    if not isinstance(environment, dict):
+        raise EvidenceError("asset manifest environment identity is missing")
+    blender_path = blender_identity.get("path")
+    blender_hash = blender_identity.get("sha256")
+    if not isinstance(blender_path, str) or not blender_path or not isinstance(blender_hash, str) or not _is_digest(blender_hash):
+        raise EvidenceError("actual Blender executable identity is missing")
+    environment["blender"] = f"{blender_path}#{blender_hash}"
+    manifest["environment"] = environment
+    canonical_khronos = dict(validation["khronos"])
+    canonical_loader = dict(validation["gltf_loader"])
+    for value, path_key in ((canonical_khronos, "report_path"), (canonical_loader, "evidence_path")):
+        target = contained_path(stage, value[path_key], field=f"validation/{path_key}")
+        value[path_key] = target.relative_to(path.parent).as_posix()
+    manifest["validation"] = {"khronos": canonical_khronos, "gltf_loader": canonical_loader}
     manifest["status"] = "complete"
     manifest["gaps"] = []
+    worker_result["validation"] = {"khronos": dict(validation["khronos"]), "gltf_loader": dict(validation["gltf_loader"])}
     _write_json(path, manifest)
     for entry in worker_result.get("outputs", []):
         if isinstance(entry, dict) and entry.get("path") == path.relative_to(stage).as_posix():
             entry["sha256"] = sha256_file(path)
             entry["bytes"] = path.stat().st_size
     _write_json(stage / "worker-result.json", worker_result)
+
+
+def _read_json_object(path: Path, *, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise EvidenceError(f"{label} is not valid JSON: {exc}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceError(f"{label} must be a JSON object")
+    return value
+
+
+def _fresh_validator(
+    stage: Path,
+    *,
+    mode: str,
+    glb_path: Path,
+    report_path: Path,
+    job: Mapping[str, Any],
+    timeout: float,
+) -> dict[str, Any]:
+    """Run one package-owned validator in a new bounded process."""
+
+    node = shutil.which("node")
+    helper = Path(__file__).resolve().with_name("asset_validation.mjs")
+    if node is None:
+        raise EvidenceError("package validator capability is unavailable: node was not found")
+    if not helper.is_file():
+        raise EvidenceError("package validator capability is unavailable: asset_validation.mjs is missing")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    if report_path.exists():
+        raise EvidenceError(f"validator report path is stale: {report_path.name}")
+    argv = [
+        node,
+        str(helper),
+        mode,
+        "--glb",
+        str(glb_path),
+        "--report",
+        str(report_path),
+        "--artifact-commit",
+        str(job["artifact_commit"]),
+        "--job-id",
+        str(job["id"]),
+    ]
+    if mode == "gltf-loader":
+        validation = job["validation"]
+        target_workspace = Path(validation["target_workspace"]).resolve()
+        three_root = validation["loader_probe"]["three_root"]
+        three_path = contained_path(target_workspace, three_root, field="validation/loader_probe/three_root")
+        browser_executable = Path(validation["loader_probe"]["browser_executable"]).resolve()
+        if not target_workspace.is_dir() or not three_path.is_dir() or not browser_executable.is_file():
+            raise EvidenceError("target Three.js workspace, package, or browser executable is missing")
+        animation_count = len(job.get("animation_clips", []))
+        collider_count = len(job.get("colliders", []))
+        argv.extend([
+            "--workspace", str(target_workspace),
+            "--three-root", str(Path(three_root).as_posix()),
+            "--browser-executable", str(browser_executable),
+            "--expected-animations", str(animation_count),
+            "--expected-colliders", str(collider_count),
+            "--timeout-ms", str(max(1, int(timeout * 1000))),
+        ])
+    exit_code, stdout, stderr, timed_out = _run_process(argv, stage, timeout)
+    _write_bytes(report_path.with_suffix(report_path.suffix + ".stdout.log"), stdout)
+    _write_bytes(report_path.with_suffix(report_path.suffix + ".stderr.log"), stderr)
+    if timed_out or exit_code == EXIT_TIMEOUT:
+        raise EvidenceError(f"validation/{mode}: validator timed out or lost its process")
+    if exit_code != EXIT_OK:
+        message = stderr.decode("utf-8", errors="replace").strip()
+        raise EvidenceError(f"validation/{mode}: validator exited {exit_code}{(': ' + message) if message else ''}")
+    try:
+        summary = json.loads(stdout.decode("utf-8").splitlines()[-1])
+    except (IndexError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise EvidenceError(f"validation/{mode}: validator did not emit a JSON result") from exc
+    if not isinstance(summary, dict) or summary.get("status") != "pass":
+        raise EvidenceError(f"validation/{mode}: validator did not report pass")
+    if not report_path.is_file() or report_path.stat().st_size == 0:
+        raise EvidenceError(f"validation/{mode}: fresh report is missing or empty")
+    observed_hash = sha256_file(report_path)
+    glb_digest = sha256_file(glb_path)
+    if summary.get("export_sha256") != glb_digest and summary.get("glb_hash") != glb_digest:
+        raise EvidenceError(f"validation/{mode}: report is not bound to exact GLB bytes")
+    report = _read_json_object(report_path, label=f"validation/{mode} report")
+    if mode == "khronos":
+        if (report.get("issues") or {}).get("numErrors") != 0 or summary.get("errors") != 0:
+            raise EvidenceError("validation/khronos: fresh report did not prove zero errors")
+        report_hash_key = "report_sha256"
+        if summary.get("report_sha256") != observed_hash:
+            raise EvidenceError("validation/khronos: report hash does not match fresh bytes")
+        return {
+            "status": "pass",
+            "errors": 0,
+            "export_sha256": glb_digest,
+            "validator": summary.get("validator", "gltf-validator@2.0.0-dev.3.10"),
+            "report_path": report_path.relative_to(stage).as_posix(),
+            report_hash_key: observed_hash,
+        }
+    checks = report.get("checks")
+    required_checks = {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}
+    if report.get("kind") != "gltf-loader-evidence" or report.get("source") != "live-browser" or report.get("glb_hash") != glb_digest or checks != required_checks:
+        raise EvidenceError("validation/gltf-loader: fresh target browser report is incomplete")
+    if summary.get("evidence_sha256") != observed_hash:
+        raise EvidenceError("validation/gltf-loader: evidence hash does not match fresh bytes")
+    if report.get("artifact_commit") != job["artifact_commit"] or not report.get("id"):
+        raise EvidenceError("validation/gltf-loader: target report identity is missing or mismatched")
+    return {
+        "status": "pass",
+        "artifact_commit": job["artifact_commit"],
+        "evidence_id": report["id"],
+        "glb_hash": glb_digest,
+        "evidence_path": report_path.relative_to(stage).as_posix(),
+        "evidence_sha256": observed_hash,
+        "checks": required_checks,
+    }
+
+
+def _run_fresh_validators(stage: Path, job: Mapping[str, Any], glb_path: Path, timeout: float) -> dict[str, Any]:
+    """Require both independent validators over the final exported GLB."""
+
+    validation_root = stage / "validation"
+    khronos = _fresh_validator(stage, mode="khronos", glb_path=glb_path, report_path=validation_root / "khronos-report.json", job=job, timeout=timeout)
+    loader = _fresh_validator(stage, mode="gltf-loader", glb_path=glb_path, report_path=validation_root / "gltf-loader-evidence.json", job=job, timeout=timeout)
+    return {"khronos": khronos, "gltf_loader": loader}
 
 
 def run_job(job_path: Path, out_dir: Path, blender_executable: Path, *, timeout: float | None = None) -> dict[str, Any]:
@@ -563,6 +804,10 @@ def run_job(job_path: Path, out_dir: Path, blender_executable: Path, *, timeout:
         "timed_out": timed_out,
         "promoted": False,
         "staging_path": str(stage),
+        "blender": {
+            "path": str(blender_executable.resolve()),
+            "sha256": sha256_file(blender_executable) if blender_executable.is_file() else None,
+        },
         "inventory": _inventory(stage),
     }
     try:
@@ -571,8 +816,12 @@ def run_job(job_path: Path, out_dir: Path, blender_executable: Path, *, timeout:
         if exit_code == EXIT_OK:
             _verify_promotion(job, stage, worker_result)
             glb_paths = [contained_path(stage, item["path"], field="worker/glb") for item in job["outputs"] if item.get("kind") == "runtime" and str(item.get("path", "")).lower().endswith(".glb")]
-            if glb_paths:
-                _finalize_manifest(stage, worker_result, sha256_file(glb_paths[0]))
+            if not glb_paths:
+                raise EvidenceError("runtime GLB output is required for promotion")
+            glb_digest = sha256_file(glb_paths[0])
+            validation = _run_fresh_validators(stage, job, glb_paths[0], process_timeout)
+            _finalize_manifest(stage, worker_result, glb_digest, validation, result["blender"])
+            result["worker"] = worker_result
             result["promoted"] = True
     except (EvidenceError, JobError) as exc:
         result["error"] = str(exc)

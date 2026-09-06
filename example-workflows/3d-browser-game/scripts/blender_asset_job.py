@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import random
 import sys
@@ -152,6 +153,27 @@ def _run_authoring(job: Mapping[str, Any], root: Path, bpy: Any, bmesh: Any) -> 
     entrypoint(context)
 
 
+def _world_bounds(obj: Any) -> list[float]:
+    corners = []
+    for corner in obj.bound_box:
+        world = obj.matrix_world @ type(obj.location)(corner)
+        corners.extend((float(world.x), float(world.y), float(world.z)))
+    return [round(min(corners[axis::3]), 6) if corners else 0.0 for axis in range(3)] + [round(max(corners[axis::3]), 6) if corners else 0.0 for axis in range(3)]
+
+
+def _image_bytes(image: Any) -> int:
+    packed = getattr(image, "packed_file", None)
+    if packed is not None and getattr(packed, "size", 0):
+        return int(packed.size)
+    filepath = getattr(image, "filepath", "")
+    if filepath:
+        try:
+            return max(0, int(Path(filepath).resolve().stat().st_size))
+        except (OSError, ValueError):
+            pass
+    return 0
+
+
 def _scene_inventory(bpy: Any) -> dict[str, Any]:
     scene = bpy.context.scene
     objects: list[dict[str, Any]] = []
@@ -159,24 +181,49 @@ def _scene_inventory(bpy: Any) -> dict[str, Any]:
     mesh_polygons = 0
     materials: set[str] = set()
     actions: list[str] = []
+    mesh_normals = 0
+    mesh_uv_layers = 0
+    morph_targets = 0
+    skeleton_bones = 0
+    poses: set[str] = set()
+    armatures: list[dict[str, Any]] = []
     for obj in sorted(bpy.data.objects, key=lambda item: item.name):
-        bound = [round(float(value), 6) for corner in obj.bound_box for value in corner]
+        bounds = _world_bounds(obj)
         record: dict[str, Any] = {
             "name": obj.name,
             "type": obj.type,
             "location": [round(float(value), 6) for value in obj.location],
+            "rotation": [round(float(value), 6) for value in obj.rotation_euler],
             "scale": [round(float(value), 6) for value in obj.scale],
-            "bounds": [min(bound[axis::3]) if bound else 0.0 for axis in range(3)] + [max(bound[axis::3]) if bound else 0.0 for axis in range(3)],
+            "bounds": bounds,
+            "dimensions": [round(bounds[axis + 3] - bounds[axis], 6) for axis in range(3)],
         }
         if obj.type == "MESH" and obj.data:
             mesh_vertices += len(obj.data.vertices)
             mesh_polygons += len(obj.data.polygons)
+            normal_count = sum(1 for polygon in obj.data.polygons if all(math.isfinite(float(value)) for value in polygon.normal) and polygon.normal.length > 0)
+            mesh_normals += normal_count
+            mesh_uv_layers += len(obj.data.uv_layers)
+            morph_targets += len(getattr(obj.data, "shape_keys", None).key_blocks) - 1 if getattr(obj.data, "shape_keys", None) else 0
             record["vertices"] = len(obj.data.vertices)
             record["polygons"] = len(obj.data.polygons)
             record["uv_layers"] = len(obj.data.uv_layers)
+            record["normals"] = len(obj.data.polygons) == 0 or normal_count == len(obj.data.polygons)
+            record["normal_count"] = normal_count
+            record["morph_targets"] = len(getattr(obj.data, "shape_keys", None).key_blocks) - 1 if getattr(obj.data, "shape_keys", None) else 0
             for material in obj.data.materials:
                 if material:
                     materials.add(material.name)
+        if obj.type == "ARMATURE" and obj.data:
+            skeleton_bones += len(obj.data.bones)
+            poses.update(bone.name for bone in obj.data.bones)
+            armatures.append({
+                "name": obj.name,
+                "bones": [
+                    {"name": bone.name, "head": [round(float(value), 6) for value in bone.head_local], "tail": [round(float(value), 6) for value in bone.tail_local]}
+                    for bone in sorted(obj.data.bones, key=lambda item: item.name)
+                ],
+            })
         if obj.animation_data:
             if obj.animation_data.action:
                 actions.append(obj.animation_data.action.name)
@@ -192,11 +239,92 @@ def _scene_inventory(bpy: Any) -> dict[str, Any]:
         "mesh_polygons": mesh_polygons,
         "materials": sorted(materials),
         "actions": sorted(set(actions)),
+        "animation_clips": [
+            {"name": action.name, "start": round(float(action.frame_range[0]), 6), "end": round(float(action.frame_range[1]), 6), "fcurves": len(getattr(action, "fcurves", []))}
+            for action in sorted(bpy.data.actions, key=lambda item: item.name)
+        ],
+        "mesh_normals": mesh_normals,
+        "mesh_uv_layers": mesh_uv_layers,
+        "texture_bytes": sum(_image_bytes(image) for image in bpy.data.images),
+        "texture_count": len(bpy.data.images),
+        "textures": [
+            {"name": image.name, "path": image.filepath, "bytes": _image_bytes(image), "width": int(image.size[0]), "height": int(image.size[1])}
+            for image in sorted(bpy.data.images, key=lambda item: item.name)
+        ],
+        "skeleton_bones": skeleton_bones,
+        "poses": sorted(poses),
+        "armatures": armatures,
+        "morph_targets": morph_targets,
         "external_references": sorted({item.filepath for item in bpy.data.libraries if item.filepath}),
     }
 
 
-def _write_inspection(job: Mapping[str, Any], root: Path, bpy: Any) -> Path:
+def _validate_scene(job: Mapping[str, Any], inventory: Mapping[str, Any]) -> list[str]:
+    """Compare measured Blender state with every declared requirement."""
+
+    failures: list[str] = []
+    scene = job["scene"]
+    if inventory.get("units") != scene["units"] or abs(float(inventory.get("unit_scale", 0.0)) - float(scene["unit_scale"])) > 1e-9:
+        failures.append("scene units or unit scale changed after job configuration")
+    budgets = job["budgets"]
+    measures = {
+        "mesh_vertices": inventory["mesh_vertices"],
+        "mesh_polygons": inventory["mesh_polygons"],
+        "materials": len(inventory["materials"]),
+        "texture_bytes": inventory["texture_bytes"],
+        "animations": len(inventory["animation_clips"]),
+        "skeleton_bones": inventory["skeleton_bones"],
+    }
+    for key, observed in measures.items():
+        if observed > budgets[key]:
+            failures.append(f"budget/{key}: observed {observed} exceeds {budgets[key]}")
+    if measures["mesh_vertices"] <= 0 or measures["mesh_polygons"] <= 0:
+        failures.append("runtime asset contains no mesh geometry")
+    allowlists = job["allowlists"]
+    objects = {item["name"] for item in inventory["objects"]}
+    for name in allowlists.get("required_objects", []):
+        if name not in objects:
+            failures.append(f"required object is missing: {name}")
+    for name in allowlists.get("required_materials", []):
+        if name not in inventory["materials"]:
+            failures.append(f"required material is missing: {name}")
+    for name in job.get("material_roles", {}):
+        if name not in inventory["materials"]:
+            failures.append(f"material role references missing material: {name}")
+    for name in allowlists.get("required_actions", []):
+        if name not in inventory["actions"]:
+            failures.append(f"required animation action is missing: {name}")
+    if allowlists.get("required_normals", True) and inventory["mesh_polygons"] and inventory["mesh_normals"] != inventory["mesh_polygons"]:
+        failures.append("required mesh normals are missing or non-finite")
+    required_uv_layers = allowlists.get("required_uv_layers", 1 if allowlists.get("required_uvs", False) else 0)
+    if required_uv_layers and any(item.get("uv_layers", 0) < required_uv_layers for item in inventory["objects"] if item["type"] == "MESH"):
+        failures.append(f"required UV layers are missing: {required_uv_layers}")
+    if allowlists.get("required_textures", False) and inventory["texture_bytes"] <= 0:
+        failures.append("required textures have no measured bytes")
+    if allowlists.get("required_armature", False) and inventory["skeleton_bones"] <= 0:
+        failures.append("required armature has no measured bones")
+    for clip in job.get("animation_clips", []):
+        name = clip.get("name") if isinstance(clip, dict) else None
+        observed = next((item for item in inventory["animation_clips"] if item["name"] == name), None)
+        if observed is None:
+            failures.append(f"required animation clip is missing: {name}")
+            continue
+        for bound in ("start", "end"):
+            if bound in clip and float(observed[bound]) != float(clip[bound]):
+                failures.append(f"animation/{name}/{bound}: observed {observed[bound]} expected {clip[bound]}")
+    for collider in job.get("colliders", []):
+        name = collider.get("name") if isinstance(collider, dict) else None
+        if name and name not in objects:
+            failures.append(f"required collider object is missing: {name}")
+        if name and isinstance(collider, dict) and isinstance(collider.get("dimensions"), list):
+            observed = next((item for item in inventory["objects"] if item["name"] == name), None)
+            expected_dimensions = collider["dimensions"]
+            if observed is not None and len(expected_dimensions) == 3 and any(abs(float(observed["dimensions"][index]) - float(expected_dimensions[index])) > 1e-5 for index in range(3)):
+                failures.append(f"collider/{name}/dimensions: measured placement does not match declaration")
+    return failures
+
+
+def _write_inspection(job: Mapping[str, Any], root: Path, inventory: Mapping[str, Any], *, status: str = "complete", gaps: list[str] | None = None) -> Path:
     path = _require_output(job, root, kind="inspection", suffix=".json")
     _write_json(path, {
         "schema_version": "1.0.0",
@@ -207,11 +335,14 @@ def _write_inspection(job: Mapping[str, Any], root: Path, bpy: Any) -> Path:
         "producer": dict(job["producer"]),
         "inputs": list(job["inputs"]),
         "environment": dict(job["environment"]),
-        "status": "complete",
-        "gaps": [],
+        "status": status,
+        "gaps": list(gaps or []),
         "invalidates": list(job["invalidates"]),
         "job_id": job["id"],
-        "asset": _scene_inventory(bpy),
+        "declared_budgets": dict(job["budgets"]),
+        "declared_scene": dict(job["scene"]),
+        "declared_allowlists": dict(job["allowlists"]),
+        "asset": dict(inventory),
     })
     return path
 
@@ -234,10 +365,15 @@ def _render_previews(job: Mapping[str, Any], root: Path, bpy: Any) -> list[Path]
     scene.render.resolution_percentage = int(render.get("percentage", 100))
     scene.render.image_settings.file_format = str(render.get("format", "PNG"))
     previews: list[Path] = []
+    labels: set[str] = set()
     for camera_record in cameras:
         if not isinstance(camera_record, dict):
             raise ValueError("job/cameras entries must be objects")
         camera_name = camera_record.get("camera")
+        label = camera_record.get("label")
+        if not isinstance(label, str) or not label:
+            raise ValueError("camera label is required for gameplay/turntable coverage")
+        labels.add(label.lower())
         camera = bpy.data.objects.get(camera_name) if isinstance(camera_name, str) else None
         if camera is None or camera.type != "CAMERA":
             raise ValueError(f"camera is missing or not a camera object: {camera_name!r}")
@@ -256,6 +392,8 @@ def _render_previews(job: Mapping[str, Any], root: Path, bpy: Any) -> list[Path]
         if not render_path.is_file() or render_path.stat().st_size == 0:
             raise RuntimeError(f"render did not produce a non-empty preview: {output}")
         previews.append(render_path)
+    if not any("gameplay" in label for label in labels) or not any("turntable" in label for label in labels):
+        raise ValueError("camera previews must include gameplay and turntable labels")
     return previews
 
 
@@ -341,6 +479,7 @@ def execute(job_path: Path) -> dict[str, Any]:
         "job_sha256": job_digest,
         "expected_job_sha256": job_digest,
         "source_blend_sha256": None,
+        "input_hashes": list(job.get("inputs", [])),
         "outputs": [],
         "previews": [],
     }
@@ -353,16 +492,19 @@ def execute(job_path: Path) -> dict[str, Any]:
         source_input = _load_source(job, root, bpy)
         _run_authoring(job, root, bpy, bmesh)
         source_output = _save_source(job, root, bpy)
-        inspection = _write_inspection(job, root, bpy)
+        result["source_input_sha256"] = _sha256(source_input) if source_input else None
+        result["source_blend_sha256"] = _sha256(source_output)
+        inventory = _scene_inventory(bpy)
+        failures = _validate_scene(job, inventory)
+        inspection = _write_inspection(job, root, inventory, status="failed" if failures else "complete", gaps=failures)
+        if failures:
+            raise ValueError("scene validation failed: " + "; ".join(failures))
         previews = _render_previews(job, root, bpy)
         glb = _export_glb(job, root, bpy)
         _write_manifest(job, root, source_output, glb, inspection, previews)
         result["status"] = "complete"
-        result["source_input_sha256"] = _sha256(source_input) if source_input else None
-        result["source_blend_sha256"] = _sha256(source_output)
         result["inspection"] = {"path": inspection.relative_to(root).as_posix(), "sha256": _sha256(inspection)}
         result["previews"] = [{"path": path.relative_to(root).as_posix(), "sha256": _sha256(path)} for path in previews]
-        result["validation"] = job.get("validation")
         result["outputs"] = [
             {"path": path.relative_to(root).as_posix(), "sha256": _sha256(path), "bytes": path.stat().st_size}
             for path in sorted(root.rglob("*"))

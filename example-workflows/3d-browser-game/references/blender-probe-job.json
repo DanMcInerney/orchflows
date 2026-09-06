@@ -31,18 +31,25 @@
   "scene": {
     "units": "METRIC",
     "unit_scale": 1.0,
+    "up_axis": "+Y",
     "gameplay_forward": "+Z",
     "origin": "orb-center"
   },
   "allowlists": {
     "input_extensions": [".py"],
-    "output_extensions": [".blend", ".glb", ".json", ".png"]
+    "output_extensions": [".blend", ".glb", ".json", ".png"],
+    "required_normals": true,
+    "required_uvs": false,
+    "required_textures": false,
+    "required_armature": false
   },
   "budgets": {
     "mesh_vertices": 25000,
     "mesh_polygons": 50000,
     "materials": 8,
-    "texture_bytes": 0
+    "texture_bytes": 0,
+    "animations": 4,
+    "skeleton_bones": 0
   },
   "cameras": [
     {"camera": "ProbeGameplayCamera", "output": "preview/gameplay.png", "frame": 1, "label": "gameplay-camera"},
@@ -58,13 +65,17 @@
     "export_yup": true,
     "animations": true
   },
+  "validation": {
+    "target_workspace": "C:/target-workspace",
+    "loader_probe": {"three_root": "node_modules/three", "browser_executable": "C:/Program Files/Google/Chrome/Application/chrome.exe"}
+  },
   "outputs": [
-    {"path": "source.blend", "kind": "source"},
-    {"path": "inspection.json", "kind": "inspection"},
-    {"path": "preview/gameplay.png", "kind": "preview"},
-    {"path": "preview/turntable.png", "kind": "preview"},
-    {"path": "asset.glb", "kind": "runtime"},
-    {"path": "asset-manifest.json", "kind": "manifest"}
+    {"path": "source.blend", "kind": "source", "required": true},
+    {"path": "inspection.json", "kind": "inspection", "required": true},
+    {"path": "preview/gameplay.png", "kind": "preview", "required": true},
+    {"path": "preview/turntable.png", "kind": "preview", "required": true},
+    {"path": "asset.glb", "kind": "runtime", "required": true},
+    {"path": "asset-manifest.json", "kind": "manifest", "required": true}
   ],
   "timeout_seconds": 180,
   "colliders": [],
