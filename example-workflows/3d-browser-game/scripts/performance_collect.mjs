@@ -576,7 +576,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
 
       const observer = {
         phase: "disabled", callbacks: [], samples: [], targets: [], gl: null,
-        max_pending: 4, pending: [], available: [], configured: false,
+        max_pending: 4, pending: [], available: [], configured: false, poll_timer: null,
         readback: {
           method: READBACK_METHOD, asynchronous: true,
           api: ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
@@ -750,9 +750,20 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           this.pending = remaining;
           this.readback.poll_duration_ms = (this.readback.poll_duration_ms || 0) + performance.now() - pollStarted;
         },
+        schedulePoll() {
+          if (this.poll_timer !== null) return;
+          this.poll_timer = setTimeout(() => {
+            this.poll_timer = null;
+            this.poll();
+          }, 0);
+        },
         sample(target, callbackIndex, callbackTimestamp) {
           const originTimestamp = Number.isFinite(callbackTimestamp) ? callbackTimestamp : performance.now();
-          this.poll();
+          // Fence polling and CPU copy run as a task after the render-callback
+          // task returns. A signaled fence may still make getBufferSubData
+          // wait for the transfer; keeping that wait out of FireAnimationFrame
+          // is the observed causal repair for the renderer stall.
+          this.schedulePoll();
           const started = performance.now();
           const item = {
             origin_timestamp_ms: originTimestamp,
@@ -812,6 +823,10 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           }
         },
         flush() {
+          if (this.poll_timer !== null) {
+            clearTimeout(this.poll_timer);
+            this.poll_timer = null;
+          }
           this.poll();
           const pendingAtCleanup = this.pending.length;
           this.readback.pending_at_cleanup = pendingAtCleanup;
