@@ -12,8 +12,9 @@ import * as THREE from "three";
 const canvas = document.querySelector("#game");
 // The ordinary default is deliberate: preserveDrawingBuffer remains false.
 const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
-renderer.setAnimationLoop((time) => {
-  const frame = Math.floor(time / (1000 / 60));
+let frame = 0;
+renderer.setAnimationLoop(() => {
+  frame += 1;
   renderer.setClearColor(frame % 2 ? 0x183a74 : 0x7b204d);
   renderer.clear();
 });

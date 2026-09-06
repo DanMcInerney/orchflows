@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Three.js stalled canvas with an active other layer</title>
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #07111f; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #other-layer { position: fixed; top: 12px; left: 12px; width: 20px; height: 20px; background: #f6c945; will-change: transform; }
+</style>
+<canvas id="game" aria-label="Three.js stalled canvas fixture"></canvas>
+<div id="other-layer" aria-hidden="true"></div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from "three";
+
+const canvas = document.querySelector("#game");
+// The ordinary default is deliberate: preserveDrawingBuffer remains false.
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+renderer.setClearColor(0x183a74);
+renderer.clear();
+
+// Keep rAF and a compositor layer active while the target canvas stays static.
+const otherLayer = document.querySelector("#other-layer");
+let tick = 0;
+function animate() {
+  tick += 1;
+  otherLayer.style.transform = `translate3d(${tick % 240}px, 0, 0)`;
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+window.__threeFixture = {
+  revision: "0.185.1",
+  preserve_drawing_buffer: renderer.getContext().getContextAttributes().preserveDrawingBuffer,
+  target_canvas_changes: 0,
+  other_layer_raf_active: true,
+};
+</script>
