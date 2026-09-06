@@ -61,7 +61,7 @@ def native_trace(stalled=False):
     return {
         "format": "cdp-return-as-stream",
         "categories": ["devtools.timeline", "disabled-by-default-devtools.timeline.frame",
-                        "disabled-by-default-devtools.timeline.layers", "disabled-by-default-cc.debug", "cc"],
+                        "disabled-by-default-devtools.timeline.layers"],
         "transfer_mode": "ReturnAsStream",
         "raw_bytes": 1,
         "raw_stream_hash": "sha256:" + "a" * 64,
@@ -251,6 +251,31 @@ class NativeTraceTests(unittest.TestCase):
         self.assertTrue(value["hidden"])
         self.assertFalse(value["enumerated"])
         self.assertFalse(value["completion"]["dataLossOccurred"])
+
+    def test_default_trace_categories_preserve_native_frame_and_layer_parser_inputs(self):
+        expression = (
+            "import {buildFrameModel,collectCDPTrace} from './" + TRACE + "'; "
+            "class C{constructor(){this.h=[];this.start=null} once(n,f){this.h.push(f)} off(n,f){this.h=this.h.filter(x=>x!==f)} async send(n,a){"
+            "if(n==='Tracing.start') this.start=a; "
+            "if(n==='Tracing.end') setTimeout(()=>this.h[0]?.({stream:'s',dataLossOccurred:false,transferMode:'ReturnAsStream'}),0); "
+            "if(n==='IO.read') return {data:'{\\\"traceEvents\\\":[]}',eof:true}; return {}}} "
+            "const c=new C(); await collectCDPTrace(c,{durationMs:1,timeoutMs:1000}); "
+            "const events=["
+            "{name:'LayerTreeHostImpl:snapshot',ts:0,pid:7,args:{snapshot:{active_tree:{layers:[{layer_id:6,layer_name:\"LayoutHTMLCanvas CANVAS id='game'\",base_type:'cc::TextureLayerImpl',compositing_reasons:['Canvas']}]}}}},"
+            "{name:'BeginFrame',ts:1000,pid:7,args:{frameSeqId:1,layerTreeId:2}},"
+            "{name:'DrawFrame',ts:2000,pid:7,args:{frameSeqId:1,layerTreeId:2}}];"
+            "const model=buildFrameModel({format:'cdp-return-as-stream',categories:c.start.traceConfig.includedCategories,traceEvents:events},{target:{canvas_selector:'#game'},startMs:0,endMs:10});"
+            "console.log(JSON.stringify({categories:c.start.traceConfig.includedCategories,frames:model.frames.map(row=>({id:row.id,draw:row.draw,layer:row.attribution}))}));"
+        )
+        result = node(expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        value = json.loads(result.stdout)
+        self.assertEqual([
+            "devtools.timeline",
+            "disabled-by-default-devtools.timeline.frame",
+            "disabled-by-default-devtools.timeline.layers",
+        ], value["categories"])
+        self.assertEqual([{"id": "1", "draw": True, "layer": "game-canvas"}], value["frames"])
 
 
 if __name__ == "__main__":
