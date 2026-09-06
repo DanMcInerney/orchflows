@@ -398,6 +398,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
             queue_duration_ms: item.queue_duration_ms || 0,
             wait_duration_ms: item.wait_duration_ms || 0,
             copy_duration_ms: 0,
+            queue_stages_ms: item.queue_stages_ms || {bind: 0, read_pixels: 0, fence: 0, flush: 0, other: 0},
             completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
             duration_ms: item.queue_duration_ms || 0,
             error: String(error),
@@ -492,6 +493,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
             preserve_drawing_buffer: target.preserve_drawing_buffer,
             queue_duration_ms: 0,
             wait_duration_ms: 0,
+            queue_stages_ms: {bind: 0, read_pixels: 0, fence: 0, flush: 0, other: 0},
           };
           if (this.pending.length >= this.max_pending || !this.available.length) {
             item.queue_duration_ms = performance.now() - started;
@@ -501,17 +503,28 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           const gl = this.gl;
           item.buffer = this.available.pop();
           try {
+            const operationStarted = performance.now();
             this.withState(gl, () => {
               const {x, y, width, height} = target.coverage.resolved_region;
+              let stageStarted = performance.now();
               gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
               gl.readBuffer(gl.BACK);
               gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+              item.queue_stages_ms.bind = performance.now() - stageStarted;
+              stageStarted = performance.now();
               gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+              item.queue_stages_ms.read_pixels = performance.now() - stageStarted;
+              stageStarted = performance.now();
               item.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
               if (!item.sync) throw new Error("WebGL2 could not create a readback fence");
+              item.queue_stages_ms.fence = performance.now() - stageStarted;
+              stageStarted = performance.now();
               gl.flush();
+              item.queue_stages_ms.flush = performance.now() - stageStarted;
             });
             item.queue_duration_ms = performance.now() - started;
+            const measuredStages = Object.values(item.queue_stages_ms).reduce((sum, value) => sum + value, 0);
+            item.queue_stages_ms.other = Math.max(0, item.queue_duration_ms - measuredStages);
             this.readback.queue_duration_ms += item.queue_duration_ms;
             this.readback.queued += 1;
             this.pending.push(item);
