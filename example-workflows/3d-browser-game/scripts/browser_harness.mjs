@@ -7,7 +7,7 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { buildFrameModel } from "./trace_frames.mjs";
 import {
   EXIT, capabilityError, canonicalJson, inputError, makeHeader, nowIso,
@@ -166,6 +166,7 @@ export async function runHarness(config) {
   const serverErrors = [];
   child?.stderr?.on("data", chunk => serverErrors.push(chunk.toString("utf8").slice(-4000)));
   const transcript = [];
+  const captureRefs = [];
   let sequence = 0;
   let closed = false;
   let playwright;
@@ -204,6 +205,7 @@ export async function runHarness(config) {
     process.stdout.write(`${JSON.stringify(ready)}\n`);
     const readline = createInterface({ input: process.stdin, crlfDelay: Infinity });
     const held = new Set();
+    const heldPointers = new Set();
     const emit = async (command, task) => {
       const beforeConsole = consoleDeltas.length;
       const beforeNetwork = networkDeltas.length;
@@ -228,23 +230,32 @@ export async function runHarness(config) {
         else if (command.type === "key") reply = await emit(command, async () => {
           await canvas.focus().catch(async () => canvas.click({ position: { x: 1, y: 1 } }));
           if (command.action === "down") { await page.keyboard.down(command.key); held.add(command.key); }
-          else { await page.keyboard.up(command.key); held.delete(command.key); }
+          else {
+            if (!held.has(command.key)) throw inputError(`key ${command.key} was released without a preceding press`, "/action");
+            await page.keyboard.up(command.key); held.delete(command.key);
+          }
           return { key: command.key, action: command.action, held_keys: [...held], snapshot: await readOnlySnapshot(page, { canvas: canvasSelector }) };
         });
         else if (command.type === "pointer") reply = await emit(command, async () => {
           await canvas.focus().catch(async () => canvas.click({ position: { x: 1, y: 1 } }));
           const options = command.button ? { button: command.button } : {};
+          const pointerButton = command.button || "left";
           if (command.action === "move") await page.mouse.move(command.x, command.y);
-          else if (command.action === "down") await page.mouse.down(options);
-          else await page.mouse.up(options);
+          else if (command.action === "down") { await page.mouse.down(options); heldPointers.add(pointerButton); }
+          else {
+            if (!heldPointers.has(pointerButton)) throw inputError(`pointer ${pointerButton} was released without a preceding press`, "/action");
+            await page.mouse.up(options); heldPointers.delete(pointerButton);
+          }
           return { pointer: { x: command.x, y: command.y, action: command.action }, snapshot: await readOnlySnapshot(page, { canvas: canvasSelector }) };
         });
         else if (command.type === "wait") reply = await emit(command, async () => { await new Promise(resolvePromise => setTimeout(resolvePromise, command.ms)); return { waited_ms: command.ms, snapshot: await readOnlySnapshot(page, { canvas: canvasSelector }) }; });
         else if (command.type === "capture") {
           const path = config.capture_dir ? resolve(config.capture_dir, `${String(sequence + 1).padStart(4, "0")}-${(command.label || "capture").replace(/[^a-z0-9_-]+/gi, "_")}.png`) : undefined;
           reply = await emit(command, async () => ({ label: command.label || null, snapshot: await readOnlySnapshot(page, { canvas: canvasSelector }), ...(await screenshot(page, path)) }));
+          if (path && config.receipt_root) captureRefs.push({ path: relative(resolve(config.receipt_root), path).replaceAll("\\", "/"), sha256: reply.screenshot_hash, sequence: reply.sequence, label: command.label || null });
         } else if (command.type === "stop") {
           for (const key of [...held]) { await page.keyboard.up(key).catch(() => {}); held.delete(key); }
+          for (const button of [...heldPointers]) { await page.mouse.up({ button }).catch(() => {}); heldPointers.delete(button); }
           reply = await emit(command, async () => ({ classification: classifyTranscript(transcript, { ...config, headed: true }), snapshot: await readOnlySnapshot(page, { canvas: canvasSelector }) }));
           closed = true;
           readline.close();
@@ -260,6 +271,7 @@ export async function runHarness(config) {
     }
     if (!closed) {
       for (const key of [...held]) await page.keyboard.up(key).catch(() => {});
+      for (const button of [...heldPointers]) await page.mouse.up({ button }).catch(() => {});
       closed = true;
     }
     const classification = classifyTranscript(transcript, { ...config, headed: true });
@@ -276,12 +288,20 @@ export async function runHarness(config) {
       ended_at: nowIso(),
       transcript,
       transcript_hash: sha256(canonicalJson(transcript)),
+      ...(config.receipt_root && config.session_out ? {
+        transcript_path: relative(resolve(config.receipt_root), `${resolve(config.session_out)}.transcript.json`).replaceAll("\\", "/"),
+        transcript_sha256: sha256(canonicalJson(transcript)),
+        captures: captureRefs,
+      } : {}),
       adaptation: classification === "actual_play" ? deriveAdaptation(transcript, config.adaptation_rationale || config.rationale) : undefined,
       console_errors: consoleDeltas.filter(item => item.type === "error"),
       network_errors: networkDeltas,
       server_errors: serverErrors,
     };
-    if (config.session_out) await writeJsonAtomic(resolve(config.session_out), session);
+    if (config.session_out) {
+      if (config.receipt_root) await writeJsonAtomic(`${resolve(config.session_out)}.transcript.json`, transcript);
+      await writeJsonAtomic(resolve(config.session_out), session);
+    }
     return session;
   } finally {
     await browser?.close().catch(() => {});

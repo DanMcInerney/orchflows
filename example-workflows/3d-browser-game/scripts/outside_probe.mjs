@@ -10,7 +10,7 @@ import { createInterface } from "node:readline";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, ensureContained, evidenceError, inputError, nowIso, parseArgs, readJson, resultFromError, sha256, writeJsonAtomic } from "./_common.mjs";
-import { validateEvidenceIndex, validateGate } from "./validate_evidence.mjs";
+import { validateEvidenceIndex, validateGate, validatePlayReceipt } from "./validate_evidence.mjs";
 import { validateCommand } from "./browser_harness.mjs";
 import { inventory } from "./outside_build.mjs";
 
@@ -85,7 +85,43 @@ function fixedCommand(helper, args = []) {
 /* Kept as a named seam for callers that inspect package command construction. */
 export function packageOwnedCommand(helper, args = []) { return fixedCommand(helper, args); }
 
-function probeTranscript(value, artifactCommit) {
+function probeSnapshotFingerprint(snapshot) {
+  return canonicalJson({ url: snapshot.url, title: snapshot.title || "", visible_text: snapshot.visible_text || "", facts: snapshot.facts || [], canvases: snapshot.canvases || [] });
+}
+
+function probeScreenshotIdentity(value, pointer, strict) {
+  if (typeof value !== "string" || !value) throw evidenceError("outside probe screenshot observation needs a non-empty identity", pointer);
+  if (strict && !/^sha256:[0-9a-f]{64}$/i.test(value)) throw evidenceError("outside probe screenshot observation must be a sha256 identity", pointer);
+  return value.toLowerCase();
+}
+
+function scenarioFacts(lines, actions, scenario) {
+  if (!scenario) return null;
+  const transitionIds = scenario.transition_ids;
+  const ids = [...transitionIds, scenario.restart_id, scenario.reentry_id];
+  if (new Set(ids).size !== ids.length) throw evidenceError("outside scenario transition, restart, and reentry identities must be unique", "/probe/scenario");
+  const byCommandIndex = index => actions.find(item => item.command_index === index);
+  const byOrdinal = ordinal => actions[ordinal];
+  const selected = (value, fallback) => {
+    const action = value === undefined ? byOrdinal(fallback) : byCommandIndex(value);
+    if (!action) throw evidenceError("outside scenario identity does not resolve to an ordinary-input command", "/probe/scenario");
+    if (!action.effective) throw evidenceError("outside scenario transition must resolve to a press or pointer movement", "/probe/scenario");
+    if (!action.before || !action.after || !action.changed) throw evidenceError("outside scenario transition lacks a causal before/after effect", "/probe/scenario");
+    return { fact_id: `outside-action-effect-${action.sequence}`, action_sequence: action.sequence, before_sequence: action.before.sequence, after_sequence: action.after.sequence, effect: action.effect };
+  };
+  const transitionIndexes = scenario.transition_command_indexes || [];
+  if (transitionIndexes.length && transitionIndexes.length !== transitionIds.length) throw evidenceError("outside scenario transition_command_indexes must cover every transition identity", "/probe/scenario/transition_command_indexes");
+  const transitions = transitionIds.map((id, index) => ({ id, ...selected(transitionIndexes[index], index) }));
+  const restart = selected(scenario.restart_command_index, actions.length - 2);
+  const reentry = selected(scenario.reentry_command_index, actions.length - 1);
+  return { id: scenario.id, transition_ids: transitions, restart: { id: scenario.restart_id, ...restart }, reentry: { id: scenario.reentry_id, ...reentry } };
+}
+
+function probeTranscript(value, artifactCommit, scenario, { strict = false } = {}) {
+  if (scenario && !Array.isArray(scenario.transition_ids) && Object.hasOwn(scenario, "strict")) {
+    strict = scenario.strict === true;
+    scenario = undefined;
+  }
   let lines;
   try { lines = typeof value === "string" ? value.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)) : value; }
   catch (error) { throw evidenceError(`outside probe transcript is not valid JSONL: ${error.message}`, "/probe/transcript"); }
@@ -101,8 +137,10 @@ function probeTranscript(value, artifactCommit) {
   let previousWall = -Infinity;
   let sessionId = null;
   let ordinaryIndex = -1;
-  let beforeObservation = false;
-  let afterObservation = false;
+  const observations = [];
+  const actions = [];
+  const heldKeys = new Set();
+  const heldPointers = new Set();
   for (const [index, item] of lines.entries()) {
     if (item?.classification === "pass" || item?.input_mode === "actual_play") throw evidenceError("probe transcript cannot self-assign a gate or play label", "/probe/transcript");
     if (item.artifact_commit !== artifactCommit) throw evidenceError("probe observed a missing or different artifact commit", "/probe/transcript/artifact_commit");
@@ -118,17 +156,54 @@ function probeTranscript(value, artifactCommit) {
     if (item.type !== "ready") {
       if (!item.snapshot || typeof item.snapshot !== "object" || typeof item.snapshot.url !== "string" || !item.snapshot.url || !Number.isInteger(item.snapshot.canvas_count) || item.snapshot.canvas_count < 1 || !Array.isArray(item.snapshot.canvases) || !item.snapshot.canvases.some(canvas => canvas && canvas.connected !== false && Number(canvas.width) > 0 && Number(canvas.height) > 0)) throw evidenceError("outside probe ordinary evidence lacks a rendered snapshot", "/probe/transcript/snapshot");
       if (["observe", "capture"].includes(item.type) && typeof item.screenshot_hash !== "string") throw evidenceError(`outside probe ${item.type} lacks a screenshot hash`, "/probe/transcript/screenshot_hash");
+      if (["observe", "capture"].includes(item.type)) probeScreenshotIdentity(item.screenshot_hash, "/probe/transcript/screenshot_hash", strict);
+      if (item.type === "observe") observations.push({ index, sequence: item.sequence, snapshot: item.snapshot, screenshot_hash: item.screenshot_hash });
     }
-    if (["key", "pointer"].includes(item.type)) ordinaryIndex = index;
-    if (item.type === "observe" && ordinaryIndex < 0) beforeObservation = true;
-    if (item.type === "observe" && ordinaryIndex >= 0) afterObservation = true;
+    if (item.type === "key") {
+      const action = item.action || (strict ? undefined : "down");
+      if (strict && !["down", "up"].includes(action)) throw evidenceError("outside probe key facts must include down/up action", "/probe/transcript/action");
+      if (action === "down") heldKeys.add(item.key || "unknown");
+      else if (action === "up") {
+        if (!heldKeys.has(item.key || "unknown")) throw evidenceError("outside probe key-up evidence must follow key-down evidence", "/probe/transcript/action");
+        heldKeys.delete(item.key || "unknown");
+      }
+      ordinaryIndex = index;
+      actions.push({ index, command_index: index - 1, sequence: item.sequence, effective: action === "down", action });
+    }
+    if (item.type === "pointer") {
+      const action = item.action || (strict ? undefined : "down");
+      const button = item.button || "left";
+      if (strict && !["move", "down", "up"].includes(action)) throw evidenceError("outside probe pointer facts must include move/down/up action", "/probe/transcript/action");
+      if (action === "down") heldPointers.add(button);
+      else if (action === "up") {
+        if (!heldPointers.has(button)) throw evidenceError("outside probe pointer-up evidence must follow pointer-down evidence", "/probe/transcript/action");
+        heldPointers.delete(button);
+      }
+      ordinaryIndex = index;
+      actions.push({ index, command_index: index - 1, sequence: item.sequence, effective: action === "move" || action === "down", action });
+    }
+    if (item.type === "observe" && ordinaryIndex >= 0) {
+      const action = [...actions].reverse().find(candidate => candidate.index < index && candidate.before === undefined);
+      if (action) {
+        action.after = item;
+        const before = [...observations].reverse().find(candidate => candidate.index < action.index);
+        action.before = before;
+        if (!before) throw evidenceError("outside probe lacks a successful observation before ordinary input", "/probe/transcript");
+        const stateChanged = probeSnapshotFingerprint(before.snapshot) !== probeSnapshotFingerprint(item.snapshot);
+        const imageChanged = before.screenshot_hash !== undefined && item.screenshot_hash !== undefined && probeScreenshotIdentity(before.screenshot_hash, "/probe/transcript/screenshot_hash", strict) !== probeScreenshotIdentity(item.screenshot_hash, "/probe/transcript/screenshot_hash", strict);
+        action.changed = stateChanged || imageChanged;
+        action.effect = stateChanged ? "state" : imageChanged ? "render" : null;
+        if (action.effective && !action.changed) throw evidenceError("outside probe ordinary input produced no observed state or rendered-image change", "/probe/transcript");
+      }
+    }
     if (item.type === "stop" && item.status !== "ok") throw evidenceError("outside probe did not close successfully", "/probe/transcript/status");
     previousSequence = item.sequence;
     previousMonotonic = item.monotonic_ms;
     previousWall = wall;
   }
-  if (!beforeObservation || !afterObservation) throw evidenceError("outside probe lacks a successful observation before and after ordinary input", "/probe/transcript");
-  return { status: "observed", artifact_commit: artifactCommit, observed_at: lines.at(-1).wall_time, lines: lines.length, ordinary_input: true, session_id: sessionId, observations: types.filter(type => type === "observe").length };
+  const firstEffective = actions.find(item => item.effective);
+  if (!firstEffective?.before || !firstEffective?.after) throw evidenceError("outside probe lacks a successful observation before and after ordinary input", "/probe/transcript");
+  return { status: "observed", artifact_commit: artifactCommit, observed_at: lines.at(-1).wall_time, lines: lines.length, ordinary_input: true, session_id: sessionId, observations: observations.length, effects: actions.filter(item => item.effective).map(item => ({ id: `outside-action-effect-${item.sequence}`, action_sequence: item.sequence, before_sequence: item.before.sequence, after_sequence: item.after.sequence, effect: item.effect })), scenario: scenarioFacts(lines, actions, scenario) };
 }
 
 function relativeWorkspacePath(root, value, pointer) {
@@ -141,7 +216,7 @@ function relativeWorkspacePath(root, value, pointer) {
 
 function validateConfig(config) {
   if (!config || typeof config !== "object" || Array.isArray(config)) throw inputError("outside probe config must be an object", "/outside_probe/config");
-  const known = new Set(["build", "server", "harness", "browser", "game", "operator", "independent_context_id"]);
+  const known = new Set(["build", "server", "harness", "browser", "game", "operator", "independent_context_id", "scenario"]);
   for (const key of Object.keys(config)) if (!known.has(key)) throw inputError(`outside probe config has unknown field ${key}`, `/outside_probe/config/${key}`);
   const build = config.build;
   const server = config.server;
@@ -163,6 +238,18 @@ function validateConfig(config) {
   if (!harness.session_out || typeof harness.session_out !== "string" || isAbsolute(harness.session_out)) throw inputError("harness.session_out must be relative", "/outside_probe/config/harness/session_out");
   if (config.browser !== undefined && (!config.browser || typeof config.browser !== "object" || Array.isArray(config.browser) || config.browser.headless === true)) throw inputError("outside probe browser must describe a headed browser", "/outside_probe/config/browser");
   if (config.game !== undefined && (!config.game || typeof config.game !== "object" || Array.isArray(config.game))) throw inputError("outside probe game must be an object", "/outside_probe/config/game");
+  if (config.scenario !== undefined) {
+    const scenario = config.scenario;
+    if (!scenario || typeof scenario !== "object" || Array.isArray(scenario)) throw inputError("outside probe scenario must be an object", "/outside_probe/config/scenario");
+    if (typeof scenario.id !== "string" || !scenario.id || !Array.isArray(scenario.transition_ids) || !scenario.transition_ids.length || scenario.transition_ids.some(item => typeof item !== "string" || !item) || typeof scenario.restart_id !== "string" || !scenario.restart_id || typeof scenario.reentry_id !== "string" || !scenario.reentry_id) throw inputError("outside probe scenario must freeze transition, restart, and reentry identities", "/outside_probe/config/scenario");
+    const identities = [...scenario.transition_ids, scenario.restart_id, scenario.reentry_id];
+    if (new Set(identities).size !== identities.length) throw inputError("outside probe scenario identities must be unique", "/outside_probe/config/scenario");
+    if (scenario.transition_command_indexes !== undefined && (!Array.isArray(scenario.transition_command_indexes) || scenario.transition_command_indexes.length !== scenario.transition_ids.length || scenario.transition_command_indexes.some(item => !Number.isInteger(item) || item < 0 || item >= harness.commands.length))) throw inputError("outside probe transition command indexes must cover valid harness commands", "/outside_probe/config/scenario/transition_command_indexes");
+    for (const key of ["restart_command_index", "reentry_command_index"]) if (scenario[key] !== undefined && (!Number.isInteger(scenario[key]) || scenario[key] < 0 || scenario[key] >= harness.commands.length)) throw inputError(`outside probe ${key} must name a valid harness command`, `/outside_probe/config/scenario/${key}`);
+    const ordinary = harness.commands.filter(command => ["key", "pointer"].includes(command.type));
+    if (ordinary.length < scenario.transition_ids.length + 2) throw inputError("outside probe harness lacks commands for every transition, restart, and reentry identity", "/outside_probe/config/harness/commands");
+    if (!harness.commands.some(command => command.type === "capture")) throw inputError("outside probe scenario requires at least one retained capture command", "/outside_probe/config/harness/commands");
+  }
   return config;
 }
 
@@ -330,9 +417,10 @@ async function outsideProbe(index, { workspace, baseDir = process.cwd() } = {}) 
   const probe = index.outside_probe || index.probe;
   const config = await readProbeConfig(probe, root);
   if (!config) {
-    if (probe?.transcript !== undefined) return { status: "unverified", joined_commit: joinedCommit, evidence_ids: evidence.ids, transcript: probeTranscript(probe.transcript, index.artifact_commit), reason: "no executable production probe declared" };
+    if (probe?.transcript !== undefined) return { status: "unverified", joined_commit: joinedCommit, evidence_ids: evidence.ids, transcript: probeTranscript(probe.transcript, index.artifact_commit, probe.scenario, { strict: true }), reason: "no executable production probe declared" };
     throw evidenceError("outside close requires a target-owned frozen production probe config", "/outside_probe/config");
   }
+  if (!config.scenario) throw evidenceError("outside close requires a frozen representative scenario with transition, restart, and reentry identities", "/outside_probe/config/scenario");
   const configPath = resolve(root, ".orch-notes", `outside-config-${process.pid}-${Date.now()}.json`);
   const capturePath = relativeWorkspacePath(root, config.harness.capture_dir, "/outside_probe/config/harness/capture_dir");
   const sessionPath = relativeWorkspacePath(root, config.harness.session_out, "/outside_probe/config/harness/session_out");
@@ -352,14 +440,15 @@ async function outsideProbe(index, { workspace, baseDir = process.cwd() } = {}) 
     if (build.status !== "built" || build.artifact_commit !== index.artifact_commit || build.output?.sha256 === undefined || build.output.path !== buildOutput.path) throw evidenceError("production build result is incomplete or not bound to the target output", "/outside_probe/build/output");
     const server = await spawnReadyServer(configPath, root, index.artifact_commit, build.output.sha256, (config.server.startup_timeout_ms || 30000) + 5000);
     serverHandle = server;
-    const harnessConfig = { ...config, artifact_commit: index.artifact_commit, server: { ...config.server, external: true, cwd: root, url: server.ready.address.url }, capture_dir: captureDir, session_out: sessionOut, mode: "scripted_input" };
+    const harnessConfig = { ...config, artifact_commit: index.artifact_commit, receipt_root: root, server: { ...config.server, external: true, cwd: root, url: server.ready.address.url }, capture_dir: captureDir, session_out: sessionOut, mode: "scripted_input" };
     await writeJsonAtomic(configPath, harnessConfig);
     harnessHandle = await runInteractiveHarness(configPath, config.harness.commands, index.artifact_commit, (config.harness.timeout_ms || 120000) + 10000);
     if (serverHandle.child.exitCode !== null || serverHandle.child.signalCode !== null) throw evidenceError("production server exited while the ordinary-input harness was running", "/outside_probe/server");
     const sessionDocument = (await readJson(sessionOut)).value;
     const transcriptLines = [{ ...(harnessHandle.lines.find(item => item.type === "ready") || {}), type: "ready" }, ...sessionDocument.transcript.map(item => ({ ...item.reply, type: item.command.type }))];
-    const harnessEvidence = probeTranscript(transcriptLines, index.artifact_commit);
+    const harnessEvidence = probeTranscript(transcriptLines, index.artifact_commit, config.scenario, { strict: true });
     if (sessionDocument.artifact_commit !== index.artifact_commit || sessionDocument.status !== "complete" || sessionDocument.source !== "live-browser" || sessionDocument.headed !== true || sessionDocument.transcript_hash !== harnessHandle.summary.transcript_hash) throw evidenceError("browser session is incomplete or disagrees with the package harness result", "/outside_probe/harness/session");
+    const receiptFacts = await validatePlayReceipt(sessionDocument, { baseDir: root, expectedProducer: "browser_harness.mjs" });
     const captures = await fileInventory(captureDir);
     if (!captures.file_count || !captures.files.some(file => /\.png$/i.test(file.path) && file.bytes > 0)) throw evidenceError("outside harness did not preserve a captured rendered image", "/outside_probe/captures");
     const finalCommit = await gitHead(root);
@@ -368,7 +457,7 @@ async function outsideProbe(index, { workspace, baseDir = process.cwd() } = {}) 
     if (finalOutput.sha256 !== build.output.sha256) throw evidenceError("production output changed after the observed harness session", "/outside_probe/build/output");
     const core = await validateGate(index, "core", { baseDir });
     const final = await validateGate(index, "final", { baseDir });
-    return { status: "observed", artifact_commit: index.artifact_commit, joined_commit: joinedCommit, observed_at: nowIso(), evidence_ids: evidence.ids, build, server: server.ready, harness: { ...harnessEvidence, session_id: sessionDocument.id, transcript_hash: sessionDocument.transcript_hash, session_path: sessionPath.path }, captures, gates: { core, final }, cleanup };
+    return { status: "observed", artifact_commit: index.artifact_commit, joined_commit: joinedCommit, observed_at: nowIso(), evidence_ids: evidence.ids, build, server: server.ready, harness: { ...harnessEvidence, ...receiptFacts.receipt, session_id: sessionDocument.id, transcript_hash: sessionDocument.transcript_hash, session_path: sessionPath.path }, captures, gates: { core, final }, cleanup };
   } finally {
     if (harnessHandle?.child) cleanup.harness = await terminate(harnessHandle.child);
     if (serverHandle?.child) cleanup.server = await terminate(serverHandle.child);
