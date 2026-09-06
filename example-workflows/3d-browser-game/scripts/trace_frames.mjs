@@ -763,6 +763,76 @@ function nativeTraceFailures(parsed, startMs, endMs) {
   return failures;
 }
 
+function foregroundState(row) {
+  const value = row?.state && typeof row.state === "object" ? row.state : row || {};
+  return {
+    visibility: value.visibility_state ?? value.visibilityState,
+    hidden: value.hidden,
+    focus: value.document_has_focus ?? value.documentHasFocus ?? value.has_focus ?? value.hasFocus,
+  };
+}
+
+function foregroundEventTime(event) {
+  for (const key of ["performance_now_ms", "page_now_ms", "time_ms", "timestamp_ms", "timestamp"]) {
+    if (typeof event?.[key] === "number" && Number.isFinite(event[key])) return event[key];
+  }
+  return null;
+}
+
+function foregroundTraceFailures(parsed) {
+  const instrumentation = parsed.canvas_instrumentation || {};
+  const metadata = parsed.metadata || {};
+  const lifecycle = parsed.measurement?.lifecycle || {};
+  const required = instrumentation.foreground_guard_required === true
+    || metadata.foreground_guard_required === true
+    || lifecycle.foreground?.required === true;
+  const guard = lifecycle.foreground || parsed.measurement?.foreground;
+  if (!required && !guard) return [];
+  const failures = [];
+  if (!guard || guard.available !== true) {
+    failures.push(failure("foreground-monitor-unavailable", "/trace/measurement/lifecycle/foreground", "available browser visibility and focus monitor", guard || null));
+    return failures;
+  }
+  const windows = [];
+  if (guard.control && typeof guard.control === "object") windows.push(["control", guard.control]);
+  if (guard.instrumented && typeof guard.instrumented === "object") windows.push(["instrumented", guard.instrumented]);
+  if (!windows.length) windows.push(["measurement", guard]);
+  for (const [name, current] of windows) {
+    const boundaries = current.boundaries || {};
+    const rows = Object.entries(boundaries).filter(([label]) => /(?:start|end)$/i.test(label)).map(([, value]) => value);
+    if (current.start) rows.push(current.start);
+    if (current.end) rows.push(current.end);
+    if (!rows.length) {
+      failures.push(failure("foreground-boundary-unavailable", `/trace/measurement/lifecycle/foreground/${name}`, "visible and focused start/end boundary snapshots", boundaries));
+      continue;
+    }
+    const invalid = rows.map(foregroundState).filter(state => state.visibility !== "visible" || state.hidden !== false || state.focus !== true);
+    if (invalid.length) failures.push(failure("foreground-boundary", `/trace/measurement/lifecycle/foreground/${name}`, "visibility_state visible, hidden false, document.hasFocus true", invalid));
+    const events = Array.isArray(current.events) ? current.events : (name === "measurement" && Array.isArray(guard.events) ? guard.events : []);
+    if (!Array.isArray(current.events) && !Array.isArray(guard.events)) {
+      failures.push(failure("foreground-event-log-unavailable", `/trace/measurement/lifecycle/foreground/${name}/events`, "browser visibility/focus event log", null));
+      continue;
+    }
+    const start = rows.reduce((minimum, row) => {
+      const time = foregroundEventTime(row);
+      return time === null ? minimum : Math.min(minimum, time);
+    }, Infinity);
+    const end = rows.reduce((maximum, row) => {
+      const time = foregroundEventTime(row);
+      return time === null ? maximum : Math.max(maximum, time);
+    }, -Infinity);
+    const transitions = events.filter(event => {
+      const time = foregroundEventTime(event);
+      if (time !== null && (time < start || time > end)) return false;
+      const type = String(event?.type || event?.event || "").toLowerCase();
+      const state = foregroundState(event);
+      return type === "blur" || type === "pagehide" || (type === "visibilitychange" && (state.hidden === true || state.visibility !== "visible"));
+    });
+    if (transitions.length) failures.push(failure("foreground-transition", `/trace/measurement/lifecycle/foreground/${name}/events`, "no hidden, blur, or pagehide transition during measured window", transitions));
+  }
+  return failures;
+}
+
 export function qualifyPerformance({cell, trace, callbacks = []}) {
   requireObject(cell, "/cell");
   const window = cell.window || {};
@@ -772,6 +842,7 @@ export function qualifyPerformance({cell, trace, callbacks = []}) {
   const T = (endMs - startMs) / 1000;
   const parsed = parseTracePayload(trace);
   const failures = parsed.format === "fixture" ? [] : nativeTraceFailures(parsed, startMs, endMs);
+  if (parsed.format !== "fixture") failures.push(...foregroundTraceFailures(parsed));
   if (cell.diagnostic_mode && cell.diagnostic_mode !== "combined") {
     failures.push(failure("diagnostic-mode", "/cell/diagnostic_mode", "combined performance measurement", cell.diagnostic_mode));
   }

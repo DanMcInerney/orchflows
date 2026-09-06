@@ -245,6 +245,8 @@ function fixtureMeasurement(cell) {
   const phase = (status, requestedMs = 0) => ({status, requested_ms: requestedMs, observed_ms: requestedMs, callbacks: 0, callback_rate_hz: 0, max_callback_interval_ms: null});
   return {
     scenario_id: scenarioId,
+    diagnostic_mode: cell.diagnostic_mode || "combined",
+    observation_mode: cell.diagnostic_mode || "combined",
     observer: "qualification-fixture",
     presentation: "fixture-native-frame-model",
     preserve_drawing_buffer: false,
@@ -313,6 +315,8 @@ async function installForegroundMonitor(page) {
       visibility_state: document.visibilityState,
       hidden: document.hidden === true,
       document_has_focus: document.hasFocus(),
+      has_focus: document.hasFocus(),
+      window_has_focus: document.hasFocus(),
     });
     const events = [];
     const record = type => events.push({type, ...snapshot()});
@@ -375,12 +379,11 @@ async function installBareCounter(page) {
   });
 }
 
-function barePhase(callbacks, startMs, endMs, requestedMs, phase = "bare-counter") {
+function barePhase(callbacks, startMs, endMs, requestedMs) {
   const values = callbacks.filter(value => value >= startMs && value < endMs);
   const intervals = values.slice(1).map((value, index) => value - values[index]);
   return {
     status: endMs > startMs ? "observed" : "unverified",
-    phase,
     requested_ms: requestedMs,
     start_ms: startMs,
     end_ms: endMs,
@@ -417,14 +420,18 @@ async function liveBareTrace(cell, {page, browser, type, canvas, wait}) {
     phase_transitions: [],
     foreground: {required: true, installation: foregroundInstall, method: foregroundInstall.method, available: foregroundInstall.available === true},
   };
+  const contextIdentity = cell.context_id || cell.context_name || cell.browser?.context_id || cell.browser?.context_name || null;
   await markForeground(page, "warmup-start");
-  await wait(warmupDurationMs);
   const warmupStart = await page.evaluate(() => performance.now());
+  await wait(warmupDurationMs);
   await markForeground(page, "measurement-start");
-  const start = await page.evaluate(() => performance.now());
+  const startClock = await page.evaluate(() => ({performance_now_ms: performance.now(), date_now_ms: Date.now()}));
+  const start = startClock.performance_now_ms;
+  const wallStart = Date.now();
   lifecycle.phase_transitions.push({phase: "bare-counter", method: counterInstall.method, start_observed: Number.isFinite(start), configured_duration_ms: durationMs});
   await wait(durationMs);
-  const end = await page.evaluate(() => performance.now());
+  const endClock = await page.evaluate(() => ({performance_now_ms: performance.now(), date_now_ms: Date.now()}));
+  const end = endClock.performance_now_ms;
   await markForeground(page, "measurement-end");
   const stopped = await page.evaluate(() => window.__orchBareCounter?.stop() || {method: "unavailable", timestamps: []});
   const foreground = await readForeground(page);
@@ -432,8 +439,8 @@ async function liveBareTrace(cell, {page, browser, type, canvas, wait}) {
   const callbacks = Array.isArray(stopped.timestamps) ? stopped.timestamps.filter(Number.isFinite) : [];
   const window = {start_ms: start, end_ms: start + durationMs};
   const control = barePhase(callbacks, start, window.end_ms, durationMs);
-  const warmup = barePhase(callbacks, warmupStart, start, warmupDurationMs, "warmup");
-  const instrumented = {...control, status: "unverified", phase: "bare-counter-uninstrumented", samples: 0, readback_errors: 0, sample_duration_ms: sampleDurationStats([])};
+  const warmup = barePhase(callbacks, warmupStart, start, warmupDurationMs);
+  const instrumented = {...control, status: "unverified", samples: 0, readback_errors: 0, sample_duration_ms: sampleDurationStats([])};
   const measurement = {
     scenario_id: cell.scenario_id,
     diagnostic_mode: "bare-counter",
@@ -444,6 +451,7 @@ async function liveBareTrace(cell, {page, browser, type, canvas, wait}) {
     lifecycle,
     warmup,
     control,
+    clock: {method: "performance.timeOrigin+performance.now", time_origin_ms: timeOrigin, start: startClock, end: endClock},
     instrumented,
     bare_counter: {method: stopped.method, time_origin_ms: timeOrigin, timestamps: callbacks, timestamp_clock: "performance.now"},
     foreground,
@@ -461,7 +469,6 @@ async function liveBareTrace(cell, {page, browser, type, canvas, wait}) {
       sample_duration_ms: sampleDurationStats([]),
     },
   };
-  const wallStart = Date.now();
   const wallEnd = Date.now();
   const trace = {
     format: "bare-counter",
@@ -474,6 +481,7 @@ async function liveBareTrace(cell, {page, browser, type, canvas, wait}) {
       clock_reconciled: false,
       clock_method: "performance.timeOrigin+performance.now",
       time_origin_ms: timeOrigin,
+      clock: {method: "performance.timeOrigin+performance.now", time_origin_ms: timeOrigin, start: startClock, end: endClock},
       wall_start_ms: wallStart,
       wall_end_ms: wallEnd,
       window_start_ms: window.start_ms,
@@ -484,6 +492,7 @@ async function liveBareTrace(cell, {page, browser, type, canvas, wait}) {
       warmup_end_ms: warmup.end_ms,
       foreground_guard_required: true,
       diagnostic_mode: "bare-counter",
+      context_identity: contextIdentity,
     },
   };
   return {
@@ -492,7 +501,7 @@ async function liveBareTrace(cell, {page, browser, type, canvas, wait}) {
     window,
     environment: {browser: type, browser_version: browser.version?.() || null, driver: cell.browser?.package || "playwright-core", renderer: "unobserved", backend: "unobserved", tools: []},
     measurement,
-    diagnostics: {diagnostic_mode: "bare-counter", trace_capture_enabled: false, readback_enabled: false, clock_method: trace.metadata.clock_method, foreground: lifecycle.foreground},
+    diagnostics: {diagnostic_mode: "bare-counter", trace_capture_enabled: false, readback_enabled: false, clock_method: trace.metadata.clock_method, foreground: lifecycle.foreground, context_identity: contextIdentity},
   };
 }
 
@@ -1101,7 +1110,8 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     if (warmupDurationMs < 0) throw inputError("cell.warmup_duration_ms must not be negative", "/cell/warmup_duration_ms");
     const selector = cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas";
     const sampling = samplingForCell(cell);
-    const sampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending, readback_enabled: diagnosticMode !== "trace-only"});
+    const readbackEnabled = !["trace-only", "observer-only"].includes(diagnosticMode);
+    const sampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending, readback_enabled: readbackEnabled});
     if (!sampler.installed) throw capabilityError(sampler.error || "frozen sampling coverage could not be installed", "/cell/sampling");
     const setupCommands = validateSetupCommands(cell);
     const initialSetup = await runSetup(page, canvas, setupCommands);
@@ -1129,6 +1139,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     await markForeground(page, "control-end");
     const controlObserver = await page.evaluate(() => ({callbacks: window.__orchPresentationObserver.callbacks.slice()}));
     const controlCallbacksObserved = controlObserver.callbacks.map(item => ({...item, timestamp_ms: item.timestamp_ms + controlClock.offsetMs}));
+    const controlForeground = await readForeground(page);
 
     // Reload the same configured URL before the instrumented phase. This is an
     // observed app reset, so both phases begin from the page's normal startup
@@ -1161,14 +1172,13 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     const backend = await canvasBackend(page, cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas");
     const wallStart = Date.now();
     const traceCaptureEnabled = !["readback-only", "observer-only"].includes(diagnosticMode);
-    const readbackEnabled = !["trace-only", "observer-only"].includes(diagnosticMode);
   const trace = traceCaptureEnabled
       ? await collectCDPTrace(instrumentedClient, { durationMs: durationMs + (2 * paddingMs), categories: cell.trace_categories, traceBufferSizeInKb: cell.trace_buffer_size_kb || 512 * 1024, recordMode: cell.trace_record_mode || "recordContinuously", timeoutMs: cell.trace_timeout_ms || Math.max(120000, durationMs + (2 * paddingMs) + 60000) })
       : await (async () => {
         const started = Date.now();
         await wait(durationMs + (2 * paddingMs));
         return {
-          format: "diagnostic-no-trace", traceEvents: [], completion: {disabled: true, reason: "readback-only diagnostic"},
+          format: "diagnostic-no-trace", traceEvents: [], completion: {disabled: true, reason: `${diagnosticMode} diagnostic`},
           raw_bytes: 0, transfer_mode: "disabled", categories: [], capture_duration_ms: Date.now() - started,
         };
       })();
@@ -1180,7 +1190,14 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     });
     await markForeground(page, "instrumented-end");
     const foreground = await readForeground(page);
-    lifecycle.foreground = {...foreground, required: true, installation: resetForegroundInstall};
+    lifecycle.foreground = {
+      ...foreground,
+      required: true,
+      control: controlForeground,
+      instrumented: foreground,
+      events: [...(controlForeground.events || []), ...(foreground.events || [])],
+      installation: resetForegroundInstall,
+    };
     const callbacksObserved = observer.callbacks.map(item => ({...item, timestamp_ms: item.timestamp_ms + captureClock.offsetMs}));
     const canvasSamples = observer.samples.map(item => ({
       ...item,
@@ -1200,11 +1217,14 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     if (observer.readback) instrumented.readback = observer.readback;
     const measurement = {
       scenario_id: cell.scenario_id,
+      diagnostic_mode: diagnosticMode,
+      observation_mode: diagnosticMode,
       observer: sampler.presentation,
       presentation: sampler.presentation,
       preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer,
       sampling: instrumentedSampler.sampling,
       lifecycle,
+      foreground: lifecycle.foreground,
       warmup: {...warmup, requested_ms: warmupDurationMs},
       control: {...control, requested_ms: controlDurationMs},
       instrumented,
@@ -1228,7 +1248,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     const parsed = {
       ...trace,
       canvas_samples: canvasSamples,
-      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, readback: observer.readback, readback_enabled: instrumentedSampler.readback_enabled === true, diagnostic_mode: diagnosticMode, trace_capture_enabled: traceCaptureEnabled, state_shadow: observer.state_diagnostic, signal: "render-callback-post-callback; async WebGL2 readback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
+      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, readback: observer.readback, readback_enabled: instrumentedSampler.readback_enabled === true, diagnostic_mode: diagnosticMode, observation_mode: diagnosticMode, trace_capture_enabled: traceCaptureEnabled, foreground_guard_required: true, foreground: lifecycle.foreground, state_shadow: observer.state_diagnostic, signal: "render-callback-post-callback; async WebGL2 readback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
       measurement,
       metadata: {
         clock_reconciled: true,
@@ -1245,6 +1265,11 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
         warmup_end_ms: warmup.end_ms,
         control_start_ms: control.start_ms,
         control_end_ms: control.end_ms,
+        diagnostic_mode: diagnosticMode,
+        observation_mode: diagnosticMode,
+        foreground_guard_required: true,
+        foreground: lifecycle.foreground,
+        context_identity: cell.context_id || cell.context_name || cell.browser?.context_id || cell.browser?.context_name || null,
       },
     };
     return {
@@ -1261,7 +1286,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
         tools: [],
       },
       measurement,
-      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, diagnostic_mode: diagnosticMode, trace_capture_enabled: traceCaptureEnabled, readback_enabled: instrumentedSampler.readback_enabled === true, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, state_shadow: observer.state_diagnostic, state_probe: observer.state_probe, measurement },
+      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, diagnostic_mode: diagnosticMode, trace_capture_enabled: traceCaptureEnabled, readback_enabled: instrumentedSampler.readback_enabled === true, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, state_shadow: observer.state_diagnostic, state_probe: observer.state_probe, measurement, context_identity: cell.context_id || cell.context_name || cell.browser?.context_id || cell.browser?.context_name || null },
     };
   } finally {
     await browser?.close().catch(() => {});
