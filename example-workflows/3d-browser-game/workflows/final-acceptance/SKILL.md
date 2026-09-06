@@ -5,7 +5,7 @@ disable-model-invocation: true
 ---
 
 Require: fixed integrated `artifact:` identity, accepted core baseline,
-production asset manifests, immutable traceability and final rubric,
+production asset manifests, immutable traceability and [final rubric](../../references/final-rubric.md),
 complete capture matrix, every required play account, qualified performance
 cells, QA result, and parent frame journal.
 

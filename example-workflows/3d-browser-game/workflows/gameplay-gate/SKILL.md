@@ -4,7 +4,7 @@ description: Judge fixed core gameplay with independent play, evidence floors, a
 disable-model-invocation: true
 ---
 
-Require: fixed I2 `artifact:` identity, frozen traceability and core rubric,
+Require: fixed I2 `artifact:` identity, frozen traceability and [core rubric](../../references/core-rubric.md),
 complete core capture/performance matrix, QA result, at least two
 maker-independent play contexts, parent frame journal, and package digest.
 

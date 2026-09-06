@@ -91,6 +91,16 @@ class WorkflowPackageTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertIsNotNone(resolve("standard", name, owner=PUBLIC))
 
+    def test_gate_judging_criteria_are_reference_contracts(self):
+        core = (PACKAGE / "references" / "core-rubric.md").read_text(encoding="utf-8")
+        final = (PACKAGE / "references" / "final-rubric.md").read_text(encoding="utf-8")
+        self.assertIn("| Loop and fun |", core)
+        self.assertIn("| Presentation |", final)
+        gameplay = (PACKAGE / "workflows" / "gameplay-gate" / "SKILL.md").read_text(encoding="utf-8")
+        acceptance = (PACKAGE / "workflows" / "final-acceptance" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("../../references/core-rubric.md", gameplay)
+        self.assertIn("../../references/final-rubric.md", acceptance)
+
 
 if __name__ == "__main__":
     unittest.main()
