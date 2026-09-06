@@ -17,12 +17,64 @@ function validateCell(cell) {
   if (!cell || typeof cell !== "object" || Array.isArray(cell)) throw inputError("cell must be an object", "/cell");
   for (const key of ["id", "artifact_commit", "scenario_id"]) if (typeof cell[key] !== "string" || !cell[key]) throw inputError(`cell.${key} is required`, `/cell/${key}`);
   const window = cell.window || {};
-  const duration = cell.duration_seconds ?? ((window.end_ms - window.start_ms) / 1000);
+  const duration = cell.duration_seconds ?? (cell.duration_ms !== undefined ? Number(cell.duration_ms) / 1000 : ((window.end_ms - window.start_ms) / 1000));
   if (!Number.isFinite(duration) || duration <= 0 || duration > 3600) throw inputError("cell duration_seconds must be finite and between 0 and 3600", "/cell/duration_seconds");
+  if (cell.duration_ms !== undefined && (!Number.isFinite(cell.duration_ms) || cell.duration_ms <= 0)) throw inputError("cell.duration_ms must be positive and finite", "/cell/duration_ms");
   for (const [key, value] of [["control_duration_ms", cell.control_duration_ms], ["warmup_duration_ms", cell.warmup_duration_ms]]) {
     if (value !== undefined && (!Number.isFinite(value) || value < 0 || value > 600000)) throw inputError(`cell.${key} must be between 0 and 600000`, `/cell/${key}`);
   }
+  samplingDeclaration(cell);
+  validateSetupCommands(cell);
   return cell;
+}
+
+const SAMPLE_COORDINATE_SPACES = new Set(["drawing-buffer", "viewport"]);
+const MAX_SAMPLE_PIXELS = 65536;
+
+/**
+ * Resolve the caller's frozen readback declaration. Coordinates are integer
+ * pixels in the selected space; viewport coordinates use CSS pixels with a
+ * top-left origin and are converted to the WebGL drawing buffer at runtime.
+ */
+function samplingDeclaration(cell) {
+  const configured = cell.sampling || cell.sample_coverage || cell.game_canvas?.sampling || null;
+  if (!configured) return null;
+  const region = configured.region || configured.coverage || configured;
+  if (!region || typeof region !== "object" || Array.isArray(region)) throw inputError("cell sampling region must be an object", "/cell/sampling/region");
+  const coordinateSpace = configured.coordinate_space || configured.coordinateSpace || "drawing-buffer";
+  if (!SAMPLE_COORDINATE_SPACES.has(coordinateSpace)) throw inputError("cell sampling coordinate_space must be drawing-buffer or viewport", "/cell/sampling/coordinate_space");
+  for (const key of ["x", "y", "width", "height"]) {
+    if (!Number.isInteger(region[key]) || region[key] < 0) throw inputError(`cell sampling region.${key} must be a non-negative integer`, `/cell/sampling/region/${key}`);
+  }
+  if (region.width <= 0 || region.height <= 0) throw inputError("cell sampling region width and height must be positive", "/cell/sampling/region");
+  if (region.width * region.height > MAX_SAMPLE_PIXELS) throw inputError(`cell sampling region may contain at most ${MAX_SAMPLE_PIXELS} pixels`, "/cell/sampling/region");
+  return {
+    explicit: true,
+    coordinate_space: coordinateSpace,
+    region: {x: region.x, y: region.y, width: region.width, height: region.height},
+  };
+}
+
+function samplingForCell(cell) {
+  return samplingDeclaration(cell) || {
+    explicit: false,
+    coordinate_space: "drawing-buffer",
+    region: {x: 0, y: 0, width: 1, height: 1},
+  };
+}
+
+function validateSetupCommands(cell) {
+  const commands = cell.setup_commands || cell.start_setup || [];
+  if (!Array.isArray(commands)) throw inputError("cell.setup_commands must be an array", "/cell/setup_commands");
+  for (const [index, command] of commands.entries()) {
+    if (!command || typeof command !== "object" || Array.isArray(command) || !["key", "pointer", "wait"].includes(command.type)) {
+      throw inputError("setup commands must use key, pointer, or wait from the ordinary input vocabulary", `/cell/setup_commands/${index}`);
+    }
+    if (command.type === "key" && (typeof command.key !== "string" || !command.key || !["down", "up"].includes(command.action))) throw inputError("setup key requires key and down/up action", `/cell/setup_commands/${index}`);
+    if (command.type === "pointer" && (!Number.isFinite(command.x) || !Number.isFinite(command.y) || !["move", "down", "up"].includes(command.action))) throw inputError("setup pointer requires finite x/y and move/down/up action", `/cell/setup_commands/${index}`);
+    if (command.type === "wait" && (!Number.isFinite(command.ms) || command.ms < 0 || command.ms > 60000)) throw inputError("setup wait ms must be between 0 and 60000", `/cell/setup_commands/${index}`);
+  }
+  return commands;
 }
 
 function serverChild(server) {
@@ -69,15 +121,50 @@ function eventTimeMs(event) {
   return value > 1e8 ? value / 1000 : value;
 }
 
-async function installCanvasSampler(page, selector) {
-  return page.evaluate(canvasSelector => {
+async function installCanvasSampler(page, selector, sampling) {
+  return page.evaluate(({canvasSelector, samplingDeclaration}) => {
     const observer = window.__orchPresentationObserver;
     const canvas = document.querySelector(canvasSelector);
     if (!observer) return {installed: false, error: "render-callback observer was not installed"};
     if (!canvas) return {installed: false, error: "canvas selector did not resolve"};
     const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
     const attributes = gl?.getContextAttributes?.() || null;
-    observer.targets = [{selector: canvasSelector}];
+    if (!gl) return {installed: false, error: "frozen sampling coverage requires a WebGL drawing buffer"};
+    const drawingBuffer = {width: canvas.width, height: canvas.height};
+    const viewport = {width: canvas.clientWidth, height: canvas.clientHeight};
+    const dpr = window.devicePixelRatio;
+    if (!Number.isFinite(dpr) || dpr <= 0) return {installed: false, error: "browser devicePixelRatio is not finite"};
+    const region = samplingDeclaration.region;
+    let resolved;
+    if (samplingDeclaration.coordinate_space === "viewport") {
+      const scaleX = viewport.width > 0 ? drawingBuffer.width / viewport.width : dpr;
+      const scaleY = viewport.height > 0 ? drawingBuffer.height / viewport.height : dpr;
+      const width = Math.max(1, Math.floor(region.width * scaleX));
+      const height = Math.max(1, Math.floor(region.height * scaleY));
+      const x = Math.floor(region.x * scaleX);
+      const top = Math.floor(region.y * scaleY);
+      resolved = {x, y: drawingBuffer.height - top - height, width, height};
+    } else {
+      resolved = {...region};
+    }
+    if (!Number.isInteger(resolved.x) || !Number.isInteger(resolved.y) || !Number.isInteger(resolved.width) || !Number.isInteger(resolved.height)
+        || resolved.x < 0 || resolved.y < 0 || resolved.width <= 0 || resolved.height <= 0
+        || resolved.x + resolved.width > drawingBuffer.width || resolved.y + resolved.height > drawingBuffer.height) {
+      return {installed: false, error: "frozen sampling coverage is outside the drawing buffer", drawing_buffer: drawingBuffer, viewport, dpr, requested: samplingDeclaration};
+    }
+    const coverage = {
+      explicit: samplingDeclaration.explicit === true,
+      coordinate_space: samplingDeclaration.coordinate_space,
+      requested_region: {...region},
+      resolved_region: resolved,
+      drawing_buffer: drawingBuffer,
+      viewport,
+      dpr,
+      sample_pixels: resolved.width * resolved.height,
+      bytes_per_sample: resolved.width * resolved.height * 4,
+      origin: samplingDeclaration.coordinate_space === "viewport" ? "viewport-top-left-to-webgl-bottom-left" : "webgl-bottom-left",
+    };
+    observer.targets = [{selector: canvasSelector, coverage}];
     observer.phase = "control";
     return {
       installed: true,
@@ -87,8 +174,9 @@ async function installCanvasSampler(page, selector) {
       read_only: true,
       presentation: "render-callback-post-callback",
       preserve_drawing_buffer: gl ? attributes?.preserveDrawingBuffer : null,
+      sampling: coverage,
     };
-  }, selector);
+  }, {canvasSelector: selector, samplingDeclaration: sampling});
 }
 
 function phaseStats(callbacks, phase, startMs, endMs) {
@@ -105,6 +193,17 @@ function phaseStats(callbacks, phase, startMs, endMs) {
   };
 }
 
+function sampleDurationStats(samples) {
+  const durations = samples.map(item => item?.duration_ms).filter(value => typeof value === "number" && Number.isFinite(value) && value >= 0).sort((a, b) => a - b);
+  if (!durations.length) return {count: 0, total_ms: 0, max_ms: null, p99_ms: null};
+  return {
+    count: durations.length,
+    total_ms: durations.reduce((sum, value) => sum + value, 0),
+    max_ms: durations[durations.length - 1],
+    p99_ms: durations[Math.min(durations.length - 1, Math.ceil(durations.length * 0.99) - 1)],
+  };
+}
+
 function fixtureMeasurement(cell) {
   const scenarioId = cell.scenario_id;
   const window = cell.window || {};
@@ -115,10 +214,12 @@ function fixtureMeasurement(cell) {
     observer: "qualification-fixture",
     presentation: "fixture-native-frame-model",
     preserve_drawing_buffer: false,
+    sampling: {explicit: false, coordinate_space: "drawing-buffer", requested_region: {x: 0, y: 0, width: 1, height: 1}, resolved_region: null, drawing_buffer: null, viewport: null, dpr: null, sample_pixels: 1, bytes_per_sample: 4, origin: "webgl-bottom-left"},
+    lifecycle: {status: "fixture", scenario_id: scenarioId, seed: cell.seed ?? null, configured_url: null, reset: null, phase_transitions: []},
     warmup: phase("fixture", Number(cell.warmup_duration_ms || 0)),
     control: phase("fixture", Number(cell.control_duration_ms || 0)),
-    instrumented: {status: "fixture", requested_ms: observedMs, start_ms: window.start_ms, end_ms: window.end_ms, observed_ms: observedMs, callbacks: 0, callback_rate_hz: 0, max_callback_interval_ms: null, samples: 0, readback_errors: 0},
-    perturbation: {status: "fixture", basis: "control-vs-instrumented", control_callbacks: 0, instrumented_callbacks: 0, control_callback_rate_hz: 0, instrumented_callback_rate_hz: 0, callback_rate_delta_hz: 0, callback_interval_delta_ms: null, samples: 0, readback_errors: 0},
+    instrumented: {status: "fixture", requested_ms: observedMs, start_ms: window.start_ms, end_ms: window.end_ms, observed_ms: observedMs, callbacks: 0, callback_rate_hz: 0, max_callback_interval_ms: null, samples: 0, readback_errors: 0, sample_duration_ms: {count: 0, total_ms: 0, max_ms: null, p99_ms: null}},
+    perturbation: {status: "fixture", basis: "control-vs-instrumented", control_callbacks: 0, instrumented_callbacks: 0, control_callback_rate_hz: 0, instrumented_callback_rate_hz: 0, callback_rate_delta_hz: 0, callback_interval_delta_ms: null, samples: 0, readback_errors: 0, sample_duration_ms: {count: 0, total_ms: 0, max_ms: null, p99_ms: null}},
   };
 }
 
@@ -136,6 +237,26 @@ async function canvasBackend(page, selector) {
     }
     return {kind: canvas.getContext("2d") ? "canvas2d" : "unknown", renderer: null};
   }, selector);
+}
+
+async function runSetup(page, canvas, commands) {
+  const actions = [];
+  await canvas.focus().catch(() => canvas.click({position: {x: 1, y: 1}}));
+  for (const command of commands) {
+    if (command.type === "key") {
+      if (command.action === "down") await page.keyboard.down(command.key);
+      else await page.keyboard.up(command.key);
+    } else if (command.type === "pointer") {
+      await page.mouse.move(command.x, command.y);
+      if (command.action === "down") await page.mouse.down({button: command.button || "left"});
+      else if (command.action === "up") await page.mouse.up({button: command.button || "left"});
+    } else if (command.type === "wait") {
+      await new Promise(resolvePromise => setTimeout(resolvePromise, command.ms));
+    }
+    actions.push({...command, observed: true});
+  }
+  const state = await page.evaluate(() => ({url: location.href, title: document.title, ready_state: document.readyState, viewport: {width: innerWidth, height: innerHeight}, dpr: devicePixelRatio}));
+  return {commands: actions, observed_state: state, observed: true};
 }
 
 async function liveTrace(cell) {
@@ -164,7 +285,7 @@ async function liveTrace(cell) {
       const digest = value => {
         let hash = 2166136261;
         for (let index = 0; index < value.length; index += 1) {
-          hash ^= value.charCodeAt(index);
+          hash ^= typeof value === "string" ? value.charCodeAt(index) : value[index];
           hash = Math.imul(hash, 16777619);
         }
         return `fnv1a:${(hash >>> 0).toString(16).padStart(8, "0")}`;
@@ -181,19 +302,15 @@ async function liveTrace(cell) {
           try {
             const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
             if (gl) {
-              const width = Math.min(1, canvas.width);
-              const height = Math.min(1, canvas.height);
+              const coverage = target.coverage;
+              const {x, y, width, height} = coverage.resolved_region;
               if (!width || !height) throw new Error("canvas drawing buffer has zero size");
-              const maxX = Math.max(0, canvas.width - width);
-              const maxY = Math.max(0, canvas.height - height);
-              const x = Math.floor(maxX / 2);
-              const y = Math.floor(maxY / 2);
               const pixels = new Uint8Array(width * height * 4);
               gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
               const attributes = gl.getContextAttributes?.() || {};
-              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(String.fromCharCode(...pixels)), source: "render-callback-post-callback", method: "webgl.readPixels", preserve_drawing_buffer: attributes.preserveDrawingBuffer === true, duration_ms: performance.now() - timestamp});
+              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(pixels), source: "render-callback-post-callback", method: "webgl.readPixels", preserve_drawing_buffer: attributes.preserveDrawingBuffer === true, coverage, duration_ms: performance.now() - timestamp});
             } else {
-              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(canvas.toDataURL("image/webp", 0.05)), source: "render-callback-post-callback", method: "canvas.toDataURL", preserve_drawing_buffer: null, duration_ms: performance.now() - timestamp});
+              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(canvas.toDataURL("image/webp", 0.05)), source: "render-callback-post-callback", method: "canvas.toDataURL", preserve_drawing_buffer: null, coverage: target.coverage, duration_ms: performance.now() - timestamp});
             }
           } catch (error) {
             this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: null, source: "render-callback-post-callback", duration_ms: performance.now() - timestamp, error: String(error.message || error)});
@@ -225,42 +342,85 @@ async function liveTrace(cell) {
     const durationMs = cell.duration_ms || Math.round((cell.duration_seconds || 60) * 1000);
     const paddingMs = Number.isFinite(cell.padding_ms) ? cell.padding_ms : 100;
     if (paddingMs < 0 || paddingMs > 10000) throw inputError("cell.padding_ms must be between 0 and 10000", "/cell/padding_ms");
-    const controlDurationMs = Number.isFinite(cell.control_duration_ms) ? cell.control_duration_ms : 1000;
+    const controlDurationMs = Number.isFinite(cell.control_duration_ms) ? cell.control_duration_ms : durationMs;
     const warmupDurationMs = Number.isFinite(cell.warmup_duration_ms) ? cell.warmup_duration_ms : Math.max(1000, Math.round(Number(cell.warmup_seconds || 5) * 1000));
     if (controlDurationMs < 250) throw inputError("cell.control_duration_ms must be at least 250", "/cell/control_duration_ms");
+    if (controlDurationMs !== durationMs) throw inputError("control_duration_ms must equal the instrumented duration for a comparable pair", "/cell/control_duration_ms");
     if (warmupDurationMs < 0) throw inputError("cell.warmup_duration_ms must not be negative", "/cell/warmup_duration_ms");
     const selector = cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas";
-    const sampler = await installCanvasSampler(page, selector);
+    const sampling = samplingForCell(cell);
+    const sampler = await installCanvasSampler(page, selector, sampling);
+    if (!sampler.installed) throw capabilityError(sampler.error || "frozen sampling coverage could not be installed", "/cell/sampling");
     const wait = duration => new Promise(resolvePromise => setTimeout(resolvePromise, duration));
+    const setupCommands = validateSetupCommands(cell);
+    const initialSetup = await runSetup(page, canvas, setupCommands);
+    const lifecycle = {
+      scenario_id: cell.scenario_id,
+      seed: cell.seed ?? null,
+      configured_url: cell.server.url,
+      viewport: cell.viewport || {width: 1280, height: 720},
+      dpr: cell.dpr || 1,
+      start: {method: "page.goto", url: page.url(), observed: true, ready: true, setup: initialSetup},
+      reset: null,
+      phase_transitions: [],
+    };
+    await page.evaluate(() => { window.__orchPresentationObserver.phase = "warmup"; });
+    await wait(warmupDurationMs);
+    const controlClock = await clockMarker(page, client);
     const controlStartPage = await page.evaluate(() => performance.now());
     await page.evaluate(() => { window.__orchPresentationObserver.phase = "control"; });
+    lifecycle.phase_transitions.push({phase: "control", method: "observed-render-callbacks", start_observed: true, configured_duration_ms: controlDurationMs});
     await wait(controlDurationMs);
     const controlEndPage = await page.evaluate(() => performance.now());
-    const warmupStartPage = controlEndPage;
+    const controlObserver = await page.evaluate(() => ({callbacks: window.__orchPresentationObserver.callbacks.slice()}));
+    const controlCallbacksObserved = controlObserver.callbacks.map(item => ({...item, timestamp_ms: item.timestamp_ms + controlClock.offsetMs}));
+
+    // Reload the same configured URL before the instrumented phase. This is an
+    // observed app reset, so both phases begin from the page's normal startup
+    // lifecycle with the same scenario, seed, viewport, and DPR.
+    const resetStartedAt = Date.now();
+    const resetFromUrl = page.url();
+    await page.reload({waitUntil: "domcontentloaded", timeout: cell.server.startup_timeout_ms || 30000});
+    const resetCanvas = page.locator(selector).first();
+    if (await page.locator(selector).count() < 1) throw capabilityError("game canvas did not resolve after the measured reset", "/cell/sampling/reset");
+    await resetCanvas.focus().catch(() => resetCanvas.click({ position: { x: 1, y: 1 } }));
+    const instrumentedClient = await context.newCDPSession(page);
+    await instrumentedClient.send("Performance.enable");
+    const resetReady = await page.evaluate(() => ({url: location.href, title: document.title, viewport: {width: innerWidth, height: innerHeight}, dpr: devicePixelRatio}));
+    const resetSetup = await runSetup(page, resetCanvas, setupCommands);
+    lifecycle.reset = {method: "page.reload", observed: true, from_url: resetFromUrl, to_url: page.url(), ready: true, elapsed_ms: Date.now() - resetStartedAt, ready_observation: resetReady, setup: resetSetup};
+    lifecycle.phase_transitions.push({phase: "instrumented", method: "observed-render-callbacks-after-reset", start_observed: true, configured_duration_ms: durationMs});
+    const instrumentedSampler = await installCanvasSampler(page, selector, sampling);
+    if (!instrumentedSampler.installed) throw capabilityError(instrumentedSampler.error || "frozen sampling coverage could not be installed after reset", "/cell/sampling/reset");
+    const warmupStartPage = await page.evaluate(() => performance.now());
     await page.evaluate(() => { window.__orchPresentationObserver.phase = "warmup"; });
     await wait(warmupDurationMs);
     const warmupEndPage = await page.evaluate(() => performance.now());
-    const captureClock = await clockMarker(page, client);
+    const captureClock = await clockMarker(page, instrumentedClient);
     const window = { start_ms: captureClock.monotonicMs + paddingMs, end_ms: captureClock.monotonicMs + paddingMs + durationMs };
     await page.evaluate(() => { window.__orchPresentationObserver.phase = "instrumented"; });
     const backend = await canvasBackend(page, cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas");
     const wallStart = Date.now();
-    const trace = await collectCDPTrace(client, { durationMs: durationMs + (2 * paddingMs), categories: cell.trace_categories, timeoutMs: cell.trace_timeout_ms || Math.max(120000, durationMs + (2 * paddingMs) + 60000) });
+    const trace = await collectCDPTrace(instrumentedClient, { durationMs: durationMs + (2 * paddingMs), categories: cell.trace_categories, timeoutMs: cell.trace_timeout_ms || Math.max(120000, durationMs + (2 * paddingMs) + 60000) });
     const observer = await page.evaluate(() => ({callbacks: window.__orchPresentationObserver.callbacks.slice(), samples: window.__orchPresentationObserver.samples.slice()}));
     const callbacksObserved = observer.callbacks.map(item => ({...item, timestamp_ms: item.timestamp_ms + captureClock.offsetMs}));
     const canvasSamples = observer.samples.map(item => ({...item, timestamp_ms: item.timestamp_ms + captureClock.offsetMs}));
     const callbacks = callbacksObserved.filter(item => item.timestamp_ms >= window.start_ms && item.timestamp_ms < window.end_ms).map(item => item.timestamp_ms);
-    const control = phaseStats(callbacksObserved, "control", controlStartPage + captureClock.offsetMs, controlEndPage + captureClock.offsetMs);
+    const control = phaseStats(controlCallbacksObserved, "control", controlStartPage + controlClock.offsetMs, controlEndPage + controlClock.offsetMs);
     const warmup = phaseStats(callbacksObserved, "warmup", warmupStartPage + captureClock.offsetMs, warmupEndPage + captureClock.offsetMs);
     const instrumented = phaseStats(callbacksObserved, "instrumented", window.start_ms, window.end_ms);
     instrumented.requested_ms = durationMs;
-    instrumented.samples = canvasSamples.filter(item => item.timestamp_ms >= window.start_ms && item.timestamp_ms < window.end_ms).length;
-    instrumented.readback_errors = canvasSamples.filter(item => item.timestamp_ms >= window.start_ms && item.timestamp_ms < window.end_ms && item.error).length;
+    const instrumentedSamples = canvasSamples.filter(item => item.timestamp_ms >= window.start_ms && item.timestamp_ms < window.end_ms);
+    instrumented.samples = instrumentedSamples.length;
+    instrumented.readback_errors = instrumentedSamples.filter(item => item.error).length;
+    instrumented.sample_duration_ms = sampleDurationStats(instrumentedSamples);
     const measurement = {
       scenario_id: cell.scenario_id,
       observer: sampler.presentation,
       presentation: sampler.presentation,
       preserve_drawing_buffer: sampler.preserve_drawing_buffer,
+      sampling: instrumentedSampler.sampling,
+      lifecycle,
       warmup: {...warmup, requested_ms: warmupDurationMs},
       control: {...control, requested_ms: controlDurationMs},
       instrumented,
@@ -275,6 +435,7 @@ async function liveTrace(cell) {
         callback_interval_delta_ms: instrumented.max_callback_interval_ms === null || control.max_callback_interval_ms === null ? null : instrumented.max_callback_interval_ms - control.max_callback_interval_ms,
         samples: instrumented.samples,
         readback_errors: instrumented.readback_errors,
+        sample_duration_ms: instrumented.sample_duration_ms,
       },
     };
     const wallEnd = Date.now();
@@ -282,7 +443,7 @@ async function liveTrace(cell) {
     const parsed = {
       ...trace,
       canvas_samples: canvasSamples,
-      canvas_instrumentation: {method: sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: sampler.read_only === true, presentation: sampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: sampler.preserve_drawing_buffer, signal: "render-callback-post-callback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
+      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, signal: "render-callback-post-callback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
       measurement,
       metadata: {
         clock_reconciled: true,

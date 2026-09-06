@@ -1,0 +1,29 @@
+{
+  "id": "threejs-default-renderer-60s",
+  "artifact_commit": "git:0000000000000000000000000000000000000000",
+  "scenario_id": "threejs-default-renderer",
+  "seed": 1,
+  "duration_seconds": 60,
+  "duration_ms": 60000,
+  "control_duration_ms": 60000,
+  "warmup_duration_ms": 5000,
+  "padding_ms": 100,
+  "canvas_selector": "#game",
+  "viewport": {"width": 640, "height": 360},
+  "dpr": 1,
+  "sampling": {
+    "coordinate_space": "viewport",
+    "region": {"x": 0, "y": 0, "width": 64, "height": 64}
+  },
+  "server": {
+    "command": ["C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe", "-m", "http.server", "8765"],
+    "cwd": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260906-3d-browser-game\\B1.18\\example-workflows\\3d-browser-game\\references\\performance-qualification",
+    "url": "http://127.0.0.1:8765/threejs-default-renderer.html",
+    "startup_timeout_ms": 30000
+  },
+  "browser": {
+    "type": "chromium",
+    "package": "playwright-core",
+    "launch_timeout_ms": 30000
+  }
+}

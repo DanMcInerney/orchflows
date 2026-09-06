@@ -17,6 +17,18 @@ def node(expression):
 
 
 def native_trace(stalled=False):
+    coverage = {
+        "explicit": True,
+        "coordinate_space": "drawing-buffer",
+        "requested_region": {"x": 32, "y": 32, "width": 8, "height": 8},
+        "resolved_region": {"x": 32, "y": 32, "width": 8, "height": 8},
+        "drawing_buffer": {"width": 640, "height": 360},
+        "viewport": {"width": 640, "height": 360},
+        "dpr": 1,
+        "sample_pixels": 64,
+        "bytes_per_sample": 256,
+        "origin": "webgl-bottom-left",
+    }
     events = []
     for index in range(60):
         time = index * (1000 / 60)
@@ -48,18 +60,21 @@ def native_trace(stalled=False):
         "canvas_instrumentation": {
             "method": "webgl.readPixels", "presentation": "render-callback-post-callback",
             "read_only": True, "preserve_drawing_buffer": False,
+            "sampling": coverage,
             "measurement_perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 60, "instrumented_callbacks": 60, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "samples": 60, "readback_errors": 0},
         },
         "measurement": {
             "scenario_id": "native-test", "observer": "render-callback-post-callback",
             "presentation": "render-callback-post-callback", "preserve_drawing_buffer": False,
+            "sampling": coverage,
+            "lifecycle": {"status": "observed", "scenario_id": "native-test", "seed": 7, "configured_url": "http://127.0.0.1/game", "reset": {"method": "page.reload", "observed": True}, "phase_transitions": [{"phase": "control", "start_observed": True}, {"phase": "instrumented", "start_observed": True}]},
             "warmup": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60},
             "control": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60},
-            "instrumented": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60, "samples": 60, "readback_errors": 0},
+            "instrumented": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60, "samples": 60, "readback_errors": 0, "sample_duration_ms": {"count": 60, "total_ms": 1.2, "max_ms": 0.1, "p99_ms": 0.1}},
             "perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 60, "instrumented_callbacks": 60, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "samples": 60, "readback_errors": 0},
         },
         "traceEvents": events,
-        "canvas_samples": ([{"timestamp_ms": index * (1000 / 60), "hash": f"frame-{index}", "source": "render-callback-post-callback"}
+        "canvas_samples": ([{"timestamp_ms": index * (1000 / 60), "hash": f"frame-{index}", "source": "render-callback-post-callback", "duration_ms": 0.1}
                              for index in range(61)]
                             if not stalled else [{"timestamp_ms": 0, "hash": "a"}, {"timestamp_ms": 200, "hash": "b"}, {"timestamp_ms": 300, "hash": "b"}]),
     }
