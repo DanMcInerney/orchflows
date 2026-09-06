@@ -78,11 +78,21 @@
     "observed_at": {"type": "string", "format": "date-time"}
   },
   "allOf": [{
-    "if": {"properties": {"source": {"const": "live-browser"}}},
-    "then": {
+    "if": {
+      "required": ["source", "cell"],
       "properties": {
-        "cell": {"required": ["sampling"]},
-        "measurement": {"required": ["sampling", "lifecycle"]}
+        "source": {"const": "live-browser"},
+        "cell": {"properties": {"diagnostic_mode": {"const": "bare-counter"}}}
+      }
+    },
+    "then": {},
+    "else": {
+      "if": {"properties": {"source": {"const": "live-browser"}}},
+      "then": {
+        "properties": {
+          "cell": {"required": ["sampling"]},
+          "measurement": {"required": ["sampling", "lifecycle"]}
+        }
       }
     }
   }],
@@ -126,7 +136,7 @@
       "required": ["status", "basis", "control_callbacks", "instrumented_callbacks", "control_callback_rate_hz", "instrumented_callback_rate_hz", "callback_rate_delta_hz", "samples", "readback_errors"],
       "properties": {
         "status": {"enum": ["observed", "fixture", "unverified"]},
-        "basis": {"const": "control-vs-instrumented"},
+        "basis": {"enum": ["control-vs-instrumented", "bare-counter-no-observer-comparison"]},
         "control_callbacks": {"type": "integer", "minimum": 0},
         "instrumented_callbacks": {"type": "integer", "minimum": 0},
         "control_callback_rate_hz": {"type": "number", "minimum": 0},
@@ -238,8 +248,21 @@
         "method": {"type": "string", "minLength": 1},
         "boundaries": {"type": "object", "additionalProperties": {"$ref": "#/$defs/foregroundState"}},
         "events": {"type": "array", "items": {"$ref": "#/$defs/foregroundState"}},
-        "control": {"$ref": "#/$defs/foreground"},
-        "instrumented": {"$ref": "#/$defs/foreground"},
+        "control": {"$ref": "#/$defs/foregroundScope"},
+        "instrumented": {"$ref": "#/$defs/foregroundScope"},
+        "installation": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "foregroundScope": {
+      "type": "object",
+      "required": ["available"],
+      "properties": {
+        "required": {"type": "boolean"},
+        "available": {"type": "boolean"},
+        "method": {"type": "string", "minLength": 1},
+        "boundaries": {"type": "object", "additionalProperties": {"$ref": "#/$defs/foregroundState"}},
+        "events": {"type": "array", "items": {"$ref": "#/$defs/foregroundState"}},
         "installation": {"type": "object"}
       },
       "additionalProperties": true

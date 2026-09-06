@@ -334,7 +334,7 @@ async function installForegroundMonitor(page) {
         return this.boundaries[label];
       },
       read() {
-        return {method: this.method, available: this.available, boundaries: this.boundaries, events: this.events.slice()};
+        return {required: true, method: this.method, available: this.available, boundaries: this.boundaries, events: this.events.slice()};
       },
     };
     Object.defineProperty(window, "__orchForegroundMonitor", {value: monitor, configurable: false});
@@ -1278,6 +1278,8 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
       callbacks,
       window,
       environment: {
+        host: "local",
+        os: process.platform,
         browser: type,
         browser_version: browser.version?.() || null,
         driver: cell.browser?.package || "playwright-core",
@@ -1318,7 +1320,7 @@ export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}
   }
   const qualification = qualifyPerformance({ cell: measuredCell, trace: traceForResult, callbacks: source.callbacks });
   const result = {
-    ...makeHeader({ kind: "performance-cell", id: cell.id, artifactCommit: cell.artifact_commit, producer: "performance_collect.mjs", inputs: { cell: sha256(JSON.stringify(cell)), trace: traceForResult.raw_stream_hash || sha256(JSON.stringify(traceForResult)) }, environment: source.environment || cell.environment || {}, status: qualification.status === "qualified" ? "complete" : "unverified", gaps: (qualification.failures || []).map(item => item.code) }),
+    ...makeHeader({ kind: "performance-cell", id: cell.id, artifactCommit: cell.artifact_commit, producer: "performance_collect.mjs", inputs: { cell: sha256(JSON.stringify(cell)), trace: traceForResult.raw_stream_hash || sha256(JSON.stringify(traceForResult)) }, environment: source.environment || cell.environment || {}, status: qualification.status === "qualified" ? "complete" : "unverified", gaps: [...new Set((qualification.failures || []).map(item => item.code))] }),
     cell: { ...measuredCell, trace: undefined, callbacks: undefined },
     source: live ? "live-browser" : "qualification-fixture",
     measurement,
