@@ -28,7 +28,7 @@ When a verdict blocks, hand its complete `findings:` line to one repair call:
 The repair goal names only accepted complaints, causal seams, affected
 evidence, visible improvement, and regression checks. Re-run affected QA and
 adaptive play, retain unaffected smoke coverage, and compare before/after
-evidence. Two repair rounds is the local bound. Continued authorized progress
+evidence. A batch permits two repair/re-judge rounds. Continued authorized progress
 opens an automatic successor with the complete ledger; stagnation or reopened
 complaints receives a changed-strategy diagnosis. `redesign` names invalidated
 descendants and returns to discovery. `unverified` names the missing

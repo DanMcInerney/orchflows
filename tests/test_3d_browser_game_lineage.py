@@ -8,6 +8,8 @@ import unittest
 from pathlib import Path
 
 
+# This test resolves its repository-owned fixture and package paths from the
+# checkout root; the climb belongs to this test owner, not a wildcard exemption.
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = "./example-workflows/3d-browser-game/scripts/gate_lineage.mjs"
 

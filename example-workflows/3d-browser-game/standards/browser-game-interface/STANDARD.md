@@ -5,8 +5,8 @@ narrows: orch-design
 adapter: git
 ---
 
-The interface is judged from captures at the declared viewport and state
-identities. The canvas, menu, HUD, prompts, upgrade choices, damage feedback,
+Review the rendered interface at every recorded viewport and state key. The
+canvas, menu, HUD, prompts, upgrade choices, damage feedback,
 telegraphs, terminal state, restart, and re-entry each communicate their job
 at gameplay distance. A visual token decision remains consistent across
 views, while density and hierarchy keep the next useful action discoverable.
@@ -20,5 +20,5 @@ at the authority level of the brief; the standard adds no product promise.
 Reviewers require a closed view × breakpoint × state capture inventory,
 including loading, empty, error, focus, and terminal states where applicable.
 They examine hierarchy, legibility, occlusion, feedback timing, affordance
-truth, focus order, contrast, and console cleanliness. A source-level claim
-without the exact rendered capture is unverified visual evidence.
+truth, focus order, contrast, and console cleanliness. Source assertions do
+not establish appearance until a matching render has been captured.

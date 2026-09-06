@@ -16,6 +16,8 @@ import unittest
 from pathlib import Path
 
 
+# This test resolves its repository-owned fixture and package paths from the
+# checkout root; the climb belongs to this test owner, not a wildcard exemption.
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "example-workflows" / "3d-browser-game" / "scripts"
 PERF_FIXTURE = ROOT / "example-workflows" / "3d-browser-game" / "references" / "performance-qualification" / "continuous-animation.json"
@@ -348,7 +350,7 @@ class BrowserGameGateIntegrationTests(unittest.TestCase):
         return subprocess.run([NODE, str(SCRIPTS / "validate_evidence.mjs"), *map(str, arguments)], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=120)
 
     def test_promoted_core_and_final_gate_rehash_full_lineage_and_reject_tampering(self):
-        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix="orchflows-integration-") as directory:
             fixture = GateFixture(Path(directory))
             core_path, final_path = fixture.build()
             core_promote = self.run_cli("--index", core_path, "--promote")

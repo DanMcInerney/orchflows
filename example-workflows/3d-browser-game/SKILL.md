@@ -11,8 +11,8 @@ Open one frame and retain its returned frame identity:
 
     tickets.py frame-open <run> --goal-file <program-goal> --workflow 3d-browser-game
 
-The frame journal is the handoff ledger. Read it at every wave and relay typed
-`artifact:` or `findings:` lines verbatim.
+Use the frame journal as the handoff ledger. At each wave, copy its typed
+`artifact:` or `findings:` entry without summarizing.
 
 **Research and design.** Open the `discovery` helper under the frame. It audits
 promises, runs independent research lanes, records capability gaps and

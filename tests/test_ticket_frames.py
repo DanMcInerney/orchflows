@@ -790,7 +790,7 @@ class FrameLawOwnerTest(unittest.TestCase):
             for shipped in ("example-workflows", "skills/workflows")
             for path in sorted((ROOT / shipped).glob("*/SKILL.md"))
         }
-        self.assertEqual(8 + 2, len(self.bodies))
+        self.assertEqual(9 + 2, len(self.bodies))
 
     def test_no_body_restates_the_journal_command(self):
         self.assertEqual([], sorted(_relaying(self.bodies)))
