@@ -255,7 +255,8 @@ class DispatchLaunchTest(unittest.TestCase):
 
         self.assertEqual("spawn_agent", result["launch"]["verb"])
         self.assertEqual("orch_worker", result["launch"]["agent"])
-        self.assertEqual("gpt-5.6-luna", result["launch"]["model"])
+        self.assertEqual("gpt-6-astra", result["launch"]["model"])
+        self.assertEqual("low", result["launch"]["effort"])
         self.assertEqual("fast", result["launch"]["fields"]["service_tier"])
 
     def test_a_sealed_profile_override_resolves_the_planner_binding(self):

@@ -60,8 +60,8 @@
         "binding": {
           "agent_type": "orch_planner",
           "fork_turns": "none",
-          "model": "gpt-5.6-sol",
-          "model_reasoning_effort": "ultra"
+          "model": "gpt-6-astra",
+          "model_reasoning_effort": "high"
         },
         "name": "orch-planner"
       },
@@ -69,8 +69,8 @@
         "binding": {
           "agent_type": "orch_worker",
           "fork_turns": "none",
-          "model": "gpt-5.6-luna",
-          "model_reasoning_effort": "xhigh",
+          "model": "gpt-6-astra",
+          "model_reasoning_effort": "low",
           "service_tier": "fast"
         },
         "name": "orch-worker"
@@ -79,5 +79,5 @@
     "schema_version": 1
   },
   "source": "hosts/codex.json",
-  "source_sha256": "a358a949d3dff680dfd158db2fe4aa2000fe9fe3f0fefd56732b0a5c756c0dd4"
+  "source_sha256": "895348a117c9dc4204b63402a749a72aab31f0ec928bf080c02183c4d5e7169e"
 }
