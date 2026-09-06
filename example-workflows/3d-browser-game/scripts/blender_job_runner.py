@@ -377,6 +377,36 @@ def _verify_report(report: Any, *, glb_digest: str, name: str) -> None:
         raise EvidenceError("validation/gltfloader: required production checks did not pass")
 
 
+def _verify_external_report(report: Mapping[str, Any], stage: Path, *, glb_digest: str, name: str) -> None:
+    """Verify an optional report file before its metadata reaches the manifest."""
+
+    path_key = "report_path" if name == "khronos" else "evidence_path"
+    hash_key = "report_sha256" if name == "khronos" else "evidence_sha256"
+    if path_key not in report and hash_key not in report:
+        return
+    if not isinstance(report.get(path_key), str) or not isinstance(report.get(hash_key), str):
+        raise EvidenceError(f"validation/{name}: external report path and hash are both required")
+    report_path = contained_path(stage, report[path_key], field=f"validation/{name}/{path_key}")
+    if not report_path.is_file() or report_path.stat().st_size == 0:
+        raise EvidenceError(f"validation/{name}: external report is missing or empty")
+    if sha256_file(report_path) != report[hash_key]:
+        raise EvidenceError(f"validation/{name}: external report hash does not match its bytes")
+    try:
+        value = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise EvidenceError(f"validation/{name}: external report is not valid JSON: {exc}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceError(f"validation/{name}: external report must be an object")
+    if name == "khronos":
+        if (value.get("issues") or {}).get("numErrors") != 0:
+            raise EvidenceError("validation/khronos: external report did not prove zero errors")
+    else:
+        if value.get("glb_hash", value.get("export_sha256")) != glb_digest:
+            raise EvidenceError("validation/gltfloader: external report is unrelated or stale")
+        if value.get("checks") != {"scale": "pass", "material": "pass", "animation": "pass", "collider": "pass"}:
+            raise EvidenceError("validation/gltfloader: external report checks did not pass")
+
+
 def _verify_promotion(job: Mapping[str, Any], stage: Path, result: Mapping[str, Any]) -> None:
     if result.get("status") != "complete":
         raise EvidenceError(f"worker status is {result.get('status')!r}")
@@ -429,8 +459,15 @@ def _verify_promotion(job: Mapping[str, Any], stage: Path, result: Mapping[str, 
         validation = result.get("validation")
         if not isinstance(validation, dict):
             raise EvidenceError("validator/import evidence is missing")
-        _verify_report(validation.get("khronos"), glb_digest=sha256_file(glb_path), name="khronos")
-        _verify_report(validation.get("gltfloader"), glb_digest=sha256_file(glb_path), name="gltfloader")
+        glb_digest = sha256_file(glb_path)
+        khronos = validation.get("khronos")
+        loader = validation.get("gltf_loader") or validation.get("gltfloader")
+        _verify_report(khronos, glb_digest=glb_digest, name="khronos")
+        _verify_report(loader, glb_digest=glb_digest, name="gltfloader")
+        if isinstance(khronos, dict):
+            _verify_external_report(khronos, stage, glb_digest=glb_digest, name="khronos")
+        if isinstance(loader, dict):
+            _verify_external_report(loader, stage, glb_digest=glb_digest, name="gltfloader")
 
 
 def _finalize_manifest(stage: Path, worker_result: dict[str, Any], glb_digest: str) -> None:
@@ -448,6 +485,31 @@ def _finalize_manifest(stage: Path, worker_result: dict[str, Any], glb_digest: s
         raise EvidenceError(f"asset manifest is invalid: {exc}") from exc
     if manifest.get("exported_glb_sha256") != glb_digest:
         raise EvidenceError("asset manifest GLB identity changed before promotion")
+    validation = worker_result.get("validation")
+    loader = validation.get("gltf_loader") if isinstance(validation, dict) else None
+    if isinstance(validation, dict) and loader is None:
+        loader = validation.get("gltfloader")
+    khronos = validation.get("khronos") if isinstance(validation, dict) else None
+    # The worker's validator result is the source of truth for promotion.  If
+    # it carries the complete target-loader provenance, copy one canonical
+    # closed shape into the manifest so downstream validators can re-hash the
+    # exact GLB without knowing worker-era aliases.  Incomplete legacy-shaped
+    # reports stay absent and are rejected by validate_evidence.mjs.
+    if isinstance(khronos, dict) and isinstance(loader, dict) and all(
+        isinstance(loader.get(key), str) and loader.get(key) for key in ("evidence_id", "artifact_commit", "evidence_path", "evidence_sha256")
+    ) and all(isinstance(khronos.get(key), str) and khronos.get(key) for key in ("report_path", "report_sha256")):
+        canonical_khronos = dict(khronos)
+        canonical_loader = dict(loader)
+        for value, path_key in ((canonical_khronos, "report_path"), (canonical_loader, "evidence_path")):
+            target = contained_path(stage, value[path_key], field=f"validation/{path_key}")
+            value[path_key] = target.relative_to(path.parent).as_posix()
+        manifest["validation"] = {
+            "khronos": canonical_khronos,
+            "gltf_loader": {
+                **canonical_loader,
+                "glb_hash": loader.get("glb_hash") or loader.get("export_sha256") or glb_digest,
+            },
+        }
     manifest["status"] = "complete"
     manifest["gaps"] = []
     _write_json(path, manifest)

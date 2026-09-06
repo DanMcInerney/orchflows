@@ -1,0 +1,6 @@
+# Node runs the package-owned JavaScript boundaries; the exact library pins
+# live in package.json and package-lock.json. Blender and a headed browser
+# are capabilities discovered by their explicit probes, so no host path is
+# shipped in this declaration.
+node >=24.15.0
+npm >=11.12.1

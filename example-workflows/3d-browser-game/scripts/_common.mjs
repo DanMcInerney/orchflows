@@ -127,7 +127,9 @@ export function makeHeader({ kind, id, artifactCommit, producer, inputs = {}, en
   requireString(kind, "/kind");
   requireString(id, "/id");
   requireString(artifactCommit, "/artifact_commit");
-  requireString(producer, "/producer");
+  if (typeof producer !== "string" && (!producer || typeof producer !== "object" || Array.isArray(producer))) {
+    throw inputError("producer must be a name or object with a name", "/producer");
+  }
   const inputRows = Array.isArray(inputs) ? inputs : Object.entries(inputs).map(([name, sha256Value]) => ({ name, sha256: sha256Value }));
   if (!Array.isArray(inputRows) || inputRows.some(item => !item || typeof item.name !== "string" || !/^sha256:[0-9a-f]{64}$/.test(item.sha256))) {
     throw inputError("inputs must be an array of {name, sha256} identities", "/inputs");

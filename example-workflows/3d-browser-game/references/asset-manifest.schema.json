@@ -42,11 +42,15 @@
     "attachments": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
     "material_roles": {"type": "object", "additionalProperties": {"type": "string"}},
     "animation_clips": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
-    "required_extensions": {"type": "array", "items": {"type": "string"}}
+    "required_extensions": {"type": "array", "items": {"type": "string"}},
+    "validation": {"$ref": "#/$defs/validation"}
   },
   "$defs": {
     "digest": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"},
     "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
-    "metadata": {"type": "object", "additionalProperties": false, "properties": {"name": {"type": "string"}, "type": {"type": "string"}, "object": {"type": "string"}, "shape": {"type": "string"}, "dimensions": {"type": "array", "items": {"type": "number"}}, "position": {"type": "array", "items": {"type": "number"}}, "rotation": {"type": "array", "items": {"type": "number"}}, "start": {"type": "integer"}, "end": {"type": "integer"}}}
+    "metadata": {"type": "object", "additionalProperties": false, "properties": {"name": {"type": "string"}, "type": {"type": "string"}, "object": {"type": "string"}, "shape": {"type": "string"}, "dimensions": {"type": "array", "items": {"type": "number"}}, "position": {"type": "array", "items": {"type": "number"}}, "rotation": {"type": "array", "items": {"type": "number"}}, "start": {"type": "integer"}, "end": {"type": "integer"}}},
+    "validation": {"type": "object", "additionalProperties": false, "required": ["khronos", "gltf_loader"], "properties": {"khronos": {"$ref": "#/$defs/khronos"}, "gltf_loader": {"$ref": "#/$defs/gltfLoader"}}},
+    "khronos": {"type": "object", "additionalProperties": false, "required": ["status", "errors", "export_sha256", "report_path", "report_sha256"], "properties": {"status": {"const": "pass"}, "errors": {"const": 0}, "export_sha256": {"$ref": "#/$defs/digest"}, "validator": {"type": "string", "minLength": 1}, "report_path": {"$ref": "#/$defs/relativePath"}, "report_sha256": {"$ref": "#/$defs/digest"}}},
+    "gltfLoader": {"type": "object", "additionalProperties": false, "required": ["status", "artifact_commit", "evidence_id", "glb_hash", "checks", "evidence_path", "evidence_sha256"], "properties": {"status": {"const": "pass"}, "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"}, "evidence_id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "glb_hash": {"$ref": "#/$defs/digest"}, "evidence_path": {"$ref": "#/$defs/relativePath"}, "evidence_sha256": {"$ref": "#/$defs/digest"}, "checks": {"type": "object", "additionalProperties": false, "required": ["scale", "material", "animation", "collider"], "properties": {"scale": {"const": "pass"}, "material": {"const": "pass"}, "animation": {"const": "pass"}, "collider": {"const": "pass"}}}}}
   }
 }
