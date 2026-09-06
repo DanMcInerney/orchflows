@@ -12,7 +12,12 @@ queues a frozen explicit region of the current default WebGL2 drawing buffer in
 a pixel-pack buffer. A `fenceSync` is polled with a zero timeout on later
 callbacks; completed bytes are copied with `getBufferSubData`, so the observer
 never waits for the GPU on the application callback. It leaves
-`preserveDrawingBuffer:false` unchanged. A cell's
+`preserveDrawingBuffer:false` unchanged. Every observer run activates its
+headed page with `page.bringToFront()` and records browser-observable
+visibility, hidden, document-focus, focus/blur, and pagehide state at measured
+boundaries. A missing monitor, hidden/unfocused boundary, or hidden/blur/pagehide
+transition makes the result `performance: unverified`; tab activation is not an
+OS-window activation claim. A cell's
 `sampling` declaration is either in drawing-buffer pixels or CSS viewport
 pixels; the result records the resolved contained region, drawing-buffer size,
 viewport size, DPR, bytes per sample, and every sample duration. Native
@@ -80,3 +85,13 @@ collector recorded `120` callbacks and `120` samples with one canvas hash,
 then rejected the result with `missing-canvas-attribution` and
 `canvas-frame-floor` (`C=0/2`). A live run still needs a headed browser and
 records the exact browser, backend, viewport, DPR, seed, and commit in its cell.
+
+Diagnostic cells keep their mode in the cell, measurement, trace metadata, and
+canvas-instrumentation record. `observer-only` uses the existing bootstrap with
+both tracing and readback disabled; `trace-only` and `readback-only` disable
+only their named path. `bare-counter` is a minimally observed baseline: after
+the application is ready it attaches one independent rAF timestamp counter,
+retains `performance.timeOrigin`, page and wall clock markers, and foreground
+lifecycle records, and performs no init script, CDP session, WebGL context
+acquisition, GL wrapping, or readback. Bare and observer-only cells are
+diagnostics and always fail closed for production qualification.

@@ -24,6 +24,7 @@
         "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"},
         "scenario_id": {"type": "string", "minLength": 1},
         "seed": {"type": ["string", "number", "integer"]},
+        "diagnostic_mode": {"enum": ["combined", "observer-only", "trace-only", "readback-only", "bare-counter"]},
         "warmup_seconds": {"type": "number", "minimum": 0},
         "control_duration_ms": {"type": "number", "minimum": 250},
         "warmup_duration_ms": {"type": "number", "minimum": 0},
@@ -54,11 +55,16 @@
       "required": ["scenario_id", "observer", "presentation", "preserve_drawing_buffer", "warmup", "control", "instrumented", "perturbation"],
       "properties": {
         "scenario_id": {"type": "string", "minLength": 1},
+        "diagnostic_mode": {"enum": ["combined", "observer-only", "trace-only", "readback-only", "bare-counter"]},
+        "observation_mode": {"enum": ["combined", "observer-only", "trace-only", "readback-only", "bare-counter"]},
         "observer": {"type": "string", "minLength": 1},
         "presentation": {"type": "string", "minLength": 1},
         "preserve_drawing_buffer": {"type": ["boolean", "null"]},
         "sampling": {"$ref": "#/$defs/sampling"},
         "lifecycle": {"$ref": "#/$defs/lifecycle"},
+        "foreground": {"$ref": "#/$defs/foreground"},
+        "bare_counter": {"$ref": "#/$defs/bareCounter"},
+        "clock": {"$ref": "#/$defs/clock"},
         "warmup": {"$ref": "#/$defs/phase"},
         "control": {"$ref": "#/$defs/phase"},
         "instrumented": {"$ref": "#/$defs/instrumented"},
@@ -72,11 +78,21 @@
     "observed_at": {"type": "string", "format": "date-time"}
   },
   "allOf": [{
-    "if": {"properties": {"source": {"const": "live-browser"}}},
-    "then": {
+    "if": {
+      "required": ["source", "cell"],
       "properties": {
-        "cell": {"required": ["sampling"]},
-        "measurement": {"required": ["sampling", "lifecycle"]}
+        "source": {"const": "live-browser"},
+        "cell": {"properties": {"diagnostic_mode": {"const": "bare-counter"}}}
+      }
+    },
+    "then": {},
+    "else": {
+      "if": {"properties": {"source": {"const": "live-browser"}}},
+      "then": {
+        "properties": {
+          "cell": {"required": ["sampling"]},
+          "measurement": {"required": ["sampling", "lifecycle"]}
+        }
       }
     }
   }],
@@ -120,7 +136,7 @@
       "required": ["status", "basis", "control_callbacks", "instrumented_callbacks", "control_callback_rate_hz", "instrumented_callback_rate_hz", "callback_rate_delta_hz", "samples", "readback_errors"],
       "properties": {
         "status": {"enum": ["observed", "fixture", "unverified"]},
-        "basis": {"const": "control-vs-instrumented"},
+        "basis": {"enum": ["control-vs-instrumented", "bare-counter-no-observer-comparison"]},
         "control_callbacks": {"type": "integer", "minimum": 0},
         "instrumented_callbacks": {"type": "integer", "minimum": 0},
         "control_callback_rate_hz": {"type": "number", "minimum": 0},
@@ -218,7 +234,81 @@
         "dpr": {"type": ["number", "null"], "exclusiveMinimum": 0},
         "start": {"type": "object"},
         "reset": {"oneOf": [{"type": "object"}, {"type": "null"}]},
-        "phase_transitions": {"type": "array", "items": {"type": "object"}}
+        "phase_transitions": {"type": "array", "items": {"type": "object"}},
+        "foreground": {"$ref": "#/$defs/foreground"}
+      },
+      "additionalProperties": false
+    },
+    "foreground": {
+      "type": "object",
+      "required": ["required", "available"],
+      "properties": {
+        "required": {"type": "boolean"},
+        "available": {"type": "boolean"},
+        "method": {"type": "string", "minLength": 1},
+        "boundaries": {"type": "object", "additionalProperties": {"$ref": "#/$defs/foregroundState"}},
+        "events": {"type": "array", "items": {"$ref": "#/$defs/foregroundState"}},
+        "control": {"$ref": "#/$defs/foregroundScope"},
+        "instrumented": {"$ref": "#/$defs/foregroundScope"},
+        "installation": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "foregroundScope": {
+      "type": "object",
+      "required": ["available"],
+      "properties": {
+        "required": {"type": "boolean"},
+        "available": {"type": "boolean"},
+        "method": {"type": "string", "minLength": 1},
+        "boundaries": {"type": "object", "additionalProperties": {"$ref": "#/$defs/foregroundState"}},
+        "events": {"type": "array", "items": {"$ref": "#/$defs/foregroundState"}},
+        "installation": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "foregroundState": {
+      "type": "object",
+      "properties": {
+        "type": {"type": "string"},
+        "performance_now_ms": {"type": "number"},
+        "date_now_ms": {"type": "number"},
+        "visibility_state": {"type": "string"},
+        "hidden": {"type": "boolean"},
+        "document_has_focus": {"type": "boolean"},
+        "has_focus": {"type": "boolean"},
+        "window_has_focus": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
+    "bareCounter": {
+      "type": "object",
+      "required": ["method", "time_origin_ms", "timestamps", "timestamp_clock"],
+      "properties": {
+        "method": {"type": "string", "minLength": 1},
+        "time_origin_ms": {"type": "number"},
+        "timestamps": {"type": "array", "items": {"type": "number"}},
+        "timestamp_clock": {"const": "performance.now"}
+      },
+      "additionalProperties": false
+    },
+    "clock": {
+      "type": "object",
+      "required": ["method", "time_origin_ms", "start", "end"],
+      "properties": {
+        "method": {"const": "performance.timeOrigin+performance.now"},
+        "time_origin_ms": {"type": "number"},
+        "start": {"$ref": "#/$defs/clockMarker"},
+        "end": {"$ref": "#/$defs/clockMarker"}
+      },
+      "additionalProperties": false
+    },
+    "clockMarker": {
+      "type": "object",
+      "required": ["performance_now_ms", "date_now_ms"],
+      "properties": {
+        "performance_now_ms": {"type": "number"},
+        "date_now_ms": {"type": "integer"}
       },
       "additionalProperties": false
     }

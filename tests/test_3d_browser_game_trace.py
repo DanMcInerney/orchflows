@@ -169,6 +169,73 @@ class NativeTraceTests(unittest.TestCase):
         self.assertEqual("unverified", qualified["status"])
         self.assertIn("diagnostic-mode", [item["code"] for item in qualified["failures"]])
 
+    def test_bare_and_observer_diagnostic_labels_fail_closed(self):
+        trace = native_trace()
+        for mode in ("bare-counter", "observer-only", "trace-only", "readback-only"):
+            with self.subTest(mode=mode):
+                expression = (
+                    "import {qualifyPerformance} from " + json.dumps(TRACE_URI) + "; "
+                    "const t=" + json.dumps(trace) + "; "
+                    "const c={id:'native',artifact_commit:'git:x',mode:'animation',diagnostic_mode:" + json.dumps(mode) + ",window:{start_ms:0,end_ms:1000},game_canvas:{canvas_selector:'#game'}}; "
+                    "console.log(JSON.stringify(qualifyPerformance({cell:c,trace:t,callbacks:Array.from({length:60},(_,i)=>i*1000/60)})));"
+                )
+                result = node(expression)
+                self.assertEqual(0, result.returncode, result.stderr)
+                qualified = json.loads(result.stdout)
+                self.assertEqual("unverified", qualified["status"])
+                self.assertIn("diagnostic-mode", [item["code"] for item in qualified["failures"]])
+
+    def test_foreground_guard_fails_closed_for_unavailable_boundary_and_transition(self):
+        trace = native_trace()
+        trace["canvas_instrumentation"]["foreground_guard_required"] = True
+        trace["metadata"]["foreground_guard_required"] = True
+        guard = {
+            "required": True,
+            "available": True,
+            "control": {
+                "available": True,
+                "boundaries": {
+                    "control-start": {"performance_now_ms": 0, "visibility_state": "visible", "hidden": False, "document_has_focus": True},
+                    "control-end": {"performance_now_ms": 1000, "visibility_state": "visible", "hidden": False, "document_has_focus": True},
+                },
+                "events": [],
+            },
+            "instrumented": {
+                "available": True,
+                "boundaries": {
+                    "instrumented-start": {"performance_now_ms": 0, "visibility_state": "visible", "hidden": False, "document_has_focus": True},
+                    "instrumented-end": {"performance_now_ms": 1000, "visibility_state": "visible", "hidden": False, "document_has_focus": True},
+                },
+                "events": [],
+            },
+        }
+        trace["measurement"]["lifecycle"]["foreground"] = guard
+        self.assertEqual("qualified", self.qualify(trace)["status"])
+        trace["measurement"]["lifecycle"]["foreground"]["instrumented"]["boundaries"]["instrumented-start"]["hidden"] = True
+        result = self.qualify(trace)
+        self.assertIn("foreground-boundary", [item["code"] for item in result["failures"]])
+        trace = native_trace()
+        trace["canvas_instrumentation"]["foreground_guard_required"] = True
+        trace["metadata"]["foreground_guard_required"] = True
+        trace["measurement"]["lifecycle"]["foreground"] = guard
+        trace["measurement"]["lifecycle"]["foreground"]["instrumented"]["events"] = [
+            {"type": "blur", "performance_now_ms": 500, "visibility_state": "visible", "hidden": False, "document_has_focus": False},
+        ]
+        result = self.qualify(trace)
+        self.assertIn("foreground-transition", [item["code"] for item in result["failures"]])
+
+    def test_validate_cell_accepts_each_named_diagnostic_mode(self):
+        collect_uri = (__import__("pathlib").Path(__file__).resolve().parents[1] / "example-workflows/3d-browser-game/scripts/performance_collect.mjs").as_uri()
+        expression = (
+            "import {validateCell} from " + json.dumps(collect_uri) + "; "
+            "const modes=[" + ",".join(json.dumps(mode) for mode in ("combined", "bare-counter", "observer-only", "trace-only", "readback-only")) + "]; "
+            "for (const diagnostic_mode of modes) validateCell({id:'cell',artifact_commit:'git:" + "a" * 40 + "',scenario_id:'scenario',duration_seconds:1,window:{start_ms:0,end_ms:1000},diagnostic_mode}); "
+            "console.log(JSON.stringify(modes));"
+        )
+        result = node(expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(["combined", "bare-counter", "observer-only", "trace-only", "readback-only"], json.loads(result.stdout))
+
     def test_native_canvas_flag_and_label_cannot_self_attribute(self):
         trace = native_trace()
         trace["traceEvents"] = [{"name": "frame", "timestamp_ms": 0, "canvas": True, "attribution": "game-canvas", "draw": True}]
