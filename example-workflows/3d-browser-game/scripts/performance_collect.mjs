@@ -324,14 +324,17 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
         // Save and restore mutable readback state around every WebGL call. The
         // observer samples the existing default framebuffer and must not alter
         // the renderer's framebuffer, pixel-store, or pack-buffer bindings.
-        withState(gl, operation) {
+        withState(gl, operation, timings = null) {
           const state = {};
           const read = name => {
             try { state[name] = gl.getParameter(gl[name]); } catch { state[name] = undefined; }
           };
+          const captureStarted = performance.now();
           for (const name of ["PIXEL_PACK_BUFFER_BINDING", "READ_FRAMEBUFFER_BINDING", "DRAW_FRAMEBUFFER_BINDING", "PACK_ALIGNMENT", "PACK_ROW_LENGTH", "PACK_SKIP_ROWS", "PACK_SKIP_PIXELS", "READ_BUFFER"]) read(name);
+          if (timings) timings.state_capture = performance.now() - captureStarted;
           try { return operation(); }
           finally {
+            const restoreStarted = performance.now();
             try { if (state.PIXEL_PACK_BUFFER_BINDING !== undefined) gl.bindBuffer(gl.PIXEL_PACK_BUFFER, state.PIXEL_PACK_BUFFER_BINDING); } catch {}
             try { if (state.READ_FRAMEBUFFER_BINDING !== undefined) gl.bindFramebuffer(gl.READ_FRAMEBUFFER, state.READ_FRAMEBUFFER_BINDING); } catch {}
             try { if (state.DRAW_FRAMEBUFFER_BINDING !== undefined) gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, state.DRAW_FRAMEBUFFER_BINDING); } catch {}
@@ -339,6 +342,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
               try { if (state[name] !== undefined) gl.pixelStorei(gl[name], state[name]); } catch {}
             }
             try { if (state.READ_BUFFER !== undefined) gl.readBuffer(state.READ_BUFFER); } catch {}
+            if (timings) timings.state_restore = performance.now() - restoreStarted;
           }
         },
         configure(target) {
@@ -494,7 +498,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
             preserve_drawing_buffer: target.preserve_drawing_buffer,
             queue_duration_ms: 0,
             wait_duration_ms: 0,
-            queue_stages_ms: {bind: 0, read_pixels: 0, fence: 0, flush: 0, other: 0},
+          queue_stages_ms: {bind: 0, read_pixels: 0, fence: 0, flush: 0, state_capture: 0, state_restore: 0, other: 0},
           };
           if (this.pending.length >= this.max_pending || !this.available.length) {
             item.queue_duration_ms = performance.now() - started;
@@ -522,9 +526,9 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
               stageStarted = performance.now();
               gl.flush();
               item.queue_stages_ms.flush = performance.now() - stageStarted;
-            });
+            }, item.queue_stages_ms);
             item.queue_duration_ms = performance.now() - started;
-            const measuredStages = Object.values(item.queue_stages_ms).reduce((sum, value) => sum + value, 0);
+            const measuredStages = Object.entries(item.queue_stages_ms).filter(([name]) => name !== "other").reduce((sum, [, value]) => sum + value, 0);
             item.queue_stages_ms.other = Math.max(0, item.queue_duration_ms - measuredStages);
             this.readback.queue_duration_ms += item.queue_duration_ms;
             this.readback.queued += 1;
