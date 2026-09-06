@@ -1,19 +1,29 @@
 """Native FramesHandler projection and raw ReturnAsStream seam checks."""
 import json
 import subprocess
+import tempfile
 import unittest
 
 
 ROOT = __import__("pathlib").Path(__file__).resolve().parents[1]
 NODE = "node"
 TRACE = "example-workflows/3d-browser-game/scripts/trace_frames.mjs"
+TRACE_URI = (__import__("pathlib").Path(__file__).resolve().parents[1] / TRACE).as_uri()
 
 
 def node(expression):
-    return subprocess.run(
-        [NODE, "--input-type=module", "-e", expression],
-        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
-    )
+    if len(expression) < 20000:
+        return subprocess.run(
+            [NODE, "--input-type=module", "-e", expression],
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
+        )
+    with tempfile.TemporaryDirectory() as directory:
+        path = __import__("pathlib").Path(directory) / "case.mjs"
+        path.write_text(expression, encoding="utf-8")
+        return subprocess.run(
+            [NODE, str(path)],
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
+        )
 
 
 def native_trace(stalled=False):
@@ -58,9 +68,15 @@ def native_trace(stalled=False):
         "completion": {"stream": "1", "transferMode": "ReturnAsStream", "dataLossOccurred": False},
         "metadata": {"clock_reconciled": True, "window_start_ms": -100, "window_end_ms": 1100},
         "canvas_instrumentation": {
-            "method": "webgl.readPixels", "presentation": "render-callback-post-callback",
+            "method": "webgl2.pixel-pack-buffer+fence-sync", "presentation": "render-callback-post-callback",
             "read_only": True, "preserve_drawing_buffer": False,
             "sampling": coverage,
+            "readback": {"method": "webgl2.pixel-pack-buffer+fence-sync", "asynchronous": True,
+                          "api": ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
+                          "max_pending": 4, "allocated_buffers": 4, "queued": 60, "completed": 60,
+                          "lost": 0, "errors": 0, "context_losses": 0, "poll_count": 60,
+                          "pending_at_cleanup": 0, "cleanup_observed": True,
+                          "queue_duration_ms": 1, "wait_duration_ms": 1, "copy_duration_ms": 1, "poll_duration_ms": 1},
             "measurement_perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 60, "instrumented_callbacks": 60, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "samples": 60, "readback_errors": 0},
         },
         "measurement": {
@@ -74,16 +90,16 @@ def native_trace(stalled=False):
             "perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 60, "instrumented_callbacks": 60, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "samples": 60, "readback_errors": 0},
         },
         "traceEvents": events,
-        "canvas_samples": ([{"timestamp_ms": index * (1000 / 60), "hash": f"frame-{index}", "source": "render-callback-post-callback", "duration_ms": 0.1}
+        "canvas_samples": ([{"timestamp_ms": index * (1000 / 60), "origin_timestamp_ms": index * (1000 / 60), "callback_index": index, "hash": f"frame-{index}", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}
                              for index in range(61)]
-                            if not stalled else [{"timestamp_ms": 0, "hash": "a"}, {"timestamp_ms": 200, "hash": "b"}, {"timestamp_ms": 300, "hash": "b"}]),
+                            if not stalled else [{"timestamp_ms": 0, "origin_timestamp_ms": 0, "callback_index": 0, "hash": "a", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}, {"timestamp_ms": 200, "origin_timestamp_ms": 200, "callback_index": 1, "hash": "b", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}, {"timestamp_ms": 300, "origin_timestamp_ms": 300, "callback_index": 2, "hash": "b", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}]),
     }
 
 
 class NativeTraceTests(unittest.TestCase):
     def qualify(self, trace):
         expression = (
-            "import {qualifyPerformance} from './" + TRACE + "'; "
+            "import {qualifyPerformance} from " + json.dumps(TRACE_URI) + "; "
             "const t=" + json.dumps(trace) + "; "
             "const c={id:'native',artifact_commit:'git:x',mode:'animation',window:{start_ms:0,end_ms:1000},game_canvas:{canvas_selector:'#game'}}; "
             "console.log(JSON.stringify(qualifyPerformance({cell:c,trace:t,callbacks:Array.from({length:60},(_,i)=>i*1000/60)})));"
@@ -122,6 +138,14 @@ class NativeTraceTests(unittest.TestCase):
         trace["measurement"].pop("perturbation")
         result = self.qualify(trace)
         self.assertIn("missing-measurement-perturbation", [item["code"] for item in result["failures"]])
+        trace = native_trace()
+        trace["canvas_instrumentation"]["readback"]["asynchronous"] = False
+        result = self.qualify(trace)
+        self.assertIn("missing-asynchronous-readback", [item["code"] for item in result["failures"]])
+        trace = native_trace()
+        trace["canvas_samples"][1].pop("origin_timestamp_ms")
+        result = self.qualify(trace)
+        self.assertIn("invalid-readback-association", [item["code"] for item in result["failures"]])
 
     def test_native_canvas_flag_and_label_cannot_self_attribute(self):
         trace = native_trace()

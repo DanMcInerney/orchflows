@@ -578,6 +578,29 @@ function validSamplingCoverage(value) {
     && Number.isInteger(value.sample_pixels) && value.sample_pixels === region.width * region.height;
 }
 
+function validAsyncReadback(value) {
+  return value?.method === "webgl2.pixel-pack-buffer+fence-sync"
+    && value?.asynchronous === true
+    && Array.isArray(value.api)
+    && value.api.includes("PIXEL_PACK_BUFFER")
+    && value.api.includes("readPixels-offset")
+    && value.api.includes("fenceSync")
+    && value.api.includes("clientWaitSync-timeout-0")
+    && value.api.includes("getBufferSubData")
+    && Number.isInteger(value.max_pending) && value.max_pending >= 1 && value.max_pending <= 8
+    && Number.isInteger(value.allocated_buffers) && value.allocated_buffers >= 0
+    && Number.isInteger(value.queued) && value.queued >= 0
+    && Number.isInteger(value.completed) && value.completed >= 0
+    && Number.isInteger(value.lost) && value.lost >= 0
+    && Number.isInteger(value.errors) && value.errors >= 0
+    && Number.isInteger(value.context_losses) && value.context_losses >= 0
+    && Number.isInteger(value.poll_count) && value.poll_count >= 0
+    && Number.isInteger(value.pending_at_cleanup) && value.pending_at_cleanup >= 0
+    && value.cleanup_observed === true
+    && ["queue_duration_ms", "wait_duration_ms", "copy_duration_ms", "poll_duration_ms"]
+      .every(key => typeof value[key] === "number" && Number.isFinite(value[key]) && value[key] >= 0);
+}
+
 function nativeTraceFailures(parsed, startMs, endMs) {
   const failures = [];
   if (!NATIVE_FORMATS.has(parsed.format)) failures.push(failure("unparsed-format", "/trace/format", [...NATIVE_FORMATS], parsed.format));
@@ -604,6 +627,10 @@ function nativeTraceFailures(parsed, startMs, endMs) {
       || instrumentation.preserve_drawing_buffer !== false) {
     failures.push(failure("missing-native-presentation-observation", "/trace/canvas_instrumentation", "read-only render-callback observation with preserveDrawingBuffer:false", instrumentation));
   }
+  const readback = instrumentation.readback || parsed.measurement?.instrumented?.readback;
+  if (!validAsyncReadback(readback)) {
+    failures.push(failure("missing-asynchronous-readback", "/trace/canvas_instrumentation/readback", "bounded WebGL2 PBO/fence readback with zero-timeout polling and observed cleanup", readback || null));
+  }
   const samples = Array.isArray(parsed.canvas_samples) ? parsed.canvas_samples : [];
   if (!samples.some(item => item?.source === "render-callback-post-callback")) {
     failures.push(failure("missing-render-callback-samples", "/trace/canvas_samples", "at least one post-callback sample", samples.length));
@@ -615,6 +642,11 @@ function nativeTraceFailures(parsed, startMs, endMs) {
   const sampledRows = samples.filter(item => item?.source === "render-callback-post-callback");
   if (sampledRows.some(item => typeof item.duration_ms !== "number" || !Number.isFinite(item.duration_ms) || item.duration_ms < 0)) {
     failures.push(failure("missing-sample-duration", "/trace/canvas_samples", "every post-callback sample records a non-negative duration_ms", sampledRows));
+  }
+  if (sampledRows.some(item => !Number.isInteger(item.callback_index) || item.callback_index < 0
+      || typeof item.origin_timestamp_ms !== "number" || !Number.isFinite(item.origin_timestamp_ms)
+      || !["complete", "lost", "error"].includes(item.completion_status))) {
+    failures.push(failure("invalid-readback-association", "/trace/canvas_samples", "each sample retains callback origin and completion/loss status", sampledRows));
   }
   const perturbation = instrumentation.measurement_perturbation || parsed.measurement?.perturbation;
   if (!perturbation || perturbation.status !== "observed" || perturbation.basis !== "control-vs-instrumented"

@@ -28,6 +28,11 @@
         "control_duration_ms": {"type": "number", "minimum": 250},
         "warmup_duration_ms": {"type": "number", "minimum": 0},
         "sampling": {"$ref": "#/$defs/sampling"},
+        "readback": {
+          "type": "object",
+          "properties": {"max_pending": {"type": "integer", "minimum": 1, "maximum": 8}},
+          "additionalProperties": false
+        },
         "window": {
           "type": "object",
           "required": ["start_ms", "end_ms"],
@@ -105,7 +110,8 @@
         "max_callback_interval_ms": {"type": ["number", "null"], "minimum": 0},
         "samples": {"type": "integer", "minimum": 0},
         "readback_errors": {"type": "integer", "minimum": 0},
-        "sample_duration_ms": {"$ref": "#/$defs/sampleDuration"}
+        "sample_duration_ms": {"$ref": "#/$defs/sampleDuration"},
+        "readback": {"$ref": "#/$defs/readback"}
       },
       "additionalProperties": false
     },
@@ -123,7 +129,8 @@
         "callback_interval_delta_ms": {"type": ["number", "null"]},
         "samples": {"type": "integer", "minimum": 0},
         "readback_errors": {"type": "integer", "minimum": 0},
-        "sample_duration_ms": {"$ref": "#/$defs/sampleDuration"}
+        "sample_duration_ms": {"$ref": "#/$defs/sampleDuration"},
+        "readback": {"$ref": "#/$defs/readback"}
       },
       "additionalProperties": false
     },
@@ -135,6 +142,30 @@
         "total_ms": {"type": "number", "minimum": 0},
         "max_ms": {"type": ["number", "null"], "minimum": 0},
         "p99_ms": {"type": ["number", "null"], "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "readback": {
+      "type": "object",
+      "required": ["method", "asynchronous", "api", "max_pending", "allocated_buffers", "queued", "completed", "lost", "errors", "context_losses", "poll_count", "pending_at_cleanup", "cleanup_observed", "queue_duration_ms", "wait_duration_ms", "copy_duration_ms", "poll_duration_ms"],
+      "properties": {
+        "method": {"const": "webgl2.pixel-pack-buffer+fence-sync"},
+        "asynchronous": {"const": true},
+        "api": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+        "max_pending": {"type": "integer", "minimum": 1, "maximum": 8},
+        "allocated_buffers": {"type": "integer", "minimum": 0},
+        "queued": {"type": "integer", "minimum": 0},
+        "completed": {"type": "integer", "minimum": 0},
+        "lost": {"type": "integer", "minimum": 0},
+        "errors": {"type": "integer", "minimum": 0},
+        "context_losses": {"type": "integer", "minimum": 0},
+        "poll_count": {"type": "integer", "minimum": 0},
+        "pending_at_cleanup": {"type": "integer", "minimum": 0},
+        "cleanup_observed": {"type": "boolean"},
+        "queue_duration_ms": {"type": "number", "minimum": 0},
+        "wait_duration_ms": {"type": "number", "minimum": 0},
+        "copy_duration_ms": {"type": "number", "minimum": 0},
+        "poll_duration_ms": {"type": "number", "minimum": 0}
       },
       "additionalProperties": false
     },

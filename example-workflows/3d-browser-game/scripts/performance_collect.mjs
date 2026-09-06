@@ -23,6 +23,10 @@ function validateCell(cell) {
   for (const [key, value] of [["control_duration_ms", cell.control_duration_ms], ["warmup_duration_ms", cell.warmup_duration_ms]]) {
     if (value !== undefined && (!Number.isFinite(value) || value < 0 || value > 600000)) throw inputError(`cell.${key} must be between 0 and 600000`, `/cell/${key}`);
   }
+  if (cell.readback?.max_pending !== undefined
+      && (!Number.isInteger(cell.readback.max_pending) || cell.readback.max_pending < 1 || cell.readback.max_pending > MAX_PENDING_READBACKS)) {
+    throw inputError(`cell.readback.max_pending must be an integer between 1 and ${MAX_PENDING_READBACKS}`, "/cell/readback/max_pending");
+  }
   samplingDeclaration(cell);
   validateSetupCommands(cell);
   return cell;
@@ -30,6 +34,7 @@ function validateCell(cell) {
 
 const SAMPLE_COORDINATE_SPACES = new Set(["drawing-buffer", "viewport"]);
 const MAX_SAMPLE_PIXELS = 65536;
+const MAX_PENDING_READBACKS = 8;
 
 /**
  * Resolve the caller's frozen readback declaration. Coordinates are integer
@@ -121,15 +126,18 @@ function eventTimeMs(event) {
   return value > 1e8 ? value / 1000 : value;
 }
 
-async function installCanvasSampler(page, selector, sampling) {
-  return page.evaluate(({canvasSelector, samplingDeclaration}) => {
+async function installCanvasSampler(page, selector, sampling, readbackOptions = {}) {
+  return page.evaluate(({canvasSelector, samplingDeclaration, maxPending}) => {
     const observer = window.__orchPresentationObserver;
     const canvas = document.querySelector(canvasSelector);
     if (!observer) return {installed: false, error: "render-callback observer was not installed"};
     if (!canvas) return {installed: false, error: "canvas selector did not resolve"};
-    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    // PBO readback and zero-timeout fences are WebGL2 APIs. Falling back to a
+    // synchronous WebGL1 readPixels call would reintroduce the measured stall,
+    // so unsupported capability remains explicitly unverified.
+    const gl = canvas.getContext("webgl2");
     const attributes = gl?.getContextAttributes?.() || null;
-    if (!gl) return {installed: false, error: "frozen sampling coverage requires a WebGL drawing buffer"};
+    if (!gl) return {installed: false, error: "bounded asynchronous sampling requires a WebGL2 drawing buffer"};
     const drawingBuffer = {width: canvas.width, height: canvas.height};
     const viewport = {width: canvas.clientWidth, height: canvas.clientHeight};
     const dpr = window.devicePixelRatio;
@@ -164,19 +172,28 @@ async function installCanvasSampler(page, selector, sampling) {
       bytes_per_sample: resolved.width * resolved.height * 4,
       origin: samplingDeclaration.coordinate_space === "viewport" ? "viewport-top-left-to-webgl-bottom-left" : "webgl-bottom-left",
     };
-    observer.targets = [{selector: canvasSelector, coverage}];
+    const target = {
+      selector: canvasSelector,
+      coverage,
+      gl,
+      max_pending: Number.isInteger(maxPending) ? maxPending : 4,
+      preserve_drawing_buffer: attributes?.preserveDrawingBuffer === true,
+    };
+    const configured = observer.configure(target);
+    if (!configured.installed) return configured;
     observer.phase = "control";
     return {
       installed: true,
       selector: canvasSelector,
       clock: "performance.now",
-      method: gl ? "webgl.readPixels" : "canvas.toDataURL",
+      method: configured.method,
       read_only: true,
       presentation: "render-callback-post-callback",
-      preserve_drawing_buffer: gl ? attributes?.preserveDrawingBuffer : null,
+      preserve_drawing_buffer: target.preserve_drawing_buffer,
       sampling: coverage,
+      readback: configured.readback,
     };
-  }, {canvasSelector: selector, samplingDeclaration: sampling});
+  }, {canvasSelector: selector, samplingDeclaration: sampling, maxPending: readbackOptions.max_pending});
 }
 
 function phaseStats(callbacks, phase, startMs, endMs) {
@@ -290,31 +307,232 @@ async function liveTrace(cell) {
         }
         return `fnv1a:${(hash >>> 0).toString(16).padStart(8, "0")}`;
       };
+      const READBACK_METHOD = "webgl2.pixel-pack-buffer+fence-sync";
       const observer = {
-        phase: "disabled", callbacks: [], samples: [], targets: [],
-        sample(target, callbackIndex) {
-          const timestamp = performance.now();
-          const canvas = document.querySelector(target.selector);
-          if (!canvas) {
-            this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: null, source: "render-callback-post-callback", duration_ms: performance.now() - timestamp, error: "canvas selector did not resolve"});
+        phase: "disabled", callbacks: [], samples: [], targets: [], gl: null,
+        max_pending: 4, pending: [], available: [], configured: false,
+        readback: {
+          method: READBACK_METHOD, asynchronous: true,
+          api: ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
+          max_pending: 4, allocated_buffers: 0, queued: 0, completed: 0,
+          lost: 0, errors: 0, context_losses: 0, poll_count: 0,
+          pending_at_cleanup: 0, cleanup_observed: false,
+          queue_duration_ms: 0, wait_duration_ms: 0, copy_duration_ms: 0, poll_duration_ms: 0,
+        },
+        // Save and restore mutable readback state around every WebGL call. The
+        // observer samples the existing default framebuffer and must not alter
+        // the renderer's framebuffer, pixel-store, or pack-buffer bindings.
+        withState(gl, operation) {
+          const state = {};
+          const read = name => {
+            try { state[name] = gl.getParameter(gl[name]); } catch { state[name] = undefined; }
+          };
+          for (const name of ["PIXEL_PACK_BUFFER_BINDING", "READ_FRAMEBUFFER_BINDING", "DRAW_FRAMEBUFFER_BINDING", "PACK_ALIGNMENT", "PACK_ROW_LENGTH", "PACK_SKIP_ROWS", "PACK_SKIP_PIXELS", "READ_BUFFER"]) read(name);
+          try { return operation(); }
+          finally {
+            try { if (state.PIXEL_PACK_BUFFER_BINDING !== undefined) gl.bindBuffer(gl.PIXEL_PACK_BUFFER, state.PIXEL_PACK_BUFFER_BINDING); } catch {}
+            try { if (state.READ_FRAMEBUFFER_BINDING !== undefined) gl.bindFramebuffer(gl.READ_FRAMEBUFFER, state.READ_FRAMEBUFFER_BINDING); } catch {}
+            try { if (state.DRAW_FRAMEBUFFER_BINDING !== undefined) gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, state.DRAW_FRAMEBUFFER_BINDING); } catch {}
+            for (const name of ["PACK_ALIGNMENT", "PACK_ROW_LENGTH", "PACK_SKIP_ROWS", "PACK_SKIP_PIXELS"]) {
+              try { if (state[name] !== undefined) gl.pixelStorei(gl[name], state[name]); } catch {}
+            }
+            try { if (state.READ_BUFFER !== undefined) gl.readBuffer(state.READ_BUFFER); } catch {}
+          }
+        },
+        configure(target) {
+          const gl = target.gl;
+          const maxPending = target.max_pending;
+          if (!gl || typeof gl.createBuffer !== "function" || typeof gl.fenceSync !== "function"
+              || typeof gl.clientWaitSync !== "function" || typeof gl.getBufferSubData !== "function") {
+            return {installed: false, error: "bounded asynchronous sampling requires WebGL2 PBO and fenceSync support"};
+          }
+          this.gl = gl;
+          this.max_pending = maxPending;
+          this.targets = [target];
+          this.pending = [];
+          this.available = [];
+          this.readback = {
+            method: READBACK_METHOD, asynchronous: true,
+            api: ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
+            max_pending: maxPending, allocated_buffers: 0, queued: 0, completed: 0,
+            lost: 0, errors: 0, context_losses: 0, poll_count: 0,
+            pending_at_cleanup: 0, cleanup_observed: false,
+            queue_duration_ms: 0, wait_duration_ms: 0, copy_duration_ms: 0, poll_duration_ms: 0,
+          };
+          try {
+            this.withState(gl, () => {
+              for (let index = 0; index < maxPending; index += 1) {
+                const buffer = gl.createBuffer();
+                if (!buffer) throw new Error("WebGL2 could not allocate a pixel-pack buffer");
+                this.available.push(buffer);
+              }
+            });
+          } catch (error) {
+            for (const buffer of this.available) { try { gl.deleteBuffer(buffer); } catch {} }
+            this.available = [];
+            return {installed: false, error: String(error.message || error)};
+          }
+          this.readback.allocated_buffers = this.available.length;
+          this.configured = true;
+          return {installed: true, method: READBACK_METHOD, readback: {...this.readback}};
+        },
+        recordFailure(item, error, status = "error") {
+          const completedAt = performance.now();
+          this.readback.errors += 1;
+          if (status === "lost") this.readback.lost += 1;
+          this.samples.push({
+            timestamp_ms: item.origin_timestamp_ms,
+            origin_timestamp_ms: item.origin_timestamp_ms,
+            callback_index: item.callback_index,
+            hash: null,
+            source: "render-callback-post-callback",
+            method: READBACK_METHOD,
+            preserve_drawing_buffer: item.preserve_drawing_buffer,
+            coverage: item.coverage,
+            completion_status: status,
+            completion_timestamp_ms: completedAt,
+            queue_duration_ms: item.queue_duration_ms || 0,
+            wait_duration_ms: item.wait_duration_ms || 0,
+            copy_duration_ms: 0,
+            completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
+            duration_ms: item.queue_duration_ms || 0,
+            error: String(error),
+          });
+        },
+        release(item) {
+          try { if (item.sync) this.gl.deleteSync(item.sync); } catch {}
+          if (item.buffer) this.available.push(item.buffer);
+        },
+        poll() {
+          const gl = this.gl;
+          if (!this.configured || !gl || !this.pending.length) return;
+          try {
+            if (gl.isContextLost?.()) {
+              this.readback.context_losses += 1;
+              for (const item of this.pending) {
+                this.recordFailure(item, "WebGL context was lost before readback completion", "lost");
+                this.release(item);
+              }
+              this.pending = [];
+              return;
+            }
+          } catch {}
+          this.readback.poll_count += 1;
+          const pollStarted = performance.now();
+          const remaining = [];
+          for (const item of this.pending) {
+            let waitStatus;
+            const waitStarted = performance.now();
+            try { waitStatus = gl.clientWaitSync(item.sync, 0, 0); }
+            catch (error) {
+              try { if (gl.isContextLost?.()) this.readback.context_losses += 1; } catch {}
+              item.wait_duration_ms = (item.wait_duration_ms || 0) + performance.now() - waitStarted;
+              this.recordFailure(item, error, "error");
+              this.release(item);
+              continue;
+            }
+            const waitDuration = performance.now() - waitStarted;
+            item.wait_duration_ms = (item.wait_duration_ms || 0) + waitDuration;
+            this.readback.wait_duration_ms += waitDuration;
+            if (waitStatus === gl.TIMEOUT_EXPIRED) { remaining.push(item); continue; }
+            if (waitStatus !== gl.ALREADY_SIGNALED && waitStatus !== gl.CONDITION_SATISFIED) {
+              this.recordFailure(item, `clientWaitSync returned ${waitStatus}`, "error");
+              this.release(item);
+              continue;
+            }
+            const copyStarted = performance.now();
+            try {
+              const pixels = new Uint8Array(item.coverage.bytes_per_sample);
+              this.withState(gl, () => {
+                gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+                gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
+              });
+              const copyDuration = performance.now() - copyStarted;
+              this.readback.copy_duration_ms += copyDuration;
+              this.readback.completed += 1;
+              const completedAt = performance.now();
+              this.samples.push({
+                timestamp_ms: item.origin_timestamp_ms,
+                origin_timestamp_ms: item.origin_timestamp_ms,
+                callback_index: item.callback_index,
+                hash: digest(pixels),
+                source: "render-callback-post-callback",
+                method: READBACK_METHOD,
+                preserve_drawing_buffer: item.preserve_drawing_buffer,
+                coverage: item.coverage,
+                completion_status: "complete",
+                completion_timestamp_ms: completedAt,
+                queue_duration_ms: item.queue_duration_ms,
+                wait_duration_ms: item.wait_duration_ms,
+                copy_duration_ms: copyDuration,
+                completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
+                duration_ms: item.queue_duration_ms + copyDuration,
+              });
+            } catch (error) {
+              try { if (gl.isContextLost?.()) this.readback.context_losses += 1; } catch {}
+              this.recordFailure(item, error, "error");
+            }
+            this.release(item);
+          }
+          this.pending = remaining;
+          this.readback.poll_duration_ms = (this.readback.poll_duration_ms || 0) + performance.now() - pollStarted;
+        },
+        sample(target, callbackIndex, callbackTimestamp) {
+          const originTimestamp = Number.isFinite(callbackTimestamp) ? callbackTimestamp : performance.now();
+          this.poll();
+          const started = performance.now();
+          const item = {
+            origin_timestamp_ms: originTimestamp,
+            callback_index: callbackIndex,
+            coverage: target.coverage,
+            preserve_drawing_buffer: target.preserve_drawing_buffer,
+            queue_duration_ms: 0,
+            wait_duration_ms: 0,
+          };
+          if (this.pending.length >= this.max_pending || !this.available.length) {
+            item.queue_duration_ms = performance.now() - started;
+            this.recordFailure(item, "bounded pending readback queue is full", "lost");
             return;
           }
+          const gl = this.gl;
+          item.buffer = this.available.pop();
           try {
-            const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-            if (gl) {
-              const coverage = target.coverage;
-              const {x, y, width, height} = coverage.resolved_region;
-              if (!width || !height) throw new Error("canvas drawing buffer has zero size");
-              const pixels = new Uint8Array(width * height * 4);
-              gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-              const attributes = gl.getContextAttributes?.() || {};
-              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(pixels), source: "render-callback-post-callback", method: "webgl.readPixels", preserve_drawing_buffer: attributes.preserveDrawingBuffer === true, coverage, duration_ms: performance.now() - timestamp});
-            } else {
-              this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: digest(canvas.toDataURL("image/webp", 0.05)), source: "render-callback-post-callback", method: "canvas.toDataURL", preserve_drawing_buffer: null, coverage: target.coverage, duration_ms: performance.now() - timestamp});
-            }
+            this.withState(gl, () => {
+              const {x, y, width, height} = target.coverage.resolved_region;
+              gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+              gl.readBuffer(gl.BACK);
+              gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+              gl.bufferData(gl.PIXEL_PACK_BUFFER, target.coverage.bytes_per_sample, gl.STREAM_READ);
+              gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+              item.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+              if (!item.sync) throw new Error("WebGL2 could not create a readback fence");
+              gl.flush();
+            });
+            item.queue_duration_ms = performance.now() - started;
+            this.readback.queue_duration_ms += item.queue_duration_ms;
+            this.readback.queued += 1;
+            this.pending.push(item);
           } catch (error) {
-            this.samples.push({timestamp_ms: timestamp, callback_index: callbackIndex, hash: null, source: "render-callback-post-callback", duration_ms: performance.now() - timestamp, error: String(error.message || error)});
+            try { if (gl.isContextLost?.()) this.readback.context_losses += 1; } catch {}
+            item.queue_duration_ms = performance.now() - started;
+            this.readback.queue_duration_ms += item.queue_duration_ms;
+            this.recordFailure(item, error, "error");
+            this.release(item);
           }
+        },
+        flush() {
+          this.poll();
+          const pendingAtCleanup = this.pending.length;
+          this.readback.pending_at_cleanup = pendingAtCleanup;
+          for (const item of this.pending) {
+            this.recordFailure(item, "readback was still pending at observed cleanup", "lost");
+            this.release(item);
+          }
+          this.pending = [];
+          for (const buffer of this.available) { try { this.gl?.deleteBuffer(buffer); } catch {} }
+          this.available = [];
+          this.readback.cleanup_observed = true;
+          return {...this.readback};
         },
       };
       const times = [];
@@ -329,7 +547,7 @@ async function liveTrace(cell) {
         try { callback(time); } finally {
           const row = observer.callbacks[callbackIndex];
           row.ended_ms = performance.now();
-          if (observer.phase === "instrumented") for (const target of observer.targets) observer.sample(target, callbackIndex);
+          if (observer.phase === "instrumented") for (const target of observer.targets) observer.sample(target, callbackIndex, time);
         }
       });
     });
@@ -349,7 +567,7 @@ async function liveTrace(cell) {
     if (warmupDurationMs < 0) throw inputError("cell.warmup_duration_ms must not be negative", "/cell/warmup_duration_ms");
     const selector = cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas";
     const sampling = samplingForCell(cell);
-    const sampler = await installCanvasSampler(page, selector, sampling);
+    const sampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending});
     if (!sampler.installed) throw capabilityError(sampler.error || "frozen sampling coverage could not be installed", "/cell/sampling");
     const wait = duration => new Promise(resolvePromise => setTimeout(resolvePromise, duration));
     const setupCommands = validateSetupCommands(cell);
@@ -390,7 +608,7 @@ async function liveTrace(cell) {
     const resetSetup = await runSetup(page, resetCanvas, setupCommands);
     lifecycle.reset = {method: "page.reload", observed: true, from_url: resetFromUrl, to_url: page.url(), ready: true, elapsed_ms: Date.now() - resetStartedAt, ready_observation: resetReady, setup: resetSetup};
     lifecycle.phase_transitions.push({phase: "instrumented", method: "observed-render-callbacks-after-reset", start_observed: true, configured_duration_ms: durationMs});
-    const instrumentedSampler = await installCanvasSampler(page, selector, sampling);
+    const instrumentedSampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending});
     if (!instrumentedSampler.installed) throw capabilityError(instrumentedSampler.error || "frozen sampling coverage could not be installed after reset", "/cell/sampling/reset");
     const warmupStartPage = await page.evaluate(() => performance.now());
     await page.evaluate(() => { window.__orchPresentationObserver.phase = "warmup"; });
@@ -402,9 +620,18 @@ async function liveTrace(cell) {
     const backend = await canvasBackend(page, cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas");
     const wallStart = Date.now();
     const trace = await collectCDPTrace(instrumentedClient, { durationMs: durationMs + (2 * paddingMs), categories: cell.trace_categories, timeoutMs: cell.trace_timeout_ms || Math.max(120000, durationMs + (2 * paddingMs) + 60000) });
-    const observer = await page.evaluate(() => ({callbacks: window.__orchPresentationObserver.callbacks.slice(), samples: window.__orchPresentationObserver.samples.slice()}));
+    const observer = await page.evaluate(() => {
+      const value = window.__orchPresentationObserver;
+      const readback = value.flush();
+      return {callbacks: value.callbacks.slice(), samples: value.samples.slice(), readback};
+    });
     const callbacksObserved = observer.callbacks.map(item => ({...item, timestamp_ms: item.timestamp_ms + captureClock.offsetMs}));
-    const canvasSamples = observer.samples.map(item => ({...item, timestamp_ms: item.timestamp_ms + captureClock.offsetMs}));
+    const canvasSamples = observer.samples.map(item => ({
+      ...item,
+      timestamp_ms: item.timestamp_ms + captureClock.offsetMs,
+      origin_timestamp_ms: Number.isFinite(item.origin_timestamp_ms) ? item.origin_timestamp_ms + captureClock.offsetMs : item.origin_timestamp_ms,
+      completion_timestamp_ms: Number.isFinite(item.completion_timestamp_ms) ? item.completion_timestamp_ms + captureClock.offsetMs : item.completion_timestamp_ms,
+    }));
     const callbacks = callbacksObserved.filter(item => item.timestamp_ms >= window.start_ms && item.timestamp_ms < window.end_ms).map(item => item.timestamp_ms);
     const control = phaseStats(controlCallbacksObserved, "control", controlStartPage + controlClock.offsetMs, controlEndPage + controlClock.offsetMs);
     const warmup = phaseStats(callbacksObserved, "warmup", warmupStartPage + captureClock.offsetMs, warmupEndPage + captureClock.offsetMs);
@@ -414,11 +641,12 @@ async function liveTrace(cell) {
     instrumented.samples = instrumentedSamples.length;
     instrumented.readback_errors = instrumentedSamples.filter(item => item.error).length;
     instrumented.sample_duration_ms = sampleDurationStats(instrumentedSamples);
+    instrumented.readback = observer.readback;
     const measurement = {
       scenario_id: cell.scenario_id,
       observer: sampler.presentation,
       presentation: sampler.presentation,
-      preserve_drawing_buffer: sampler.preserve_drawing_buffer,
+      preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer,
       sampling: instrumentedSampler.sampling,
       lifecycle,
       warmup: {...warmup, requested_ms: warmupDurationMs},
@@ -436,6 +664,7 @@ async function liveTrace(cell) {
         samples: instrumented.samples,
         readback_errors: instrumented.readback_errors,
         sample_duration_ms: instrumented.sample_duration_ms,
+        readback: observer.readback,
       },
     };
     const wallEnd = Date.now();
@@ -443,7 +672,7 @@ async function liveTrace(cell) {
     const parsed = {
       ...trace,
       canvas_samples: canvasSamples,
-      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, signal: "render-callback-post-callback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
+      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, readback: observer.readback, signal: "render-callback-post-callback; async WebGL2 readback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
       measurement,
       metadata: {
         clock_reconciled: true,
@@ -469,7 +698,7 @@ async function liveTrace(cell) {
       window,
       environment: { browser: type, browser_version: browser.version?.() || null, driver: cell.browser?.package || "playwright-core", renderer_backend: backend },
       measurement,
-      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, canvas_sampler: parsed.canvas_instrumentation, measurement },
+      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, measurement },
     };
   } finally {
     await browser?.close().catch(() => {});
