@@ -1,6 +1,7 @@
 {
  "discovery": {
   "identities": [
+   "test_3d_browser_game_admission.ThreeDBrowserGameAdmissionTest.test_external_package_admission_and_resumable_lifecycle",
    "test_3d_browser_game_blender.BlenderBoundaryTests.test_changed_authoring_module_digest_is_rejected",
    "test_3d_browser_game_blender.BlenderBoundaryTests.test_complete_outputs_require_hash_bound_external_validators",
    "test_3d_browser_game_blender.BlenderBoundaryTests.test_malformed_unknown_field_is_rejected",
@@ -25,6 +26,11 @@
    "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_outside_probe_requires_current_ordinary_input",
    "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_overlapping_dropped_and_partial_flags_count_once",
    "test_3d_browser_game_play.BrowserGamePlayEvidenceTests.test_the_four_qualification_boundaries_are_explicit",
+   "test_3d_browser_game_trace.NativeTraceTests.test_begin_frame_queue_omits_undrawn_and_keeps_dropped_once",
+   "test_3d_browser_game_trace.NativeTraceTests.test_native_canvas_flag_and_label_cannot_self_attribute",
+   "test_3d_browser_game_trace.NativeTraceTests.test_native_layer_presence_requires_pixel_change_for_fps",
+   "test_3d_browser_game_trace.NativeTraceTests.test_return_as_stream_keeps_exact_nonserialized_bytes_and_completion",
+   "test_3d_browser_game_trace.NativeTraceTests.test_sparse_canvas_changes_do_not_upgrade_intervening_frames",
    "test_3d_browser_game_workflow.WorkflowPackageTests.test_gate_judging_criteria_are_reference_contracts",
    "test_3d_browser_game_workflow.WorkflowPackageTests.test_literal_standard_names_resolve_inside_public_package",
    "test_3d_browser_game_workflow.WorkflowPackageTests.test_literal_workflow_commands_preserve_stage_order",
@@ -2244,6 +2250,23 @@
    "module": "tests._windows_semantics",
    "owner": "install",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_admission",
+   "owner": "ThreeDBrowserGameAdmissionTest._inside",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_admission",
+   "owner": "ThreeDBrowserGameAdmissionTest.test_external_package_admission_and_resumable_lifecycle",
+   "restoration": "selected-module-boundary",
    "seams": [
     "environment",
     "monkeypatch"
