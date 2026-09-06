@@ -155,6 +155,20 @@ class NativeTraceTests(unittest.TestCase):
         self.assertEqual("unverified", result["status"])
         self.assertIn("readback-sample-failure", [item["code"] for item in result["failures"]])
 
+    def test_diagnostic_modes_cannot_be_admitted_as_performance(self):
+        trace = native_trace()
+        expression = (
+            "import {qualifyPerformance} from " + json.dumps(TRACE_URI) + "; "
+            "const t=" + json.dumps(trace) + "; "
+            "const c={id:'native',artifact_commit:'git:x',mode:'animation',diagnostic_mode:'trace-only',window:{start_ms:0,end_ms:1000},game_canvas:{canvas_selector:'#game'}}; "
+            "console.log(JSON.stringify(qualifyPerformance({cell:c,trace:t,callbacks:Array.from({length:60},(_,i)=>i*1000/60)})));"
+        )
+        result = node(expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        qualified = json.loads(result.stdout)
+        self.assertEqual("unverified", qualified["status"])
+        self.assertIn("diagnostic-mode", [item["code"] for item in qualified["failures"]])
+
     def test_native_canvas_flag_and_label_cannot_self_attribute(self):
         trace = native_trace()
         trace["traceEvents"] = [{"name": "frame", "timestamp_ms": 0, "canvas": True, "attribution": "game-canvas", "draw": True}]

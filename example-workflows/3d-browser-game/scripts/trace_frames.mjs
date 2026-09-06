@@ -772,6 +772,9 @@ export function qualifyPerformance({cell, trace, callbacks = []}) {
   const T = (endMs - startMs) / 1000;
   const parsed = parseTracePayload(trace);
   const failures = parsed.format === "fixture" ? [] : nativeTraceFailures(parsed, startMs, endMs);
+  if (cell.diagnostic_mode && cell.diagnostic_mode !== "combined") {
+    failures.push(failure("diagnostic-mode", "/cell/diagnostic_mode", "combined performance measurement", cell.diagnostic_mode));
+  }
   if (parsed.dataLossOccurred === true || parsed.completion?.dataLossOccurred === true) {
     failures.push(failure("trace-data-loss", "/trace/completion/dataLossOccurred", false, true));
   }
@@ -866,13 +869,17 @@ function waitForEvent(client, eventNameValue, timeoutMs) {
 export async function collectCDPTrace(client, {
   durationMs = 1000,
   categories = ["devtools.timeline", "disabled-by-default-devtools.timeline.frame", "disabled-by-default-devtools.timeline.layers", "disabled-by-default-cc.debug", "cc"],
+  traceBufferSizeInKb = 512 * 1024,
+  recordMode = "recordContinuously",
   timeoutMs = Math.max(120000, Number(durationMs) + 60000),
 } = {}) {
   if (!Number.isFinite(durationMs) || durationMs <= 0) throw inputError("durationMs must be positive and finite", "/durationMs");
+  if (!Number.isInteger(traceBufferSizeInKb) || traceBufferSizeInKb < 200 * 1024 || traceBufferSizeInKb > 4 * 1024 * 1024) throw inputError("traceBufferSizeInKb must be an integer between 204800 and 4194304", "/traceBufferSizeInKb");
+  if (!["recordUntilFull", "recordContinuously", "recordAsMuchAsPossible"].includes(recordMode)) throw inputError("recordMode must be recordUntilFull, recordContinuously, or recordAsMuchAsPossible", "/recordMode");
   const started = Date.now();
   const deadline = Date.now() + timeoutMs;
   const completionPromise = waitForEvent(client, "Tracing.tracingComplete", Math.max(1, timeoutMs));
-  await withDeadline(client.send("Tracing.start", {transferMode: "ReturnAsStream", traceConfig: {includedCategories: categories}}), Math.max(1, deadline - Date.now()), "/trace/start");
+  await withDeadline(client.send("Tracing.start", {transferMode: "ReturnAsStream", traceConfig: {includedCategories: categories, traceBufferSizeInKb, recordMode}}), Math.max(1, deadline - Date.now()), "/trace/start");
   await withDeadline(new Promise(resolve => setTimeout(resolve, durationMs)), Math.max(1, deadline - Date.now()), "/trace/window");
   await withDeadline(client.send("Tracing.end"), Math.max(1, deadline - Date.now()), "/trace/end");
   const completion = await withDeadline(completionPromise, Math.max(1, deadline - Date.now()), "/trace/completion");
@@ -880,7 +887,7 @@ export async function collectCDPTrace(client, {
   const bytes = await readReturnAsStream(client, completion.stream, {timeoutMs: Math.max(1, deadline - Date.now())});
   const trace = {
     format: "cdp-return-as-stream", traceEvents: parseTracePayload(bytes).events, completion, raw_bytes: bytes.length,
-    raw_stream_hash: sha256(bytes), transfer_mode: "ReturnAsStream", categories: [...categories], capture_duration_ms: Date.now() - started,
+    raw_stream_hash: sha256(bytes), transfer_mode: "ReturnAsStream", categories: [...categories], trace_buffer_size_kb: traceBufferSizeInKb, trace_record_mode: recordMode, capture_duration_ms: Date.now() - started,
   };
   // Keep exact bytes available to the collector without serializing a large
   // Buffer into trace.json. The collector writes this hidden value verbatim.
