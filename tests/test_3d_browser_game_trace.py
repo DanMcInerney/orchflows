@@ -147,6 +147,14 @@ class NativeTraceTests(unittest.TestCase):
         result = self.qualify(trace)
         self.assertIn("invalid-readback-association", [item["code"] for item in result["failures"]])
 
+    def test_measured_readback_loss_cannot_qualify_the_observer(self):
+        trace = native_trace()
+        trace["canvas_samples"][1]["completion_status"] = "lost"
+        trace["canvas_samples"][1]["error"] = "readback was still pending at observed cleanup"
+        result = self.qualify(trace)
+        self.assertEqual("unverified", result["status"])
+        self.assertIn("readback-sample-failure", [item["code"] for item in result["failures"]])
+
     def test_native_canvas_flag_and_label_cannot_self_attribute(self):
         trace = native_trace()
         trace["traceEvents"] = [{"name": "frame", "timestamp_ms": 0, "canvas": True, "attribution": "game-canvas", "draw": True}]
