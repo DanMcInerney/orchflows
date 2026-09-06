@@ -22,10 +22,10 @@ const COMPOSITOR_NAMES = new Set([
   "requestmainthreadframe", "activatelayertree", "needsbeginframechanged", "setlayertreeid", "commit",
 ]);
 const NATIVE_FORMATS = new Set(["trace-event-json", "cdp-return-as-stream"]);
-const REQUIRED_CATEGORIES = new Set([
+const DEFAULT_TRACE_CATEGORIES = Object.freeze([
   "devtools.timeline", "disabled-by-default-devtools.timeline.frame", "disabled-by-default-devtools.timeline.layers",
-  "disabled-by-default-cc.debug", "cc",
 ]);
+const REQUIRED_CATEGORIES = new Set(DEFAULT_TRACE_CATEGORIES);
 
 function eventName(event) {
   return String(event?.name || event?.type || "").replace(/[^a-z0-9]/gi, "").toLowerCase();
@@ -868,7 +868,7 @@ function waitForEvent(client, eventNameValue, timeoutMs) {
 
 export async function collectCDPTrace(client, {
   durationMs = 1000,
-  categories = ["devtools.timeline", "disabled-by-default-devtools.timeline.frame", "disabled-by-default-devtools.timeline.layers", "disabled-by-default-cc.debug", "cc"],
+  categories = DEFAULT_TRACE_CATEGORIES,
   traceBufferSizeInKb = 512 * 1024,
   recordMode = "recordContinuously",
   timeoutMs = Math.max(120000, Number(durationMs) + 60000),
