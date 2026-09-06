@@ -64,6 +64,23 @@
     "game": {
       "type": "object", "additionalProperties": false,
       "properties": {"canvas_selector": {"type": "string", "minLength": 1}, "allowed_keys": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}
+    },
+    "result": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "artifact_commit", "joined_commit", "build", "server", "harness", "captures", "cleanup"],
+      "properties": {
+        "status": {"const": "observed"},
+        "artifact_commit": {"type": "string", "pattern": "^(?:git:)?[0-9a-f]{40}$"},
+        "joined_commit": {"type": "string", "pattern": "^(?:git:)?[0-9a-f]{40}$"},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "evidence_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "build": {"type": "object"},
+        "server": {"type": "object"},
+        "harness": {"type": "object"},
+        "captures": {"type": "object"},
+        "gates": {"type": "object"},
+        "cleanup": {"type": "object"}
+      }
     }
   }
 }

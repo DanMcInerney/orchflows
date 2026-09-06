@@ -6,9 +6,31 @@ import argparse
 import ast
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
+
+# Dependency installs and interpreter caches are generated content. Markdown
+# under these directories is not authored library guidance and must never be
+# admitted as a canonical source file. This helper prunes those directories
+# before walking so a large ignored install does not become validator work.
+OWNED_CONTENT_IGNORES = frozenset({".git", "__pycache__", "node_modules", ".venv", "venv"})
+
+
+def owned_markdown_files(root: Path):
+    """Yield authored Markdown below ``root`` in deterministic order."""
+
+    root = Path(root)
+    if not root.is_dir():
+        return
+    for current, directories, files in os.walk(root, topdown=True):
+        directories[:] = sorted(
+            name for name in directories if name not in OWNED_CONTENT_IGNORES
+        )
+        for name in sorted(files):
+            if name.lower().endswith(".md"):
+                yield Path(current) / name
 
 # An install ships this package flat in `bin/`; hence the paired import.
 try:
@@ -184,7 +206,8 @@ CARRIAGE_DEFERRED = {}
 
 __all__ = (
     'annotations', 'argparse', 'ast', 'hashlib',
-    'json', 're', 'sys', 'Path',
+    'json', 'os', 're', 'sys', 'Path',
+    'OWNED_CONTENT_IGNORES', 'owned_markdown_files',
     'ROOT', 'SKIPPED', 'SKILL_TIERS', 'BODY_BUDGET',
     'LINK_TARGET_RE', 'SURFACE_BUDGET', 'ROUTING_BLOCK_BUDGET', 'ROLE_AGENT_BUDGET',
     'DESCRIPTION_BUDGET',

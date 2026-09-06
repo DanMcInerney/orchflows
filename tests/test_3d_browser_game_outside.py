@@ -193,6 +193,14 @@ class OutsideProductionTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual("/outside_probe/config/harness/commands", json.loads(result.stdout)["pointer"])
 
+    def test_outside_registration_validates_inline_config_and_result_schema(self):
+        expression = "import * as m from './example-workflows/3d-browser-game/scripts/validate_evidence.mjs'; const config={build:{command:['node','build.mjs'],output_dir:'dist'},server:{output_dir:'dist',ready_path:'/'},harness:{commands:[{type:'observe'},{type:'key',key:'w',action:'down'},{type:'observe'},{type:'stop'}],capture_dir:'.outside/c',session_out:'.outside/s.json'}}; const result={status:'observed',artifact_commit:'git:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',joined_commit:'git:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',build:{},server:{},harness:{},captures:{},cleanup:{}}; console.log(JSON.stringify(await m.validateOutsideProbeRegistration({config,result})));"
+        result = subprocess.run([NODE, "--input-type=module", "-e", expression], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30)
+        self.assertEqual(0, result.returncode, result.stderr)
+        value = json.loads(result.stdout)
+        self.assertEqual("observed", value["result"]["status"])
+        self.assertIsNone(value["config_path"])
+
 
 if __name__ == "__main__":
     unittest.main()
