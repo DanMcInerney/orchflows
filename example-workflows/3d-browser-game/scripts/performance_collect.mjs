@@ -1159,7 +1159,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     lifecycle.reset = {method: "page.reload", observed: true, from_url: resetFromUrl, to_url: page.url(), ready: true, elapsed_ms: Date.now() - resetStartedAt, ready_observation: resetReady, setup: resetSetup};
     lifecycle.reset.foreground = {required: true, installation: resetForegroundInstall, method: resetForegroundInstall.method, available: resetForegroundInstall.available === true};
     lifecycle.phase_transitions.push({phase: "instrumented", method: "observed-render-callbacks-after-reset", start_observed: true, configured_duration_ms: durationMs});
-    const instrumentedSampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending, readback_enabled: diagnosticMode !== "trace-only"});
+    const instrumentedSampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending, readback_enabled: readbackEnabled});
     if (!instrumentedSampler.installed) throw capabilityError(instrumentedSampler.error || "frozen sampling coverage could not be installed after reset", "/cell/sampling/reset");
     const warmupStartPage = await page.evaluate(() => performance.now());
     await page.evaluate(() => { window.__orchPresentationObserver.phase = "warmup"; });
