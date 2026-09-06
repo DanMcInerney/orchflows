@@ -1,28 +1,44 @@
 /**
- * A small, pinned-compatible projection of DevTools' FramesHandler model.
- * It joins compositor lifecycle events into unique frame rows. It deliberately
- * refuses to infer a game-canvas row from callback cadence alone.
+ * Native Chrome frame qualification.
+ *
+ * This is a deliberately small projection of the pinned DevTools
+ * FramesHandler (9f9f40ba5bca7e385be30535cdbf01a3a7e5ba44). Meta, Renderer,
+ * and LayerTree facts are derived from the trace before the compositor queue
+ * is consumed. A canvas layer's existence is only an attribution candidate;
+ * native animation also needs read-only canvas pixel observations (or an
+ * observed native update marker). This prevents rAF cadence or a static
+ * layer from proving presentation.
  */
-import { inputError, requireObject, requireString, sha256 } from "./_common.mjs";
+import {inputError, requireObject, requireString, sha256} from "./_common.mjs";
 
 const DRAW_NAMES = new Set(["drawframe", "draw_frame", "compositelayers", "compositelayerslegacy"]);
 const DROP_NAMES = new Set(["droppedframe", "dropped_frame"]);
-const PARTIAL_NAMES = new Set(["partialframe", "partial_frame"]);
 const IDLE_NAMES = new Set(["idleframe", "idle_frame"]);
 const BEGIN_NAMES = new Set(["beginframe", "begin_frame"]);
+const PARTIAL_NAMES = new Set(["partialframe", "partial_frame"]);
+const MAIN_MARKERS = new Set(["schedulestylerecalculation", "invalidatelayout", "beginmainthreadframe", "scrolllayer"]);
+const COMPOSITOR_NAMES = new Set([
+  ...DRAW_NAMES, ...DROP_NAMES, ...IDLE_NAMES, ...BEGIN_NAMES,
+  "requestmainthreadframe", "activatelayertree", "needsbeginframechanged", "setlayertreeid", "commit",
+]);
+const NATIVE_FORMATS = new Set(["trace-event-json", "cdp-return-as-stream"]);
+const REQUIRED_CATEGORIES = new Set([
+  "devtools.timeline", "disabled-by-default-devtools.timeline.frame", "disabled-by-default-devtools.timeline.layers",
+  "disabled-by-default-cc.debug", "cc",
+]);
 
 function eventName(event) {
   return String(event?.name || event?.type || "").replace(/[^a-z0-9]/gi, "").toLowerCase();
 }
 
 function timestampMs(event) {
-  if (typeof event?.timestamp_ms === "number" && Number.isFinite(event.timestamp_ms)) return event.timestamp_ms;
-  if (typeof event?.time_ms === "number" && Number.isFinite(event.time_ms)) return event.time_ms;
-  if (typeof event?.start_ms === "number" && Number.isFinite(event.start_ms)) return event.start_ms;
-  // Chrome trace events use microseconds in `ts`; fixture events use explicit
-  // `*_ms` fields. Do not guess units from magnitude.
-  if (typeof event?.ts === "number" && Number.isFinite(event.ts)) return event.ts / 1000;
-  if (typeof event?.timestamp === "number" && Number.isFinite(event.timestamp)) return event.timestamp / 1000;
+  for (const key of ["timestamp_ms", "time_ms", "start_ms"]) {
+    if (typeof event?.[key] === "number" && Number.isFinite(event[key])) return event[key];
+  }
+  // Chrome trace events use microseconds; fixtures use explicit ms.
+  for (const key of ["ts", "timestamp"]) {
+    if (typeof event?.[key] === "number" && Number.isFinite(event[key])) return event[key] / 1000;
+  }
   return null;
 }
 
@@ -34,13 +50,10 @@ function frameIdOf(event) {
   const data = dataOf(event);
   const value = event?.frame_id ?? event?.frameId ?? data.frameId ?? data.frame_id
     ?? event?.args?.frameId ?? event?.args?.frame_id
-    // Chrome's compositor trace uses BeginFrame.args.frameSeqId rather than
-    // the fixture-friendly frameId spelling. Preserve that identity so a
-    // real trace is modeled instead of silently producing N=0.
+    // Native compositor records use BeginFrame.args.frameSeqId.
     ?? event?.args?.frameSeqId ?? data.frameSeqId ?? data.frame_seq_id
     ?? event?.sequence_number ?? data.sequence_number;
-  if (value !== undefined && value !== null && String(value) !== "") return String(value);
-  return null;
+  return value === undefined || value === null || String(value) === "" ? null : String(value);
 }
 
 function layerIdOf(event) {
@@ -55,38 +68,34 @@ function layerTreeIdOf(event) {
   return value === undefined || value === null ? null : String(value);
 }
 
-function canvasLayersAt(snapshot, target) {
-  const selector = target.canvas_selector || target.canvasSelector;
-  if (typeof selector !== "string" || !selector) return [];
-  const layers = snapshot?.args?.snapshot?.active_tree?.layers;
-  if (!Array.isArray(layers)) return [];
-  const idMatch = selector.match(/^#([A-Za-z_][A-Za-z0-9_-]*)$/);
-  return layers.filter(layer => {
-    const name = String(layer.layer_name || "");
-    if (!/HTMLCanvas|canvas/i.test(name)) return false;
-    if (idMatch) return name.includes(`id='${idMatch[1]}'`) || name.includes(`id=\"${idMatch[1]}\"`);
-    return selector === "canvas";
-  });
+function snapshotOf(event) {
+  return event?.args?.snapshot || dataOf(event).snapshot || event?.snapshot || null;
 }
 
-function nativeCanvasAttribution(snapshots, time, target, sourceEvent = null) {
-  if (!snapshots.length || time === null) return null;
-  const processSnapshots = sourceEvent?.pid === undefined ? snapshots : snapshots.filter(snapshot => snapshot.event?.pid === sourceEvent.pid);
-  if (!processSnapshots.length) return null;
-  let latestTime = null;
-  for (const snapshot of processSnapshots) {
-    if (snapshot.time <= time) latestTime = snapshot.time;
-    else break;
-  }
-  if (latestTime === null) return null;
-  // Chrome may emit several same-timestamp snapshots for one compositor
-  // update. Their active trees can be split across events, so inspect the
-  // complete timestamp group before deciding that the canvas is absent.
-  const layers = processSnapshots.filter(snapshot => snapshot.time === latestTime)
-    .flatMap(snapshot => canvasLayersAt(snapshot.event, target));
-  if (layers.length === 1) return "game-canvas";
-  if (layers.length > 1) return "ambiguous";
-  return null;
+function layersOf(snapshotEvent) {
+  return snapshotOf(snapshotEvent)?.active_tree?.layers || [];
+}
+
+function isCanvasLayer(layer, selector = "canvas") {
+  if (!layer || typeof layer !== "object") return false;
+  const name = String(layer.layer_name || "");
+  const base = String(layer.base_type || "");
+  const reasons = Array.isArray(layer.compositing_reasons) ? layer.compositing_reasons.join(" ") : "";
+  const canvasLike = /htmlcanvas|canvas/i.test(name) || /canvas/i.test(reasons);
+  if (!canvasLike && selector !== "canvas") return false;
+  if (selector === "canvas") return canvasLike || /texturelayerimpl/i.test(base);
+  const match = String(selector).match(/^#([A-Za-z_][A-Za-z0-9_-]*)$/);
+  if (!match) return canvasLike;
+  return name.includes(`id='${match[1]}'`) || name.includes(`id=\"${match[1]}\"`);
+}
+
+function canvasLayersAt(snapshotEvent, target = {}) {
+  const selector = target.canvas_selector || target.canvasSelector || "canvas";
+  const targetLayers = (target.layer_ids || target.layerIds || []).map(String);
+  return layersOf(snapshotEvent).filter(layer => {
+    if (targetLayers.length && !targetLayers.includes(String(layer.layer_id))) return false;
+    return isCanvasLayer(layer, selector);
+  });
 }
 
 function explicitAttribution(event) {
@@ -96,32 +105,137 @@ function explicitAttribution(event) {
   if (typeof value !== "string") return null;
   const normalized = value.toLowerCase().replace(/[ _]/g, "-");
   if (["game-canvas", "game", "canvas", "target"].includes(normalized)) return "game-canvas";
-  if (["other-layer", "other", "chrome", "unknown"].includes(normalized)) return "other-layer";
+  if (["other-layer", "other", "chrome"].includes(normalized)) return "other-layer";
   return "ambiguous";
 }
 
-function targetForEvent(event, target = {}) {
-  const explicit = explicitAttribution(event);
-  if (explicit) return explicit;
-  const layer = layerIdOf(event);
-  const targetLayers = target.layer_ids || target.layerIds || (target.layer_id ? [target.layer_id] : []);
-  const layerMatches = targetLayers.map(String).filter(Boolean);
-  if (layer && layerMatches.length === 1) return layerMatches.includes(layer) ? "game-canvas" : "other-layer";
-  if (layer && layerMatches.length > 1) {
-    return layerMatches.includes(layer) ? "ambiguous" : "other-layer";
+function targetForEvent(event, target = {}, {allowSynthetic = false} = {}) {
+  // Native caller-supplied IDs and canvas:true flags are hints only. They are
+  // considered by nativeCanvasAttribution only after renderer/layer and
+  // pixel-change evidence are joined. Fixture records retain explicit labels
+  // so deterministic qualification boundaries remain cheap to test.
+  if (allowSynthetic) {
+    const explicit = explicitAttribution(event);
+    if (explicit) return explicit;
+    if (event?.canvas === true || dataOf(event).canvas === true) return "game-canvas";
+    const layer = layerIdOf(event);
+    const targetLayers = (target.layer_ids || target.layerIds || (target.layer_id ? [target.layer_id] : [])).map(String);
+    if (layer && targetLayers.length) return targetLayers.includes(layer) ? "game-canvas" : "other-layer";
+    const tree = layerTreeIdOf(event);
+    const targetTrees = (target.layer_tree_ids || target.layerTreeIds || (target.layer_tree_id ? [target.layer_tree_id] : [])).map(String);
+    if (tree && targetTrees.length) return targetTrees.includes(tree) ? "game-canvas" : "other-layer";
+    return null;
   }
-  const tree = layerTreeIdOf(event);
-  const targetTrees = target.layer_tree_ids || target.layerTreeIds || (target.layer_tree_id ? [target.layer_tree_id] : []);
-  const treeMatches = targetTrees.map(String).filter(Boolean);
-  if (tree && treeMatches.length === 1) return treeMatches.includes(tree) ? "game-canvas" : "other-layer";
-  if (tree && treeMatches.length > 1) return treeMatches.includes(tree) ? "ambiguous" : "other-layer";
   const process = event?.renderer_process_id ?? dataOf(event).rendererProcessId ?? dataOf(event).renderer_process_id;
-  if (target.renderer_process_id && process !== undefined && String(process) !== String(target.renderer_process_id)) return "other-layer";
-  if (event?.canvas === true || dataOf(event).canvas === true) return "game-canvas";
+  if (target.renderer_process_id !== undefined && process !== undefined && String(process) !== String(target.renderer_process_id)) return "other-layer";
   return null;
 }
 
-function mergeRow(row, event, target) {
+function deriveRendererContext(events, target, snapshots) {
+  const mainFrameIds = new Set();
+  const rendererPidsByFrame = new Map();
+  const rendererPids = new Set();
+  const mainThreadByPid = new Map();
+  for (const event of events) {
+    const name = eventName(event);
+    const data = dataOf(event);
+    if (name === "tracingstartedinbrowser") {
+      for (const frame of data.frames || []) {
+        if (frame?.frame && (frame.isInPrimaryMainFrame === true || frame.isOutermostMainFrame === true || (!frame.parent && frame.url))) mainFrameIds.add(String(frame.frame));
+        if (frame?.frame !== undefined && frame?.processId !== undefined) {
+          const pid = String(frame.processId);
+          rendererPidsByFrame.set(String(frame.frame), pid);
+          rendererPids.add(pid);
+        }
+      }
+    }
+    if (name === "framecommittedinbrowser" || name === "commitload") {
+      const frame = data;
+      if (frame?.frame !== undefined && event.pid !== undefined) {
+        const pid = String(frame.processId ?? event.pid);
+        rendererPidsByFrame.set(String(frame.frame), pid);
+        rendererPids.add(pid);
+        if (frame.isInPrimaryMainFrame === true || frame.isOutermostMainFrame === true) mainFrameIds.add(String(frame.frame));
+      }
+    }
+    if (name === "threadname" && String(data.name || "") === "CrRendererMain" && event.pid !== undefined) mainThreadByPid.set(String(event.pid), String(event.tid));
+  }
+  const requestedMain = target.main_frame_id || target.mainFrameId;
+  if (requestedMain) mainFrameIds.add(String(requestedMain));
+  const targetPid = target.renderer_process_id ?? target.renderer_pid;
+  if (targetPid !== undefined && targetPid !== null) rendererPids.add(String(targetPid));
+
+  // Generic traces often omit Meta's process records. A canvas layer observed
+  // in LayerTreeHostImpl snapshots safely discovers the candidate renderer;
+  // competing candidates remain ambiguous.
+  const canvasPidCounts = new Map();
+  for (const item of snapshots) {
+    if (!canvasLayersAt(item.event, target).length || item.event.pid === undefined) continue;
+    const pid = String(item.event.pid);
+    canvasPidCounts.set(pid, (canvasPidCounts.get(pid) || 0) + 1);
+  }
+  if (!targetPid && canvasPidCounts.size) {
+    const max = Math.max(...canvasPidCounts.values());
+    for (const [pid, count] of canvasPidCounts) if (count === max) rendererPids.add(pid);
+  }
+  if (!rendererPids.size && snapshots.length) rendererPids.add(String(snapshots[0].event.pid));
+  const mainThreads = new Set(mainThreadByPid.values());
+  for (const event of events) {
+    if (event.pid !== undefined && rendererPids.has(String(event.pid)) && event.tid !== undefined && eventName(event) === "beginmainthreadframe") {
+      mainThreads.add(String(event.tid));
+      if (!mainThreadByPid.has(String(event.pid))) mainThreadByPid.set(String(event.pid), String(event.tid));
+    }
+  }
+  return {mainFrameIds, rendererPids, mainThreadByPid, mainThreads, rendererPidsByFrame, canvasPidCounts};
+}
+
+function nativeUpdateAt(events, time, target, processId) {
+  return events.some(event => {
+    const at = timestampMs(event);
+    if (at === null || Math.abs(at - time) > 20) return false;
+    if (processId !== undefined && event.pid !== undefined && String(event.pid) !== String(processId)) return false;
+    const data = dataOf(event);
+    return event.canvas_updated === true || data.canvasUpdated === true || data.canvas_updated === true
+      || /canvas.*(update|paint)|texturelayer.*pushproperties/i.test(String(event.name || ""));
+  });
+}
+
+function canvasActivityIntervals(parsed) {
+  const samples = parsed.canvas_samples || parsed.metadata?.canvas_samples || [];
+  const rows = Array.isArray(samples) ? samples.map(item => ({
+    time: item?.timestamp_ms ?? item?.time_ms ?? item?.time,
+    hash: item?.hash ?? item?.digest ?? item?.signature,
+  })).filter(item => typeof item.time === "number" && Number.isFinite(item.time) && typeof item.hash === "string")
+    .sort((a, b) => a.time - b.time) : [];
+  const intervals = [];
+  for (let index = 1; index < rows.length; index += 1) if (rows[index - 1].hash !== rows[index].hash) intervals.push([rows[index - 1].time, rows[index].time]);
+  return intervals;
+}
+
+function hasCanvasActivity(parsed, time, target, snapshots, sourceEvent) {
+  if (parsed.format === "fixture") return true;
+  const process = sourceEvent?.pid;
+  if (nativeUpdateAt(parsed.events, time, target, process)) return true;
+  return canvasActivityIntervals(parsed).some(([start, end]) => time >= start && time < end);
+}
+
+function nativeCanvasAttribution(parsed, snapshots, time, target, sourceEvent = null) {
+  if (!snapshots.length || time === null) return null;
+  const candidates = snapshots.filter(snapshot => {
+    if (sourceEvent?.pid !== undefined && snapshot.event?.pid !== sourceEvent.pid) return false;
+    if (target.renderer_process_id !== undefined && String(snapshot.event?.pid) !== String(target.renderer_process_id)) return false;
+    return snapshot.time <= time;
+  });
+  if (!candidates.length) return null;
+  const latestTime = candidates[candidates.length - 1].time;
+  const group = candidates.filter(snapshot => snapshot.time === latestTime);
+  const layers = group.flatMap(snapshot => canvasLayersAt(snapshot.event, target));
+  if (layers.length > 1) return "ambiguous";
+  if (layers.length !== 1) return null;
+  return "game-canvas";
+}
+
+function mergeRow(row, event, target, {allowSynthetic = false} = {}) {
   const name = eventName(event);
   row.events.push(name || "unknown");
   const time = timestampMs(event);
@@ -131,17 +245,18 @@ function mergeRow(row, event, target) {
   if (DROP_NAMES.has(name) || data.dropped === true || event.dropped === true) row.dropped = true;
   if (PARTIAL_NAMES.has(name) || data.isPartial === true || data.partial === true || event.isPartial === true || event.partial === true) row.isPartial = true;
   if (IDLE_NAMES.has(name) || data.idle === true || event.idle === true) row.idle = true;
-  const attribution = targetForEvent(event, target);
+  const attribution = targetForEvent(event, target, {allowSynthetic});
   if (attribution === "ambiguous") row.ambiguous = true;
   else if (attribution && row.attribution && row.attribution !== attribution) row.ambiguous = true;
   else if (attribution) row.attribution = attribution;
-  if (layerIdOf(event)) row.layer_id = layerIdOf(event);
+  const layer = layerIdOf(event);
+  if (layer) row.layer_id = layer;
   if (event.duration_ms !== undefined) row.duration_ms = event.duration_ms;
   if (data.duration_ms !== undefined) row.duration_ms = data.duration_ms;
 }
 
 export function parseTracePayload(payload) {
-  if (Buffer.isBuffer(payload)) payload = payload.toString("utf8");
+  if (Buffer.isBuffer(payload) || payload instanceof Uint8Array) payload = Buffer.from(payload).toString("utf8");
   if (typeof payload === "string") {
     const text = payload.trim();
     if (!text) throw inputError("empty CDP trace stream", "/trace");
@@ -151,14 +266,12 @@ export function parseTracePayload(payload) {
       const events = [];
       for (const line of text.split(/\r?\n/)) {
         if (!line.trim()) continue;
-        try { events.push(JSON.parse(line)); } catch (lineError) {
-          throw inputError(`unparsed CDP trace line: ${lineError.message}`, "/trace");
-        }
+        try { events.push(JSON.parse(line)); } catch (lineError) { throw inputError(`unparsed CDP trace line: ${lineError.message}`, "/trace"); }
       }
       payload = events;
     }
   }
-  if (Array.isArray(payload)) return { events: payload, metadata: {}, completion: {} };
+  if (Array.isArray(payload)) return {events: payload, metadata: {}, completion: {}, format: "trace-event-json"};
   requireObject(payload, "/trace");
   const events = payload.traceEvents || payload.events || payload.data;
   if (!Array.isArray(events)) throw inputError("trace must contain traceEvents/events array", "/trace/traceEvents");
@@ -166,104 +279,209 @@ export function parseTracePayload(payload) {
     events,
     metadata: payload.metadata || {},
     completion: payload.completion || payload.tracingComplete || {},
-    dataLossOccurred: payload.dataLossOccurred === true,
+    dataLossOccurred: Object.prototype.hasOwnProperty.call(payload, "dataLossOccurred") ? payload.dataLossOccurred : undefined,
     format: payload.format || "trace-event-json",
+    transfer_mode: payload.transfer_mode || payload.transferMode,
+    categories: payload.categories || payload.traceConfig?.includedCategories || payload.metadata?.categories || [],
+    raw_bytes: payload.raw_bytes,
+    raw_stream_hash: payload.raw_stream_hash,
+    raw_stream_path: payload.raw_stream_path,
+    canvas_samples: payload.canvas_samples || payload.metadata?.canvas_samples,
+    canvas_instrumentation: payload.canvas_instrumentation || payload.metadata?.canvas_instrumentation,
   };
 }
 
-export function buildFrameModel(payload, { target = {}, startMs = -Infinity, endMs = Infinity } = {}) {
+function eventPhase(event) {
+  return String(event?.ph || "").toLowerCase();
+}
+
+function shouldProcessCommit(event) {
+  const phase = eventPhase(event);
+  return phase !== "e" && phase !== "f";
+}
+
+function eventAllowed(event, context, target) {
+  if (event?.pid !== undefined && context.rendererPids.size && !context.rendererPids.has(String(event.pid))) return false;
+  const tree = layerTreeIdOf(event);
+  const targetTrees = (target.layer_tree_ids || target.layerTreeIds || (target.layer_tree_id ? [target.layer_tree_id] : [])).map(String);
+  if (tree && targetTrees.length && !targetTrees.includes(tree)) return false;
+  return true;
+}
+
+export function buildFrameModel(payload, {target = {}, startMs = -Infinity, endMs = Infinity} = {}) {
   const parsed = parseTracePayload(payload);
-  if (parsed.format && !["trace-event-json", "cdp-return-as-stream", "fixture"].includes(parsed.format)) {
-    return { ...parsed, frames: [], unparsed: true, errors: [`unsupported trace format ${parsed.format}`] };
-  }
-  const rows = new Map();
+  if (parsed.format && !NATIVE_FORMATS.has(parsed.format) && parsed.format !== "fixture") return {...parsed, frames: [], attributed: 0, ambiguous: false, unparsed: true, errors: [`unsupported trace format ${parsed.format}`]};
+  const ordered = parsed.events.map((event, index) => ({event, index})).filter(item => item.event && typeof item.event === "object")
+    .sort((a, b) => (timestampMs(a.event) ?? Infinity) - (timestampMs(b.event) ?? Infinity) || a.index - b.index);
+  const snapshots = ordered.map(item => ({event: item.event, time: timestampMs(item.event)}))
+    .filter(item => item.time !== null && eventName(item.event) === "layertreehostimplsnapshot");
+  const context = deriveRendererContext(ordered.map(item => item.event), target, snapshots);
+  const allowSynthetic = parsed.format === "fixture";
+  const rows = [];
   const beginQueue = [];
   const beginById = new Map();
   let ordinal = 0;
+  let lastFrame = null;
+  let mainFrameCommitted = false;
+  let mainFrameRequested = false;
+  let pendingCommit = null;
+  let pendingActivation = null;
+  let lastBeginFrame = null;
+  let lastNeedsBeginFrame = null;
   let activeLayerTree = null;
-  const ordered = parsed.events.map((event, index) => ({ event, index })).sort((a, b) => {
-    const at = timestampMs(a.event); const bt = timestampMs(b.event);
-    return (at ?? Infinity) - (bt ?? Infinity) || a.index - b.index;
-  });
-  const nativeSnapshots = ordered
-    .map(item => ({ event: item.event, time: timestampMs(item.event) }))
-    .filter(item => item.time !== null && eventName(item.event) === "layertreehostimplsnapshot");
-  const compositorNames = new Set([...BEGIN_NAMES, ...DRAW_NAMES, ...DROP_NAMES, ...PARTIAL_NAMES, ...IDLE_NAMES, "requestmainthreadframe", "activatelayertree", "needsbeginframechanged", "setlayertreeid"]);
-  const emit = (info, event, flags = {}) => {
-    const id = String(info.id);
-    if (rows.has(id)) return;
+
+  const emit = (info, event, {draw = false, dropped = false, isPartial = false} = {}) => {
+    const baseId = String(info.id);
+    const id = rows.some(row => row.id === baseId) ? `${baseId}#${ordinal++}` : baseId;
     const row = {
-      id,
-      start_ms: info.start_ms,
-      duration_ms: null,
-      draw: false,
-      dropped: Boolean(info.dropped),
-      isPartial: Boolean(info.isPartial),
-      idle: Boolean(info.idle),
-      attribution: null,
-      layer_id: null,
-      ambiguous: false,
-      events: [],
-      ...flags,
+      id, start_ms: info.start_ms, duration_ms: null, draw, dropped: Boolean(dropped), isPartial: Boolean(isPartial), idle: false,
+      attribution: null, attribution_source: null, presentation_evidence: false, layer_id: null, ambiguous: false, events: [],
     };
-    if (event) mergeRow(row, event, target);
-    const nativeAttribution = nativeCanvasAttribution(nativeSnapshots, row.start_ms, target, event);
-    if (nativeAttribution === "ambiguous") row.ambiguous = true;
-    else if (nativeAttribution && row.attribution && row.attribution !== nativeAttribution) row.ambiguous = true;
-    else if (nativeAttribution) row.attribution = nativeAttribution;
-    rows.set(id, row);
+    if (event) mergeRow(row, event, target, {allowSynthetic});
+    if (draw) row.draw = true;
+    if (dropped) row.dropped = true;
+    if (isPartial) row.isPartial = true;
+    if (!allowSynthetic) {
+      const nativeAttribution = nativeCanvasAttribution(parsed, snapshots, row.start_ms, target, event);
+      if (nativeAttribution === "ambiguous") row.ambiguous = true;
+      else if (nativeAttribution === "game-canvas") {
+        row.attribution = "game-canvas";
+        row.presentation_evidence = hasCanvasActivity(parsed, row.start_ms, target, snapshots, event);
+        row.attribution_source = row.presentation_evidence
+          ? "renderer-process+layer-tree-canvas+read-only-pixel-change"
+          : "renderer-process+layer-tree-canvas-without-presentation-proof";
+      }
+    }
+    rows.push(row);
+    return row;
   };
-  for (const { event } of ordered) {
-    if (!event || typeof event !== "object") continue;
-    const time = timestampMs(event);
-    const name = eventName(event);
-    const direct = name === "frame" || event.frame === true || event.kind === "frame";
-    if (direct) {
-      const id = frameIdOf(event) || event.id || `fixture-${ordinal++}`;
-      emit({ id, start_ms: time, dropped: false, isPartial: false, idle: false }, event);
+  const startFrame = (time, id) => {
+    if (lastFrame) lastFrame.idle = true;
+    lastFrame = {start_ms: time, id: String(id)};
+  };
+  const processPendingOnDraw = seqId => {
+    if (!beginById.has(seqId)) return [];
+    const visible = [];
+    while (beginQueue.length && beginQueue[0] !== seqId) {
+      const id = beginQueue.shift();
+      const info = beginById.get(id);
+      beginById.delete(id);
+      if (info?.dropped) visible.push(info);
+    }
+    const current = beginById.get(seqId);
+    if (current) visible.push(current);
+    beginById.delete(seqId);
+    const index = beginQueue.indexOf(seqId);
+    if (index >= 0) beginQueue.splice(index, 1);
+    return visible;
+  };
+
+  for (const {event} of ordered) {
+    if (allowSynthetic) {
+      const name = eventName(event);
+      const direct = name === "frame" || event.frame === true || event.kind === "frame";
+      if (direct) {
+        const time = timestampMs(event);
+        emit({id: frameIdOf(event) || event.id || `fixture-${ordinal++}`, start_ms: time}, event, {
+          draw: Boolean(event.draw || dataOf(event).draw), dropped: Boolean(event.dropped || dataOf(event).dropped),
+          isPartial: Boolean(event.isPartial || event.partial || dataOf(event).isPartial || dataOf(event).partial),
+        });
+      }
       continue;
     }
-    if (!compositorNames.has(name)) continue;
+    const name = eventName(event);
+    if (!COMPOSITOR_NAMES.has(name) && !MAIN_MARKERS.has(name)) continue;
+    if (!eventAllowed(event, context, target)) continue;
+    const time = timestampMs(event);
     const tree = layerTreeIdOf(event);
     if (name === "setlayertreeid") {
       const data = dataOf(event);
-      const mainFrameId = target.main_frame_id || target.mainFrameId;
-      if (!mainFrameId || String(data.frame || data.frameId || "") === String(mainFrameId)) activeLayerTree = data.layerTreeId ?? data.layer_tree_id ?? null;
+      const frame = data.frame || data.frameId;
+      const main = target.main_frame_id || target.mainFrameId;
+      if (!main || !frame || String(frame) === String(main) || context.mainFrameIds.has(String(frame))) activeLayerTree = data.layerTreeId ?? data.layer_tree_id ?? null;
       continue;
     }
-    const targetTrees = target.layer_tree_ids || target.layerTreeIds || (target.layer_tree_id ? [target.layer_tree_id] : []);
-    if (targetTrees.length && (!tree || !targetTrees.map(String).includes(tree))) continue;
-    if (activeLayerTree !== null && tree !== null && String(activeLayerTree) !== tree) continue;
-    if (BEGIN_NAMES.has(name)) {
+    if (tree && activeLayerTree !== null && String(activeLayerTree) !== tree) continue;
+    if (name === "beginframe") {
       const id = frameIdOf(event);
       if (id !== null && !beginById.has(id)) {
-        const info = { id, start_ms: time, dropped: false, isPartial: false, idle: false, event };
-        beginById.set(id, info); beginQueue.push(info);
+        beginById.set(id, {id, start_ms: time, dropped: false, isPartial: false, event});
+        beginQueue.push(id);
       }
+      lastBeginFrame = time;
       continue;
     }
-    if (DROP_NAMES.has(name)) {
+    if (name === "droppedframe") {
       const id = frameIdOf(event);
       if (id !== null) {
         let info = beginById.get(id);
-        if (!info) { info = { id, start_ms: time, dropped: true, isPartial: Boolean(dataOf(event).hasPartialUpdate || event.hasPartialUpdate), idle: false, event }; beginById.set(id, info); beginQueue.push(info); }
-        info.dropped = true; info.isPartial = info.isPartial || Boolean(dataOf(event).hasPartialUpdate || event.hasPartialUpdate);
+        if (!info) {
+          info = {id, start_ms: time, dropped: true, isPartial: Boolean(dataOf(event).hasPartialUpdate || event.hasPartialUpdate), event};
+          beginById.set(id, info);
+          beginQueue.push(id);
+        }
+        info.dropped = true;
+        info.isPartial = info.isPartial || Boolean(dataOf(event).hasPartialUpdate || event.hasPartialUpdate);
       }
       continue;
     }
-    if (DRAW_NAMES.has(name)) {
+    if (name === "requestmainthreadframe") {
+      if (lastFrame) mainFrameRequested = true;
+      continue;
+    }
+    if (MAIN_MARKERS.has(name)) {
+      const mainTid = context.mainThreadByPid.get(String(event.pid));
+      if (mainTid && event.tid !== undefined && String(event.tid) !== String(mainTid)) continue;
+      if (!pendingCommit) pendingCommit = {triggerTime: time, paints: [], mainFrameId: null};
+      if (name === "beginmainthreadframe") {
+        const data = dataOf(event);
+        pendingCommit.mainFrameId = data.frameId ?? data.frame_id ?? null;
+      }
+      continue;
+    }
+    if (name === "commit" || name === "compositelayers") {
+      if (shouldProcessCommit(event) && pendingCommit) {
+        pendingActivation = pendingCommit;
+        pendingCommit = null;
+        mainFrameRequested = false;
+        mainFrameCommitted = true;
+      }
+      continue;
+    }
+    if (name === "activatelayertree") {
+      if (pendingActivation && lastNeedsBeginFrame === null) pendingActivation = null;
+      continue;
+    }
+    if (name === "needsbeginframechanged") {
+      const data = dataOf(event);
+      const needs = data.needsBeginFrame ?? data.needs_begin_frame;
+      if (needs === true || needs === 1) lastNeedsBeginFrame = time;
+      continue;
+    }
+    if (name === "drawframe") {
+      if (!lastFrame) startFrame(time, frameIdOf(event) || `frame-${ordinal++}`);
+      if (!(mainFrameCommitted || !mainFrameRequested)) continue;
+      if (lastNeedsBeginFrame !== null) {
+        const idleEnd = pendingActivation?.triggerTime ?? lastBeginFrame ?? lastNeedsBeginFrame;
+        if (idleEnd > lastFrame.start_ms) lastFrame.idle = true;
+        lastNeedsBeginFrame = null;
+      }
       const id = frameIdOf(event);
-      if (id === null || !beginById.has(id)) continue;
-      while (beginQueue.length && String(beginQueue[0].id) !== id) {
-        const old = beginQueue.shift(); beginById.delete(old.id);
-        if (old.dropped) emit(old, null);
+      if (id === null) continue;
+      const visible = processPendingOnDraw(id);
+      for (const info of visible) {
+        emit({id: info.id, start_ms: info.start_ms}, info.event, {draw: false, dropped: info.dropped, isPartial: info.isPartial});
       }
-      const info = beginById.get(id);
-      if (info) {
-        emit(info, info.event || event);
-        mergeRow(rows.get(String(id)), event, target);
-        beginById.delete(id); beginQueue.shift();
+      const current = visible.find(info => String(info.id) === String(id));
+      if (current) {
+        const row = rows[rows.length - 1];
+        mergeRow(row, event, target);
+        row.draw = true;
+        lastFrame = row;
+      } else if (visible.length) {
+        lastFrame = rows[rows.length - 1];
       }
+      mainFrameCommitted = false;
       continue;
     }
     if (IDLE_NAMES.has(name)) {
@@ -271,24 +489,18 @@ export function buildFrameModel(payload, { target = {}, startMs = -Infinity, end
       if (id !== null && beginById.has(id)) beginById.get(id).idle = true;
     }
   }
-  const frames = [...rows.values()]
-    .filter(row => row.start_ms !== null && row.start_ms >= startMs && row.start_ms < endMs)
+
+  const frames = rows.filter(row => row.start_ms !== null && row.start_ms >= startMs && row.start_ms < endMs)
     .sort((a, b) => a.start_ms - b.start_ms || a.id.localeCompare(b.id));
   const ambiguous = frames.some(row => row.ambiguous);
-  const attributed = frames.filter(row => row.attribution === "game-canvas").length;
   return {
-    ...parsed,
-    frames,
-    ambiguous,
-    attributed,
-    unparsed: false,
+    ...parsed, frames, ambiguous, attributed: frames.filter(row => row.attribution === "game-canvas").length, unparsed: false,
     errors: ambiguous ? ["ambiguous frame or canvas attribution"] : [],
+    renderer: {process_ids: [...context.rendererPids], main_frame_ids: [...context.mainFrameIds], main_thread_ids: [...context.mainThreads]},
   };
 }
 
-export function frameRows(payload, options = {}) {
-  return buildFrameModel(payload, options).frames;
-}
+export function frameRows(payload, options = {}) { return buildFrameModel(payload, options).frames; }
 
 export function callbackTimes(callbacks) {
   if (!Array.isArray(callbacks)) return [];
@@ -296,114 +508,147 @@ export function callbackTimes(callbacks) {
     .filter(value => typeof value === "number" && Number.isFinite(value)).sort((a, b) => a - b);
 }
 
-function ratio(count, denominator) {
-  return denominator > 0 ? count / denominator : 0;
+function ratio(count, denominator) { return denominator > 0 ? count / denominator : 0; }
+function failure(code, pointer, expected, observed) { return {code, pointer, expected, observed}; }
+
+function nativeTraceFailures(parsed, startMs, endMs) {
+  const failures = [];
+  if (!NATIVE_FORMATS.has(parsed.format)) failures.push(failure("unparsed-format", "/trace/format", [...NATIVE_FORMATS], parsed.format));
+  const completion = parsed.completion || {};
+  if (parsed.format === "cdp-return-as-stream") {
+    if (completion.dataLossOccurred !== false || typeof completion.stream !== "string" || completion.stream.length === 0
+      || (parsed.transfer_mode && parsed.transfer_mode !== "ReturnAsStream") || (completion.transferMode && completion.transferMode !== "ReturnAsStream")) {
+      failures.push(failure("missing-completion-metadata", "/trace/completion", "stream, transferMode ReturnAsStream, dataLossOccurred:false", completion));
+    }
+    const categories = new Set(parsed.categories || []);
+    const missing = [...REQUIRED_CATEGORIES].filter(category => !categories.has(category));
+    if (missing.length) failures.push(failure("trace-categories", "/trace/categories", [...REQUIRED_CATEGORIES], missing));
+    if (!Number.isInteger(parsed.raw_bytes) || parsed.raw_bytes <= 0 || !/^sha256:[0-9a-f]{64}$/i.test(parsed.raw_stream_hash || "")) {
+      failures.push(failure("missing-raw-stream", "/trace/raw_stream_hash", "raw bytes and sha256 identity", {raw_bytes: parsed.raw_bytes, raw_stream_hash: parsed.raw_stream_hash}));
+    }
+  }
+  if (parsed.metadata?.clock_reconciled !== true) failures.push(failure("clock-mismatch", "/trace/metadata/clock_reconciled", true, parsed.metadata?.clock_reconciled));
+  if (typeof parsed.metadata?.window_start_ms !== "number" || parsed.metadata.window_start_ms > startMs
+    || typeof parsed.metadata?.window_end_ms !== "number" || parsed.metadata.window_end_ms < endMs) {
+    failures.push(failure("unpadded-window", "/trace/metadata", `window covers [${startMs}, ${endMs})`, parsed.metadata));
+  }
+  return failures;
 }
 
-function failure(code, pointer, expected, observed) {
-  return { code, pointer, expected, observed };
-}
-
-export function qualifyPerformance({ cell, trace, callbacks = [] }) {
+export function qualifyPerformance({cell, trace, callbacks = []}) {
   requireObject(cell, "/cell");
   const window = cell.window || {};
   const startMs = window.start_ms ?? cell.start_ms;
   const endMs = window.end_ms ?? cell.end_ms;
-  if (typeof startMs !== "number" || typeof endMs !== "number" || !(endMs > startMs)) {
-    return { status: "unverified", failures: [failure("missing-window", "/cell/window", "finite start_ms < end_ms", window)], metrics: {} };
-  }
+  if (typeof startMs !== "number" || typeof endMs !== "number" || !(endMs > startMs)) return {status: "unverified", failures: [failure("missing-window", "/cell/window", "finite start_ms < end_ms", window)], metrics: {fps_claim: false}};
   const T = (endMs - startMs) / 1000;
   const parsed = parseTracePayload(trace);
-  const failures = [];
-  const completion = parsed.completion || {};
-  if (parsed.format !== "fixture" && (completion.dataLossOccurred === undefined || !completion.stream)) {
-    failures.push(failure("missing-completion-metadata", "/trace/completion", "dataLossOccurred and ReturnAsStream stream", completion));
+  const failures = parsed.format === "fixture" ? [] : nativeTraceFailures(parsed, startMs, endMs);
+  if (parsed.dataLossOccurred === true || parsed.completion?.dataLossOccurred === true) {
+    failures.push(failure("trace-data-loss", "/trace/completion/dataLossOccurred", false, true));
   }
-  if (parsed.dataLossOccurred === true || completion.dataLossOccurred === true) failures.push(failure("trace-data-loss", "/trace/completion/dataLossOccurred", false, true));
-  if (parsed.unparsed) failures.push(failure("unparsed-format", "/trace/format", "trace-event-json", parsed.format));
-  if (parsed.metadata?.clock_reconciled === false || parsed.metadata?.clock_match === false) failures.push(failure("clock-mismatch", "/trace/metadata/clock_reconciled", true, false));
-  if (parsed.metadata?.window_start_ms !== undefined && parsed.metadata.window_start_ms > startMs) failures.push(failure("unpadded-window", "/trace/metadata/window_start_ms", `<= ${startMs}`, parsed.metadata.window_start_ms));
-  if (parsed.metadata?.window_end_ms !== undefined && parsed.metadata.window_end_ms < endMs) failures.push(failure("unpadded-window", "/trace/metadata/window_end_ms", `>= ${endMs}`, parsed.metadata.window_end_ms));
-  const target = cell.game_canvas || cell.target || {};
-  const model = buildFrameModel(parsed, { target, startMs, endMs });
+  const model = buildFrameModel(parsed, {target: cell.game_canvas || cell.target || {}, startMs, endMs});
+  if (model.unparsed) failures.push(failure("unparsed-format", "/trace/format", [...NATIVE_FORMATS], parsed.format));
   if (model.ambiguous) failures.push(failure("ambiguous-attribution", "/trace/frames", "one game-canvas attribution", model.errors));
   const frames = model.frames;
-  const targetFrames = frames.filter(row => row.attribution === "game-canvas");
-  if (targetFrames.length === 0) failures.push(failure("missing-canvas-attribution", "/trace/frames", "at least one game-canvas frame", 0));
+  const targetFrames = frames.filter(row => row.attribution === "game-canvas" && (row.presentation_evidence !== false || parsed.format === "fixture"));
+  if (targetFrames.length === 0) failures.push(failure("missing-canvas-attribution", "/trace/frames", "at least one observed game-canvas frame", 0));
   const callback = callbackTimes(callbacks).filter(time => time >= startMs && time < endMs);
   const intervals = callback.slice(1).map((time, index) => time - callback[index]);
-  const compliantIntervals = intervals.filter(value => value <= 18.33).length;
-  const intervalRatio = intervals.length ? compliantIntervals / intervals.length : 0;
-  const callbackRate = callback.length / T;
+  const intervalRatio = intervals.length ? intervals.filter(value => value <= 18.33).length / intervals.length : 0;
   const uniqueFlags = frames.filter(row => row.dropped || row.isPartial).length;
   const clean = targetFrames.filter(row => !row.idle && !row.dropped && !row.isPartial && row.draw);
-  const frameTimes = clean.map(row => row.start_ms);
-  const allGaps = [...callback, ...frameTimes].sort((a, b) => a - b).reduce((gaps, value, index, values) => {
-    if (index) gaps.push(value - values[index - 1]);
-    return gaps;
-  }, []);
-  const gapsFor = values => values.slice(1).map((value, index) => value - values[index]);
-  // Callback cadence can continue while the target canvas stops drawing. The
-  // frame series therefore gets its own stall test; merging both series would
-  // hide exactly the negative case the qualification fixtures cover.
-  const unexplainedStall = allGaps.some(value => value > 100)
-    || gapsFor(targetFrames.map(row => row.start_ms)).some(value => value > 100)
-    || gapsFor(callback).some(value => value > 100);
+  const targetGaps = targetFrames.slice(1).map((row, index) => row.start_ms - targetFrames[index].start_ms);
+  const callbackGaps = callback.slice(1).map((time, index) => time - callback[index]);
+  const unexplainedStall = [...targetGaps, ...callbackGaps].some(value => value > 100);
   const metrics = {
-    window_start_ms: startMs,
-    window_end_ms: endMs,
-    duration_seconds: T,
-    N: frames.length,
-    C: clean.length,
-    I: frames.filter(row => row.idle).length,
-    D: uniqueFlags,
-    callbacks: callback.length,
-    callback_rate_hz: callbackRate,
-    callback_interval_compliance: intervalRatio,
-    max_callback_interval_ms: intervals.length ? Math.max(...intervals) : null,
-    unexplained_stall: unexplainedStall,
-    attribution: "game-canvas",
+    window_start_ms: startMs, window_end_ms: endMs, duration_seconds: T, N: frames.length, C: clean.length,
+    I: frames.filter(row => row.idle).length, D: uniqueFlags, callbacks: callback.length, callback_rate_hz: callback.length / T,
+    callback_interval_compliance: intervalRatio, max_callback_interval_ms: intervals.length ? Math.max(...intervals) : null,
+    unexplained_stall: unexplainedStall, attribution: targetFrames.length ? "game-canvas" : "unverified", fps_claim: false,
   };
   const mode = cell.mode || cell.surface || "animation";
   if (mode === "static" || mode === "static-idle") {
-    return { status: failures.length ? "unverified" : "qualified", verdict: failures.length ? "performance: unverified" : "qualified", mode: "static", metrics: { ...metrics, fps_claim: false }, failures };
+    const status = failures.length ? "unverified" : "qualified";
+    return {status, verdict: status === "qualified" ? "qualified" : "performance: unverified", mode: "static", metrics, failures};
   }
   if (metrics.N <= 0) failures.push(failure("no-frames", "/metrics/N", "> 0", metrics.N));
   if (ratio(metrics.C, T) < 59) failures.push(failure("canvas-frame-floor", "/metrics/C", "C/T >= 59", `${metrics.C}/${T}`));
   if (ratio(metrics.D, metrics.N) > 0.01) failures.push(failure("dropped-partial-floor", "/metrics/D", "D/N <= 0.01", `${metrics.D}/${metrics.N}`));
-  if (callbackRate < 59) failures.push(failure("callback-rate-floor", "/metrics/callback_rate_hz", ">= 59", callbackRate));
+  if (metrics.callback_rate_hz < 59) failures.push(failure("callback-rate-floor", "/metrics/callback_rate_hz", ">= 59", metrics.callback_rate_hz));
   if (intervalRatio < 0.99) failures.push(failure("callback-interval-floor", "/metrics/callback_interval_compliance", ">= 0.99", intervalRatio));
   if (unexplainedStall) failures.push(failure("unexplained-stall", "/metrics/unexplained_stall", false, true));
-  return { status: failures.length ? "unverified" : "qualified", verdict: failures.length ? "performance: unverified" : "qualified", mode: "animation", metrics: { ...metrics, fps_claim: true }, failures };
+  const status = failures.length ? "unverified" : "qualified";
+  metrics.fps_claim = status === "qualified";
+  return {status, verdict: status === "qualified" ? "qualified" : "performance: unverified", mode: "animation", metrics, failures};
 }
 
-export async function readReturnAsStream(client, handle) {
+function withDeadline(promise, timeoutMs, pointer) {
+  const duration = Number(timeoutMs);
+  if (!Number.isFinite(duration) || duration <= 0) return Promise.reject(inputError("timeout must be a positive finite number", pointer));
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error("operation deadline exceeded"), {code: "timeout-process-loss", pointer})), duration); }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+export async function readReturnAsStream(client, handle, {timeoutMs = 30000, maxBytes = 512 * 1024 * 1024} = {}) {
   requireString(handle, "/stream_handle");
+  const deadline = Date.now() + timeoutMs;
   const chunks = [];
+  let bytes = 0;
   let eof = false;
   while (!eof) {
-    const reply = await client.send("IO.read", { handle });
-    if (reply?.data) chunks.push(reply.base64Encoded ? Buffer.from(reply.data, "base64") : Buffer.from(reply.data));
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw Object.assign(new Error("ReturnAsStream IO.read deadline exceeded"), {code: "timeout-process-loss", pointer: "/trace/raw_stream"});
+    const reply = await withDeadline(client.send("IO.read", {handle}), remaining, "/trace/raw_stream");
+    if (reply?.data) {
+      const chunk = reply.base64Encoded ? Buffer.from(reply.data, "base64") : Buffer.from(reply.data);
+      bytes += chunk.length;
+      if (bytes > maxBytes) throw inputError(`trace stream exceeds ${maxBytes} bytes`, "/trace/raw_stream");
+      chunks.push(chunk);
+    }
     eof = reply?.eof === true;
   }
-  try { await client.send("IO.close", { handle }); } catch { /* completion metadata remains useful */ }
+  try { await withDeadline(client.send("IO.close", {handle}), Math.max(1, deadline - Date.now()), "/trace/raw_stream"); } catch { /* preserve completion and bytes */ }
   return Buffer.concat(chunks);
 }
 
-export async function collectCDPTrace(client, { durationMs = 1000, categories = ["devtools.timeline", "disabled-by-default-devtools.timeline.frame", "disabled-by-default-devtools.timeline.layers", "disabled-by-default-cc.debug", "cc"] } = {}) {
-  const completionPromise = new Promise((resolve) => client.once?.("Tracing.tracingComplete", resolve));
-  await client.send("Tracing.start", { transferMode: "ReturnAsStream", traceConfig: { includedCategories: categories } });
-  await new Promise(resolve => setTimeout(resolve, durationMs));
-  await client.send("Tracing.end");
-  const completion = await completionPromise;
-  if (!completion?.stream) throw inputError("CDP tracingComplete lacked ReturnAsStream handle", "/trace/completion/stream");
-  const bytes = await readReturnAsStream(client, completion.stream);
-  return {
-    format: "cdp-return-as-stream",
-    traceEvents: parseTracePayload(bytes).events,
-    completion,
-    raw_bytes: bytes.length,
-    raw_stream_hash: sha256(bytes),
-    transfer_mode: "ReturnAsStream",
-  };
+function waitForEvent(client, eventNameValue, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    let timer;
+    const onEvent = value => { clearTimeout(timer); client.off?.(eventNameValue, onEvent); resolve(value); };
+    timer = setTimeout(() => { client.off?.(eventNameValue, onEvent); reject(Object.assign(new Error(`${eventNameValue} deadline exceeded`), {code: "timeout-process-loss", pointer: "/trace/completion"})); }, timeoutMs);
+    if (client.once) client.once(eventNameValue, onEvent);
+    else if (client.on) client.on(eventNameValue, onEvent);
+    else reject(inputError("CDP client cannot subscribe to tracingComplete", "/trace/completion"));
+  });
 }
+
+export async function collectCDPTrace(client, {
+  durationMs = 1000,
+  categories = ["devtools.timeline", "disabled-by-default-devtools.timeline.frame", "disabled-by-default-devtools.timeline.layers", "disabled-by-default-cc.debug", "cc"],
+  timeoutMs = Math.max(120000, Number(durationMs) + 60000),
+} = {}) {
+  if (!Number.isFinite(durationMs) || durationMs <= 0) throw inputError("durationMs must be positive and finite", "/durationMs");
+  const started = Date.now();
+  const deadline = Date.now() + timeoutMs;
+  const completionPromise = waitForEvent(client, "Tracing.tracingComplete", Math.max(1, timeoutMs));
+  await withDeadline(client.send("Tracing.start", {transferMode: "ReturnAsStream", traceConfig: {includedCategories: categories}}), Math.max(1, deadline - Date.now()), "/trace/start");
+  await withDeadline(new Promise(resolve => setTimeout(resolve, durationMs)), Math.max(1, deadline - Date.now()), "/trace/window");
+  await withDeadline(client.send("Tracing.end"), Math.max(1, deadline - Date.now()), "/trace/end");
+  const completion = await withDeadline(completionPromise, Math.max(1, deadline - Date.now()), "/trace/completion");
+  if (!completion?.stream) throw inputError("CDP tracingComplete lacked ReturnAsStream handle", "/trace/completion/stream");
+  const bytes = await readReturnAsStream(client, completion.stream, {timeoutMs: Math.max(1, deadline - Date.now())});
+  const trace = {
+    format: "cdp-return-as-stream", traceEvents: parseTracePayload(bytes).events, completion, raw_bytes: bytes.length,
+    raw_stream_hash: sha256(bytes), transfer_mode: "ReturnAsStream", categories: [...categories], capture_duration_ms: Date.now() - started,
+  };
+  // Keep exact bytes available to the collector without serializing a large
+  // Buffer into trace.json. The collector writes this hidden value verbatim.
+  Object.defineProperty(trace, "rawStream", {value: bytes, enumerable: false});
+  return trace;
+}
+
+export {canvasLayersAt, canvasActivityIntervals, timestampMs};
