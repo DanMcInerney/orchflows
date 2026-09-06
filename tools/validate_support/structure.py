@@ -32,6 +32,8 @@ COMPOSITION_SCRIPT_SUFFIXES = frozenset({
 })
 COMPOSITION_SCHEMA_RE = re.compile(r"(?:^|[._-])schemas?(?:[._-]|$)", re.IGNORECASE)
 COMPOSITION_FIXTURE_RE = re.compile(r"(?:^|[._-])fixtures?(?:[._-]|$)", re.IGNORECASE)
+COMPOSITION_PACKAGE_DIRS = frozenset(("references", "scripts", "skills", "standards", "workflows"))
+COMPOSITION_PACKAGE_FILES = frozenset(("package.json", "package-lock.json", "requirements.txt", "tools.txt"))
 from . import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
@@ -245,14 +247,125 @@ def _script_owner(path: Path, composition_names):
     return None
 
 
+def _workflow_skipped_dirs():
+    """Use the workflow digest's generated-directory exclusions."""
+    try:
+        from scripts.tickets_pins import SKIPPED_DIRS
+    except ImportError:  # pragma: no cover - installed flat script layout
+        from tickets_pins import SKIPPED_DIRS
+    return frozenset(SKIPPED_DIRS["workflow"])
+
+
+def _inside(path: Path, package: Path) -> bool:
+    """Whether a physical path remains below its public workflow owner."""
+    try:
+        path.resolve().relative_to(package.resolve())
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _workflow_paths(package: Path):
+    """Yield package entries without descending generated cache directories."""
+    skipped = _workflow_skipped_dirs()
+    pending = [package]
+    while pending:
+        current = pending.pop()
+        try:
+            entries = sorted(current.iterdir(), key=lambda path: path.name)
+        except OSError:
+            continue
+        for path in entries:
+            yield path
+            if not _inside(path, package) or path.name in skipped:
+                continue
+            try:
+                is_dir = path.is_dir()
+            except OSError:
+                is_dir = False
+            if is_dir and path.name not in skipped:
+                pending.append(path)
+
+
+def _has_composable_surface(package: Path) -> bool:
+    """Whether this workflow carries private members or package tooling."""
+    try:
+        return any(
+            path.name in COMPOSITION_PACKAGE_DIRS
+            or path.name in COMPOSITION_PACKAGE_FILES
+            or path.name.endswith(".lock")
+            for path in package.iterdir()
+        )
+    except OSError:
+        return False
+
+
+def _canonical_law_path(path: Path) -> bool:
+    """Whether an external package link cites canonical library law."""
+    try:
+        relative = path.resolve().relative_to(ROOT.resolve())
+    except (OSError, ValueError):
+        return False
+    return bool(relative.parts) and relative.parts[0] in {
+        "contracts", "docs", "rules",
+    }
+
+
+def _legacy_reference_path(path: Path, composition: str) -> bool:
+    """A pre-package example's owner-prefixed shared reference."""
+    try:
+        relative = path.resolve().relative_to(
+            (ROOT / "example-workflows" / "references").resolve()
+        )
+    except (OSError, ValueError):
+        return False
+    return bool(relative.parts) and _reference_owner(path, {composition}) == composition
+
+
+def _validate_workflow_package(
+    package: Path, composition: str, diag: Diagnostics, allowlist
+) -> None:
+    """Apply package containment to one public workflow and its prose links."""
+    paths = list(_workflow_paths(package))
+    for path in paths:
+        if not _inside(path, package):
+            diag.error(
+                rel(path),
+                f"workflow package path escapes its public owner at {package}",
+            )
+    for path in paths:
+        if not _inside(path, package) or not path.is_file() or path.suffix.lower() != ".md":
+            continue
+        text = _read_source(path)
+        for match in MD_LINK_RE.finditer(text):
+            target = match.group(1)
+            resolved = _doclint().resolve_link(path, target)
+            if resolved is None or _inside(resolved, package):
+                continue
+            if _canonical_law_path(resolved):
+                continue
+            if not _has_composable_surface(package) and _legacy_reference_path(
+                resolved, composition
+            ):
+                continue
+            diag.error(
+                rel(path),
+                "workflow package link escapes its public owner and the "
+                f"canonical library law roots: {target}",
+            )
+
+
 def validate_composition_admission(
     diag: Diagnostics, allowlist=COMPOSITION_PROTOCOL_ALLOWLIST
 ) -> None:
-    """Reject protocol artifacts owned by composition templates.
+    """Admit package-owned workflow machinery and refuse escaped namespaces.
 
-    Ownership is physical inside ``example-workflows/<name>/`` or explicit in the
-    bounded name of a shared ``example-workflows/references`` artifact.  The latter
-    is how the pre-existing browser-game schemas and fixture format ship.
+    A public workflow owns its scripts, schemas, fixtures, and references.
+    The package digest's generated-directory exclusions are honored while
+    every remaining path and Markdown link stays below that public owner, or
+    cites canonical library law.  Shared protocol artifacts and workflow-
+    named root scripts remain outside package scope; the dated browser-game
+    entry is the one historical shared-reference exception.
     """
 
     compositions = ROOT / "example-workflows"
@@ -265,17 +378,30 @@ def validate_composition_admission(
     names = {path.name for path in directories}
     findings = []
     for directory in directories:
-        for path in sorted(directory.rglob("*")):
-            kind = _composition_artifact_kind(path) if path.is_file() else None
-            if kind:
-                findings.append((directory.name, path, kind))
+        if _inside(directory, compositions):
+            _validate_workflow_package(directory, directory.name, diag, allowlist)
+        else:
+            diag.error(
+                rel(directory),
+                f"workflow package path escapes its public owner at {compositions}",
+            )
     references = compositions / "references"
     if references.is_dir():
-        for path in sorted(references.rglob("*")):
-            kind = _composition_artifact_kind(path) if path.is_file() else None
-            owner = _reference_owner(path, names) if kind else None
+        for path in _workflow_paths(references):
+            if not path.is_file():
+                continue
+            kind = _composition_artifact_kind(path)
+            if not kind:
+                continue
+            owner = _reference_owner(path, names)
             if owner:
                 findings.append((owner, path, kind))
+            else:
+                diag.error(
+                    rel(path),
+                    f"shared workflow reference carries forbidden {kind}; "
+                    "put it below its public workflow package",
+                )
     scripts = ROOT / "scripts"
     if scripts.is_dir():
         for path in sorted(scripts.rglob("*")):
