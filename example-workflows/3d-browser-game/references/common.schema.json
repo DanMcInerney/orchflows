@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/common/v1.json",
+  "title": "3D browser-game evidence common definitions",
+  "description": "Shared closed header and identity types for every stored package record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "kind": {"type": "string", "minLength": 1},
+    "id": {"$ref": "#/$defs/identity"},
+    "artifact_commit": {"$ref": "#/$defs/identity"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "inputs": {"$ref": "#/$defs/inputs"},
+    "environment": {"$ref": "#/$defs/environment"},
+    "status": {"$ref": "#/$defs/status"},
+    "gaps": {"$ref": "#/$defs/gaps"},
+    "invalidates": {"$ref": "#/$defs/invalidates"}
+  },
+  "$defs": {
+    "identity": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]*$"},
+    "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^(?:git:)?[0-9a-f]{40}$"},
+    "namedHash": {
+      "type": "object", "additionalProperties": false, "required": ["name", "sha256"],
+      "properties": {"name": {"$ref": "#/$defs/identity"}, "sha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "inputs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/namedHash"}},
+    "producer": {
+      "type": "object", "additionalProperties": false, "required": ["name"],
+      "properties": {
+        "name": {"$ref": "#/$defs/identity"}, "version": {"type": "string", "minLength": 1},
+        "command": {"type": "string", "minLength": 1}, "package_digest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "environment": {
+      "type": "object", "additionalProperties": false, "required": ["host", "os", "tools"],
+      "properties": {
+        "host": {"type": "string", "minLength": 1}, "os": {"type": "string", "minLength": 1},
+        "tools": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/namedHash"}},
+        "browser": {"type": "string", "minLength": 1}, "blender": {"type": "string", "minLength": 1},
+        "node": {"type": "string", "minLength": 1}, "renderer": {"type": "string", "minLength": 1},
+        "backend": {"type": "string", "minLength": 1}, "driver": {"type": "string", "minLength": 1}
+      }
+    },
+    "status": {"enum": ["draft", "ready", "complete", "failed", "invalid", "unverified", "superseded"]},
+    "gaps": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identity"}},
+    "invalidates": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identity"}},
+    "evidenceIdentity": {"$ref": "#/$defs/identity"},
+    "nullableIdentity": {"oneOf": [{"$ref": "#/$defs/identity"}, {"type": "null"}]},
+    "nonEmptyString": {"type": "string", "minLength": 1}
+  }
+}
