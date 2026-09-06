@@ -40,7 +40,7 @@
       "properties": {
         "host": {"type": "string", "minLength": 1}, "os": {"type": "string", "minLength": 1},
         "tools": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/namedHash"}},
-        "browser": {"type": "string", "minLength": 1}, "blender": {"type": "string", "minLength": 1},
+        "browser": {"type": "string", "minLength": 1}, "browser_version": {"type": "string", "minLength": 1}, "blender": {"type": "string", "minLength": 1},
         "node": {"type": "string", "minLength": 1}, "renderer": {"type": "string", "minLength": 1},
         "backend": {"type": "string", "minLength": 1}, "driver": {"type": "string", "minLength": 1}
       }

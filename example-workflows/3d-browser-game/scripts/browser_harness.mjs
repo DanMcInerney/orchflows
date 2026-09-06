@@ -57,12 +57,22 @@ function validateCommand(command) {
 }
 
 function commandHasAdaptation(transcript) {
-  let observed = false;
-  for (const item of transcript) {
-    if (item.command.type === "observe" || item.command.type === "capture") observed = true;
-    if (observed && ["key", "pointer"].includes(item.command.type)) return true;
-  }
-  return false;
+  return Boolean(deriveAdaptation(transcript, ""));
+}
+
+function deriveAdaptation(transcript, rationale = "") {
+  const successfulObservation = item => item?.command?.type === "observe" && item.reply?.status === "ok" && item.reply?.snapshot;
+  const action = transcript.find(item => ["key", "pointer"].includes(item?.command?.type) && item.reply?.status === "ok");
+  if (!action) return null;
+  const before = transcript.find(item => successfulObservation(item) && item.reply.sequence < action.reply.sequence);
+  const after = transcript.find(item => successfulObservation(item) && item.reply.sequence > action.reply.sequence);
+  if (!before || !after) return null;
+  return {
+    observation_sequence: before.reply.sequence,
+    action_sequence: action.reply.sequence,
+    subsequent_observation_sequence: after.reply.sequence,
+    rationale: String(rationale || "Input selected after inspecting the current rendered game state."),
+  };
 }
 
 export function classifyTranscript(transcript, config = {}) {
@@ -146,6 +156,8 @@ export async function runHarness(config) {
   const { server, browser: browserConfig } = commandArgs(config);
   const origin = process.hrtime.bigint();
   const startedAt = nowIso();
+  const sessionId = config.session_id || `session-${Date.now()}`;
+  const artifactCommit = config.artifact_commit || "unbound";
   const child = spawn(server.command[0], server.command.slice(1), {
     cwd: resolve(server.cwd), env: { ...process.env, ...(server.env || {}) },
     shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"], windowsHide: true,
@@ -185,7 +197,7 @@ export async function runHarness(config) {
     if (await page.locator(canvasSelector).count() < 1) throw capabilityError(`game canvas selector ${canvasSelector} did not resolve`, "/game/canvas_selector");
     await canvas.focus().catch(async () => { await canvas.click({ position: { x: 1, y: 1 } }); });
     const ready = {
-      sequence: ++sequence, monotonic_ms: monotonicMs(origin), wall_time: nowIso(), type: "ready",
+      sequence: ++sequence, monotonic_ms: monotonicMs(origin), wall_time: nowIso(), type: "ready", artifact_commit: artifactCommit, session_id: sessionId,
       status: "ready", snapshot: await readOnlySnapshot(page, { canvas: canvasSelector }), console: [], network: [],
     };
     process.stdout.write(`${JSON.stringify(ready)}\n`);
@@ -196,7 +208,7 @@ export async function runHarness(config) {
       const beforeNetwork = networkDeltas.length;
       const value = await task();
       const reply = {
-        sequence: ++sequence, monotonic_ms: monotonicMs(origin), wall_time: nowIso(), type: command.type,
+        sequence: ++sequence, monotonic_ms: monotonicMs(origin), wall_time: nowIso(), type: command.type, artifact_commit: artifactCommit, session_id: sessionId,
         status: "ok", ...value,
         console: consoleDeltas.slice(beforeConsole), network: networkDeltas.slice(beforeNetwork),
       };
@@ -251,7 +263,7 @@ export async function runHarness(config) {
     }
     const classification = classifyTranscript(transcript, { ...config, headed: true });
     const session = {
-      ...makeHeader({ kind: "play-session", id: config.session_id || `session-${Date.now()}`, artifactCommit: config.artifact_commit || "unbound", producer: "browser_harness.mjs", inputs: { config: sha256(canonicalJson(config)) }, environment: { browser: browserConfig.type || "chromium", driver: browserConfig.package || "playwright-core" }, status: "complete" }),
+      ...makeHeader({ kind: "play-session", id: sessionId, artifactCommit, producer: "browser_harness.mjs", inputs: { config: sha256(canonicalJson(config)) }, environment: { browser: browserConfig.type || "chromium", browser_version: browser.version?.() || "unknown", driver: browserConfig.package || "playwright-core" }, status: "complete" }),
       source: "live-browser",
       classification,
       input_mode: classification,
@@ -263,6 +275,7 @@ export async function runHarness(config) {
       ended_at: nowIso(),
       transcript,
       transcript_hash: sha256(canonicalJson(transcript)),
+      adaptation: classification === "actual_play" ? deriveAdaptation(transcript, config.adaptation_rationale || config.rationale) : undefined,
       console_errors: consoleDeltas.filter(item => item.type === "error"),
       network_errors: networkDeltas,
       server_errors: serverErrors,
@@ -289,4 +302,4 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\",
 
 function printResult(result) { process.stdout.write(`${JSON.stringify(result)}\n`); }
 
-export { validateCommand, readOnlySnapshot, commandHasAdaptation };
+export { validateCommand, readOnlySnapshot, commandHasAdaptation, deriveAdaptation };

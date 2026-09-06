@@ -3,7 +3,7 @@
   "$id": "https://orchflows.local/3d-browser-game/play-session.schema.json",
   "title": "3d-browser-game play session",
   "type": "object",
-  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "classification", "transcript", "transcript_hash"],
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "classification", "source", "headed", "url", "operator", "independent_context_id", "started_at", "ended_at", "transcript", "transcript_hash"],
   "properties": {
     "schema_version": {"type": "string", "const": "1.0.0"},
     "kind": {"const": "play-session"},
@@ -26,6 +26,7 @@
     "started_at": {"type": "string", "minLength": 1},
     "ended_at": {"type": "string", "minLength": 1},
     "transcript_hash": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "adaptation": {"$ref": "#/$defs/adaptation"},
     "transcript": {
       "type": "array",
       "items": {
@@ -51,6 +52,10 @@
     "console_errors": {"type": "array"},
     "network_errors": {"type": "array"},
     "server_errors": {"type": "array"}
+  },
+  "allOf": [{"if": {"properties": {"classification": {"const": "actual_play"}}, "required": ["classification"]}, "then": {"required": ["adaptation"]}}],
+  "$defs": {
+    "adaptation": {"type": "object", "additionalProperties": false, "required": ["observation_sequence", "action_sequence", "subsequent_observation_sequence", "rationale"], "properties": {"observation_sequence": {"type": "integer", "minimum": 1}, "action_sequence": {"type": "integer", "minimum": 1}, "subsequent_observation_sequence": {"type": "integer", "minimum": 1}, "rationale": {"type": "string", "minLength": 1}}}
   },
   "additionalProperties": false
 }
