@@ -1,6 +1,7 @@
 ---
 name: blender-bpy
 description: Author, inspect, render, and export one hash-bound Blender asset in a disposable worker process.
+role: worker
 ---
 
 Require: a closed `blender-job` document with a unique job id, a pinned

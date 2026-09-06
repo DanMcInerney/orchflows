@@ -75,34 +75,37 @@ assigned owners.
 
 ## Verification record
 
-The existing nearest composition tests passed before this test was authored:
+The joined candidate carries the applied-skill role required by the real
+admission resolver: `example-workflows/3d-browser-game/skills/blender-bpy/SKILL.md`
+declares `role: worker`. The admission module was first run against the clean
+baseline and failed at that missing key; after the metadata repair, the same
+real disposable-project test passed.
 
 ```text
-orch-code read: exit 0
-tests.test_3d_browser_game_workflow: exit 0 (6 tests)
-tests.test_composable_integration: exit 0 (1 test)
+baseline scoped admission: exit 1 (1 failure, 8.61s)
+candidate scoped admission: exit 0 (1 test, 32.81s)
 ```
 
-The new test's first run against joined base `a58d205f` exited 1 because the
-package dependency declaration had not yet landed. A read-only run against
-the integration candidate reached static admission and exited 1 because
-`skills/blender-bpy/SKILL.md` lacked the required `role: worker` frontmatter.
-After adding that line only in a temporary overlay (never in either
-candidate), the test reached lifecycle and exposed two test-harness shape
-assumptions; both were corrected in the owned test. The corrected harness
-then passed against that temporary overlay:
+The serial compatibility manifest was regenerated from the candidate after
+the admission test and native trace tests were present. The writer completed
+with the two new admission restoration seams classified as
+`selected-module-boundary`, because both context managers restore their
+process state before the module returns:
 
 ```text
-temporary peer-package admission: exit 0 (1 test, 44.723s)
+run_serial_compat.py --write-manifest: exit 0
+discovery: 2210 identities; sentinels: 12; mutation owners: 388
 ```
 
-The candidate source syntax check and `git diff --check` both exited 0. The
-new test intentionally remains a can-fail check on this candidate until the
-dependency files and the applied-skill role fix are landed by B1.5. Root must
-rerun the test against the joined source after those package changes, then
-run the required repository gate and accepted-source install. The unresolved
-package defect is concrete and package-owned; this ticket does not widen its
-file scope to repair it.
+The repository validator completed with exit 1 on the existing package shape:
+it rejects the package's schema files under `references/` and scripts under
+`scripts/` as forbidden workflow contents. That validator-owned defect is
+reported for the root gate and is outside this seam repair.
+
+The admission test remains lifecycle evidence only: its scripted child exit,
+proof writer, and review writer do not claim Blender, browser, GLB, gameplay,
+or performance qualification. Root owns the full five-check gate and accepted
+source install after this joined seam lands.
 
 ## Deliberate limits
 
