@@ -2,6 +2,7 @@
   "fixture": "canvas-stall-other-layer",
   "cell": {
     "id": "fixture-canvas-stall-other-layer",
+    "scenario_id": "canvas-stall-other-layer",
     "artifact_commit": "git:fixture",
     "mode": "animation",
     "window": {
@@ -576,4 +577,3 @@
     "failure_code": "canvas-frame-floor"
   }
 }
-

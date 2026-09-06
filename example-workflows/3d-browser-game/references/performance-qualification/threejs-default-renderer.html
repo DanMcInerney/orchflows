@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Three.js default WebGLRenderer performance fixture</title>
+<style>html,body,canvas{margin:0;width:100%;height:100%;display:block;background:#07111f}</style>
+<canvas id="game" aria-label="Three.js performance fixture"></canvas>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from "three";
+
+const canvas = document.querySelector("#game");
+// The ordinary default is deliberate: preserveDrawingBuffer remains false.
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+renderer.setAnimationLoop((time) => {
+  const frame = Math.floor(time / (1000 / 60));
+  renderer.setClearColor(frame % 2 ? 0x183a74 : 0x7b204d);
+  renderer.clear();
+});
+window.__threeFixture = {revision: "0.185.1", preserveDrawingBuffer: renderer.getContext().getContextAttributes().preserveDrawingBuffer};
+</script>

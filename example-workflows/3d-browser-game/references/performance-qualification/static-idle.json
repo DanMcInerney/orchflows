@@ -2,6 +2,7 @@
   "fixture": "static-idle",
   "cell": {
     "id": "fixture-static-idle",
+    "scenario_id": "static-idle",
     "artifact_commit": "git:fixture",
     "mode": "static",
     "window": {
@@ -50,5 +51,4 @@
     "status": "qualified"
   }
 }
-
 

@@ -1,0 +1,9 @@
+# Native performance collector repair
+
+The performance collector now observes the host-owned `requestAnimationFrame` presentation seam and performs read-only `readPixels` sampling after each application callback. The observed WebGL context must report `preserveDrawingBuffer:false`; samples retain their callback index and source, and sparse samples are joined to unique native frames without interpolation. Each result records scenario identity, observed warm-up, control and instrumented phases, and the measured control-versus-instrumented perturbation. Raw ReturnAsStream bytes and trace metadata remain part of the result.
+
+The pinned Three.js default-renderer fixture uses `THREE.WebGLRenderer({canvas, antialias:true})` without a preserve override and alternates high-contrast clears in its animation loop. The live positive probe completed and validated with `N=120`, `C=120`, `callbacks=120`, `preserve_drawing_buffer=false`, and observed perturbation (`control_callbacks=61`, `instrumented_callbacks=120`, `readback_errors=0`). Its raw evidence is retained in `.orch-notes/live-positive2/`.
+
+Three sequential 60-second warm runs completed with exit 0 and retained raw evidence in `.orch-notes/warm-1/`, `.orch-notes/warm-2/`, and `.orch-notes/warm-3/`. They are unverified as performance evidence because the native observation recorded callback gaps of 3049.9 ms, 2933.3 ms, and 3118.7 ms respectively, with callback rates 56.78, 56.95, and 56.60 Hz. These results demonstrate the observer and attribution fields while preserving the observed failure; they do not claim a passing 60-second gate.
+
+The deliberate-stall and canvas-stall-other-layer qualification fixtures remain negative controls, and the scoped trace tests cover rejection of preserve-enabled or unobserved measurement paths. The gate consumer must group distinct warm runs by its frozen performance plan and retain the raw evidence paths above.

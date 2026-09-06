@@ -45,8 +45,21 @@ def native_trace(stalled=False):
         "raw_stream_hash": "sha256:" + "a" * 64,
         "completion": {"stream": "1", "transferMode": "ReturnAsStream", "dataLossOccurred": False},
         "metadata": {"clock_reconciled": True, "window_start_ms": -100, "window_end_ms": 1100},
+        "canvas_instrumentation": {
+            "method": "webgl.readPixels", "presentation": "render-callback-post-callback",
+            "read_only": True, "preserve_drawing_buffer": False,
+            "measurement_perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 60, "instrumented_callbacks": 60, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "samples": 60, "readback_errors": 0},
+        },
+        "measurement": {
+            "scenario_id": "native-test", "observer": "render-callback-post-callback",
+            "presentation": "render-callback-post-callback", "preserve_drawing_buffer": False,
+            "warmup": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60},
+            "control": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60},
+            "instrumented": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60, "samples": 60, "readback_errors": 0},
+            "perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 60, "instrumented_callbacks": 60, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "samples": 60, "readback_errors": 0},
+        },
         "traceEvents": events,
-        "canvas_samples": ([{"timestamp_ms": index * (1000 / 60), "hash": f"frame-{index}"}
+        "canvas_samples": ([{"timestamp_ms": index * (1000 / 60), "hash": f"frame-{index}", "source": "render-callback-post-callback"}
                              for index in range(61)]
                             if not stalled else [{"timestamp_ms": 0, "hash": "a"}, {"timestamp_ms": 200, "hash": "b"}, {"timestamp_ms": 300, "hash": "b"}]),
     }
@@ -82,6 +95,18 @@ class NativeTraceTests(unittest.TestCase):
         self.assertEqual("unverified", result["status"])
         self.assertLess(result["metrics"]["C"], 59)
         self.assertIn("canvas-frame-floor", [item["code"] for item in result["failures"]])
+
+    def test_native_default_buffer_path_requires_observed_presentation_seam(self):
+        trace = native_trace()
+        trace["canvas_instrumentation"]["preserve_drawing_buffer"] = True
+        result = self.qualify(trace)
+        self.assertEqual("unverified", result["status"])
+        self.assertIn("missing-native-presentation-observation", [item["code"] for item in result["failures"]])
+        trace = native_trace()
+        trace["canvas_instrumentation"].pop("measurement_perturbation")
+        trace["measurement"].pop("perturbation")
+        result = self.qualify(trace)
+        self.assertIn("missing-measurement-perturbation", [item["code"] for item in result["failures"]])
 
     def test_native_canvas_flag_and_label_cannot_self_attribute(self):
         trace = native_trace()

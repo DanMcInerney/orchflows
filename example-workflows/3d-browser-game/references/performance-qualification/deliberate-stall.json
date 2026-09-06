@@ -2,6 +2,7 @@
   "fixture": "deliberate-stall",
   "cell": {
     "id": "fixture-deliberate-stall",
+    "scenario_id": "deliberate-stall",
     "artifact_commit": "git:fixture",
     "mode": "animation",
     "window": {
@@ -576,4 +577,3 @@
     "failure_code": "unexplained-stall"
   }
 }
-
