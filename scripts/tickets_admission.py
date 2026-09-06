@@ -9,7 +9,7 @@ from pathlib import Path
 if __package__:
     from . import _bootstrap
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
-    from .tickets_adapters import AdapterError, adapter_spec
+    from .tickets_adapters import AdapterError, adapter_for_ticket
     from .tickets_format import (
         RESULT_BEARING_STATES,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, declared_parent,
@@ -19,7 +19,7 @@ if __package__:
 else:
     import _bootstrap
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
-    from tickets_adapters import AdapterError, adapter_spec
+    from tickets_adapters import AdapterError, adapter_for_ticket
     from tickets_format import (
         RESULT_BEARING_STATES,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, declared_parent,
@@ -60,16 +60,13 @@ def adapter_resolution(data):
     """
 
     if __package__:
-        from .tickets_pins import STANDARDS_FIELD, adapter_standard
+        from .tickets_pins import STANDARDS_FIELD
     else:  # pragma: no cover - direct/installed flat script path
-        from tickets_pins import STANDARDS_FIELD, adapter_standard
+        from tickets_pins import STANDARDS_FIELD
     if not data.get(STANDARDS_FIELD):
         return None, None
-    stamped = adapter_standard(data)
-    if not stamped:
-        return None, None
     try:
-        return adapter_id(stamped), None
+        return adapter_for_ticket(data).key, None
     except AdapterError as error:
         return None, finding(error.code, STANDARDS_FIELD, error.detail)
 

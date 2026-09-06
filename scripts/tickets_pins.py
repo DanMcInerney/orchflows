@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Digest pins for the ring items a ticket stamps.
 
-Two kinds pin here: the standards a ticket stamps as its standard
-(`contracts/standard.md`) and the applied skill its executor enters as its
-method. Both are ordinary ring items resolving through `scripts/rings.py`'s
-one order, so both carry one hazard: a *name* resolves to whatever bytes
-happen to be nearest.
+Three kinds pin here: standards, an applied skill, and the public workflow
+package whose private members a child may use. All are ordinary ring items
+resolving through `scripts/rings.py`'s one order, so all carry one hazard: a
+*name* resolves to whatever bytes happen to be nearest.
 
 The answer to it: take the digest at issue, the last moment the assignment
 is still a draft, and re-derive it at every later door. Identity is a hash
@@ -20,7 +19,7 @@ chain into the one ordered `(name, digest)` list the ticket carries.
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Dict, List, Optional, Sequence, Tuple
 
 try:
@@ -38,11 +37,13 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 # hash skips. A standard carries prose and nothing else, so nothing is
 # skipped for either directory one still lives in. A skill may carry its own
 # tests and installed dependencies, and neither is what the ticket stamped.
-PINNED_KINDS = ("standard", "standard", "skill")
+# A workflow package's tests and fixtures are evidence for the package as a
+# whole, so only generated caches and installed dependencies are omitted.
+PINNED_KINDS = ("standard", "skill", "workflow")
 SKIPPED_DIRS = {
     "standard": frozenset(),
-    "standard": frozenset(),
     "skill": frozenset(("tests", "__pycache__", "node_modules")),
+    "workflow": frozenset(("__pycache__", "node_modules")),
 }
 # The one hashed-tree format version. It prefixes the digest input so a
 # change to how a tree is walked is a visibly different digest rather than a
@@ -90,6 +91,11 @@ def tree_digest(kind: str, directory) -> str:
 
     if kind not in PINNED_KINDS:
         raise PinError("kind-unpinned", f"kind '{kind}' carries no ticket pin")
+    if kind == "standard":
+        try:
+            return standards_support.tree_digest(Path(directory))
+        except standards_support.StandardError as error:
+            raise PinError(error.code, error.detail) from error
     digest = hashlib.sha256()
     digest.update(TREE_VERSION)
     digest.update(f"{kind}\n".encode("utf-8"))
@@ -154,7 +160,7 @@ def resolved_standards(names: Sequence[str], **overrides) -> List[Dict[str, obje
     """One stamped set's whole chain, broad to narrow, each level digested.
 
     Resolution -- the `narrows:` walk, the cycle, depth and parent refusals,
-    and the one-adapter check -- belongs to `standards_support` and raises
+    and base-chain checks -- belongs to `standards_support` and raises
     `StandardError`. What is added here is the pin: the tree digest of every
     level, taken once, at the last moment the assignment is still a draft.
     """
@@ -254,6 +260,35 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
     """Every pin defect one ticket's frontmatter carries, as gradeable findings."""
 
     findings = []
+    owner = dequote(data.get("workflow")) or None
+    workflow_digest = dequote(data.get("workflow_digest"))
+    workflow_entry = dequote(data.get("workflow_entry"))
+    if bool(owner) != bool(workflow_digest) or bool(owner) != bool(workflow_entry):
+        findings.append(finding(
+            "workflow-digest-unbound", "workflow_digest",
+            "workflow, workflow_digest, and workflow_entry are stamped together or not at all",
+        ))
+    elif owner:
+        detail = drift("workflow", owner, workflow_digest, **overrides)
+        if detail is not None:
+            findings.append(finding("workflow-digest-mismatch", "workflow_digest", detail))
+        else:
+            entry = PurePosixPath(workflow_entry)
+            invalid = entry.is_absolute() or ".." in entry.parts or not entry.parts
+            try:
+                record = resolved("workflow", owner, **overrides)
+                package = Path(record["dir"]).resolve()
+                target = (package / Path(*entry.parts)).resolve()
+                target.relative_to(package)
+                invalid = invalid or not target.is_file()
+            except (PinError, OSError, ValueError):
+                invalid = True
+            if invalid:
+                findings.append(finding(
+                    "workflow-entry-invalid", "workflow_entry",
+                    f"workflow_entry '{workflow_entry}' must name a file contained "
+                    f"by the pinned workflow package '{owner}'",
+                ))
     raw = data.get(STANDARDS_FIELD)
     levels = standards_of(raw)
     stamped = names_of(raw if isinstance(raw, (list, tuple)) else [raw])
@@ -265,7 +300,11 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
         ))
     elif levels:
         try:
-            chain = resolved_standards([name for name, _digest in levels], **overrides)
+            resolution = dict(overrides)
+            resolution.setdefault("owner", owner)
+            chain = resolved_standards(
+                [name for name, _digest in levels], **resolution,
+            )
         except (standards_support.StandardError, PinError) as error:
             chain = None
             findings.append(finding(error.code, STANDARDS_FIELD, error.detail))
@@ -280,7 +319,9 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
             "not at all",
         ))
     elif applied:
-        detail = drift("skill", applied[0], pinned, **overrides)
+        resolution = dict(overrides)
+        resolution.setdefault("owner", owner)
+        detail = drift("skill", applied[0], pinned, **resolution)
         if detail is not None:
             findings.append(finding("skill-digest-mismatch", "skill_digest", detail))
     return findings

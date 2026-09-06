@@ -272,7 +272,7 @@ def print_plan(plan: Plan) -> None:
 def apply_plan(plan: Plan, keep_role_agents: bool | None = None, *, accepted_source: str | None = None, source_commit: str | None = None) -> dict:
     _sync_installer_seams()
     observed = resolve_source_commit() if source_commit is None else source_commit
-    accepted_source_commit(observed, accepted_source, mutating=True)
+    accepted_source_commit(observed, accepted_source)
     return _apply_plan(plan, observed, keep_role_agents)
 
 
@@ -302,7 +302,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip the prompts: keep any role agent this machine has changed.",
     )
-    parser.add_argument("--accepted-source", metavar="COMMIT", help="Require this exact composite-gate source commit.")
+    parser.add_argument(
+        "--accepted-source",
+        metavar="COMMIT",
+        help="If supplied, require the checkout's source commit to match COMMIT.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print the full plan; write nothing.")
     parser.add_argument("--quick", action="store_true", help="Doctor: compare only the receipt's source commit and host block, then exit; write nothing.")
     parser.add_argument(
@@ -366,14 +370,10 @@ def main(argv=None) -> int:
         return 0
 
     source_commit = resolve_source_commit()
-    # Uninstall has already returned above; what remains that is not a dry
-    # run or a doctor probe consumes the checkout and must name the identity
-    # its gate accepted.  A read-only path grades one only if given one.
+    # Optional identity assertion.  Supplying one is strict, but an ordinary
+    # install does not claim that some external gate accepted this checkout.
     try:
-        accepted_source_commit(
-            source_commit, args.accepted_source,
-            mutating=not (args.dry_run or doctor_requested),
-        )
+        accepted_source_commit(source_commit, args.accepted_source)
     except ValueError as error:
         print(f"error: refusing source identity: {error}", file=sys.stderr)
         return 1

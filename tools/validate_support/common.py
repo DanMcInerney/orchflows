@@ -46,41 +46,15 @@ ROLE_VALUES = {"planner", "worker", "none"}
 # so `role: none` refuses that entry. Derived from the set above.
 APPLIED_ROLE_VALUES = ROLE_VALUES - {"none"}
 # contracts/standard.md's frontmatter: two fields every standard carries,
-# and two a standard may. `narrows` is what makes one a narrowing;
-# `adapter` is the workspace mechanism key of whichever standard
-# introduces the domain.
+# and two compatibility/composition hints a standard may carry.
 STANDARD_REQUIRED_FRONTMATTER = ("name", "description")
 STANDARD_OPTIONAL_FRONTMATTER = ("narrows", "adapter")
 STANDARD_NARROWS_KEY = "narrows"
 STANDARD_ADAPTER_KEY = "adapter"
-# contracts/standard.md's section table, one row per kind. A root states
-# the domain; a narrowing tightens it, and the three refused sections are
-# facts about the domain a narrowing restating one would own twice.
-STANDARD_ROOT_REQUIRED_SECTIONS = (
-    "Making",
-    "Lens",
-    "Vocabulary",
-    "Workspace",
-    "Spec fields",
-)
-STANDARD_ROOT_OPTIONAL_SECTIONS = ("Scaffolding", "Stages")
-STANDARD_NARROWING_REQUIRED_SECTIONS = ("Making", "Lens")
-STANDARD_NARROWING_OPTIONAL_SECTIONS = ("Vocabulary", "Scaffolding")
-STANDARD_NARROWING_REFUSED_SECTIONS = ("Workspace", "Spec fields", "Stages")
-# Headings an earlier kind carried that a standard no longer does. `Standard`
-# is the standard section `## Making` absorbed; the rest retired into `## Lens`
-# entries keyed by artifact kind.
-STANDARD_RETIRED_SECTIONS = ("Standard", "Outline", "Slicing", "Evidence", "Shape")
-# The two artifact kinds every standard's Lens keys, in their required order
-# before the adapter's own: the machinery already identifies a frozen root
-# and a cut, so every domain judges both.
-STANDARD_LIBRARY_LENS_KINDS = ("root", "cut")
 # One ceiling for a standard, root and narrowing alike (contracts/standard.md
-# rule 4): whitespace-separated words over the whole manifest, frontmatter
+# budget rule: whitespace-separated words over the whole manifest, frontmatter
 # counted. Words rather than lines because a line ceiling is met by writing
-# longer lines. It replaces the two it folds -- a standard's 130 non-empty lines
-# and a standard's 100 -- because the section table, not a smaller number, is
-# what keeps a narrowing from growing into a second owner of a domain.
+# longer lines.
 STANDARD_BUDGET = 1200
 STANDARD_DIR_NAME = "standards"
 STANDARD_MANIFEST = "STANDARD.md"
@@ -90,7 +64,7 @@ STANDARD_REFUSED_ENTRIES = ("scripts", "requirements.txt", "tools.txt")
 # The one place a root is told from a narrowing. They are one kind under one
 # directory, so the partition is the field and never the path: a standard
 # naming a broader one in `narrows:` is a narrowing, and one naming none is a
-# root (contracts/standard.md rule 3).
+# root.
 STANDARD_NARROWS_RE = re.compile(r"(?m)^narrows:\s*\S")
 
 
@@ -220,11 +194,6 @@ __all__ = (
     'STANDARD_FLOW_VERBS', 'STANDARD_FLOW_IMPERATIVE_RE',
     'STANDARD_REQUIRED_FRONTMATTER', 'STANDARD_OPTIONAL_FRONTMATTER',
     'STANDARD_NARROWS_KEY', 'STANDARD_ADAPTER_KEY',
-    'STANDARD_ROOT_REQUIRED_SECTIONS', 'STANDARD_ROOT_OPTIONAL_SECTIONS',
-    'STANDARD_NARROWING_REQUIRED_SECTIONS',
-    'STANDARD_NARROWING_OPTIONAL_SECTIONS',
-    'STANDARD_NARROWING_REFUSED_SECTIONS',
-    'STANDARD_RETIRED_SECTIONS', 'STANDARD_LIBRARY_LENS_KINDS',
     'STANDARD_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
     'STANDARD_DIR_NAME', 'STANDARD_MANIFEST',
     'STANDARD_REFUSED_ENTRIES', 'STANDARD_NARROWS_RE', 'declares_narrows',

@@ -35,12 +35,13 @@ class GoalEvidenceContractTest(unittest.TestCase):
 
     def test_execute_consumes_the_standard_and_records_post_work_evidence(self):
         execute = read("skills/kernel/orch-do/SKILL.md")
-        self.assertIn("read the whole manifest", " ".join(execute.split()))
+        normalized = " ".join(execute.split())
+        self.assertIn("read each standard whole", normalized)
         # The Details prescribe/deviate rule is contracts/work-item.md's and
         # the launch prompt's; a third copy here was the same law thrice.
         self.assertNotIn("Details prescribes", execute)
         self.assertRegex(execute, r"Stream the\s+executor\s+record")
-        self.assertIn("reserved outcome", execute)
+        self.assertIn("reserved outcome", normalized)
         result_contract = " ".join(read("contracts/result.md").split())
         self.assertIn("do not change the semantic assignment digest", result_contract)
 
@@ -99,8 +100,10 @@ class CritiqueContractTest(unittest.TestCase):
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
         check = read("skills/kernel/orch-judge/SKILL.md")
         normalized_check = " ".join(check.split())
-        self.assertIn("Never: edit the artifact", normalized_check)
-        self.assertIn("mix a review stage with another kind", normalized_check)
+        self.assertIn("edit the artifact or sealed semantics", normalized_check)
+        self.assertIn(
+            "maker's local inspection as independent acceptance", normalized_check,
+        )
         # The sentence this once pinned ("`## Lens` owns the review
         # criteria") was keyed by artifact kind: the entry, not the whole
         # section, is what a judge checks against. Same fact, new spelling.

@@ -223,6 +223,84 @@ class RingOrderTests(unittest.TestCase):
             )
 
 
+class OwningPackageScopeTests(unittest.TestCase):
+    def _public_workflow(self, world, name="public-flow"):
+        return _item(
+            world["project"] / rings.BUNDLE_DIR / "workflows",
+            "workflow", name,
+        ).parent
+
+    def test_a_private_member_is_nearest_only_for_its_public_owner(self):
+        with _world() as world:
+            package = self._public_workflow(world)
+            private = _item(package / "workflows", "workflow", "helper")
+            public = _item(world["home"] / "workflows", "workflow", "helper")
+            overrides = {
+                "project": world["project"], "home": world["home"],
+                "lib": world["lib"], "trust": False,
+            }
+
+            owned = rings.resolve("workflow", "helper", owner="public-flow", **overrides)
+            ordinary = rings.resolve("workflow", "helper", **overrides)
+
+            self.assertEqual(str(private), owned["path"])
+            self.assertTrue(owned["private"])
+            self.assertEqual("public-flow", owned["owner"])
+            self.assertEqual(str(public), ordinary["path"])
+            self.assertNotIn("private", ordinary)
+
+    def test_an_owned_lookup_preserves_the_ordinary_outer_project_ring(self):
+        with _world() as world:
+            self._public_workflow(world)
+            project_standard = _item(
+                world["project"] / rings.BUNDLE_DIR / "standards",
+                "standard", "team-standard",
+            )
+
+            record = rings.resolve(
+                "standard", "team-standard", owner="public-flow",
+                project=world["project"], home=world["home"],
+                lib=world["lib"], trust=False,
+            )
+
+            self.assertEqual(str(project_standard), record["path"])
+            self.assertFalse(record.get("private", False))
+
+    def test_private_members_never_enter_global_inventory(self):
+        with _world() as world:
+            package = self._public_workflow(world)
+            _item(package / "workflows", "workflow", "helper")
+            _item(package / "skills", "skill", "method")
+            _item(package / "standards", "standard", "local-standard")
+
+            records = rings.inventory(
+                project=world["project"], home=world["home"],
+                lib=world["lib"],
+            )
+
+            self.assertEqual(
+                [("workflow", "public-flow")],
+                [(record["kind"], record["name"]) for record in records],
+            )
+
+    def test_project_trust_is_rechecked_at_the_public_owner(self):
+        with _world() as world:
+            package = self._public_workflow(world)
+            _item(package / "workflows", "workflow", "helper")
+            arguments = {
+                "owner": "public-flow", "project": world["project"],
+                "home": world["home"], "lib": world["lib"],
+            }
+
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve("workflow", "helper", **arguments)
+            self.assertEqual("bundle-untrusted", raised.exception.code)
+
+            rings_trust.grant(world["project"] / rings.BUNDLE_DIR)
+            record = rings.resolve("workflow", "helper", **arguments)
+            self.assertTrue(record["private"])
+
+
 class ReservationAndShadowTests(unittest.TestCase):
     def test_a_reserved_ring_name_refuses_loudly_rather_than_never_running(self):
         with _world() as world:

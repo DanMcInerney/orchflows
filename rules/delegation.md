@@ -14,7 +14,7 @@ connect this law to each authorized dispatch event and predecessor record.
    joins, verbatim user interaction, and answers decided by evidence
    already in context. Neither executes a role-bearing skill body nor
    authors or changes a deliverable. Every such skill runs in a child
-   at the role [roles.md](roles.md) §4 resolves; inline execution is
+   under the profile [roles.md](roles.md) §4 resolves; inline execution is
    forbidden. Those mechanics are one command each way and the root
    improvises neither: a dispatching command — `tickets.py do` and `judge`
    for a callable, `dispatch` for a hand-written ticket — emits the concrete
@@ -26,7 +26,7 @@ connect this law to each authorized dispatch event and predecessor record.
    sideways handoff of control — only call/return and suspension.
 4. A child executes its exact named skill directly
    or standard stage in that stated order, one witness in this one
-   context at the one role [roles.md](roles.md) §4 resolves — and never
+   context under the one profile [roles.md](roles.md) §4 resolves — and never
    re-dispatches that primary work. A child identity stops at the ticket
    boundary and is never reused by another ticket. Critique and repair are
    distinct tickets because critique is read-only and repair invalidates its

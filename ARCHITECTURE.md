@@ -10,14 +10,14 @@ Ceiling: 945 whitespace-delimited words. Terms are
   [`contracts/shapes.json`](contracts/shapes.json).
   [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns the
-  two callables; `workflows/` the reusable domain-blind workflows.
-  Control flow is not a tier: it is the caller's prose. A package
-  owns its `SKILL.md`, `references/`, `scripts/`.
+  two profile-neutral callables; `workflows/` the reusable domain-blind workflows.
+  Control flow is the caller's prose. A package owns its `SKILL.md` and
+  private references, scripts, and nested items.
 - **T2 — [`standards/`](standards/):** domain prose under the
   [standard contract](contracts/standard.md), never control flow. A root
-  states one domain and declares the workspace adapter; a narrowing names
-  one other standard in `narrows:` and only tightens it. The contract owns
-  the frontmatter, the section table, the word ceiling and the digest.
+  states one domain; `narrows:` optionally names one tightening base. The
+  contract owns consumed frontmatter, word ceiling, Lens compatibility, and
+  tree digest, not prose headings.
 - **T3 — [`example-workflows/`](example-workflows/):** named workflows, each
   a skill body calling callables; their authoring standard is
   [custom workflow authoring](docs/custom-workflow-authoring.md).
@@ -44,14 +44,16 @@ Ceiling: 945 whitespace-delimited words. Terms are
   `tickets_frame.py` the callable and frame minting commands;
   `tickets_shape_line.py` shape-line grammar; `tickets_dispatch_launch.py` the
   host binding, `tickets_dispatch_launch_lines.py` the prompt's lines.
-- [`scripts/workspace.py`](scripts/workspace.py) owns a candidate worktree's
+- [`scripts/tickets_adapters.py`](scripts/tickets_adapters.py) selects the
+  execution workspace. [`scripts/workspace.py`](scripts/workspace.py) owns a candidate worktree's
   whole life: `establish` creates and records it, `prepare` installs what it
   declares, `retire` removes it. [`scripts/state_root.py`](scripts/state_root.py)
   alone derives that path and branch; nothing else computes either.
 - [`scripts/rings.py`](scripts/rings.py) owns the one ring resolution order —
   project, home, pinned imports, lib — with its reserved-prefix floor and
-  shadow notices; `standards_support.py` and `tickets_adapters.py` route through
-  it and spell no root of their own. `rings_trust.py` owns the never-portable
+  shadow notices. Owner-scoped private resolution precedes rings without
+  entering inventory; `standards_support.py` routes through it.
+  `rings_trust.py` owns the never-portable
   trust ledger. `orchflows.py` is the ring and resume command surface over
   `orchflows_home.py` (home layout, the committed/regenerable line, pins),
   `orchflows_scaffold.py` (`new` skeletons), `orchflows_adapters.py`
@@ -95,7 +97,7 @@ Ceiling: 945 whitespace-delimited words. Terms are
   shared`, with one named reuse edge: the Now view renders the Workflows-owned
   [`SummaryFlow`](reader/web/src/features/workflows/view/SummaryFlow.tsx)
   flowchart and stylesheet.
-- [`hosts/`](hosts/) owns host records and the role bindings
+- [`hosts/`](hosts/) owns host records, entry mechanisms, and role bindings
   [roles.md](rules/roles.md) §3 resolves against.
 - [`benchmarks/`](benchmarks/) owns evidence corpora, not library machinery.
 - [`.orchflows/`](.orchflows/) owns this repository's own project ring.
@@ -138,8 +140,8 @@ Arrows point from reader or binder to dependency:
 `AGENTS.md` → `rules/` → `contracts/` → `skills/` → package `scripts/`.
 
 Standards depend on contracts and may name callable skills. Generic skills
-never name a standard or domain. A workflow calls skills and
-scripts; no skill depends on a workflow. A lower layer
+never name a standard or domain. A workflow's prose calls skills, other
+workflows, and scripts; no lower-layer skill depends on a workflow. A lower layer
 may link the law or contract binding it; a rule never depends on
 package internals. Shared packages never name project packages;
 project packages may name visible ones.

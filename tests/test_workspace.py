@@ -1,7 +1,10 @@
 """Candidate workspaces report actual mutations without predicted-scope grading."""
 import types
+import tempfile
 import unittest
-from scripts import tickets_adapters, workspace, workspace_candidate
+from pathlib import Path
+from unittest import mock
+from scripts import tickets_adapters, tickets_land, workspace, workspace_candidate
 
 from tests.test_workspace_cases.candidate_cases import (  # noqa: F401
     TestDerivedCandidatePaths,
@@ -118,3 +121,52 @@ class WorkspaceTest(unittest.TestCase):
             with self.subTest(adapter.key):
                 self.assertIsInstance(adapter.workspace_strategy, str)
                 self.assertIsInstance(adapter.establishes_isolation, bool)
+
+
+class WorkspaceAdapterSelectionTest(unittest.TestCase):
+    def test_an_empty_persisted_adapter_refuses(self):
+        with self.assertRaises(tickets_adapters.AdapterError) as raised:
+            tickets_adapters.adapter_for_ticket({"workspace_adapter": "   "})
+        self.assertEqual("workspace-adapter-invalid", raised.exception.code)
+
+    def test_plain_existing_directory_infers_document_tree(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            tickets_adapters.subprocess, "run",
+            return_value=types.SimpleNamespace(returncode=128, stdout="", stderr="not a repository"),
+        ):
+            self.assertEqual("document-tree", tickets_adapters.infer_adapter(tmp).key)
+
+    def test_failed_git_checkout_probe_refuses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / ".git").mkdir()
+            with mock.patch.object(
+                tickets_adapters.subprocess, "run",
+                return_value=types.SimpleNamespace(
+                    returncode=128, stdout="", stderr="dubious ownership",
+                ),
+            ):
+                with self.assertRaises(tickets_adapters.AdapterError) as raised:
+                    tickets_adapters.infer_adapter(tmp)
+        self.assertEqual("workspace-git-invalid", raised.exception.code)
+
+    def test_competing_legacy_hints_refuse_before_cwd_inference(self):
+        with mock.patch.object(
+            tickets_adapters, "legacy_adapter_hints",
+            return_value=("git", "document-tree"),
+        ):
+            with self.assertRaises(tickets_adapters.AdapterError) as raised:
+                tickets_adapters.select_adapter(standards=("a", "b"), target=Path.cwd())
+        self.assertEqual("workspace-adapter-ambiguous", raised.exception.code)
+
+    def test_landing_refuses_an_unresolved_binding_instead_of_skipping_it(self):
+        data = {"workspace_adapter": ""}
+
+        integrated = tickets_land._integrate_workspace(
+            "run", "B1", data, None, Path("ticket.md"), "driver",
+        )
+        retired = tickets_land._retire_workspace("run", "B1", "complete", data)
+
+        self.assertEqual("refused", integrated["outcome"])
+        self.assertEqual("workspace-adapter-invalid", integrated["code"])
+        self.assertEqual("refused", retired["outcome"])
+        self.assertEqual("workspace-adapter-invalid", retired["code"])

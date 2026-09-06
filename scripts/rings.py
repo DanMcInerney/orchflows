@@ -349,12 +349,69 @@ def _unresolved_refusal(kind: str, name: str, **overrides) -> str:
     return line
 
 
-def resolve(kind: str, name: str, *, trust: bool = True, **overrides) -> Dict[str, object]:
-    """Resolve one item to its nearest ring, refusing a reserved ring name."""
+def _owned_hit(kind: str, name: str, owner: str, trust: bool, overrides) -> Optional[Dict[str, object]]:
+    """One private package member, reached through its public workflow owner.
 
+    ``owner`` is deliberately a resolvable name rather than a filesystem
+    path.  Resolving it again applies the ordinary ring order and project
+    trust decision before any package content is read.  The private root is
+    then only a nearest scope for this call; it is never added to inventory.
+    """
+
+    owner_name = item_name(owner)
+    owner_record = resolve("workflow", owner_name, trust=trust, **overrides)
+    package = Path(str(owner_record["dir"])).resolve()
+    root = package / RING_DIRS[kind]
+    try:
+        # A private-root symlink must not turn package scope into a path
+        # escape.  `_manifest` contains a name within the root it receives;
+        # this second boundary contains that root within its public owner.
+        root.resolve().relative_to(package)
+    except (OSError, ValueError):
+        return None
+    manifest = _manifest(kind, root, name)
+    if manifest is None:
+        return None
+    try:
+        manifest.resolve().relative_to(package)
+    except (OSError, ValueError):
+        return None
+    return {
+        "kind": kind,
+        "name": name,
+        "ring": owner_record["ring"],
+        "root": str(root),
+        "dir": str(manifest.parent),
+        "path": str(manifest),
+        "owner": owner_name,
+        "private": True,
+    }
+
+
+def resolve(
+    kind: str,
+    name: str,
+    *,
+    trust: bool = True,
+    owner: Optional[str] = None,
+    **overrides,
+) -> Dict[str, object]:
+    """Resolve one item, optionally inside one public workflow package first.
+
+    Package scope reuses the same name, collision, trust, and outer-ring
+    rules.  It accepts no path and is absent from ``inventory()``, so a
+    private member cannot become a global name or a trust bypass.
+    """
+
+    kind = kind_of(kind)
+    name = item_name(name)
     hits = locate(kind, name, **overrides)
+    if owner is not None:
+        private = _owned_hit(kind, name, owner, trust, overrides)
+        if private is not None:
+            hits.insert(0, private)
     for hit in hits:
-        if hit["ring"] != "lib" and name.startswith(RESERVED_PREFIX):
+        if (hit.get("private") or hit["ring"] != "lib") and name.startswith(RESERVED_PREFIX):
             raise RingError(
                 "reserved-name",
                 reserved_refusal(kind, name, str(hit["ring"]), Path(str(hit["path"]))),
@@ -362,7 +419,7 @@ def resolve(kind: str, name: str, *, trust: bool = True, **overrides) -> Dict[st
     if not hits:
         raise RingError("unresolved", _unresolved_refusal(kind, name, **overrides))
     record = _shadowed_record(hits)
-    if trust and record["ring"] == "project":
+    if trust and record["ring"] == "project" and not record.get("private"):
         _require_trust(Path(str(record["dir"])).parent.parent)
     return record
 

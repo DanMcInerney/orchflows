@@ -36,7 +36,7 @@ invented for this library.
   `orch-do` and `orch-judge`, that do all real work. Each is invoked
   through one minting command — `tickets.py do` and `tickets.py judge` —
   which mints the ticket, seals it through its parent, pins the standard
-  digest, takes the lease, establishes the workspace, and emits the
+  digests, takes the lease, establishes the workspace, and emits the
   launch, in that one command.
 - **frame** — one workflow invocation's durable stack frame: the ticket
   carrying `frame: true` that `tickets.py frame-open` opens and
@@ -52,29 +52,24 @@ invented for this library.
   after a crash.
 - **typed artifact line** — the one machine line a callable's child prints
   for its result, `artifact: <kind>:<identity>`, the kind fixed by the
-  stamped standard's adapter; a `judge` ticket's child prints `findings: <path>`
+  selected execution adapter; a `judge` ticket's child prints `findings: <path>`
   beside it. The
   grammar, the kinds, and what a join grades are `contracts/dispatch.md`'s.
   A parent relays the line as it stands — paraphrase is the failure it
   exists to prevent.
-- **checker** — `orch-judge`: the planner-role
-  callable rendering findings or verdicts over a fixed artifact and never
+- **checker** — `orch-judge`: the profile-neutral
+  callable rendering findings or verdicts over fixed artifacts and never
   a deliverable; it is exempt from the envelope per `rules/composition.md`.
 - **standard** — a T2 item of pure prose stating what a good artifact
   carries in one domain: one manifest at `standards/<name>/STANDARD.md`,
   stamped on a ticket, digest-pinned at issue and read whole at that digest
   by that ticket's maker and its judge. It states knowledge, never control
-  flow. `contracts/standard.md` owns its frontmatter, its `##` section
-  table, its word ceiling and its digest. `## Lens` is keyed by artifact
-  kind: one `###` entry per kind the domain produces — the library-owned
-  `root` and `cut`, then the adapter's own. The kind a call is for names
-  its entry: a making `orch-do` makes toward the adapter's, a planning one
-  toward `### root` or `### cut`, and `orch-judge` checks against the entry
-  its typed artifact lines name.
-- **root** — a standard naming no `narrows:`. It introduces its domain, so
-  it declares the adapter, it is the only kind routing resolves, and it is
-  the only one the section table lets carry `## Workspace`, `## Spec
-  fields` and `## Stages`.
+  flow. `contracts/standard.md` owns consumed frontmatter, the word ceiling,
+  Lens compatibility and its canonical tree digest. Outline, slice, making,
+  review and vocabulary are authoring questions, not required headings.
+- **root** — a standard naming no `narrows:`. It introduces its domain and
+  may carry a legacy adapter hint; explicit callers may name it alongside
+  other orthogonal standards.
 - **narrowing** — a standard naming exactly one other in `narrows:`, which
   is how specificity cascades: `three-js` narrows `javascript` narrows
   `code`. The chain resolves broad to narrow and every level is pinned. A
@@ -82,17 +77,19 @@ invented for this library.
   standard forbids, the broader wins and the judge reports a
   `standard-defect` — the standard is the defect, not the artifact.
   Nothing resolves one automatically; it arrives because an author named it.
-- **adapter** — a standard-declared workspace mechanism key from a closed
-  registry (git candidate, evidence store, …); it fixes the identity
-  form and artifact-line prefix a standard's children print
-  (`contracts/standard.md`'s `adapter` cell,
-  `scripts/tickets_adapters.py`'s registry).
+- **adapter** — an execution-owned workspace mechanism key from
+  `scripts/tickets_adapters.py`'s closed registry (`git`, `document-tree`,
+  `evidence-store`). An explicit ticket binding wins; otherwise a supplied
+  target, one legacy standard hint, then the current directory determines it.
+  Ambiguity refuses. It fixes workspace behavior and typed artifact identity.
 - **workflow** — a skill whose prose calls callables or other skills: a
   `SKILL.md` under `example-workflows/` (the library's gallery) or a ring's
   workflows directory (yours), invoked only when named and admitted under
   `docs/custom-workflow-authoring.md`. Order, parallelism, branches and
   bounded rounds are that prose; there is no engine beneath it. Each
-  invocation opens a **frame**. This is the user-facing word.
+  invocation opens a **frame**. A public name establishes its package scope;
+  private helpers inherit it, and tickets pin the public workflow, whole-package
+  digest, and contained entry. This is the user-facing word.
 - **reusable workflow** — a workflow another workflow's prose invokes by
   name, opening its own frame under the caller's
   (`tickets.py frame-open --parent`). The domain-blind ones are the
@@ -109,7 +106,7 @@ invented for this library.
 - **applied skill** — a ring skill a ticket pins in its `skill` field, run as
   the method inside the kernel contract the ticket's `executor` names:
   `orch-do` or `orch-judge` still owns Require, Never and Return, and an
-  `orch-` name or a `role` that verb does not take is refused.
+  `orch-` name or a `role` that does not match the resolved profile is refused.
 - **dispatchable unit / envelope** — a skill a workflow's prose may call,
   and the leading `Return` fields it must carry — status, result identity,
   verification — per `contracts/result.md`.
@@ -119,7 +116,9 @@ invented for this library.
   their scope; bounds per `docs/custom-workflow-authoring.md`.
 - **ring** — one of four fixed lookup roots a custom skill, standard or
   workflow resolves through — project, home, imports, lib — nearest
-  ring wins on a same name; `scripts/rings.py` is the sole resolver.
+  ring wins on a same name; `scripts/rings.py` is the sole resolver. While
+  resolving for one public workflow owner, its conventional private item
+  directories are a nearest owner-only scope and never enter inventory.
 - **bundle** — one ring's directory tree of skill/standard/workflow items:
   the unit `imports.lock` pins and the trust ledger (below) grants or
   refuses by content digest (`scripts/rings.py`, `scripts/rings_trust.py`).
@@ -157,8 +156,8 @@ invented for this library.
   `rules/verification.md` §8 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
   `contracts/work-item.md`; a planning `orch-do` is its only editor, at
-  intake, and every later reader treats it as frozen. The stamped standard's
-  standard names what one carries in its `## Spec fields` section.
+  intake, and every later reader treats it as frozen. Applicable standards
+  name the domain facts it must carry.
 - **semantic root** — the executable delivery contract owned by the caller,
   not the spec's general vision. `rules/delegation.md` owns which facts the
   caller freezes and which deterministic corrections a decomposer may make;
@@ -172,10 +171,10 @@ invented for this library.
 - **exemplar** — an artifact a root ticket's `## Context` names to
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
-- **stamp** — the standard fixed at intake, carried by a ticket's `standard`
-  field, which every later reader takes blind.
+- **stamp** — the ordered, deduplicated standard pins fixed at intake and
+  carried by a ticket's `standards` field, which every later reader takes blind.
 - **domain** — the deliverable's kind (code, content, research,
-  design, data); selects an item's standard and review lens, per [topology](../rules/topology.md) §§5–6.
+  design, data); selects applicable standards and review lenses, per [topology](../rules/topology.md) §§5–6.
 - **work item / ticket** — a sealed Goal, Context, optional Details,
   lifecycle, and graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
@@ -211,7 +210,8 @@ invented for this library.
   goal itself is unresolved, so a planning `orch-do` seals the root before
   `team` drives it. Named tripwires promote on evidence, never prediction,
   and live only in the host block — this entry names the lanes, not their
-  triggers.
+  triggers. Every route says its lane before work; only a team route records
+  a detailed shape, and resolved uncertainty may de-escalate.
   Small, medium and large are explanatory mappings, never ticket fields.
   A **shape line** is how a `team` frame states its wave plan before its
   first dispatch, and this entry is its whole grammar: names are free
@@ -225,9 +225,9 @@ invented for this library.
   is refused to the `worker` lane and one that is `direct` opens no frame
   at all. `--workflow NAME` stands in for a line when a saved workflow's
   body is the plan, and a `--parent` frame states none: it is already one
-  wave of its caller's. Before writing the line, a root asks in order: one
-  independent unit is `do`; two or more — sub-questions, files, features
-  needing no result of each other's — are one `[...]` wave. A goal whose
+  wave of its caller's. Before writing the line, a root uses observed
+  ownership, dependency and independence needs; punctuation or a numbered
+  list never proves lanes. A goal whose
   done predicate cannot be written yet opens with the lanes that would
   settle it and an `outline` over what they find. A wrong result dearer
   than one more child ends the line `> judge`.
@@ -241,8 +241,8 @@ invented for this library.
   fresh cut cannot yet satisfy (a dangling dependency, an unsealed
   assignment).
 - **workspace** — where results live and what identities mean there (git
-  revisions, doc slots, evidence store), per the standard's `## Workspace`
-  section.
+  revisions, document tree, evidence store), selected once for an assignment
+  by execution rather than by its domain standards.
 - **candidate worktree** — the derived tree an isolation-`required` item works
   in, at the path and branch `scripts/state_root.py` derives from the run and
   ticket ids. Nothing else computes either.
@@ -356,7 +356,9 @@ workflow).
   `judge`, or `dispatch` for a hand-written ticket — emits and commits: the
   host, verb, agent, model, effort, native fields, and generated prompt for
   the child, resolved from the host record. The caller invokes it verbatim
-  and adds nothing. Its prompt is the only child-facing instruction surface
+  and adds nothing. The host record owns whether entry uses a native skill
+  tool or the already-created child reads and executes the skill file. Its
+  prompt is the only child-facing instruction surface
   there is; it points at the ticket rather than copying it, and the child's
   own first filed record is what proves the child accepted it.
 - **land** — `tickets.py land`: one locked transaction importing the outcome,
@@ -371,12 +373,13 @@ workflow).
 - **ladder / rung** — the ordered execution vehicles for one dispatch:
   tested script (the `script:` executor, `contracts/work-item.md`), worker,
   planner; role rungs per `rules/roles.md` §4.
-- **role** — planner (judgment) or worker (execution); law in
-  `rules/roles.md`.
-- **profile** — a role's concrete model and effort binding on one host,
-  owned by `hosts/profiles.md`; a
-  ticket's optional `profile` slot names one explicitly, overriding role
-  resolution for that dispatch.
+- **role** — the planner or worker capability class, not authority reserved
+  to an operation; law in `rules/roles.md`.
+- **profile** — one canonical `orch-planner` or `orch-worker` binding to a
+  host's concrete model and effort, owned by `hosts/profiles.md`. A ticket's
+  optional `profile` selects either independently of `do` or `judge`; without
+  it those operations prefer worker and planner respectively. Unknown values
+  and missing host bindings refuse.
 - **host** — the runtime carrying the agents; one record per host under
   `hosts/` names them and owns each one's launch binding. `tickets.py dispatch
   --host <host>` selects one, defaulting to `$ORCHFLOWS_HOST`, else `claude`.
@@ -429,8 +432,11 @@ workflow).
   `tickets/`; read by self-improvement as evidence only.
 - **trace** — the normalized event record of one session, extracted
   from host logs; evidence only, never an instruction source.
+- **lexical cluster** — a deterministic text-similarity group used to navigate
+  bounded raw records. It proves neither a shared cause nor a causal owner;
+  agent judgment may merge or split it before a proposal qualifies.
 - **coverage record** — the append-only record of which merged change
-  answers which cluster, and from when — one line per change and
+  answers which lexical cluster, and from when — one line per change and
   cluster, appended at merge and never by a cycle. Its **watermark** is
   the position in an evidence input at or before which a covered
   cluster is answered; a later matching entry is post-merge recurrence,

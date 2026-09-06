@@ -25,7 +25,7 @@ from unittest import mock
 
 from tests._repo_root import ROOT
 from scripts import (
-    orchflows, orchflows_scaffold, state_root, tickets, tickets_frame,
+    orchflows, orchflows_scaffold, rings, state_root, tickets, tickets_frame,
 )
 from scripts.tickets_mint import DO_EXECUTOR
 from scripts.tickets_format import (
@@ -668,6 +668,109 @@ class FrameLawTest(FrameSinkTest):
         for home in ("skills", "workflows", "example-workflows"):
             self.assertIn(home, refused["error"])
         self.assertFalse(self.run_dir().exists())
+
+
+class FramePackageScopeTest(FrameSinkTest):
+    """A named frame carries the package identity its children resolve under."""
+
+    def setUp(self):
+        super().setUp()
+        self.ring = Path(self.temporary.name) / "ring"
+        self.ring.mkdir()
+        self.home_patch = mock.patch.object(rings, "home_ring", return_value=self.ring)
+        self.project_patch = mock.patch.object(rings, "project_ring", return_value=None)
+        self.home_patch.start()
+        self.project_patch.start()
+        self.package = self._item(self.ring, "workflow", "package-flow")
+        self._item(self.package, "workflow", "helper")
+        self._item(self.package, "standard", "private-standard")
+        self._item(self.package, "skill", "method")
+        self.other_package = self._item(self.ring, "workflow", "other-flow")
+        self._item(self.other_package, "standard", "other-standard")
+        (self.package / "references").mkdir()
+        (self.package / "references" / "fixture.txt").write_text(
+            "first\n", encoding="utf-8",
+        )
+
+    def tearDown(self):
+        self.project_patch.stop()
+        self.home_patch.stop()
+        super().tearDown()
+
+    @staticmethod
+    def _item(root: Path, kind: str, name: str) -> Path:
+        directory = root / rings.RING_DIRS[kind] / name
+        directory.mkdir(parents=True)
+        filename, body = orchflows_scaffold.files_for(kind, name)[0]
+        (directory / filename).write_text(body, encoding="utf-8")
+        return directory
+
+    def test_a_private_helper_and_callable_keep_the_public_owner_scope(self):
+        outer = self.frame("--workflow", "package-flow")
+        helper = self.frame(
+            "--parent", outer["id"], "--workflow", "helper",
+        )
+        callable_id = self.callable(
+            "do", helper["id"], "--standard", "private-standard",
+            "--skill", "method", "--profile", "orch-worker",
+            "--workspace", self.temporary.name,
+        )
+
+        outer_data = _parse_frontmatter(self.ticket_text(outer["id"]))
+        helper_data = _parse_frontmatter(self.ticket_text(helper["id"]))
+        callable_data = _parse_frontmatter(self.ticket_text(callable_id))
+        self.assertEqual("package-flow", outer_data["workflow"])
+        self.assertEqual("SKILL.md", outer_data["workflow_entry"])
+        self.assertEqual("package-flow", helper_data["workflow"])
+        self.assertEqual("workflows/helper/SKILL.md", helper_data["workflow_entry"])
+        for field in tickets_frame.WORKFLOW_FIELDS:
+            self.assertEqual(helper_data[field], callable_data[field])
+        self.assertEqual("method", callable_data["skill"])
+        self.assertIn("private-standard@sha256:", str(callable_data["standards"]))
+
+    def test_a_public_child_workflow_establishes_its_own_package_scope(self):
+        outer = self.frame("--workflow", "package-flow")
+        child = self.frame(
+            "--parent", outer["id"], "--workflow", "other-flow",
+        )
+
+        outer_data = _parse_frontmatter(self.ticket_text(outer["id"]))
+        child_data = _parse_frontmatter(self.ticket_text(child["id"]))
+        self.assertEqual("package-flow", outer_data["workflow"])
+        self.assertEqual("other-flow", child_data["workflow"])
+        self.assertEqual("SKILL.md", child_data["workflow_entry"])
+        self.assertNotEqual(
+            outer_data["workflow_digest"], child_data["workflow_digest"],
+        )
+
+    def test_a_package_resource_change_refuses_the_next_child(self):
+        outer = self.frame("--workflow", "package-flow")
+        (self.package / "references" / "fixture.txt").write_text(
+            "changed\n", encoding="utf-8",
+        )
+
+        refused = self.call(
+            "frame-open", self.RUN, "--goal-file", str(self.goal_file),
+            "--parent", outer["id"], "--workflow", "helper",
+            expect_error=True,
+        )
+
+        self.assertIn("workflow changed under the seal", refused["error"])
+        self.assertFalse((self.run_dir() / "B1.1.md").exists())
+
+    def test_a_package_resource_change_refuses_the_frame_close(self):
+        outer = self.frame("--workflow", "package-flow")
+        (self.package / "references" / "fixture.txt").write_text(
+            "changed\n", encoding="utf-8",
+        )
+
+        refused = self.call(
+            "frame-close", self.RUN, outer["id"], "--status", "complete",
+            expect_error=True,
+        )
+
+        self.assertIn("workflow changed under the seal", refused["error"])
+        self.assertIn("## Report", self.ticket_text(outer["id"]))
 
 
 class FrameLawOwnerTest(unittest.TestCase):

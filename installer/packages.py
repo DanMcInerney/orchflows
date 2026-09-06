@@ -473,25 +473,19 @@ def source_commit_drift_message(old_receipt: dict | None, new_commit: str | None
 
 
 def accepted_source_commit(
-    current_commit: str | None, accepted_commit: str | None, *, mutating: bool = False
+    current_commit: str | None, accepted_commit: str | None
 ) -> str | None:
-    """Require the checkout to be the one identity accepted by its gate.
+    """Assert the checkout's source identity when the caller supplies one.
 
-    Only one final repository-global gate decides an installable tip, so a
-    mutating installation must name the identity that gate accepted: omitting
-    it there would make the finalization-gate-install path optional rather
-    than enforced.  The read-only paths -- ``--dry-run``, doctor, uninstall --
-    inspect a checkout rather than consume it, and may omit the identity.
-    The value returned is the observed identity, never a caller-supplied
-    value substituted for an unreadable checkout.
+    Omitting ``accepted_commit`` skips the assertion, so the ordinary install
+    command works without manufacturing evidence about an external gate.  A
+    supplied value remains strict: it must be non-empty, the checkout identity
+    must resolve, and the two identities must match.  The value returned is
+    always the observed identity, never the caller's assertion substituted for
+    an unreadable checkout.
     """
 
     if accepted_commit is None:
-        if mutating:
-            raise ValueError(
-                "a mutating installation requires the accepted composite-gate "
-                "source identity; pass --accepted-source"
-            )
         return current_commit
     if not isinstance(accepted_commit, str) or not accepted_commit.strip():
         raise ValueError("accepted source identity must be a non-empty commit")
@@ -500,7 +494,7 @@ def accepted_source_commit(
         raise ValueError("accepted source identity cannot be checked: source commit is unresolved")
     if current_commit.lower() != accepted.lower():
         raise ValueError(
-            "source identity is not the accepted composite-gate commit: "
+            "source identity does not match --accepted-source: "
             f"expected {accepted}, observed {current_commit}"
         )
     return current_commit

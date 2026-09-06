@@ -88,9 +88,9 @@ def _loaded(run: str, ticket_id: str):
     return path, data, path.read_text(encoding="utf-8")
 
 
-def _adapter(data: dict):
+def _adapter(data: dict, target=None):
     try:
-        return tickets_adapters.adapter_spec(tickets_pins.adapter_standard(data))
+        return tickets_adapters.adapter_for_ticket(data, target=target)
     except tickets_adapters.AdapterError as error:
         raise Refused(f"{error.code}: {error.detail}") from error
 
@@ -289,12 +289,12 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams, named)
 
 def _establishment(run, ticket_id, key, held, seams, source, where, named=False):
     path, data, prior_text = _loaded(run, ticket_id)
-    adapter = _adapter(data)
+    adapter = _adapter(data, where or source)
     # The item's isolation before the adapter's strategy, never after. The
     # other way round refuses a document lane over a tree of its own, which
     # only an explicit override ever asks for.
     isolation = tickets_adapters.derived_isolation(
-        data.get(ISOLATION_KEY), tickets_pins.adapter_standard(data),
+        data.get(ISOLATION_KEY), adapter.key,
     )
     if isolation == REQUIRED and not adapter.establishes_isolation:
         raise Refused(f"adapter-not-establishable: {adapter.key} does not "

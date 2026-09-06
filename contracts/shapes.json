@@ -151,8 +151,9 @@
       "fields": [
         "id", "run", "status", "admission", "executor", "standards",
         "skill", "skill_digest",
-        "profile", "parent", "depends_on", "isolation", "bound",
+        "profile", "parent", "depends_on", "isolation", "workspace_adapter", "bound",
         "frame", "done", "makes",
+        "workflow", "workflow_digest", "workflow_entry",
         "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "dispatch_v1"
       ],
@@ -198,21 +199,6 @@
       "contract": "standard.md",
       "fields": ["name", "description", "narrows", "adapter"],
       "required": ["name", "description"]
-    },
-    {
-      "name": "standard_root_sections",
-      "contract": "standard.md",
-      "fields": [
-        "Making", "Lens", "Vocabulary", "Scaffolding", "Workspace",
-        "Spec fields", "Stages"
-      ],
-      "required": ["Making", "Lens", "Vocabulary", "Workspace", "Spec fields"]
-    },
-    {
-      "name": "standard_narrowing_sections",
-      "contract": "standard.md",
-      "fields": ["Making", "Lens", "Vocabulary", "Scaffolding"],
-      "required": ["Making", "Lens"]
     }
   ]
 }

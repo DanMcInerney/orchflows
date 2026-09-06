@@ -60,18 +60,24 @@ def pinned_items(standards, skill):
     return pin_fields(standards, skill)
 
 
-def _applied_skill_refusal(skill, executor):
+def _applied_skill_refusal(skill, executor, profile=None, owner=None):
     """Why this `--skill` may not be the method of this verb, or None."""
 
     name = dequote(skill)
-    if not name:
-        return None
     if __package__:
         from . import rings
-        from .tickets_dispatch_launch import declared_role, manifest_role
+        from .tickets_dispatch_launch import manifest_role, resolved_role_profile
     else:  # pragma: no cover - direct/installed flat script path
         import rings
-        from tickets_dispatch_launch import declared_role, manifest_role
+        from tickets_dispatch_launch import manifest_role, resolved_role_profile
+    required, resolved_profile = resolved_role_profile(executor, profile)
+    if resolved_profile is not None and required is None:
+        return {"error": (
+            f"--profile '{resolved_profile}' is not one of "
+            "['orch-planner', 'orch-worker']"
+        )}
+    if not name:
+        return None
     if name.startswith(rings.RESERVED_PREFIX):
         return {"error": (
             f"--skill '{name}' takes the reserved '{rings.RESERVED_PREFIX}' "
@@ -82,16 +88,16 @@ def _applied_skill_refusal(skill, executor):
             f"'{rings.RESERVED_PREFIX}*'."
         )}
     try:
-        record = rings.resolve("skill", name, trust=False)
+        record = rings.resolve("skill", name, trust=False, owner=owner)
     except rings.RingError as error:
         return {"error": f"skill '{name}' cannot be applied: {error.detail}"}
-    required = declared_role(executor)
     role = manifest_role(record["path"])
     if role != required:
         return {"error": (
             f"skill '{name}' at {record['path']} declares role "
-            f"'{role or 'none'}', and {executor} launches a {required}: an "
-            f"applied skill is the method one {required} runs, so it declares "
+            f"'{role or 'none'}', while profile '{resolved_profile}' resolves "
+            f"to {required}: an applied skill is the method one {required} "
+            "runs, so it declares "
             f"`role: {required}` or it is not applicable on this verb."
         )}
     return None

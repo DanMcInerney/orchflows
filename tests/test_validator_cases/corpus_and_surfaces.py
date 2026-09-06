@@ -116,20 +116,12 @@ class TestLicensedCopies(unittest.TestCase):
 
 
 class TestStandardSections(_IsolatedTree):
-    """validate_standard_sections: a root carries every required section.
+    """Standards accept ordinary prose and validate an optional old Lens."""
 
-    Every verb reads the whole standard and acts under its named sections,
-    so deleting a heading once left the validator at exit 0 and the suite
-    green while the machinery pointed at a section that was not there.
-    """
-
-    MANDATORY = ("Making", "Vocabulary", "Workspace", "Spec fields", "Lens")
-    # `adapter: git` below, so `git` is the standard's own artifact kind
-    # beside the two the library owns.
-    LENS_KINDS = ("root", "cut", "git")
+    SECTIONS = ("Making", "Vocabulary", "Workspace", "Spec fields")
 
     def _write_standard(self, name: str, omit: str = "", adapter: str = "git",
-                    kinds=None, extra: str = ""):
+                    kinds=None, extra: str = "", include_lens: bool = True):
         standard_dir = self.tmp_path / "standards" / name
         standard_dir.mkdir(parents=True)
         body = (
@@ -137,13 +129,13 @@ class TestStandardSections(_IsolatedTree):
             f"adapter: {adapter}\n---\n\n"
             f"# {name}\n\n"
         )
-        for section in self.MANDATORY:
+        for section in self.SECTIONS:
             if section == omit:
                 continue
             body += "## %s\n\ncontent.\n\n" % section
-            if section != "Lens":
-                continue
-            for kind in self.LENS_KINDS if kinds is None else kinds:
+        if include_lens and omit != "Lens":
+            body += "## Lens\n\n"
+            for kind in ("root", "cut", "git") if kinds is None else kinds:
                 body += "### %s\n\ncriteria.\n\n" % kind
         body += extra
         (standard_dir / "STANDARD.md").write_text(body, encoding="utf-8")
@@ -153,9 +145,8 @@ class TestStandardSections(_IsolatedTree):
             with self.subTest(omit=omit):
                 self._write_standard("orch-synth-%s-standard" % omit.lower(), omit=omit)
         result = self._run()
-        self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("no `## Lens` heading", result.stdout)
-        self.assertIn("no `## Workspace` heading", result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("standard carries no", result.stdout)
 
     def test_a_standard_with_every_required_heading_is_clean(self):
         self._write_standard("orch-synth-standard")
@@ -164,36 +155,30 @@ class TestStandardSections(_IsolatedTree):
         self.assertNotIn("`## Lens` carries", result.stdout)
 
     def test_a_retired_heading_is_an_error(self):
-        """The four sections `## Lens`'s entries absorbed are refused, not
-        merely unread: a standard keeping one owns the fact twice, and the
-        copy beside the entry is the one no verb is pointed at."""
+        """Compatibility still refuses two mechanically ambiguous Lenses."""
 
         self._write_standard(
             "orch-synth-retired-standard",
             extra="## Outline\n\nthe old root taste.\n\n"
-                  "## Shape\n\nthe old taste.\n\n",
+                  "## Lens\n\n### another\n\ncriteria.\n\n",
         )
         result = self._run()
         self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("retired `## Outline` heading", result.stdout)
-        self.assertIn("retired `## Shape` heading", result.stdout)
+        self.assertIn("more than one `## Lens`", result.stdout)
 
     def test_a_heading_outside_the_roster_is_an_error(self):
-        """The `##` roster closes both ways, as the `###` keys already do:
-        a section the standard table never named is content no verb is
-        pointed at, and reads correct in the prose alone."""
+        """Authors may choose headings that fit their domain guidance."""
 
         self._write_standard(
             "orch-synth-novel-standard",
             extra="## Notes\n\nasides the verbs never read.\n\n",
         )
         result = self._run()
-        self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("unrecognized `## Notes` heading", result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("unrecognized", result.stdout)
 
     def test_the_optional_stages_heading_is_clean(self):
-        """`Stages` is the one section the table marks optional, so the
-        roster loop reads it rather than the mandatory list alone."""
+        """A familiar optional heading remains valid ordinary navigation."""
 
         self._write_standard(
             "orch-synth-stages-standard",
@@ -205,37 +190,34 @@ class TestStandardSections(_IsolatedTree):
     def test_a_lens_missing_a_library_kind_is_an_error(self):
         self._write_standard("orch-synth-nocut-standard", kinds=("root", "git"))
         result = self._run()
-        self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("no `### cut` entry", result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("no `### cut` entry", result.stdout)
 
     def test_a_lens_missing_the_adapter_kind_is_an_error(self):
         self._write_standard("orch-synth-nokind-standard", kinds=("root", "cut"))
         result = self._run()
-        self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("no `### git` entry", result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("no `### git` entry", result.stdout)
 
     def test_a_lens_key_the_adapter_never_produces_is_an_error(self):
-        """The kind comes from the registry the runtime branches on, so a
-        `doc` entry under a `git` adapter is criteria for an artifact this
-        standard cannot emit -- and reads correct in the prose alone."""
+        """Lens labels do not assert what an adapter can produce."""
 
         self._write_standard(
             "orch-synth-extra-standard", kinds=("root", "cut", "git", "doc"),
         )
         result = self._run()
-        self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("`### doc` entry for an artifact kind", result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("artifact kind", result.stdout)
 
     def test_the_adapter_decides_which_kind_the_lens_must_carry(self):
-        """Same standard shape, a different registered adapter: the entry the
-        `git` standard must carry is the one the `document-tree` standard must not.
-        A hard-coded kind here would pass both."""
+        """An adapter hint does not assign semantic meaning to Lens labels."""
 
         self._write_standard(
             "orch-synth-doc-standard", adapter="document-tree",
             kinds=("root", "cut", "doc"),
         )
         result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn("`## Lens` carries", result.stdout)
 
 

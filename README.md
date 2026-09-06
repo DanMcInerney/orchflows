@@ -135,8 +135,10 @@ and keep it by default.
 Every run auto-logs its friction — retries, missing inputs,
 workarounds — under an always-on law, and `trace.py` extracts each
 session's requests, narration and tool calls into one event record.
-The improvement workflow mines those logs into proposals you accept or
-reject, each scoped to where the change lands: your **environment** (a
+The improvement workflow groups bounded raw records lexically for navigation;
+an agent decides which share a cause and causal owner before writing proposals
+you accept or reject. Each is scoped to where the change lands: your
+**environment** (a
 missing interpreter, a broken tool), your **project** (code or docs
 that keep causing friction), or the **workflows** themselves. Real
 proposals from my own usage:

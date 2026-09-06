@@ -1,14 +1,15 @@
 """Resolve one dispatch's launch: its host binding and its whole prompt.
 
 Two things meet here and nowhere else. `rules/roles.md` clause 4 resolves a
-child's role -- an explicit profile wins, else the applied skill's own
-declaration -- through this one function; and the host records under
+child's profile -- an explicit canonical profile wins, else the operation's
+compatibility default -- through this one function; and the host records under
 `hosts/` own the launch verb, the native launch fields, and the per-role
 model and effort. Nothing here restates a model name, an effort value, or
 an agent identifier, so a host that adds a native field gets it carried
 without this module learning its name.
 
-What the child-facing prompt may carry is
+The applied skill, when present, is checked against that resolved profile and
+never selects it. What the child-facing prompt may carry is
 `tickets_dispatch_launch_lines.py`'s; `launch_prompt` below is only the
 order those groups are rendered in.
 """
@@ -54,6 +55,12 @@ HOSTS_DIR_NAME = "hosts"
 # below turns a profile back into a role and a role back into a profile.
 PROFILE_ROLES = ("planner", "worker")
 ROLE_PROFILES = {f"orch-{role}": role for role in PROFILE_ROLES}
+# A kernel operation is profile-neutral.  These are compatibility preferences
+# for a call that did not name a profile, not authority declared by the skill.
+OPERATION_DEFAULT_ROLES = {
+    "orch-do": "worker",
+    "orch-judge": "planner",
+}
 ROLE_RE = re.compile(r"^role:\s*(worker|planner|none)\s*$", re.MULTILINE)
 AGENT_FIELD_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 EFFORT_SUFFIX = "_effort"
@@ -85,11 +92,18 @@ def declared_role(executor: str):
 
 
 def resolved_role_profile(executor, profile):
-    """`rules/roles.md` clause 4's order, as one `(role, profile)` answer."""
+    """Resolve one exact canonical profile, or expose an unknown one to refuse.
 
-    declared = declared_role(str(executor or ""))
-    role = ROLE_PROFILES.get(profile) or declared
-    named = profile or (f"orch-{role}" if role in PROFILE_ROLES else None)
+    Kernel operations declare no authority.  Their old role choices survive as
+    defaults only; an explicit canonical profile may select either role.
+    """
+
+    executor = str(executor or "").strip()
+    named = str(profile or "").strip() or None
+    if named is not None:
+        return ROLE_PROFILES.get(named), named
+    role = OPERATION_DEFAULT_ROLES.get(executor)
+    named = f"orch-{role}" if role in PROFILE_ROLES else None
     return role, named
 
 
@@ -197,10 +211,21 @@ def _native_fields(record, role, binding) -> dict:
     return fields
 
 
-def binding_failure(record, role):
+def binding_failure(record, role, profile=None):
     """Why this host cannot launch that role, or None."""
 
     host = record.get("id")
+    named = str(profile or "").strip() or None
+    if named is not None and named not in ROLE_PROFILES:
+        return classification(
+            "profile-unresolved",
+            f"profile '{named}' is not one of {', '.join(ROLE_PROFILES)}",
+        )
+    if named is not None and ROLE_PROFILES[named] != role:
+        return classification(
+            "profile-unresolved",
+            f"profile '{named}' resolves to {ROLE_PROFILES[named]}, not {role}",
+        )
     if role not in PROFILE_ROLES:
         return classification(
             "role-unresolved",
@@ -208,10 +233,16 @@ def binding_failure(record, role):
             "launch binding resolves; name profile orch-planner or profile "
             "orch-worker on the ticket (rules/roles.md clause 4)",
         )
-    profile, binding = _binding(record, role)
+    profile_row, binding = _binding(record, role)
     if not binding:
         return classification(
             "profile-unresolved", f"host '{host}' declares no {role} launch binding"
+        )
+    expected = f"orch-{role}"
+    if str(profile_row.get("name") or "").strip() != expected:
+        return classification(
+            "profile-unresolved",
+            f"host '{host}' {role} binding does not declare profile '{expected}'",
         )
     if not str((record.get("launch") or {}).get("verb") or "").strip():
         return classification(
@@ -229,7 +260,7 @@ def binding_failure(record, role):
     return None
 
 
-def launch_prompt(assignment: dict) -> str:
+def launch_prompt(record: dict, assignment: dict) -> str:
     """The one child-facing surface, filled from the graded assignment."""
 
     # Deferred like every tickets->workspace import: a flat `tickets.py`
@@ -247,7 +278,7 @@ def launch_prompt(assignment: dict) -> str:
         "--by", assignment["assigned_name"],
     ]
     lines = [
-        _identity_line(assignment),
+        _identity_line(record, assignment),
         *_contract_lines(assignment),
         *_lane_lines(assignment),
         *_reading_lines(assignment),
@@ -296,7 +327,10 @@ def launch_spec(record, assignment: dict):
     """`(launch, failure)` -- the concrete invocation for one assignment."""
 
     role = assignment.get("role")
-    failure = binding_failure(record, role)
+    profile = assignment.get("profile") or (
+        f"orch-{role}" if role in PROFILE_ROLES else None
+    )
+    failure = binding_failure(record, role, profile)
     if failure is not None:
         return None, failure
     _profile, binding = _binding(record, role)
@@ -307,7 +341,7 @@ def launch_spec(record, assignment: dict):
         "model": binding.get("model"),
         "effort": _effort(binding),
         "fields": _native_fields(record, role, binding),
-        "prompt": launch_prompt(assignment),
+        "prompt": launch_prompt(record, assignment),
     }, None
 
 
@@ -324,8 +358,8 @@ def precheck(run: str, ticket_id: str, host):
     if failure is not None:
         return None, failure
     data = _parse_frontmatter(text)
-    role, _profile = resolved_role_profile(_executor_of(data), data.get("profile"))
-    failure = binding_failure(record, role)
+    role, profile = resolved_role_profile(_executor_of(data), data.get("profile"))
+    failure = binding_failure(record, role, profile)
     if failure is not None:
         return None, failure
     return record, None
@@ -333,7 +367,7 @@ def precheck(run: str, ticket_id: str, host):
 
 __all__ = (
     "ARTIFACT_LINE_FORMS", "DEFAULT_HOST", "FINDINGS_LINE",
-    "HOST_ENV_VAR", "PROFILE_ROLES",
+    "HOST_ENV_VAR", "OPERATION_DEFAULT_ROLES", "PROFILE_ROLES",
     "ROLE_PROFILES", "binding_failure", "declared_role", "host_names",
     "hosts_dir", "launch_prompt", "launch_spec", "manifest_role", "precheck",
     "resolve_host",

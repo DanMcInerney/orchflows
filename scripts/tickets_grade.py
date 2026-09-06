@@ -8,17 +8,14 @@ sufficient.
 
 from __future__ import annotations
 
-import re
 
 if __package__:
-    from .tickets_adapters import AdapterError, adapter_spec, manifest_path
-    from .tickets_pins import adapter_standard
+    from .tickets_adapters import AdapterError, adapter_for_ticket
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
-    from tickets_adapters import AdapterError, adapter_spec, manifest_path
-    from tickets_pins import adapter_standard
+    from tickets_adapters import AdapterError, adapter_for_ticket
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -57,51 +54,6 @@ def _member_ids(root_id: str, snapshot: dict) -> list[str]:
     return members
 
 
-_SPEC_FIELDS_HEADING = re.compile(r"(?m)^##\s+Spec fields\s*$")
-_NEXT_STANDARD_SECTION = re.compile(r"(?m)^##\s+")
-_FIELD_SEPARATOR = re.compile(r"\s*;\s*")
-_EM_DASH = re.compile(r"\s+[—–-]\s+")
-_WORDS = re.compile(r"[a-z0-9_]+")
-
-
-def _required_spec_fields(standard: str) -> list[str]:
-    try:
-        text = manifest_path(standard).read_text(encoding="utf-8")
-    except (AdapterError, OSError, UnicodeDecodeError) as error:
-        raise GradeError(str(error)) from error
-    match = _SPEC_FIELDS_HEADING.search(text)
-    if not match:
-        return []
-    rest = text[match.end():]
-    boundary = _NEXT_STANDARD_SECTION.search(rest)
-    declared = " ".join(
-        line.strip()
-        for line in (rest[: boundary.start()] if boundary else rest).splitlines()
-        if line.strip()
-    )
-    if not declared:
-        return []
-    fields = []
-    for value in _FIELD_SEPARATOR.split(declared):
-        value = dequote(value)
-        if not value:
-            continue
-        # A standard may explain a field after an em dash; the stable field name
-        # is the portion before that explanation.
-        value = dequote(_EM_DASH.split(value, maxsplit=1)[0])
-        if value and value not in fields:
-            fields.append(value)
-    return fields
-
-
-def _mentioned(field: str, text: str) -> bool:
-    """Match a declared field by its meaningful words, not punctuation."""
-
-    field_words = _WORDS.findall(field.casefold().replace("-", "_"))
-    body_words = set(_WORDS.findall(text.casefold().replace("-", "_")))
-    return bool(field_words) and all(word in body_words for word in field_words)
-
-
 def grade_snapshot(root_id: str, snapshot: dict) -> dict:
     """Grade one exact ticket snapshot into the closed routing answer."""
 
@@ -117,25 +69,15 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
     if members:
         raise GradeError(f"root {root_id} is a direct root with executor-result members")
     shape, width = "single", 1
-    standard = adapter_standard(root_data)
-    if not standard:
-        raise GradeError(f"root {root_id} names no standard declaring an adapter")
     try:
-        deterministic_gate = bool(adapter_spec(standard).deterministic_gate)
+        adapter = adapter_for_ticket(root_data)
+        deterministic_gate = bool(adapter.deterministic_gate)
     except AdapterError as error:
         raise GradeError(error.detail) from error
-    sections = _sections(_ticket_text(root_value)) if _ticket_text(root_value) else {}
-    semantic_text = "\n".join(
-        sections.get(name, "") for name in ("Goal", "Context", "Details")
-    )
-    unmentioned = [
-        field for field in _required_spec_fields(standard)
-        if not _mentioned(field, semantic_text)
-    ]
     return {
         "width": width,
         "shape": shape,
-        "unmentioned_spec_fields": unmentioned,
+        "unmentioned_spec_fields": [],
         "deterministic_gate": deterministic_gate,
     }
 

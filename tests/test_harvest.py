@@ -415,13 +415,27 @@ class TestClusteringAndRecurrence(_HarvestTestCase):
         self.assertTrue(cluster["recurrence_met"])
 
     def test_dissimilar_entries_land_in_separate_clusters(self):
+        # These two notes could describe the same underlying CLI defect, but
+        # the harvester reports lexical grouping only. Causal equivalence is
+        # a later agent judgment over the bounded raw records.
         entries = [
-            _friction_entry("2026-08-01T00:00:00Z", "completely unrelated alpha topic", "e", session="s1"),
-            _friction_entry("2026-08-02T00:00:00Z", "an entirely different beta subject", "e", session="s2"),
+            _friction_entry(
+                "2026-08-01T00:00:00Z",
+                "command failed because the required standard flag was absent",
+                "usage should show and supply required options",
+                session="s1",
+            ),
+            _friction_entry(
+                "2026-08-02T00:00:00Z",
+                "missing standard option made tickets do reject the request",
+                "the route should pass all mandatory flags",
+                session="s2",
+            ),
         ]
         _write_jsonl(self._friction_path(), entries)
         rc, digest, _, _ = self._harvest(["--since", "2026-01-01T00:00:00Z"])
         self.assertEqual(2, len(digest["clusters"]))
+        self.assertEqual([False, False], [c["recurrence_met"] for c in digest["clusters"]])
 
     def test_clusters_are_ranked_by_member_count_descending(self):
         entries = [

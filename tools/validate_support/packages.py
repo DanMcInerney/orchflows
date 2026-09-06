@@ -140,11 +140,9 @@ def discover_packages():
             if not pkg_dir.is_dir():
                 continue
             manifest = pkg_dir / STANDARD_MANIFEST
-            # Roots only. A narrowing lives in the same directory and is
-            # graded against the sections it is *refused*, which is
-            # `standards.validate_standards`; grading it here would apply a
-            # root's required sections to a manifest the contract forbids
-            # them to.
+            # Roots only. `standards.validate_standards` discovers and grades
+            # narrowings separately so it can also resolve their `narrows:`
+            # base. Both paths apply the same body rules.
             if manifest.is_file() and not declares_narrows(_read_source(manifest)):
                 packages.append({
                     "path": pkg_dir,
@@ -185,8 +183,8 @@ def parse_frontmatter(text: str, file_label: str, diag: Diagnostics):
 def validate_frontmatter(fm: dict, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     # A standard's two optional keys are contracts/standard.md's, not a
-    # skill's: `narrows` names the one broader standard and `adapter` the
-    # workspace mechanism, and neither is legal on a skill.
+    # skill's: `narrows` names one broader standard and `adapter` is a
+    # legacy workspace hint. Neither is legal on a skill.
     allowed = ALLOWED_FRONTMATTER_KEYS | (
         set(STANDARD_OPTIONAL_FRONTMATTER) if pkg["is_standard"] else set()
     )

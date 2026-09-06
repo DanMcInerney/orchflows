@@ -123,7 +123,7 @@ class TestSourceCommit(unittest.TestCase):
             )
 
             with patch.object(install, "resolve_source_commit", return_value="cafe"):
-                receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
+                receipt = install.apply_plan(plan)
 
             self.assertEqual("cafe", receipt["source_commit"])
 
@@ -148,25 +148,24 @@ class TestSourceCommit(unittest.TestCase):
     def test_source_commit_warning_is_silent_when_a_commit_was_resolved(self):
         self.assertIsNone(install.source_commit_warning("cafe"))
 
-    def test_accepted_source_commit_is_one_fail_closed_gate_identity(self):
+    def test_accepted_source_commit_is_an_optional_identity_assertion(self):
         accepted = "A" * 40
         self.assertEqual(accepted.lower(), install.accepted_source_commit(accepted.lower(), accepted))
         with self.assertRaisesRegex(ValueError, "non-empty"):
             install.accepted_source_commit("abc123", " ")
         with self.assertRaisesRegex(ValueError, "unresolved"):
             install.accepted_source_commit(None, accepted)
-        with self.assertRaisesRegex(ValueError, "not the accepted"):
+        with self.assertRaisesRegex(ValueError, "does not match"):
             install.accepted_source_commit("b" * 40, accepted)
-        # Read-only inspection may omit the identity; consuming the checkout
-        # may not, or the one finalization-gate-install path is optional.
+        # Omission makes no assertion, including when the checkout identity
+        # cannot be resolved; the receipt still records the observed value.
         self.assertEqual("abc123", install.accepted_source_commit("abc123", None))
-        with self.assertRaisesRegex(ValueError, "requires the accepted"):
-            install.accepted_source_commit("abc123", None, mutating=True)
+        self.assertIsNone(install.accepted_source_commit(None, None))
 
-    def test_a_mutating_install_without_an_accepted_identity_changes_nothing(self):
-        for arguments, expected in (
-            (["--user", "--yes"], "requires the accepted"),
-            (["--user", "--yes", "--accepted-source", "   "], "non-empty"),
+    def test_main_omits_the_assertion_but_rejects_an_empty_one(self):
+        for arguments, expected_code, expected_error, reaches_application in (
+            (["--user", "--yes"], 0, None, True),
+            (["--user", "--yes", "--accepted-source", "   "], 1, "non-empty", False),
         ):
             with self.subTest(arguments=arguments), tempfile.TemporaryDirectory() as tmp:
                 home = Path(tmp)
@@ -177,18 +176,25 @@ class TestSourceCommit(unittest.TestCase):
                 ), patch.object(
                     install, "resolve_source_commit", return_value="b" * 40
                 ), patch.object(
-                    install, "apply_plan", side_effect=AssertionError("application reached")
+                    install, "apply_plan", return_value={"source_commit": "b" * 40}
                 ) as application:
                     err = io.StringIO()
                     with redirect_stdout(io.StringIO()), redirect_stderr(err):
                         code = install.main(arguments)
 
-                self.assertEqual(1, code)
-                self.assertIn(expected, err.getvalue())
-                application.assert_not_called()
+                self.assertEqual(expected_code, code)
+                if expected_error is None:
+                    self.assertEqual("", err.getvalue())
+                else:
+                    self.assertIn(expected_error, err.getvalue())
+                if reaches_application:
+                    application.assert_called_once()
+                    self.assertIsNone(application.call_args.kwargs["accepted_source"])
+                else:
+                    application.assert_not_called()
                 self.assertEqual(before, sorted(path.name for path in home.rglob("*")))
 
-    def test_an_unresolved_checkout_refuses_a_mutating_install(self):
+    def test_an_unresolved_checkout_refuses_a_supplied_identity(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
@@ -230,12 +236,11 @@ class TestSourceCommit(unittest.TestCase):
                     code = install.main(["--user", "--yes", "--accepted-source", accepted])
 
             self.assertEqual(1, code)
-            self.assertIn("accepted composite-gate commit", err.getvalue())
+            self.assertIn("does not match --accepted-source", err.getvalue())
             application.assert_not_called()
 
     def test_a_dry_run_says_why_it_could_not_resolve_a_source_commit(self):
-        """A mutating install refuses an unresolved checkout outright, so the
-        warning has one live consumer left: the read-only plan."""
+        """A dry run still explains why its prospective receipt has no commit."""
 
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)

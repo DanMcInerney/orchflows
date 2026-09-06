@@ -109,10 +109,10 @@ and how review reads; none bound what its domain's terms mean or what
 good shape is at write time. Undefined judged terms resolve differently
 in every fresh judge context, so gate verdicts churn, and executors
 write to an unstated bar the one gate then pays for in rework. The cell
-that closes it is each standard's own manifest — **Vocabulary**,
-**Workspace**, **Spec fields** and **Lens** — defined by
-[contracts/standard.md](contracts/standard.md) and carried
-to every executor through the ticket's `standard` stamp.
+that closes it is each standard's own compact domain guidance, defined by
+[contracts/standard.md](contracts/standard.md) and carried whole to every
+executor through the ticket's standard pins. A Lens remains useful where
+artifact-kind criteria need structure; headings do not make prose complete.
 
 Why this shape:
 
@@ -121,9 +121,9 @@ Why this shape:
   ([rules/composition.md](rules/composition.md) §9). A planning `orch-do`
   is generic and needs the nouns; reaching them any other way is a
   signature leak.
-- **One file, not vocabulary and design separately.** A good standard
+- **One compact read, not vocabulary and design separately.** A good standard
   term is a compressed principle — "skim layer" names a thing and
-  instructs you to build one. The sections are consumed together at
+  instructs you to build one. The guidance is consumed together at
   write and review time; splitting doubles every child's reads.
 - **Per standard, not central.** `docs/vocabulary.md` is the library's
   own namespace and stays domain-free; a central domain glossary
@@ -159,16 +159,16 @@ file owns only why each list earned its lines.
   gains its scored dimensions, which is what makes the standard's judged
   voice oracle repeatable across fresh judges.
 - **Research** terms name the evidence discipline (claim, provenance,
-  independence, laundering, gaps, evidence packet); the rigor bar
-  itself is one of the standard's required spec fields, stated per run.
+  independence, laundering, gaps, evidence packet); the rigor bar is
+  domain guidance stated for each run.
 - **Design** terms name the rendered-interface discipline (view
   identity, capture, golden capture, token, state, affordance) and
   give the judged design-language oracle its scored dimensions.
 
 ## Why the design standard
 
-Admitted 2026-07-16 on the contract's admission rule, via workspace
-semantics: the identity algebra is new. Design acceptance is
+Admitted 2026-07-16 on the contract's admission rule, via artifact
+identity semantics: the identity algebra is new. Design acceptance is
 undecidable from source text, so what a verdict covers and a golden
 capture pins is view × breakpoint × state at a revision — a spec's
 enumerated states are first-class identities, not files, and no
@@ -211,7 +211,9 @@ SuperClaude's overwrite-CLAUDE.md data-loss complaints price the
 latter on every reinstall. Receipts carry `source_commit` and print
 drift on rerun because no surveyed library in this space detects
 install drift, and an installer that silently reapplies stale content
-over a newer clone is a bug its own user cannot see.
+over a newer clone is a bug its own user cannot see. `--accepted-source`
+optionally asserts that observed identity; omission makes no gate claim, and
+an unresolved checkout is recorded as such rather than replaced by caller text.
 
 The fourth is live indirection. Codex reads `~/.codex/skills` as one
 global, unscoped catalog, while a skill's body is read live from disk only at
@@ -247,7 +249,7 @@ had no reader at all, project workflows were documented in three places
 and read by nothing, and `/super-research` ran entirely outside the
 library through a hand-written host shim.
 
-- **Three rings, one bundle shape, one resolver.** Every surveyed system
+- **Four rings, one bundle shape, one resolver.** Every surveyed system
   that got scoping right uses one fixed, short, root-relative path per
   kind and no configurable search path; GitHub Actions goes furthest and
   forbids subdirectories. Two resolvers disagreeing about which file is
@@ -255,7 +257,9 @@ library through a hand-written host shim.
   code and the bare `<dir>/standards` root that caused it is gone. The same
   `.orchflows` directory is a project ring, the home ring's custom half,
   and a publishable bundle, so nothing has to be reshaped to move
-  between them.
+  between them. A public workflow package may resolve conventional private
+  item directories before the outer rings; the same resolver, owner, trust
+  decision and digest apply, and private names never enter inventory.
 - **The home ring is a git repository, not a config directory.** The
   sync question — "how do I get my workflow onto the next machine" —
   has a boring answer once the committed and regenerable halves are
@@ -322,13 +326,18 @@ wrong. So each thread was answered by naming an owner in code, and the
 corresponding instructions were deleted from the docs rather than kept
 as fallback lore. Fallback lore is how two owners appear.
 
+A lexical cluster is only a navigation aid over bounded raw records;
+agent judgment establishes a shared cause and causal owner before proposal.
+
 - **The LLM sequenced dispatch and return by hand.** Now `tickets.py
   dispatch` is the outbound transaction and `tickets.py land` the
   inbound one. The role→launch hop in particular was the single
   transcribed link in the system — read the host file, pick the profile
   row, type a model into the launch verb — and a mistyped model there
   killed a dispatch. Emitting a `launch` object the caller invokes
-  verbatim removes the transcription, not just the mistake.
+  verbatim removes the transcription, not just the mistake. Kernel verbs are
+  profile-neutral: explicit planner or worker wins, while `do`/worker and
+  `judge`/planner are compatibility preferences owned by dispatch.
 - **The per-child worktree had no creator.** `work-item.md` called
   establishment "host-owned", which meant improvised; isolation was
   recorded rather than enforced. It was the largest single friction
@@ -421,9 +430,10 @@ the library had built to be that interpreter was machinery it did not need
 to own.
 
 - **Two callables, not four.** The four verbs were four entry points into
-  one standard's. A standard is read three ways and always was; what the tier
+  the applicable standards. Domain guidance is read while making and judging;
+  what the tier
   actually needs is one callable that makes something and one that reads
-  something, each naming which standard sections its call is for. Freezing a
+  something, each naming the guidance its call is for. Freezing a
   root is a `do` whose artifact is a sealed root, which is why the intake
   verb and the cutter both retire into it rather than into each other.
 - **The ticket tree is the call stack.** One move buys durability for
@@ -470,27 +480,27 @@ to own.
   quality removes. Frames are singular and session-bound, so displaying
   their age suffices; callables are dispatchable by anyone holding the
   sink, so the lease is the arbiter.
-- **Why standards and applied skills.** Two verbs left two real gaps: standard one
-  assignment wants and no other, and a method one call runs. Both failed as
+- **Why standards and applied skills.** Two verbs left two real gaps: the
+  orthogonal guidance one assignment wants, and a method one call runs. Both failed as
   verbs — a third verb is a new entry point into the same standard — and both
   fail as standards, since a house style or one client's report shape is not a
   new domain. They pass the perfect-model test from the other side: a
   perfect model still cannot know which style this caller wants or which
   bytes a judge will be graded against, and the fix is data the caller
-  stamps, not procedure the model executes. So a standard is standard pinned by
-  digest on one ticket and read by exactly that ticket's maker and judge,
+  stamps, not procedure the model executes. So each applicable standard is
+  digest-pinned on one ticket and read by that ticket's maker and judge,
   and an applied skill is a method pinned the same way inside the kernel
   contract that still owns Require, Never and Return. Both are stamped and
   neither is called, which is why neither is a call edge and neither needed
   a verb. The cost is one more thing a ticket can pin, and the mitigation is
   that a narrowing only tightens: where it loosens the standard it names,
   the broader one wins and the judge reports the narrowing.
-- **Standards bind per call, not per run.** Callables never share a workspace —
-  each adapter owns its own callable's world — so the one-standard-per-run law
-  and the adapter-compatibility worry behind it both dissolve. One callable
-  is one standard is one artifact; two domains in one deliverable are two
-  callables and a handoff. Frames carry no standard, because a journal is not
-  standard-governed work.
+- **Standards bind per assignment, workspace once.** Explicit orthogonal names
+  and an optional narrowing expand into one ordered, deduplicated pin list.
+  Execution selects one workspace independently from those domain texts, so
+  compatible sequential work can retain one context and mixed-artifact review
+  can read relationships without selecting another workspace. Frames carry no
+  standard, because a journal is not standard-governed work.
 
 Eyes open on the costs: parent-mediated handoffs can still drift, and the
 verbatim machine line is the whole mitigation; the composition vantage is

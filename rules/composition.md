@@ -10,8 +10,9 @@
 2. Every resolved backticked skill name in a body is a call edge. Name
    each call once, at its prose call site, with the exact backticked
    name; mention a skill without calling it in plain text, never
-   backticked. Markdown links to another package's `references/` are
-   file dependencies, not call edges.
+   backticked. Markdown links to the owning package's resources are file
+   dependencies, not call edges; a link outside the package may cite
+   canonical library law only, as §16 defines.
 3. The call graph is acyclic. Recursion, including mutual, is expressed
    by an engine's bounded iteration, never by a call cycle.
 4. Every callable skill ends with `Return` naming its output fields,
@@ -32,14 +33,16 @@
    the join mechanically detects actual overlap and ordinary Git conflicts.
 8. Every failure path returns partial results plus the evidence
    gathered; work is never silently discarded.
-9. Generic skills (kernel, workflows) never name a
-   domain; how they reach domain facts is
-   [contracts/standard.md](../contracts/standard.md)'s. A
-   generic body may name the skill the stamped standard's cell binds, only
-   in apposition to the cell reference that binds it.
-10. Every `Require:` item rides a named T0 carrier — a field a T0
-    contract defines, never bare prose; the caller supplies each
-    callee's `Require` item by that name. A dispatchable unit's
+9. Generic skills (kernel, workflows) never name a domain; each callable
+   reaches domain facts through the standard and narrowing chain its caller
+   stamps, under [contracts/standard.md](../contracts/standard.md). A generic
+   workflow names the standard on the call that needs it rather than copying
+   domain criteria into its body.
+10. A machine-consumed `Require:` value rides the named field or protocol
+    envelope its T0 contract defines. A workflow's semantic inputs remain
+    ordinary prose carried in the call's Goal, Details, and Context; an author
+    does not add a T0 field for each idea. The caller supplies every required
+    input through the carrier appropriate to it. A dispatchable unit's
     `Return:` leads with the result envelope per
     [contracts/result.md](../contracts/result.md); evaluators are
     exempt. A `Return:` item with no consumer or
@@ -70,3 +73,23 @@
 14. Placement. An item lives in the innermost ring that contains every
     caller: one project, the project ring; two, the home ring; other
     people, a bundle they import.
+15. A top-level workflow is the public owner of its directory. It may keep
+    package-private items at `workflows/<name>/workflows/<helper>/SKILL.md`,
+    `skills/<method>/SKILL.md`, and `standards/<standard>/STANDARD.md`, with
+    ordinary resources and scripts beside them. These nested items resolve
+    by name for calls owned by that public workflow, before the outer rings,
+    and never enter global inventory or generated host adapters. A call to a
+    top-level public workflow starts that workflow's scope; a call to a
+    private helper keeps its enclosing public scope. There is no export
+    manifest: an ordinary top-level ring item is public and a nested one is
+    private.
+16. One workflow-package identity covers the public body and every contained
+    helper, standard, skill, script, fixture, and reference. The frame and
+    each child pin that public owner, its whole-tree digest, and the contained
+    workflow entry they read. Resolution rechecks the owner's ordinary ring
+    trust and contains every private path below it; no path supplied by prose
+    can establish scope. Local resource links stay in the package. Links out
+    may cite only canonical library law under `contracts/`, `docs/`, or
+    `rules/`. Static admission checks literal Orchflows commands and says
+    when dynamic or implied prose calls remain unchecked; prose remains the
+    workflow's control flow.

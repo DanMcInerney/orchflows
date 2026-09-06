@@ -72,7 +72,7 @@ class TestHostBlockRendering(unittest.TestCase):
                 f"the block states {branch} {rendered.count(branch)} times, not once",
             )
         for lane in (
-            "smallest first",
+            "smallest-first",
             "evidence decides",
             "Context",
             "`launch`",
@@ -127,7 +127,7 @@ _HOST_BLOCK_DEMANDS = {
         "named items still run only when named",
     ),
     "route by need through the four canonical lanes": (
-        "smallest first",
+        "smallest-first",
         "**direct**",
         "**worker**",
         "**team**",
@@ -140,15 +140,18 @@ _HOST_BLOCK_DEMANDS = {
         "`tickets.py land`",
         "`land --status`",
         "`install.py doctor`",
-        "`evolve`/`benchmaker` run when named",
-        # The write-the-shape sentence (the say-the-lane sentence it
-        # replaced) and the two named tripwires (the third, unknown-cause,
+        "`evolve`/`benchmaker`/ `skill-tournament` run only when named",
+        # The lane announcement, explicit-cost, team-shape and route-change
+        # clauses plus the two named tripwires (the third, unknown-cause,
         # was already covered by "cause investigates before any edit" in
         # TestHostBlockRendering below) -- a seam-judge blocker (F1, run
         # 20260901T021739Z) found these cut for budget with nothing here to
         # catch it: a trim that drops one of these three now goes red
         # instead of shipping silently.
-        "write the run's shape line before the first dispatch",
+        "say the lane before work",
+        "user cost choices win",
+        "record shape through",
+        "resolved uncertainty de-escalates",
         "a second concern mid-direct enters worker",
         "splitting scope enters team",
     ),
@@ -351,7 +354,9 @@ class TestHostBlockDoFlags(unittest.TestCase):
         omitted_required, _ = _flags_by_bracket_depth(omitted)
         self.assertNotEqual(usage_required, omitted_required)
 
-        grown_usage = DO_USAGE.replace("--standard P ", "--standard P --new-required <x> ")
+        grown_usage = DO_USAGE.replace(
+            "--goal-file F", "--new-required X --goal-file F",
+        )
         grown_required, _ = _flags_by_bracket_depth(grown_usage)
         self.assertNotEqual(grown_required, example_required)
 

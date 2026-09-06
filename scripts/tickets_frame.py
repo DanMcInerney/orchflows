@@ -25,6 +25,7 @@ and whose journal states no `unjudged: <reason>`.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path, PurePosixPath
 
 if __package__:
     from . import rings
@@ -115,6 +116,7 @@ FRAME_CLOSE_USAGE = (
     "frame-close <run> <id> [--status S] [--done <canonical-json>]"
 )
 COMMAND_FORM = "command"
+WORKFLOW_FIELDS = ("workflow", "workflow_digest", "workflow_entry")
 
 
 def _done_module():
@@ -125,13 +127,14 @@ def _done_module():
     return tickets_done
 
 
-def _frame_fields(run: str, parent, done, bound: str) -> dict:
+def _frame_fields(run: str, parent, done, bound: str, workflow_fields=None) -> dict:
     """The frontmatter one frame carries: the marker, and no standard binding."""
 
     return {
         "run": run, "status": ADMISSION_PENDING, "admission": ADMISSION_PENDING,
         "frame": FRAME_MARKER,
         "parent": parent or None,
+        **dict(workflow_fields or {}),
         "isolation": "none", "bound": bound,
         "done": done,
     }
@@ -164,9 +167,6 @@ def _cmd_frame_open(rest):
     plan, refusal = shape_for(shape, workflow, parent)
     if refusal is not None:
         return refusal
-    workflow_path, refusal = _workflow_path(workflow)
-    if refusal is not None:
-        return refusal
     goal, failure = _read_utf8(goal_file, "goal file")
     if failure is not None:
         return failure
@@ -180,13 +180,20 @@ def _cmd_frame_open(rest):
     run_dir, failure = _run_dir(run)
     if failure is not None:
         return failure
+    inherited, refusal = workflow_context(run_dir, parent)
+    if refusal is not None:
+        return refusal
+    workflow_record, workflow_fields, refusal = _workflow_record(workflow, inherited)
+    if refusal is not None:
+        return refusal
     sections = [("Goal", goal.strip()), ("Context", _context(parent, None))]
     if (details or "").strip():
         sections.append(("Details", details.strip()))
     sections.append((REPORT_SECTION, ""))
     with _run_lock(run):
         frame_id, failure = _mint(
-            run, run_dir, parent, _frame_fields(run, parent, done, bound),
+            run, run_dir, parent,
+            _frame_fields(run, parent, done, bound, workflow_fields),
             sections,
         )
     if failure is not None:
@@ -219,24 +226,107 @@ def _cmd_frame_open(rest):
         "assignment_seal": opened["assignment_seal"],
         "dispatch_id": opened["dispatch_id"],
         "journal_by": frame_id, "shape": plan,
-        "workflow_path": workflow_path,
+        "workflow_path": (
+            str(workflow_record["path"]) if workflow_record is not None else None
+        ),
         "law": list(FRAME_LAW),
     }}
 
 
-def _workflow_path(workflow):
-    """The named workflow's body, or a refusal naming the rings searched."""
+def _pin_module():
+    if __package__:
+        from . import tickets_pins
+    else:  # pragma: no cover - direct/installed flat script path
+        import tickets_pins
+    return tickets_pins
 
+
+def _workflow_record(workflow, inherited=None):
+    """Resolve a call and return its public-package identity fields.
+
+    A public workflow starts its own package scope.  A private helper keeps
+    the caller's public owner, which is the only name later ticket doors need
+    to re-resolve through the ordinary trust boundary.
+    """
+
+    context = dict(inherited or {})
     if not workflow:
-        return None, None
+        return None, context, None
+    caller_owner = context.get("workflow")
+    pins = _pin_module()
     try:
-        record = rings.resolve("workflow", workflow)
+        record = rings.resolve("workflow", workflow, owner=caller_owner)
     except rings.RingError as error:
         searched = "; ".join(
             f"{ring} {root}" for ring, root in rings.item_roots("workflow")
         )
-        return None, {"error": f"{error.detail}. rings searched: {searched}"}
-    return str(record["path"]), None
+        return None, None, {"error": f"{error.detail}. rings searched: {searched}"}
+    owner_name = str(record.get("owner") or record["name"])
+    try:
+        owner_record = rings.resolve("workflow", owner_name)
+        owner_root = Path(str(owner_record["dir"])).resolve()
+        entry = Path(str(record["path"])).resolve().relative_to(owner_root).as_posix()
+        digest = pins.tree_digest("workflow", owner_root)
+    except (OSError, ValueError, rings.RingError, pins.PinError) as error:
+        detail = getattr(error, "detail", str(error))
+        return None, None, {"error": f"workflow package '{owner_name}' is invalid: {detail}"}
+    return record, {
+        "workflow": owner_name,
+        "workflow_digest": digest,
+        "workflow_entry": entry,
+    }, None
+
+
+def workflow_context(run_dir, parent):
+    """The verified public-package identity inherited by one child.
+
+    The ticket supplies only a public workflow name and a digest.  This
+    helper re-resolves that name through rings, checks the whole package pin,
+    and contains the recorded entry below that package before returning it.
+    A supplied path or owner dictionary is never accepted as authority.
+    """
+
+    if not parent:
+        return {}, None
+    text, failure = _read_utf8(Path(run_dir) / f"{parent}.md", "parent ticket")
+    if failure is not None:
+        return None, {"error": f"parent ticket not found in run: {parent}"}
+    data = _parse_frontmatter(text)
+    fields = {name: str(data.get(name) or "").strip() for name in WORKFLOW_FIELDS}
+    present = [name for name, value in fields.items() if value]
+    if not present:
+        return {}, None
+    if len(present) != len(WORKFLOW_FIELDS):
+        return None, {"error": (
+            "parent workflow package identity is incomplete: workflow, "
+            "workflow_digest, and workflow_entry are stamped together"
+        )}
+    owner = fields["workflow"]
+    pins = _pin_module()
+    try:
+        record = pins.resolved("workflow", owner)
+        root = Path(str(record["dir"])).resolve()
+        entry = PurePosixPath(fields["workflow_entry"])
+        if (
+            entry.is_absolute()
+            or ".." in entry.parts
+            or "\\" in fields["workflow_entry"]
+        ):
+            raise ValueError("workflow_entry escapes its public owner")
+        entry_path = root.joinpath(*entry.parts).resolve()
+        entry_path.relative_to(root)
+        if not entry_path.is_file():
+            raise ValueError(f"workflow_entry does not resolve: {fields['workflow_entry']}")
+    except (OSError, ValueError, rings.RingError, pins.PinError) as error:
+        detail = getattr(error, "detail", str(error))
+        return None, {"error": f"parent workflow package '{owner}' is invalid: {detail}"}
+    current = str(record["digest"])
+    if current != fields["workflow_digest"]:
+        return None, {"error": pins.drift_refusal(
+            "workflow", owner, str(record["ring"]),
+            fields["workflow_digest"], current,
+        )}
+    return fields, None
 
 
 def _opened(run: str, frame_id: str, bound: str) -> dict:
@@ -391,6 +481,9 @@ def _cmd_frame_close(rest):
             f"{run}/{frame_id} is not a frame; `tickets.py land` closes a "
             "callable, and it is the command that integrates and retires a candidate"
         )}
+    _verified_context, refusal = workflow_context(run_dir, frame_id)
+    if refusal is not None:
+        return refusal
     sealed = str(data.get("done") or "").strip()
     if sealed and (status is not None or done is not None):
         return {"error": (

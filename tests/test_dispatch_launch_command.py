@@ -204,7 +204,9 @@ class DispatchLaunchTest(unittest.TestCase):
         """A command verdict is an exit code and a check's verdict is its
         findings, so no prompt teaches a prefix a join used to parse."""
 
-        prompt = launch.launch_prompt(self.assignment_facts())
+        record, failure = launch.resolve_host("claude")
+        self.assertIsNone(failure)
+        prompt = launch.launch_prompt(record, self.assignment_facts())
         for token in ("PASS:", "FAIL:", "UNVERIFIED:"):
             self.assertNotIn(token, prompt)
 
@@ -278,10 +280,24 @@ class DispatchLaunchTest(unittest.TestCase):
         opened.assert_not_called()
         self.assertEqual(before, self.ticket_path().read_text(encoding="utf-8"))
 
+    def test_an_unknown_profile_refuses_before_the_attempt_is_opened(self):
+        self.seal_ticket("decorative", "--profile", "house-profile")
+        before = self.ticket_path("decorative").read_text(encoding="utf-8")
+        with mock.patch.object(
+            tickets._tickets_dispatch_facade_module, "_cmd_dispatch_open",
+        ) as opened:
+            result = self.dispatch(run="decorative")
+
+        self.assertEqual("profile-unresolved", result["code"])
+        self.assertIn("house-profile", result["error"])
+        opened.assert_not_called()
+        self.assertEqual(
+            before, self.ticket_path("decorative").read_text(encoding="utf-8"),
+        )
+
     def test_an_unresolved_role_refuses_before_the_attempt_is_opened(self):
-        # Every registered callable declares planner or worker now, so the
-        # one executor form left that resolves to neither is the `script:`
-        # escape hatch: it names no skill, so it declares no role.
+        # Registered operations have compatibility defaults. A `script:`
+        # executor has no such default and therefore needs an explicit profile.
         text = tickets._set_frontmatter_field(
             self.ticket_path().read_text(encoding="utf-8"),
             "executor", "script:scripts/harvest.py",

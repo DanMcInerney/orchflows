@@ -41,16 +41,16 @@ def _skill_path(name: str) -> str:
 
 
 class ThinOrchestratorContractTests(unittest.TestCase):
-    WORKFLOW_ROLES = {
+    OPERATION_DEFAULTS = {
         "orch-judge": "planner",
         "orch-do": "worker",
     }
 
     def test_canonical_role_map_and_glue_only_contract(self):
-        for name, role in self.WORKFLOW_ROLES.items():
+        for name in self.OPERATION_DEFAULTS:
             with self.subTest(skill=name):
                 self.assertEqual(
-                    role,
+                    "none",
                     _frontmatter(_skill_path(name))["role"],
                 )
 
@@ -63,7 +63,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         # tier actually carries one is
         # tests/test_catalog_completeness.py's population check.
         self.assertEqual(
-            set(self.WORKFLOW_ROLES),
+            set(self.OPERATION_DEFAULTS),
             {path.parent.name for path in (ROOT / "skills" / "kernel").rglob("SKILL.md")},
         )
         for path in sorted((ROOT / "skills" / "workflows").rglob("SKILL.md")):
@@ -87,7 +87,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "glue-only",
             "role-bearing",
             "exact named skill",
-            "matching role",
+            "resolved profile",
             "user-only",
             "verbatim",
         ):
@@ -102,11 +102,10 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "`launch`",
             "`tickets.py do <run>",
             "`tickets.py land`",
-            # The UX contract's write-the-shape sentence, which replaced the
-            # say-the-lane one; a seam-judge blocker (F1, run
-            # 20260901T021739Z) found that one cut for budget with no anchor
-            # here to catch it.
-            "write the run's shape line before the first dispatch",
+            "say the lane before work",
+            "user cost choices win",
+            "resolved uncertainty de-escalates",
+            "`evolve`/`benchmaker`/ `skill-tournament` run only when named",
         ):
             self.assertIn(anchor, collapsed_host)
         authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
@@ -136,6 +135,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
 
         for anchor in (
             "tickets.py frame-open <run>",
+            "record shape through",
             "each wave re-read its `## Report`",
             "`artifact:` and `findings:` lines verbatim",
             "`frame-close`",
@@ -238,6 +238,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "a second concern mid-direct enters worker",
             "splitting scope enters team",
             "an unknown cause investigates before any edit",
+            "resolved uncertainty de-escalates",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, spec_route)
@@ -256,31 +257,27 @@ class ThinOrchestratorContractTests(unittest.TestCase):
 
         prompts = {dest.stem: content for dest, content in plan.codex_prompts}
         redirects = {dest.parent.name: content for dest, content in plan.codex_skills}
-        for name, role in self.WORKFLOW_ROLES.items():
+        for name in self.OPERATION_DEFAULTS:
             with self.subTest(prompt=name):
                 prompt = prompts[name]
+                normalized = " ".join(prompt.split())
                 for anchor in (
-                    f"agent_type `orch_{role}`",
-                    "fork_turns `none`",
-                    f"`{name}`",
-                    "emitted launch prompt",
-                    "matching role",
-                    "directly",
-                    "refuse",
+                    "resolved child profile",
+                    "profile-neutral contract",
+                    "role: none",
                 ):
-                    self.assertIn(anchor, prompt)
-                self.assertNotIn("automatic binding", prompt)
-                self.assertNotIn("root guard", prompt)
-                self.assertNotIn("hook", prompt.lower())
+                    self.assertIn(anchor, normalized)
+                self.assertNotIn("agent_type `orch_", prompt)
+                self.assertNotIn("fork_turns", prompt)
 
         for name in {"orch-judge", "orch-do"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
-                role = self.WORKFLOW_ROLES[name]
-                self.assertIn(f"agent_type `orch_{role}`", content)
-                self.assertIn("fork_turns `none`", content)
-                self.assertIn("matching role", content)
-                self.assertIn("refuse", content)
+                self.assertIn("role: none", content)
+                self.assertIn("Read ", content)
+                self.assertIn("SKILL.md and follow it exactly", content)
+                self.assertNotIn("agent_type `orch_", content)
+                self.assertNotIn("fork_turns", content)
 
         role_agent = install.render_codex_agent(
             "orch-planner", install.load_role_profiles()["orch-planner"]

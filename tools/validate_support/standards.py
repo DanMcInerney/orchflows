@@ -1,26 +1,19 @@
 """Grade every library standard against `contracts/standard.md`.
 
 A root states a domain; a narrowing tightens one. They are one kind in one
-`standards/` directory, told apart by `narrows:` alone: this module grades
-the narrowings and `packages.py` the roots, because the section table gives
-each a different set. What a narrowing may say is bounded by what its root
-already says. Every bound here is one that contract states: the
-frontmatter keys, the two sections both kinds carry, the three a narrowing
-is refused, the one word ceiling, and the refusal of anything executable
-inside the directory.
+`standards/` directory, told apart by optional `narrows:` alone. Both carry
+ordinary domain guidance in any clear Markdown layout. This module checks
+the shared frontmatter, nonempty guidance, optional legacy Lens structure,
+the word ceiling, and the refusal of executable content.
 
 Its own module rather than a fifth concern inside `packages.py`: that file
 already owns discovery, frontmatter, role, anatomy and budget for skills at
-four hundred lines. The seam is the section table a manifest is graded
-against, so the growth goes sideways.
+four hundred lines. Standard-specific checks stay here so the growth goes
+sideways.
 
-Two of the checks read a *root* to grade a *narrowing*. `narrows:` names
-the one standard the narrowing tightens, so a name that resolves to no
-root is a stamp that can never be taken; and a `## Lens` `###` entry is
-keyed by the artifact kind that root's adapter emits, so an entry under
-any other key is criteria no verb will ever read. Both are read out of the
-root's own `adapter` frontmatter through `ADAPTER_REGISTRY`, never out of
-a second table here.
+One check reads a *root* to grade a *narrowing*: `narrows:` names the one
+standard it tightens, so a name that resolves to no manifest is a stamp that
+can never be taken. Adapter hints and Lens labels do not decide composition.
 """
 
 from __future__ import annotations
@@ -34,12 +27,8 @@ STANDARD_MANIFEST = __dep_common.STANDARD_MANIFEST
 STANDARD_REFUSED_ENTRIES = __dep_common.STANDARD_REFUSED_ENTRIES
 STANDARD_ADAPTER_KEY = __dep_common.STANDARD_ADAPTER_KEY
 STANDARD_NARROWS_KEY = __dep_common.STANDARD_NARROWS_KEY
-STANDARD_NARROWING_OPTIONAL_SECTIONS = __dep_common.STANDARD_NARROWING_OPTIONAL_SECTIONS
-STANDARD_NARROWING_REFUSED_SECTIONS = __dep_common.STANDARD_NARROWING_REFUSED_SECTIONS
-STANDARD_NARROWING_REQUIRED_SECTIONS = __dep_common.STANDARD_NARROWING_REQUIRED_SECTIONS
 STANDARD_OPTIONAL_FRONTMATTER = __dep_common.STANDARD_OPTIONAL_FRONTMATTER
 STANDARD_REQUIRED_FRONTMATTER = __dep_common.STANDARD_REQUIRED_FRONTMATTER
-STANDARD_RETIRED_SECTIONS = __dep_common.STANDARD_RETIRED_SECTIONS
 SKIPPED = __dep_common.SKIPPED
 re = __dep_common.re
 
@@ -78,8 +67,7 @@ def discover_standards():
     Root and narrowing alike, with `narrows` saying which: they are one
     kind in one directory, so the field is the partition and the path is
     not. The section, frontmatter and Lens checks below take the
-    narrowings, because `packages.discover_packages` takes the roots and
-    grades them against the sections a root is *required*.
+    narrowings, because `packages.discover_packages` takes the roots.
 
     A directory without the manifest is data rather than a standard,
     exactly as a tier directory holding only ``references/`` is no
@@ -142,54 +130,12 @@ def declared_adapter(text: str) -> str:
     return dequote(match.group(1)) if match else ""
 
 
-def standard_lens_kinds(standard_roots, standards):
-    """``(kind_by_standard, unresolved)`` for the standard a narrowing names.
-
-    ``kind_by_standard`` maps each resolved name to the one artifact kind its
-    adapter emits. Their values are the closed set of `###` keys the
-    narrowing's `## Lens` may key, and each key is separately owed: a root
-    whose kind no entry carries is a stamp that would hand a verb a
-    standard with nothing in it to read. A name that does not resolve, or
-    whose adapter is unregistered, lands in ``unresolved`` instead of
-    silently widening that set.
-
-    ``standard_roots`` is the directories to look in, nearest first. The
-    library has one; a ring's narrowing almost always names a *library*
-    root, so a caller grading a ring passes every directory that resolves
-    from there and a stamp that can be taken is not reported as one that
-    cannot.
-    """
-
-    kind_by_standard, unresolved = {}, []
-    for name in standards:
-        manifest = _standard_manifest(standard_roots, name)
-        if manifest is None:
-            unresolved.append(name)
-            continue
-        adapter = ADAPTER_REGISTRY.get(declared_adapter(_read_source(manifest)))
-        if adapter is None:
-            unresolved.append(name)
-            continue
-        kind_by_standard[name] = adapter.artifact_kind
-    return kind_by_standard, unresolved
-
-
 def validate_standard_adapter(fm: dict, pkg: dict, diag) -> None:
-    """A root's `adapter:` names one registered workspace mechanism key.
-
-    The typed leaf downstream machinery branches on, so an unregistered
-    value is a standard whose `## Lens` keys an artifact kind no verb is
-    ever handed.
-    """
+    """When present, ``adapter:`` is one registered legacy workspace hint."""
 
     file_label = rel(pkg["skill_md"])
     value = dequote(fm.get(STANDARD_ADAPTER_KEY, ""))
     if not value:
-        diag.error(
-            file_label,
-            "standard frontmatter declares no 'adapter'; a root introduces "
-            "its domain, so it names the one workspace mechanism key",
-        )
         return
     if not STANDARD_ADAPTER_RE.match(value):
         diag.error(
@@ -234,76 +180,79 @@ def validate_standard_frontmatter(fm: dict, standard: dict, diag) -> None:
         )
 
 
+def _substantive(text: str) -> bool:
+    """Whether Markdown contains guidance beyond headings and fences."""
+
+    without_headings = re.sub(r"(?m)^\s{0,3}#{1,6}\s+.*$", "", text)
+    without_fences = re.sub(r"(?m)^\s*(?:---|```|~~~)\s*$", "", without_headings)
+    return bool(without_fences.strip())
+
+
+def _lens_entries(body: str):
+    """The optional Lens regions and their ``###`` entries, mechanically."""
+
+    sections = list(SECTION_RE.finditer(body))
+    lenses = []
+    for index, section in enumerate(sections):
+        if section.group(1) != "Lens":
+            continue
+        end = sections[index + 1].start() if index + 1 < len(sections) else len(body)
+        region = body[section.end():end]
+        lenses.append((region, list(LENS_ENTRY_RE.finditer(region))))
+    return lenses
+
+
 def validate_standard_sections(body: str, standard: dict, diag) -> None:
+    """Require guidance; if a legacy Lens exists, require sound structure.
+
+    Headings are author choices. The validator does not infer semantic
+    coverage from their names or from an adapter hint.
+    """
+
     file_label = rel(standard["manifest"])
-    present = SECTION_RE.findall(body)
-    for heading in STANDARD_NARROWING_REQUIRED_SECTIONS:
-        if heading not in present:
-            diag.error(file_label, f"standard missing required section '## {heading}'")
-    allowed = set(STANDARD_NARROWING_REQUIRED_SECTIONS) | set(
-        STANDARD_NARROWING_OPTIONAL_SECTIONS
-    )
-    for heading in present:
-        if heading in STANDARD_NARROWING_REFUSED_SECTIONS:
+    if not _substantive(body):
+        diag.error(file_label, "standard body carries no domain guidance")
+        return
+    lenses = _lens_entries(body)
+    if len(lenses) > 1:
+        diag.error(file_label, "standard carries more than one `## Lens` heading")
+        return
+    if not lenses:
+        return
+    region, entries = lenses[0]
+    if not entries:
+        diag.error(file_label, "standard `## Lens` carries no `###` entry")
+        return
+    names = [entry.group(1) for entry in entries]
+    duplicates = sorted({name for name in names if names.count(name) > 1})
+    for name in duplicates:
+        diag.error(file_label, f"standard `## Lens` repeats `### {name}`")
+    for index, entry in enumerate(entries):
+        end = entries[index + 1].start() if index + 1 < len(entries) else len(region)
+        if not _substantive(region[entry.end():end]):
             diag.error(
                 file_label,
-                f"section '## {heading}' is a root's; a narrowing carrying it "
-                "would be a second owner of a fact about the domain",
+                f"standard `## Lens` entry `### {entry.group(1)}` carries no guidance",
             )
-        elif heading in STANDARD_RETIRED_SECTIONS:
-            diag.error(
-                file_label,
-                f"standard carries a retired `## {heading}` heading; "
-                "contracts/standard.md's section table does not list it",
-            )
-        elif heading not in allowed:
-            diag.error(file_label, f"section '## {heading}' is not a standard section")
 
 
 def validate_standard_lens(body: str, fm: dict, standard: dict, diag, standard_roots=None) -> None:
-    """`## Lens` keys and the named root's kind are the same set.
+    """Check only that optional ``narrows:`` resolves to one manifest.
 
-    Both directions, because each fails its own way: an entry under a key
-    the named root never emits is criteria no verb reads, and a named root
-    whose kind no entry carries is a stamp that hands its verb a standard
-    with nothing in it for the artifact it makes (contracts/standard.md
-    `## Lens`).
+    Lens labels are reader guidance, not a machine claim that the standard
+    covers an adapter's artifact kinds.
     """
 
     file_label = rel(standard["manifest"])
     standards = declared_standards(fm.get(STANDARD_NARROWS_KEY))
-    kind_by_standard, unresolved = standard_lens_kinds(
-        default_standard_roots() if standard_roots is None else standard_roots, standards,
-    )
-    for name in unresolved:
+    roots = default_standard_roots() if standard_roots is None else standard_roots
+    for name in standards:
+        if _standard_manifest(roots, name) is not None:
+            continue
         diag.error(
             file_label,
-            f"narrows names '{name}', which resolves to no standard with a "
-            "registered adapter in this library",
+            f"narrows names '{name}', which resolves to no standard in this library",
         )
-    kinds = set(kind_by_standard.values())
-    entries = LENS_ENTRY_RE.findall(body)
-    if standards and not unresolved and not entries:
-        diag.error(file_label, "standard '## Lens' carries no '###' artifact-kind entry")
-    for entry in entries:
-        if unresolved or not kinds:
-            break
-        if entry not in kinds:
-            diag.error(
-                file_label,
-                f"'## Lens' entry '### {entry}' is not an artifact kind the "
-                f"standard {sorted(standards)} emits ({sorted(kinds)})",
-            )
-    if unresolved:
-        return
-    for name in sorted(kind_by_standard):
-        if kind_by_standard[name] not in entries:
-            diag.error(
-                file_label,
-                f"narrows names '{name}', whose artifact kind "
-                f"'{kind_by_standard[name]}' has no '## Lens' entry "
-                f"'### {kind_by_standard[name]}'",
-            )
 
 
 def validate_standard_contents(standard: dict, diag) -> None:
@@ -325,7 +274,7 @@ def validate_standards(diag, standard_roots=None) -> None:
 
     `validate_standard_contents` is the one check here that reaches a root
     as well: what a standard's *directory* may hold is a fact about the
-    kind, and the section table does not partition it.
+    kind.
     """
 
     root = standard_root()
@@ -343,12 +292,13 @@ def validate_standards(diag, standard_roots=None) -> None:
         validate_standard_frontmatter(fm, standard, diag)
         validate_standard_sections(body, standard, diag)
         validate_standard_lens(body, fm, standard, diag, standard_roots)
+        validate_standard_adapter(fm, {"skill_md": standard["manifest"]}, diag)
         validate_standard_budget(standard["manifest"], diag)
 
 
 __all__ = (
     "declared_adapter", "declared_standards", "default_standard_roots",
-    "discover_standards", "standard_lens_kinds", "standard_root",
+    "discover_standards", "standard_root",
     "validate_standard_contents",
     "validate_standard_frontmatter", "validate_standard_lens",
     "validate_standard_sections", "validate_standards",

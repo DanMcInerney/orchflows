@@ -167,12 +167,10 @@ class AdapterRegistryTest(unittest.TestCase):
             commits_in_place=True,
         )
         with mock.patch.object(
-            tickets_assignment, "adapter_spec", return_value=adapter,
-        ), mock.patch.object(
-            tickets_assignment, "adapter_standard", return_value="widget-standard",
+            tickets_assignment, "adapter_for_ticket", return_value=adapter,
         ):
             finding = tickets_assignment.workspace_establishment_finding(
-                {"standards": ["widget-standard@sha256:" + "0" * 64],
+                {"workspace_adapter": "synthetic",
                  "isolation": "required"}, None,
             )
         self.assertEqual("workspace-unestablished", finding[0])

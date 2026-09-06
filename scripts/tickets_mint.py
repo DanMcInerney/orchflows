@@ -20,12 +20,13 @@ lifecycle here rather than by a caller.
 
 from __future__ import annotations
 
-import re
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 if __package__:
-    from .standards_support import StandardError, adapter_standard
-    from .tickets_adapters import ADAPTER_REGISTRY, AdapterError, adapter_id
+    from .tickets_adapters import (
+        ADAPTER_REGISTRY, WORKSPACE_ADAPTER_FIELD, AdapterError, select_adapter,
+    )
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_bound import parse_bound
     from .tickets_format import (
@@ -35,9 +36,10 @@ if __package__:
         done_defects, next_mint_id,
     )
     from .tickets_generations import assignment_digest
+    from .tickets_pins import pin_fields
     from .tickets_issue import (
         ISOLATION_VALUES, NEW_DEFAULT_BOUND, _applied_skill_refusal,
-        _issue_ticket, pinned_items,
+        _issue_ticket,
     )
     from .tickets_issue_render import _render_ticket
     from .tickets_seal import _cmd_draft_validate, _cmd_seal
@@ -45,8 +47,9 @@ if __package__:
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _segment_error, _tickets_root,
     )
 else:  # pragma: no cover - direct/installed flat script path
-    from standards_support import StandardError, adapter_standard
-    from tickets_adapters import ADAPTER_REGISTRY, AdapterError, adapter_id
+    from tickets_adapters import (
+        ADAPTER_REGISTRY, WORKSPACE_ADAPTER_FIELD, AdapterError, select_adapter,
+    )
     from tickets_admission import ADMISSION_PENDING
     from tickets_bound import parse_bound
     from tickets_format import (
@@ -56,9 +59,10 @@ else:  # pragma: no cover - direct/installed flat script path
         done_defects, next_mint_id,
     )
     from tickets_generations import assignment_digest
+    from tickets_pins import pin_fields
     from tickets_issue import (
         ISOLATION_VALUES, NEW_DEFAULT_BOUND, _applied_skill_refusal,
-        _issue_ticket, pinned_items,
+        _issue_ticket,
     )
     from tickets_issue_render import _render_ticket
     from tickets_seal import _cmd_draft_validate, _cmd_seal
@@ -67,18 +71,18 @@ else:  # pragma: no cover - direct/installed flat script path
     )
 
 DO_USAGE = (
-    "do <run> --standard P [--standard ...] --goal-file F [--details-file D] "
-    "[--parent ID] [--standard S] [--standard ...] [--skill S] "
+    "do <run> --standard S [--standard S ...] --goal-file F [--details-file D] "
+    "[--parent ID] [--skill S] [--profile P] "
     "[--done <canonical-json>] [--makes " + "|".join(PLANNING_KINDS) + "] "
     "[--isolation required|none] [--bound B] "
-    "[--workspace <source-tree-to-cut-from>] [--host H]"
+    "[--workspace <target>] [--workspace-adapter A] [--host H]"
 )
 JUDGE_USAGE = (
-    "judge <run> --standard P [--standard ...] --goal-file F --artifacts <typed-line> "
+    "judge <run> --standard S [--standard S ...] --goal-file F --artifacts <typed-line> "
     "[--artifacts ...] [--details-file D] [--parent ID] "
-    "[--standard S] [--standard ...] [--skill S] "
+    "[--skill S] [--profile P] "
     "[--isolation required|none] [--bound B] "
-    "[--workspace <source-tree-to-cut-from>] [--host H]"
+    "[--workspace <target>] [--workspace-adapter A] [--host H]"
 )
 DO_EXECUTOR = "orch-do"
 JUDGE_EXECUTOR = "orch-judge"
@@ -98,50 +102,6 @@ JUDGE_KINDS = ARTIFACT_KINDS | frozenset(GENERATION_KINDS)
 # whose call this ticket is, in the section a reader of the ticket alone
 # would otherwise have to infer it from the id.
 PARENT_CLAUSE = "- parent: "
-# The adapter whose workspace *is* lanes, and so the one whose standard prices
-# a lane at one independently answerable sub-question. Selected off the
-# standard's own declared adapter rather than off a standard name, because machinery
-# stays domain-blind; a standard that adopts this adapter inherits the door.
-LANE_ADAPTER = "evidence-store"
-# The marker that adapter's standard root entry states the form of. The door
-# counts it; the standard is where the form is said.
-_SUBQUESTION_MARKER = "sub-questions"
-_HEADING_LINE = re.compile(r"^ {0,3}#{1,6}\s")
-_NUMBERED_ITEM = re.compile(r"^\s*\d+[.)]\s+\S")
-
-
-def subquestion_count(goal: str) -> int:
-    """How many sub-questions one goal declares."""
-
-    count, inside = 0, False
-    for line in goal.splitlines():
-        if _HEADING_LINE.match(line):
-            inside = _SUBQUESTION_MARKER in line.lower()
-        elif inside and _NUMBERED_ITEM.match(line):
-            count += 1
-    return count
-
-
-def _one_lane(standards, parent, goal: str, goal_file):
-    """The refusal for a parentless lane-adapter `do` carrying several lanes."""
-
-    if parent:
-        return None
-    try:
-        if adapter_id(adapter_standard(standards)) != LANE_ADAPTER:
-            return None
-    except (AdapterError, StandardError):
-        return None
-    lanes = subquestion_count(goal)
-    if lanes < 2:
-        return None
-    return {"error": (
-        f"goal file {goal_file}: {lanes} sub-questions are {lanes} lanes, "
-        "per the research standard's cut rule; open a frame with `--shape` and "
-        "mint one `do` per sub-question under it"
-    )}
-
-
 def _dispatch_facade():
     if __package__:
         from .tickets_dispatch_facade import _cmd_dispatch
@@ -272,10 +232,12 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
 
 
 def _minted(run: str, run_dir, *, executor, standards, goal, details, parent,
-            done, isolation, bound, artifacts, makes=None, skill=None):
+            done, isolation, bound, artifacts, makes=None, skill=None,
+            profile=None, workspace_adapter=None, owner=None,
+            workflow_context=None):
     """`(ticket_id, refusal)` -- one callable's fields, minted through `_mint`."""
 
-    stamped, refusal = pinned_items(standards, skill)
+    stamped, refusal = pin_fields(standards, skill, owner=owner)
     if refusal is not None:
         return None, refusal
     fields = {
@@ -283,6 +245,9 @@ def _minted(run: str, run_dir, *, executor, standards, goal, details, parent,
         "admission": ADMISSION_PENDING, "executor": executor,
         **stamped,
         "parent": parent or None,
+        "profile": profile,
+        WORKSPACE_ADAPTER_FIELD: workspace_adapter,
+        **dict(workflow_context or {}),
         "isolation": isolation, "bound": bound,
         "done": done, MAKES_FIELD: makes,
     }
@@ -332,10 +297,7 @@ def _cmd_callable(rest, *, judge: bool):
 
     usage = JUDGE_USAGE if judge else DO_USAGE
     args = list(rest)
-    # Two spellings of one repeatable stamping flag while the items still
-    # live in two directories: every `--standard` first, then every `--standard`,
-    # which is the order a chain is read in anyway.
-    standards = _extract_all(args, "--standard") + _extract_all(args, "--standard")
+    standards = _extract_all(args, "--standard")
     goal_file = _extract_flag(args, "--goal-file")
     details_file = _extract_flag(args, "--details-file")
     parent = _extract_flag(args, "--parent")
@@ -344,9 +306,13 @@ def _cmd_callable(rest, *, judge: bool):
     isolation = _extract_flag(args, "--isolation")
     bound = _extract_flag(args, "--bound") or NEW_DEFAULT_BOUND
     host = _extract_flag(args, "--host")
+    workspace_supplied = "--workspace" in args
     workspace = _extract_flag(args, "--workspace")
+    workspace_adapter_supplied = "--workspace-adapter" in args
+    workspace_adapter = _extract_flag(args, "--workspace-adapter")
     artifacts = _extract_all(args, "--artifacts")
     skill = _extract_flag(args, "--skill")
+    profile = _extract_flag(args, "--profile")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"{'judge' if judge else 'do'} does not accept {stray}. usage: {usage}"}
@@ -360,11 +326,8 @@ def _cmd_callable(rest, *, judge: bool):
             return invalid
     if isolation is not None and isolation.strip() not in ISOLATION_VALUES:
         return {"error": f"--isolation '{isolation}' is not one of {list(ISOLATION_VALUES)}"}
-    refusal = _applied_skill_refusal(
-        skill, JUDGE_EXECUTOR if judge else DO_EXECUTOR,
-    )
-    if refusal is not None:
-        return refusal
+    if workspace_adapter_supplied and not str(workspace_adapter or "").strip():
+        return {"error": f"--workspace-adapter requires one of {sorted(ADAPTER_REGISTRY)}"}
     # A judge is handed finished artifacts and names their kind on its
     # Context; only a `do` chooses what it makes, and only when the standard's
     # adapter does not already say.
@@ -383,10 +346,6 @@ def _cmd_callable(rest, *, judge: bool):
         return failure
     if not goal.strip():
         return {"error": f"goal file {goal_file} is empty; Goal is one observable end result"}
-    if not judge:
-        crowded = _one_lane(standards, parent, goal, goal_file)
-        if crowded is not None:
-            return crowded
     details = None
     if details_file is not None:
         details, failure = _read_utf8(details_file, "details file")
@@ -403,18 +362,38 @@ def _cmd_callable(rest, *, judge: bool):
         lines, failure = _artifact_lines(artifacts, run_dir)
         if failure is not None:
             return failure
-        # One judge, one kind: the kind selects the standard's `## Lens` entry
-        # the judge reads its criteria from, and a call handed two kinds has
-        # no one entry to be judged against. Two calls, not one.
-        kinds = sorted({line.split(":", 1)[0] for line in lines})
-        if len(kinds) > 1:
-            return {"error": (
-                "judge reads one artifact kind, and --artifacts names "
-                + ", ".join(f"'{kind}'" for kind in kinds)
-                + f"; mint one judge per kind. usage: {JUDGE_USAGE}"
-            )}
     elif artifacts:
         return {"error": f"--artifacts belongs to judge. usage: {DO_USAGE}"}
+    owner = None
+    workflow_context = {}
+    if parent:
+        try:
+            if __package__:
+                from .tickets_frame import workflow_context as inherited_workflow_context
+            else:  # pragma: no cover - direct/installed flat script path
+                from tickets_frame import workflow_context as inherited_workflow_context
+            workflow_context, failure = inherited_workflow_context(run_dir, parent)
+            if failure is not None:
+                return failure
+            workflow_context = dict(workflow_context or {})
+            owner = workflow_context.get("workflow")
+        except ImportError:  # pragma: no cover - partial install during cutover
+            owner = None
+    refusal = _applied_skill_refusal(
+        skill, JUDGE_EXECUTOR if judge else DO_EXECUTOR, profile, owner,
+    )
+    if refusal is not None:
+        return refusal
+    try:
+        selected = select_adapter(
+            explicit=workspace_adapter,
+            standards=standards,
+            target=Path(workspace).expanduser() if workspace_supplied else Path.cwd(),
+            target_supplied=workspace_supplied,
+            owner=owner,
+        )
+    except AdapterError as error:
+        return {"error": error.detail, "code": error.code}
     # The one lock that decides anything two callers could disagree about:
     # which id this callable takes. Everything after it is per-ticket work
     # whose own command takes the lock for itself.
@@ -426,6 +405,8 @@ def _cmd_callable(rest, *, judge: bool):
             details=(details or "").strip() or None,
             parent=parent, done=done, isolation=isolation, bound=bound,
             artifacts=lines, makes=makes, skill=skill,
+            profile=profile, workspace_adapter=selected.key, owner=owner,
+            workflow_context=workflow_context,
         )
     if failure is not None:
         return failure
@@ -453,7 +434,6 @@ def _cmd_judge(rest):
 
 __all__ = (
     "ARTIFACT_KINDS", "DO_EXECUTOR", "DO_USAGE",
-    "JUDGE_EXECUTOR", "JUDGE_USAGE", "LANE_ADAPTER", "_cmd_callable",
+    "JUDGE_EXECUTOR", "JUDGE_USAGE", "_cmd_callable",
     "_cmd_do", "_cmd_judge", "_launched", "_mint", "_run_dir", "_sealed_root",
-    "subquestion_count",
 )
