@@ -195,8 +195,12 @@ function nativeUpdateAt(events, time, target, processId) {
     if (at === null || Math.abs(at - time) > 20) return false;
     if (processId !== undefined && event.pid !== undefined && String(event.pid) !== String(processId)) return false;
     const data = dataOf(event);
+    // A generic TextureLayer push only proves compositor bookkeeping. It can
+    // occur while the canvas remains visually unchanged, so it is not a
+    // presentation marker. Accept only explicit target-canvas update/paint
+    // markers supplied by a trace producer.
     return event.canvas_updated === true || data.canvasUpdated === true || data.canvas_updated === true
-      || /canvas.*(update|paint)|texturelayer.*pushproperties/i.test(String(event.name || ""));
+      || /canvas.*(update|paint)/i.test(String(event.name || ""));
   });
 }
 
@@ -212,11 +216,54 @@ function canvasActivityIntervals(parsed) {
   return intervals;
 }
 
+function canvasChangeTimes(parsed) {
+  const samples = parsed.canvas_samples || parsed.metadata?.canvas_samples || [];
+  const rows = Array.isArray(samples) ? samples.map(item => ({
+    time: item?.timestamp_ms ?? item?.time_ms ?? item?.time,
+    hash: item?.hash ?? item?.digest ?? item?.signature,
+  })).filter(item => typeof item.time === "number" && Number.isFinite(item.time) && typeof item.hash === "string")
+    .sort((a, b) => a.time - b.time) : [];
+  const changes = [];
+  for (let index = 1; index < rows.length; index += 1) {
+    if (rows[index - 1].hash !== rows[index].hash) changes.push(rows[index].time);
+  }
+  return changes;
+}
+
 function hasCanvasActivity(parsed, time, target, snapshots, sourceEvent) {
   if (parsed.format === "fixture") return true;
   const process = sourceEvent?.pid;
-  if (nativeUpdateAt(parsed.events, time, target, process)) return true;
-  return canvasActivityIntervals(parsed).some(([start, end]) => time >= start && time < end);
+  return nativeUpdateAt(parsed.events, time, target, process);
+}
+
+function markCanvasSampleEvidence(frames, parsed) {
+  if (parsed.format === "fixture") return;
+  const changes = canvasChangeTimes(parsed);
+  if (!changes.length) return;
+  // A sample is associated with at most one native frame. The tolerance is
+  // half of a 60 Hz frame interval; sparse samples therefore mark sparse
+  // frames instead of upgrading an entire interval to 60 Hz.
+  const toleranceMs = 9;
+  const used = new Set();
+  for (const change of changes) {
+    let bestIndex = -1;
+    let bestDistance = Infinity;
+    for (let index = 0; index < frames.length; index += 1) {
+      const row = frames[index];
+      if (used.has(index) || row.ambiguous || row.attribution !== "game-canvas" || !row.draw) continue;
+      const distance = Math.abs(row.start_ms - change);
+      if (distance <= toleranceMs && distance < bestDistance) {
+        bestIndex = index;
+        bestDistance = distance;
+      }
+    }
+    if (bestIndex >= 0) {
+      used.add(bestIndex);
+      const row = frames[bestIndex];
+      row.presentation_evidence = true;
+      row.attribution_source = "renderer-process+layer-tree-canvas+read-only-pixel-change-at-frame";
+    }
+  }
 }
 
 function nativeCanvasAttribution(parsed, snapshots, time, target, sourceEvent = null) {
@@ -492,6 +539,7 @@ export function buildFrameModel(payload, {target = {}, startMs = -Infinity, endM
 
   const frames = rows.filter(row => row.start_ms !== null && row.start_ms >= startMs && row.start_ms < endMs)
     .sort((a, b) => a.start_ms - b.start_ms || a.id.localeCompare(b.id));
+  markCanvasSampleEvidence(frames, parsed);
   const ambiguous = frames.some(row => row.ambiguous);
   return {
     ...parsed, frames, ambiguous, attributed: frames.filter(row => row.attribution === "game-canvas").length, unparsed: false,
@@ -558,7 +606,12 @@ export function qualifyPerformance({cell, trace, callbacks = []}) {
   const intervalRatio = intervals.length ? intervals.filter(value => value <= 18.33).length / intervals.length : 0;
   const uniqueFlags = frames.filter(row => row.dropped || row.isPartial).length;
   const clean = targetFrames.filter(row => !row.idle && !row.dropped && !row.isPartial && row.draw);
-  const targetGaps = targetFrames.slice(1).map((row, index) => row.start_ms - targetFrames[index].start_ms);
+  // Stall detection uses the native canvas-attributed frame cadence, while
+  // presentation qualification separately requires evidence on each clean
+  // frame. Sparse read-only samples must not manufacture a stall merely
+  // because they leave most otherwise observed frames uncertified.
+  const observedTargetFrames = frames.filter(row => row.attribution === "game-canvas" && !row.ambiguous);
+  const targetGaps = observedTargetFrames.slice(1).map((row, index) => row.start_ms - observedTargetFrames[index].start_ms);
   const callbackGaps = callback.slice(1).map((time, index) => time - callback[index]);
   const unexplainedStall = [...targetGaps, ...callbackGaps].some(value => value > 100);
   const metrics = {

@@ -46,7 +46,8 @@ def native_trace(stalled=False):
         "completion": {"stream": "1", "transferMode": "ReturnAsStream", "dataLossOccurred": False},
         "metadata": {"clock_reconciled": True, "window_start_ms": -100, "window_end_ms": 1100},
         "traceEvents": events,
-        "canvas_samples": ([{"timestamp_ms": 0, "hash": "a"}, {"timestamp_ms": 1000, "hash": "b"}]
+        "canvas_samples": ([{"timestamp_ms": index * (1000 / 60), "hash": f"frame-{index}"}
+                             for index in range(61)]
                             if not stalled else [{"timestamp_ms": 0, "hash": "a"}, {"timestamp_ms": 200, "hash": "b"}, {"timestamp_ms": 300, "hash": "b"}]),
     }
 
@@ -70,6 +71,17 @@ class NativeTraceTests(unittest.TestCase):
         stalled = self.qualify(native_trace(stalled=True))
         self.assertEqual("unverified", stalled["status"])
         self.assertIn("canvas-frame-floor", [item["code"] for item in stalled["failures"]])
+
+    def test_sparse_canvas_changes_do_not_upgrade_intervening_frames(self):
+        trace = native_trace()
+        trace["canvas_samples"] = [
+            {"timestamp_ms": time, "hash": f"sample-{index}"}
+            for index, time in enumerate((0, 250, 500, 750, 1000))
+        ]
+        result = self.qualify(trace)
+        self.assertEqual("unverified", result["status"])
+        self.assertLess(result["metrics"]["C"], 59)
+        self.assertIn("canvas-frame-floor", [item["code"] for item in result["failures"]])
 
     def test_native_canvas_flag_and_label_cannot_self_attribute(self):
         trace = native_trace()

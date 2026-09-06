@@ -78,13 +78,22 @@ async function installCanvasSampler(page, selector, intervalMs) {
       }
       return `fnv1a:${(hash >>> 0).toString(16).padStart(8, "0")}`;
     };
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const method = gl ? "webgl.readPixels" : "canvas.toDataURL";
     const sample = () => {
       const timestamp = performance.now();
       try {
-        // toDataURL reads the presented canvas pixels. It exposes no game
-        // object and makes no state/time changes; the sampling clock is the
-        // page's normal performance.now() clock.
-        samples.push({timestamp_ms: timestamp, hash: digest(canvas.toDataURL("image/webp", 0.05))});
+        // readPixels/toDataURL reads the current canvas buffer only. It
+        // exposes no game object and makes no state/time changes; the
+        // sampling clock is the page's normal performance.now() clock.
+        // WebGL's default drawing buffer may be cleared after presentation,
+        // so this signal is activity evidence rather than presentation proof;
+        // prefer a tiny readPixels sample when a WebGL context is present.
+        if (gl) {
+          const pixels = new Uint8Array(16);
+          gl.readPixels(0, 0, 2, 2, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+          samples.push({timestamp_ms: timestamp, hash: digest(String.fromCharCode(...pixels))});
+        } else samples.push({timestamp_ms: timestamp, hash: digest(canvas.toDataURL("image/webp", 0.05))});
       } catch (error) {
         samples.push({timestamp_ms: timestamp, hash: null, error: String(error.message || error)});
       }
@@ -93,9 +102,9 @@ async function installCanvasSampler(page, selector, intervalMs) {
     const timer = setInterval(sample, period);
     Object.defineProperty(window, "__orchCanvasSampler", {
       configurable: false,
-      value: {samples, timer, selector: canvasSelector, interval_ms: period, clock: "performance.now", read_only: true},
+      value: {samples, timer, selector: canvasSelector, interval_ms: period, clock: "performance.now", method, read_only: true},
     });
-    return {installed: true, interval_ms: period, clock: "performance.now", read_only: true};
+    return {installed: true, interval_ms: period, clock: "performance.now", method, read_only: true};
   }, {canvasSelector: selector, period: intervalMs});
 }
 
@@ -162,14 +171,14 @@ async function liveTrace(cell) {
     const parsed = {
       ...trace,
       canvas_samples: canvasSamples,
-      canvas_instrumentation: {method: "canvas.toDataURL", selector: cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas", interval_ms: samplerIntervalMs, clock: "performance.now+cdp-offset", read_only: sampler.installed === true, errors: canvasSamples.filter(item => item.error).map(item => item.error)},
+      canvas_instrumentation: {method: sampler.method || "unknown", selector: cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas", interval_ms: samplerIntervalMs, clock: "performance.now+cdp-offset", read_only: sampler.installed === true, measurement_perturbation: false, signal: "canvas-buffer-activity; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
       metadata: {
         clock_reconciled: true,
         clock_method: "cdp-performance-timestamp-minus-page-performance-now",
         wall_start_ms: wallStart,
         wall_end_ms: wallEnd,
         capture_start_ms: clock.monotonicMs,
-        capture_end_ms: traceTimes.reduce((maximum, value) => Math.max(maximum, value), -Infinity),
+        capture_end_ms: traceTimes.length ? traceTimes.reduce((maximum, value) => Math.max(maximum, value), -Infinity) : null,
         window_start_ms: window.start_ms,
         window_end_ms: window.end_ms,
         padding_before_ms: paddingMs,
@@ -214,8 +223,6 @@ export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}
   };
   if (outDir) {
     await mkdir(resolve(outDir), { recursive: true });
-    await writeJsonAtomic(resolve(outDir, "cell-result.json"), result);
-    await writeJsonAtomic(resolve(outDir, "trace.json"), traceForResult);
     if (source.rawStream) {
       const rawPath = resolve(outDir, "trace.raw.json");
       await writeFile(rawPath, source.rawStream, {flag: "wx"});
@@ -224,6 +231,8 @@ export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}
         throw evidenceError("raw ReturnAsStream bytes changed while writing evidence", "/trace/raw_stream_path");
       }
     }
+    await writeJsonAtomic(resolve(outDir, "cell-result.json"), result);
+    await writeJsonAtomic(resolve(outDir, "trace.json"), traceForResult);
   }
   return result;
 }
