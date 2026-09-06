@@ -94,6 +94,21 @@ def build(context):
     ground.location.z = -1.35
     ground_mesh.materials.append(ground_material)
 
+    # Keep the collider as a real exported mesh so the runtime probe can
+    # compare its world transform and bounds after the Blender-to-glTF axis
+    # conversion.  It is hidden from previews but remains part of delivery.
+    bpy.ops.mesh.primitive_cube_add(size=2.8, location=(0.0, 0.0, 0.0))
+    collider = bpy.context.object
+    collider.name = "ProbeCollider"
+    collider.hide_render = True
+
+    # An attachment is an empty node parented to the orb.  Its parent/name
+    # binding is observable in GLTFLoader and is part of the frozen job.
+    socket = bpy.data.objects.new("ProbeSocket", None)
+    bpy.context.collection.objects.link(socket)
+    socket.parent = orb
+    socket.location = (0.0, 0.0, 1.3)
+
     camera_data = bpy.data.cameras.new("ProbeGameplayCamera")
     camera = bpy.data.objects.new("ProbeGameplayCamera", camera_data)
     bpy.context.collection.objects.link(camera)

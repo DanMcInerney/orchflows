@@ -58,7 +58,8 @@
         "unit_scale": {"type": "number", "exclusiveMinimum": 0},
         "up_axis": {"const": "+Y"},
         "gameplay_forward": {"type": "string", "minLength": 1},
-        "origin": {"type": "string", "minLength": 1}
+        "origin": {"type": "string", "minLength": 1},
+        "frame_rate": {"type": "number", "exclusiveMinimum": 0}
       },
       "required": ["units", "unit_scale", "up_axis", "gameplay_forward", "origin"]
     },
@@ -87,7 +88,10 @@
         "materials": {"type": "integer", "minimum": 0},
         "texture_bytes": {"type": "integer", "minimum": 0},
         "animations": {"type": "integer", "minimum": 0},
-        "skeleton_bones": {"type": "integer", "minimum": 0}
+        "skeleton_bones": {"type": "integer", "minimum": 0},
+        "runtime_bytes": {"type": "number", "minimum": 0},
+        "draw_calls": {"type": "number", "minimum": 0},
+        "load_time_ms": {"type": "number", "minimum": 0}
       },
       "required": ["mesh_vertices", "mesh_polygons", "materials", "texture_bytes", "animations", "skeleton_bones"]
     },
@@ -158,13 +162,14 @@
     "timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
     "colliders": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
     "attachments": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
-    "material_roles": {"type": "object", "additionalProperties": {"type": "string"}},
+    "material_roles": {"type": "object", "additionalProperties": {"oneOf": [{"type": "string", "minLength": 1}, {"$ref": "#/$defs/materialRole"}]}},
     "animation_clips": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
     "required_extensions": {"type": "array", "items": {"type": "string"}}
   },
   "$defs": {
     "digest": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"},
     "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
-    "metadata": {"type": "object", "additionalProperties": false, "properties": {"name": {"type": "string"}, "type": {"type": "string"}, "object": {"type": "string"}, "shape": {"type": "string"}, "dimensions": {"type": "array", "items": {"type": "number"}}, "position": {"type": "array", "items": {"type": "number"}}, "rotation": {"type": "array", "items": {"type": "number"}}, "start": {"type": "integer"}, "end": {"type": "integer"}}}
+    "metadata": {"type": "object", "additionalProperties": false, "required": ["name"], "properties": {"name": {"type": "string", "minLength": 1}, "type": {"type": "string"}, "object": {"type": "string"}, "shape": {"type": "string"}, "dimensions": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}, "position": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}, "rotation": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}, "scale": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}, "bounds": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"type": "number"}}, "start": {"type": "number"}, "end": {"type": "number"}, "duration_seconds": {"type": "number", "minimum": 0}, "tolerance": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.0001}, "coordinate_space": {"enum": ["blender-world", "runtime-world"]}, "parent": {"type": "string"}, "role": {"type": "string"}, "objects": {"type": "array", "items": {"type": "string"}}, "decoder": {"type": "string"}, "optional": {"type": "boolean"}}},
+    "materialRole": {"type": "object", "additionalProperties": false, "required": ["role"], "properties": {"role": {"type": "string", "minLength": 1}, "objects": {"type": "array", "items": {"type": "string", "minLength": 1}}, "optional": {"type": "boolean"}}}
   }
 }
