@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import shutil
 import signal
@@ -33,6 +34,8 @@ EXIT_TIMEOUT = 5
 
 _HASH_LENGTH = 64
 _HASH_PREFIX = "sha256:"
+SEMANTIC_TOLERANCE = 1e-4
+SEMANTIC_CHECKS = ("scale", "bounds", "orientation", "material", "attachments", "animation", "extensions", "collider", "cost")
 _JOB_KINDS = {"blender-job"}
 _MODES = {"generate", "edit", "render", "export"}
 _SOURCE_KINDS = {"generated", "edited"}
@@ -151,10 +154,97 @@ def _require_string(value: Any, *, field: str) -> str:
     return value
 
 
+def _validate_semantic_declaration(value: Any, *, field: str, require_name: bool = True) -> None:
+    if not isinstance(value, dict):
+        raise JobError(f"{field}: expected object")
+    allowed = {
+        "name", "type", "object", "shape", "dimensions", "position", "rotation", "scale", "bounds",
+        "start", "end", "duration_seconds", "tolerance", "coordinate_space", "parent", "role", "objects",
+        "decoder", "optional",
+    }
+    unknown = set(value) - allowed
+    if unknown:
+        raise JobError(f"{field}: unknown fields: {', '.join(sorted(unknown))}")
+    if require_name and (not isinstance(value.get("name"), str) or not value["name"]):
+        raise JobError(f"{field}/name: expected a non-empty name")
+    for key in ("type", "object", "shape", "parent", "role", "decoder", "coordinate_space"):
+        if key in value and (not isinstance(value[key], str) or not value[key]):
+            raise JobError(f"{field}/{key}: expected a non-empty string")
+    for key, size in (("dimensions", 3), ("position", 3), ("rotation", 3), ("scale", 3), ("bounds", 6)):
+        if key in value:
+            candidate = value[key]
+            if not isinstance(candidate, list) or len(candidate) != size or any(not isinstance(item, (int, float)) or isinstance(item, bool) or not math.isfinite(float(item)) for item in candidate):
+                raise JobError(f"{field}/{key}: expected {size} finite numbers")
+    for key in ("start", "end"):
+        if key in value and (not isinstance(value[key], (int, float)) or isinstance(value[key], bool)):
+            raise JobError(f"{field}/{key}: expected a number")
+    if "duration_seconds" in value and (not isinstance(value["duration_seconds"], (int, float)) or isinstance(value["duration_seconds"], bool) or value["duration_seconds"] < 0):
+        raise JobError(f"{field}/duration_seconds: expected a non-negative number")
+    if "tolerance" in value and (not isinstance(value["tolerance"], (int, float)) or isinstance(value["tolerance"], bool) or not 0 < value["tolerance"] <= SEMANTIC_TOLERANCE):
+        raise JobError(f"{field}/tolerance: expected a number in (0, {SEMANTIC_TOLERANCE}]")
+    if value.get("coordinate_space", "blender-world") not in {"blender-world", "runtime-world"}:
+        raise JobError(f"{field}/coordinate_space: expected blender-world or runtime-world")
+    if "optional" in value and not isinstance(value["optional"], bool):
+        raise JobError(f"{field}/optional: expected boolean")
+    if "objects" in value and (not isinstance(value["objects"], list) or any(not isinstance(item, str) or not item for item in value["objects"])):
+        raise JobError(f"{field}/objects: expected an array of names")
+
+
+def _semantic_declarations(job: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "scene": dict(job["scene"]),
+        "budgets": dict(job["budgets"]),
+        "colliders": list(job.get("colliders", [])),
+        "attachments": list(job.get("attachments", [])),
+        "material_roles": dict(job.get("material_roles", {})),
+        "animation_clips": list(job.get("animation_clips", [])),
+        "required_extensions": list(job.get("required_extensions", [])),
+    }
+
+
+def semantic_expectations(job: Mapping[str, Any], manifest: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the canonical job/manifest declaration surface used by both probes."""
+
+    return {
+        "job_id": job["id"],
+        "artifact_commit": job["artifact_commit"],
+        "job_declarations": _semantic_declarations(job),
+        "manifest_declarations": {
+            "units": manifest.get("units"),
+            "unit_scale": manifest.get("unit_scale"),
+            "up_axis": manifest.get("up_axis"),
+            "gameplay_forward": manifest.get("gameplay_forward"),
+            "origin": manifest.get("origin"),
+            "colliders": manifest.get("colliders"),
+            "attachments": manifest.get("attachments"),
+            "material_roles": manifest.get("material_roles"),
+            "animation_clips": manifest.get("animation_clips"),
+            "required_extensions": manifest.get("required_extensions"),
+            "semantic_contract": manifest.get("semantic_contract"),
+        },
+    }
+
+
+def semantic_expectations_hash(job: Mapping[str, Any], manifest: Mapping[str, Any]) -> str:
+    def normalize(value: Any) -> Any:
+        if isinstance(value, float) and value.is_integer():
+            return int(value)
+        if isinstance(value, list):
+            return [normalize(item) for item in value]
+        if isinstance(value, dict):
+            return {key: normalize(item) for key, item in value.items()}
+        return value
+    canonical = json.dumps(normalize(semantic_expectations(job, manifest)), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return sha256_bytes(canonical)
+
+
 def _validate_asset_contract(job: Mapping[str, Any], root: Path) -> None:
     """Validate the closed asset contract before staging or starting Blender."""
 
     scene = _require_mapping(job.get("scene"), field="job/scene")
+    unknown_scene = set(scene) - {"units", "unit_scale", "up_axis", "gameplay_forward", "origin", "frame_rate"}
+    if unknown_scene:
+        raise JobError(f"job/scene: unknown fields: {', '.join(sorted(unknown_scene))}")
     for key in ("units", "unit_scale", "up_axis", "gameplay_forward", "origin"):
         if key not in scene:
             raise JobError(f"job/scene/{key}: is required")
@@ -166,6 +256,8 @@ def _validate_asset_contract(job: Mapping[str, Any], root: Path) -> None:
         raise JobError("job/scene/up_axis: expected +Y for runtime export")
     _require_string(scene.get("gameplay_forward"), field="job/scene/gameplay_forward")
     _require_string(scene.get("origin"), field="job/scene/origin")
+    if "frame_rate" in scene and (not isinstance(scene["frame_rate"], (int, float)) or isinstance(scene["frame_rate"], bool) or not math.isfinite(float(scene["frame_rate"])) or scene["frame_rate"] <= 0):
+        raise JobError("job/scene/frame_rate: expected a positive number")
 
     allowlists = _require_mapping(job.get("allowlists"), field="job/allowlists")
     allowed_allowlist_fields = {
@@ -193,10 +285,51 @@ def _validate_asset_contract(job: Mapping[str, Any], root: Path) -> None:
             raise JobError("job/allowlists/required_uv_layers: expected a non-negative integer")
 
     budgets = _require_mapping(job.get("budgets"), field="job/budgets")
+    allowed_budget_fields = set(_REQUIRED_BUDGETS) | {"runtime_bytes", "draw_calls", "load_time_ms"}
+    unknown_budgets = set(budgets) - allowed_budget_fields
+    if unknown_budgets:
+        raise JobError(f"job/budgets: unknown fields: {', '.join(sorted(unknown_budgets))}")
     for key in _REQUIRED_BUDGETS:
         value = budgets.get(key)
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise JobError(f"job/budgets/{key}: expected a non-negative integer")
+    for key in ("runtime_bytes", "draw_calls", "load_time_ms"):
+        if key in budgets and (not isinstance(budgets[key], (int, float)) or isinstance(budgets[key], bool) or not math.isfinite(float(budgets[key])) or budgets[key] < 0):
+            raise JobError(f"job/budgets/{key}: expected a non-negative number")
+
+    colliders = job.get("colliders")
+    attachments = job.get("attachments")
+    if not isinstance(colliders, list) or not isinstance(attachments, list):
+        raise JobError("job/colliders and job/attachments: expected arrays")
+    for index, declaration in enumerate(colliders):
+        _validate_semantic_declaration(declaration, field=f"job/colliders/{index}")
+    for index, declaration in enumerate(attachments):
+        _validate_semantic_declaration(declaration, field=f"job/attachments/{index}")
+    material_roles = job.get("material_roles")
+    if not isinstance(material_roles, dict):
+        raise JobError("job/material_roles: expected an object")
+    for material, declaration in material_roles.items():
+        if not isinstance(material, str) or not material:
+            raise JobError("job/material_roles: material names must be non-empty strings")
+        if isinstance(declaration, str):
+            if not declaration:
+                raise JobError(f"job/material_roles/{material}: expected a non-empty role")
+        else:
+            _validate_semantic_declaration(declaration, field=f"job/material_roles/{material}", require_name=False)
+            if not declaration.get("role"):
+                raise JobError(f"job/material_roles/{material}/role: expected a non-empty role")
+    clips = job.get("animation_clips")
+    if not isinstance(clips, list):
+        raise JobError("job/animation_clips: expected an array")
+    for index, declaration in enumerate(clips):
+        _validate_semantic_declaration(declaration, field=f"job/animation_clips/{index}")
+        if "start" not in declaration or "end" not in declaration:
+            raise JobError(f"job/animation_clips/{index}: start and end are required")
+        if float(declaration["end"]) <= float(declaration["start"]):
+            raise JobError(f"job/animation_clips/{index}: end must be after start")
+    extensions = job.get("required_extensions")
+    if not isinstance(extensions, list) or any(not isinstance(item, str) or not item for item in extensions):
+        raise JobError("job/required_extensions: expected an array of non-empty extension names")
 
     cameras = job.get("cameras")
     if not isinstance(cameras, list) or len(cameras) < 2:
@@ -567,6 +700,17 @@ def _verify_promotion(job: Mapping[str, Any], stage: Path, result: Mapping[str, 
             raise EvidenceError(f"structural inspection is missing measured field {key}")
     if inspection_doc.get("declared_budgets") != job.get("budgets"):
         raise EvidenceError("structural inspection budget declaration is not bound to this job")
+    declared_semantics = inspection_doc.get("declared_semantics")
+    expected_semantics = _semantic_declarations(job)
+    if declared_semantics != {key: expected_semantics[key] for key in ("colliders", "attachments", "material_roles", "animation_clips", "required_extensions")}:
+        raise EvidenceError("structural inspection semantic declarations are not bound to this job")
+    if inspection_doc.get("coordinate_conversion") != {
+        "matrix": "Rx(-pi/2)",
+        "mapping": "(x,y,z)->(x,z,-y)",
+        "source_up": "+Z",
+        "runtime_up": "+Y",
+    } or inspection_doc.get("semantic_tolerance") != SEMANTIC_TOLERANCE:
+        raise EvidenceError("structural inspection coordinate conversion contract is missing or changed")
     previews = result.get("previews")
     if not isinstance(previews, list) or not previews:
         raise EvidenceError("render/turntable preview coverage is missing")
@@ -592,6 +736,35 @@ def _verify_promotion(job: Mapping[str, Any], stage: Path, result: Mapping[str, 
         raise EvidenceError("asset manifest source identity does not match worker result")
     if manifest.get("exported_glb_sha256") != sha256_file(glb_path):
         raise EvidenceError("asset manifest GLB identity does not match output bytes")
+    scene = job.get("scene", {})
+    for manifest_key, expected in (
+        ("units", scene.get("units")),
+        ("unit_scale", scene.get("unit_scale")),
+        ("up_axis", scene.get("up_axis")),
+        ("gameplay_forward", scene.get("gameplay_forward")),
+        ("origin", scene.get("origin")),
+        ("colliders", job.get("colliders", [])),
+        ("attachments", job.get("attachments", [])),
+        ("material_roles", job.get("material_roles", {})),
+        ("animation_clips", job.get("animation_clips", [])),
+        ("required_extensions", job.get("required_extensions", [])),
+    ):
+        if manifest.get(manifest_key) != expected:
+            raise EvidenceError(f"asset manifest {manifest_key} declaration is not bound to this job")
+    worker_semantics = result.get("semantics")
+    if not isinstance(worker_semantics, dict) or worker_semantics.get("status") != "complete" or worker_semantics.get("coordinate_conversion") != {
+        "matrix": "Rx(-pi/2)",
+        "mapping": "(x,y,z)->(x,z,-y)",
+        "source_up": "+Z",
+        "runtime_up": "+Y",
+    } or worker_semantics.get("tolerance") != SEMANTIC_TOLERANCE or worker_semantics.get("checks") != {
+        "colliders": "pass",
+        "attachments": "pass",
+        "material_roles": "pass",
+        "animation_clips": "pass",
+        "required_extensions": "pass",
+    }:
+        raise EvidenceError("worker semantic checks are missing or incomplete")
     if manifest.get("status") != "unverified" or not manifest.get("gaps"):
         raise EvidenceError("worker manifest must remain unverified until fresh host validation")
 
@@ -654,6 +827,8 @@ def _fresh_validator(
     glb_path: Path,
     report_path: Path,
     job: Mapping[str, Any],
+    job_path: Path,
+    manifest_path: Path | None = None,
     timeout: float,
 ) -> dict[str, Any]:
     """Run one package-owned validator in a new bounded process."""
@@ -681,6 +856,9 @@ def _fresh_validator(
         str(job["id"]),
     ]
     if mode == "gltf-loader":
+        if manifest_path is None or not manifest_path.is_file():
+            raise EvidenceError("validation/gltf-loader: worker manifest is missing before runtime probe")
+        argv.extend(["--job", str(job_path), "--manifest", str(manifest_path)])
         validation = job["validation"]
         target_workspace = Path(validation["target_workspace"]).resolve()
         three_root = validation["loader_probe"]["three_root"]
@@ -694,8 +872,6 @@ def _fresh_validator(
             "--workspace", str(target_workspace),
             "--three-root", str(Path(three_root).as_posix()),
             "--browser-executable", str(browser_executable),
-            "--expected-animations", str(animation_count),
-            "--expected-colliders", str(collider_count),
             "--timeout-ms", str(max(1, int(timeout * 1000))),
         ])
     exit_code, stdout, stderr, timed_out = _run_process(argv, stage, timeout)
@@ -760,6 +936,13 @@ def _fresh_validator(
     observed = report.get("observed")
     if not isinstance(observed, dict) or not isinstance(observed.get("meshes"), int) or observed["meshes"] < 1 or not isinstance(observed.get("materials"), int) or observed["materials"] < observed["meshes"] or not isinstance(observed.get("animations"), int) or observed["animations"] < 0:
         raise EvidenceError("validation/gltf-loader: actual scene inspection counts are missing")
+    semantic_checks = report.get("semantic_checks")
+    if not isinstance(semantic_checks, dict) or any(not isinstance(semantic_checks.get(key), dict) or semantic_checks[key].get("status") not in {"pass", "not_applicable"} for key in SEMANTIC_CHECKS):
+        raise EvidenceError("validation/gltf-loader: declared asset semantics were not observed and passed")
+    expected_job_path = contained_path(stage, job_path.relative_to(stage), field="validation/gltf-loader/job")
+    expected_job_hash = sha256_file(expected_job_path)
+    if report.get("job_sha256") != expected_job_hash or report.get("expectations_hash") != semantic_expectations_hash(job, _read_json_object(manifest_path, label="asset manifest")):
+        raise EvidenceError("validation/gltf-loader: semantic expectations are not bound to the staged job and manifest")
     if summary.get("evidence_sha256") != observed_hash:
         raise EvidenceError("validation/gltf-loader: evidence hash does not match fresh bytes")
     if report.get("artifact_commit") != job["artifact_commit"] or not report.get("id"):
@@ -772,15 +955,21 @@ def _fresh_validator(
         "evidence_path": report_path.relative_to(stage).as_posix(),
         "evidence_sha256": observed_hash,
         "checks": required_checks,
+        "semantic_checks": semantic_checks,
+        "coordinate_conversion": report.get("coordinate_conversion"),
+        "semantic_tolerance": report.get("semantic_tolerance"),
+        "job_sha256": report.get("job_sha256"),
+        "expectations_hash": report.get("expectations_hash"),
     }
 
 
-def _run_fresh_validators(stage: Path, job: Mapping[str, Any], glb_path: Path, timeout: float) -> dict[str, Any]:
+def _run_fresh_validators(stage: Path, job: Mapping[str, Any], glb_path: Path, job_path: Path, timeout: float) -> dict[str, Any]:
     """Require both independent validators over the final exported GLB."""
 
     validation_root = stage / "validation"
-    khronos = _fresh_validator(stage, mode="khronos", glb_path=glb_path, report_path=validation_root / "khronos-report.json", job=job, timeout=timeout)
-    loader = _fresh_validator(stage, mode="gltf-loader", glb_path=glb_path, report_path=validation_root / "gltf-loader-evidence.json", job=job, timeout=timeout)
+    manifest_path = next((contained_path(stage, item["path"], field="worker/manifest") for item in job["outputs"] if item.get("kind") == "manifest"), None)
+    khronos = _fresh_validator(stage, mode="khronos", glb_path=glb_path, report_path=validation_root / "khronos-report.json", job=job, job_path=job_path, timeout=timeout)
+    loader = _fresh_validator(stage, mode="gltf-loader", glb_path=glb_path, report_path=validation_root / "gltf-loader-evidence.json", job=job, job_path=job_path, manifest_path=manifest_path, timeout=timeout)
     return {"khronos": khronos, "gltf_loader": loader}
 
 
@@ -842,7 +1031,7 @@ def run_job(job_path: Path, out_dir: Path, blender_executable: Path, *, timeout:
             if not glb_paths:
                 raise EvidenceError("runtime GLB output is required for promotion")
             glb_digest = sha256_file(glb_paths[0])
-            validation = _run_fresh_validators(stage, job, glb_paths[0], process_timeout)
+            validation = _run_fresh_validators(stage, job, glb_paths[0], staged_job, process_timeout)
             _finalize_manifest(stage, worker_result, glb_digest, validation, result["blender"])
             result["worker"] = worker_result
             result["promoted"] = True

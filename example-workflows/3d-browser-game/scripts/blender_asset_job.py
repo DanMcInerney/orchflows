@@ -21,6 +21,19 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
+# This is the shared source-to-runtime comparison tolerance.  It is frozen in
+# both validators because Blender and glTF serialize floating point transforms
+# at different points in the pipeline.  A declaration may tighten it, never
+# widen it.
+SEMANTIC_TOLERANCE = 1e-4
+BLENDER_TO_RUNTIME_CONVERSION = {
+    "matrix": "Rx(-pi/2)",
+    "mapping": "(x,y,z)->(x,z,-y)",
+    "source_up": "+Z",
+    "runtime_up": "+Y",
+}
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -108,6 +121,11 @@ def _configure_scene(job: Mapping[str, Any], bpy: Any) -> None:
     unit_settings.scale_length = float(units.get("unit_scale", 1.0))
     if unit_settings.scale_length <= 0:
         raise ValueError("job/scene/unit_scale must be positive")
+    if "frame_rate" in units:
+        frame_rate = float(units["frame_rate"])
+        if not math.isfinite(frame_rate) or frame_rate <= 0:
+            raise ValueError("job/scene/frame_rate must be positive")
+        scene.render.fps = int(round(frame_rate))
     if bpy.context.scene != scene or bpy.context.view_layer is None:
         raise RuntimeError("Blender scene/view-layer context is unavailable")
 
@@ -174,6 +192,25 @@ def _image_bytes(image: Any) -> int:
     return 0
 
 
+def _action_fcurve_count(action: Any) -> int:
+    """Count curves across both legacy and Blender 5.2 layered Actions."""
+
+    direct = getattr(action, "fcurves", None)
+    if direct is not None:
+        try:
+            count = len(direct)
+        except TypeError:
+            count = 0
+        if count:
+            return count
+    count = 0
+    for layer in getattr(action, "layers", ()):
+        for strip in getattr(layer, "strips", ()):
+            for channelbag in getattr(strip, "channelbags", ()):
+                count += len(getattr(channelbag, "fcurves", ()))
+    return count
+
+
 def _scene_inventory(bpy: Any) -> dict[str, Any]:
     scene = bpy.context.scene
     objects: list[dict[str, Any]] = []
@@ -187,14 +224,24 @@ def _scene_inventory(bpy: Any) -> dict[str, Any]:
     skeleton_bones = 0
     poses: set[str] = set()
     armatures: list[dict[str, Any]] = []
+    material_bindings: dict[str, dict[str, Any]] = {}
     for obj in sorted(bpy.data.objects, key=lambda item: item.name):
         bounds = _world_bounds(obj)
+        world_matrix = obj.matrix_world
+        world_position = [round(float(value), 6) for value in world_matrix.translation]
+        world_rotation = [round(float(value), 6) for value in world_matrix.to_euler("XYZ")]
+        world_scale = [round(float(value), 6) for value in world_matrix.to_scale()]
         record: dict[str, Any] = {
             "name": obj.name,
             "type": obj.type,
             "location": [round(float(value), 6) for value in obj.location],
             "rotation": [round(float(value), 6) for value in obj.rotation_euler],
             "scale": [round(float(value), 6) for value in obj.scale],
+            "world_position": world_position,
+            "world_rotation": world_rotation,
+            "world_scale": world_scale,
+            "matrix_world": [[round(float(value), 6) for value in row] for row in world_matrix],
+            "parent": obj.parent.name if obj.parent else None,
             "bounds": bounds,
             "dimensions": [round(bounds[axis + 3] - bounds[axis], 6) for axis in range(3)],
         }
@@ -211,9 +258,16 @@ def _scene_inventory(bpy: Any) -> dict[str, Any]:
             record["normals"] = len(obj.data.polygons) == 0 or normal_count == len(obj.data.polygons)
             record["normal_count"] = normal_count
             record["morph_targets"] = len(getattr(obj.data, "shape_keys", None).key_blocks) - 1 if getattr(obj.data, "shape_keys", None) else 0
+            record["materials"] = [material.name for material in obj.data.materials if material]
             for material in obj.data.materials:
                 if material:
                     materials.add(material.name)
+                    binding = material_bindings.setdefault(material.name, {"objects": [], "roles": []})
+                    binding["objects"].append(obj.name)
+                    for property_name in ("orchflows_role", "role"):
+                        role = material.get(property_name)
+                        if isinstance(role, str) and role and role not in binding["roles"]:
+                            binding["roles"].append(role)
         if obj.type == "ARMATURE" and obj.data:
             skeleton_bones += len(obj.data.bones)
             poses.update(bone.name for bone in obj.data.bones)
@@ -238,11 +292,13 @@ def _scene_inventory(bpy: Any) -> dict[str, Any]:
         "mesh_vertices": mesh_vertices,
         "mesh_polygons": mesh_polygons,
         "materials": sorted(materials),
+        "material_bindings": material_bindings,
         "actions": sorted(set(actions)),
         "animation_clips": [
-            {"name": action.name, "start": round(float(action.frame_range[0]), 6), "end": round(float(action.frame_range[1]), 6), "fcurves": len(getattr(action, "fcurves", []))}
+            {"name": action.name, "start": round(float(action.frame_range[0]), 6), "end": round(float(action.frame_range[1]), 6), "fcurves": _action_fcurve_count(action)}
             for action in sorted(bpy.data.actions, key=lambda item: item.name)
         ],
+        "frame_rate": round(float(getattr(scene.render, "fps", 24.0)), 6),
         "mesh_normals": mesh_normals,
         "mesh_uv_layers": mesh_uv_layers,
         "texture_bytes": sum(_image_bytes(image) for image in bpy.data.images),
@@ -257,6 +313,77 @@ def _scene_inventory(bpy: Any) -> dict[str, Any]:
         "morph_targets": morph_targets,
         "external_references": sorted({item.filepath for item in bpy.data.libraries if item.filepath}),
     }
+
+
+def _numbers(value: Any, length: int, *, label: str) -> list[float] | None:
+    if value is None:
+        return None
+    if not isinstance(value, (list, tuple)) or len(value) != length:
+        raise ValueError(f"{label} must contain {length} numbers")
+    converted = [float(item) for item in value]
+    if not all(math.isfinite(item) for item in converted):
+        raise ValueError(f"{label} must contain finite numbers")
+    return converted
+
+
+def _close_vector(actual: Any, expected: Any, *, label: str, tolerance: float = SEMANTIC_TOLERANCE) -> bool:
+    if actual is None or expected is None:
+        return False
+    return len(actual) == len(expected) and all(abs(float(left) - float(right)) <= tolerance for left, right in zip(actual, expected))
+
+
+def _semantic_tolerance(declaration: Mapping[str, Any]) -> float:
+    value = declaration.get("tolerance", SEMANTIC_TOLERANCE)
+    if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(float(value)):
+        raise ValueError("semantic declaration tolerance must be a finite number")
+    value = float(value)
+    if value <= 0 or value > SEMANTIC_TOLERANCE:
+        raise ValueError(f"semantic declaration tolerance must be in (0, {SEMANTIC_TOLERANCE}]" )
+    return value
+
+
+def _transform_failures(declaration: Mapping[str, Any], observed: Mapping[str, Any], *, kind: str, name: str) -> list[str]:
+    failures: list[str] = []
+    tolerance = _semantic_tolerance(declaration)
+    coordinate_space = declaration.get("coordinate_space", "blender-world")
+    if coordinate_space != "blender-world":
+        failures.append(f"{kind}/{name}/coordinate_space: native Blender checks require blender-world declarations")
+        return failures
+    expected_position = _numbers(declaration.get("position"), 3, label=f"{kind}/{name}/position")
+    expected_rotation = _numbers(declaration.get("rotation"), 3, label=f"{kind}/{name}/rotation")
+    expected_scale = _numbers(declaration.get("scale"), 3, label=f"{kind}/{name}/scale")
+    expected_dimensions = _numbers(declaration.get("dimensions"), 3, label=f"{kind}/{name}/dimensions")
+    expected_bounds = _numbers(declaration.get("bounds"), 6, label=f"{kind}/{name}/bounds")
+    actual_position = observed.get("world_position", observed.get("location"))
+    actual_rotation = observed.get("world_rotation", observed.get("rotation"))
+    actual_scale = observed.get("world_scale", observed.get("scale"))
+    if expected_position is not None and not _close_vector(actual_position, expected_position, label=f"{kind}/{name}/position", tolerance=tolerance):
+        failures.append(f"{kind}/{name}/position: measured Blender world position does not match declaration")
+    if expected_rotation is not None and not _close_vector(actual_rotation, expected_rotation, label=f"{kind}/{name}/rotation", tolerance=tolerance):
+        failures.append(f"{kind}/{name}/rotation: measured Blender world rotation does not match declaration")
+    if expected_scale is not None and not _close_vector(actual_scale, expected_scale, label=f"{kind}/{name}/scale", tolerance=tolerance):
+        failures.append(f"{kind}/{name}/scale: measured Blender world scale does not match declaration")
+    if expected_dimensions is not None and not _close_vector(observed.get("dimensions"), expected_dimensions, label=f"{kind}/{name}/dimensions", tolerance=tolerance):
+        failures.append(f"{kind}/{name}/dimensions: measured Blender world dimensions do not match declaration")
+    if expected_bounds is not None and not _close_vector(observed.get("bounds"), expected_bounds, label=f"{kind}/{name}/bounds", tolerance=tolerance):
+        failures.append(f"{kind}/{name}/bounds: measured Blender world bounds do not match declaration")
+    if "parent" in declaration and observed.get("parent") != declaration.get("parent"):
+        failures.append(f"{kind}/{name}/parent: measured parent does not match declaration")
+    return failures
+
+
+def _material_role_declaration(value: Any, *, material: str) -> tuple[str | None, list[str] | None]:
+    if isinstance(value, str):
+        return value, None
+    if isinstance(value, dict):
+        role = value.get("role")
+        objects = value.get("objects")
+        if role is not None and (not isinstance(role, str) or not role):
+            raise ValueError(f"material role {material!r} has an invalid role")
+        if objects is not None and (not isinstance(objects, list) or any(not isinstance(item, str) or not item for item in objects)):
+            raise ValueError(f"material role {material!r} has invalid objects")
+        return role, objects
+    raise ValueError(f"material role {material!r} must be a role string or object")
 
 
 def _validate_scene(job: Mapping[str, Any], inventory: Mapping[str, Any]) -> list[str]:
@@ -288,9 +415,23 @@ def _validate_scene(job: Mapping[str, Any], inventory: Mapping[str, Any]) -> lis
     for name in allowlists.get("required_materials", []):
         if name not in inventory["materials"]:
             failures.append(f"required material is missing: {name}")
-    for name in job.get("material_roles", {}):
+    material_bindings = inventory.get("material_bindings", {})
+    for name, declaration in job.get("material_roles", {}).items():
         if name not in inventory["materials"]:
+            if isinstance(declaration, dict) and declaration.get("optional") is True:
+                continue
             failures.append(f"material role references missing material: {name}")
+            continue
+        role, role_objects = _material_role_declaration(declaration, material=name)
+        binding = material_bindings.get(name, {}) if isinstance(material_bindings, dict) else {}
+        bound_objects = binding.get("objects", []) if isinstance(binding, dict) else []
+        if not bound_objects:
+            failures.append(f"material role is not bound to a mesh object: {name}")
+        if role_objects is not None and any(item not in bound_objects for item in role_objects):
+            failures.append(f"material role/{name}/objects: declared object binding is missing")
+        actual_roles = binding.get("roles", []) if isinstance(binding, dict) else []
+        if role and actual_roles and role not in actual_roles:
+            failures.append(f"material role/{name}: measured role does not match declaration")
     for name in allowlists.get("required_actions", []):
         if name not in inventory["actions"]:
             failures.append(f"required animation action is missing: {name}")
@@ -303,24 +444,54 @@ def _validate_scene(job: Mapping[str, Any], inventory: Mapping[str, Any]) -> lis
         failures.append("required textures have no measured bytes")
     if allowlists.get("required_armature", False) and inventory["skeleton_bones"] <= 0:
         failures.append("required armature has no measured bones")
+    frame_rate = float(inventory.get("frame_rate", job.get("scene", {}).get("frame_rate", 24.0)))
+    if not math.isfinite(frame_rate) or frame_rate <= 0:
+        failures.append("animation/frame_rate: measured frame rate is invalid")
+        frame_rate = 24.0
     for clip in job.get("animation_clips", []):
         name = clip.get("name") if isinstance(clip, dict) else None
         observed = next((item for item in inventory["animation_clips"] if item["name"] == name), None)
         if observed is None:
+            if isinstance(clip, dict) and clip.get("optional") is True:
+                continue
             failures.append(f"required animation clip is missing: {name}")
             continue
         for bound in ("start", "end"):
             if bound in clip and float(observed[bound]) != float(clip[bound]):
                 failures.append(f"animation/{name}/{bound}: observed {observed[bound]} expected {clip[bound]}")
+        if float(observed.get("end", 0)) <= float(observed.get("start", 0)):
+            failures.append(f"animation/{name}: clip range is empty")
+        if int(observed.get("fcurves", 0)) <= 0:
+            failures.append(f"animation/{name}: clip has no fcurves to play")
+        if "duration_seconds" in clip:
+            expected_duration = float(clip["duration_seconds"])
+        else:
+            expected_duration = (float(clip.get("end", observed.get("end", 0))) - float(clip.get("start", observed.get("start", 0)))) / frame_rate
+        observed_duration = (float(observed.get("end", 0)) - float(observed.get("start", 0))) / frame_rate
+        if abs(observed_duration - expected_duration) > max(SEMANTIC_TOLERANCE, 1.0 / frame_rate):
+            failures.append(f"animation/{name}/duration: measured {observed_duration} expected {expected_duration}")
     for collider in job.get("colliders", []):
         name = collider.get("name") if isinstance(collider, dict) else None
         if name and name not in objects:
+            if isinstance(collider, dict) and collider.get("optional") is True:
+                continue
             failures.append(f"required collider object is missing: {name}")
-        if name and isinstance(collider, dict) and isinstance(collider.get("dimensions"), list):
+        if name and isinstance(collider, dict):
             observed = next((item for item in inventory["objects"] if item["name"] == name), None)
-            expected_dimensions = collider["dimensions"]
-            if observed is not None and len(expected_dimensions) == 3 and any(abs(float(observed["dimensions"][index]) - float(expected_dimensions[index])) > 1e-5 for index in range(3)):
-                failures.append(f"collider/{name}/dimensions: measured placement does not match declaration")
+            if observed is not None:
+                failures.extend(_transform_failures(collider, observed, kind="collider", name=name))
+    for attachment in job.get("attachments", []):
+        name = attachment.get("name") if isinstance(attachment, dict) else None
+        if not name:
+            failures.append("attachment declaration is missing a name")
+            continue
+        observed = next((item for item in inventory["objects"] if item["name"] == name), None)
+        if observed is None:
+            if attachment.get("optional") is True:
+                continue
+            failures.append(f"required attachment object is missing: {name}")
+        else:
+            failures.extend(_transform_failures(attachment, observed, kind="attachment", name=name))
     return failures
 
 
@@ -342,6 +513,15 @@ def _write_inspection(job: Mapping[str, Any], root: Path, inventory: Mapping[str
         "declared_budgets": dict(job["budgets"]),
         "declared_scene": dict(job["scene"]),
         "declared_allowlists": dict(job["allowlists"]),
+        "coordinate_conversion": dict(BLENDER_TO_RUNTIME_CONVERSION),
+        "semantic_tolerance": SEMANTIC_TOLERANCE,
+        "declared_semantics": {
+            "colliders": list(job.get("colliders", [])),
+            "attachments": list(job.get("attachments", [])),
+            "material_roles": dict(job.get("material_roles", {})),
+            "animation_clips": list(job.get("animation_clips", [])),
+            "required_extensions": list(job.get("required_extensions", [])),
+        },
         "asset": dict(inventory),
     })
     return path
@@ -424,6 +604,41 @@ def _export_glb(job: Mapping[str, Any], root: Path, bpy: Any) -> Path:
     return path
 
 
+def _read_glb_json(path: Path) -> dict[str, Any]:
+    """Read the JSON chunk so required extensions are checked after export."""
+
+    raw = path.read_bytes()
+    if len(raw) < 20 or raw[:4] != b"glTF" or int.from_bytes(raw[4:8], "little") != 2:
+        raise ValueError("runtime export is not a glTF 2.0 binary")
+    chunk_length = int.from_bytes(raw[12:16], "little")
+    if raw[16:20] != b"JSON" or 20 + chunk_length > len(raw):
+        raise ValueError("runtime export has no JSON chunk")
+    try:
+        value = json.loads(raw[20 : 20 + chunk_length].decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("runtime export JSON chunk is invalid") from exc
+    if not isinstance(value, dict):
+        raise ValueError("runtime export JSON chunk must be an object")
+    return value
+
+
+def _validate_export_semantics(job: Mapping[str, Any], path: Path) -> list[str]:
+    """Check declarations that only become observable in exported glTF."""
+
+    document = _read_glb_json(path)
+    used = set(document.get("extensionsUsed", [])) if isinstance(document.get("extensionsUsed", []), list) else set()
+    required = set(document.get("extensionsRequired", [])) if isinstance(document.get("extensionsRequired", []), list) else set()
+    failures: list[str] = []
+    for extension in job.get("required_extensions", []):
+        name = extension.get("name") if isinstance(extension, dict) else extension
+        if not isinstance(name, str) or not name:
+            failures.append("extension declaration has no name")
+            continue
+        if name not in used and name not in required:
+            failures.append(f"required extension is absent from exported GLB: {name}")
+    return failures
+
+
 def _write_manifest(job: Mapping[str, Any], root: Path, source_path: Path, glb_path: Path | None, inspection: Path, previews: list[Path]) -> Path | None:
     manifest_path = _output(job, root, kind="manifest", suffix="asset-manifest.json")
     if manifest_path is None:
@@ -460,6 +675,13 @@ def _write_manifest(job: Mapping[str, Any], root: Path, source_path: Path, glb_p
         "material_roles": dict(job.get("material_roles", {})),
         "animation_clips": list(job.get("animation_clips", [])),
         "required_extensions": list(job.get("required_extensions", [])),
+        "semantic_contract": {
+            "coordinate_conversion": dict(BLENDER_TO_RUNTIME_CONVERSION),
+            "tolerance": SEMANTIC_TOLERANCE,
+            "source_coordinate_space": "blender-world",
+            "runtime_coordinate_space": "three-world",
+            "runtime_budget_fields": [key for key in ("runtime_bytes", "draw_calls", "load_time_ms") if key in job.get("budgets", {})],
+        },
     }
     _write_json(manifest_path, payload)
     return manifest_path
@@ -501,10 +723,19 @@ def execute(job_path: Path) -> dict[str, Any]:
             raise ValueError("scene validation failed: " + "; ".join(failures))
         previews = _render_previews(job, root, bpy)
         glb = _export_glb(job, root, bpy)
+        export_failures = _validate_export_semantics(job, glb)
+        if export_failures:
+            raise ValueError("export validation failed: " + "; ".join(export_failures))
         _write_manifest(job, root, source_output, glb, inspection, previews)
         result["status"] = "complete"
         result["inspection"] = {"path": inspection.relative_to(root).as_posix(), "sha256": _sha256(inspection)}
         result["previews"] = [{"path": path.relative_to(root).as_posix(), "sha256": _sha256(path)} for path in previews]
+        result["semantics"] = {
+            "status": "complete",
+            "coordinate_conversion": dict(BLENDER_TO_RUNTIME_CONVERSION),
+            "tolerance": SEMANTIC_TOLERANCE,
+            "checks": {"colliders": "pass", "attachments": "pass", "material_roles": "pass", "animation_clips": "pass", "required_extensions": "pass"},
+        }
         result["outputs"] = [
             {"path": path.relative_to(root).as_posix(), "sha256": _sha256(path), "bytes": path.stat().st_size}
             for path in sorted(root.rglob("*"))

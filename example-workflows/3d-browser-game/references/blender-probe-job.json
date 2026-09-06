@@ -10,7 +10,7 @@
     "command": "blender_job_runner.py"
   },
   "inputs": [
-    {"name": "probe-generator", "sha256": "sha256:3e4e786a64fe5900230a7f66603396fb98c2cb609e992cf1ac5b5b2cad77b855"}
+    {"name": "probe-generator", "sha256": "sha256:01a0ef8988ac1842bfaabe6a474a8cc1672c56cadc42cbe044c90d2b8184424e"}
   ],
   "environment": {
     "host": "capability-probe",
@@ -24,13 +24,14 @@
   "authoring": {
     "kind": "generated",
     "module": "probe_generator.py",
-    "sha256": "sha256:3e4e786a64fe5900230a7f66603396fb98c2cb609e992cf1ac5b5b2cad77b855",
+    "sha256": "sha256:01a0ef8988ac1842bfaabe6a474a8cc1672c56cadc42cbe044c90d2b8184424e",
     "entrypoint": "build"
   },
   "seed": 42,
   "scene": {
     "units": "METRIC",
     "unit_scale": 1.0,
+    "frame_rate": 24.0,
     "up_axis": "+Y",
     "gameplay_forward": "+Z",
     "origin": "orb-center"
@@ -66,7 +67,7 @@
     "animations": true
   },
   "validation": {
-    "target_workspace": "C:/target-workspace",
+    "target_workspace": "C:/Users/danhm/.orchflows/worktrees/20260906-3d-browser-game/B1.27/example-workflows/3d-browser-game",
     "loader_probe": {"three_root": "node_modules/three", "browser_executable": "C:/Program Files/Google/Chrome/Application/chrome.exe"}
   },
   "outputs": [
@@ -78,8 +79,18 @@
     {"path": "asset-manifest.json", "kind": "manifest", "required": true}
   ],
   "timeout_seconds": 180,
-  "colliders": [],
-  "attachments": [],
+  "colliders": [
+    {
+      "name": "ProbeCollider",
+      "shape": "box",
+      "dimensions": [2.8, 2.8, 2.8],
+      "position": [0.0, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "bounds": [-1.4, -1.4, -1.4, 1.4, 1.4, 1.4]
+    }
+  ],
+  "attachments": [{"name": "ProbeSocket", "parent": "ProbeOrb"}],
   "material_roles": {"Probe_Orb": "primary", "Probe_Frame": "accent", "Probe_Ground": "ground"},
   "animation_clips": [{"name": "OrbTurntable", "start": 1, "end": 48}],
   "required_extensions": []
