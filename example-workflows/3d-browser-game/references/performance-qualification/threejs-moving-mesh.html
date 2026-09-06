@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Three.js noncentral moving mesh performance fixture</title>
+<style>html,body,canvas{margin:0;width:100%;height:100%;display:block;background:#07111f}</style>
+<canvas id="game" aria-label="Three.js moving mesh performance fixture"></canvas>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from "three";
+
+const canvas = document.querySelector("#game");
+// The ordinary default is deliberate: preserveDrawingBuffer remains false.
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07111f);
+const camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 100);
+camera.position.z = 5;
+const mesh = new THREE.Mesh(
+  new THREE.BoxGeometry(1.2, 1.2, 1.2),
+  new THREE.MeshBasicMaterial({color: 0x42d6a4}),
+);
+// The mesh remains to the right of the canvas center. Its declared sampling
+// region changes during ordinary scene rendering while the center stays still.
+mesh.position.set(1.15, 0, 0);
+scene.add(mesh);
+let frame = 0;
+renderer.setAnimationLoop(() => {
+  frame += 1;
+  mesh.position.x = 1.15 + Math.sin(frame * 0.035) * 0.18;
+  mesh.rotation.y = frame * 0.02;
+  renderer.render(scene, camera);
+});
+window.__threeFixture = {
+  revision: "0.185.1",
+  preserve_drawing_buffer: renderer.getContext().getContextAttributes().preserveDrawingBuffer,
+  moving_mesh: true,
+  center_unchanged: true,
+  motion_region: {coordinate_space: "viewport", x: 384, y: 96, width: 160, height: 168},
+};
+</script>

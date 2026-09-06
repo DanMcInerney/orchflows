@@ -189,19 +189,91 @@ function deriveRendererContext(events, target, snapshots) {
   return {mainFrameIds, rendererPids, mainThreadByPid, mainThreads, rendererPidsByFrame, canvasPidCounts};
 }
 
-function nativeUpdateAt(events, time, target, processId) {
+function isNativeCanvasUpdate(event) {
+  const data = dataOf(event);
+  // A generic TextureLayer push only proves compositor bookkeeping. It can
+  // occur while the canvas remains visually unchanged, so it is not a
+  // presentation marker. Accept only explicit target-canvas update/paint
+  // markers supplied by a trace producer.
+  return event.canvas_updated === true || data.canvasUpdated === true || data.canvas_updated === true
+    || /canvas.*(update|paint)/i.test(String(event.name || ""));
+}
+
+function nativeUpdateIndex(events) {
+  const any = [];
+  const withoutPid = [];
+  const byPid = new Map();
+  for (const event of events) {
+    if (!isNativeCanvasUpdate(event)) continue;
+    const time = timestampMs(event);
+    if (time === null) continue;
+    const row = {time, pid: event.pid === undefined ? undefined : String(event.pid)};
+    any.push(row);
+    if (row.pid === undefined) withoutPid.push(row);
+    else {
+      if (!byPid.has(row.pid)) byPid.set(row.pid, []);
+      byPid.get(row.pid).push(row);
+    }
+  }
+  const order = (a, b) => a.time - b.time;
+  any.sort(order);
+  withoutPid.sort(order);
+  for (const rows of byPid.values()) rows.sort(order);
+  return {any, withoutPid, byPid};
+}
+
+function hasTimeWithin(rows, time, toleranceMs = 20) {
+  let low = 0;
+  let high = rows.length;
+  const minimum = time - toleranceMs;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (rows[middle].time < minimum) low = middle + 1;
+    else high = middle;
+  }
+  return low < rows.length && rows[low].time <= time + toleranceMs;
+}
+
+function nativeUpdateAt(events, time, target, processId, index = null) {
+  if (index) {
+    if (processId === undefined) return hasTimeWithin(index.any, time);
+    return hasTimeWithin(index.byPid.get(String(processId)) || [], time)
+      || hasTimeWithin(index.withoutPid, time);
+  }
   return events.some(event => {
     const at = timestampMs(event);
     if (at === null || Math.abs(at - time) > 20) return false;
     if (processId !== undefined && event.pid !== undefined && String(event.pid) !== String(processId)) return false;
-    const data = dataOf(event);
-    // A generic TextureLayer push only proves compositor bookkeeping. It can
-    // occur while the canvas remains visually unchanged, so it is not a
-    // presentation marker. Accept only explicit target-canvas update/paint
-    // markers supplied by a trace producer.
-    return event.canvas_updated === true || data.canvasUpdated === true || data.canvas_updated === true
-      || /canvas.*(update|paint)/i.test(String(event.name || ""));
+    return isNativeCanvasUpdate(event);
   });
+}
+
+function snapshotIndex(snapshots) {
+  const all = snapshots.slice().sort((a, b) => a.time - b.time);
+  const byPid = new Map();
+  for (const snapshot of all) {
+    if (snapshot.event?.pid === undefined) continue;
+    const pid = String(snapshot.event.pid);
+    if (!byPid.has(pid)) byPid.set(pid, []);
+    byPid.get(pid).push(snapshot);
+  }
+  return {all, byPid};
+}
+
+function latestSnapshotGroup(rows, time) {
+  let low = 0;
+  let high = rows.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (rows[middle].time <= time) low = middle + 1;
+    else high = middle;
+  }
+  const end = low - 1;
+  if (end < 0) return [];
+  const latestTime = rows[end].time;
+  let start = end;
+  while (start > 0 && rows[start - 1].time === latestTime) start -= 1;
+  return rows.slice(start, end + 1);
 }
 
 function canvasActivityIntervals(parsed) {
@@ -230,10 +302,10 @@ function canvasChangeTimes(parsed) {
   return changes;
 }
 
-function hasCanvasActivity(parsed, time, target, snapshots, sourceEvent) {
+function hasCanvasActivity(parsed, time, target, snapshots, sourceEvent, updateIndex = null) {
   if (parsed.format === "fixture") return true;
   const process = sourceEvent?.pid;
-  return nativeUpdateAt(parsed.events, time, target, process);
+  return nativeUpdateAt(parsed.events, time, target, process, updateIndex);
 }
 
 function markCanvasSampleEvidence(frames, parsed) {
@@ -363,6 +435,8 @@ export function buildFrameModel(payload, {target = {}, startMs = -Infinity, endM
     .sort((a, b) => (timestampMs(a.event) ?? Infinity) - (timestampMs(b.event) ?? Infinity) || a.index - b.index);
   const snapshots = ordered.map(item => ({event: item.event, time: timestampMs(item.event)}))
     .filter(item => item.time !== null && eventName(item.event) === "layertreehostimplsnapshot");
+  const snapshotLookup = snapshotIndex(snapshots);
+  const updateLookup = nativeUpdateIndex(parsed.events);
   const context = deriveRendererContext(ordered.map(item => item.event), target, snapshots);
   const allowSynthetic = parsed.format === "fixture";
   const rows = [];
@@ -390,11 +464,20 @@ export function buildFrameModel(payload, {target = {}, startMs = -Infinity, endM
     if (dropped) row.dropped = true;
     if (isPartial) row.isPartial = true;
     if (!allowSynthetic) {
-      const nativeAttribution = nativeCanvasAttribution(parsed, snapshots, row.start_ms, target, event);
+      const sourcePid = event?.pid;
+      const targetPid = target.renderer_process_id;
+      const snapshotRows = sourcePid !== undefined
+        ? snapshotLookup.byPid.get(String(sourcePid)) || []
+        : targetPid !== undefined
+          ? snapshotLookup.byPid.get(String(targetPid)) || []
+          : snapshotLookup.all;
+      const candidates = (sourcePid !== undefined && targetPid !== undefined && String(sourcePid) !== String(targetPid))
+        ? [] : latestSnapshotGroup(snapshotRows, row.start_ms);
+      const nativeAttribution = nativeCanvasAttribution(parsed, candidates, row.start_ms, target, event);
       if (nativeAttribution === "ambiguous") row.ambiguous = true;
       else if (nativeAttribution === "game-canvas") {
         row.attribution = "game-canvas";
-        row.presentation_evidence = hasCanvasActivity(parsed, row.start_ms, target, snapshots, event);
+        row.presentation_evidence = hasCanvasActivity(parsed, row.start_ms, target, snapshots, event, updateLookup);
         row.attribution_source = row.presentation_evidence
           ? "renderer-process+layer-tree-canvas+read-only-pixel-change"
           : "renderer-process+layer-tree-canvas-without-presentation-proof";
@@ -578,6 +661,29 @@ function validSamplingCoverage(value) {
     && Number.isInteger(value.sample_pixels) && value.sample_pixels === region.width * region.height;
 }
 
+function validAsyncReadback(value) {
+  return value?.method === "webgl2.pixel-pack-buffer+fence-sync"
+    && value?.asynchronous === true
+    && Array.isArray(value.api)
+    && value.api.includes("PIXEL_PACK_BUFFER")
+    && value.api.includes("readPixels-offset")
+    && value.api.includes("fenceSync")
+    && value.api.includes("clientWaitSync-timeout-0")
+    && value.api.includes("getBufferSubData")
+    && Number.isInteger(value.max_pending) && value.max_pending >= 1 && value.max_pending <= 8
+    && Number.isInteger(value.allocated_buffers) && value.allocated_buffers >= 0
+    && Number.isInteger(value.queued) && value.queued >= 0
+    && Number.isInteger(value.completed) && value.completed >= 0
+    && Number.isInteger(value.lost) && value.lost >= 0
+    && Number.isInteger(value.errors) && value.errors >= 0
+    && Number.isInteger(value.context_losses) && value.context_losses >= 0
+    && Number.isInteger(value.poll_count) && value.poll_count >= 0
+    && Number.isInteger(value.pending_at_cleanup) && value.pending_at_cleanup >= 0
+    && value.cleanup_observed === true
+    && ["queue_duration_ms", "wait_duration_ms", "copy_duration_ms", "poll_duration_ms"]
+      .every(key => typeof value[key] === "number" && Number.isFinite(value[key]) && value[key] >= 0);
+}
+
 function nativeTraceFailures(parsed, startMs, endMs) {
   const failures = [];
   if (!NATIVE_FORMATS.has(parsed.format)) failures.push(failure("unparsed-format", "/trace/format", [...NATIVE_FORMATS], parsed.format));
@@ -604,6 +710,10 @@ function nativeTraceFailures(parsed, startMs, endMs) {
       || instrumentation.preserve_drawing_buffer !== false) {
     failures.push(failure("missing-native-presentation-observation", "/trace/canvas_instrumentation", "read-only render-callback observation with preserveDrawingBuffer:false", instrumentation));
   }
+  const readback = instrumentation.readback || parsed.measurement?.instrumented?.readback;
+  if (!validAsyncReadback(readback)) {
+    failures.push(failure("missing-asynchronous-readback", "/trace/canvas_instrumentation/readback", "bounded WebGL2 PBO/fence readback with zero-timeout polling and observed cleanup", readback || null));
+  }
   const samples = Array.isArray(parsed.canvas_samples) ? parsed.canvas_samples : [];
   if (!samples.some(item => item?.source === "render-callback-post-callback")) {
     failures.push(failure("missing-render-callback-samples", "/trace/canvas_samples", "at least one post-callback sample", samples.length));
@@ -615,6 +725,11 @@ function nativeTraceFailures(parsed, startMs, endMs) {
   const sampledRows = samples.filter(item => item?.source === "render-callback-post-callback");
   if (sampledRows.some(item => typeof item.duration_ms !== "number" || !Number.isFinite(item.duration_ms) || item.duration_ms < 0)) {
     failures.push(failure("missing-sample-duration", "/trace/canvas_samples", "every post-callback sample records a non-negative duration_ms", sampledRows));
+  }
+  if (sampledRows.some(item => !Number.isInteger(item.callback_index) || item.callback_index < 0
+      || typeof item.origin_timestamp_ms !== "number" || !Number.isFinite(item.origin_timestamp_ms)
+      || !["complete", "lost", "error"].includes(item.completion_status))) {
+    failures.push(failure("invalid-readback-association", "/trace/canvas_samples", "each sample retains callback origin and completion/loss status", sampledRows));
   }
   const perturbation = instrumentation.measurement_perturbation || parsed.measurement?.perturbation;
   if (!perturbation || perturbation.status !== "observed" || perturbation.basis !== "control-vs-instrumented"

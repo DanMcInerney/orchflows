@@ -7,9 +7,12 @@ the game canvas stops changing. `static-idle.json` demonstrates the static path,
 which reports frame counts without a 59 Hz claim.
 
 Live cells use the same model with a host-owned render-callback observer. The
-observer runs after each application `requestAnimationFrame` callback, samples
-a frozen explicit region of the current WebGL drawing buffer with read-only
-`readPixels`, and leaves `preserveDrawingBuffer:false` unchanged. A cell's
+observer runs after each application `requestAnimationFrame` callback and
+queues a frozen explicit region of the current default WebGL2 drawing buffer in
+a pixel-pack buffer. A `fenceSync` is polled with a zero timeout on later
+callbacks; completed bytes are copied with `getBufferSubData`, so the observer
+never waits for the GPU on the application callback. It leaves
+`preserveDrawingBuffer:false` unchanged. A cell's
 `sampling` declaration is either in drawing-buffer pixels or CSS viewport
 pixels; the result records the resolved contained region, drawing-buffer size,
 viewport size, DPR, bytes per sample, and every sample duration. Native
@@ -46,12 +49,23 @@ animation callback so a timestamp alias cannot manufacture a false frame-floor
 failure. The live positive probe measured `N=600`, `C=600`, `callbacks=600`,
 `preserve_drawing_buffer=false`, and zero readback errors over 10 seconds.
 
+`threejs-moving-mesh.html` is the noncentral positive fixture. Its ordinary
+Three.js scene renders a box whose x position and rotation change in the right
+side of the canvas while the center remains unchanged. Its paired cell freezes
+the viewport region `{x:384,y:96,width:160,height:168}` so pixel changes are
+observed over the mesh without treating a whole-canvas clear as moving-mesh
+evidence.
+
 The collector takes the cell's contained region after each instrumented
-callback and records the sample duration. Small regions bound observation work;
-the region can be placed over a declared moving object whose motion does not
-cross the canvas center. A region outside the actual drawing buffer is rejected
-before qualification, so a static target canvas with an animated other DOM
-layer remains a negative result.
+callback and records callback origin, completion status, queue/copy timing, and
+sample duration. A bounded PBO pool records every queue overflow, readback
+error, context loss, and pending item observed during cleanup. Small regions
+bound observation work; the region can be placed over a declared moving object
+whose motion does not cross the canvas center. A region outside the actual
+drawing buffer is rejected before qualification, so a static target canvas
+with an animated other DOM layer remains a negative result. WebGL1 or a browser
+without the required WebGL2 PBO/fence APIs is unverified rather than silently
+falling back to synchronous readback.
 
 `threejs-stalled-canvas-other-layer.html` is a live negative probe. Its default
 Three.js canvas is cleared once and left unchanged while a separate promoted
