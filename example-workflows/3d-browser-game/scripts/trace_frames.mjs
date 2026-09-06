@@ -560,6 +560,24 @@ export function callbackTimes(callbacks) {
 function ratio(count, denominator) { return denominator > 0 ? count / denominator : 0; }
 function failure(code, pointer, expected, observed) { return {code, pointer, expected, observed}; }
 
+function validSamplingCoverage(value) {
+  const region = value?.resolved_region;
+  const buffer = value?.drawing_buffer;
+  const viewport = value?.viewport;
+  return value?.explicit === true
+    && ["drawing-buffer", "viewport"].includes(value?.coordinate_space)
+    && region && Number.isInteger(region.x) && Number.isInteger(region.y)
+    && Number.isInteger(region.width) && Number.isInteger(region.height)
+    && region.x >= 0 && region.y >= 0 && region.width > 0 && region.height > 0
+    && buffer && Number.isInteger(buffer.width) && Number.isInteger(buffer.height)
+    && buffer.width > 0 && buffer.height > 0
+    && region.x + region.width <= buffer.width && region.y + region.height <= buffer.height
+    && viewport && Number.isFinite(viewport.width) && viewport.width > 0
+    && Number.isFinite(viewport.height) && viewport.height > 0
+    && Number.isFinite(value.dpr) && value.dpr > 0
+    && Number.isInteger(value.sample_pixels) && value.sample_pixels === region.width * region.height;
+}
+
 function nativeTraceFailures(parsed, startMs, endMs) {
   const failures = [];
   if (!NATIVE_FORMATS.has(parsed.format)) failures.push(failure("unparsed-format", "/trace/format", [...NATIVE_FORMATS], parsed.format));
@@ -590,6 +608,14 @@ function nativeTraceFailures(parsed, startMs, endMs) {
   if (!samples.some(item => item?.source === "render-callback-post-callback")) {
     failures.push(failure("missing-render-callback-samples", "/trace/canvas_samples", "at least one post-callback sample", samples.length));
   }
+  const sampling = instrumentation.sampling || instrumentation.sample_coverage || parsed.measurement?.sampling;
+  if (!validSamplingCoverage(sampling)) {
+    failures.push(failure("missing-sampling-coverage", "/trace/canvas_instrumentation/sampling", "explicit contained drawing-buffer coverage with viewport and DPR", sampling || null));
+  }
+  const sampledRows = samples.filter(item => item?.source === "render-callback-post-callback");
+  if (sampledRows.some(item => typeof item.duration_ms !== "number" || !Number.isFinite(item.duration_ms) || item.duration_ms < 0)) {
+    failures.push(failure("missing-sample-duration", "/trace/canvas_samples", "every post-callback sample records a non-negative duration_ms", sampledRows));
+  }
   const perturbation = instrumentation.measurement_perturbation || parsed.measurement?.perturbation;
   if (!perturbation || perturbation.status !== "observed" || perturbation.basis !== "control-vs-instrumented"
       || !Number.isFinite(perturbation.callback_rate_delta_hz)
@@ -606,6 +632,18 @@ function nativeTraceFailures(parsed, startMs, endMs) {
         || !Number.isInteger(phase.callbacks) || !Number.isFinite(phase.callback_rate_hz)) {
       failures.push(failure(`missing-observed-${name}`, `/trace/measurement/${name}`, "observed callback phase", phase || null));
     }
+  }
+  const control = parsed.measurement?.control;
+  const instrumented = parsed.measurement?.instrumented;
+  if (control && instrumented && control.requested_ms !== instrumented.requested_ms) {
+    failures.push(failure("incomparable-control-duration", "/trace/measurement/control/requested_ms", instrumented.requested_ms, control.requested_ms));
+  }
+  const lifecycle = parsed.measurement?.lifecycle;
+  if (!lifecycle || lifecycle.status === "fixture" || lifecycle.reset?.observed !== true
+      || lifecycle.reset?.method !== "page.reload"
+      || !Array.isArray(lifecycle.phase_transitions) || lifecycle.phase_transitions.length < 2
+      || lifecycle.phase_transitions.some(item => item?.start_observed !== true)) {
+    failures.push(failure("missing-observed-reset-lifecycle", "/trace/measurement/lifecycle", "observed page reset and control/instrumented phase starts", lifecycle || null));
   }
   return failures;
 }

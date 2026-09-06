@@ -27,6 +27,7 @@
         "warmup_seconds": {"type": "number", "minimum": 0},
         "control_duration_ms": {"type": "number", "minimum": 250},
         "warmup_duration_ms": {"type": "number", "minimum": 0},
+        "sampling": {"$ref": "#/$defs/sampling"},
         "window": {
           "type": "object",
           "required": ["start_ms", "end_ms"],
@@ -51,6 +52,8 @@
         "observer": {"type": "string", "minLength": 1},
         "presentation": {"type": "string", "minLength": 1},
         "preserve_drawing_buffer": {"type": ["boolean", "null"]},
+        "sampling": {"$ref": "#/$defs/sampling"},
+        "lifecycle": {"$ref": "#/$defs/lifecycle"},
         "warmup": {"$ref": "#/$defs/phase"},
         "control": {"$ref": "#/$defs/phase"},
         "instrumented": {"$ref": "#/$defs/instrumented"},
@@ -63,6 +66,15 @@
     "diagnostics": {"type": "object"},
     "observed_at": {"type": "string", "format": "date-time"}
   },
+  "allOf": [{
+    "if": {"properties": {"source": {"const": "live-browser"}}},
+    "then": {
+      "properties": {
+        "cell": {"required": ["sampling"]},
+        "measurement": {"required": ["sampling", "lifecycle"]}
+      }
+    }
+  }],
   "$defs": {
     "phase": {
       "type": "object",
@@ -92,7 +104,8 @@
         "callback_rate_hz": {"type": "number", "minimum": 0},
         "max_callback_interval_ms": {"type": ["number", "null"], "minimum": 0},
         "samples": {"type": "integer", "minimum": 0},
-        "readback_errors": {"type": "integer", "minimum": 0}
+        "readback_errors": {"type": "integer", "minimum": 0},
+        "sample_duration_ms": {"$ref": "#/$defs/sampleDuration"}
       },
       "additionalProperties": false
     },
@@ -109,7 +122,72 @@
         "callback_rate_delta_hz": {"type": "number"},
         "callback_interval_delta_ms": {"type": ["number", "null"]},
         "samples": {"type": "integer", "minimum": 0},
-        "readback_errors": {"type": "integer", "minimum": 0}
+        "readback_errors": {"type": "integer", "minimum": 0},
+        "sample_duration_ms": {"$ref": "#/$defs/sampleDuration"}
+      },
+      "additionalProperties": false
+    },
+    "sampleDuration": {
+      "type": "object",
+      "required": ["count", "total_ms", "max_ms", "p99_ms"],
+      "properties": {
+        "count": {"type": "integer", "minimum": 0},
+        "total_ms": {"type": "number", "minimum": 0},
+        "max_ms": {"type": ["number", "null"], "minimum": 0},
+        "p99_ms": {"type": ["number", "null"], "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "sampling": {
+      "type": "object",
+      "required": ["explicit", "coordinate_space", "requested_region", "resolved_region", "drawing_buffer", "viewport", "dpr", "sample_pixels", "bytes_per_sample", "origin"],
+      "properties": {
+        "explicit": {"type": "boolean"},
+        "coordinate_space": {"enum": ["drawing-buffer", "viewport"]},
+        "requested_region": {"$ref": "#/$defs/region"},
+        "resolved_region": {"oneOf": [{"$ref": "#/$defs/region"}, {"type": "null"}]},
+        "drawing_buffer": {"oneOf": [{"$ref": "#/$defs/size"}, {"type": "null"}]},
+        "viewport": {"oneOf": [{"$ref": "#/$defs/size"}, {"type": "null"}]},
+        "dpr": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "sample_pixels": {"type": "integer", "minimum": 1},
+        "bytes_per_sample": {"type": "integer", "minimum": 4},
+        "origin": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "region": {
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "size": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": {"type": "number", "exclusiveMinimum": 0},
+        "height": {"type": "number", "exclusiveMinimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": ["status", "scenario_id", "configured_url", "reset", "phase_transitions"],
+      "properties": {
+        "status": {"enum": ["observed", "fixture"]},
+        "scenario_id": {"type": "string", "minLength": 1},
+        "seed": {"type": ["string", "number", "null"]},
+        "configured_url": {"type": ["string", "null"]},
+        "viewport": {"$ref": "#/$defs/size"},
+        "dpr": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "start": {"type": "object"},
+        "reset": {"oneOf": [{"type": "object"}, {"type": "null"}]},
+        "phase_transitions": {"type": "array", "items": {"type": "object"}}
       },
       "additionalProperties": false
     }
