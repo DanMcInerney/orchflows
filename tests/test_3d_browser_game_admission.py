@@ -62,7 +62,9 @@ class ThreeDBrowserGameAdmissionTest(unittest.TestCase):
                 self._git(project, "config", "user.name", "3d admission fixture")
                 self._git(project, "config", "user.email", "fixture@example.invalid")
                 self._git(project, "config", "core.autocrlf", "false")
-                ring, package = self._copy_package(project)
+                source = self._assert_source_copy_boundary(temporary)
+                ring, package = self._copy_package(project, source=source)
+                self.assertFalse((package / "node_modules").exists())
                 goal = project / "goal.md"
                 goal.write_text("Admit the copied 3D browser-game package.\n", encoding="utf-8")
                 self._git(project, "add", ".")
@@ -261,11 +263,72 @@ class ThreeDBrowserGameAdmissionTest(unittest.TestCase):
                 self.assertEqual(0, resume_code, resume_output)
                 self.assertIn("no open frames", resume_output)
 
-    def _copy_package(self, project: Path):
+    @staticmethod
+    def _copy_source(source: Path, destination: Path):
+        """Copy authored package files while leaving generated Node state behind."""
+
+        shutil.copytree(
+            source, destination, ignore=shutil.ignore_patterns("node_modules"),
+        )
+        return destination
+
+    def _author_source(self, destination: Path, *, with_cache: bool) -> Path:
+        source = self._copy_source(ROOT / "example-workflows" / PUBLIC, destination)
+        if with_cache:
+            modules = source / "node_modules"
+            modules.mkdir()
+            (modules / orchflows_node.STAMP_NAME).write_text(
+                json.dumps(
+                    {
+                        "schema": orchflows_node.STAMP_SCHEMA,
+                        "kind": "workflow",
+                        "name": PUBLIC,
+                        "lockfile": str(source / "package-lock.json"),
+                        "lock_sha256": orchflows_node.digest(
+                            source / "package-lock.json"
+                        ),
+                    },
+                    sort_keys=True,
+                ) + "\n",
+                encoding="utf-8",
+            )
+        return source
+
+    def _assert_source_copy_boundary(self, temporary: Path) -> Path:
+        source_without_cache = self._author_source(
+            temporary / "author-source-without-cache", with_cache=False,
+        )
+        copied_without_cache = self._copy_source(
+            source_without_cache, temporary / "copied-without-cache",
+        )
+        self.assertFalse((copied_without_cache / "node_modules").exists())
+        self.assertEqual(
+            tickets_pins.tree_digest("workflow", source_without_cache),
+            tickets_pins.tree_digest("workflow", copied_without_cache),
+        )
+
+        source_with_cache = self._author_source(
+            temporary / "author-source-with-cache", with_cache=True,
+        )
+        self.assertTrue((source_with_cache / "node_modules").is_dir())
+        copied_with_cache = self._copy_source(
+            source_with_cache, temporary / "copied-with-cache",
+        )
+        self.assertFalse((copied_with_cache / "node_modules").exists())
+        self.assertEqual(
+            tickets_pins.tree_digest("workflow", source_with_cache),
+            tickets_pins.tree_digest("workflow", copied_with_cache),
+        )
+        return source_with_cache
+
+    def _copy_package(self, project: Path, *, source: Path | None = None):
         ring = project / rings.BUNDLE_DIR
         orchflows_scaffold.write_bundle(ring, "3d-browser-game-consumer", "1.0.0")
         package = ring / "workflows" / PUBLIC
-        shutil.copytree(ROOT / "example-workflows" / PUBLIC, package)
+        self._copy_source(
+            ROOT / "example-workflows" / PUBLIC if source is None else source,
+            package,
+        )
         # discovery's research-acquire edge is intentionally inherited from
         # the surrounding project ring. This is the real project scoped skill
         # shipped by this checkout, copied as package-adjacent fixture input.
