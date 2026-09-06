@@ -322,9 +322,261 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
         return `fnv1a:${(hash >>> 0).toString(16).padStart(8, "0")}`;
       };
       const READBACK_METHOD = "webgl2.pixel-pack-buffer+fence-sync";
+      const trackedContexts = new WeakMap();
+      const PACK_STATE = ["PACK_ALIGNMENT", "PACK_ROW_LENGTH", "PACK_SKIP_ROWS", "PACK_SKIP_PIXELS"];
+
+      // WebGL getParameter/getError can synchronously flush the graphics
+      // process. Discover the small state boundary once when a context is
+      // created, then shadow only the mutations that this observer touches.
+      // This keeps the measured callback path free of state queries while
+      // retaining the renderer's bindings and framebuffer-local read buffers.
+      function stateFailure(state, message) {
+        state.valid = false;
+        state.error = message;
+      }
+
+      function readInitialState(gl) {
+        const read = name => {
+          const value = gl.getParameter(gl[name]);
+          if (value === undefined) throw new Error(`WebGL state query ${name} returned undefined`);
+          return value;
+        };
+        const readFramebuffer = read("READ_FRAMEBUFFER_BINDING");
+        const state = {
+          valid: true,
+          error: null,
+          context_lost: false,
+          context_restored: false,
+          active: false,
+          gl,
+          canvas: null,
+          wrappers: new Map(),
+          originals: new Map(),
+          framebuffers: new Set(),
+          read_buffers: new Map(),
+          pixel_pack_buffer: read("PIXEL_PACK_BUFFER_BINDING"),
+          read_framebuffer: readFramebuffer,
+          draw_framebuffer: read("DRAW_FRAMEBUFFER_BINDING"),
+          PACK_ALIGNMENT: read("PACK_ALIGNMENT"),
+          PACK_ROW_LENGTH: read("PACK_ROW_LENGTH"),
+          PACK_SKIP_ROWS: read("PACK_SKIP_ROWS"),
+          PACK_SKIP_PIXELS: read("PACK_SKIP_PIXELS"),
+        };
+        state.read_buffers.set(readFramebuffer, read("READ_BUFFER"));
+        if (state.read_framebuffer) state.framebuffers.add(state.read_framebuffer);
+        if (state.draw_framebuffer) state.framebuffers.add(state.draw_framebuffer);
+        return state;
+      }
+
+      function knownReadBuffer(state, framebuffer) {
+        if (state.read_buffers.has(framebuffer)) return;
+        if (framebuffer === null || state.framebuffers.has(framebuffer)) {
+          // WebGL2 initializes a user framebuffer's READ_BUFFER to
+          // COLOR_ATTACHMENT0. Context-created framebuffers are tracked from
+          // their creation, so an old, unobserved framebuffer fails closed.
+          state.read_buffers.set(framebuffer, framebuffer === null ? state.gl.BACK : state.gl.COLOR_ATTACHMENT0);
+          return;
+        }
+        throw new Error("framebuffer READ_BUFFER state was not observed");
+      }
+
+      function updateBinding(state, target, framebuffer) {
+        const gl = state.gl;
+        if (target === gl.READ_FRAMEBUFFER) {
+          state.read_framebuffer = framebuffer;
+          knownReadBuffer(state, framebuffer);
+        } else if (target === gl.DRAW_FRAMEBUFFER) {
+          state.draw_framebuffer = framebuffer;
+        } else if (target === gl.FRAMEBUFFER) {
+          state.read_framebuffer = framebuffer;
+          state.draw_framebuffer = framebuffer;
+          knownReadBuffer(state, framebuffer);
+        }
+      }
+
+      function installStateWrappers(state) {
+        if (state.active) return;
+        const gl = state.gl;
+        const wrap = (name, update) => {
+          const original = gl[name];
+          if (typeof original !== "function") throw new Error(`WebGL ${name} is unavailable`);
+          const wrapper = function (...args) {
+            const result = original.apply(this, args);
+            if (this !== gl) {
+              stateFailure(state, `WebGL ${name} was called with an unexpected receiver`);
+              return result;
+            }
+            try { update(args, result); }
+            catch (error) { stateFailure(state, String(error.message || error)); }
+            return result;
+          };
+          Object.defineProperty(gl, name, {configurable: true, writable: true, value: wrapper});
+          state.originals.set(name, original);
+          state.wrappers.set(name, wrapper);
+        };
+        wrap("bindBuffer", args => {
+          if (args[0] === gl.PIXEL_PACK_BUFFER) state.pixel_pack_buffer = args[1] === undefined ? null : args[1];
+        });
+        wrap("bindFramebuffer", args => {
+          const framebuffer = args[1] === undefined ? null : args[1];
+          updateBinding(state, args[0], framebuffer);
+        });
+        wrap("pixelStorei", args => {
+          for (const name of PACK_STATE) if (args[0] === gl[name]) state[name] = args[1];
+        });
+        wrap("readBuffer", args => {
+          knownReadBuffer(state, state.read_framebuffer);
+          state.read_buffers.set(state.read_framebuffer, args[0]);
+        });
+        wrap("createFramebuffer", (_args, framebuffer) => {
+          if (framebuffer) {
+            state.framebuffers.add(framebuffer);
+            state.read_buffers.set(framebuffer, gl.COLOR_ATTACHMENT0);
+          }
+        });
+        wrap("deleteFramebuffer", args => {
+          const framebuffer = args[0];
+          state.framebuffers.delete(framebuffer);
+          state.read_buffers.delete(framebuffer);
+          if (state.read_framebuffer === framebuffer) state.read_framebuffer = null;
+          if (state.draw_framebuffer === framebuffer) state.draw_framebuffer = null;
+          knownReadBuffer(state, null);
+        });
+        wrap("deleteBuffer", args => {
+          if (state.pixel_pack_buffer === args[0]) state.pixel_pack_buffer = null;
+        });
+        state.active = true;
+      }
+
+      function trackContext(gl, canvas = null) {
+        if (!gl || typeof gl.getParameter !== "function") return null;
+        let state = trackedContexts.get(gl);
+        if (state) {
+          if (canvas && !state.canvas) state.canvas = canvas;
+          return state;
+        }
+        try { state = readInitialState(gl); }
+        catch (error) {
+          state = {valid: false, error: String(error.message || error), context_lost: false, context_restored: false, active: false, gl, canvas, wrappers: new Map(), originals: new Map()};
+          trackedContexts.set(gl, state);
+          return state;
+        }
+        state.canvas = canvas;
+        trackedContexts.set(gl, state);
+        try { installStateWrappers(state); }
+        catch (error) { stateFailure(state, String(error.message || error)); }
+        if (canvas?.addEventListener) {
+          canvas.addEventListener("webglcontextlost", () => {
+            state.context_lost = true;
+            stateFailure(state, "WebGL context was lost; state shadow is invalid");
+          }, {passive: true});
+          canvas.addEventListener("webglcontextrestored", () => {
+            state.context_restored = true;
+            stateFailure(state, "WebGL context was restored; observer requires reconfiguration");
+          }, {passive: true});
+        }
+        return state;
+      }
+
+      function hookCanvasContext(canvasPrototype) {
+        if (!canvasPrototype?.getContext) return;
+        const original = canvasPrototype.getContext;
+        try {
+          Object.defineProperty(canvasPrototype, "getContext", {
+            configurable: true,
+            writable: true,
+            value: function (type, ...args) {
+              const context = original.call(this, type, ...args);
+              if (context && /^(?:experimental-)?webgl2?$/.test(String(type || "").toLowerCase())) trackContext(context, this);
+              return context;
+            },
+          });
+        } catch { /* configure() reports an explicit capability failure below */ }
+      }
+      hookCanvasContext(globalThis.HTMLCanvasElement?.prototype);
+      hookCanvasContext(globalThis.OffscreenCanvas?.prototype);
+
+      function contextState(gl) {
+        const state = trackedContexts.get(gl) || trackContext(gl);
+        if (!state?.valid) throw new Error(state?.error || "WebGL state shadow is unavailable");
+        for (const [name, wrapper] of state.wrappers) {
+          if (gl[name] !== wrapper) {
+            stateFailure(state, `WebGL ${name} wrapper ownership changed`);
+            throw new Error(state.error);
+          }
+        }
+        if (!state.active) installStateWrappers(state);
+        return state;
+      }
+
+      function restoreWrappers(state) {
+        let error = null;
+        for (const [name, wrapper] of state.wrappers) {
+          if (state.gl[name] !== wrapper) {
+            error = `WebGL ${name} wrapper ownership changed during cleanup`;
+            continue;
+          }
+          try { Object.defineProperty(state.gl, name, {configurable: true, writable: true, value: state.originals.get(name)}); }
+          catch (caught) { error = String(caught.message || caught); }
+        }
+        state.active = false;
+        state.wrappers.clear();
+        state.originals.clear();
+        if (error) stateFailure(state, error);
+        return error;
+      }
+
+      function captureState(gl) {
+        const state = contextState(gl);
+        const readBuffers = new Map();
+        for (const framebuffer of [state.read_framebuffer, null]) {
+          knownReadBuffer(state, framebuffer);
+          readBuffers.set(framebuffer, state.read_buffers.get(framebuffer));
+        }
+        return {
+          pixel_pack_buffer: state.pixel_pack_buffer,
+          read_framebuffer: state.read_framebuffer,
+          draw_framebuffer: state.draw_framebuffer,
+          PACK_ALIGNMENT: state.PACK_ALIGNMENT,
+          PACK_ROW_LENGTH: state.PACK_ROW_LENGTH,
+          PACK_SKIP_ROWS: state.PACK_SKIP_ROWS,
+          PACK_SKIP_PIXELS: state.PACK_SKIP_PIXELS,
+          read_buffers: readBuffers,
+        };
+      }
+
+      function restoreState(gl, state, saved) {
+        const errors = [];
+        const call = (name, ...args) => {
+          const original = state.originals.get(name);
+          if (typeof original !== "function") { errors.push(`WebGL ${name} original is unavailable`); return; }
+          try { original.apply(gl, args); }
+          catch (error) { errors.push(`${name}: ${String(error.message || error)}`); }
+        };
+        call("bindBuffer", gl.PIXEL_PACK_BUFFER, saved.pixel_pack_buffer);
+        call("bindFramebuffer", gl.READ_FRAMEBUFFER, saved.read_framebuffer);
+        call("bindFramebuffer", gl.DRAW_FRAMEBUFFER, saved.draw_framebuffer);
+        for (const [framebuffer, readBuffer] of saved.read_buffers) {
+          call("bindFramebuffer", gl.READ_FRAMEBUFFER, framebuffer);
+          call("readBuffer", readBuffer);
+        }
+        call("bindFramebuffer", gl.READ_FRAMEBUFFER, saved.read_framebuffer);
+        call("bindFramebuffer", gl.DRAW_FRAMEBUFFER, saved.draw_framebuffer);
+        for (const name of PACK_STATE) call("pixelStorei", gl[name], saved[name]);
+        if (errors.length) {
+          stateFailure(state, `WebGL state restoration failed: ${errors.join("; ")}`);
+          throw new Error(state.error);
+        }
+        state.pixel_pack_buffer = saved.pixel_pack_buffer;
+        state.read_framebuffer = saved.read_framebuffer;
+        state.draw_framebuffer = saved.draw_framebuffer;
+        for (const name of PACK_STATE) state[name] = saved[name];
+        for (const [framebuffer, readBuffer] of saved.read_buffers) state.read_buffers.set(framebuffer, readBuffer);
+      }
+
       const observer = {
         phase: "disabled", callbacks: [], samples: [], targets: [], gl: null,
-        max_pending: 4, pending: [], available: [], configured: false,
+        max_pending: 4, pending: [], available: [], configured: false, poll_timer: null,
         readback: {
           method: READBACK_METHOD, asynchronous: true,
           api: ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
@@ -334,26 +586,17 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           queue_duration_ms: 0, wait_duration_ms: 0, copy_duration_ms: 0, poll_duration_ms: 0,
         },
         // Save and restore mutable readback state around every WebGL call. The
-        // observer samples the existing default framebuffer and must not alter
-        // the renderer's framebuffer, pixel-store, or pack-buffer bindings.
+        // state values are shadowed by the context wrappers above; no getter is
+        // called from this hot path. The observer samples the existing default
+        // framebuffer and must not alter renderer or framebuffer-local state.
         withState(gl, operation, timings = null) {
-          const state = {};
-          const read = name => {
-            try { state[name] = gl.getParameter(gl[name]); } catch { state[name] = undefined; }
-          };
           const captureStarted = performance.now();
-          for (const name of ["PIXEL_PACK_BUFFER_BINDING", "READ_FRAMEBUFFER_BINDING", "DRAW_FRAMEBUFFER_BINDING", "PACK_ALIGNMENT", "PACK_ROW_LENGTH", "PACK_SKIP_ROWS", "PACK_SKIP_PIXELS", "READ_BUFFER"]) read(name);
+          const state = captureState(gl);
           if (timings) timings.state_capture = performance.now() - captureStarted;
           try { return operation(); }
           finally {
             const restoreStarted = performance.now();
-            try { if (state.PIXEL_PACK_BUFFER_BINDING !== undefined) gl.bindBuffer(gl.PIXEL_PACK_BUFFER, state.PIXEL_PACK_BUFFER_BINDING); } catch {}
-            try { if (state.READ_FRAMEBUFFER_BINDING !== undefined) gl.bindFramebuffer(gl.READ_FRAMEBUFFER, state.READ_FRAMEBUFFER_BINDING); } catch {}
-            try { if (state.DRAW_FRAMEBUFFER_BINDING !== undefined) gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, state.DRAW_FRAMEBUFFER_BINDING); } catch {}
-            for (const name of ["PACK_ALIGNMENT", "PACK_ROW_LENGTH", "PACK_SKIP_ROWS", "PACK_SKIP_PIXELS"]) {
-              try { if (state[name] !== undefined) gl.pixelStorei(gl[name], state[name]); } catch {}
-            }
-            try { if (state.READ_BUFFER !== undefined) gl.readBuffer(state.READ_BUFFER); } catch {}
+            restoreState(gl, contextState(gl), state);
             if (timings) timings.state_restore = performance.now() - restoreStarted;
           }
         },
@@ -507,9 +750,20 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           this.pending = remaining;
           this.readback.poll_duration_ms = (this.readback.poll_duration_ms || 0) + performance.now() - pollStarted;
         },
+        schedulePoll() {
+          if (this.poll_timer !== null) return;
+          this.poll_timer = setTimeout(() => {
+            this.poll_timer = null;
+            this.poll();
+          }, 0);
+        },
         sample(target, callbackIndex, callbackTimestamp) {
           const originTimestamp = Number.isFinite(callbackTimestamp) ? callbackTimestamp : performance.now();
-          this.poll();
+          // Fence polling and CPU copy run as a task after the render-callback
+          // task returns. A signaled fence may still make getBufferSubData
+          // wait for the transfer; keeping that wait out of FireAnimationFrame
+          // is the observed causal repair for the renderer stall.
+          this.schedulePoll();
           const started = performance.now();
           const item = {
             origin_timestamp_ms: originTimestamp,
@@ -536,6 +790,12 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
               gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
               gl.readBuffer(gl.BACK);
               gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+              // The observer owns a tightly sized PBO. Normalize pack layout
+              // for this read, then withState restores the app's exact values.
+              gl.pixelStorei(gl.PACK_ALIGNMENT, 4);
+              gl.pixelStorei(gl.PACK_ROW_LENGTH, 0);
+              gl.pixelStorei(gl.PACK_SKIP_ROWS, 0);
+              gl.pixelStorei(gl.PACK_SKIP_PIXELS, 0);
               item.queue_stages_ms.bind = performance.now() - stageStarted;
               stageStarted = performance.now();
               gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
@@ -563,6 +823,10 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           }
         },
         flush() {
+          if (this.poll_timer !== null) {
+            clearTimeout(this.poll_timer);
+            this.poll_timer = null;
+          }
           this.poll();
           const pendingAtCleanup = this.pending.length;
           this.readback.pending_at_cleanup = pendingAtCleanup;
@@ -573,6 +837,17 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           this.pending = [];
           for (const buffer of this.available) { try { this.gl?.deleteBuffer(buffer); } catch {} }
           this.available = [];
+          const state = trackedContexts.get(this.gl);
+          const cleanupError = state ? restoreWrappers(state) : null;
+          this.state_diagnostic = state ? {
+            method: "initial-getParameter+mutation-shadow",
+            valid: state.valid && !cleanupError,
+            context_lost: state.context_lost,
+            context_restored: state.context_restored,
+            wrappers_active: state.active,
+            cleanup_error: cleanupError,
+          } : {method: "initial-getParameter+mutation-shadow", valid: false, error: "WebGL context was not tracked"};
+          if (cleanupError) this.readback.errors += 1;
           this.readback.cleanup_observed = true;
           return {...this.readback};
         },
@@ -664,9 +939,10 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     const wallStart = Date.now();
     const trace = await collectCDPTrace(instrumentedClient, { durationMs: durationMs + (2 * paddingMs), categories: cell.trace_categories, timeoutMs: cell.trace_timeout_ms || Math.max(120000, durationMs + (2 * paddingMs) + 60000) });
     const observer = await page.evaluate(() => {
-      const value = window.__orchPresentationObserver;
-      const readback = value.flush();
-      return {callbacks: value.callbacks.slice(), samples: value.samples.slice(), readback};
+       const value = window.__orchPresentationObserver;
+       const readback = value.flush();
+       const stateProbe = window.__orchStateProbe ? JSON.parse(JSON.stringify(window.__orchStateProbe)) : null;
+       return {callbacks: value.callbacks.slice(), samples: value.samples.slice(), readback, state_diagnostic: value.state_diagnostic, state_probe: stateProbe};
     });
     const callbacksObserved = observer.callbacks.map(item => ({...item, timestamp_ms: item.timestamp_ms + captureClock.offsetMs}));
     const canvasSamples = observer.samples.map(item => ({
@@ -715,7 +991,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     const parsed = {
       ...trace,
       canvas_samples: canvasSamples,
-      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, readback: observer.readback, signal: "render-callback-post-callback; async WebGL2 readback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
+      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, readback: observer.readback, state_shadow: observer.state_diagnostic, signal: "render-callback-post-callback; async WebGL2 readback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
       measurement,
       metadata: {
         clock_reconciled: true,
@@ -748,7 +1024,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
         tools: [],
       },
       measurement,
-      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, measurement },
+      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, state_shadow: observer.state_diagnostic, state_probe: observer.state_probe, measurement },
     };
   } finally {
     await browser?.close().catch(() => {});

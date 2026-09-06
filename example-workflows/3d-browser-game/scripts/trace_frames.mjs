@@ -782,6 +782,10 @@ export function qualifyPerformance({cell, trace, callbacks = []}) {
   const targetFrames = frames.filter(row => row.attribution === "game-canvas" && (row.presentation_evidence !== false || parsed.format === "fixture"));
   if (targetFrames.length === 0) failures.push(failure("missing-canvas-attribution", "/trace/frames", "at least one observed game-canvas frame", 0));
   const callback = callbackTimes(callbacks).filter(time => time >= startMs && time < endMs);
+  const sampledRows = (parsed.canvas_samples || []).filter(item => item?.source === "render-callback-post-callback"
+    && typeof item.origin_timestamp_ms === "number" && item.origin_timestamp_ms >= startMs && item.origin_timestamp_ms < endMs);
+  const failedSamples = sampledRows.filter(item => item.completion_status !== "complete" || item.error);
+  if (failedSamples.length) failures.push(failure("readback-sample-failure", "/trace/canvas_samples", "every measured sample completes without an error or loss", failedSamples.length));
   const intervals = callback.slice(1).map((time, index) => time - callback[index]);
   const intervalRatio = intervals.length ? intervals.filter(value => value <= 18.33).length / intervals.length : 0;
   const uniqueFlags = frames.filter(row => row.dropped || row.isPartial).length;
