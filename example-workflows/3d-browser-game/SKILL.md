@@ -5,17 +5,16 @@ disable-model-invocation: true
 ---
 
 Require: one complete `brief`, a git-backed `workspace`, and any explicit
-amendments. The brief and amendments are product authority. This package
-keeps the public entry, private helpers, standards, and evidence contracts
-together; host adapters supply the resolved role, model, and effort.
+amendments. The brief and amendments are product authority; host adapters
+supply the resolved role, model, and effort.
 
 Open one frame and retain its returned frame identity:
 
     tickets.py frame-open <run> --goal-file <program-goal> --workflow 3d-browser-game
 
-The frame journal is the handoff ledger. Read it at the head of every wave,
-relay each typed `artifact:` or `findings:` line verbatim, and preserve the
-package digest, target commit, tool identities, and evidence identities.
+The frame journal is the handoff ledger. Read it at every wave, relay typed
+`artifact:` or `findings:` lines verbatim, and preserve package, target,
+tool, and evidence identities.
 
 **Research and design.** Open the private `discovery` helper under the frame.
 It audits every promise, runs its independent research lanes in parallel,
@@ -47,10 +46,10 @@ named invalidations, and `unverified` records the missing capability or cell.
 mechanics, collision, camera, controls, and timing. Generate and inspect
 concept art, then open `blender-asset` jobs for source, render, export,
 manifest, GLB, and runtime evidence. Gameplay-changing art invalidates the
-affected core verdict. Integrate production assets and open `final-acceptance`
-for complete play, captures, performance cells, and independent whole-game
-judgment. Its bounded repair cycles preserve complaint IDs, causes, contrary
-evidence, and resume state.
+affected core verdict. Integrate production assets and open
+`final-acceptance` for complete play, captures, performance cells, and
+independent judgment. Its repair cycles preserve complaint IDs, causes,
+contrary evidence, and resume state.
 
     tickets.py frame-open <run> --goal-file <asset-goal> --parent <frame> --workflow blender-asset
     tickets.py frame-close <run> <asset-frame> --done <asset-check>
@@ -67,6 +66,6 @@ complaint, mix package revisions, or claim `gaps: []` without observed gate
 and outside-probe evidence.
 
 Return: `tickets.py frame-close <run> <frame> --done <outside-probe>`, carrying
-the accepted `artifact: git:<full-commit-id>`, evidence-index identity, both
-gate identities, outside-probe reading, or the best fixed revision and exact
-resume state with every unresolved gap declared.
+the accepted `artifact: git:<full-commit-id>`, evidence-index and gate
+identities, outside-probe reading, or the best fixed revision and exact resume
+state with every unresolved gap declared.
