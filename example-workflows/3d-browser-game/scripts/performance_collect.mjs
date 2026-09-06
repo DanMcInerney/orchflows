@@ -244,15 +244,27 @@ function fixtureMeasurement(cell) {
 
 async function canvasBackend(page, selector) {
   return page.evaluate(canvasSelector => {
-    const canvas = document.querySelector(canvasSelector);
-    if (!canvas) return {kind: "unknown", renderer: null};
-    for (const kind of ["webgl2", "webgl"]) {
-      const gl = canvas.getContext(kind);
-      if (gl) {
-        let renderer = null;
-        try { renderer = gl.getParameter(gl.RENDERER); } catch { /* masked renderer is still an observed backend */ }
-        return {kind, renderer};
-      }
+      const canvas = document.querySelector(canvasSelector);
+      if (!canvas) return {kind: "unknown", renderer: null};
+      for (const kind of ["webgl2", "webgl"]) {
+        const gl = canvas.getContext(kind);
+        if (gl) {
+          let vendor = null;
+          let renderer = null;
+          let unmaskedVendor = null;
+          let unmaskedRenderer = null;
+          let debugInfo = null;
+          try { vendor = gl.getParameter(gl.VENDOR); } catch { /* an unavailable vendor remains explicitly unknown */ }
+          try { renderer = gl.getParameter(gl.RENDERER); } catch { /* masked renderer is still an observed backend */ }
+          try { debugInfo = gl.getExtension("WEBGL_debug_renderer_info"); } catch { /* privacy masking may deny the extension */ }
+          if (debugInfo) {
+            try { unmaskedVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL); } catch {}
+            try { unmaskedRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL); } catch {}
+          }
+          const rendererText = [vendor, renderer, unmaskedVendor, unmaskedRenderer].filter(Boolean).join(" ");
+          const software = /swiftshader|software|llvmpipe|softpipe|mesa software/i.test(rendererText);
+          return {kind, vendor, renderer, unmasked_vendor: unmaskedVendor, unmasked_renderer: unmaskedRenderer, renderer_mode: software ? "software" : (unmaskedRenderer || renderer ? "hardware-or-masked" : "unknown"), debug_renderer_info: Boolean(debugInfo)};
+        }
     }
     return {kind: canvas.getContext("2d") ? "canvas2d" : "unknown", renderer: null};
   }, selector);
