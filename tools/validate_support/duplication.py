@@ -11,6 +11,7 @@ from . import common as __dep_common
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
 CELL_SIMILARITY_THRESHOLD = __dep_common.CELL_SIMILARITY_THRESHOLD
 ROOT = __dep_common.ROOT
+owned_markdown_files = __dep_common.owned_markdown_files
 re = __dep_common.re
 
 from . import packages as __dep_packages
@@ -305,12 +306,14 @@ def cross_tier_documents(packages):
             tier = WORKFLOW_TIER if pkg["kind"] in homes else "skills"
         documents.append((tier, rel(pkg["skill_md"]), pkg.get("body") or ""))
         if pkg["is_standard"]:
-            for reference in sorted((pkg["path"] / "references").glob("*.md")):
+            for reference in owned_markdown_files(pkg["path"] / "references"):
                 documents.append(("standards", rel(reference), _read_source(reference)))
     for tier in ("rules", "contracts", "docs"):
         directory = ROOT / tier
         if directory.is_dir():
-            for path in sorted(directory.glob("*.md")):
+            for path in owned_markdown_files(directory):
+                if path.parent != directory:
+                    continue
                 # docs/vocabulary.md is the definitional owner of every
                 # term: an entry is one line naming the term's meaning and
                 # its owner, so a contract or skill using the term in its
@@ -327,7 +330,7 @@ def cross_tier_documents(packages):
     # existed when it was written.
     compositions = ROOT / "example-workflows"
     if compositions.is_dir():
-        for path in sorted(compositions.rglob("*.md")):
+        for path in owned_markdown_files(compositions):
             documents.append((WORKFLOW_TIER, rel(path), _read_source(path)))
     host_block = ROOT / "templates" / "host-block.md"
     if host_block.is_file():

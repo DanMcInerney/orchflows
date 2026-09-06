@@ -244,6 +244,24 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
             [], [line for line in diag.lines() if line.startswith("ERROR")]
         )
 
+    def test_dependency_markdown_is_outside_the_canonical_path_walk(self):
+        root = self._tree("No authored pointer here.\n")
+        dependency = root / "example-workflows" / "probe" / "node_modules" / "pkg"
+        dependency.mkdir(parents=True)
+        (dependency / "README.md").write_text(
+            "The dependency points at `tools/missing.py`.\n", encoding="utf-8"
+        )
+        saved = validate.ROOT
+        try:
+            validate.ROOT = root
+            diag = validate.Diagnostics()
+            validate.validate_documented_paths(diag)
+        finally:
+            validate.ROOT = saved
+        self.assertFalse(
+            any("node_modules" in line for line in diag.lines()), diag.lines()
+        )
+
 
 class TestVocabularyTermsHaveConsumers(unittest.TestCase):
     """Every term `docs/vocabulary.md` defines is used somewhere it ships.
