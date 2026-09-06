@@ -234,6 +234,9 @@ try {
   const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#canvas"), antialias: false });
   renderer.setSize(320, 240, false);
   const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0.008, 0.012, 0.025);
+  scene.add(new THREE.HemisphereLight(0x9fc8ff, 0x101828, 1.5));
+  const keyLight = new THREE.DirectionalLight(0xffffff, 2.5); keyLight.position.set(4, 6, 8); scene.add(keyLight);
   const camera = new THREE.PerspectiveCamera(45, 4 / 3, 0.01, 1000);
   camera.position.set(3, 2, 5); camera.lookAt(0, 0, 0);
   new GLTFLoader().load("/asset.glb", (gltf) => {
@@ -274,7 +277,11 @@ try {
       for (const declaration of EXPECTATIONS.declarations.animation_clips) {
         const clip = gltf.animations.find(item => item.name === declaration.name); if (!clip) { if (declaration.optional === true) continue; animationFailures.push("animation clip " + declaration.name + " is missing from loaded GLTF"); continue; }
         const expectedDuration = declaration.duration_seconds ?? ((Number(declaration.end) - Number(declaration.start)) / Number(EXPECTATIONS.frame_rate));
-        const durationOk = close(clip.duration, expectedDuration, Math.max(tolerance, 1 / Number(EXPECTATIONS.frame_rate)));
+        // glTF exporters may retain the inclusive terminal sample, so the
+        // one-frame allowance is the frozen contract. Add a few ulps to keep
+        // an exact boundary from failing due to IEEE-754 division rounding.
+        const durationTolerance = Math.max(tolerance, 1 / Number(EXPECTATIONS.frame_rate)) + Number.EPSILON * 4;
+        const durationOk = close(clip.duration, expectedDuration, durationTolerance);
         const before = new Map(meshObjects.map(object => [object.uuid, matrixOf(object)])); const action = mixer.clipAction(clip); action.reset().play(); mixer.update(Math.max(clip.duration / 3, 1 / Number(EXPECTATIONS.frame_rate))); mixer.update(Math.max(clip.duration / 3, 1 / Number(EXPECTATIONS.frame_rate))); gltf.scene.updateMatrixWorld(true); const changed = meshObjects.some(object => !closeMatrix(before.get(object.uuid), matrixOf(object), tolerance)); action.stop();
         if (!durationOk) animationFailures.push("animation/" + declaration.name + "/duration: observed " + clip.duration + " expected " + expectedDuration); if (!changed) animationFailures.push("animation/" + declaration.name + "/playback: no loaded object transform changed during mixer playback"); animationObserved.push({ name: clip.name, duration: clip.duration, expected_duration: expectedDuration, playback_changed: changed, tracks: clip.tracks.length });
       }
@@ -287,6 +294,12 @@ try {
     result.semantic_checks.cost = semanticResult(costFailures.length ? "fail" : "pass", "declared runtime bytes, draw calls, and load time budgets", { runtime_bytes: ${glbBytes.length}, draw_calls: result.draw_calls, load_time_ms: result.load_time_ms, failures: costFailures });
     const semanticPass = name => result.semantic_checks[name]?.status === "pass" || result.semantic_checks[name]?.status === "not_applicable";
     result.checks = { scale: semanticPass("scale") ? "pass" : "fail", material: semanticPass("material") ? "pass" : "fail", animation: semanticPass("animation") ? "pass" : "fail", collider: semanticPass("collider") ? "pass" : "fail" };
+    // Collision geometry is loaded and measured above, then hidden for the
+    // consumer capture just as the Blender authoring job hides it in previews.
+    for (const declaration of EXPECTATIONS.declarations.colliders) {
+      const collider = objects.get(declarationName(declaration));
+      if (collider) collider.visible = false;
+    }
     scene.add(gltf.scene); renderer.render(scene, camera); window.__loaderResult = result;
   }, undefined, (error) => { result.error = String(error); result.load_time_ms = performance.now(); result.semantic_checks = Object.fromEntries(["scale", "bounds", "orientation", "material", "attachments", "animation", "extensions", "collider", "cost"].map(name => [name, semanticResult("fail", "GLTFLoader load error")])); window.__loaderResult = result; });
 } catch (error) { result.error = String(error); window.__loaderResult = result; }
