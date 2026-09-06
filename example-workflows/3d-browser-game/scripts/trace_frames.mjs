@@ -26,6 +26,14 @@ const DEFAULT_TRACE_CATEGORIES = Object.freeze([
   "devtools.timeline", "disabled-by-default-devtools.timeline.frame", "disabled-by-default-devtools.timeline.layers",
 ]);
 const REQUIRED_CATEGORIES = new Set(DEFAULT_TRACE_CATEGORIES);
+const PERFORMANCE_THRESHOLDS = Object.freeze({
+  clean_frames_per_second: 56,
+  callbacks_per_second: 56,
+  callback_interval_ms: (1.1 * 1000) / 56,
+  callback_interval_compliance: 0.99,
+  dropped_partial_ratio: 0.01,
+  unexplained_stall_ms: 100,
+});
 
 function eventName(event) {
   return String(event?.name || event?.type || "").replace(/[^a-z0-9]/gi, "").toLowerCase();
@@ -312,9 +320,8 @@ function markCanvasSampleEvidence(frames, parsed) {
   if (parsed.format === "fixture") return;
   const changes = canvasChangeTimes(parsed);
   if (!changes.length) return;
-  // A sample is associated with at most one native frame. The tolerance is
-  // half of a 60 Hz frame interval; sparse samples therefore mark sparse
-  // frames instead of upgrading an entire interval to 60 Hz.
+  // A sample is associated with at most one native frame. Sparse samples
+  // therefore mark sparse frames instead of upgrading an entire interval.
   const toleranceMs = 9;
   const used = new Set();
   for (const change of changes) {
@@ -861,7 +868,7 @@ export function qualifyPerformance({cell, trace, callbacks = []}) {
   const failedSamples = sampledRows.filter(item => item.completion_status !== "complete" || item.error);
   if (failedSamples.length) failures.push(failure("readback-sample-failure", "/trace/canvas_samples", "every measured sample completes without an error or loss", failedSamples.length));
   const intervals = callback.slice(1).map((time, index) => time - callback[index]);
-  const intervalRatio = intervals.length ? intervals.filter(value => value <= 18.33).length / intervals.length : 0;
+  const intervalRatio = intervals.length ? intervals.filter(value => value <= PERFORMANCE_THRESHOLDS.callback_interval_ms).length / intervals.length : 0;
   const uniqueFlags = frames.filter(row => row.dropped || row.isPartial).length;
   const clean = targetFrames.filter(row => !row.idle && !row.dropped && !row.isPartial && row.draw);
   // Stall detection uses the native canvas-attributed frame cadence, while
@@ -871,12 +878,13 @@ export function qualifyPerformance({cell, trace, callbacks = []}) {
   const observedTargetFrames = frames.filter(row => row.attribution === "game-canvas" && !row.ambiguous);
   const targetGaps = observedTargetFrames.slice(1).map((row, index) => row.start_ms - observedTargetFrames[index].start_ms);
   const callbackGaps = callback.slice(1).map((time, index) => time - callback[index]);
-  const unexplainedStall = [...targetGaps, ...callbackGaps].some(value => value > 100);
+  const unexplainedStall = [...targetGaps, ...callbackGaps].some(value => value > PERFORMANCE_THRESHOLDS.unexplained_stall_ms);
   const metrics = {
     window_start_ms: startMs, window_end_ms: endMs, duration_seconds: T, N: frames.length, C: clean.length,
     I: frames.filter(row => row.idle).length, D: uniqueFlags, callbacks: callback.length, callback_rate_hz: callback.length / T,
     callback_interval_compliance: intervalRatio, max_callback_interval_ms: intervals.length ? Math.max(...intervals) : null,
     unexplained_stall: unexplainedStall, attribution: targetFrames.length ? "game-canvas" : "unverified", fps_claim: false,
+    thresholds: PERFORMANCE_THRESHOLDS,
   };
   const mode = cell.mode || cell.surface || "animation";
   if (mode === "static" || mode === "static-idle") {
@@ -884,11 +892,19 @@ export function qualifyPerformance({cell, trace, callbacks = []}) {
     return {status, verdict: status === "qualified" ? "qualified" : "performance: unverified", mode: "static", metrics, failures};
   }
   if (metrics.N <= 0) failures.push(failure("no-frames", "/metrics/N", "> 0", metrics.N));
-  if (ratio(metrics.C, T) < 59) failures.push(failure("canvas-frame-floor", "/metrics/C", "C/T >= 59", `${metrics.C}/${T}`));
-  if (ratio(metrics.D, metrics.N) > 0.01) failures.push(failure("dropped-partial-floor", "/metrics/D", "D/N <= 0.01", `${metrics.D}/${metrics.N}`));
-  if (metrics.callback_rate_hz < 59) failures.push(failure("callback-rate-floor", "/metrics/callback_rate_hz", ">= 59", metrics.callback_rate_hz));
-  if (intervalRatio < 0.99) failures.push(failure("callback-interval-floor", "/metrics/callback_interval_compliance", ">= 0.99", intervalRatio));
-  if (unexplainedStall) failures.push(failure("unexplained-stall", "/metrics/unexplained_stall", false, true));
+  if (ratio(metrics.C, T) < PERFORMANCE_THRESHOLDS.clean_frames_per_second) {
+    failures.push(failure("canvas-frame-floor", "/metrics/C", `C/T >= ${PERFORMANCE_THRESHOLDS.clean_frames_per_second}`, `${metrics.C}/${T}`));
+  }
+  if (ratio(metrics.D, metrics.N) > PERFORMANCE_THRESHOLDS.dropped_partial_ratio) {
+    failures.push(failure("dropped-partial-floor", "/metrics/D", `D/N <= ${PERFORMANCE_THRESHOLDS.dropped_partial_ratio}`, `${metrics.D}/${metrics.N}`));
+  }
+  if (metrics.callback_rate_hz < PERFORMANCE_THRESHOLDS.callbacks_per_second) {
+    failures.push(failure("callback-rate-floor", "/metrics/callback_rate_hz", `>= ${PERFORMANCE_THRESHOLDS.callbacks_per_second}`, metrics.callback_rate_hz));
+  }
+  if (intervalRatio < PERFORMANCE_THRESHOLDS.callback_interval_compliance) {
+    failures.push(failure("callback-interval-floor", "/metrics/callback_interval_compliance", `>= ${PERFORMANCE_THRESHOLDS.callback_interval_compliance}`, intervalRatio));
+  }
+  if (unexplainedStall) failures.push(failure("unexplained-stall", "/metrics/unexplained_stall", `no gap > ${PERFORMANCE_THRESHOLDS.unexplained_stall_ms} ms`, true));
   const status = failures.length ? "unverified" : "qualified";
   metrics.fps_claim = status === "qualified";
   return {status, verdict: status === "qualified" ? "qualified" : "performance: unverified", mode: "animation", metrics, failures};
