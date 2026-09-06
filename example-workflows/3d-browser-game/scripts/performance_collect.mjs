@@ -364,6 +364,8 @@ async function liveTrace(cell) {
               for (let index = 0; index < maxPending; index += 1) {
                 const buffer = gl.createBuffer();
                 if (!buffer) throw new Error("WebGL2 could not allocate a pixel-pack buffer");
+                gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer);
+                gl.bufferData(gl.PIXEL_PACK_BUFFER, target.coverage.bytes_per_sample, gl.STREAM_READ);
                 this.available.push(buffer);
               }
             });
@@ -502,7 +504,6 @@ async function liveTrace(cell) {
               gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
               gl.readBuffer(gl.BACK);
               gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
-              gl.bufferData(gl.PIXEL_PACK_BUFFER, target.coverage.bytes_per_sample, gl.STREAM_READ);
               gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
               item.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
               if (!item.sync) throw new Error("WebGL2 could not create a readback fence");
