@@ -197,7 +197,7 @@ at the earliest affected gate.
 | 0. Deep research | Complete brief, amendments, workspace, baseline | Parallel dated research packets, prompt audit, capability inventory, and open-question ledger. Research may continue on supplied facts while a user-only gap parks only dependent decisions. |
 | 1. Core concept design | Stage 0 identities and independent packets | Detailed fun hypotheses, rules/state model, controls/camera, progression/content plan, session test, traceability matrix, rubric, capture/performance matrices, and frozen core contract. No production art prerequisite. |
 | 2. Fundamental playable game | Frozen core contract | Three.js playable increments I0–I2 with primitives, graybox, basic functional placeholders, normal input, readable feedback, scoped QA, and adaptive play. A tiny technical export/import probe may answer feasibility; it is not production art. |
-| 3. QA and core-gameplay gate | Fixed core candidate and complete core evidence | Separate QA, at least two maker-independent play contexts, complete core captures, demanding independent verdict, and repeated judge/fix/QA/play/re-judge successor batches until core acceptance, redesign, unverified, or a real stop. |
+| 3. QA and core-gameplay gate | Fixed core candidate and complete core evidence | Separate QA, at least two maker-independent play contexts, complete core captures, and a demanding independent verdict, with repeated judge/fix/QA/play/re-judge successor batches until core acceptance or a real stop; `redesign` routes to Stage 1 with a new concept revision, named invalidations, and a new core candidate, while `unverified` routes to missing-evidence acquisition or a capable execution context. |
 | 4. Concept art and production assets | Accepted core identity and frozen baseline | Inspected GPT concept-art set, post-core Blender source/GLB batches, closed manifests, and integrated production candidate. Missing image or Blender capability parks only dependent work. |
 | 5. Integration QA and whole-game gate | Fixed integrated candidate and final matrices | Production build, asset/runtime checks, full adaptive play and captures, declared performance cells, demanding whole-game verdict, and repeated repair successor batches until acceptance or a real stop. |
 | 6. Outside close and resume | Joined fixed revision, returned children, verdict ledger | Outside probe, exact artifact identity, `gaps: []` only on acceptance, or best fixed revision plus unresolved findings and resumable state. |
@@ -431,6 +431,14 @@ successor batch with the complete ledger and fixed criteria. It never creates
 a recursive private workflow cycle, silently relaxes a threshold, resets the
 complaint ledger, or asks permission merely to open an already-authorized
 successor.
+
+A `redesign` disposition routes to Stage 1 with a new concept revision, named
+invalidations, and a new core candidate. An `unverified` disposition continues
+through missing-evidence acquisition or a capable execution context. Neither
+disposition is an independent terminal reason: either becomes a non-success
+return only when its recorded cause also meets one of the enumerated real stop
+conditions, preserving the best fixed revision, unresolved ledger, and exact
+resume state.
 
 Stagnation, reopened complaints, or oscillation trigger independent diagnosis
 and a materially changed repair or design plan. The diagnosis preserves the
