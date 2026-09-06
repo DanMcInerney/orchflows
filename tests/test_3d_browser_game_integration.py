@@ -198,8 +198,29 @@ class GateFixture:
         cell.update({"id": cell_id, "scenario_id": scenario, "artifact_commit": artifact_commit, "duration_seconds": 60, "run_id": f"{cell_id}-run-{run_number}"})
         cell["window"] = {"start_ms": 0, "end_ms": 60000}
         cell["game_canvas"] = {"layer_ids": ["canvas-layer"]}
+        sampling = {
+            "explicit": True, "coordinate_space": "viewport",
+            "requested_region": {"x": 0, "y": 0, "width": 1, "height": 1},
+            "resolved_region": {"x": 0, "y": 719, "width": 1, "height": 1},
+            "drawing_buffer": {"width": 1280, "height": 720},
+            "viewport": {"width": 1280, "height": 720}, "dpr": 1,
+            "sample_pixels": 1, "bytes_per_sample": 4,
+            "origin": "viewport-top-left-to-webgl-bottom-left",
+        }
+        cell["sampling"] = sampling
         measurement = {
             "scenario_id": scenario, "observer": "render-callback-post-callback", "presentation": "render-callback-post-callback", "preserve_drawing_buffer": False,
+            "sampling": sampling,
+            "lifecycle": {
+                "status": "observed", "scenario_id": scenario, "seed": 1,
+                "configured_url": "http://127.0.0.1:3000/", "viewport": {"width": 1280, "height": 720}, "dpr": 1,
+                "start": {"method": "page.goto", "observed": True},
+                "reset": {"method": "page.reload", "observed": True},
+                "phase_transitions": [
+                    {"phase": "control", "start_observed": True},
+                    {"phase": "instrumented", "start_observed": True},
+                ],
+            },
             "warmup": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60},
             "control": {"status": "observed", "requested_ms": 60000, "observed_ms": 60000, "callbacks": 3600, "callback_rate_hz": 60},
             "instrumented": {"status": "observed", "requested_ms": 60000, "observed_ms": 60000, "callbacks": 3600, "callback_rate_hz": 60, "samples": 3600, "readback_errors": 0},
