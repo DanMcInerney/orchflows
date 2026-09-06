@@ -4,7 +4,7 @@ description: Build a 3D Three.js browser game through research, playable core ga
 disable-model-invocation: true
 ---
 
-Require: one complete `brief`, a git-backed `workspace`, and explicit
+Require: one `brief`, a git-backed `workspace`, and explicit
 amendments. The brief and amendments are product authority.
 
 Open one frame and retain its returned frame identity:
