@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -29,6 +30,16 @@ try:  # in-repo; the installed copy sits flat beside doclint.py
     from scripts import console
 except ImportError:  # pragma: no cover - the installed copy's path
     import console
+
+try:
+    # The checkout's validator owns this directory policy. The installed
+    # flat script has no ``tools`` package, so retain the same closed policy
+    # for standalone use there.
+    from tools.validate_support.common import OWNED_CONTENT_IGNORES
+except ImportError:  # pragma: no cover - installed flat script path
+    OWNED_CONTENT_IGNORES = frozenset({
+        ".git", "__pycache__", "node_modules", ".venv", "venv",
+    })
 
 LINK_RE = re.compile(r"\]\(([^)]+)\)")
 EXTERNAL_PREFIXES = ("http://", "https://", "mailto:")
@@ -56,13 +67,22 @@ def read(path: Path) -> str:
 
 
 def markdown_files(root: Path) -> list:
-    """Every ``*.md`` under ``root``, minus dot-directories."""
+    """Every authored ``*.md`` under ``root`` in deterministic order."""
 
-    return sorted(
-        path
-        for path in Path(root).rglob("*.md")
-        if not any(part.startswith(".") for part in path.relative_to(root).parts)
-    )
+    root = Path(root)
+    found = []
+    for current, directories, files in os.walk(root, topdown=True):
+        directories[:] = sorted(
+            name
+            for name in directories
+            if name not in OWNED_CONTENT_IGNORES and not name.startswith(".")
+        )
+        found.extend(
+            Path(current) / name
+            for name in sorted(files)
+            if name.lower().endswith(".md")
+        )
+    return sorted(found)
 
 
 def resolve_link(source: Path, target: str, root=None):

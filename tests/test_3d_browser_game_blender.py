@@ -20,6 +20,8 @@ from pathlib import Path
 from unittest import mock
 
 
+# This test resolves its repository-owned fixture and package paths from the
+# checkout root; the climb belongs to this test owner, not a wildcard exemption.
 HERE = Path(__file__).resolve().parents[1]
 RUNNER_PATH = HERE / "example-workflows" / "3d-browser-game" / "scripts" / "blender_job_runner.py"
 SPEC = importlib.util.spec_from_file_location("blender_job_runner_test_module", RUNNER_PATH)

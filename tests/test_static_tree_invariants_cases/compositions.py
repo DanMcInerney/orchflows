@@ -1,4 +1,5 @@
 """Static invariants owned by the library's workflow skills."""
+import re
 import unittest
 
 from scripts.tickets_registry import CALLABLE_EXECUTORS, SUPERSEDED_EXECUTORS
@@ -8,6 +9,7 @@ from ._support import (
     LINK_RE,
     WORKFLOW_FILE,
     split_document,
+    validate,
     workflow_directories,
 )
 
@@ -17,7 +19,7 @@ class TestCompositionLinks(unittest.TestCase):
 
     def test_every_composition_link_resolves(self):
         checked = 0
-        for path in sorted(COMPOSITIONS.rglob("*.md")):
+        for path in validate.owned_markdown_files(COMPOSITIONS):
             for target in LINK_RE.findall(path.read_text(encoding="utf-8")):
                 if target.startswith(("http://", "https://", "#", "mailto:")):
                     continue
@@ -35,7 +37,7 @@ class TestWorkflowSkills(unittest.TestCase):
     """Every library workflow is one manual-only skill calling callables."""
 
     WORKFLOWS = (
-        "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
+        "3d-browser-game", "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
         "self-improve", "skill-tournament", "super-research",
     )
 
@@ -73,8 +75,18 @@ class TestWorkflowSkills(unittest.TestCase):
                 body = (directory / WORKFLOW_FILE).read_text(encoding="utf-8")
                 self.assertIn("tickets.py frame-open", body)
                 self.assertIn("tickets.py frame-close", body)
+                commands = re.findall(
+                    r"(?m)^\s*tickets\.py\s+frame-open\s+<run>\s+([^\n]+)",
+                    body,
+                )
+                has_nested_frame = any(
+                    parts[index:index + 2] == ["--parent", "<frame>"]
+                    for command in commands
+                    for parts in [command.split()]
+                    for index in range(len(parts) - 1)
+                )
                 self.assertTrue(
-                    "--standard " in body or "frame-open <run> --parent" in body,
+                    "--standard " in body or has_nested_frame,
                     f"{directory.name} neither calls a callable nor nests a frame",
                 )
                 # No retired callable survives the conversion: every name

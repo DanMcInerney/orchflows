@@ -13,23 +13,21 @@ Read the journal, freeze the evidence index, and judge the joined candidate:
 
     tickets.py judge <run> --standard threejs-browser-game --standard browser-game-3d-asset --standard browser-game-interface --standard browser-game-playtest --parent <frame> --artifacts <integrated-artifact> --goal-file <final-judge-goal> --isolation required
 
-The final gate requires a browser-served production build that starts without
-developer tools, documented controls, every prompt-derived mechanic and state,
-approved production assets with closed provenance, no blocking console,
-network, or load errors, adaptive play from at least two independent
-contexts, complete boot/entry/combat/progression/boss or terminal/win-loss/
-restart/re-entry captures, and every declared performance cell. It scores
+The final gate requires a browser-served production build without developer
+tools, documented controls, every prompt-derived mechanic and state, approved
+assets with closed provenance, no blocking console, network, or load errors,
+adaptive play from at least two independent contexts, complete
+boot/entry/combat/progression/boss or terminal/win-loss/restart/re-entry
+captures, and every declared performance cell. It scores
 presentation, play, prompt fidelity, and performance only from indexed
 evidence. Static surfaces report counts without an FPS claim.
 
 For a blocking verdict, relay its complete `findings:` line to one bounded
-repair and repeat affected QA, play, capture, and judgment. A quality-cycle
-batch has a local bound of two repair/re-judge rounds. If the first re-judge
-still blocks, the parent opens the one automatic successor round with the
-complete append-only complaint ledger, fixed acceptance criteria, and the
-best artifact identity; it does not ask permission for this already-authorized
-successor. A second blocked re-judge ends that batch and routes the recorded
-disposition through the parent:
+repair and repeat affected QA, play, capture, and judgment. A batch permits
+two repair/re-judge rounds. If re-judge still blocks, the parent opens one
+automatic successor with the complete append-only complaint ledger, fixed
+criteria, and best artifact identity; permission is unnecessary. A second
+blocked re-judge ends the batch and routes its disposition through the parent:
 
 - `fix` opens the next bounded repair with only accepted complaints and their
   regression checks;
@@ -44,10 +42,10 @@ exact resume state before continuing or stopping.
     tickets.py do <run> --standard threejs-browser-game --parent <frame> --goal-file <final-repair-goal> --isolation required
     tickets.py judge <run> --standard threejs-browser-game --standard browser-game-3d-asset --standard browser-game-interface --standard browser-game-playtest --parent <frame> --artifacts <repaired-artifact> --goal-file <final-rejudge-goal> --isolation required
 
-Keep complaint IDs append-only, diagnose stagnation or oscillation with a
-changed strategy, and preserve the best fixed revision plus unresolved
-findings and resume state at a real external or budget limit. A performance
-miss repeats the identical cell after one causal repair. An evidence loss,
+Keep complaint IDs append-only; diagnose stagnation or oscillation with a
+changed strategy; preserve the best fixed revision, unresolved findings, and
+resume state at an external or budget limit. A performance miss repeats the
+identical cell after one causal repair. An evidence loss,
 ambiguous canvas attribution, trace mismatch, or gameplay-changing asset is
 `unverified` until its boundary is repaired.
 

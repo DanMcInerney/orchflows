@@ -1,6 +1,25 @@
 {
   "schema": "orchflows.workflow-summary.v1",
   "workflows": {
+    "3d-browser-game": {
+      "nodes": [
+        {"id": "record", "label": "Establish the program record"},
+        {"id": "discovery", "label": "Resolve empirical questions"},
+        {"id": "playable-increment", "label": "Build the playable core"},
+        {"id": "gameplay-gate", "label": "Judge the fixed core"},
+        {"id": "blender-asset", "label": "Produce the asset batch"},
+        {"id": "final-acceptance", "label": "Judge final acceptance"},
+        {"id": "outside-probe", "label": "Probe the joined revision"}
+      ],
+      "edges": [
+        {"source": "record", "target": "discovery", "kind": "sequence"},
+        {"source": "discovery", "target": "playable-increment", "kind": "sequence"},
+        {"source": "playable-increment", "target": "gameplay-gate", "kind": "sequence"},
+        {"source": "gameplay-gate", "target": "blender-asset", "kind": "sequence"},
+        {"source": "blender-asset", "target": "final-acceptance", "kind": "sequence"},
+        {"source": "final-acceptance", "target": "outside-probe", "kind": "sequence"}
+      ]
+    },
     "bakeoff": {
       "nodes": [
         {"id": "label", "label": "Label the candidates"},

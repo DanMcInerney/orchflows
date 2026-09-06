@@ -24,6 +24,7 @@ CANONICAL_WORKFLOW_IDS = frozenset({
     "browser-game",
     "checkpointed-build",
     "drift-canary",
+    "3d-browser-game",
     "evolve",
     "orch-do",
     "orch-judge",

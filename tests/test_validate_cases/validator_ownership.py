@@ -376,7 +376,7 @@ class FrictionLocationSyncTest(unittest.TestCase):
     # run that the copy is still the tree's stand-in.
     COPY_SKIPS = shutil.ignore_patterns(
         ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache",
-        "fixtures",
+        "fixtures", "orchflows-integration-*",
     )
     _copy = None
     _revisions = None

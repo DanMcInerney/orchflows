@@ -20,7 +20,7 @@ inventory. A successful handoff contains the `.blend` source, rendered
 previews, GLB export, asset manifest, hashes, zero-error Khronos validation,
 and a pinned production `GLTFLoader` scale/material/animation/collider probe.
 
-Judge the returned batch independently before integration:
+Have a separate judge assess the returned batch before integration:
 
     tickets.py judge <run> --standard browser-game-3d-asset --standard blender-game-asset --parent <frame> --artifacts <asset-artifact> --goal-file <asset-judge-goal> --isolation required
 
