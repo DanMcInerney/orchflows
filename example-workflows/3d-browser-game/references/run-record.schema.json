@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/run-record/v1.json",
+  "title": "3D browser-game run record",
+  "description": "Append-only index of authority, evidence, decisions, and resumable workflow state.",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "brief", "amendments", "workspace", "package", "tools", "decisions", "freezes", "increments", "jobs", "sessions", "captures", "cells", "verdicts", "complaints", "resume_cursor"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"}, "kind": {"const": "run-record"},
+    "id": {"$ref": "common.schema.json#/$defs/identity"}, "artifact_commit": {"$ref": "common.schema.json#/$defs/identity"},
+    "created_at": {"type": "string", "format": "date-time"}, "producer": {"$ref": "common.schema.json#/$defs/producer"},
+    "inputs": {"$ref": "common.schema.json#/$defs/inputs"}, "environment": {"$ref": "common.schema.json#/$defs/environment"},
+    "status": {"$ref": "common.schema.json#/$defs/status"}, "gaps": {"$ref": "common.schema.json#/$defs/gaps"}, "invalidates": {"$ref": "common.schema.json#/$defs/invalidates"},
+    "brief": {"$ref": "#/$defs/authority"}, "amendments": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/authority"}},
+    "workspace": {"$ref": "#/$defs/workspace"}, "package": {"$ref": "#/$defs/package"},
+    "tools": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/tool"}},
+    "decisions": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/decision"}},
+    "freezes": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/freeze"}},
+    "increments": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/work_item"}}, "jobs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/work_item"}},
+    "sessions": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/work_item"}}, "captures": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/work_item"}},
+    "cells": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/work_item"}}, "verdicts": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/work_item"}},
+    "complaints": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/complaint"}}, "resume_cursor": {"$ref": "#/$defs/resume"}
+  },
+  "$defs": {
+    "authority": {"type": "object", "additionalProperties": false, "required": ["identity", "revision", "sha256"], "properties": {"identity": {"$ref": "common.schema.json#/$defs/identity"}, "revision": {"$ref": "common.schema.json#/$defs/identity"}, "sha256": {"$ref": "common.schema.json#/$defs/sha256"}}},
+    "workspace": {"type": "object", "additionalProperties": false, "required": ["repository", "baseline_commit", "working_tree"], "properties": {"repository": {"$ref": "common.schema.json#/$defs/identity"}, "baseline_commit": {"$ref": "common.schema.json#/$defs/identity"}, "working_tree": {"enum": ["clean", "dirty"]}}},
+    "package": {"type": "object", "additionalProperties": false, "required": ["name", "digest"], "properties": {"name": {"const": "3d-browser-game"}, "digest": {"$ref": "common.schema.json#/$defs/sha256"}}},
+    "tool": {"type": "object", "additionalProperties": false, "required": ["name", "version", "identity"], "properties": {"name": {"$ref": "common.schema.json#/$defs/identity"}, "version": {"$ref": "common.schema.json#/$defs/nonEmptyString"}, "identity": {"$ref": "common.schema.json#/$defs/sha256"}, "path": {"$ref": "common.schema.json#/$defs/nonEmptyString"}}},
+    "decision": {"type": "object", "additionalProperties": false, "required": ["id", "subject", "owner", "evidence", "confidence", "invalidation_trigger"], "properties": {"id": {"$ref": "common.schema.json#/$defs/identity"}, "subject": {"$ref": "common.schema.json#/$defs/nonEmptyString"}, "owner": {"$ref": "common.schema.json#/$defs/identity"}, "evidence": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/identity"}}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}, "invalidation_trigger": {"$ref": "common.schema.json#/$defs/nonEmptyString"}}},
+    "freeze": {"type": "object", "additionalProperties": false, "required": ["id", "subject", "revision", "evidence", "invalidates_on_change"], "properties": {"id": {"$ref": "common.schema.json#/$defs/identity"}, "subject": {"$ref": "common.schema.json#/$defs/nonEmptyString"}, "revision": {"$ref": "common.schema.json#/$defs/identity"}, "evidence": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/identity"}}, "invalidates_on_change": {"type": "boolean"}}},
+    "work_item": {"type": "object", "additionalProperties": false, "required": ["id", "artifact_commit", "status", "evidence"], "properties": {"id": {"$ref": "common.schema.json#/$defs/identity"}, "artifact_commit": {"$ref": "common.schema.json#/$defs/identity"}, "status": {"enum": ["planned", "opened", "complete", "failed", "unverified"]}, "evidence": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/identity"}}}},
+    "complaint": {"type": "object", "additionalProperties": false, "required": ["id", "seam", "kind", "status", "evidence", "cause"], "properties": {"id": {"$ref": "common.schema.json#/$defs/identity"}, "seam": {"$ref": "common.schema.json#/$defs/nonEmptyString"}, "kind": {"enum": ["defect", "unverified", "preference"]}, "status": {"enum": ["open", "accepted", "fixed", "rejected", "superseded"]}, "evidence": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/identity"}}, "cause": {"$ref": "common.schema.json#/$defs/nonEmptyString"}}},
+    "resume": {"type": "object", "additionalProperties": false, "required": ["stage", "cursor", "next_action", "open_findings"], "properties": {"stage": {"$ref": "common.schema.json#/$defs/nonEmptyString"}, "cursor": {"$ref": "common.schema.json#/$defs/identity"}, "next_action": {"$ref": "common.schema.json#/$defs/nonEmptyString"}, "open_findings": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/identity"}}}}
+  }
+}

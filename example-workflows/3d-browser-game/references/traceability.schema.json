@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/traceability/v1.json",
+  "title": "3D browser-game prompt traceability",
+  "description": "Immutable rows connecting each prompt promise to ordinary-input evidence and both gates.",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "rows"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"}, "kind": {"const": "traceability"}, "id": {"$ref": "common.schema.json#/$defs/identity"}, "artifact_commit": {"$ref": "common.schema.json#/$defs/identity"},
+    "created_at": {"type": "string", "format": "date-time"}, "producer": {"$ref": "common.schema.json#/$defs/producer"}, "inputs": {"$ref": "common.schema.json#/$defs/inputs"}, "environment": {"$ref": "common.schema.json#/$defs/environment"},
+    "status": {"$ref": "common.schema.json#/$defs/status"}, "gaps": {"$ref": "common.schema.json#/$defs/gaps"}, "invalidates": {"$ref": "common.schema.json#/$defs/invalidates"}, "rows": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/row"}}
+  },
+  "$defs": {
+    "row": {"type": "object", "additionalProperties": false, "required": ["prompt_promise", "amendment_identity", "requirement", "playable_evidence_ids", "normal_input_path", "core_gate_verdict", "final_gate_verdict", "owner", "invalidation_trigger"], "properties": {
+      "prompt_promise": {"type": "object", "additionalProperties": false, "required": ["identity", "text"], "properties": {"identity": {"$ref": "common.schema.json#/$defs/identity"}, "text": {"$ref": "common.schema.json#/$defs/nonEmptyString"}}},
+      "amendment_identity": {"oneOf": [{"$ref": "common.schema.json#/$defs/identity"}, {"type": "null"}]},
+      "requirement": {"type": "object", "additionalProperties": false, "required": ["identity", "kind", "text"], "properties": {"identity": {"$ref": "common.schema.json#/$defs/identity"}, "kind": {"enum": ["rule", "state", "content", "visual", "performance"]}, "text": {"$ref": "common.schema.json#/$defs/nonEmptyString"}}},
+      "playable_evidence_ids": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/identity"}}, "normal_input_path": {"$ref": "common.schema.json#/$defs/nonEmptyString"},
+      "core_gate_verdict": {"oneOf": [{"$ref": "common.schema.json#/$defs/identity"}, {"type": "null"}]}, "final_gate_verdict": {"oneOf": [{"$ref": "common.schema.json#/$defs/identity"}, {"type": "null"}]},
+      "owner": {"$ref": "common.schema.json#/$defs/identity"}, "invalidation_trigger": {"$ref": "common.schema.json#/$defs/nonEmptyString"}
+    }}
+  }
+}
