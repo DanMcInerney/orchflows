@@ -158,7 +158,7 @@ async function liveTrace(cell) {
     if (paddingMs < 0 || paddingMs > 10000) throw inputError("cell.padding_ms must be between 0 and 10000", "/cell/padding_ms");
     const window = { start_ms: clock.monotonicMs + paddingMs, end_ms: clock.monotonicMs + paddingMs + durationMs };
     const samplerIntervalMs = Number.isFinite(cell.canvas_sampling_interval_ms) ? cell.canvas_sampling_interval_ms : 250;
-    if (samplerIntervalMs < 50 || samplerIntervalMs > 5000) throw inputError("cell.canvas_sampling_interval_ms must be between 50 and 5000", "/cell/canvas_sampling_interval_ms");
+    if (samplerIntervalMs < 8 || samplerIntervalMs > 5000) throw inputError("cell.canvas_sampling_interval_ms must be between 8 and 5000", "/cell/canvas_sampling_interval_ms");
     const sampler = await installCanvasSampler(page, cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas", samplerIntervalMs);
     const backend = await canvasBackend(page, cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas");
     const wallStart = Date.now();
