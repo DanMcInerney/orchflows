@@ -4,7 +4,14 @@ These small records exercise the native frame model at its seams. `continuous-an
 is the positive animation case. `deliberate-stall.json` and
 `canvas-stall-other-layer.json` keep callback or other-layer activity alive while
 the game canvas stops changing. `static-idle.json` demonstrates the static path,
-which reports frame counts without a 59 Hz claim.
+which reports frame counts without an animation-rate claim.
+
+The accepted animation minimum is 56 clean game-canvas frames per second and
+56 requestAnimationFrame callbacks per second. At least 99% of callback
+intervals must be at or below 19.642857 ms (1.1 times 1000/56), with no
+unexplained stall above 100 ms and at most 1% dropped or partial frames. A
+60 fps result remains an aspirational refresh-rate target; it is not the
+accepted minimum for this amendment.
 
 Live cells use the same model with a host-owned render-callback observer. The
 observer runs after each application `requestAnimationFrame` callback and

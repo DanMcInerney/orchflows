@@ -564,6 +564,17 @@ affected gate passed.
 
 ## Real presented-frame performance
 
+**User amendment (2026-09-06):** The user authorized “56 fps is fine” for
+this run. This supersedes the prior 59 Hz acceptance floor for this workflow.
+The accepted animation minimum is 56 clean game-canvas frames per second and
+56 `requestAnimationFrame` callbacks per second. The corresponding callback
+interval budget is 19.642857 ms (`1.1 * 1000 / 56`), with at least 99% of
+intervals inside that budget. The 1% dropped-or-partial limit, 100 ms
+unexplained-stall limit, foreground guard, normal clocks, native attribution,
+PBO/readback, loss, hash, schema, and lineage checks remain unchanged. Any
+“60 fps” wording below is aspirational or measurement-cell nomenclature and
+does not raise the accepted 56 minimum.
+
 “60 fps” is a measurement cell. Each cell binds device/CPU/GPU/RAM, OS and
 power mode, browser/version, renderer/backend, display refresh, viewport/DPR,
 quality settings, commit, scenario/seed, warm/cold state, duration,
@@ -572,17 +583,18 @@ rule. The core gate proves representative active-play and worst-core-scenario
 cells; the final gate adds every production stress and full-session cell.
 
 A stationary menu/pause surface must stay stable, error-free, and responsive to
-a marked ordinary-input transition; Chrome idle frames receive no 59 fps
+a marked ordinary-input transition; Chrome idle frames receive no 56 fps
 threshold unless continuous menu motion is promised. Required animation cells
 use brief-derived motion or a visible sentinel rendered through the game
 canvas. The default 60 Hz contract uses three warm 60-second runs per bounded
 animation/stress scenario after warm-up.
 
 For an animation run, let `T` be the complete marked foreground normal-clock
-window in seconds. `requestAnimationFrame` evidence must average at least 59
+window in seconds. `requestAnimationFrame` evidence must average at least 56
 callbacks per second over `T`, place at least 99% of callback intervals at or
-below 18.33 ms, and contain no unexplained stall above 100 ms. Callback cadence
-is necessary but does not prove compositor presentation.
+below 19.642857 ms (`1.1 * 1000 / 56`), and contain no unexplained stall above
+100 ms. Callback cadence is necessary but does not prove compositor
+presentation.
 
 **Current fact:** Chrome's protocol exposes `Tracing.start` with `traceConfig`
 and `ReturnAsStream`, `Tracing.end`, and `tracingComplete` with a stream and
@@ -613,7 +625,7 @@ For a qualified animation window, `N` counts unique rows starting in
 `[start, end)`; `C` counts rows attributed to the game canvas and free of
 `idle`, `dropped`, or `isPartial`; `I` counts idle rows; and `D` counts rows
 with `dropped OR isPartial`, once when both. Passing requires `N > 0`,
-`C / T >= 59`, `D / N <= 1%`, and the callback thresholds. Static windows
+`C / T >= 56`, `D / N <= 1%`, and the callback thresholds. Static windows
 report `N`, `I`, and flags without this denominator. Callback and clean-frame
 thresholds must agree on scenario, seed, markers, duration, and artifact.
 Fake clocks, background tabs, throttling, null renderers, fast-forward, and

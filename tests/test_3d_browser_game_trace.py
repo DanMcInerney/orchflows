@@ -26,7 +26,7 @@ def node(expression):
         )
 
 
-def native_trace(stalled=False):
+def native_trace(stalled=False, fps=60):
     coverage = {
         "explicit": True,
         "coordinate_space": "drawing-buffer",
@@ -40,8 +40,8 @@ def native_trace(stalled=False):
         "origin": "webgl-bottom-left",
     }
     events = []
-    for index in range(60):
-        time = index * (1000 / 60)
+    for index in range(fps):
+        time = index * (1000 / fps)
         events.append({
             "name": "BeginFrame", "ts": time * 1000, "pid": 7, "tid": 8,
             "args": {"frameSeqId": index + 1, "layerTreeId": 2},
@@ -73,36 +73,37 @@ def native_trace(stalled=False):
             "sampling": coverage,
             "readback": {"method": "webgl2.pixel-pack-buffer+fence-sync", "asynchronous": True,
                           "api": ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
-                          "max_pending": 4, "allocated_buffers": 4, "queued": 60, "completed": 60,
+                          "max_pending": 4, "allocated_buffers": 4, "queued": fps, "completed": fps,
                           "lost": 0, "errors": 0, "context_losses": 0, "poll_count": 60,
                           "pending_at_cleanup": 0, "cleanup_observed": True,
                           "queue_duration_ms": 1, "wait_duration_ms": 1, "copy_duration_ms": 1, "poll_duration_ms": 1},
-            "measurement_perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 60, "instrumented_callbacks": 60, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "samples": 60, "readback_errors": 0},
+            "measurement_perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": fps, "instrumented_callbacks": fps, "control_callback_rate_hz": fps, "instrumented_callback_rate_hz": fps, "callback_rate_delta_hz": 0, "samples": fps, "readback_errors": 0},
         },
         "measurement": {
             "scenario_id": "native-test", "observer": "render-callback-post-callback",
             "presentation": "render-callback-post-callback", "preserve_drawing_buffer": False,
             "sampling": coverage,
             "lifecycle": {"status": "observed", "scenario_id": "native-test", "seed": 7, "configured_url": "http://127.0.0.1/game", "reset": {"method": "page.reload", "observed": True}, "phase_transitions": [{"phase": "control", "start_observed": True}, {"phase": "instrumented", "start_observed": True}]},
-            "warmup": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60},
-            "control": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60},
-            "instrumented": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": 60, "callback_rate_hz": 60, "samples": 60, "readback_errors": 0, "sample_duration_ms": {"count": 60, "total_ms": 1.2, "max_ms": 0.1, "p99_ms": 0.1}},
-            "perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": 60, "instrumented_callbacks": 60, "control_callback_rate_hz": 60, "instrumented_callback_rate_hz": 60, "callback_rate_delta_hz": 0, "samples": 60, "readback_errors": 0},
+            "warmup": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": fps, "callback_rate_hz": fps},
+            "control": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": fps, "callback_rate_hz": fps},
+            "instrumented": {"status": "observed", "requested_ms": 1000, "observed_ms": 1000, "callbacks": fps, "callback_rate_hz": fps, "samples": fps, "readback_errors": 0, "sample_duration_ms": {"count": fps, "total_ms": 1.2, "max_ms": 0.1, "p99_ms": 0.1}},
+            "perturbation": {"status": "observed", "basis": "control-vs-instrumented", "control_callbacks": fps, "instrumented_callbacks": fps, "control_callback_rate_hz": fps, "instrumented_callback_rate_hz": fps, "callback_rate_delta_hz": 0, "samples": fps, "readback_errors": 0},
         },
         "traceEvents": events,
-        "canvas_samples": ([{"timestamp_ms": index * (1000 / 60), "origin_timestamp_ms": index * (1000 / 60), "callback_index": index, "hash": f"frame-{index}", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}
-                             for index in range(61)]
+        "canvas_samples": ([{"timestamp_ms": -1, "origin_timestamp_ms": -1, "callback_index": 0, "hash": "before-window", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}]
+                            + [{"timestamp_ms": index * (1000 / fps), "origin_timestamp_ms": index * (1000 / fps), "callback_index": index, "hash": f"frame-{index}", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}
+                               for index in range(fps + 1)]
                             if not stalled else [{"timestamp_ms": 0, "origin_timestamp_ms": 0, "callback_index": 0, "hash": "a", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}, {"timestamp_ms": 200, "origin_timestamp_ms": 200, "callback_index": 1, "hash": "b", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}, {"timestamp_ms": 300, "origin_timestamp_ms": 300, "callback_index": 2, "hash": "b", "source": "render-callback-post-callback", "completion_status": "complete", "duration_ms": 0.1}]),
     }
 
 
 class NativeTraceTests(unittest.TestCase):
-    def qualify(self, trace):
+    def qualify(self, trace, fps=60):
         expression = (
             "import {qualifyPerformance} from " + json.dumps(TRACE_URI) + "; "
             "const t=" + json.dumps(trace) + "; "
             "const c={id:'native',artifact_commit:'git:x',mode:'animation',window:{start_ms:0,end_ms:1000},game_canvas:{canvas_selector:'#game'}}; "
-            "console.log(JSON.stringify(qualifyPerformance({cell:c,trace:t,callbacks:Array.from({length:60},(_,i)=>i*1000/60)})));"
+            "console.log(JSON.stringify(qualifyPerformance({cell:c,trace:t,callbacks:Array.from({length:" + str(fps) + "},(_,i)=>i*1000/" + str(fps) + ")})));"
         )
         result = node(expression)
         self.assertEqual(0, result.returncode, result.stderr)
@@ -116,6 +117,16 @@ class NativeTraceTests(unittest.TestCase):
         self.assertEqual("unverified", stalled["status"])
         self.assertIn("canvas-frame-floor", [item["code"] for item in stalled["failures"]])
 
+        boundary = self.qualify(native_trace(fps=56), fps=56)
+        self.assertEqual("qualified", boundary["status"])
+        self.assertEqual(56, boundary["metrics"]["C"])
+        self.assertEqual(56, boundary["metrics"]["callbacks"])
+        self.assertEqual(56, boundary["metrics"]["thresholds"]["clean_frames_per_second"])
+        below = self.qualify(native_trace(fps=55), fps=55)
+        self.assertEqual("unverified", below["status"])
+        self.assertIn("canvas-frame-floor", [item["code"] for item in below["failures"]])
+        self.assertIn("callback-rate-floor", [item["code"] for item in below["failures"]])
+
     def test_sparse_canvas_changes_do_not_upgrade_intervening_frames(self):
         trace = native_trace()
         trace["canvas_samples"] = [
@@ -124,7 +135,7 @@ class NativeTraceTests(unittest.TestCase):
         ]
         result = self.qualify(trace)
         self.assertEqual("unverified", result["status"])
-        self.assertLess(result["metrics"]["C"], 59)
+        self.assertLess(result["metrics"]["C"], 56)
         self.assertIn("canvas-frame-floor", [item["code"] for item in result["failures"]])
 
     def test_native_default_buffer_path_requires_observed_presentation_seam(self):
