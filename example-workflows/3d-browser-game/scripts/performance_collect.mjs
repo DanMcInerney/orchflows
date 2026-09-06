@@ -615,6 +615,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     const setupCommands = validateSetupCommands(cell);
     const initialSetup = await runSetup(page, canvas, setupCommands);
     const lifecycle = {
+      status: "observed",
       scenario_id: cell.scenario_id,
       seed: cell.seed ?? null,
       configured_url: cell.server.url,
@@ -738,9 +739,16 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
       rawStream: trace.rawStream,
       callbacks,
       window,
-      environment: { browser: type, browser_version: browser.version?.() || null, driver: cell.browser?.package || "playwright-core", renderer_backend: backend },
+      environment: {
+        browser: type,
+        browser_version: browser.version?.() || null,
+        driver: cell.browser?.package || "playwright-core",
+        renderer: backend.unmasked_renderer || backend.renderer || "unknown",
+        backend: backend.kind || "unknown",
+        tools: [],
+      },
       measurement,
-      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, measurement },
+      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, measurement },
     };
   } finally {
     await browser?.close().catch(() => {});
@@ -757,6 +765,7 @@ export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}
     ...cell,
     window: source.window,
     game_canvas: { ...(cell.game_canvas || {}), canvas_selector: cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas" },
+    ...(measurement.sampling ? {sampling: measurement.sampling} : {}),
   } : cell;
   let traceForResult = source.trace;
   if (source.rawStream && outDir) traceForResult = {...source.trace, raw_stream_path: "trace.raw.json"};
