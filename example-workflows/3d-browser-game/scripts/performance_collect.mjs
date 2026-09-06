@@ -29,9 +29,18 @@ function validateCell(cell) {
       && (!Number.isInteger(cell.readback.max_pending) || cell.readback.max_pending < 1 || cell.readback.max_pending > MAX_PENDING_READBACKS)) {
     throw inputError(`cell.readback.max_pending must be an integer between 1 and ${MAX_PENDING_READBACKS}`, "/cell/readback/max_pending");
   }
+  measurementMode(cell);
   samplingDeclaration(cell);
   validateSetupCommands(cell);
   return cell;
+}
+
+const DIAGNOSTIC_MODES = new Set(["combined", "trace-only", "readback-only"]);
+
+function measurementMode(cell) {
+  const mode = cell.diagnostic_mode || "combined";
+  if (!DIAGNOSTIC_MODES.has(mode)) throw inputError("cell.diagnostic_mode must be combined, trace-only, or readback-only", "/cell/diagnostic_mode");
+  return mode;
 }
 
 const SAMPLE_COORDINATE_SPACES = new Set(["drawing-buffer", "viewport"]);
@@ -129,7 +138,7 @@ function eventTimeMs(event) {
 }
 
 async function installCanvasSampler(page, selector, sampling, readbackOptions = {}) {
-  return page.evaluate(({canvasSelector, samplingDeclaration, maxPending}) => {
+  return page.evaluate(({canvasSelector, samplingDeclaration, maxPending, readback_enabled}) => {
     const observer = window.__orchPresentationObserver;
     const canvas = document.querySelector(canvasSelector);
     if (!observer) return {installed: false, error: "render-callback observer was not installed"};
@@ -179,6 +188,7 @@ async function installCanvasSampler(page, selector, sampling, readbackOptions = 
       coverage,
       gl,
       max_pending: Number.isInteger(maxPending) ? maxPending : 4,
+      readback_enabled: readback_enabled !== false,
       preserve_drawing_buffer: attributes?.preserveDrawingBuffer === true,
     };
     const configured = observer.configure(target);
@@ -194,8 +204,9 @@ async function installCanvasSampler(page, selector, sampling, readbackOptions = 
       preserve_drawing_buffer: target.preserve_drawing_buffer,
       sampling: coverage,
       readback: configured.readback,
+      readback_enabled: configured.readback_enabled !== false,
     };
-  }, {canvasSelector: selector, samplingDeclaration: sampling, maxPending: readbackOptions.max_pending});
+  }, {canvasSelector: selector, samplingDeclaration: sampling, maxPending: readbackOptions.max_pending, readback_enabled: readbackOptions.readback_enabled});
 }
 
 function phaseStats(callbacks, phase, startMs, endMs) {
@@ -576,7 +587,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
 
       const observer = {
         phase: "disabled", callbacks: [], samples: [], targets: [], gl: null,
-        max_pending: 4, pending: [], available: [], configured: false, poll_timer: null,
+        max_pending: 4, pending: [], available: [], configured: false, poll_timer: null, readback_enabled: true,
         readback: {
           method: READBACK_METHOD, asynchronous: true,
           api: ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
@@ -609,6 +620,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           }
           this.gl = gl;
           this.max_pending = maxPending;
+          this.readback_enabled = target.readback_enabled !== false;
           this.targets = [target];
           this.pending = [];
           this.available = [];
@@ -620,6 +632,10 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
             pending_at_cleanup: 0, cleanup_observed: false,
             queue_duration_ms: 0, wait_duration_ms: 0, copy_duration_ms: 0, poll_duration_ms: 0,
           };
+          if (!this.readback_enabled) {
+            this.configured = true;
+            return {installed: true, method: "diagnostic-readback-disabled", readback: null, readback_enabled: false};
+          }
           try {
             this.withState(gl, () => {
               for (let index = 0; index < maxPending; index += 1) {
@@ -758,6 +774,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           }, 0);
         },
         sample(target, callbackIndex, callbackTimestamp) {
+          if (!this.readback_enabled) return;
           const originTimestamp = Number.isFinite(callbackTimestamp) ? callbackTimestamp : performance.now();
           // Fence polling and CPU copy run as a task after the render-callback
           // task returns. A signaled fence may still make getBufferSubData
@@ -849,7 +866,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
           } : {method: "initial-getParameter+mutation-shadow", valid: false, error: "WebGL context was not tracked"};
           if (cleanupError) this.readback.errors += 1;
           this.readback.cleanup_observed = true;
-          return {...this.readback};
+          return this.readback_enabled ? {...this.readback} : null;
         },
       };
       const times = [];
@@ -875,6 +892,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     const client = await context.newCDPSession(page);
     await client.send("Performance.enable");
     const durationMs = cell.duration_ms || Math.round((cell.duration_seconds || 60) * 1000);
+    const diagnosticMode = measurementMode(cell);
     const paddingMs = Number.isFinite(cell.padding_ms) ? cell.padding_ms : 100;
     if (paddingMs < 0 || paddingMs > 10000) throw inputError("cell.padding_ms must be between 0 and 10000", "/cell/padding_ms");
     const controlDurationMs = Number.isFinite(cell.control_duration_ms) ? cell.control_duration_ms : durationMs;
@@ -884,7 +902,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     if (warmupDurationMs < 0) throw inputError("cell.warmup_duration_ms must not be negative", "/cell/warmup_duration_ms");
     const selector = cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas";
     const sampling = samplingForCell(cell);
-    const sampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending});
+    const sampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending, readback_enabled: diagnosticMode !== "trace-only"});
     if (!sampler.installed) throw capabilityError(sampler.error || "frozen sampling coverage could not be installed", "/cell/sampling");
     const wait = duration => new Promise(resolvePromise => setTimeout(resolvePromise, duration));
     const setupCommands = validateSetupCommands(cell);
@@ -926,7 +944,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     const resetSetup = await runSetup(page, resetCanvas, setupCommands);
     lifecycle.reset = {method: "page.reload", observed: true, from_url: resetFromUrl, to_url: page.url(), ready: true, elapsed_ms: Date.now() - resetStartedAt, ready_observation: resetReady, setup: resetSetup};
     lifecycle.phase_transitions.push({phase: "instrumented", method: "observed-render-callbacks-after-reset", start_observed: true, configured_duration_ms: durationMs});
-    const instrumentedSampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending});
+    const instrumentedSampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending, readback_enabled: diagnosticMode !== "trace-only"});
     if (!instrumentedSampler.installed) throw capabilityError(instrumentedSampler.error || "frozen sampling coverage could not be installed after reset", "/cell/sampling/reset");
     const warmupStartPage = await page.evaluate(() => performance.now());
     await page.evaluate(() => { window.__orchPresentationObserver.phase = "warmup"; });
@@ -937,7 +955,17 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     await page.evaluate(() => { window.__orchPresentationObserver.phase = "instrumented"; });
     const backend = await canvasBackend(page, cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas");
     const wallStart = Date.now();
-    const trace = await collectCDPTrace(instrumentedClient, { durationMs: durationMs + (2 * paddingMs), categories: cell.trace_categories, timeoutMs: cell.trace_timeout_ms || Math.max(120000, durationMs + (2 * paddingMs) + 60000) });
+    const traceCaptureEnabled = diagnosticMode !== "readback-only";
+  const trace = traceCaptureEnabled
+      ? await collectCDPTrace(instrumentedClient, { durationMs: durationMs + (2 * paddingMs), categories: cell.trace_categories, traceBufferSizeInKb: cell.trace_buffer_size_kb || 512 * 1024, recordMode: cell.trace_record_mode || "recordContinuously", timeoutMs: cell.trace_timeout_ms || Math.max(120000, durationMs + (2 * paddingMs) + 60000) })
+      : await (async () => {
+        const started = Date.now();
+        await wait(durationMs + (2 * paddingMs));
+        return {
+          format: "diagnostic-no-trace", traceEvents: [], completion: {disabled: true, reason: "readback-only diagnostic"},
+          raw_bytes: 0, transfer_mode: "disabled", categories: [], capture_duration_ms: Date.now() - started,
+        };
+      })();
     const observer = await page.evaluate(() => {
        const value = window.__orchPresentationObserver;
        const readback = value.flush();
@@ -960,7 +988,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     instrumented.samples = instrumentedSamples.length;
     instrumented.readback_errors = instrumentedSamples.filter(item => item.error).length;
     instrumented.sample_duration_ms = sampleDurationStats(instrumentedSamples);
-    instrumented.readback = observer.readback;
+    if (observer.readback) instrumented.readback = observer.readback;
     const measurement = {
       scenario_id: cell.scenario_id,
       observer: sampler.presentation,
@@ -983,7 +1011,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
         samples: instrumented.samples,
         readback_errors: instrumented.readback_errors,
         sample_duration_ms: instrumented.sample_duration_ms,
-        readback: observer.readback,
+        ...(observer.readback ? {readback: observer.readback} : {}),
       },
     };
     const wallEnd = Date.now();
@@ -991,7 +1019,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
     const parsed = {
       ...trace,
       canvas_samples: canvasSamples,
-      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, readback: observer.readback, state_shadow: observer.state_diagnostic, signal: "render-callback-post-callback; async WebGL2 readback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
+      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, readback: observer.readback, readback_enabled: instrumentedSampler.readback_enabled === true, diagnostic_mode: diagnosticMode, trace_capture_enabled: traceCaptureEnabled, state_shadow: observer.state_diagnostic, signal: "render-callback-post-callback; async WebGL2 readback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
       measurement,
       metadata: {
         clock_reconciled: true,
@@ -1024,7 +1052,7 @@ async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
         tools: [],
       },
       measurement,
-      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, state_shadow: observer.state_diagnostic, state_probe: observer.state_probe, measurement },
+      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, diagnostic_mode: diagnosticMode, trace_capture_enabled: traceCaptureEnabled, readback_enabled: instrumentedSampler.readback_enabled === true, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, state_shadow: observer.state_diagnostic, state_probe: observer.state_probe, measurement },
     };
   } finally {
     await browser?.close().catch(() => {});
