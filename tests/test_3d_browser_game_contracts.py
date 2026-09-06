@@ -16,6 +16,7 @@ SCHEMA_NAMES = (
     "traceability.schema.json",
     "evidence-index.schema.json",
     "gate-verdict.schema.json",
+    "performance-plan.schema.json",
 )
 HEADER = {
     "schema_version",
@@ -75,6 +76,8 @@ class ContractSchemaTests(unittest.TestCase):
                 document["kind"] = "traceability"
             elif name == "evidence-index.schema.json":
                 document["kind"] = "evidence-index"
+            elif name == "performance-plan.schema.json":
+                document["kind"] = "performance-plan"
             else:
                 document["kind"] = "gate-verdict"
             accepted, reason = declared_shape(schema, document)
@@ -93,6 +96,7 @@ class ContractSchemaTests(unittest.TestCase):
             "traceability.schema.json": "traceability",
             "evidence-index.schema.json": "evidence-index",
             "gate-verdict.schema.json": "gate-verdict",
+            "performance-plan.schema.json": "performance-plan",
         }
         for name, kind in expected.items():
             self.assertEqual(kind, load(name)["properties"]["kind"]["const"])

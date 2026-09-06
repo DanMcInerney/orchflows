@@ -92,9 +92,60 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
         self.assertIn('"code":"invalid-input"', result.stdout)
         self.assertIn('"pointer":"/classification"', result.stdout)
 
+    def actual_session(self):
+        snapshot = {"url": "http://127.0.0.1:3000/", "canvas_count": 1, "canvases": [{"width": 640, "height": 360, "connected": True}], "facts": []}
+        transcript = [
+            {"command": {"type": "observe"}, "reply": {"sequence": 1, "monotonic_ms": 1, "wall_time": "2026-09-06T00:00:01Z", "type": "observe", "status": "ok", "snapshot": snapshot, "screenshot_hash": "sha256:" + "1" * 64}},
+            {"command": {"type": "key", "key": "w", "action": "down"}, "reply": {"sequence": 2, "monotonic_ms": 2, "wall_time": "2026-09-06T00:00:02Z", "type": "key", "status": "ok", "snapshot": snapshot}},
+            {"command": {"type": "observe"}, "reply": {"sequence": 3, "monotonic_ms": 3, "wall_time": "2026-09-06T00:00:03Z", "type": "observe", "status": "ok", "snapshot": snapshot, "screenshot_hash": "sha256:" + "2" * 64}},
+            {"command": {"type": "stop"}, "reply": {"sequence": 4, "monotonic_ms": 4, "wall_time": "2026-09-06T00:00:04Z", "type": "stop", "status": "ok", "snapshot": snapshot}},
+        ]
+        transcript_bytes = (json.dumps(transcript, sort_keys=True, indent=2) + "\n").encode("utf-8")
+        return {
+            "schema_version": "1.0.0", "kind": "play-session", "id": "session-positive",
+            "artifact_commit": "git:" + "a" * 40, "created_at": "2026-09-06T00:00:00Z", "producer": {"name": "browser_harness.mjs"},
+            "inputs": [], "environment": {"host": "codex", "os": "windows", "tools": [], "browser": "chromium", "browser_version": "124.0", "driver": "playwright-core"},
+            "status": "complete", "gaps": [], "invalidates": [], "classification": "actual_play", "input_mode": "actual_play", "source": "live-browser", "headed": True,
+            "url": "http://127.0.0.1:3000/", "operator": "operator-a", "independent_context_id": "context-a", "started_at": "2026-09-06T00:00:00Z", "ended_at": "2026-09-06T00:00:05Z",
+            "transcript": transcript, "transcript_hash": "sha256:" + hashlib.sha256(transcript_bytes).hexdigest(),
+            "adaptation": {"observation_sequence": 1, "action_sequence": 2, "subsequent_observation_sequence": 3, "rationale": "The observed state showed the player could advance, so the next input tested movement."},
+        }
+
+    def test_actual_play_requires_successful_causal_snapshots_and_accepts_harness_shape(self):
+        session = self.actual_session()
+        expression = "const s=" + json.dumps(session) + "; console.log(JSON.stringify(m.validatePlaySession(s)));"
+        result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("actual_play", json.loads(result.stdout)["requested"])
+
+        session["transcript"][1]["reply"]["status"] = "error"
+        expression = "const s=" + json.dumps(session) + "; try { m.validatePlaySession(s); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer})); }"
+        result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('"code":"evidence-failure"', result.stdout)
+
+    def test_frozen_performance_plan_requires_declared_scenario_coverage(self):
+        plan = {
+            "schema_version": "1.0.0", "kind": "performance-plan", "id": "plan-positive",
+            "artifact_commit": "git:" + "a" * 40, "created_at": "2026-09-06T00:00:00Z",
+            "producer": {"name": "test"}, "inputs": [], "environment": {"host": "test", "os": "windows", "tools": []},
+            "status": "draft", "gaps": [], "invalidates": [],
+            "scenarios": [{"scenario_id": "arena", "cells": ["arena-cell"], "required_runs": 3, "min_duration_seconds": 60, "animated": True}],
+        }
+        expression = "const p=" + json.dumps(plan) + "; console.log(JSON.stringify(m.validatePerformancePlan(p)));"
+        result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("arena", json.loads(result.stdout)["scenarios"][0]["id"])
+
+        plan["scenarios"][0]["required_runs"] = 2
+        expression = "const p=" + json.dumps(plan) + "; try { m.validatePerformancePlan(p); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer})); }"
+        result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('"code":"evidence-failure"', result.stdout)
+
     def test_fixture_collector_and_validator_preserve_hash_bound_record(self):
         fixture = self.fixture("continuous-animation")
-        cell = {**fixture["cell"], "trace": fixture["trace"], "callbacks": fixture["callbacks"]}
+        cell = {**fixture["cell"], "artifact_commit": "git:" + "a" * 40, "trace": fixture["trace"], "callbacks": fixture["callbacks"]}
         with tempfile.TemporaryDirectory() as directory:
             cell_path = Path(directory) / "cell.json"
             out_dir = Path(directory) / "out"
@@ -121,9 +172,26 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn("ordinary input", result.stdout)
 
+    def test_outside_probe_accepts_timestamped_rendered_observation_sequence(self):
+        commit = "git:" + "a" * 40
+        snapshot = {"url": "http://127.0.0.1:3000/", "canvas_count": 1, "canvases": [{"width": 640, "height": 360, "connected": True}]}
+        transcript = [
+            {"type": "ready", "status": "ready", "artifact_commit": commit, "session_id": "outside-a", "sequence": 1, "monotonic_ms": 0, "wall_time": "2026-09-06T00:00:00Z"},
+            {"type": "observe", "status": "ok", "artifact_commit": commit, "session_id": "outside-a", "sequence": 2, "monotonic_ms": 1, "wall_time": "2026-09-06T00:00:01Z", "snapshot": snapshot, "screenshot_hash": "sha256:" + "1" * 64},
+            {"type": "key", "status": "ok", "artifact_commit": commit, "session_id": "outside-a", "sequence": 3, "monotonic_ms": 2, "wall_time": "2026-09-06T00:00:02Z", "snapshot": snapshot},
+            {"type": "observe", "status": "ok", "artifact_commit": commit, "session_id": "outside-a", "sequence": 4, "monotonic_ms": 3, "wall_time": "2026-09-06T00:00:03Z", "snapshot": snapshot, "screenshot_hash": "sha256:" + "2" * 64},
+            {"type": "stop", "status": "ok", "artifact_commit": commit, "session_id": "outside-a", "sequence": 5, "monotonic_ms": 4, "wall_time": "2026-09-06T00:00:04Z", "snapshot": snapshot},
+        ]
+        expression = "const t=" + json.dumps(transcript) + "; console.log(JSON.stringify(m.probeTranscript(t," + json.dumps(commit) + ")));"
+        result = node_module("example-workflows/3d-browser-game/scripts/outside_probe.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        observed = json.loads(result.stdout)
+        self.assertEqual("observed", observed["status"])
+        self.assertTrue(observed["ordinary_input"])
+
     def test_evidence_index_rehashes_entries_and_rejects_stale_bytes(self):
         fixture = self.fixture("continuous-animation")
-        cell = {**fixture["cell"], "trace": fixture["trace"], "callbacks": fixture["callbacks"]}
+        cell = {**fixture["cell"], "artifact_commit": "git:" + "a" * 40, "trace": fixture["trace"], "callbacks": fixture["callbacks"]}
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             cell_path = root / "cell.json"
@@ -138,19 +206,34 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
             digest = "sha256:" + hashlib.sha256(result_path.read_bytes()).hexdigest()
             index = {
                 "schema_version": "1.0.0", "kind": "evidence-index", "id": "index-fixture",
-                "artifact_commit": "git:fixture", "created_at": "2026-09-06T00:00:00Z",
+                "artifact_commit": "git:" + "a" * 40, "created_at": "2026-09-06T00:00:00Z",
                 "producer": {"name": "test"}, "inputs": [], "environment": {"host": "test", "os": "windows", "tools": []},
-                "status": "complete", "gaps": [], "invalidates": [], "declared_ancestors": [],
+                "status": "draft", "gaps": [], "invalidates": [], "declared_ancestors": [],
                 "entries": [{"path": "out/cell-result.json", "kind": "performance", "sha256": digest, "revision": "same-artifact"}],
-                "promotion": {"validator": "validate_evidence.mjs", "observed_at": "2026-09-06T00:00:00Z", "result_identity": "sha256:" + "0" * 64},
             }
             index_path = root / "index.json"
             index_path.write_text(json.dumps(index), encoding="utf-8")
+            promoted = subprocess.run(
+                [NODE, str(SCRIPTS / "validate_evidence.mjs"), "--index", str(index_path), "--promote"],
+                cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
+            )
+            self.assertEqual(0, promoted.returncode, promoted.stderr + promoted.stdout)
+            promoted_index = json.loads(index_path.read_text(encoding="utf-8"))
+            self.assertRegex(promoted_index["promotion"]["result_identity"], r"^sha256:[0-9a-f]{64}$")
             checked = subprocess.run(
                 [NODE, str(SCRIPTS / "validate_evidence.mjs"), "--index", str(index_path)],
                 cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
             )
             self.assertEqual(0, checked.returncode, checked.stderr + checked.stdout)
+            forged = dict(promoted_index)
+            forged["promotion"] = dict(promoted_index["promotion"], result_identity="sha256:" + "0" * 64)
+            forged_path = root / "forged-index.json"
+            forged_path.write_text(json.dumps(forged), encoding="utf-8")
+            forged_result = subprocess.run(
+                [NODE, str(SCRIPTS / "validate_evidence.mjs"), "--index", str(forged_path)],
+                cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
+            )
+            self.assertEqual(4, forged_result.returncode, forged_result.stderr + forged_result.stdout)
             result_path.write_bytes(result_path.read_bytes() + b"\n")
             stale = subprocess.run(
                 [NODE, str(SCRIPTS / "validate_evidence.mjs"), "--index", str(index_path)],

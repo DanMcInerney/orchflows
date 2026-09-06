@@ -4,7 +4,11 @@
  * acceptance evidence by itself.
  */
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { resolve, relative, isAbsolute, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import Ajv from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 import { parseArgs, readJson, resultFromError, sha256, inputError, evidenceError, ensureContained, requireObject, nowIso, writeJsonAtomic, canonicalJson } from "./_common.mjs";
 import { qualifyPerformance } from "./trace_frames.mjs";
 import { validateCommand } from "./browser_harness.mjs";
@@ -63,6 +67,31 @@ export const FINAL_DIMENSION_IDS = Object.freeze([
 ]);
 const CRITICAL_SCORE_FLOOR = 3;
 
+// Stored evidence is admitted through the package schemas as well as the
+// semantic checks below.  The schemas are loaded from this package, so a
+// caller cannot silently replace them with a schema from its evidence folder.
+const REFERENCE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../references");
+const schemaJson = name => JSON.parse(readFileSync(resolve(REFERENCE_DIR, name), "utf8"));
+const schemaValidator = (() => {
+  const ajv = new Ajv({ allErrors: true, strict: false });
+  addFormats(ajv);
+  const common = schemaJson("common.schema.json");
+  ajv.addSchema(common);
+  const play = ajv.compile(schemaJson("play-session.schema.json"));
+  const performancePlan = ajv.compile(schemaJson("performance-plan.schema.json"));
+  const evidenceIndex = ajv.compile(schemaJson("evidence-index.schema.json"));
+  const gateVerdict = ajv.compile(schemaJson("gate-verdict.schema.json"));
+  const captureMatrix = ajv.compile(schemaJson("capture-matrix.schema.json"));
+  const assetManifest = ajv.compile(schemaJson("asset-manifest.schema.json"));
+  return { play, performancePlan, evidenceIndex, gateVerdict, captureMatrix, assetManifest };
+})();
+
+function validateStoredSchema(document, validator, label, pointer = "/") {
+  if (validator(document)) return document;
+  const details = (validator.errors || []).map(item => `${item.instancePath || "/"} ${item.message}`).join("; ");
+  throw evidenceError(`${label} does not satisfy its package schema: ${details}`, pointer);
+}
+
 function requireHeader(document, expectedKind, pointer = "/") {
   requireObject(document, pointer);
   for (const key of HEADER_KEYS) if (!(key in document)) throw evidenceError(`missing header field ${key}`, `${pointer}/${key}`);
@@ -88,49 +117,81 @@ async function hashPath(baseDir, path, pointer) {
   return { target, path: normalized, hash: sha256(bytes), bytes };
 }
 
+function parsedTime(value, pointer) {
+  if (typeof value !== "string" || !value || !Number.isFinite(Date.parse(value))) throw evidenceError("timestamp must be an ISO date-time", pointer);
+  return Date.parse(value);
+}
+
+function meaningfulSnapshot(snapshot, pointer) {
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) throw evidenceError("successful observation needs a rendered snapshot", pointer);
+  if (typeof snapshot.url !== "string" || !snapshot.url || !Array.isArray(snapshot.canvases) || !Number.isInteger(snapshot.canvas_count) || snapshot.canvas_count < 1) {
+    throw evidenceError("rendered snapshot must include url, canvas_count, and canvases", pointer);
+  }
+  if (!snapshot.canvases.some(canvas => canvas && canvas.connected !== false && Number(canvas.width) > 0 && Number(canvas.height) > 0)) throw evidenceError("rendered snapshot has no usable connected canvas", pointer);
+  return snapshot;
+}
+
 function sessionClassification(session) {
   const transcript = session.transcript;
   if (!Array.isArray(transcript)) throw evidenceError("play session transcript must be an array", "/transcript");
   const allowed = new Set(["observe", "key", "pointer", "wait", "capture", "stop"]);
-  let observed = false;
-  let adapted = false;
   let previousSequence = 0;
+  let previousMonotonic = -Infinity;
+  let previousWall = -Infinity;
   let stopped = false;
-  for (const item of transcript) {
-    if (!item || typeof item !== "object" || !item.command) throw evidenceError("transcript item lacks command", "/transcript");
+  const observations = [];
+  const actions = [];
+  for (let index = 0; index < transcript.length; index += 1) {
+    const item = transcript[index];
+    if (!item || typeof item !== "object" || !item.command) throw evidenceError("transcript item lacks command", `/transcript/${index}`);
     const command = item.command;
-    try { validateCommand(command); } catch (error) { throw evidenceError(`invalid ordinary-input command: ${error.message}`, "/transcript/command"); }
-    if (!allowed.has(command.type)) throw evidenceError(`unsupported transcript command ${command.type}`, "/transcript/command/type");
-    if (!item.reply || typeof item.reply !== "object" || !Number.isInteger(item.reply.sequence) || typeof item.reply.status !== "string") throw evidenceError("every transcript command needs an observed sequence and status reply", "/transcript/reply");
-    if (command.type === "observe" || command.type === "capture") observed = true;
-    if (observed && ["key", "pointer"].includes(command.type)) adapted = true;
-    const sequence = item.reply?.sequence;
-    if (sequence !== undefined) {
-      if (!Number.isInteger(sequence) || sequence <= previousSequence) throw evidenceError("transcript reply sequence is not strictly increasing", "/transcript/reply/sequence");
-      previousSequence = sequence;
-    }
+    try { validateCommand(command); } catch (error) { throw evidenceError(`invalid ordinary-input command: ${error.message}`, `/transcript/${index}/command`); }
+    if (!allowed.has(command.type)) throw evidenceError(`unsupported transcript command ${command.type}`, `/transcript/${index}/command/type`);
+    const reply = item.reply;
+    if (!reply || typeof reply !== "object" || Array.isArray(reply) || !Number.isInteger(reply.sequence) || reply.sequence <= previousSequence) throw evidenceError("every transcript command needs a strictly increasing reply sequence", `/transcript/${index}/reply/sequence`);
+    if (reply.type !== command.type) throw evidenceError("reply type must match its ordinary-input command", `/transcript/${index}/reply/type`);
+    if (reply.status !== "ok") throw evidenceError("play evidence cannot contain failed or unlabeled command replies", `/transcript/${index}/reply/status`);
+    if (!Number.isFinite(reply.monotonic_ms) || reply.monotonic_ms < 0) throw evidenceError("reply needs a non-negative monotonic timestamp", `/transcript/${index}/reply/monotonic_ms`);
+    const wall = parsedTime(reply.wall_time, `/transcript/${index}/reply/wall_time`);
+    if (reply.monotonic_ms < previousMonotonic || wall < previousWall) throw evidenceError("transcript timestamps must be causally ordered", `/transcript/${index}/reply`);
+    meaningfulSnapshot(reply.snapshot, `/transcript/${index}/reply/snapshot`);
+    if (command.type === "capture" && typeof reply.screenshot_hash !== "string") throw evidenceError("capture reply needs its observed screenshot hash", `/transcript/${index}/reply/screenshot_hash`);
+    if (command.type === "observe") observations.push({ index, sequence: reply.sequence });
+    if (["key", "pointer"].includes(command.type)) actions.push({ index, sequence: reply.sequence });
     if (command.type === "stop") stopped = true;
+    previousSequence = reply.sequence;
+    previousMonotonic = reply.monotonic_ms;
+    previousWall = wall;
   }
   if (!transcript.length || !stopped || transcript.at(-1).command.type !== "stop") throw evidenceError("play session must end with an observed stop command", "/transcript");
   const requested = session.classification || session.input_mode;
   if (!["actual_play", "scripted_input", "simulated"].includes(requested)) throw evidenceError(`invalid play classification ${requested}`, "/classification");
+  const started = parsedTime(session.started_at, "/started_at");
+  const ended = parsedTime(session.ended_at, "/ended_at");
+  if (ended <= started) throw evidenceError("play session ended before it started", "/ended_at");
+  if (session.input_mode !== undefined && session.input_mode !== requested) throw evidenceError("classification and input_mode disagree", "/input_mode");
   if (requested === "actual_play") {
-    if (!session.operator || !session.independent_context_id) throw evidenceError("actual play requires operator and independent_context_id", "/classification");
+    if (typeof session.operator !== "string" || !session.operator.trim() || typeof session.independent_context_id !== "string" || !session.independent_context_id.trim()) throw evidenceError("actual play requires operator and independent_context_id", "/classification");
     if (session.source !== "live-browser") throw evidenceError("actual play requires a live-browser session source", "/source");
-    if (session.headed !== true && session.environment?.headed !== true && session.browser?.headed !== true) throw evidenceError("actual play requires headed evidence", "/headed");
-    if (!adapted) throw evidenceError("actual play requires an observation before later ordinary input", "/transcript");
+    if (session.headed !== true) throw evidenceError("actual play requires headed evidence", "/headed");
+    if (!session.environment?.browser || !session.environment?.browser_version || session.environment.browser_version === "unknown" || !session.environment?.driver) throw evidenceError("actual play requires browser name, version, and driver identity", "/environment");
+    const firstAction = actions[0];
+    const before = firstAction && observations.find(item => item.index < firstAction.index);
+    const after = firstAction && observations.find(item => item.index > firstAction.index);
+    if (!firstAction || !before || !after) throw evidenceError("actual play requires a successful fresh observation, ordinary action, and subsequent observation", "/transcript");
+    const adaptation = session.adaptation;
+    if (!adaptation || typeof adaptation !== "object" || Array.isArray(adaptation) || typeof adaptation.rationale !== "string" || !adaptation.rationale.trim()) throw evidenceError("actual play requires a recorded adaptation rationale", "/adaptation");
+    if (adaptation.observation_sequence !== before.sequence || adaptation.action_sequence !== firstAction.sequence || adaptation.subsequent_observation_sequence !== after.sequence) throw evidenceError("adaptation facts do not match the causal transcript order", "/adaptation");
+    return { requested, observations: observations.length, adapted: true, adaptation: { observation_sequence: before.sequence, action_sequence: firstAction.sequence, subsequent_observation_sequence: after.sequence, rationale: adaptation.rationale } };
   }
-  if (session.transcript_hash && session.transcript_hash !== sha256(JSON.stringify(transcript, (_key, item) => item === undefined ? undefined : item))) {
-    // Harness uses canonical JSON. This branch is a diagnostic for old or
-    // hand-written sessions; canonical comparison below is authoritative.
-  }
-  return { requested, observations: transcript.filter(item => item.command.type === "observe").length, adapted };
+  return { requested, observations: observations.length, adapted: false };
 }
 
 export function validatePlaySession(session) {
   requireHeader(session, "play-session");
+  validateStoredSchema(session, schemaValidator.play, "play session");
   const facts = sessionClassification(session);
-  if (session.transcript_hash && session.transcript_hash !== sha256(canonicalTranscript(session.transcript))) throw evidenceError("transcript_hash does not match immutable transcript bytes", "/transcript_hash");
+  if (session.transcript_hash !== sha256(canonicalTranscript(session.transcript))) throw evidenceError("transcript_hash does not match immutable transcript bytes", "/transcript_hash");
   if (session.status === "pass" || session.status === "qualified") throw evidenceError("a play session cannot promote itself to a gate verdict", "/status");
   return { status: "valid", ...facts };
 }
@@ -151,6 +212,10 @@ export async function validatePerformanceCell(document) {
   if (!document.cell || !document.trace || !Array.isArray(document.callbacks)) throw evidenceError("performance result must preserve cell, trace, and callback samples", "/");
   if (!["live-browser", "qualification-fixture"].includes(document.source)) throw evidenceError("performance result must declare live-browser or qualification-fixture source", "/source");
   if (document.cell.artifact_commit !== document.artifact_commit) throw evidenceError("performance cell and result are bound to different artifact commits", "/cell/artifact_commit");
+  const measurement = document.measurement;
+  if (document.source === "live-browser" && (!measurement || typeof measurement !== "object" || measurement.scenario_id !== document.cell.scenario_id || !measurement.warmup || !measurement.control || !measurement.instrumented || !measurement.perturbation)) throw evidenceError("live performance result must preserve the measured scenario and warm-up/control/instrumented phases", "/measurement");
+  const window = document.cell.window;
+  if (document.source === "live-browser" && (!window || !Number.isFinite(window.start_ms) || !Number.isFinite(window.end_ms) || window.end_ms <= window.start_ms)) throw evidenceError("live performance result must preserve a positive measured window", "/cell/window");
   const qualification = qualifyPerformance({ cell: document.cell, trace: document.trace, callbacks: document.callbacks });
   if (qualification.status !== "qualified") throw evidenceError("performance: unverified", "/qualification");
   if (!document.qualification || document.qualification.status !== qualification.status) throw evidenceError("stored performance qualification does not match recomputed result", "/qualification/status");
@@ -183,6 +248,7 @@ async function runPinnedKhronosValidator(bytes, pointer) {
 
 export async function validateAssetManifest(manifest, { baseDir = process.cwd() } = {}) {
   requireHeader(manifest, "asset-manifest");
+  validateStoredSchema(manifest, schemaValidator.assetManifest, "asset manifest");
   const glbPath = manifest.runtime_glb;
   const expectedHash = manifest.exported_glb_sha256;
   if (!glbPath || !expectedHash) throw evidenceError("asset manifest needs runtime_glb and exported_glb_sha256", "/runtime_glb");
@@ -195,10 +261,11 @@ export async function validateAssetManifest(manifest, { baseDir = process.cwd() 
   if (!validation || !khronos || khronos.status !== "pass" || Number(khronos.errors) !== 0 || khronos.export_sha256 !== expectedHash) throw evidenceError("pinned Khronos validation is missing, failed, or bound to another GLB", "/validation/khronos");
   const khronosEvidence = await readEvidenceJson(baseDir, khronos.report_path, khronos.report_sha256, "/validation/khronos", "Khronos report");
   if (!Number.isInteger(khronosEvidence.value?.issues?.numErrors) || khronosEvidence.value.issues.numErrors !== 0) throw evidenceError("Khronos report does not prove zero validation errors", "/validation/khronos/report_path");
+  if (khronosEvidence.value.orchflows?.kind !== "khronos-validation" || khronosEvidence.value.orchflows?.source !== "package-owned-fresh-process" || khronosEvidence.value.orchflows?.artifact_commit !== manifest.artifact_commit || khronosEvidence.value.orchflows?.glb_hash !== expectedHash) throw evidenceError("Khronos report is not a fresh package-owned observation of this artifact and GLB", "/validation/khronos/report_path");
   await runPinnedKhronosValidator(observed.bytes, "/validation/khronos");
   if (!loader || loader.status !== "pass" || !loader.evidence_id || !loader.artifact_commit || loader.artifact_commit !== manifest.artifact_commit || loader.glb_hash !== expectedHash) throw evidenceError("target GLTFLoader proof is missing, not passed, or bound to another GLB/artifact", "/validation/gltf_loader");
   const loaderEvidence = await readEvidenceJson(baseDir, loader.evidence_path, loader.evidence_sha256, "/validation/gltf_loader", "GLTFLoader evidence");
-  if (loaderEvidence.value.id !== loader.evidence_id || loaderEvidence.value.artifact_commit !== manifest.artifact_commit || loaderEvidence.value.glb_hash !== expectedHash) throw evidenceError("GLTFLoader evidence identity is not bound to this artifact and GLB", "/validation/gltf_loader/evidence_path");
+  if (loaderEvidence.value.kind !== "gltf-loader-evidence" || loaderEvidence.value.source !== "live-browser" || loaderEvidence.value.id !== loader.evidence_id || loaderEvidence.value.artifact_commit !== manifest.artifact_commit || loaderEvidence.value.glb_hash !== expectedHash || typeof loaderEvidence.value.target_workspace !== "string" || !loaderEvidence.value.target_workspace || !loaderEvidence.value.target_probe?.path || !/^sha256:[0-9a-f]{64}$/i.test(loaderEvidence.value.target_probe?.sha256 || "")) throw evidenceError("GLTFLoader evidence identity is not bound to this artifact, exact GLB, and target browser probe", "/validation/gltf_loader/evidence_path");
   const checks = loader.checks || {};
   for (const key of ["scale", "material", "animation", "collider"]) if (checks[key] !== "pass") throw evidenceError(`GLTFLoader proof ${key} check is not passed`, `/validation/gltf_loader/checks/${key}`);
   const observedChecks = loaderEvidence.value.checks;
@@ -210,9 +277,10 @@ async function validateCapture(document, { baseDir = process.cwd() } = {}) {
   requireHeader(document, "capture");
   const capture = document.capture || document.screenshot || {};
   if (!capture.path || !capture.hash) throw evidenceError("capture evidence needs a relative screenshot path and hash", "/capture");
+  resultIdentity(capture.hash);
   const observed = await hashPath(baseDir, capture.path, "/capture/path");
   if (observed.hash !== capture.hash) throw evidenceError("capture screenshot hash mismatch", "/capture/hash");
-  if (!document.viewport || !Number.isFinite(document.dpr) || !document.state) throw evidenceError("capture lacks viewport, DPR, or state binding", "/capture");
+  if (!document.viewport || !Number.isInteger(document.viewport.width) || document.viewport.width < 1 || !Number.isInteger(document.viewport.height) || document.viewport.height < 1 || !Number.isFinite(document.dpr) || document.dpr <= 0 || document.state === undefined || document.state === null || document.state === "") throw evidenceError("capture lacks a valid viewport, DPR, or state binding", "/capture");
   return { status: "valid" };
 }
 
@@ -222,10 +290,106 @@ function validateCaptureMatrix(document) {
   const ids = new Set();
   for (const cell of document.cells) {
     if (!cell || typeof cell.id !== "string" || ids.has(cell.id)) throw evidenceError("capture matrix cells need unique ids", "/cells");
+    if (typeof cell.state !== "string" || !cell.state || !cell.viewport || !Number.isInteger(cell.viewport.width) || cell.viewport.width < 1 || !Number.isInteger(cell.viewport.height) || cell.viewport.height < 1 || !Number.isFinite(cell.dpr) || cell.dpr <= 0) throw evidenceError(`capture matrix cell ${cell.id} lacks a valid state, viewport, and DPR`, "/cells");
     ids.add(cell.id);
     if (cell.required !== false && (!Array.isArray(cell.capture_ids) || cell.capture_ids.length === 0) && document.status === "complete") throw evidenceError(`required capture cell ${cell.id} is missing capture evidence`, `/cells/${cell.id}`);
   }
   return { status: "valid", cells: document.cells.length };
+}
+
+function validatePerformancePlan(document) {
+  requireHeader(document, "performance-plan");
+  validateStoredSchema(document, schemaValidator.performancePlan, "performance plan");
+  const groups = document.groups || document.scenarios;
+  if (!Array.isArray(groups) || groups.length === 0) throw evidenceError("performance plan needs at least one scenario group", "/groups");
+  const seen = new Set();
+  const normalized = groups.map((group, index) => {
+    if (!group || typeof group !== "object" || Array.isArray(group)) throw evidenceError("performance plan scenario must be an object", `/groups/${index}`);
+    const id = group.id || group.scenario || group.scenario_id || group.name;
+    if (typeof id !== "string" || !id || seen.has(id)) throw evidenceError("performance plan scenarios need unique ids", `/groups/${index}/id`);
+    seen.add(id);
+    const animated = group.animated !== false;
+    const requiredRuns = group.required_runs ?? group.runs ?? (animated ? 3 : 1);
+    const minDuration = group.min_duration_seconds ?? group.duration_seconds ?? (animated ? 60 : 0);
+    if (!Number.isInteger(requiredRuns) || requiredRuns < (animated ? 3 : 1)) throw evidenceError("animated performance scenarios require at least three runs", `/groups/${index}/required_runs`);
+    if (!Number.isFinite(minDuration) || minDuration < (animated ? 60 : 0)) throw evidenceError("animated performance scenarios require a 60-second minimum duration", `/groups/${index}/min_duration_seconds`);
+    const cells = group.cells || group.cell_ids || [];
+    if (!Array.isArray(cells)) throw evidenceError("performance plan scenario cells must be an array", `/groups/${index}/cells`);
+    const cellIds = cells.map(cell => typeof cell === "string" ? cell : cell?.id || cell?.cell_id);
+    if (cellIds.some(cell => typeof cell !== "string" || !cell)) throw evidenceError("performance plan scenario cells need identities", `/groups/${index}/cells`);
+    if (new Set(cellIds).size !== cellIds.length) throw evidenceError("performance plan scenario cells need unique identities", `/groups/${index}/cells`);
+    return { id, animated, required_runs: requiredRuns, min_duration_seconds: minDuration, cell_ids: cellIds };
+  });
+  return { status: "valid", scenarios: normalized };
+}
+
+function performanceRunId(item) {
+  const cell = item.document?.cell || {};
+  const value = item.document?.run_id || item.document?.run || cell.run_id || cell.run || cell.attempt_id || cell.attempt || item.document?.id;
+  return typeof value === "string" && value ? value : null;
+}
+
+function performanceScenario(item) {
+  const cell = item.document?.cell || {};
+  return item.document?.scenario || cell.scenario || cell.scenario_id || null;
+}
+
+function performanceCellId(item) {
+  return item.document?.cell?.id || item.document?.id || item.id;
+}
+
+function performanceWarm(item) {
+  const cell = item.document?.cell;
+  const measurement = item.document?.measurement;
+  const warmup = measurement?.warmup;
+  if (!cell || !measurement || measurement.scenario_id !== cell.scenario_id || !warmup || warmup.status !== "observed") return false;
+  const requested = Number(warmup.requested_ms);
+  const observed = Number(warmup.observed_ms);
+  return Number.isFinite(requested) && requested > 0 && Number.isFinite(observed) && observed >= requested;
+}
+
+function performanceDuration(item) {
+  const cell = item.document?.cell || {};
+  const duration = cell.duration_seconds ?? ((cell.window?.end_ms - cell.window?.start_ms) / 1000);
+  return Number(duration);
+}
+
+function performanceConfiguration(item) {
+  const cell = item.document?.cell || {};
+  const excluded = new Set(["id", "run_id", "run", "attempt", "attempt_id", "warmup", "warmup_index", "warm", "warmup_complete", "warmup_completed", "warmup_seconds", "warmup_duration_seconds", "window"]);
+  return canonicalJson(Object.fromEntries(Object.entries(cell).filter(([key]) => !excluded.has(key))));
+}
+
+function validatePerformanceCoverage(planFacts, performanceEntries, pointer) {
+  const assigned = new Set();
+  const coverage = [];
+  for (const scenario of planFacts.scenarios) {
+    const plannedCells = new Set(scenario.cell_ids);
+    const candidates = performanceEntries.filter(item => {
+      const scenarioMatch = performanceScenario(item) === scenario.id || (!performanceScenario(item) && plannedCells.has(performanceCellId(item)));
+      const cellMatch = plannedCells.size === 0 || plannedCells.has(performanceCellId(item));
+      return scenarioMatch && cellMatch;
+    });
+    const scopes = plannedCells.size ? [...plannedCells].map(cellId => ({ id: cellId, entries: candidates.filter(item => performanceCellId(item) === cellId) })) : [{ id: scenario.id, entries: candidates }];
+    for (const scope of scopes) {
+      if (scope.entries.length < scenario.required_runs) throw evidenceError(`performance plan scenario ${scenario.id} cell ${scope.id} lacks required runs`, pointer);
+      const runs = new Set();
+      for (const item of scope.entries) {
+        assigned.add(item.id);
+        const run = performanceRunId(item);
+        if (!run) throw evidenceError(`performance scenario ${scenario.id} has a run without a stable run identity`, pointer);
+        runs.add(run);
+        if (!performanceWarm(item)) throw evidenceError(`performance scenario ${scenario.id} has a run without completed warm-up evidence`, pointer);
+        if (performanceDuration(item) < scenario.min_duration_seconds) throw evidenceError(`performance scenario ${scenario.id} has a run shorter than its frozen duration`, pointer);
+      }
+      if (runs.size < scenario.required_runs) throw evidenceError(`performance plan scenario ${scenario.id} cell ${scope.id} lacks distinct runs`, pointer);
+      if (new Set(scope.entries.map(performanceConfiguration)).size !== 1) throw evidenceError(`performance scenario ${scenario.id} runs do not share one frozen configuration`, pointer);
+      const selected = scope.entries.filter(item => [...runs].indexOf(performanceRunId(item)) < scenario.required_runs);
+      coverage.push({ scenario: scenario.id, cell: scope.id, runs: [...runs].sort(), evidence_ids: selected.map(item => item.id).sort() });
+    }
+  }
+  if (assigned.size !== performanceEntries.length) throw evidenceError("performance evidence includes an unplanned scenario or cell", pointer);
+  return coverage;
 }
 
 async function loadEntry(baseDir, entry, index) {
@@ -245,16 +409,42 @@ async function loadEntry(baseDir, entry, index) {
     if (entry.revision === "same-artifact" && document.artifact_commit !== index.artifact_commit) throw evidenceError(`entry ${identity} is not from the indexed artifact`, `/entries/${key}/revision`);
     if (entry.revision === "declared-ancestor" && !ancestors.includes(document.artifact_commit)) throw evidenceError(`entry ${identity} is from an undeclared artifact commit`, `/entries/${key}/source_commit`);
   }
-  if (document.kind === "play-session" || entry.kind === "play-session") validatePlaySession(document);
-  if (document.kind === "performance-cell" || entry.kind === "performance") await validatePerformanceCell(document);
-  if (document.kind === "asset-manifest" || entry.kind === "manifest" || entry.kind === "asset") await validateAssetManifest(document, { baseDir: dirname(observed.target) });
-  if (document.kind === "capture" || entry.kind === "capture") await validateCapture(document, { baseDir: dirname(observed.target) });
-  if (document.kind === "capture-matrix") validateCaptureMatrix(document);
-  return { entry, document, observed, id: identity };
+  let facts = { status: "valid" };
+  if (document.kind === "play-session" || entry.kind === "play-session") facts = validatePlaySession(document);
+  if (document.kind === "performance-cell" || entry.kind === "performance") facts = await validatePerformanceCell(document);
+  if (document.kind === "asset-manifest" || entry.kind === "manifest" || entry.kind === "asset") facts = await validateAssetManifest(document, { baseDir: dirname(observed.target) });
+  if (document.kind === "capture" || entry.kind === "capture") facts = await validateCapture(document, { baseDir: dirname(observed.target) });
+  if (document.kind === "capture-matrix") {
+    validateStoredSchema(document, schemaValidator.captureMatrix, "capture matrix");
+    facts = validateCaptureMatrix(document);
+  }
+  if (document.kind === "performance-plan" || entry.kind === "performance-plan") facts = validatePerformancePlan(document);
+  return { entry, document, observed, id: identity, facts };
+}
+
+function validationReceipt(index, loaded, required, kinds) {
+  return {
+    version: "1.0.0",
+    kind: "evidence-index-validation",
+    index_id: index.id,
+    artifact_commit: index.artifact_commit,
+    entries: loaded.map(item => ({
+      id: item.id,
+      kind: item.entry.kind,
+      path: item.observed.path,
+      sha256: item.observed.hash,
+      revision: item.entry.revision,
+      document_kind: item.document.kind || null,
+      facts: item.facts,
+    })).sort((left, right) => left.id.localeCompare(right.id)),
+    required: required.map(item => typeof item === "string" ? { id: item } : { id: item.id, ...(item.kind ? { kind: item.kind } : {}) }).sort((left, right) => left.id.localeCompare(right.id)),
+    required_kinds: [...kinds.entries()].map(([kind, count]) => ({ kind, count })).sort((left, right) => left.kind.localeCompare(right.kind)),
+  };
 }
 
 export async function validateEvidenceIndex(index, { baseDir = process.cwd(), allowDraft = false } = {}) {
   requireHeader(index, "evidence-index");
+  validateStoredSchema(index, schemaValidator.evidenceIndex, "evidence index");
   if (index.promotion && (index.promotion.validator !== "validate_evidence.mjs" || !/^sha256:[0-9a-f]{64}$/i.test(index.promotion.result_identity || ""))) throw evidenceError("evidence index promotion is not a validate_evidence.mjs result identity", "/promotion");
   if (!index.promotion && !(allowDraft && index.status === "draft")) throw evidenceError("evidence index is not promoted by validate_evidence.mjs", "/promotion");
   if (index.promotion && index.status !== "complete") throw evidenceError("a promoted evidence index must be complete", "/status");
@@ -284,13 +474,18 @@ export async function validateEvidenceIndex(index, { baseDir = process.cwd(), al
     const count = kinds.get(requirement.kind) || 0;
     if (count < (requirement.count || 1)) throw evidenceError(`missing required evidence kind ${requirement.kind}`, "/required_kinds");
   }
-  return { status: "valid", ids: [...ids], entries: loaded, kinds: Object.fromEntries(kinds) };
+  const requiredReceipt = index.required || index.required_evidence || [];
+  const receipt = validationReceipt(index, loaded, requiredReceipt, kinds);
+  const computedIdentity = sha256(canonicalJson(receipt));
+  if (index.promotion && index.promotion.result_identity.toLowerCase() !== computedIdentity) throw evidenceError(`promotion result identity does not match the rehashed validation receipt; expected ${computedIdentity}, observed ${index.promotion.result_identity}`, "/promotion/result_identity");
+  return { status: "valid", ids: [...ids], entries: loaded, kinds: Object.fromEntries(kinds), receipt, result_identity: computedIdentity };
 }
 
 export async function validateGate(index, gate, { baseDir = process.cwd() } = {}) {
   const evidence = await validateEvidenceIndex(index, { baseDir });
   const record = index.gates?.[gate] || evidence.entries.map(item => item.document).find(document => document.kind === "gate-verdict" && document.gate === gate);
   if (!record) throw evidenceError(`missing ${gate} gate record`, `/gates/${gate}`);
+  validateStoredSchema(record, schemaValidator.gateVerdict, `${gate} gate verdict`);
   if (record.gate !== gate) throw evidenceError(`gate record is for ${record.gate}, not ${gate}`, `/gates/${gate}/gate`);
   if (record.artifact_commit && record.artifact_commit !== index.artifact_commit) throw evidenceError("gate record is bound to a different artifact commit", `/gates/${gate}/artifact_commit`);
   const requiredHard = [...(gate === "core" ? CORE_HARD_GATE_IDS : FINAL_HARD_GATE_IDS)];
@@ -302,7 +497,11 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   for (const hard of hardGates) {
     if (!hard || typeof hard !== "object" || !Array.isArray(hard.evidence) || hard.evidence.length === 0) throw evidenceError("each hard gate needs evidence identities; booleans cannot self-qualify", `/gates/${gate}/hard_gates`);
     if (hard.result !== "pass") throw evidenceError(`hard gate ${hard.id} is not passed`, `/gates/${gate}/hard_gates/${hard.id}`);
-    for (const id of hard.evidence) if (!evidence.ids.includes(id)) throw evidenceError(`hard gate ${hard.id} references missing evidence ${id}`, `/gates/${gate}/hard_gates/${hard.id}`);
+    for (const id of hard.evidence) {
+      const item = evidence.entries.find(candidate => candidate.id === id);
+      if (!item) throw evidenceError(`hard gate ${hard.id} references missing evidence ${id}`, `/gates/${gate}/hard_gates/${hard.id}`);
+      if (item.entry.kind === "other" || !item.document.kind) throw evidenceError(`hard gate ${hard.id} references untyped evidence ${id}`, `/gates/${gate}/hard_gates/${hard.id}`);
+    }
   }
   const dimensions = record.scores;
   const requiredDimensions = gate === "core" ? CORE_DIMENSION_IDS : FINAL_DIMENSION_IDS;
@@ -311,38 +510,50 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   if (new Set(dimensionIds).size !== dimensionIds.length || requiredDimensions.some(id => !dimensionIds.includes(id)) || dimensionIds.some(id => !requiredDimensions.includes(id))) throw evidenceError("gate dimension identities do not match the frozen rubric", `/gates/${gate}/scores`);
   for (const dimension of dimensions) {
     if (!Number.isInteger(dimension.score) || dimension.score < 0 || dimension.score > 4 || dimension.score < CRITICAL_SCORE_FLOOR || (dimension.floor !== undefined && dimension.floor !== CRITICAL_SCORE_FLOOR)) throw evidenceError(`dimension ${dimension.dimension || "unknown"} is below the frozen floor of ${CRITICAL_SCORE_FLOOR}`, `/gates/${gate}/scores`);
-    if (!Array.isArray(dimension.evidence) || dimension.evidence.length === 0 || dimension.evidence.some(id => !evidence.ids.includes(id))) throw evidenceError(`dimension ${dimension.dimension} lacks bound evidence`, `/gates/${gate}/scores`);
+    if (!Array.isArray(dimension.evidence) || dimension.evidence.length === 0 || dimension.evidence.some(id => {
+      const item = evidence.entries.find(candidate => candidate.id === id);
+      return !item || item.entry.kind === "other" || !item.document.kind;
+    })) throw evidenceError(`dimension ${dimension.dimension} lacks bound typed evidence`, `/gates/${gate}/scores`);
   }
   const fixed = record.fixed_inputs || {};
   if (fixed.artifact_commit !== index.artifact_commit) throw evidenceError("gate fixed inputs are bound to a different artifact commit", `/gates/${gate}/fixed_inputs/artifact_commit`);
   if (fixed.evidence_index !== index.id) throw evidenceError("gate fixed inputs must name this promoted evidence index", `/gates/${gate}/fixed_inputs/evidence_index`);
   for (const key of ["traceability", "rubric_revision"]) {
-    if (typeof fixed[key] !== "string" || !evidence.ids.includes(fixed[key])) throw evidenceError(`gate fixed input ${key} is not bound to evidence`, `/gates/${gate}/fixed_inputs/${key}`);
+    const item = typeof fixed[key] === "string" ? evidence.entries.find(candidate => candidate.id === fixed[key]) : null;
+    if (!item || item.entry.kind === "other" || !item.document.kind || (key === "traceability" && item.document.kind !== "traceability")) throw evidenceError(`gate fixed input ${key} is not bound to typed evidence`, `/gates/${gate}/fixed_inputs/${key}`);
   }
   if (!Array.isArray(fixed.play_sessions) || fixed.play_sessions.length < 2 || new Set(fixed.play_sessions).size !== fixed.play_sessions.length) throw evidenceError("gate requires two independent play contexts", `/gates/${gate}/fixed_inputs/play_sessions`);
   const playEntries = fixed.play_sessions.map(id => evidence.entries.find(item => item.id === id));
   if (playEntries.some(item => !item)) throw evidenceError("gate references a missing play session", `/gates/${gate}/fixed_inputs/play_sessions`);
   if (playEntries.some(item => item.document.kind !== "play-session" || item.document.classification !== "actual_play" || item.document.source !== "live-browser" || item.document.headed !== true || typeof item.document.operator !== "string" || !item.document.operator || typeof item.document.independent_context_id !== "string" || !item.document.independent_context_id)) throw evidenceError("gate play coverage requires live headed actual-play provenance", `/gates/${gate}/fixed_inputs/play_sessions`);
   if (new Set(playEntries.map(item => item.document.independent_context_id)).size < 2 || new Set(playEntries.map(item => item.document.operator)).size < 2) throw evidenceError("gate play coverage is not independent by both context and operator", `/gates/${gate}/fixed_inputs/play_sessions`);
+  if (typeof fixed.performance_plan !== "string" || !fixed.performance_plan) throw evidenceError("gate requires a frozen performance plan", `/gates/${gate}/fixed_inputs/performance_plan`);
+  const performancePlanEntry = evidence.entries.find(item => item.id === fixed.performance_plan && (item.entry.kind === "performance-plan" || item.document.kind === "performance-plan"));
+  if (!performancePlanEntry) throw evidenceError("gate references a missing performance plan", `/gates/${gate}/fixed_inputs/performance_plan`);
+  const performancePlan = performancePlanEntry.facts?.scenarios ? performancePlanEntry.facts : validatePerformancePlan(performancePlanEntry.document);
   const performanceIds = fixed.performance_cells;
   if (!Array.isArray(performanceIds) || performanceIds.length === 0 || new Set(performanceIds).size !== performanceIds.length) throw evidenceError("gate performance coverage is incomplete", `/gates/${gate}/fixed_inputs/performance_cells`);
   const performanceEntries = performanceIds.map(id => evidence.entries.find(candidate => candidate.id === id && (candidate.entry.kind === "performance" || candidate.document.kind === "performance-cell")));
   if (performanceEntries.some(item => !item)) throw evidenceError("gate references a missing performance cell", `/gates/${gate}/fixed_inputs/performance_cells`);
   if (performanceEntries.some(item => item.document.source !== "live-browser" || item.document.status !== "complete" || item.document.qualification?.status !== "qualified")) throw evidenceError("fixture or unqualified performance evidence cannot pass a gate", `/gates/${gate}/fixed_inputs/performance_cells`);
-  const animated = performanceEntries.filter(item => !["static", "static-idle"].includes(item.document.cell?.mode || item.document.cell?.surface));
-  if (animated.length && (animated.length < 3 || animated.some(item => Number(item.document.cell?.duration_seconds || ((item.document.cell?.window?.end_ms - item.document.cell?.window?.start_ms) / 1000)) < 60))) throw evidenceError("animation performance coverage requires three warm 60-second runs", `/gates/${gate}/fixed_inputs/performance_cells`);
-  if (animated.length >= 3) {
-    const signature = item => canonicalJson(Object.fromEntries(Object.entries(item.document.cell || {}).filter(([key]) => !["id", "run_id", "run", "attempt", "warmup_index"].includes(key))));
-    if (new Set(animated.map(signature)).size !== 1) throw evidenceError("animation performance runs must use one identical frozen cell", `/gates/${gate}/fixed_inputs/performance_cells`);
-  }
+  const performanceCoverage = validatePerformanceCoverage(performancePlan, performanceEntries, `/gates/${gate}/fixed_inputs/performance_cells`);
   const matrixEntry = evidence.entries.find(item => item.id === fixed.capture_matrix && item.document.kind === "capture-matrix");
   if (!matrixEntry) throw evidenceError("gate capture matrix identity is missing", `/gates/${gate}/fixed_inputs/capture_matrix`);
   if (matrixEntry.document.status !== "complete") throw evidenceError("gate capture matrix is not complete", `/gates/${gate}/fixed_inputs/capture_matrix`);
-  for (const cell of matrixEntry.document.cells || []) if (cell.required !== false && (!Array.isArray(cell.capture_ids) || cell.capture_ids.length === 0 || cell.capture_ids.some(id => !evidence.ids.includes(id)))) throw evidenceError(`required capture cell ${cell.id} is missing hashed evidence`, `/gates/${gate}/fixed_inputs/capture_matrix`);
+  for (const cell of matrixEntry.document.cells || []) {
+    if (cell.required === false) continue;
+    if (!Array.isArray(cell.capture_ids) || cell.capture_ids.length === 0 || cell.capture_ids.some(id => !evidence.ids.includes(id))) throw evidenceError(`required capture cell ${cell.id} is missing hashed evidence`, `/gates/${gate}/fixed_inputs/capture_matrix`);
+    for (const captureId of cell.capture_ids) {
+      const capture = evidence.entries.find(item => item.id === captureId && (item.entry.kind === "capture" || item.document.kind === "capture"));
+      if (!capture) throw evidenceError(`capture ${captureId} is not a typed capture record`, `/gates/${gate}/fixed_inputs/capture_matrix`);
+      const document = capture.document;
+      if (canonicalJson(document.state) !== canonicalJson(cell.state) || canonicalJson(document.viewport) !== canonicalJson(cell.viewport) || Number(document.dpr) !== Number(cell.dpr)) throw evidenceError(`capture ${captureId} does not match matrix cell ${cell.id} state, viewport, and DPR`, `/gates/${gate}/fixed_inputs/capture_matrix/${cell.id}`);
+    }
+  }
   if (record.disposition !== "pass") throw evidenceError(`gate disposition is ${record.disposition}, not pass`, `/gates/${gate}/disposition`);
   if ((record.complaints || []).length || (record.gaps || []).length) throw evidenceError("gate has open complaints or gaps", `/gates/${gate}`);
   if (!index.promotion || index.promotion.validator !== "validate_evidence.mjs" || !index.promotion.result_identity) throw evidenceError("gate requires a validate_evidence.mjs promoted index", "/promotion");
-  return { status: "valid", gate, evidence_ids: evidence.ids, disposition: "pass" };
+  return { status: "valid", gate, evidence_ids: evidence.ids, performance_coverage: performanceCoverage, disposition: "pass" };
 }
 
 async function main() {
@@ -362,7 +573,8 @@ async function main() {
     const index = loaded.value;
     output = await validateEvidenceIndex(index, { baseDir: dirname(resolve(args.index)), allowDraft: Boolean(args.promote) });
     if (args.promote) {
-      const resultIdentity = sha256(canonicalJson(output));
+      if (index.status !== "draft" || index.promotion) throw evidenceError("--promote accepts only an unpromoted draft evidence index", "/status");
+      const resultIdentity = output.result_identity;
       index.promotion = { validator: "validate_evidence.mjs", observed_at: nowIso(), result_identity: resultIdentity };
       index.status = "complete";
       await writeJsonAtomic(resolve(args.index), index);
@@ -377,4 +589,4 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\",
   main().catch(error => { const result = resultFromError(error); process.stderr.write(`${result.result.error.message}\n`); process.stdout.write(`${JSON.stringify(result.result)}\n`); process.exitCode = result.exitCode; });
 }
 
-export { requireHeader, sessionClassification, canonicalTranscript, hashPath };
+export { requireHeader, sessionClassification, canonicalTranscript, hashPath, validatePerformancePlan, validationReceipt };

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/performance-plan.schema.json",
+  "title": "3D browser-game frozen performance plan",
+  "description": "Declared animated scenarios and the minimum independent warm runs that each requires.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "kind": {"const": "performance-plan"},
+    "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"},
+    "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"},
+    "environment": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"},
+    "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"},
+    "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"},
+    "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"},
+    "groups": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/group"}},
+    "scenarios": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/group"}}
+  },
+  "oneOf": [{"required": ["groups"]}, {"required": ["scenarios"]}],
+  "$defs": {
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [{"required": ["id"]}, {"required": ["scenario"]}, {"required": ["scenario_id"]}, {"required": ["name"]}],
+      "properties": {
+        "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+        "scenario": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+        "scenario_id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+        "name": {"type": "string", "minLength": 1},
+        "cells": {"type": "array", "uniqueItems": true, "items": {"oneOf": [{"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, {"type": "object", "additionalProperties": false, "required": ["id"], "properties": {"id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "cell_id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}}}]}},
+        "cell_ids": {"type": "array", "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}},
+        "required_runs": {"type": "integer", "minimum": 1},
+        "runs": {"type": "integer", "minimum": 1},
+        "min_duration_seconds": {"type": "number", "minimum": 0},
+        "duration_seconds": {"type": "number", "minimum": 0},
+        "animated": {"type": "boolean"}
+      }
+    }
+  }
+}
