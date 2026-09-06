@@ -175,7 +175,7 @@ async function observedAncestor(ancestor, descendant, input, pointer) {
     const raw = observer.length <= 1
       ? await observer({ ancestor: `git:${a}`, descendant: `git:${d}`, pointer })
       : await observer(`git:${a}`, `git:${d}`);
-    const result = typeof raw === "boolean" ? raw : first(raw?.isAncestor, raw?.ancestor, raw?.descends, raw?.status === "ancestor" ? true : undefined);
+    const result = typeof raw === "boolean" ? raw : first(raw?.isAncestor, raw?.ancestor, raw?.descends, raw?.status === "ancestor" || raw?.relation === "ancestor" ? true : undefined, raw?.status === "unrelated" || raw?.relation === "unrelated" ? false : undefined);
     if (result === true) return true;
     if (result === false) fail("unrelated-source-ancestry", "source observation says the claimed ancestor is unrelated", pointer, { ancestor: a, descendant: d }, raw);
     fail("unverified-source-ancestry", "source observation did not return an ancestry result", pointer, "boolean or {isAncestor:boolean}", raw);
@@ -187,7 +187,7 @@ async function observedAncestor(ancestor, descendant, input, pointer) {
   if (Array.isArray(data.observations)) {
     const row = data.observations.find(item => item && String(item.ancestor || "").replace(/^git:/i, "").toLowerCase() === a && String(item.descendant || item.artifact || "").replace(/^git:/i, "").toLowerCase() === d);
     if (row) {
-      if (row.isAncestor === true || row.status === "ancestor") return true;
+      if (row.isAncestor === true || row.status === "ancestor" || row.relation === "ancestor") return true;
       fail("unrelated-source-ancestry", "source observation says the claimed ancestor is unrelated", pointer, { ancestor: a, descendant: d }, row);
     }
   }
@@ -205,12 +205,15 @@ function complaintMap(record, pointer) {
   return map;
 }
 
-function closure(item, pointer) {
+function closure(item, pointer, entries) {
   const proof = first(item.closure, item.resolution, item.disposition);
   if (!proof || typeof proof !== "object") fail("missing-complaint-closure", `closed complaint ${item.id} needs explicit closure evidence`, pointer, "closure {reason,evidence}", proof);
   if (typeof proof.reason !== "string" || proof.reason.length === 0) fail("missing-complaint-closure", `closed complaint ${item.id} needs a closure reason`, `${pointer}/reason`, "non-empty reason", proof.reason);
   if (!Array.isArray(proof.evidence) || proof.evidence.length === 0) fail("missing-complaint-closure", `closed complaint ${item.id} needs closure evidence identities`, `${pointer}/evidence`, "non-empty identity array", proof.evidence);
-  for (const [position, id] of proof.evidence.entries()) identity(id, `${pointer}/evidence/${position}`);
+  for (const [position, id] of proof.evidence.entries()) {
+    identity(id, `${pointer}/evidence/${position}`);
+    if (entries && !entries.has(id)) fail("missing-closure-evidence", `closure evidence ${id} is not indexed`, `${pointer}/evidence/${position}`, id, undefined);
+  }
 }
 
 function predecessorOf(record) {
@@ -222,17 +225,17 @@ function predecessorOf(record) {
   };
 }
 
-function verifyPredecessorHash(successor, predecessor, pointer, suppliedHash) {
+function verifyPredecessorHash(successor, predecessor, pointer, suppliedHash, predecessorBytes) {
   const declared = predecessorOf(successor);
   if (declared.id && predecessor?.id && declared.id !== predecessor.id) fail("predecessor-id-mismatch", "successor names a different predecessor record", `${pointer}/predecessor`, predecessor.id, declared.id);
   const expected = first(suppliedHash, declared.sha256, predecessor?.record_hash, predecessor?.hash);
   if (!expected) fail("missing-predecessor-hash", "successor record must bind its predecessor bytes", `${pointer}/predecessor_sha256`, "sha256 identity", expected);
   hash(expected, `${pointer}/predecessor_sha256`);
-  const observed = sha256(canonicalJson(predecessor));
+  const observed = sha256(predecessorBytes === undefined ? canonicalJson(predecessor) : predecessorBytes);
   if (expected.toLowerCase() !== observed.toLowerCase()) fail("predecessor-hash-mismatch", "successor predecessor hash does not match predecessor bytes", `${pointer}/predecessor_sha256`, expected, observed);
 }
 
-function verifyComplaintLineage(successor, predecessor, pointer) {
+function verifyComplaintLineage(successor, predecessor, pointer, entries) {
   if (!predecessor) return;
   typed(predecessor, "run-record", "/predecessor");
   const prior = complaintMap(predecessor, "/predecessor");
@@ -242,10 +245,12 @@ function verifyComplaintLineage(successor, predecessor, pointer) {
     const current = next.get(id);
     if (!current) fail("deleted-complaint", `successor deleted prior complaint ${id}`, `${pointer}/complaints`, id, undefined);
     for (const field of ["seam", "kind", "cause"]) if (current[field] !== old[field]) fail("rewritten-complaint", `successor rewrote immutable complaint ${id} field ${field}`, `${pointer}/complaints/${id}/${field}`, old[field], current[field]);
+    if (Array.isArray(old.evidence) && (!Array.isArray(current.evidence) || old.evidence.some(value => !current.evidence.includes(value)))) fail("rewritten-complaint", `successor rewrote evidence for complaint ${id}`, `${pointer}/complaints/${id}/evidence`, old.evidence, current.evidence);
+    if (old.expected_improvement !== undefined && current.expected_improvement !== old.expected_improvement) fail("rewritten-complaint", `successor rewrote expected improvement for complaint ${id}`, `${pointer}/complaints/${id}/expected_improvement`, old.expected_improvement, current.expected_improvement);
     const previousStatus = old.status || "open";
     const currentStatus = current.status || "open";
     if (CLOSING_STATUSES.has(previousStatus) && OPEN_STATUSES.has(currentStatus)) fail("reopened-complaint", `successor reopened closed complaint ${id}`, `${pointer}/complaints/${id}/status`, previousStatus, currentStatus);
-    if (currentStatus !== previousStatus) closure(current, `${pointer}/complaints/${id}/closure`);
+    if (currentStatus !== previousStatus) closure(current, `${pointer}/complaints/${id}/closure`, entries);
   }
 }
 
@@ -383,8 +388,8 @@ export async function validateGateLineage(input = {}) {
   if (input.gateVerdict.artifact_commit && input.gate === "final" && !sameCommit(input.gateVerdict.artifact_commit, current)) fail("artifact-mismatch", "final verdict is not bound to the selected artifact", "/gate_verdict/artifact_commit", current, input.gateVerdict.artifact_commit);
   const predecessor = input.predecessorRunRecord || input.predecessor?.runRecord || input.predecessor;
   if (predecessor) {
-    verifyPredecessorHash(input.runRecord, predecessor, "/run_record/lineage", first(input.predecessorHash, input.predecessor_sha256));
-    verifyComplaintLineage(input.runRecord, predecessor, "/run_record/lineage");
+    verifyPredecessorHash(input.runRecord, predecessor, "/run_record/lineage", first(input.predecessorHash, input.predecessor_sha256), input.predecessorBytes);
+    verifyComplaintLineage(input.runRecord, predecessor, "/run_record/lineage", entries);
   } else if (gate === "final") {
     const declared = predecessorOf(input.runRecord);
     if (declared.id || declared.sha256) fail("missing-predecessor-record", "successor names a predecessor but no typed predecessor record was supplied", "/run_record/lineage/predecessor", "typed run-record", undefined);
