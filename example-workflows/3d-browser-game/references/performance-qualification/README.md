@@ -20,6 +20,12 @@ qualification joins those samples to one compositor frame by timestamp and
 marks at most one native frame per observed region change; sparse samples never
 upgrade intervening frames.
 
+The checked-in cells are portable templates: `server.cwd` is resolved relative
+to the cell file's directory, and a live run must materialize its current full
+Git artifact commit and actual browser driver before collection. A retained
+result is admitted only when those identities are real and the result is
+recomputed from its stored trace.
+
 Every live result records `cell.scenario_id` and a top-level `measurement`:
 
 - `warmup` is the elapsed, callback-observed warm-up interval;

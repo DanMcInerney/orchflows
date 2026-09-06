@@ -10,12 +10,14 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import {
   EXIT, capabilityError, inputError, makeHeader, nowIso, parseArgs,
   readJson, resultFromError, sha256, timeoutError, writeJsonAtomic, evidenceError,
+  isCommitIdentity,
 } from "./_common.mjs";
 import { collectCDPTrace, qualifyPerformance } from "./trace_frames.mjs";
 
 function validateCell(cell) {
   if (!cell || typeof cell !== "object" || Array.isArray(cell)) throw inputError("cell must be an object", "/cell");
   for (const key of ["id", "artifact_commit", "scenario_id"]) if (typeof cell[key] !== "string" || !cell[key]) throw inputError(`cell.${key} is required`, `/cell/${key}`);
+  if (!isCommitIdentity(cell.artifact_commit)) throw inputError("cell.artifact_commit must identify a full git revision", "/cell/artifact_commit");
   const window = cell.window || {};
   const duration = cell.duration_seconds ?? (cell.duration_ms !== undefined ? Number(cell.duration_ms) / 1000 : ((window.end_ms - window.start_ms) / 1000));
   if (!Number.isFinite(duration) || duration <= 0 || duration > 3600) throw inputError("cell duration_seconds must be finite and between 0 and 3600", "/cell/duration_seconds");
@@ -82,10 +84,10 @@ function validateSetupCommands(cell) {
   return commands;
 }
 
-function serverChild(server) {
+function serverChild(server, baseDir = process.cwd()) {
   if (!server || !Array.isArray(server.command) || !server.command.length) throw inputError("live cell server.command is required as argv", "/cell/server/command");
   if (!server.cwd) throw inputError("live cell server.cwd is required", "/cell/server/cwd");
-  return spawn(server.command[0], server.command.slice(1), { cwd: resolve(server.cwd), env: { ...process.env, ...(server.env || {}) }, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  return spawn(server.command[0], server.command.slice(1), { cwd: resolve(baseDir, server.cwd), env: { ...process.env, ...(server.env || {}) }, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
 }
 
 function stopChild(child) {
@@ -276,14 +278,14 @@ async function runSetup(page, canvas, commands) {
   return {commands: actions, observed_state: state, observed: true};
 }
 
-async function liveTrace(cell) {
+async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
   let playwright;
   const browserPackage = cell.browser?.package || "playwright-core";
   const packageSpecifier = /^(?:[A-Za-z]:[\\/]|[\\/])/.test(browserPackage) && !browserPackage.startsWith("file:")
     ? pathToFileURL(resolve(browserPackage)).href : browserPackage;
   try { playwright = await import(packageSpecifier); }
   catch (error) { throw capabilityError(`Playwright is unavailable: ${error.message}`, "/cell/browser/package"); }
-  const server = serverChild(cell.server);
+  const server = serverChild(cell.server, baseDir);
   const errors = [];
   server.stderr?.on("data", chunk => errors.push(chunk.toString("utf8").slice(-4000)));
   let browser;
@@ -710,7 +712,7 @@ async function liveTrace(cell) {
 export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}) {
   validateCell(cell);
   const live = !(cell.trace || cell.trace_file);
-  const source = live ? await liveTrace(cell) : await fixtureTrace(cell, baseDir);
+  const source = live ? await liveTrace(cell, {baseDir}) : await fixtureTrace(cell, baseDir);
   const measurement = source.measurement || fixtureMeasurement(cell);
   const measuredCell = source.window ? {
     ...cell,

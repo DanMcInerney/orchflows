@@ -8,6 +8,11 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 
 export const EXIT = Object.freeze({ OK: 0, INPUT: 2, CAPABILITY: 3, EVIDENCE: 4, TIMEOUT: 5 });
+const GIT_COMMIT = /^(?:git:)?[0-9a-f]{40}$/i;
+
+export function isCommitIdentity(value) {
+  return typeof value === "string" && GIT_COMMIT.test(value) && !/^(?:git:)?0{40}$/i.test(value);
+}
 
 export function sha256(value) {
   const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value);

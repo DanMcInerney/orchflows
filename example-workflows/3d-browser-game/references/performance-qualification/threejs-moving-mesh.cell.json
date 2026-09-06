@@ -18,7 +18,7 @@
   "readback": {"max_pending": 4},
   "server": {
     "command": ["C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe", "-m", "http.server", "8765"],
-    "cwd": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260906-3d-browser-game\\B1.20\\example-workflows\\3d-browser-game\\references\\performance-qualification",
+    "cwd": ".",
     "url": "http://127.0.0.1:8765/threejs-moving-mesh.html",
     "startup_timeout_ms": 30000
   },
