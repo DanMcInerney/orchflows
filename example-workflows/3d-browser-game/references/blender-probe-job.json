@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "blender-job",
+  "id": "blender-probe-orb-20260906",
+  "artifact_commit": "git:514520217b3d6a13095b36003f2b13455092e73e",
+  "created_at": "2026-09-06T00:00:00Z",
+  "producer": {
+    "name": "3d-browser-game.blender-probe",
+    "version": "1.0.0",
+    "command": "blender_job_runner.py"
+  },
+  "inputs": [
+    {"name": "probe-generator", "sha256": "sha256:3e4e786a64fe5900230a7f66603396fb98c2cb609e992cf1ac5b5b2cad77b855"}
+  ],
+  "environment": {
+    "host": "capability-probe",
+    "os": "observed-at-run",
+    "tools": []
+  },
+  "status": "draft",
+  "gaps": ["khronos-validator-and-production-gltfloader-probe-at-run"],
+  "invalidates": ["blender-identity-change", "generator-change", "job-change"],
+  "mode": "generate",
+  "authoring": {
+    "kind": "generated",
+    "module": "probe_generator.py",
+    "sha256": "sha256:3e4e786a64fe5900230a7f66603396fb98c2cb609e992cf1ac5b5b2cad77b855",
+    "entrypoint": "build"
+  },
+  "seed": 42,
+  "scene": {
+    "units": "METRIC",
+    "unit_scale": 1.0,
+    "gameplay_forward": "+Z",
+    "origin": "orb-center"
+  },
+  "allowlists": {
+    "input_extensions": [".py"],
+    "output_extensions": [".blend", ".glb", ".json", ".png"]
+  },
+  "budgets": {
+    "mesh_vertices": 25000,
+    "mesh_polygons": 50000,
+    "materials": 8,
+    "texture_bytes": 0
+  },
+  "cameras": [
+    {"camera": "ProbeGameplayCamera", "output": "preview/gameplay.png", "frame": 1, "label": "gameplay-camera"},
+    {"camera": "ProbeGameplayCamera", "output": "preview/turntable.png", "frame": 24, "label": "turntable-frame"}
+  ],
+  "render": {
+    "engine": "BLENDER_EEVEE",
+    "resolution": [320, 240],
+    "percentage": 100,
+    "format": "PNG"
+  },
+  "export": {
+    "export_yup": true,
+    "animations": true
+  },
+  "outputs": [
+    {"path": "source.blend", "kind": "source"},
+    {"path": "inspection.json", "kind": "inspection"},
+    {"path": "preview/gameplay.png", "kind": "preview"},
+    {"path": "preview/turntable.png", "kind": "preview"},
+    {"path": "asset.glb", "kind": "runtime"},
+    {"path": "asset-manifest.json", "kind": "manifest"}
+  ],
+  "timeout_seconds": 180,
+  "colliders": [],
+  "attachments": [],
+  "material_roles": {"Probe_Orb": "primary", "Probe_Frame": "accent", "Probe_Ground": "ground"},
+  "animation_clips": [{"name": "OrbTurntable", "start": 1, "end": 48}],
+  "required_extensions": []
+}
