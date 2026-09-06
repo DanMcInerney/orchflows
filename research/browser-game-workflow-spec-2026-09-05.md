@@ -1,259 +1,634 @@
 # Three.js and Blender browser-game workflow specification
 
-The rebuilt `browser-game` workflow has one production route: a 3D browser game implemented with a pinned Three.js dependency and assets authored in a pinned Blender executable. It earns a complete-game claim only when one fixed revision survives playable vertical increments, inspected Blender-to-GLB handoffs, ordinary-input play by agents that can see and control the game, measured presented-frame performance on declared hardware, and maker-independent judgment. This document specifies that reusable workflow; it does not implement the workflow or build a game.
+The `browser-game` workflow has one production route: a 3D browser game using
+a pinned Three.js dependency and assets authored with a pinned Blender
+executable. Its order is deliberate: deep parallel research; detailed design
+of the core idea, rules, fun loop, and game concept; a fundamental playable
+Three.js game with functional placeholder assets; separate QA, adaptive play,
+and a demanding independent core-gameplay gate; GPT concept art and production
+Blender assets after that gate; integration; and a second demanding whole-game
+gate. Each gate can judge, fix, QA, play, and re-judge repeatedly until its
+evidence is good enough. This document specifies that reusable workflow. It
+does not implement the workflow or build a game.
 
-All **MUST**, **SHOULD**, and **MAY** statements are proposed workflow policy. Statements labeled **Current fact** report primary documentation checked on 2026-09-05. A run rechecks facts whose pinned Blender, Three.js, browser, graphics backend, or model identity has changed. Recommendations are defaults to test, not guarantees about an unmeasured project.
+All **MUST**, **SHOULD**, and **MAY** statements are proposed workflow policy.
+Statements labeled **Current fact** report primary documentation checked on
+2026-09-05. A run rechecks facts whose pinned Blender, Three.js, browser,
+graphics backend, or model identity has changed. Recommendations are defaults
+to test, not guarantees about an unmeasured project.
 
 ## Outcome and completion contract
 
-The public workflow remains `browser-game`. It takes `brief`, the user's complete natural-language request, and `workspace`, the target git repository. Three.js and Blender are fixed by this workflow. The brief remains authoritative for the game, and the workflow must not silently create promises about browser support, hardware, accessibility, licensing, monetization, telemetry, or release.
+The public workflow remains `browser-game`. It takes `brief`, the user's
+complete natural-language request, and `workspace`, the target git repository.
+Three.js and Blender are fixed by this workflow. The original brief, together
+with explicit user amendments made during the run, is the authority for game
+promises. Concept revisions clarify how to satisfy that authority; they never
+silently replace it or turn a generic example into a new requirement. The
+workflow must not invent promises about browser support, hardware,
+accessibility, licensing, monetization, telemetry, or release.
 
-A successful return contains:
+The workflow has two distinct acceptance identities:
+
+1. **Core-gameplay acceptance** proves that the fundamental game works, is
+   understandable, and is engaging enough to continue under ordinary input.
+   Primitives, graybox geometry, and basic functional placeholders are allowed
+   here. Final visual polish is deliberately outside this gate, while readable
+   feedback, timing, camera behavior, sound or animation needed for fair play,
+   and every central mechanic remain required.
+2. **Whole-game acceptance** proves one integrated release candidate looks good,
+   plays well, and adheres to the frozen original prompt. It includes approved
+   concept art, production Blender assets, final content breadth, complete
+   play and capture coverage, and the declared performance evidence. Attractive
+   art cannot mask a weak core loop.
+
+A successful final return contains:
 
 - `artifact: git:<commit>` for the accepted game revision;
-- an evidence-index identity binding the brief, research, concept, asset manifests, playable increments, play sessions, captures, performance traces, judgments, and repairs;
-- the exact outside probe and its passing observation at that commit; and
+- an evidence-index identity binding the original brief and amendments,
+  research, concept, core increments, asset manifests, play sessions,
+  captures, performance traces, judgments, repairs, and both gate verdicts;
+- the core and whole-game gate identities, including their fixed artifact
+  revisions and coverage records;
+- the exact outside probe and its passing observation at the joined commit; and
 - `gaps: []`.
 
-A non-success return names the fixed artifact reached, all evidence gathered, and every remaining gap. The complete-game gate requires a browser-served production build that starts without developer tools; documented controls; a coherent brief-derived core loop; every promised mechanic, progression path, terminal or continuing state, and replay or re-entry behavior; final assets with closed provenance; no blocking console, network, or load errors; actual play evidence; independent acceptance; and every declared continuously animated performance cell passing. The frozen concept may define completion as a conventional win/loss cycle, a bounded session, a stable sandbox loop, or another observable form suited to the brief. A prototype, scripted state transition, screenshot gallery, or green unit suite cannot satisfy the gate by itself.
+A core-gate return may be an intermediate handoff. A non-success final return
+names the fixed artifact reached, all evidence gathered, each complaint or
+unverified claim still open, the last completed quality-cycle batch, and the
+exact resumable state. The final gate requires a browser-served production
+build that starts without developer tools; documented controls; a coherent
+brief-derived core loop; every promised mechanic, progression path, terminal
+or continuing state, and replay or re-entry behavior; approved production
+assets with closed provenance; no blocking console, network, or load errors;
+actual adaptive play; independent acceptance; and every required performance
+cell passing. A prototype, scripted state transition, screenshot gallery, or
+green unit suite cannot satisfy either gate by itself.
 
-Publishing, buying or accepting licensed assets, installing Blender or other system software, and making commercial or support promises require current or standing user authority. The future workflow may perform an authorized bounded setup step and resume its capability gate; this document-only specification change performs no installation.
+Publishing, buying or accepting licensed assets, installing Blender or other
+system software, and making commercial or support promises require current or
+standing user authority. The future workflow may perform one authorized,
+bounded setup step and resume its capability gate. This document-only revision
+performs no installation, asset purchase, publication, or game implementation.
 
 ## Baseline and deliberate replacement
 
-This revision was derived from clean repository revision `bbdc7effbf00ed8f7d58eff1b422513bb9d1b9b2`. The earlier draft covered 2D and 3D routes, compared engines, and treated MCP as a possible Blender path. This revision supersedes those choices. Discovery proves that the fixed tools are usable; it does not reopen engine selection or route around a missing Blender installation with another DCC.
+This revision is derived from the clean candidate baseline recorded by the
+parent (`e3c3c11d9ea44b1acab1d70a30dc7a93809e7636`). The prior specification
+revision recorded its own source baseline as
+`bbdc7effbf00ed8f7d58eff1b422513bb9d1b9b2`; that provenance remains part of
+the replacement history. An earlier draft covered
+2D and 3D routes, compared engines, treated MCP as a possible Blender path,
+and stopped after a fixed two-round review. This revision keeps the fixed
+Three.js plus native Blender CLI/`bpy` stack, replaces engine or DCC choice with
+capability checks, and makes the user's gameplay-first sequence and continued
+quality cycle the contract.
 
-The current public [browser-game workflow](../example-workflows/browser-game/SKILL.md) already records a program, evidence, a checkpoint, and a successor plan. It does not make assets or code, open playable increments, perform actual play, gather presentation evidence, or judge a complete game. The rebuilt package SHOULD preserve its atomic authority, immutable evidence identities, and explicit invalidation while replacing its fixed questionnaire with the smaller gates below.
+The current public [browser-game workflow](../example-workflows/browser-game/SKILL.md)
+already records a program, evidence, a checkpoint, and a successor plan. It
+does not make assets or code, open playable increments, perform actual play,
+gather presentation evidence, or judge a complete game. The rebuilt package
+SHOULD preserve its atomic authority, immutable evidence identities, and
+explicit invalidation while replacing its fixed questionnaire with the
+research, core, and whole-game gates below.
 
-Current package law permits one public workflow to own private helper workflows, applied skills, standards, references, scripts, and dependency declarations under its directory. All private items share one package digest. The migration therefore moves useful browser-game references and validators behind that owner before retiring legacy allowlists. It migrates responsibilities, not old schemas: brief cells become the brief audit; decisions become a compact decision ledger; asset and performance claims become manifests and measurement cells; and the successor plan becomes the playable-increment ledger.
+## Package shape, ownership, and call flow
 
-## Package shape and ownership
-
-Only `browser-game` is public. The following proposed paths are private to `example-workflows/browser-game/` (or to the corresponding project/user ring package if authored there):
+Only `browser-game` is public. The following proposed paths are private to
+`example-workflows/browser-game/` (or to the corresponding project or user
+ring package if authored there):
 
 | Package path | Responsibility |
 | --- | --- |
-| `SKILL.md` | Public contract, stage order, frame ownership, and close behavior. |
-| `workflows/discovery/SKILL.md` | Brief audit, capability probes, focused research, concept freeze, and increment plan. |
-| `workflows/blender-asset/SKILL.md` | One asset batch through source edit, inspection, render, export, validation, judgment, and handoff. |
-| `workflows/playable-increment/SKILL.md` | One build/check/land/play/judge checkpoint from the prior accepted commit. |
-| `workflows/final-acceptance/SKILL.md` | Fixed-revision evidence fan-out, independent judgment, bounded repair, and re-judgment. |
+| `SKILL.md` | Public contract, stage order, frame ownership, quality-cycle progress, and close behavior. |
+| `workflows/discovery/SKILL.md` | Brief audit, deep parallel research, fixed-tool probes, concept/rules freeze, and evidence matrices. |
+| `workflows/playable-increment/SKILL.md` | One isolated build, QA, land, ordinary-input play, capture, and fixed-revision checkpoint. |
+| `workflows/gameplay-gate/SKILL.md` | Core-gameplay evidence collection, demanding independent judgment, findings, and successor repair batches. |
+| `workflows/blender-asset/SKILL.md` | One post-core production asset batch through source edit, inspection, render, export, validation, judgment, and handoff. |
+| `workflows/final-acceptance/SKILL.md` | Whole-game evidence fan-out, independent judgment, bounded repair batches, re-judgment, and outside close. |
 | `skills/blender-bpy/SKILL.md` | Reusable method for job-driven `bpy`/BMesh creation, editing, inspection, rendering, and export. |
 | `standards/browser-game-3d-asset/STANDARD.md` | Private 3D game-asset root: source authority, budgets, manifest, previews, runtime handoff, and artifact evidence. |
 | `standards/blender-game-asset/STANDARD.md` | Blender-specific narrowing of `browser-game-3d-asset`. |
 | `standards/threejs-browser-game/STANDARD.md` | Three.js game-code narrowing of `orch-code`. |
 | `standards/browser-game-interface/STANDARD.md` | Rendered canvas, menu, HUD, focus, and accessibility narrowing of `orch-design`. |
 | `standards/browser-game-playtest/STANDARD.md` | Ordinary-input session and provenance narrowing of `orch-research`. |
-| `references/` | Run-record, job, asset-manifest, evidence-index, capture-matrix, rubric, and worked-example contracts. |
-| `scripts/` | Capability probes, Blender process launcher and worker, manifest/GLB checks, capture indexing, and outside probe. |
+| `references/` | Run-record, traceability, job, asset-manifest, evidence-index, capture-matrix, rubric, and worked-example contracts. |
+| `scripts/` | Capability probes, Blender process launcher and worker, manifest/GLB checks, capture indexing, performance collection, and outside probe. |
 | `tools.txt`, optional `requirements.txt`, `package.json`, lockfile | Tools and libraries used by package scripts only. Game dependencies stay in the target workspace. |
 
-The standard bases are deliberate:
+The public workflow opens one frame and drives private helpers in this order:
 
-- `threejs-browser-game` MUST declare `narrows: orch-code`. Its artifact is executable repository code with ordinary git identity and code seams. A second generic game-code layer has no independent caller in this fixed-stack package and would duplicate ownership. If another engine later creates a real shared caller, that is the time to extract a common narrowing.
-- `browser-game-3d-asset` MUST be a private root with the git adapter. A `.blend` source, GLB export, manifest, structural inspection, and rendered review require materially different evidence from code even though they land in the same repository. That satisfies the root admission rule without broadening the library. `blender-game-asset` MUST name that root as its one `narrows:` base and add only Blender-specific criteria.
-- `browser-game-interface` MAY narrow `orch-design` for rendered interface evidence: canvas states, menus, HUD, focus, keyboard reach, breakpoints, and captures. It MUST NOT own mesh, material, rig, or animation quality; `orch-design` is a rendered-interface domain, not a generic 3D-asset base.
-- `browser-game-playtest` MAY narrow `orch-research` because its artifact is a traceable evidence packet rather than a git candidate.
+1. `discovery` audits the complete prompt and launches independent research
+   lanes in parallel. It synthesizes their evidence into a detailed concept,
+   traceability matrix, rubric, capture matrix, and core test plan. It uses
+   written visual intentions and research references only; GPT concept art and
+   production asset jobs wait.
+2. `playable-increment` makes the Three.js core from the frozen concept. Its
+   candidate uses primitives, graybox geometry, and basic functional
+   placeholders, with enough feedback to test the intended mechanics fairly.
+   The helper runs scoped QA and adaptive play, lands each accepted checkpoint,
+   and records core evidence.
+3. `gameplay-gate` reads a fixed core commit and the core evidence packet. Its
+   maker-independent judge either accepts the fundamental gameplay or emits
+   complaint IDs. A repair `do` receives the findings verbatim, runs QA and
+   play again, and a successor batch re-judges while progress continues.
+4. Only after core acceptance does the parent freeze the accepted
+   mechanics/control/collision/camera/timing baseline, invoke GPT concept-art
+   generation and inspection, and fan out post-core `blender-asset` jobs.
+5. The parent lands those production assets, runs a Three.js integration
+   increment, and checks animation timing, hitboxes, camera occlusion,
+   silhouette/readability, motion feedback, disposal, and performance.
+6. `final-acceptance` judges the fixed integrated candidate against the full
+   capture matrix and every play account. It repeats QA, repair, adaptive play,
+   and demanding re-judgment through successor batches until it passes or an
+   actual stop condition is reached. The outside probe runs after all children
+   return and prints the joined identity.
 
-Each standard contains domain knowledge only. It contains no stage order, delegation, stop condition, or return contract. `blender-bpy` carries reusable technique and MUST declare `role: worker`; every making call that applies it resolves the `orch-worker` profile before the skill runs. The active host's existing profile record owns the concrete model and effort. Planner-profile asset judges inspect fixed outputs without entering the applied skill. Helper workflow prose orders calls. Package scripts own deterministic process and file boundaries. A standard has no scripts or dependencies.
+No helper calls another public workflow or recursively calls its own quality
+cycle. Typed `artifact:` and `findings:` lines cross each handoff verbatim.
+Each wave reads the frame journal before acting and lands completed work before
+opening its successor. A standard carries domain knowledge only: it has no
+stage order, delegation, stop condition, or return contract. `blender-bpy`
+carries reusable technique and MUST declare `role: worker`; its host profile
+owns the concrete model and effort.
 
-A narrowing has one base. A ticket may list orthogonal standards only when they address the same coherent artifact and resolve to one adapter; a list is not a substitute for splitting different domains and handing identities across. This design normally keeps the calls separate:
+The standard bases are deliberate. `threejs-browser-game` MUST declare
+`narrows: orch-code`; `browser-game-3d-asset` is a private git-adapter root
+because a `.blend`, GLB, manifest, structural inspection, and rendered review
+need asset evidence; `blender-game-asset` narrows only that root. The interface
+standard MAY narrow `orch-design` for rendered UI evidence and MUST NOT own
+mesh, material, rig, or animation quality. The playtest standard MAY narrow
+`orch-research` for a traceable evidence packet. Target Three.js dependencies
+remain in the target workspace lockfile; package tooling owns none of them.
 
-1. an asset-making `do` stamps `blender-game-asset` and the applied `blender-bpy` skill;
-2. an asset `judge` stamps the identical asset-standard chain against its fixed git revision and manifest;
-3. after landing, the parent relays the asset's `artifact: git:<commit>` and manifest identity into a Three.js integration `do` stamped `threejs-browser-game`;
-4. separate fixed-revision judges apply `threejs-browser-game` and, where relevant, `browser-game-interface`; and
-5. actual-play calls stamp `browser-game-playtest` and hand evidence-packet identities to final acceptance.
+## Authority, traceability, and freezes
 
-All calls using these private names MUST occur in `browser-game` itself or one of its private helpers, which preserves the enclosing package scope. Calling another public workflow changes package scope, so that callee cannot resolve the caller's private standards. The rebuild needs no new public workflow, command registry, or generic workflow engine.
+The run record indexes rather than transcribes work. It identifies the original
+brief and explicit amendments; target-workspace baseline; host, Blender,
+Three.js, browser, hardware, and backend capabilities; dated research packets;
+concept revision; core and final acceptance matrices; every playable increment;
+asset source/export manifest; play session; capture; performance cell; judge;
+repair; and gap.
 
-## Run record, authority, and invalidation
+The immutable traceability matrix has at least these columns: prompt promise
+and amendment identity; derived rule, state, content, or visual requirement;
+playable evidence identity and normal-input path; core-gate verdict; final-gate
+verdict; owner; and invalidation trigger. A promise with no rule or evidence is
+an open hard gate. A concept revision adds a row or a new revision and names
+invalidated descendants; it never edits the prompt or overwrites a prior
+verdict. Generic genre conventions remain out of scope unless the prompt
+adopts them.
 
-One compact run record indexes rather than transcribes the work. It identifies the brief and open decisions; target-workspace baseline; host, Blender, Three.js, browser, hardware, and backend capabilities; research packets; concept and acceptance matrix; every asset source/export manifest; each increment's input and output commit, checks, play evidence, findings, and disposition; and final evidence, repairs, and gaps.
-
-Every decision records its owner, evidence identity, revision, and invalidation trigger. Product intent and promises are `kind: user-only`. Exact installed versions, renderer/backend choice, collision route, asset budgets, and test mechanics are empirical decisions. An unrelated user-only gap parks only its dependent work.
-
-The brief revision, pinned dependencies, concept, art direction, target hardware, control map, asset contracts, and acceptance matrix freeze before production. A contradiction creates a new evidence and decision revision, names every invalidated descendant, and resumes at the earliest affected gate. It never silently rewrites a build ticket.
+Every decision records owner, evidence identity, revision, confidence, and
+invalidation trigger. Product intent and promises are `kind: user-only`. Exact
+installed versions, renderer/backend choice, collision route, asset budgets,
+and test mechanics are empirical decisions. The brief revision, pinned
+dependencies, core concept, control map, collision/camera/timing contract,
+target hardware, acceptance dimensions, and core evidence plan freeze before
+the core candidate. The production art direction and asset contracts freeze
+after core acceptance against that accepted baseline. A contradiction creates
+a new evidence and decision revision, names affected descendants, and resumes
+at the earliest affected gate.
 
 ## Stages and literal gates
 
-The workflow opens one frame. It reads the journal at the start of every wave, lands each completed wave before opening its successor, and relays typed artifact and findings lines verbatim.
-
 | Stage | Inputs | Output and gate |
 | --- | --- | --- |
-| 0. Ask and audit | Brief, workspace, baseline | Prioritized self-question ledger, brief audit, capability inventory, and target hardware. Every material gap or user decision has an owner and route. |
-| 1. Research, design, and reference freeze | Stage 0 identities, independent research packets | Synthesized evidence; detailed game concept; inspected GPT concept-art set; asset budgets; increment plan; and acceptance, capture, and performance matrices. A reader can build and falsify the whole game without selecting another engine. |
-| 2. Prove pipelines | Frozen contract, representative asset jobs | I0 control tracer plus one Blender-to-GLB representative set imported through `GLTFLoader`. Production build, ordinary input, renders, validation, and in-engine scale/material/animation checks pass. |
-| 3. Grow vertically | Prior accepted commit, next increment goal, accepted assets | Ordered playable commits I1–I4. Each commit builds, plays, is captured, and resolves blocking judgment before its successor opens. |
-| 4. Accept | One frozen release-candidate commit and closed matrices | Maker-independent functional, asset, visual, play, compatibility, and performance evidence. Every hard gate and quality floor passes or returns findings. |
-| 5. Repair and close | Verbatim findings, fixed evidence, round count | At most two scoped repair/re-judge rounds, then an outside probe over the joined tip or an honest return of remaining blocks. |
+| 0. Deep research | Complete brief, amendments, workspace, baseline | Parallel dated research packets, prompt audit, capability inventory, and open-question ledger. Research may continue on supplied facts while a user-only gap parks only dependent decisions. |
+| 1. Core concept design | Stage 0 identities and independent packets | Detailed fun hypotheses, rules/state model, controls/camera, progression/content plan, session test, traceability matrix, rubric, capture/performance matrices, and frozen core contract. No production art prerequisite. |
+| 2. Fundamental playable game | Frozen core contract | Three.js playable increments I0–I2 with primitives, graybox, basic functional placeholders, normal input, readable feedback, scoped QA, and adaptive play. A tiny technical export/import probe may answer feasibility; it is not production art. |
+| 3. QA and core-gameplay gate | Fixed core candidate and complete core evidence | Separate QA, at least two maker-independent play contexts, complete core captures, demanding independent verdict, and repeated judge/fix/QA/play/re-judge successor batches until core acceptance, redesign, unverified, or a real stop. |
+| 4. Concept art and production assets | Accepted core identity and frozen baseline | Inspected GPT concept-art set, post-core Blender source/GLB batches, closed manifests, and integrated production candidate. Missing image or Blender capability parks only dependent work. |
+| 5. Integration QA and whole-game gate | Fixed integrated candidate and final matrices | Production build, asset/runtime checks, full adaptive play and captures, declared performance cells, demanding whole-game verdict, and repeated repair successor batches until acceptance or a real stop. |
+| 6. Outside close and resume | Joined fixed revision, returned children, verdict ledger | Outside probe, exact artifact identity, `gaps: []` only on acceptance, or best fixed revision plus unresolved findings and resumable state. |
 
-## Stage 0 — ask, audit the brief, and prove the fixed tools
+### Deep research before design
 
-The audit covers the game fantasy and audience; core and session loops; mechanics, world/content structure, progression, and terminal or continuing states; camera and controls; target hardware/browser/display; art, audio, and accessibility scope; asset and license constraints; delivery boundary; repository conventions; and the user's quality bar. It separates supplied facts, repository facts, reversible defaults, empirical questions, and user-only questions.
+Research launches one independent lane per material question cluster inside the
+fixed Three.js-and-Blender scope: game and mechanic comparables; Three.js and
+browser feasibility; Blender asset feasibility and budgets; and host play,
+capture, and performance evidence. Each lane returns its question, source
+policy, dated source identities, claims and counterevidence, authorized spike
+observations, supported decisions, confidence, disagreements, and gaps without
+reading another lane's packet. Synthesis waits for at least two independent
+packets, correlates them rather than voting, and gives every ledger item an
+answer or explicit gap under one evidence identity. Research does not compare
+engines or DCCs.
 
-The capability inventory observes:
+The audit covers fantasy and audience; core and session loops; mechanics,
+world/content structure, progression, terminal or continuing states, replay or
+re-entry; controls, disclosure, and camera; target hardware/browser/display;
+art, audio, UI, and accessibility scope; asset and license constraints;
+delivery boundary; repository conventions; and the quality bar. The
+capability inventory observes the exact pinned tools, available visual/input
+control, capture and error-reading capability, and production-like serving.
+Missing Blender or image generation is a capability gap. With standing
+authority, the workflow may make one bounded setup attempt and re-probe.
+Without authority, it returns the exact `kind: user-only` question and parks
+only dependent work. A technical export/import probe is allowed when it
+answers a feasibility question, with a distinct probe identity and no claim of
+production art.
 
-- clean/dirty workspace state, baseline, package manager, lockfile, build/test/serve commands, and installed Three.js identity;
-- exact CPU, GPU, memory, OS, display refresh, viewport, device-pixel ratio, power mode, browser/version, and available WebGL/WebGPU backend;
-- whether an agent can receive current visual feedback; focus the canvas; click; hold and release composite keyboard/mouse input; recover focus; pass user-gesture and pointer-lock gates; capture images/video/traces; and read console/network failures;
-- the absolute Blender executable, version output, executable identity, background Python execution, render engines/devices, glTF exporter, and package script compatibility; and
-- whether a production-like build can be served and reached without privileged game-state calls.
+### Detailed core concept and design freeze
 
-Missing Blender is a capability gap, so the workflow probes first. With current or standing installation authority, it performs one bounded, recorded setup step through the host's ordinary boundary and repeats the complete probe. Without authority, it returns the exact `kind: user-only` question with requirement/resume state and parks only dependent work. A changed executable invalidates dependent spikes, assets, renders, exports, and performance evidence. The workflow neither changes DCC nor accepts primitives as final art; it has no MCP, custom RPC service, or persistent Blender daemon.
+Synthesis produces a build-ready concept, not a genre label. Before making, it
+states testable hypotheses such as “the player understands the main choice
+within two attempts” or “escalating pressure creates a meaningful risk/reward
+decision.” It defines what observation would support or weaken each hypothesis.
+It freezes, as applicable:
 
-The LLM then creates a numbered, prioritized self-question ledger from the brief, audit, probes, and repository evidence. It exposes missing, contradictory, risky, or infeasible promises and evidence needed for the fun loop, controls/camera, mechanics/states, world/content, progression/pacing, Three.js, Blender, assets, presentation, and target hardware. Rank follows ability to change the concept or acceptance plan. The LLM may propose reversible defaults but never answers a `kind: user-only` question.
+- fantasy, purpose, fun loop, session shape, and the bounded full-session or
+  continuing-loop observation goal;
+- controls, input disclosure, focus, camera framing, camera movement, and
+  recovery behavior;
+- entities, ownership, mechanics, collision, rules, resources, timing,
+  transitions, win/loss/continuing states, restart, and replay/re-entry;
+- level/world topology, content breadth, spawn or encounter logic, progression,
+  difficulty, pacing, challenge, choice, and learnable counterplay;
+- feedback for actions, hits, damage, objectives, rewards, failure, and
+  transitions, including the minimum sound/animation/UI needed for fair play;
+- written art direction, reference sources, palette and silhouette intentions,
+  accessibility direction, and placeholder contracts;
+- asset/provenance and geometry/material/rig/texture budgets, target hardware,
+  stress scenarios, and the vertical-slice plan; and
+- core hard gates, critical gameplay dimensions, score anchors, evidence
+  owners, capture cells, and regression checks.
 
-## Stage 1 — research, design, and reference freeze
+This stage may inspect research references and write visual intentions. It does
+not generate GPT concept art, require a concept-art review, or make production
+Blender assets. Those activities start only after the core gate passes. A
+placeholder represents a declared tested function and is listed in the core
+evidence; it cannot hide an unimplemented central promise behind a stub.
 
-One independent research lane per material question cluster launches in parallel inside the fixed Three.js-and-Blender scope. The wave covers game/mechanic comparables, Three.js/browser feasibility, Blender asset feasibility/budgets, and host play/performance evidence. Without reading another lane's packet, each returns its question, source policy, dated source identities, claims/counterevidence, authorized spike observations, supported decisions, confidence, disagreements, and gaps. Synthesis waits for at least two independent packets, correlates them rather than voting, records unresolved conflicts, and gives every ledger item an answer or explicit gap under one evidence identity. Research does not compare engines or DCCs.
+### Fundamental Three.js game and placeholder milestones
 
-Synthesis feeds a build-ready concept, not a label. As applicable, it freezes the fantasy/fun loop and session shape; controls, disclosure, and camera; mechanics, rules, ownership, and state transitions; level/world/content design; progression, pacing, difficulty, terminal or continuing states, and replay/re-entry; art, animation, audio, UI, and accessibility direction; asset/provenance and geometry/material/rig/texture budgets; target hardware; and the vertical-slice plan. It marks inapplicable fields with reasons and derives required paths, play sessions, stress/capture matrices, rubric dimensions, and acceptance from the brief, preventing a later genre example from widening the contract.
+The core candidate uses the target workspace's pinned Three.js and ordinary
+browser input. Primitives and graybox assets must still provide legible
+silhouette, scale, collision, timing, camera behavior, action/reward/failure
+feedback, simple sound or animation where the concept needs it, and enough
+content to test the intended choices. Final material polish, detailed meshes,
+production textures, and a broad final cast are deferred. A viable Three.js
+prototype does not wait for Blender; absent Blender parks only dependent
+production asset work.
 
-After the written concept and before dependent Blender jobs, a GPT image model produces the required concept-art set. Its record binds exposed provider/model identity, prompt revision, inputs, rights/restrictions, output hashes, and asset/view coverage. A visual-capable maker and separate inspector view every candidate, record rejections/risks, and freeze selected silhouettes/views, scale cues, palette, materials, and lighting by identity for affected jobs. References never prove `.blend` or runtime quality. Unavailable generation or inspection yields `concept-art: unverified`, resume state, and parked dependent asset work rather than an unreviewed substitute.
+Each `playable-increment` begins at the last accepted commit, makes one bounded
+candidate, runs seam checks and a production build, lands the checked commit,
+serves that exact identity, and records ordinary-input play, captures, and
+findings. The core milestones are:
 
-New material evidence reopens the affected questions and lanes. A successor synthesis/concept revision names invalidated art selections, asset jobs, increments, captures, play accounts, performance cells, and judgments before resuming at the earliest affected stage; build steps never overwrite the decision in place.
+| Increment | Required core proof |
+| --- | --- |
+| I0 control/state tracer | Production build boots; normal entry and canvas focus work; primary controls and camera work; one representative state transition crosses final input/state seams; a promised restart/re-entry path works; and a representative GLB or tiny export/import probe loads through `GLTFLoader` when relevant. |
+| I1 fun-loop slice | Several minutes of adaptive ordinary-input play demonstrate the smallest complete loop, action and interaction feedback, intended challenge or expressive opportunity, and meaningful choice/progression where promised. Placeholder subjects, focal props, environment, animation, VFX, UI, and audio cover the mechanics under test. |
+| I2 core-session candidate | The full bounded acceptance journey or continuing-loop window is reachable with every central mechanic, world/content topology, progression, terminal/continuing state, and replay/re-entry path. Placeholder inventory and concept-derived stress seeds are complete. |
+
+QA, adaptive play, and judgment are separate records. QA fixes known
+technical blockers before the independent judge sees the revision. Playtesters
+receive current visual feedback, act on a normal clock, and adapt later input
+to observations. A scripted sequence can support a narrow functional check;
+it cannot support a fun or complete-game claim.
+
+### Core-gameplay gate
+
+The core gate freezes the I2 commit, prompt traceability matrix, concept and
+rubric revision, QA result, play accounts, capture matrix, and representative
+performance evidence before judging. Its hard gates are production boot,
+focus and controls, fundamental loop, every central mechanic and state
+transition, every promised core progression/content path, terminal or
+continuing behavior, replay/re-entry where promised, functional final boss
+play when central to the brief, readable feedback and fair camera/collision,
+and no undisclosed placeholder masking an unimplemented promise. A deliberate
+graybox is not a visual-polish failure at this gate.
+
+At least two maker-independent agents or contexts play the fixed core commit
+with ordinary input. Together they cover every required core path and state;
+one begins at the normal entry surface and encounters controls/tutorial
+disclosure. For a continuing game, the concept's bounded observation window
+must be traversed. Each account and capture binds artifact commit, browser,
+device/backend, seed, input mode, time, choices, state transitions, recovery,
+readability, pacing, fun/frustration observations, and console/network result.
+
+The core judge is independent of the maker and sees the fixed evidence index,
+not maker conversation. It enumerates every required core capture and reads
+every play account in full. It scores the frozen critical dimensions with
+predeclared anchors: loop purpose and clarity; control/camera feel; interaction
+feedback and state readability; fairness and challenge; meaningful choice or
+progression; pacing and continued engagement; prompt fidelity; and stability.
+Each dimension must be strong (normally at least 3 on a 0–4 scale) and every
+hard gate must pass. A forgiving average cannot offset a weak critical
+dimension. The verdict names strengths, complaint IDs and responsible seams,
+contrary evidence, confidence, expected visible improvement, regression
+checks, and one disposition: `pass`, `fix`, `redesign`, or `unverified`.
+
+Core evidence is sufficient only when it proves the mechanics and loop through
+normal play. Screenshots, simulated state jumps, attractive concept references,
+and unit tests are supporting evidence with narrower meanings. Fun is an
+evidence-backed judgment about this loop and these contexts; it is not a unit
+test, screenshot claim, or proof that every player will enjoy the game.
+
+## Post-core concept art, Blender assets, and integration
+
+After the core verdict is `pass`, the parent records the accepted mechanics,
+control, collision, camera, timing, and feedback baseline as immutable input to
+production. GPT image generation then produces the required concept-art set.
+The record binds provider/model identity, prompt revision, inputs,
+rights/restrictions, output hashes, and view coverage. A visual-capable maker
+and separate inspector view every candidate, record rejections and risks, and
+freeze selected silhouettes, views, scale cues, palette, materials, and lighting
+by identity for affected jobs. References guide production; they never prove a
+`.blend` or runtime asset.
+
+Post-core Blender jobs use the native CLI subprocess and the `blender-bpy`
+method. Every job has a never-reused directory/id, explicit input hashes,
+source mode, seed, unit/axis/pivot contract, allowlists, budgets, render
+cameras, export options, and expected outputs. Procedural jobs treat generator,
+job JSON, and pinned references as authority; edited jobs treat the pinned
+`.blend` as authority and record one-purpose edit provenance. Production
+concept art, representative production Blender assets, and mass art production
+are all downstream of the accepted core identity.
+
+Asset inspection includes the gameplay camera and a fixed turntable, plus
+animation frames where relevant. Validation records structure, transforms,
+bounds, ground contact, topology, materials, textures, armatures, clips,
+budgets, source/export hashes, and a machine-readable Khronos glTF report.
+`GLTFLoader` integration checks scale, orientation, materials, clip playback,
+bounds/collider alignment, load errors, and representative-device cost. A
+failure promotes nothing and receives a new job id. Missing image inspection or
+Blender parks the dependent production batch while the accepted core remains
+valid.
+
+The integration increment replaces placeholders only through accepted asset
+manifests. It checks animation timing against gameplay events, hitboxes and
+colliders, camera occlusion, silhouette and readability at gameplay distance,
+motion feedback, scale/material drift, UI/audio integration, disposal, and
+performance. An art change that alters collision, timing, camera, control, or
+other gameplay behavior invalidates the affected core verdict and routes back
+to the core evidence plan. Late gameplay defects receive gameplay repair;
+cosmetic work cannot conceal them.
+
+## Whole-game evidence and demanding final gate
+
+The final gate freezes one integrated release-candidate commit before review.
+Maker-independent lanes collect deterministic build/mechanics results,
+production asset/provenance manifests, visual captures, ordinary-input play
+accounts, compatibility/console/network results, and physical-device traces.
+Collectors do not edit the candidate.
+
+The final capture matrix covers every required viewport and DPR at boot,
+loading, errors, normal entry/control disclosure, opening play, each mechanic,
+progression/content phase, representative session or continuing-loop state,
+visual stress/readability condition, pause/settings surface, terminal or
+continuing state, and replay/re-entry. Inapplicable cells need a frozen
+rationale. Every capture binds commit, viewport/DPR, browser/backend, state,
+seed, and timestamp. Every play account is read in full. Missing coverage,
+unread accounts, broken identities, or unresolved conflicts are unverified hard
+gates; curated subsets cannot pass.
+
+Final hard gates cover clean production boot; controls/focus; all prompt and
+concept promises; every mechanic, content and progression path; terminal or
+continuing behavior; replay/re-entry; zero undisclosed placeholders or
+blocking errors; asset provenance and disposal; complete capture and adaptive
+play coverage; and every required performance cell with callback/Chrome-frame
+agreement. The final judge scores, with frozen 0–4 anchors, prompt fidelity;
+loop and purpose; controls/camera; feedback/readability/fairness; challenge,
+choice, pacing, and continued engagement; level/world coherence; 3D art,
+silhouette, animation, and motion coherence; promised UI/audio/accessibility;
+stability; and polish. The concept may omit a dimension only with a recorded
+reason. Every applicable dimension must be strong and every hard gate must
+pass. The final review re-runs the affected core proof against the accepted
+baseline; a core regression blocks final acceptance. There is no reward for
+attractive art masking weak mechanics and no
+false rejection of the deliberately scoped core graybox.
+
+The final maker-independent judge names strengths, material complaints and
+causes, contrary evidence, confidence, expected visible improvement, regression
+results, coverage omissions, and conflict resolution. It classifies each
+finding as defect, unverified claim, or preference. Preferences do not block
+unless the frozen prompt or rubric makes them material. A material unresolved
+complaint, weak critical score, conflict, or missing evidence yields `fix`,
+`redesign`, or `unverified`, never a rubber-stamped pass.
+
+## Quality-cycle progress, repair, and resumption
+
+Both gates use the same durable quality cycle: freeze the judged artifact and
+critical dimensions; collect QA, actual play, and independent judgment; record
+complaint IDs; hand accepted findings to one repair; run scoped QA; repeat
+affected play and evidence; and re-judge the fixed revision. The complaint
+ledger is append-only. A repair goal names only accepted complaints, their
+responsible seams, affected evidence, expected visible improvement, and the
+regression subset. A re-judge repeats every affected gate plus a smoke subset
+of unaffected paths. It compares the before/after evidence and closes a
+complaint only when the expected improvement is visible and no regression is
+introduced.
+
+Each individual ticket or frame uses a bounded repair batch for context and
+resource control. **Where the judge blocks, one repair `do` is handed the
+`findings:` line verbatim, then one re-judge; two rounds is the bound.** That is
+a local batch bound, not an automatic total stop for the public workflow. When
+a batch remains blocked but the parent is authorized, making progress, and has
+not reached a user/host budget or time boundary, the parent opens an automatic
+successor batch with the complete ledger and fixed criteria. It never creates
+a recursive private workflow cycle, silently relaxes a threshold, resets the
+complaint ledger, or asks permission merely to open an already-authorized
+successor.
+
+Stagnation, reopened complaints, or oscillation trigger independent diagnosis
+and a materially changed repair or design plan. The diagnosis preserves the
+original prompt, critical dimensions, evidence, and failed approaches. It may
+return `redesign` when the frozen concept cannot make the promise testable or
+enjoyable. Repeating the same action without new causal evidence does not count
+as progress. Stop only for acceptance; user cancellation; an applicable
+user/host budget or time boundary; or an evidenced external, unresolvable
+blocker. At a stop, return the best fixed revision, unresolved findings,
+contrary evidence, confidence, and exact resumable state.
+
+The frame journal is read at every wave head. A crash or context loss resumes
+through `orchflows resume`, resolves the recorded package and evidence
+identities, lands completed outcomes, and reopens only absent or expired
+dispatches. **Close on a command run outside every child; never on a child's
+own claim.** The outside probe checks the joined commit, installs/builds from
+the workspace lockfile, serves production output, exercises boot, normal entry,
+representative mechanics/state transitions, and replay/re-entry through
+ordinary input, and validates the complete gate coverage and complaint ledger.
 
 ## Native Blender job boundary
 
-**Current fact:** Blender's command line can run without a UI, execute a Python file with `--python`, turn an uncaught command-line script exception into a chosen nonzero status with `--python-exit-code`, and pass following arguments untouched after `--`. Blender evaluates arguments in order ([command-line arguments](https://docs.blender.org/manual/en/5.1/advanced/command_line/arguments.html)).
+**Current fact:** Blender's command line can run without a UI, execute a Python
+file with `--python`, turn an uncaught command-line script exception into a
+chosen nonzero status with `--python-exit-code`, and pass following arguments
+untouched after `--`. Blender evaluates arguments in order ([command-line
+arguments](https://docs.blender.org/manual/en/5.1/advanced/command_line/arguments.html)).
 
-The default route MUST launch the absolute, capability-probed Blender executable as a fresh subprocess for one job. The host-side package runner builds an argument array rather than interpolating a shell string. An illustrative launch is:
+The default route launches the absolute, capability-probed Blender executable
+as a fresh subprocess for one job. The host runner builds an argument array,
+sets an explicit wall timeout, and owns process-tree termination:
 
 ```text
 <BLENDER_EXE> --background --factory-startup --python-exit-code 23 --python <PACKAGE>/scripts/blender_asset_job.py -- <JOB_DIR>/job.json
 ```
 
-The executable path and version are pinned by the run's capability identity; `<PACKAGE>` is fixed by the workflow-package digest. The runner sets an explicit wall timeout and owns process-tree termination. The worker gets all variable input from `job.json`; it does not receive generated Python through `--python-expr` or open a socket.
+The worker gets variable input from `job.json`; it does not receive generated
+Python through `--python-expr` or open a socket. One Blender process owns one
+`.blend` state. Concurrent jobs never share a writable source or output path.
+CPU jobs use a measured process cap; GPU renders serialize per GPU by default.
 
-Every job has a never-reused directory and id. The input file records schema version, job id, asset id, source mode, exact input hashes, expected source hash, seed, unit/axis/pivot contract, collection and object allowlists, mesh/material/texture/rig/animation budgets, render cameras, engine/device/sample settings, export options, and expected output paths. Paths resolve inside the job or declared workspace roots. One Blender process owns one `.blend` state. CPU jobs run under a measured process cap; GPU renders are serialized per GPU by default and widen only after a resource probe. Concurrent jobs never share a writable source or output path.
+The worker prefers `bpy.data` and BMesh for deterministic edits. Operators are
+used only at supported boundaries such as open, save, render, and export, with
+scene, view layer, mode, active object, selection, engine, device, frame, and
+output path asserted before use. Structural inspection records names, external
+references, units, transforms, bounds, geometry, UVs, normals, materials,
+textures, armatures, clips, poses, and budgets. The source, export, render,
+executable, OS/driver/backend, job, and manifest identities are bound even
+where GPU output cannot be byte-identical.
 
-Source authority is explicit:
+The handoff keeps `.blend` as source and `.glb` as runtime delivery. Its
+manifest fixes meters, exported +Y up, gameplay-forward vector, origin,
+transforms, bounds, collider/attachment metadata, material and texture roles,
+animation names/ranges, skeleton/morph budgets, required decoders/extensions,
+and hashes. The runner promotes outputs only when Blender exits zero, echoed
+job and input digest match, outputs are new, contained, nonempty and
+hash-matched, inspection/render evidence is complete, the pinned Khronos
+validator reports no errors, and the pinned production `GLTFLoader` path
+passes scale/material/animation/collider checks. A timeout, mismatch, partial
+file, validator error, or import mismatch promotes nothing.
 
-- **Procedural:** the generator/edit script, job JSON, and pinned reference inputs are authoritative. The `.blend`, GLB, and previews are derived and must rebuild from those identities.
-- **Edited:** the pinned `.blend` is authoritative. A one-purpose Python edit job asserts its input hash, saves a new source revision, and records the edit script/job as provenance; it does not claim that earlier manual modeling is reproducible from code. Later validation/render/export jobs never mutate that accepted source.
-
-Each affected job names the selected GPT concept-art identities frozen in Stage 1 and the concrete views or qualities they constrain. These images are references, not proof of a runtime asset. The accepted object is the inspected `.blend` plus its validated runtime export and in-engine evidence.
-
-### Python method inside Blender
-
-The worker prefers `bpy.data` and BMesh for deterministic object, mesh, material, collection, transform, and topology edits. Blender documents that operators depend on implicit UI context and may fail their poll where a direct API would give clearer access, while BMesh can be created, modified, written back, and freed without Edit Mode ([operator limitations](https://docs.blender.org/api/current/info_gotchas_operators.html), [BMesh API](https://docs.blender.org/api/current/bmesh.html)). The applied `blender-bpy` method therefore requires explicit names and direct references rather than selection-driven mutation.
-
-Operators remain deliberate boundaries when they are the supported operation: open a pinned `.blend`, save a new `.blend`, bake materials, render, and export glTF. Before each operator, the worker sets and asserts scene, view layer, mode, active object, selection, render engine, device, frame, and output path as applicable; it checks the returned status and then validates the observable file or data change. Version-specific keyword support is capability-probed rather than inferred from moving `main`/`current` API pages.
-
-Structural inspection records object/collection names; dependency and external-file references; unit scale; transforms, origin, forward marker, bounds, and ground contact; mesh triangle/vertex counts after evaluated modifiers; UVs, normals, tangents where required, non-manifold and degenerate geometry; material slots and texture dimensions/color roles; armatures, bone influences, actions, clip names/ranges, root motion, and sampled poses; cameras/lights used only for review; and every budget verdict. Seeds cover procedural choices, but the record does not promise byte-identical GPU renders across drivers or devices. It binds Blender/executable, OS/driver/backend, scene, script, job, source, export, and render identities and uses numeric and visual tolerances where bytes may vary.
-
-### Render, inspect, export, and promote
-
-The worker renders the asset from the actual gameplay camera and lighting contract, not only a flattering studio angle. It also emits a fixed turntable and, for animated assets, representative clip frames or a review animation that exposes silhouette, deformation, foot contact, looping, and attachments. The asset maker and judge MUST actually view these renders with a visual-capable tool and record which files and frames they inspected. A file's existence is not visual evidence.
-
-The source uses a small glTF-compatible Principled metal/rough material vocabulary. Procedural or unsupported Blender shader networks are baked deliberately to the agreed base-color, metallic/roughness, normal, occlusion, and emissive textures; color textures and data textures retain distinct color-space roles. The export contract fixes whether modifiers are applied, because applying them can conflict with shape keys, and fixes action/NLA handling, clip names, sampling, skin influence limits, morph targets, textures, extras, and extensions. Blender's exporter supports meshes, metal/rough materials, textures, skinning, shape keys, and animation, but Blender and glTF material systems are not identical ([Blender glTF manual](https://docs.blender.org/manual/en/5.1/addons/import_export/scene_gltf2.html), [versioned export API](https://docs.blender.org/api/5.1/bpy.ops.export_scene.html)). The workflow verifies the chosen subset; it never assumes the viewport look survives export.
-
-The handoff uses `.glb` for runtime delivery and keeps `.blend` as source. Its manifest fixes meters, exported +Y up, the model's gameplay-forward vector, pivot/origin, transform policy, bounds, collider/attachment metadata, material and texture roles, animation names/ranges, skeleton and morph budgets, required loader extensions/decoders, and hashes. Three.js recommends glTF for runtime assets and exposes glTF scenes, cameras, and animation clips through `GLTFLoader` ([Three.js loading guide](https://threejs.org/manual/en/loading-3d-models.html), [`GLTFLoader`](https://threejs.org/docs/pages/GLTFLoader.html)).
-
-Blender writes candidate outputs and a worker-result manifest inside the unique job directory, with the manifest last. The host runner accepts nothing unless the process exits zero; the echoed job id and input digest match; every expected output is new, contained, nonempty, and hash-matched; structural and render evidence is complete; and the pinned Khronos validator produces a machine-readable report with no errors. The validator documents JSON reports and a nonzero CLI status on errors ([glTF Validator](https://github.com/KhronosGroup/glTF-Validator)). The runner then imports the GLB through the pinned Three.js production path, checks scale, orientation, materials, clip playback, bounds/collider alignment, load errors, and representative-device cost, and only then promotes source/export/manifest files into the candidate commit.
-
-A timeout, nonzero exit, missing manifest, mismatched nonce/hash, validator error, stale path, partial file, or in-engine mismatch keeps the job directory as failed evidence and promotes nothing. There is no automatic retry. Diagnosis names the failed boundary; a new attempt gets a new job id and records its relationship to the failure.
-
-**Qualified alternative:** Blender publishes a pip-installable `bpy` module, but its official documentation notes one active `.blend` per process, unsupported module reload, different startup/preferences, unavailable CLI-controlled functions, different signal handling, and possible GPU conflicts ([Blender as a Python module](https://docs.blender.org/api/current/info_advanced_blender_as_bpy.html)). A run MAY use embedded `bpy` only after pinning a distribution compatible with the required Blender version and passing the same render/export/signal/timeout probes. It still uses one disposable worker process and the same job/result files. It is not installed into or assumed compatible with the Orchflows interpreter. The executable subprocess remains the default because it preserves Blender's tested CLI, add-on, render, crash, and isolation behavior.
+Blender's pip-installable `bpy` module MAY be used only after pinning a
+compatible distribution and passing the same render/export/signal/timeout
+probes. It remains one disposable worker process and is never assumed
+compatible with the Orchflows interpreter. The executable subprocess remains
+the default. These native rules are unchanged by the gameplay-first order.
 
 ## Three.js runtime contract
 
-Three.js supplies scene, rendering, loading, and animation primitives; it does not choose the game's architecture. Before I0, the concept assigns each system to an explicit module and seam:
+Before I0, the concept assigns each system to an explicit seam: normal-clock
+simulation and pause/visibility handling; ordinary input and focus; collision
+and camera; boot/loading/active/pause/phase/terminal/replay states; entity and
+content ownership; `GLTFLoader` progress/errors/decoders; animation mixer and
+clip cleanup; renderer, materials, color management, culling, LOD, instancing,
+particles, and post-processing; audio unlock/mixing/disposal; DOM/canvas UI,
+HUD, accessibility, resize/DPR, and resource disposal. Load errors are visible
+game states and test seams.
 
-- normal-clock loop and fixed/variable simulation timing, pause, visibility loss, and catch-up limits;
-- ordinary input action map, focus/pointer lock where applicable, brief-derived navigation/interaction, collision/physics when used, and camera;
-- game-state machine for boot, loading, entry, active play, pause where promised, every concept-derived phase or mode, terminal or continuing states, and replay or re-entry;
-- entities and world/content ownership, every concept-derived mechanic and progression system, seeded randomness where used, lifecycle/pooling, and read-only diagnostics;
-- `GLTFLoader` registry, progress, cancellation, error presentation, decoders/extensions, and fallback behavior;
-- `AnimationMixer`/clip ownership, transitions, root-motion policy, skeleton budgets, and animation cleanup;
-- renderer, scene, lights/shadows, materials, color management, culling, LOD, instancing, particles, and post-processing;
-- audio unlock, mixing, pause/disposal, and observable failure where audio is promised; and
-- DOM/canvas UI, HUD, accessibility, resize/DPR policy, and resource disposal.
+Three.js and all runtime decoders or physics dependencies are pinned in the
+target workspace lockfile. A manifest using Draco, Meshopt, or KTX2 names its
+loader setup and decoder identity; omission or load failure is fatal. Removal
+disposes geometries, materials, textures/image bitmaps, render targets,
+skeletons, mixers, listeners, and audio according to ownership.
 
-The target workspace pins Three.js and every runtime decoder or physics dependency in its own lockfile. The workflow package owns none of them. A manifest using Draco, Meshopt, or KTX2 names the corresponding loader setup and decoder identity; omission or load failure is fatal. Load errors are visible game states and test seams. Removal disposes geometries, materials, textures/image bitmaps, render targets, skeletons, mixers, listeners, and audio according to ownership; Three.js warns that loader-created image bitmaps need special disposal handling ([`GLTFLoader`](https://threejs.org/docs/pages/GLTFLoader.html), [disposal guide](https://threejs.org/manual/en/how-to-dispose-of-objects.html)).
+Renderer choice is empirical inside the fixed Three.js route. The default
+acceptance baseline SHOULD use pinned `WebGLRenderer` on WebGL 2.
+`WebGPURenderer` MAY replace it only when the exact revision, materials,
+fallback, browsers, captures, and performance cells pass. A backend change
+invalidates visual and performance evidence. Color inputs, working space,
+output transform, tone mapping, environment maps, and post-processing are
+explicit. Instancing and animation strategies require measured draw-call,
+memory, and peak-density evidence rather than assumed benefit.
 
-Renderer choice remains an empirical decision within Three.js. The default acceptance baseline SHOULD use pinned `WebGLRenderer` on WebGL 2. `WebGPURenderer` MAY replace it only when the exact Three.js revision, materials/post-processing, fallback behavior, browsers, captures, and performance cells pass; the current Three.js guide calls it experimental and documents material/post-processing differences and a WebGL 2 fallback ([renderer guide](https://threejs.org/manual/en/webgpurenderer)). A backend change invalidates visual and performance evidence.
+## Actual adaptive playtesting
 
-Color inputs, working space, output transform, tone mapping, environment maps, and post-processing output are explicit. Three.js uses Linear-sRGB as its working space and requires correct annotations for color versus data textures ([color management](https://threejs.org/manual/en/color-management.html)). The imported asset test catches washed-out base color, incorrect normal/roughness treatment, lighting mismatch, and missing output conversion.
+The target carries a small browser harness that starts/stops server and
+browser, focuses the game, issues ordinary keyboard/pointer actions, waits on
+a normal clock, returns a current screenshot plus a compact read-only state
+snapshot, and starts/stops capture. It may use Playwright's ordinary input
+APIs ([Playwright input](https://playwright.dev/docs/input)) or an equivalent
+host. It never invokes game methods to move the player, grant progression,
+advance content, or set terminal/continuing state.
 
-Instancing is admitted only for compatible shared geometry/material and a measured draw-call win. Animated crowds receive a declared strategy and peak-scenario proof; an ordinary `InstancedMesh` is not assumed to solve skeletal animation. Skeleton/bone/influence, active mixer, morph, particle, light/shadow, triangle, texture-memory, and draw-call limits come from the representative asset and peak-density measurements. They are budgets, not fashionable constants.
+Evidence labels are explicit:
 
-The production input boundary also serves testing. Browser automation may focus the canvas and press, hold, move, and release ordinary inputs. A lab build may select a seed, load a scenario, control simulation time, or expose a read-only snapshot; those controls are absent from production and never count as actual play or normal-clock performance.
+- **actual play:** current visual feedback, sustained ordinary input on a
+  normal clock, and later input adapted to observations;
+- **scripted input:** a fixed ordinary-input sequence without adaptive
+  observation; and
+- **simulated:** fake time, scenario jumps, direct state mutation, bots, or
+  headless/null rendering.
 
-## Playable vertical increments
-
-Each `playable-increment` starts from the last accepted commit and performs one bounded sequence: make in an isolated candidate, run seam checks and a production build, land the checked commit, serve that exact identity, play with ordinary input, capture new and regression states, judge the fixed revision, and resolve any blocking finding before its successor opens.
-
-| Increment | Required playable proof |
-| --- | --- |
-| I0 control tracer | The production build boots; entry/start, canvas focus, the primary control and camera actions, one representative concept-derived state transition, and replay or re-entry where promised cross the final input/state boundaries. A representative GLB loads through the production path. |
-| I1 fun-loop slice | Several minutes of adaptive ordinary-input play prove the smallest complete fun loop, readable action/interaction feedback, the intended challenge or expressive opportunity, and meaningful choice or progression where promised. Representative playable subjects or focal props, interactive content, environment, animation, VFX, UI, and audio establish the applicable quality bar. |
-| I2 full-session skeleton | The complete bounded acceptance journey or continuing-loop observation window is reachable with all required mechanics, world/content topology, progression, and terminal or continuing states. Every placeholder is identified, and every concept-derived stress scenario runs. |
-| I3 production-content candidate | Approved Blender assets, animation, VFX, UI/audio, promised content breadth, balance or tuning, pacing, and distinctive moments replace every placeholder. Asset manifests and disposal checks close. |
-| I4 release candidate | Full adaptive ordinary-input sessions cover every concept-derived required path and re-entry behavior; the complete capture matrix, compatibility checks, clean production build, declared-hardware traces, and outside-probe preparation bind one commit. |
-
-Mass asset production begins only after the representative pipeline and I1 fun loop pass. Thereafter asset batches and code increments may run in parallel from explicit baselines, but asset commits land and hand manifests to the integration increment before that increment is judged. A final assembly view checks cast-wide scale, palette, lighting, density, animation, and camera readability because separately approved assets can still conflict in a scene.
-
-## Actual agent playtesting
-
-The target carries a small browser harness that can start/stop the server and browser, focus the game, issue ordinary keyboard/pointer actions, wait on a normal clock, return a current screenshot plus a compact read-only state snapshot, and start/stop evidence capture. It may adapt [Playwright's ordinary input APIs](https://playwright.dev/docs/input) or an equivalent host. It never invokes game methods to move the player, perform interactions, grant progression, advance content, or set a terminal or continuing state.
-
-Evidence uses three labels:
-
-- **actual play:** a player receives current visual feedback, sustains ordinary input on a normal clock, and adapts later input to observations;
-- **scripted input:** a fixed ordinary-input sequence runs without adaptive observation; and
-- **simulated:** fake time, scenario jumps, direct state mutation, bots, or headless/null rendering.
-
-Only the first supports play-quality and complete-game claims. A session records artifact commit, harness/browser/device/backend, seed, real start/end time, input mode, checkpoints/captures, actions and choices, mechanic/progression/state transitions, recovery or re-entry, control problems, pacing, readability, feedback, fun/frustration observations, console/network errors, and confidence limits.
-
-At least two maker-independent agents or contexts play I4. Together they cover every required ordinary-input path, mechanic, progression or content phase, terminal or continuing-state observation, and replay or re-entry behavior frozen by the concept; at least one begins from the normal entry surface and traverses control/tutorial disclosure. The concept defines a bounded observation goal for games without a conventional ending. If no available agent can both see and control real-time play, the workflow returns `actual-play: unverified` and cannot claim completion; scripted and simulated evidence retain their narrower labels.
+Only actual play supports play-quality and complete-game claims. A session
+records artifact commit, harness/browser/device/backend, seed, real start/end
+time, input mode, checkpoints/captures, actions and choices,
+mechanic/progression/state transitions, recovery or re-entry, control problems,
+pacing, readability, feedback, fun/frustration observations, console/network
+errors, and confidence limits. Both main gates require at least two
+maker-independent play contexts and all applicable account/capture coverage.
+If no available agent can see and control real-time play, the workflow records
+`actual-play: unverified`, preserves narrower evidence, and cannot claim the
+affected gate passed.
 
 ## Real presented-frame performance
 
-“60 fps” is a measurement cell. Each cell binds device/CPU/GPU/RAM, OS and power mode, browser/version, renderer/backend, display refresh, viewport/DPR, quality settings, commit, scenario/seed, warm/cold state, duration, instrumentation, raw paths, metric definitions, thresholds, and invalidation rule.
+“60 fps” is a measurement cell. Each cell binds device/CPU/GPU/RAM, OS and
+power mode, browser/version, renderer/backend, display refresh, viewport/DPR,
+quality settings, commit, scenario/seed, warm/cold state, duration,
+instrumentation, raw paths, metric definitions, thresholds, and invalidation
+rule. The core gate proves representative active-play and worst-core-scenario
+cells; the final gate adds every production stress and full-session cell.
 
-The frozen concept separates static readiness from animation cells. A stationary menu/pause surface must stay stable, error-free, and responsive to a marked ordinary-input transition; Chrome idle frames are expected and receive no 59 fps threshold. Promised continuous menu motion makes it an animation cell. Required animation cells cover representative ordinary-input play, each concept-derived worst case, and a full adaptive session's predeclared active spans, using brief-derived motion or a visible sentinel rendered through the game canvas. A separate DOM/compositor animation cannot satisfy the cell. The default 60 Hz contract uses three warm 60-second runs per bounded animation/stress scenario after warm-up.
+A stationary menu/pause surface must stay stable, error-free, and responsive to
+a marked ordinary-input transition; Chrome idle frames receive no 59 fps
+threshold unless continuous menu motion is promised. Required animation cells
+use brief-derived motion or a visible sentinel rendered through the game
+canvas. The default 60 Hz contract uses three warm 60-second runs per bounded
+animation/stress scenario after warm-up.
 
-For an animation run, let `T` be the complete marked foreground normal-clock window in seconds. `requestAnimationFrame` evidence must average at least 59 callbacks per second over `T`, place at least 99% of callback intervals at or below 18.33 ms, and contain no unexplained stall above 100 ms. Callback cadence remains necessary but does not prove Chrome compositor presentation.
+For an animation run, let `T` be the complete marked foreground normal-clock
+window in seconds. `requestAnimationFrame` evidence must average at least 59
+callbacks per second over `T`, place at least 99% of callback intervals at or
+below 18.33 ms, and contain no unexplained stall above 100 ms. Callback cadence
+is necessary but does not prove compositor presentation.
 
-**Current fact:** Chrome's protocol exposes `Tracing.start` with `traceConfig` and `ReturnAsStream`, `Tracing.end`, and `tracingComplete` with the stream and `dataLossOccurred`; JSON support is marked for future deprecation ([CDP Tracing](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/)). The collector preserves the raw stream/completion metadata, pins and probes Chrome, CDP schema, format, categories, and parser, and pads both sides of the marked window.
+**Current fact:** Chrome's protocol exposes `Tracing.start` with `traceConfig`
+and `ReturnAsStream`, `Tracing.end`, and `tracingComplete` with a stream and
+`dataLossOccurred` ([CDP Tracing](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/)).
+The collector preserves raw stream/completion metadata, pins and probes Chrome,
+CDP schema, format, categories, and parser, and pads both sides of the marked
+window.
 
-**Current fact:** Pinned DevTools `FramesHandler` uses Meta, Renderer, and LayerTree handlers; consumes `BeginFrame`, `DrawFrame`, `DroppedFrame`, `RequestMainThreadFrame`, `BeginMainThreadFrame`, `Commit`/legacy `CompositeLayers`, `ActivateLayerTree`, `NeedsBeginFrameChanged`, and `SetLayerTreeId`; and emits `TimelineFrameModel` start/end/duration plus `idle`, `dropped`, and `isPartial` ([source revision `9f9f40b`](https://github.com/ChromeDevTools/devtools-frontend/blob/9f9f40ba5bca7e385be30535cdbf01a3a7e5ba44/front_end/models/trace/handlers/FramesHandler.ts)). Partial and dropped flags may overlap on one row. Some undrawn non-dropped `BeginFrame` events are omitted and widen the preceding frame. The versioned adapter therefore never treats row count as exhaustive display opportunities or claims physical scanout.
+**Current fact:** Pinned DevTools `FramesHandler` uses Meta, Renderer, and
+LayerTree handlers; consumes `BeginFrame`, `DrawFrame`, `DroppedFrame`,
+`RequestMainThreadFrame`, `BeginMainThreadFrame`, `Commit`/legacy
+`CompositeLayers`, `ActivateLayerTree`, `NeedsBeginFrameChanged`, and
+`SetLayerTreeId`; and emits `TimelineFrameModel` timing plus `idle`, `dropped`,
+and `isPartial` ([pinned source revision](https://github.com/ChromeDevTools/devtools-frontend/blob/9f9f40ba5bca7e385be30535cdbf01a3a7e5ba44/front_end/models/trace/handlers/FramesHandler.ts)).
+Partial and dropped flags may overlap, and omitted undrawn non-dropped frames
+mean row count is not exhaustive display opportunity evidence.
 
-Before accepting a cell, discovery qualifies that binding with fixed static-idle, continuous-game-animation, and deliberate-stall traces. It proves padded extraction, `dataLossOccurred: false`, clock reconciliation, raw joins, game-canvas renderer/layer attribution, all flag overlaps, and stall failure through a flag or reduced wall-time clean rate. A negative fixture keeps callbacks or another compositor layer active while delaying canvas draws; the game-cadence claim must fail. This document has not implemented or tested the adapter. Unparsed formats, unqualified flags, missing/ambiguous attribution, loss, or incomplete coverage make dependent cells `performance: unverified`.
+Before accepting a cell, discovery qualifies static-idle,
+continuous-game-animation, and deliberate-stall traces. It proves padded
+extraction, `dataLossOccurred: false`, clock reconciliation, raw joins,
+game-canvas renderer/layer attribution, flag overlaps, and stall failure. A
+negative fixture keeps callbacks or another compositor layer active while
+delaying canvas draws; the game-cadence claim must fail. Unparsed formats,
+loss, ambiguous attribution, or incomplete coverage make dependent cells
+`performance: unverified`.
 
-For a qualified animation window, `N` counts unique rows starting in `[start, end)`; `C` counts rows both attributed to the game canvas and free of `idle`, `dropped`, or `isPartial`; `I` counts idle rows; and `D` counts rows with `dropped OR isPartial`, once when both. Reports retain row identities and flags. Passing requires `N > 0`, `C / T >= 59`, `D / N <= 1%`, and callback thresholds. Idle/omitted/unattributed rows add nothing to `C`, so wall duration exposes lost cadence. Static windows report `N`, `I`, and flags without this denominator. Animation evidence reconciles callbacks, trace, rows, canvas attribution, and captures; static responses bind ordinary input and resulting capture to covered trace time.
+For a qualified animation window, `N` counts unique rows starting in
+`[start, end)`; `C` counts rows attributed to the game canvas and free of
+`idle`, `dropped`, or `isPartial`; `I` counts idle rows; and `D` counts rows
+with `dropped OR isPartial`, once when both. Passing requires `N > 0`,
+`C / T >= 59`, `D / N <= 1%`, and the callback thresholds. Static windows
+report `N`, `I`, and flags without this denominator. Callback and clean-frame
+thresholds must agree on scenario, seed, markers, duration, and artifact.
+Fake clocks, background tabs, throttling, null renderers, fast-forward, and
+dev builds are diagnostic only. A repair targets the measured bottleneck and
+repeats the identical cell; lowering resolution, content density, effects,
+browser cohort, or hardware target requires a visible decision revision.
 
-Instrumented and minimally instrumented runs stay separate. Callback and clean-frame thresholds must both pass, while scenario, seed, markers, duration, and artifact must reconcile; contradictions close only after cause and matching rerun. Fake clocks, background tabs, throttling, null renderers, fast-forward, and dev builds are diagnostic only.
-
-Failure attribution distinguishes simulation/main-thread work, garbage collection, draw calls, GPU/fill rate, shader compilation, asset decode/upload, animation/skinning, memory growth, and harness overhead. One repair targets the measured bottleneck and repeats the identical cell. Lowering resolution, content density, effects, browser cohort, or hardware target requires a visible decision revision; it cannot recolor a failure.
-
-## Fixed-revision judgment, repair, and close
-
-Final acceptance freezes one release-candidate commit before review. Maker-independent lanes gather deterministic build/mechanics results, asset/provenance manifests, visual captures, ordinary-input play accounts, compatibility/console/network results, and physical-device traces. Collectors do not edit the candidate. Judges receive the Goal, fixed artifact identity, their one stamped lens, and the evidence index rather than maker conversation.
-
-The concept-derived capture matrix covers every viewport/DPR at boot/loading/errors, normal entry/control disclosure, opening play, each required mechanic/progression/content phase, representative session or continuing-loop states, every visual stress/readability condition, promised pause/settings, terminal or continuing states, and replay/re-entry. Inapplicable cells need a frozen rationale. Each capture binds commit, viewport/DPR, browser/backend, state, seed, and timestamp.
-
-Before scoring, the final maker-independent judge enumerates and visually inspects every required capture and reads every playtester account in full. Its coverage record maps every matrix cell, gate, and score to identities; names omissions; and correlates conflicts among visuals, accounts, snapshots, console/network results, and performance. A missing capture, unread account, broken identity, or unresolved conflict is an unverified hard gate; curated subsets cannot pass. Asset gameplay-camera and turntable/animation inspection remains distinct and never substitutes for in-engine captures.
-
-Hard gates cover production boot; controls/focus; every concept-frozen mechanic, content promise, progression, terminal/continuing observation, and replay/re-entry; zero undisclosed placeholders or blocking errors; provenance closure; complete play/capture coverage; and each performance cell with callback/Chrome-frame agreement. The brief adds genre-specific gates and dimensions before production. The universal 0–4 floor covers loop/purpose clarity, control/camera feel, interaction feedback, state/opportunity readability, appropriate pacing, promised choice/progression, level/world and 3D art/motion coherence, promised UI/audio/accessibility support, stability, and polish. Only the frozen concept may omit a dimension, with reason. Every gate and applicable score of at least 3 must pass.
-
-Findings are observable complaints tied to evidence and a responsible seam. They distinguish defects, unverified claims, and preferences. **Where the judge blocks, one repair `do` is handed the `findings:` line verbatim, then one re-judge; two rounds is the bound.** A repair goal names only the accepted complaints, affected evidence, and regression subset. Re-judgment repeats affected gates and a smoke subset of unaffected paths.
-
-**Close on a command run outside every child; never on a child's own claim.** The outside probe checks the joined commit, installs/builds from the workspace lockfile, serves production output, exercises boot, normal entry, representative concept-derived mechanics/state transitions, and replay/re-entry where promised through ordinary input, validates evidence/manifest identities and complete judge-coverage records, and verifies collector qualification, raw callback/trace identities, metric rows, thresholds, and agreement verdicts for every required cell. It prints the exact accepted git identity. After two blocked rounds or any unclosed hard gate, the workflow returns the fixed revision and gaps without claiming completion.
-
-## Failure and resumption
+## Failure and resumption table
 
 | Event | Required behavior |
 | --- | --- |
-| Missing product promise | File one `kind: user-only` question verbatim; park only dependent work and revise the brief on answer. |
-| Missing/changed Blender, browser, or tool | Record observed and required capability. Use current or standing installation authority for one bounded setup step and re-probe; otherwise return the verbatim user-only question and resume state. Invalidate dependent evidence on identity change. |
+| Missing product promise | File one `kind: user-only` question verbatim; continue independent research and park only dependent design/build work. |
+| Changed prompt or amendment | Freeze a new authority revision, update traceability, name invalidated descendants, and resume at the earliest affected gate. |
+| Missing/changed Blender, browser, image, or tool | Record observed and required capability; perform one authorized bounded setup/re-probe or return the exact user-only question. Invalidate dependent evidence on identity change. |
+| Image generation or inspection unavailable | Record `concept-art: unverified`; park only post-core art jobs and retain viable core gameplay evidence. |
 | Blender job failure | Preserve job, source, script/package identity, stdout/stderr, partial outputs, and diagnosis; promote nothing; retry only as a new job. |
-| Three.js load/runtime failure | Keep candidate unlanded, bind console/network/manifest evidence, and repair the responsible loader, asset, or runtime seam. |
-| Agent cannot see/control play | Preserve narrower scripted/simulated evidence; dispatch a capable lane or return actual play unverified. |
-| Performance miss/contradiction | Preserve raw callbacks and trace, attribute, repair one seam, and repeat the same cell. |
-| Judge block | Apply the two-round rule, then return remaining blocks. |
+| Three.js load/runtime failure | Keep candidate unlanded, bind console/network/manifest evidence, repair the responsible seam, and refresh QA before judgment. |
+| Agent cannot see/control play | Preserve scripted/simulated evidence with its narrower label; dispatch a capable context or return actual play unverified. |
+| Core judge block | Record findings verbatim, run a scoped QA/fix/play/re-judge batch, and open a successor batch while authorized progress continues. |
+| Production art changes gameplay | Invalidate affected core verdict and route to gameplay repair and re-judgment before final acceptance. |
+| Final judge block | Apply the same durable quality cycle; diagnose stagnation or redesign when complaints reopen or oscillate. |
+| Performance miss/contradiction | Preserve raw callbacks and trace, attribute one bottleneck, repair one seam, and repeat the identical cell. |
+| Stagnation or external limit | Record diagnosis, unchanged evidence, budget/time or external proof, best fixed revision, unresolved findings, and exact resume state; never relax quality silently. |
 | Crash/context loss | Use `orchflows resume`, read the frame journal, resolve recorded identities/package digest, land completed outcomes, and reopen only absent or expired dispatches. |
 | Package changes mid-run | Refuse stale admission and start a successor run citing predecessor evidence; never mix package contracts. |
 
@@ -263,28 +638,93 @@ Findings are observable complaints tied to evidence and a responsible seam. They
 /browser-game build me a 3d vampire survivors-like game with 1 level but many waves that ends in a final boss fight
 ```
 
-Discovery treats 3D, one level, many waves, and a final boss as fixed intent; Three.js and Blender come from the workflow contract. It audits session length, controls, target hardware/browser, art/audio/accessibility, asset rights, and delivery. A reversible proposal might be a 12-minute local run, keyboard movement with automatic attacks, an original stylized low-poly direction, and the available development machine plus pinned Chromium/WebGL 2 as the first 60 Hz cell. Broader support remains user-owned.
+Deep research launches independent lanes for survivor pacing and boss
+counterplay, Three.js entity/runtime feasibility, Blender production budgets,
+and host adaptive-play/performance capture. The audit treats 3D, one level,
+many waves, and a final boss as fixed prompt promises. A reversible proposal
+might be a 12-minute local run, keyboard movement with automatic attacks, an
+original stylized low-poly direction, and pinned Chromium/WebGL 2 as the first
+60 Hz cell. Exact support remains user-owned.
 
-The LLM's prioritized questions include how many simultaneous threats remain readable, what makes upgrades change play, how keyboard-only and pointer variants steer, how waves create relief and escalation, how the boss tests learned movement, which Blender set proves the style, and what the declared machine can present at 60 Hz. Independent lanes research survivor pacing and boss counterplay, Three.js many-entity/runtime feasibility, Blender geometry/material/rig production, and host play/performance capture in parallel; synthesis resolves their evidence and gaps before concept work. There is no engine or DCC bakeoff.
+Design then fixes testable fun hypotheses, an arena with landmarks and spawn
+exclusions, controls and camera, attack/damage/experience/upgrade/spawn/death/
+win/restart states, grace/escalation/relief/peak/boss beats, melee/ranged/
+fast/tank/elite pressures, upgrade families and build choices, readable
+damage and telegraphs, a multi-phase boss, and a bounded full-session test.
+The traceability matrix maps “many waves” and “final boss fight” to reachable
+rules, ordinary-input evidence, and both gate verdicts. It records written
+visual intentions and references, but generates no GPT concept art yet.
 
-The detailed concept fixes an arena with landmarks and spawn exclusions; controls and camera; attack, damage, experience, upgrade, spawn, death, win, and restart states; grace, escalation, relief, peak, and boss beats; melee/ranged/fast/tank/elite pressures; upgrade families and build choices; readable damage and telegraphs; asset/audio/UI budgets; and a multi-phase final boss. GPT image generation then produces inspected hero/enemy/boss silhouettes, environment/prop language, palette/material references, and useful views by recorded identity for the Blender jobs. Exact counts, timings, and selected art come from the synthesized evidence and review, not this example.
+The core build uses Three.js primitives and basic functional placeholders. I0
+proves boot, focus, movement, camera, damage, restart, terminal states, and
+representative GLB loading. I1 proves several minutes of adaptive combat and
+reward choices with readable placeholder feedback. I2 makes the full wave and
+multi-phase boss journey playable, including actual boss defeat or loss and
+re-entry, and runs peak-density seeds. QA repairs blockers first. Two
+maker-independent contexts then play the fixed candidate and a demanding core
+judge checks the loop, challenge, choices, pacing, readability, and prompt
+fidelity. Core graybox visuals are judged for function and legibility, not final
+art polish. Any block enters the durable judge/fix/QA/play/re-judge cycle.
 
-The representative Blender set contains hero, enemy, environment kit, one effect mesh/material, and named clips. Each runs through a unique file job, gameplay-camera and turntable/animation review, GLB validation, and `GLTFLoader` import before I1. The vertical plan is:
+After core acceptance, the mechanics/control/collision/camera/timing baseline
+is frozen. GPT generation produces inspected hero, enemy, boss, environment,
+prop, palette/material, and useful-view references. Blender jobs create the
+approved representative set, then the full production cast and effects. Each
+job has source/render/export/GLB evidence and a `GLTFLoader` integration check.
+The integration candidate checks boss telegraphs, hitboxes, animation timing,
+camera occlusion, silhouettes at peak density, VFX/UI/audio, and disposal.
 
-1. I0 proves production boot, focus, movement, camera, damage, terminal states, restart, and representative GLB loading.
-2. I1 proves a three-minute combat/reward loop with the representative production set.
-3. I2 makes the full 12-minute wave and boss skeleton playable, inventories placeholders, and runs peak/boss stress seeds.
-4. I3 replaces every placeholder and closes animation, VFX, UI/audio, balance, pacing, disposal, and asset manifests.
-5. I4 gathers two independent ordinary-input accounts, full win/loss/restart coverage, the complete combat/wave/upgrade/boss capture matrix, static-menu readiness, and three-run callback/Chrome-frame cells for representative play, peak wave, heaviest boss effects, and the full adaptive session.
-
-Final judgment blocks on incomplete boss play, unreadable peak action, hollow upgrades, focus failure, asset/scale/material drift, unviewed renders, actual-play gaps, or any failed or contradictory 60 fps cell. The workflow gets two scoped repair/re-judge rounds. The outside probe alone closes the joined revision.
+The final gate requires two independent full sessions, complete boot/entry/
+combat/wave/upgrade/boss/win-loss/restart/re-entry capture coverage, all
+production manifests, static-menu readiness, and three-run callback/Chrome
+frame cells for representative play, peak wave, heaviest boss effects, and the
+full adaptive session. It judges looks, play, and original-prompt adherence
+together. An attractive boss with hollow upgrades or an unreadable peak wave
+blocks. Final findings repeat the same evidence-backed quality cycle until the
+candidate passes or a real external/budget boundary returns the best revision
+and resumable ledger.
 
 ## Implementation acceptance for the future rebuild
 
-The future workflow implementation is complete when the package has one public entry and the private structure above; all literal private names resolve inside its package scope; a scratch run journals prioritized self-questions, parallel independent packets, synthesis, the detailed concept, inspected GPT concept-art identities, pipeline proof, at least two vertical increments, actual play, complete final-judge evidence coverage, bounded repair, and outside close; missing-tool or image capability, absent user authority, Blender failure, unplayable host, unqualified/lost performance trace, evidence contradiction, and repair-exhaustion paths return closed evidence and resume state; validators check identities and shapes rather than sentences; target dependencies remain in the target lockfile; and the repository's full required gate passes at the implementation commit.
+The future implementation is complete when the package has one public entry
+and the private structure above; all literal private names resolve inside its
+package scope; and a scratch run journals deep parallel research, detailed
+core concept and testable fun hypotheses, traceability, placeholder playable
+increments, separate QA/adaptive play/independent core judgment, accepted
+core baseline, inspected GPT concept art, post-core Blender production,
+integration QA, separate whole-game evidence, demanding repeated quality
+cycles, and outside close. It must cover missing-tool/image capability,
+absent authority, Blender failure, unplayable host, unqualified/lost
+performance trace, evidence contradiction, gameplay-altering art, stagnation,
+redesign, and genuine repair exhaustion with closed evidence and resume state.
+Validators check identities and shapes rather than sentences; target
+dependencies remain in the target lockfile; no private workflow recursively
+cycles; and the repository's full required gate passes at the implementation
+commit.
 
 ## Compact primary-source list
 
-Internal owners: [custom workflow authoring](../docs/custom-workflow-authoring.md), [standard authoring](../docs/standard-authoring.md), [standard contract](../contracts/standard.md), [composition](../rules/composition.md), [vocabulary](../docs/vocabulary.md), [architecture](../ARCHITECTURE.md), and [repository checks](../AGENTS.md).
+Internal owners: [custom workflow authoring](../docs/custom-workflow-authoring.md),
+[standard authoring](../docs/standard-authoring.md),
+[standard contract](../contracts/standard.md),
+[composition](../rules/composition.md), [vocabulary](../docs/vocabulary.md),
+[architecture](../ARCHITECTURE.md), and [repository checks](../AGENTS.md).
 
-External primary sources: [Blender command-line arguments](https://docs.blender.org/manual/en/5.1/advanced/command_line/arguments.html), [Blender as a Python module](https://docs.blender.org/api/current/info_advanced_blender_as_bpy.html), [operator limitations](https://docs.blender.org/api/current/info_gotchas_operators.html), [BMesh](https://docs.blender.org/api/current/bmesh.html), [Blender glTF manual](https://docs.blender.org/manual/en/5.1/addons/import_export/scene_gltf2.html), [Blender 5.1 export API](https://docs.blender.org/api/5.1/bpy.ops.export_scene.html), [Three.js model loading](https://threejs.org/manual/en/loading-3d-models.html), [`GLTFLoader`](https://threejs.org/docs/pages/GLTFLoader.html), [Three.js color management](https://threejs.org/manual/en/color-management.html), [Three.js renderer guide](https://threejs.org/manual/en/webgpurenderer), [Three.js disposal](https://threejs.org/manual/en/how-to-dispose-of-objects.html), [Khronos glTF Validator](https://github.com/KhronosGroup/glTF-Validator), [Playwright input](https://playwright.dev/docs/input), [Chrome performance reference](https://developer.chrome.com/docs/devtools/performance/reference), [CDP Tracing domain](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/), and [pinned DevTools `FramesHandler`](https://github.com/ChromeDevTools/devtools-frontend/blob/9f9f40ba5bca7e385be30535cdbf01a3a7e5ba44/front_end/models/trace/handlers/FramesHandler.ts). Claims were checked on 2026-09-05; moving API pages describe current capability only, while each run pins and probes the versions it actually invokes.
+External primary sources: [Blender command-line arguments](https://docs.blender.org/manual/en/5.1/advanced/command_line/arguments.html),
+[Blender as a Python module](https://docs.blender.org/api/current/info_advanced_blender_as_bpy.html),
+[operator limitations](https://docs.blender.org/api/current/info_gotchas_operators.html),
+[BMesh](https://docs.blender.org/api/current/bmesh.html),
+[Blender glTF manual](https://docs.blender.org/manual/en/5.1/addons/import_export/scene_gltf2.html),
+[Blender 5.1 export API](https://docs.blender.org/api/5.1/bpy.ops.export_scene.html),
+[Three.js model loading](https://threejs.org/manual/en/loading-3d-models.html),
+[`GLTFLoader`](https://threejs.org/docs/pages/GLTFLoader.html),
+[Three.js color management](https://threejs.org/manual/en/color-management.html),
+[Three.js renderer guide](https://threejs.org/manual/en/webgpurenderer),
+[Three.js disposal](https://threejs.org/manual/en/how-to-dispose-of-objects.html),
+[Khronos glTF Validator](https://github.com/KhronosGroup/glTF-Validator),
+[Playwright input](https://playwright.dev/docs/input),
+[Chrome performance reference](https://developer.chrome.com/docs/devtools/performance/reference),
+[CDP Tracing domain](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/),
+and [pinned DevTools `FramesHandler`](https://github.com/ChromeDevTools/devtools-frontend/blob/9f9f40ba5bca7e385be30535cdbf01a3a7e5ba44/front_end/models/trace/handlers/FramesHandler.ts).
+Claims were checked on 2026-09-05; moving API pages describe current
+capability only, while each run pins and probes the versions it invokes.
