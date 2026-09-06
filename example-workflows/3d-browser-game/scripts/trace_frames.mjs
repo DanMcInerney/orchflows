@@ -189,19 +189,91 @@ function deriveRendererContext(events, target, snapshots) {
   return {mainFrameIds, rendererPids, mainThreadByPid, mainThreads, rendererPidsByFrame, canvasPidCounts};
 }
 
-function nativeUpdateAt(events, time, target, processId) {
+function isNativeCanvasUpdate(event) {
+  const data = dataOf(event);
+  // A generic TextureLayer push only proves compositor bookkeeping. It can
+  // occur while the canvas remains visually unchanged, so it is not a
+  // presentation marker. Accept only explicit target-canvas update/paint
+  // markers supplied by a trace producer.
+  return event.canvas_updated === true || data.canvasUpdated === true || data.canvas_updated === true
+    || /canvas.*(update|paint)/i.test(String(event.name || ""));
+}
+
+function nativeUpdateIndex(events) {
+  const any = [];
+  const withoutPid = [];
+  const byPid = new Map();
+  for (const event of events) {
+    if (!isNativeCanvasUpdate(event)) continue;
+    const time = timestampMs(event);
+    if (time === null) continue;
+    const row = {time, pid: event.pid === undefined ? undefined : String(event.pid)};
+    any.push(row);
+    if (row.pid === undefined) withoutPid.push(row);
+    else {
+      if (!byPid.has(row.pid)) byPid.set(row.pid, []);
+      byPid.get(row.pid).push(row);
+    }
+  }
+  const order = (a, b) => a.time - b.time;
+  any.sort(order);
+  withoutPid.sort(order);
+  for (const rows of byPid.values()) rows.sort(order);
+  return {any, withoutPid, byPid};
+}
+
+function hasTimeWithin(rows, time, toleranceMs = 20) {
+  let low = 0;
+  let high = rows.length;
+  const minimum = time - toleranceMs;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (rows[middle].time < minimum) low = middle + 1;
+    else high = middle;
+  }
+  return low < rows.length && rows[low].time <= time + toleranceMs;
+}
+
+function nativeUpdateAt(events, time, target, processId, index = null) {
+  if (index) {
+    if (processId === undefined) return hasTimeWithin(index.any, time);
+    return hasTimeWithin(index.byPid.get(String(processId)) || [], time)
+      || hasTimeWithin(index.withoutPid, time);
+  }
   return events.some(event => {
     const at = timestampMs(event);
     if (at === null || Math.abs(at - time) > 20) return false;
     if (processId !== undefined && event.pid !== undefined && String(event.pid) !== String(processId)) return false;
-    const data = dataOf(event);
-    // A generic TextureLayer push only proves compositor bookkeeping. It can
-    // occur while the canvas remains visually unchanged, so it is not a
-    // presentation marker. Accept only explicit target-canvas update/paint
-    // markers supplied by a trace producer.
-    return event.canvas_updated === true || data.canvasUpdated === true || data.canvas_updated === true
-      || /canvas.*(update|paint)/i.test(String(event.name || ""));
+    return isNativeCanvasUpdate(event);
   });
+}
+
+function snapshotIndex(snapshots) {
+  const all = snapshots.slice().sort((a, b) => a.time - b.time);
+  const byPid = new Map();
+  for (const snapshot of all) {
+    if (snapshot.event?.pid === undefined) continue;
+    const pid = String(snapshot.event.pid);
+    if (!byPid.has(pid)) byPid.set(pid, []);
+    byPid.get(pid).push(snapshot);
+  }
+  return {all, byPid};
+}
+
+function latestSnapshotGroup(rows, time) {
+  let low = 0;
+  let high = rows.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (rows[middle].time <= time) low = middle + 1;
+    else high = middle;
+  }
+  const end = low - 1;
+  if (end < 0) return [];
+  const latestTime = rows[end].time;
+  let start = end;
+  while (start > 0 && rows[start - 1].time === latestTime) start -= 1;
+  return rows.slice(start, end + 1);
 }
 
 function canvasActivityIntervals(parsed) {
@@ -230,10 +302,10 @@ function canvasChangeTimes(parsed) {
   return changes;
 }
 
-function hasCanvasActivity(parsed, time, target, snapshots, sourceEvent) {
+function hasCanvasActivity(parsed, time, target, snapshots, sourceEvent, updateIndex = null) {
   if (parsed.format === "fixture") return true;
   const process = sourceEvent?.pid;
-  return nativeUpdateAt(parsed.events, time, target, process);
+  return nativeUpdateAt(parsed.events, time, target, process, updateIndex);
 }
 
 function markCanvasSampleEvidence(frames, parsed) {
@@ -363,6 +435,8 @@ export function buildFrameModel(payload, {target = {}, startMs = -Infinity, endM
     .sort((a, b) => (timestampMs(a.event) ?? Infinity) - (timestampMs(b.event) ?? Infinity) || a.index - b.index);
   const snapshots = ordered.map(item => ({event: item.event, time: timestampMs(item.event)}))
     .filter(item => item.time !== null && eventName(item.event) === "layertreehostimplsnapshot");
+  const snapshotLookup = snapshotIndex(snapshots);
+  const updateLookup = nativeUpdateIndex(parsed.events);
   const context = deriveRendererContext(ordered.map(item => item.event), target, snapshots);
   const allowSynthetic = parsed.format === "fixture";
   const rows = [];
@@ -390,11 +464,20 @@ export function buildFrameModel(payload, {target = {}, startMs = -Infinity, endM
     if (dropped) row.dropped = true;
     if (isPartial) row.isPartial = true;
     if (!allowSynthetic) {
-      const nativeAttribution = nativeCanvasAttribution(parsed, snapshots, row.start_ms, target, event);
+      const sourcePid = event?.pid;
+      const targetPid = target.renderer_process_id;
+      const snapshotRows = sourcePid !== undefined
+        ? snapshotLookup.byPid.get(String(sourcePid)) || []
+        : targetPid !== undefined
+          ? snapshotLookup.byPid.get(String(targetPid)) || []
+          : snapshotLookup.all;
+      const candidates = (sourcePid !== undefined && targetPid !== undefined && String(sourcePid) !== String(targetPid))
+        ? [] : latestSnapshotGroup(snapshotRows, row.start_ms);
+      const nativeAttribution = nativeCanvasAttribution(parsed, candidates, row.start_ms, target, event);
       if (nativeAttribution === "ambiguous") row.ambiguous = true;
       else if (nativeAttribution === "game-canvas") {
         row.attribution = "game-canvas";
-        row.presentation_evidence = hasCanvasActivity(parsed, row.start_ms, target, snapshots, event);
+        row.presentation_evidence = hasCanvasActivity(parsed, row.start_ms, target, snapshots, event, updateLookup);
         row.attribution_source = row.presentation_evidence
           ? "renderer-process+layer-tree-canvas+read-only-pixel-change"
           : "renderer-process+layer-tree-canvas-without-presentation-proof";

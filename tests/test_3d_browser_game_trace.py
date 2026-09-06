@@ -171,6 +171,48 @@ class NativeTraceTests(unittest.TestCase):
         self.assertEqual(["2", "3"], [row["id"] for row in rows])
         self.assertEqual(1, sum(row["dropped"] or row["isPartial"] for row in rows))
 
+    def test_native_activity_index_preserves_pid_window_and_equal_snapshot_semantics(self):
+        def model(update, snapshots=None):
+            snapshots = snapshots or [{"name": "LayerTreeHostImpl:snapshot", "ts": 0, "pid": 7,
+                "args": {"snapshot": {"active_tree": {"layers": [{
+                    "layer_id": 6, "layer_name": "LayoutHTMLCanvas CANVAS id='game'",
+                    "base_type": "cc::TextureLayerImpl", "compositing_reasons": ["Canvas"],
+                }]}}}}]
+            events = snapshots + [
+                {"name": "BeginFrame", "ts": 100000, "pid": 7, "args": {"frameSeqId": 1}},
+                {"name": "DrawFrame", "ts": 101000, "pid": 7, "args": {"frameSeqId": 1}},
+            ]
+            if update is not None:
+                events.append(update)
+            expression = (
+                "import {buildFrameModel} from './" + TRACE + "'; "
+                "const t=" + json.dumps({"format": "trace-event-json", "traceEvents": events}) + "; "
+                "console.log(JSON.stringify(buildFrameModel(t,{target:{canvas_selector:'#game'},startMs:0,endMs:1000}).frames));"
+            )
+            result = node(expression)
+            self.assertEqual(0, result.returncode, result.stderr)
+            rows = json.loads(result.stdout)
+            self.assertEqual(1, len(rows))
+            return rows[0]
+
+        self.assertTrue(model({"name": "CanvasUpdate", "ts": 120000, "pid": 7})["presentation_evidence"])
+        self.assertTrue(model({"name": "CanvasUpdate", "ts": 120000})["presentation_evidence"])
+        self.assertFalse(model({"name": "CanvasUpdate", "ts": 120000, "pid": 8})["presentation_evidence"])
+        self.assertFalse(model({"name": "CanvasUpdate", "ts": 121000, "pid": 7})["presentation_evidence"])
+        equal_time = [
+            {"name": "LayerTreeHostImpl:snapshot", "ts": 0, "pid": 7,
+             "args": {"snapshot": {"active_tree": {"layers": [{
+                 "layer_id": 6, "layer_name": "LayoutHTMLCanvas CANVAS id='game'",
+                 "base_type": "cc::TextureLayerImpl", "compositing_reasons": ["Canvas"],
+             }]}}}},
+            {"name": "LayerTreeHostImpl:snapshot", "ts": 0, "pid": 7,
+             "args": {"snapshot": {"active_tree": {"layers": [{
+                 "layer_id": 9, "layer_name": "LayoutHTMLCanvas CANVAS id='game'",
+                 "base_type": "cc::TextureLayerImpl", "compositing_reasons": ["Canvas"],
+             }]}}}},
+        ]
+        self.assertTrue(model({"name": "CanvasUpdate", "ts": 101000, "pid": 7}, equal_time)["ambiguous"])
+
     def test_return_as_stream_keeps_exact_nonserialized_bytes_and_completion(self):
         expression = (
             "import {collectCDPTrace} from './" + TRACE + "'; "

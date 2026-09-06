@@ -718,6 +718,15 @@ export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}
   } : cell;
   let traceForResult = source.trace;
   if (source.rawStream && outDir) traceForResult = {...source.trace, raw_stream_path: "trace.raw.json"};
+  if (outDir && source.rawStream) {
+    await mkdir(resolve(outDir), { recursive: true });
+    const rawPath = resolve(outDir, "trace.raw.json");
+    await writeFile(rawPath, source.rawStream, {flag: "wx"});
+    const observed = await readFile(rawPath);
+    if (observed.length !== source.rawStream.length || sha256(observed) !== source.trace.raw_stream_hash) {
+      throw evidenceError("raw ReturnAsStream bytes changed while writing evidence", "/trace/raw_stream_path");
+    }
+  }
   const qualification = qualifyPerformance({ cell: measuredCell, trace: traceForResult, callbacks: source.callbacks });
   const result = {
     ...makeHeader({ kind: "performance-cell", id: cell.id, artifactCommit: cell.artifact_commit, producer: "performance_collect.mjs", inputs: { cell: sha256(JSON.stringify(cell)), trace: traceForResult.raw_stream_hash || sha256(JSON.stringify(traceForResult)) }, environment: source.environment || cell.environment || {}, status: qualification.status === "qualified" ? "complete" : "unverified", gaps: (qualification.failures || []).map(item => item.code) }),
@@ -732,14 +741,6 @@ export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}
   };
   if (outDir) {
     await mkdir(resolve(outDir), { recursive: true });
-    if (source.rawStream) {
-      const rawPath = resolve(outDir, "trace.raw.json");
-      await writeFile(rawPath, source.rawStream, {flag: "wx"});
-      const observed = await readFile(rawPath);
-      if (observed.length !== source.rawStream.length || sha256(observed) !== source.trace.raw_stream_hash) {
-        throw evidenceError("raw ReturnAsStream bytes changed while writing evidence", "/trace/raw_stream_path");
-      }
-    }
     await writeJsonAtomic(resolve(outDir, "cell-result.json"), result);
     await writeJsonAtomic(resolve(outDir, "trace.json"), traceForResult);
   }
