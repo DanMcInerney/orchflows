@@ -120,7 +120,7 @@ class ContractSchemaTests(unittest.TestCase):
     def test_evidence_index_accepts_unpromoted_draft_but_requires_promotion_when_complete(self):
         schema = load("evidence-index.schema.json")
         self.assertNotIn("promotion", schema["required"])
-        self.assertEqual("null", schema["properties"]["promotion"]["oneOf"][0]["type"])
+        self.assertEqual("#/$defs/promotion", schema["properties"]["promotion"]["$ref"])
         condition = schema["allOf"][0]
         self.assertEqual("complete", condition["if"]["properties"]["status"]["const"])
         self.assertEqual(["promotion"], condition["then"]["required"])
