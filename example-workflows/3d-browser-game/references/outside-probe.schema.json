@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/outside-probe/v1.json",
+  "title": "3D browser-game outside production probe configuration",
+  "description": "Frozen target-owned build, production server, and ordinary-input scenario consumed by the package-owned outside probe.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["build", "server", "harness"],
+  "properties": {
+    "build": {"$ref": "#/$defs/build"},
+    "server": {"$ref": "#/$defs/server"},
+    "harness": {"$ref": "#/$defs/harness"},
+    "browser": {"$ref": "#/$defs/browser"},
+    "game": {"$ref": "#/$defs/game"},
+    "operator": {"type": "string", "minLength": 1},
+    "independent_context_id": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000]+$"},
+    "argv": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "build": {
+      "type": "object", "additionalProperties": false, "required": ["command", "output_dir"],
+      "properties": {
+        "command": {"$ref": "#/$defs/argv"}, "output_dir": {"$ref": "#/$defs/relativePath"},
+        "timeout_ms": {"type": "integer", "minimum": 1}
+      }
+    },
+    "server": {
+      "type": "object", "additionalProperties": false, "required": ["output_dir", "ready_path"],
+      "properties": {
+        "output_dir": {"$ref": "#/$defs/relativePath"}, "host": {"type": "string", "minLength": 1},
+        "port": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "ready_path": {"type": "string", "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000]*$"},
+        "startup_timeout_ms": {"type": "integer", "minimum": 1}
+      }
+    },
+    "command": {
+      "type": "object", "additionalProperties": false, "required": ["type"],
+      "properties": {
+        "type": {"enum": ["observe", "key", "pointer", "wait", "capture", "stop"]},
+        "key": {"type": "string", "minLength": 1, "maxLength": 32}, "action": {"type": "string"},
+        "x": {"type": "number"}, "y": {"type": "number"}, "button": {"enum": ["left", "middle", "right"]},
+        "ms": {"type": "number", "minimum": 0, "maximum": 60000}, "label": {"type": "string", "maxLength": 120}
+      }
+    },
+    "harness": {
+      "type": "object", "additionalProperties": false, "required": ["commands", "capture_dir", "session_out"],
+      "properties": {
+        "commands": {"type": "array", "minItems": 4, "items": {"$ref": "#/$defs/command"}},
+        "capture_dir": {"$ref": "#/$defs/relativePath"}, "session_out": {"$ref": "#/$defs/relativePath"},
+        "timeout_ms": {"type": "integer", "minimum": 1}
+      }
+    },
+    "browser": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "type": {"type": "string", "minLength": 1}, "package": {"type": "string", "minLength": 1},
+        "executable_path": {"type": "string", "minLength": 1}, "executablePath": {"type": "string", "minLength": 1},
+        "headless": {"const": false}, "launch_timeout_ms": {"type": "integer", "minimum": 1},
+        "viewport": {"type": "object", "additionalProperties": false, "required": ["width", "height"], "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}},
+        "device_scale_factor": {"type": "number", "exclusiveMinimum": 0}, "args": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "game": {
+      "type": "object", "additionalProperties": false,
+      "properties": {"canvas_selector": {"type": "string", "minLength": 1}, "allowed_keys": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}
+    }
+  }
+}
