@@ -105,10 +105,10 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
         transcript_bytes = (json.dumps(transcript, sort_keys=True, indent=2) + "\n").encode("utf-8")
         return {
             "schema_version": "1.0.0", "kind": "play-session", "id": "session-positive",
-            "artifact_commit": "git:" + "a" * 40, "created_at": "2026-09-06T00:00:00Z", "producer": {"name": "browser_harness.mjs"},
+            "artifact_commit": "git:" + "a" * 40, "created_at": "2026-09-06T00:00:00Z", "producer": {"name": "qualification-fixture"},
             "inputs": [], "environment": {"host": "codex", "os": "windows", "tools": [], "browser": "chromium", "browser_version": "124.0", "driver": "playwright-core"},
-            "status": "complete", "gaps": [], "invalidates": [], "classification": "actual_play", "input_mode": "actual_play", "source": "live-browser", "headed": True,
-            "url": "http://127.0.0.1:3000/", "operator": "operator-a", "independent_context_id": "context-a", "started_at": "2026-09-06T00:00:00Z", "ended_at": "2026-09-06T00:00:05Z",
+            "status": "complete", "gaps": [], "invalidates": [], "classification": "actual_play", "input_mode": "actual_play", "source": "qualification-fixture", "headed": True,
+            "url": "http://127.0.0.1:3000/", "operator": "operator-a", "independent_context_id": "context-a", "fixture_only": True, "started_at": "2026-09-06T00:00:00Z", "ended_at": "2026-09-06T00:00:05Z",
             "transcript": transcript, "transcript_hash": "sha256:" + hashlib.sha256(transcript_bytes).hexdigest(),
             "adaptation": {"observation_sequence": 1, "action_sequence": 2, "subsequent_observation_sequence": 3, "rationale": "The observed state showed the player could advance, so the next input tested movement."},
         }
@@ -140,6 +140,16 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
         result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn("state or rendered-image change", result.stdout)
+
+    def test_live_actual_play_requires_package_receipt_while_fixture_is_explicit(self):
+        session = self.actual_session()
+        session["source"] = "live-browser"
+        session.pop("fixture_only")
+        session["producer"] = {"name": "browser_harness.mjs"}
+        expression = "const s=" + json.dumps(session) + "; try { m.validatePlaySession(s); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer,message:error.message})); }"
+        result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("package receipt verification", result.stdout)
 
     def test_frozen_performance_plan_requires_declared_scenario_coverage(self):
         plan = {

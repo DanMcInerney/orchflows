@@ -164,12 +164,16 @@ class GateFixture:
         body = struct.pack("<I4s", len(encoded), b"JSON") + encoded + struct.pack("<I4s", len(binary), b"BIN\x00") + binary
         return struct.pack("<4sII", b"glTF", 2, 12 + len(body)) + body
 
-    def play_session(self, artifact_commit, identity, operator, context):
+    def play_session(self, artifact_commit, identity, operator, context, receipt_dir):
         snapshot = {"url": "http://127.0.0.1:3000/", "canvas_count": 1, "canvases": [{"width": 640, "height": 360, "connected": True}], "facts": []}
+        before_capture = self.write_bytes(f"{receipt_dir}/{identity}-before.png", f"before capture {identity}".encode("ascii"))
+        after_capture = self.write_bytes(f"{receipt_dir}/{identity}-after.png", f"after capture {identity}".encode("ascii"))
+        before_hash = digest(before_capture.read_bytes())
+        after_hash = digest(after_capture.read_bytes())
         transcript = [
-            {"command": {"type": "observe"}, "reply": {"sequence": 1, "monotonic_ms": 1, "wall_time": "2026-09-06T00:00:01Z", "type": "observe", "status": "ok", "snapshot": snapshot, "screenshot_hash": "sha256:" + "1" * 64}},
+            {"command": {"type": "observe"}, "reply": {"sequence": 1, "monotonic_ms": 1, "wall_time": "2026-09-06T00:00:01Z", "type": "observe", "status": "ok", "snapshot": snapshot, "screenshot_hash": before_hash}},
             {"command": {"type": "key", "key": "w", "action": "down"}, "reply": {"sequence": 2, "monotonic_ms": 2, "wall_time": "2026-09-06T00:00:02Z", "type": "key", "status": "ok", "snapshot": snapshot}},
-            {"command": {"type": "observe"}, "reply": {"sequence": 3, "monotonic_ms": 3, "wall_time": "2026-09-06T00:00:03Z", "type": "observe", "status": "ok", "snapshot": snapshot, "screenshot_hash": "sha256:" + "2" * 64}},
+            {"command": {"type": "observe"}, "reply": {"sequence": 3, "monotonic_ms": 3, "wall_time": "2026-09-06T00:00:03Z", "type": "observe", "status": "ok", "snapshot": snapshot, "screenshot_hash": after_hash}},
             {"command": {"type": "stop"}, "reply": {"sequence": 4, "monotonic_ms": 4, "wall_time": "2026-09-06T00:00:04Z", "type": "stop", "status": "ok", "snapshot": snapshot}},
         ]
         value = header("play-session", identity, artifact_commit)
@@ -177,9 +181,13 @@ class GateFixture:
             "classification": "actual_play", "input_mode": "actual_play", "source": "live-browser", "headed": True,
             "url": snapshot["url"], "operator": operator, "independent_context_id": context,
             "started_at": "2026-09-06T00:00:00Z", "ended_at": "2026-09-06T00:00:05Z", "transcript": transcript,
-            "transcript_hash": digest(canonical(transcript)), "adaptation": {"observation_sequence": 1, "action_sequence": 2, "subsequent_observation_sequence": 3, "rationale": "The observed state guided the movement input."},
+            "transcript_hash": digest(canonical(transcript)), "transcript_path": f"{identity}.transcript.json", "transcript_sha256": digest(canonical(transcript)),
+            "captures": [{"path": f"{identity}-before.png", "sha256": before_hash}, {"path": f"{identity}-after.png", "sha256": after_hash}],
+            "adaptation": {"observation_sequence": 1, "action_sequence": 2, "subsequent_observation_sequence": 3, "rationale": "The observed state guided the movement input."},
         })
+        value["producer"] = {"name": "browser_harness.mjs", "version": "fixture"}
         value["environment"].update({"browser": "chromium", "browser_version": "124.0", "driver": "playwright-core"})
+        self.write_json(f"{receipt_dir}/{identity}.transcript.json", transcript)
         return value
 
     def performance_cell(self, artifact_commit, scenario, cell_id, run_number):
@@ -313,7 +321,7 @@ class GateFixture:
                 cells.append(result_id)
         for suffix, operator, context in [("a", "operator-a", "context-a"), ("b", "operator-b", "context-b")]:
             identity = f"{gate}-session-{suffix}"
-            add(identity, "play-session", self.play_session(artifact_commit, identity, operator, context), f"{prefix}/{identity}.json")
+            add(identity, "play-session", self.play_session(artifact_commit, identity, operator, context, prefix), f"{prefix}/{identity}.json")
         capture_id = f"{gate}-capture"
         capture_path = f"{prefix}/{capture_id}.json"
         capture_value = self.capture(artifact_commit, capture_id, f"{prefix}/{capture_id}.png")

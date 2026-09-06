@@ -333,7 +333,8 @@ function sessionClassification(session) {
   if (session.input_mode !== undefined && session.input_mode !== requested) throw evidenceError("classification and input_mode disagree", "/input_mode");
   if (requested === "actual_play") {
     if (typeof session.operator !== "string" || !session.operator.trim() || typeof session.independent_context_id !== "string" || !session.independent_context_id.trim()) throw evidenceError("actual play requires operator and independent_context_id", "/classification");
-    if (session.source !== "live-browser") throw evidenceError("actual play requires a live-browser session source", "/source");
+    const fixtureOnly = session.source === "qualification-fixture" && session.fixture_only === true;
+    if (session.source !== "live-browser" && !fixtureOnly) throw evidenceError("actual play requires a live-browser session source or an explicit qualification fixture", "/source");
     if (session.headed !== true) throw evidenceError("actual play requires headed evidence", "/headed");
     if (!session.environment?.browser || !session.environment?.browser_version || session.environment.browser_version === "unknown" || !session.environment?.driver) throw evidenceError("actual play requires browser name, version, and driver identity", "/environment");
     const firstAction = actions[0];
@@ -354,6 +355,7 @@ function sessionClassification(session) {
       requested,
       observations: observations.length,
       adapted: true,
+      ...(fixtureOnly ? { fixture_only: true } : {}),
       observed_facts: [
         { id: `play-observation-${before.sequence}`, kind: "rendered-state", sequence: before.sequence },
         { id: `play-action-effect-${firstAction.sequence}`, kind: changed && snapshotFingerprint(beforeItem.snapshot) !== snapshotFingerprint(afterItem.snapshot) ? "state-transition" : "rendered-effect", sequence: firstAction.sequence, after_sequence: after.sequence },
@@ -364,17 +366,22 @@ function sessionClassification(session) {
   return { requested, observations: observations.length, adapted: false, observed_facts: [] };
 }
 
-export function validatePlaySession(session) {
+export function validatePlaySession(session, { receiptVerified = false } = {}) {
   requireHeader(session, "play-session");
   validateStoredSchema(session, schemaValidator.play, "play session");
   const facts = sessionClassification(session);
   if (session.transcript_hash !== sha256(canonicalTranscript(session.transcript))) throw evidenceError("transcript_hash does not match immutable transcript bytes", "/transcript_hash");
   if (session.status === "pass" || session.status === "qualified") throw evidenceError("a play session cannot promote itself to a gate verdict", "/status");
+  if (session.classification === "actual_play" && session.source === "live-browser") {
+    if (!receiptVerified) throw evidenceError("live actual-play admission requires package receipt verification", "/transcript_path");
+    if (session.producer?.name !== "browser_harness.mjs") throw evidenceError("live actual-play evidence must come from the package browser harness", "/producer/name");
+    if (typeof session.transcript_path !== "string" || !session.transcript_path || !/^sha256:[0-9a-f]{64}$/i.test(session.transcript_sha256 || "") || !Array.isArray(session.captures) || session.captures.length === 0) throw evidenceError("live actual-play evidence requires a retained transcript and captured image receipt", "/transcript_path");
+  }
   return { status: "valid", ...facts };
 }
 
 export async function validatePlayReceipt(session, { baseDir = process.cwd(), expectedProducer } = {}) {
-  const facts = validatePlaySession(session);
+  const facts = validatePlaySession(session, { receiptVerified: true });
   if (expectedProducer && session.producer?.name !== expectedProducer) throw evidenceError(`play receipt must be produced by ${expectedProducer}`, "/producer/name");
   if (typeof session.transcript_path !== "string" || !session.transcript_path || !/^sha256:[0-9a-f]{64}$/i.test(session.transcript_sha256 || "")) throw evidenceError("play receipt must retain a hashed transcript byte artifact", "/transcript_path");
   const transcriptBytes = await hashPath(baseDir, session.transcript_path, "/transcript_path");
@@ -629,7 +636,11 @@ async function loadEntry(baseDir, entry, index) {
   if (document.kind === "run-record") { validateStoredSchema(document, schemaValidator.runRecord, "run record"); facts = { status: "schema-valid", kind: document.kind }; }
   if (document.kind === "traceability") { validateStoredSchema(document, schemaValidator.traceability, "traceability"); facts = { status: "schema-valid", kind: document.kind }; }
   if (document.kind === "gate-verdict") { validateStoredSchema(document, schemaValidator.gateVerdict, "gate verdict"); facts = { status: "schema-valid", kind: document.kind }; }
-  if (document.kind === "play-session" || entry.kind === "play-session") facts = validatePlaySession(document);
+  if (document.kind === "play-session" || entry.kind === "play-session") {
+    facts = document.classification === "actual_play" && document.source === "live-browser"
+      ? await validatePlayReceipt(document, { baseDir: dirname(observed.target), expectedProducer: "browser_harness.mjs" })
+      : validatePlaySession(document);
+  }
   if (document.kind === "performance-cell" || entry.kind === "performance") facts = await validatePerformanceCell(document);
   if (document.kind === "asset-manifest" || entry.kind === "manifest" || entry.kind === "asset") facts = await validateAssetManifest(document, { baseDir: dirname(observed.target) });
   if (document.kind === "capture" || entry.kind === "capture") facts = await validateCapture(document, { baseDir: dirname(observed.target) });
@@ -846,7 +857,7 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   if (!Array.isArray(fixed.play_sessions) || fixed.play_sessions.length < 2 || new Set(fixed.play_sessions).size !== fixed.play_sessions.length) throw evidenceError("gate requires two independent play contexts", `/gates/${gate}/fixed_inputs/play_sessions`);
   const playEntries = fixed.play_sessions.map(id => evidence.entries.find(item => item.id === id));
   if (playEntries.some(item => !item)) throw evidenceError("gate references a missing play session", `/gates/${gate}/fixed_inputs/play_sessions`);
-  if (playEntries.some(item => item.document.kind !== "play-session" || item.document.classification !== "actual_play" || item.document.source !== "live-browser" || item.document.headed !== true || typeof item.document.operator !== "string" || !item.document.operator || typeof item.document.independent_context_id !== "string" || !item.document.independent_context_id)) throw evidenceError("gate play coverage requires live headed actual-play provenance", `/gates/${gate}/fixed_inputs/play_sessions`);
+  if (playEntries.some(item => item.document.kind !== "play-session" || item.document.classification !== "actual_play" || item.document.source !== "live-browser" || item.document.headed !== true || typeof item.document.operator !== "string" || !item.document.operator || typeof item.document.independent_context_id !== "string" || !item.document.independent_context_id || !item.facts?.receipt)) throw evidenceError("gate play coverage requires live headed actual-play provenance with a verified byte receipt", `/gates/${gate}/fixed_inputs/play_sessions`);
   if (new Set(playEntries.map(item => item.document.independent_context_id)).size < 2 || new Set(playEntries.map(item => item.document.operator)).size < 2) throw evidenceError("gate play coverage is not independent by both context and operator", `/gates/${gate}/fixed_inputs/play_sessions`);
   if (typeof fixed.performance_plan !== "string" || !fixed.performance_plan) throw evidenceError("gate requires a frozen performance plan", `/gates/${gate}/fixed_inputs/performance_plan`);
   const performancePlanEntry = evidence.entries.find(item => item.id === fixed.performance_plan && (item.entry.kind === "performance-plan" || item.document.kind === "performance-plan"));

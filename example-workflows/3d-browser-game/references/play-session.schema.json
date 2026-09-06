@@ -19,6 +19,7 @@
     "classification": {"type": "string", "enum": ["actual_play", "scripted_input", "simulated"]},
     "input_mode": {"type": "string", "enum": ["actual_play", "scripted_input", "simulated"]},
     "source": {"enum": ["live-browser", "qualification-fixture"]},
+    "fixture_only": {"const": true},
     "headed": {"const": true},
     "url": {"type": "string", "format": "uri"},
     "operator": {"type": ["string", "null"]},
