@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/asset-manifest.schema.json",
+  "title": "Validated Blender asset manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "kind", "id", "artifact_commit", "created_at",
+    "producer", "inputs", "environment", "status", "gaps", "invalidates",
+    "source_kind", "source_blend", "source_blend_sha256", "runtime_glb",
+    "exported_glb_sha256", "inspection", "previews", "units", "unit_scale",
+    "up_axis", "gameplay_forward", "origin", "colliders", "attachments",
+    "material_roles", "animation_clips", "required_extensions"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "kind": {"type": "string", "const": "asset-manifest"},
+    "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"},
+    "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"},
+    "environment": {
+      "$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"
+    },
+    "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"},
+    "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"},
+    "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"},
+    "source_kind": {"enum": ["generated", "edited"]},
+    "source_blend": {"$ref": "#/$defs/relativePath"},
+    "source_blend_sha256": {"$ref": "#/$defs/digest"},
+    "runtime_glb": {"$ref": "#/$defs/relativePath"},
+    "exported_glb_sha256": {"$ref": "#/$defs/digest"},
+    "inspection": {"$ref": "#/$defs/relativePath"},
+    "previews": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/relativePath"}},
+    "units": {"type": "string", "minLength": 1},
+    "unit_scale": {"type": "number", "exclusiveMinimum": 0},
+    "up_axis": {"type": "string", "const": "+Y"},
+    "gameplay_forward": {"type": "string", "minLength": 1},
+    "origin": {"type": "string", "minLength": 1},
+    "colliders": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "attachments": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "material_roles": {"type": "object", "additionalProperties": {"type": "string"}},
+    "animation_clips": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "required_extensions": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "digest": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"},
+    "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "metadata": {"type": "object", "additionalProperties": false, "properties": {"name": {"type": "string"}, "type": {"type": "string"}, "object": {"type": "string"}, "shape": {"type": "string"}, "dimensions": {"type": "array", "items": {"type": "number"}}, "position": {"type": "array", "items": {"type": "number"}}, "rotation": {"type": "array", "items": {"type": "number"}}, "start": {"type": "integer"}, "end": {"type": "integer"}}}
+  }
+}
