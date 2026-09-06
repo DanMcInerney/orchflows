@@ -23,7 +23,23 @@ presentation, play, prompt fidelity, and performance only from indexed
 evidence. Static surfaces report counts without an FPS claim.
 
 For a blocking verdict, relay its complete `findings:` line to one bounded
-repair and repeat affected QA, play, capture, and judgment:
+repair and repeat affected QA, play, capture, and judgment. A quality-cycle
+batch has a local bound of two repair/re-judge rounds. If the first re-judge
+still blocks, the parent opens the one automatic successor round with the
+complete append-only complaint ledger, fixed acceptance criteria, and the
+best artifact identity; it does not ask permission for this already-authorized
+successor. A second blocked re-judge ends that batch and routes the recorded
+disposition through the parent:
+
+- `fix` opens the next bounded repair with only accepted complaints and their
+  regression checks;
+- `redesign` returns to discovery with a new concept revision and named
+  invalidations; and
+- `unverified` opens missing-evidence acquisition or a capable execution
+  context, preserving narrower evidence until it is observed.
+
+Every route appends its findings, cause, evidence, expected improvement, and
+exact resume state before continuing or stopping.
 
     tickets.py do <run> --standard threejs-browser-game --parent <frame> --goal-file <final-repair-goal> --isolation required
     tickets.py judge <run> --standard threejs-browser-game --standard browser-game-3d-asset --standard browser-game-interface --standard browser-game-playtest --parent <frame> --artifacts <repaired-artifact> --goal-file <final-rejudge-goal> --isolation required
@@ -36,8 +52,11 @@ ambiguous canvas attribution, trace mismatch, or gameplay-changing asset is
 `unverified` until its boundary is repaired.
 
 Never average contradictory evidence, waive a hard gate for attractive art,
-call scripted input actual play, or claim a final pass without the outside
-probe's joined revision.
+or call scripted input actual play. The independent final gate may pass its
+fixed source before the outside probe runs; public workflow completion may
+claim final acceptance only after the outside probe observes that joined
+revision. Keep the pending outside status, fixed identities, and gate evidence
+visible between those two checks.
 
 Return: completed ticket carrying `artifact:` for the best or accepted final
 revision, final gate-verdict and evidence-index identities, complaint ledger,
