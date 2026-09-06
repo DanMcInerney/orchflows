@@ -105,10 +105,10 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
         transcript_bytes = (json.dumps(transcript, sort_keys=True, indent=2) + "\n").encode("utf-8")
         return {
             "schema_version": "1.0.0", "kind": "play-session", "id": "session-positive",
-            "artifact_commit": "git:" + "a" * 40, "created_at": "2026-09-06T00:00:00Z", "producer": {"name": "browser_harness.mjs"},
+            "artifact_commit": "git:" + "a" * 40, "created_at": "2026-09-06T00:00:00Z", "producer": {"name": "qualification-fixture"},
             "inputs": [], "environment": {"host": "codex", "os": "windows", "tools": [], "browser": "chromium", "browser_version": "124.0", "driver": "playwright-core"},
-            "status": "complete", "gaps": [], "invalidates": [], "classification": "actual_play", "input_mode": "actual_play", "source": "live-browser", "headed": True,
-            "url": "http://127.0.0.1:3000/", "operator": "operator-a", "independent_context_id": "context-a", "started_at": "2026-09-06T00:00:00Z", "ended_at": "2026-09-06T00:00:05Z",
+            "status": "complete", "gaps": [], "invalidates": [], "classification": "actual_play", "input_mode": "actual_play", "source": "qualification-fixture", "headed": True,
+            "url": "http://127.0.0.1:3000/", "operator": "operator-a", "independent_context_id": "context-a", "fixture_only": True, "started_at": "2026-09-06T00:00:00Z", "ended_at": "2026-09-06T00:00:05Z",
             "transcript": transcript, "transcript_hash": "sha256:" + hashlib.sha256(transcript_bytes).hexdigest(),
             "adaptation": {"observation_sequence": 1, "action_sequence": 2, "subsequent_observation_sequence": 3, "rationale": "The observed state showed the player could advance, so the next input tested movement."},
         }
@@ -125,6 +125,31 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
         result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn('"code":"evidence-failure"', result.stdout)
+
+    def test_actual_play_rejects_release_only_and_render_noop_evidence(self):
+        session = self.actual_session()
+        session["transcript"][1]["command"]["action"] = "up"
+        expression = "const s=" + json.dumps(session) + "; try { m.validatePlaySession(s); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer,message:error.message})); }"
+        result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("key-up evidence must follow", result.stdout)
+
+        session = self.actual_session()
+        session["transcript"][2]["reply"]["screenshot_hash"] = session["transcript"][0]["reply"]["screenshot_hash"]
+        expression = "const s=" + json.dumps(session) + "; try { m.validatePlaySession(s); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer,message:error.message})); }"
+        result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("state or rendered-image change", result.stdout)
+
+    def test_live_actual_play_requires_package_receipt_while_fixture_is_explicit(self):
+        session = self.actual_session()
+        session["source"] = "live-browser"
+        session.pop("fixture_only")
+        session["producer"] = {"name": "browser_harness.mjs"}
+        expression = "const s=" + json.dumps(session) + "; try { m.validatePlaySession(s); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer,message:error.message})); }"
+        result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("package receipt verification", result.stdout)
 
     def test_frozen_performance_plan_requires_declared_scenario_coverage(self):
         plan = {
@@ -191,6 +216,21 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
         self.assertEqual("observed", observed["status"])
         self.assertTrue(observed["ordinary_input"])
 
+    def test_outside_probe_rejects_ordinary_input_without_an_observed_effect(self):
+        commit = "git:" + "a" * 40
+        snapshot = {"url": "http://127.0.0.1:3000/", "canvas_count": 1, "canvases": [{"width": 640, "height": 360, "connected": True}]}
+        transcript = [
+            {"type": "ready", "status": "ready", "artifact_commit": commit, "session_id": "outside-noop", "sequence": 1, "monotonic_ms": 0, "wall_time": "2026-09-06T00:00:00Z"},
+            {"type": "observe", "status": "ok", "artifact_commit": commit, "session_id": "outside-noop", "sequence": 2, "monotonic_ms": 1, "wall_time": "2026-09-06T00:00:01Z", "snapshot": snapshot, "screenshot_hash": "sha256:" + "1" * 64},
+            {"type": "key", "key": "w", "action": "down", "status": "ok", "artifact_commit": commit, "session_id": "outside-noop", "sequence": 3, "monotonic_ms": 2, "wall_time": "2026-09-06T00:00:02Z", "snapshot": snapshot},
+            {"type": "observe", "status": "ok", "artifact_commit": commit, "session_id": "outside-noop", "sequence": 4, "monotonic_ms": 3, "wall_time": "2026-09-06T00:00:03Z", "snapshot": snapshot, "screenshot_hash": "sha256:" + "1" * 64},
+            {"type": "stop", "status": "ok", "artifact_commit": commit, "session_id": "outside-noop", "sequence": 5, "monotonic_ms": 4, "wall_time": "2026-09-06T00:00:04Z", "snapshot": snapshot},
+        ]
+        expression = "const t=" + json.dumps(transcript) + "; try { m.probeTranscript(t," + json.dumps(commit) + ",{id:'representative',transition_ids:['move'],restart_id:'restart',reentry_id:'reentry'}); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer,message:error.message})); }"
+        result = node_module("example-workflows/3d-browser-game/scripts/outside_probe.mjs", expression)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("no observed state or rendered-image change", result.stdout)
+
     def test_evidence_index_rehashes_entries_and_rejects_stale_bytes(self):
         fixture = self.fixture("continuous-animation")
         cell = {**fixture["cell"], "artifact_commit": "git:" + "a" * 40, "trace": fixture["trace"], "callbacks": fixture["callbacks"]}
@@ -227,6 +267,7 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
                 cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
             )
             self.assertEqual(0, checked.returncode, checked.stderr + checked.stdout)
+
             forged = dict(promoted_index)
             forged["promotion"] = dict(promoted_index["promotion"], result_identity="sha256:" + "0" * 64)
             forged_path = root / "forged-index.json"
@@ -242,6 +283,24 @@ class BrowserGamePlayEvidenceTests(unittest.TestCase):
                 cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
             )
             self.assertEqual(4, stale.returncode, stale.stderr + stale.stdout)
+
+    def test_evidence_index_rejects_unknown_document_kind_before_gate_use(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = root / "record.json"
+            record.write_text(json.dumps({"kind": "fabricated-pass", "id": "fabricated"}), encoding="utf-8")
+            digest = "sha256:" + hashlib.sha256(record.read_bytes()).hexdigest()
+            index = {
+                "schema_version": "1.0.0", "kind": "evidence-index", "id": "index-unknown-kind",
+                "artifact_commit": "git:" + "a" * 40, "created_at": "2026-09-06T00:00:00Z",
+                "producer": {"name": "test"}, "inputs": [], "environment": {"host": "test", "os": "windows", "tools": []},
+                "status": "draft", "gaps": [], "invalidates": [], "declared_ancestors": [],
+                "entries": [{"id": "fabricated", "path": "record.json", "kind": "research", "sha256": digest, "revision": "same-artifact"}],
+            }
+            expression = "const i=" + json.dumps(index) + "; try { await m.validateEvidenceIndex(i,{baseDir:""" + json.dumps(directory) + ",allowDraft:true}); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer,message:error.message})); }"
+            result = node_module("example-workflows/3d-browser-game/scripts/validate_evidence.mjs", expression)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn("unknown evidence document kind", result.stdout)
 
 
 if __name__ == "__main__":

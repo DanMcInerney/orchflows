@@ -13,7 +13,8 @@
     "browser": {"$ref": "#/$defs/browser"},
     "game": {"$ref": "#/$defs/game"},
     "operator": {"type": "string", "minLength": 1},
-    "independent_context_id": {"type": "string", "minLength": 1}
+    "independent_context_id": {"type": "string", "minLength": 1},
+    "scenario": {"$ref": "#/$defs/scenario"}
   },
   "$defs": {
     "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000]+$"},
@@ -64,6 +65,19 @@
     "game": {
       "type": "object", "additionalProperties": false,
       "properties": {"canvas_selector": {"type": "string", "minLength": 1}, "allowed_keys": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}
+    },
+    "scenario": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "transition_ids", "restart_id", "reentry_id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "transition_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "restart_id": {"type": "string", "minLength": 1},
+        "reentry_id": {"type": "string", "minLength": 1},
+        "transition_command_indexes": {"type": "array", "uniqueItems": true, "items": {"type": "integer", "minimum": 0}},
+        "restart_command_index": {"type": "integer", "minimum": 0},
+        "reentry_command_index": {"type": "integer", "minimum": 0}
+      }
     },
     "result": {
       "type": "object", "additionalProperties": false,

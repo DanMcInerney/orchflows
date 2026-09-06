@@ -72,6 +72,73 @@ export const FINAL_DIMENSION_IDS = Object.freeze([
 ]);
 const CRITICAL_SCORE_FLOOR = 3;
 
+// Evidence has a deliberately closed vocabulary.  The entry kind describes
+// the role an artifact plays in the index; the document kind describes the
+// bytes at that path.  Keeping the relation here means a caller cannot make
+// an arbitrary JSON object gate-eligible by choosing a convenient entry kind.
+const ENTRY_DOCUMENT_KINDS = Object.freeze({
+  brief: Object.freeze(["brief", "program-brief"]),
+  amendment: Object.freeze(["amendment"]),
+  research: Object.freeze(["research", "rubric", "design", "judge"]),
+  concept: Object.freeze(["concept", "concept-art"]),
+  traceability: Object.freeze(["traceability"]),
+  increment: Object.freeze(["increment"]),
+  asset: Object.freeze(["asset-manifest"]),
+  manifest: Object.freeze(["asset-manifest"]),
+  "run-record": Object.freeze(["run-record"]),
+  "play-session": Object.freeze(["play-session"]),
+  capture: Object.freeze(["capture"]),
+  "capture-matrix": Object.freeze(["capture-matrix"]),
+  performance: Object.freeze(["performance-cell"]),
+  "performance-plan": Object.freeze(["performance-plan"]),
+  verdict: Object.freeze(["gate-verdict", "verdict"]),
+  repair: Object.freeze(["repair"]),
+  other: Object.freeze(["other"]),
+});
+const KNOWN_DOCUMENT_KINDS = new Set(Object.values(ENTRY_DOCUMENT_KINDS).flat());
+const DESCRIPTIVE_ENTRY_KINDS = new Set(["brief", "amendment", "research", "concept", "increment", "repair", "other"]);
+
+const HARD_EVIDENCE_KINDS = Object.freeze({
+  "production-boot": ["increment", "run-record", "play-session", "capture"],
+  "focus-controls": ["increment", "play-session", "capture"],
+  "fundamental-loop": ["increment", "play-session"],
+  "central-mechanics-state-transitions": ["increment", "play-session"],
+  "core-progression-content-paths": ["increment", "concept", "play-session"],
+  "terminal-continuing-behavior": ["increment", "play-session"],
+  "replay-reentry": ["increment", "play-session"],
+  "readable-feedback-camera-collision": ["increment", "play-session", "capture"],
+  "no-undisclosed-placeholder": ["increment", "asset", "manifest", "play-session"],
+  "complete-core-captures": ["increment", "capture", "capture-matrix", "play-session"],
+  "qualified-representative-performance": ["increment", "performance", "performance-plan"],
+  "functional-final-boss": ["increment", "concept", "play-session"],
+  "clean-production-boot": ["increment", "run-record", "play-session", "capture"],
+  "documented-controls-focus": ["increment", "play-session", "capture"],
+  "all-prompt-concept-promises": ["increment", "research", "concept", "traceability", "play-session"],
+  "mechanics-content-progression": ["increment", "concept", "play-session"],
+  "no-blocking-errors-placeholders": ["increment", "play-session", "asset", "manifest"],
+  "asset-provenance-disposal": ["increment", "asset", "manifest"],
+  "complete-capture-adaptive-play": ["increment", "play-session", "capture", "capture-matrix"],
+  "performance-cell-coverage": ["increment", "performance", "performance-plan"],
+});
+const DIMENSION_EVIDENCE_KINDS = Object.freeze({
+  "loop-purpose-clarity": ["increment", "research", "concept", "play-session", "capture"],
+  "controls-camera-feel": ["increment", "play-session", "capture"],
+  "interaction-feedback-readability": ["increment", "play-session", "capture"],
+  "fairness-challenge": ["increment", "research", "concept", "play-session"],
+  "meaningful-choice-progression": ["increment", "concept", "play-session"],
+  "pacing-continued-engagement": ["increment", "concept", "play-session"],
+  "prompt-fidelity": ["increment", "research", "concept", "traceability", "play-session"],
+  "stability": ["increment", "play-session", "capture", "performance"],
+  "loop-purpose": ["increment", "research", "concept", "play-session", "capture"],
+  "controls-camera": ["increment", "play-session", "capture"],
+  "feedback-readability-fairness": ["increment", "research", "concept", "play-session", "capture"],
+  "challenge-choice-pacing-engagement": ["increment", "research", "concept", "play-session"],
+  "level-world-coherence": ["increment", "concept", "play-session", "capture"],
+  "3d-art-animation-motion-coherence": ["increment", "asset", "manifest", "play-session", "capture"],
+  "promised-ui-audio-accessibility": ["increment", "concept", "play-session", "capture"],
+  polish: ["increment", "asset", "manifest", "play-session", "capture"],
+});
+
 // Stored evidence is admitted through the package schemas as well as the
 // semantic checks below.  The schemas are loaded from this package, so a
 // caller cannot silently replace them with a schema from its evidence folder.
@@ -132,7 +199,10 @@ async function validateOutsideProbeRegistration(probe, { baseDir = process.cwd()
   facts.config_path = probe.config_path || null;
   facts.config_sha256 = probe.config_sha256 || null;
   if (probe.config) validateStoredSchema(probe.config, schemaValidator.outsideProbe, "outside probe config", "/outside_probe/config");
-  if (probe.result) facts.result = { status: probe.result.status, artifact_commit: probe.result.artifact_commit, joined_commit: probe.result.joined_commit };
+  if (probe.result) {
+    validateStoredSchema(probe.result, schemaValidator.outsideProbeResult, "outside probe result", "/outside_probe/result");
+    facts.result = { status: probe.result.status, artifact_commit: probe.result.artifact_commit, joined_commit: probe.result.joined_commit };
+  }
   if (probe.result_path) {
     const observed = await hashPath(baseDir, probe.result_path, "/outside_probe/result_path");
     if (observed.hash !== probe.result_sha256) throw evidenceError("outside probe result hash does not match its bytes", "/outside_probe/result_sha256");
@@ -188,6 +258,23 @@ function meaningfulSnapshot(snapshot, pointer) {
   return snapshot;
 }
 
+function snapshotFingerprint(snapshot) {
+  // DOM state is the observable state boundary.  Ignore focus and selector
+  // metadata, which can change while the game remains in the same state.
+  return canonicalJson({
+    url: snapshot.url,
+    title: snapshot.title || "",
+    visible_text: snapshot.visible_text || "",
+    facts: snapshot.facts || [],
+    canvases: snapshot.canvases || [],
+  });
+}
+
+function screenshotIdentity(value, pointer) {
+  if (typeof value !== "string" || !/^sha256:[0-9a-f]{64}$/i.test(value)) throw evidenceError("screenshot evidence must be a sha256 identity", pointer);
+  return value.toLowerCase();
+}
+
 function sessionClassification(session) {
   const transcript = session.transcript;
   if (!Array.isArray(transcript)) throw evidenceError("play session transcript must be an array", "/transcript");
@@ -198,6 +285,8 @@ function sessionClassification(session) {
   let stopped = false;
   const observations = [];
   const actions = [];
+  const heldKeys = new Set();
+  const heldPointers = new Set();
   for (let index = 0; index < transcript.length; index += 1) {
     const item = transcript[index];
     if (!item || typeof item !== "object" || !item.command) throw evidenceError("transcript item lacks command", `/transcript/${index}`);
@@ -212,9 +301,24 @@ function sessionClassification(session) {
     const wall = parsedTime(reply.wall_time, `/transcript/${index}/reply/wall_time`);
     if (reply.monotonic_ms < previousMonotonic || wall < previousWall) throw evidenceError("transcript timestamps must be causally ordered", `/transcript/${index}/reply`);
     meaningfulSnapshot(reply.snapshot, `/transcript/${index}/reply/snapshot`);
+    if (["observe", "capture"].includes(command.type) && reply.screenshot_hash !== undefined) screenshotIdentity(reply.screenshot_hash, `/transcript/${index}/reply/screenshot_hash`);
     if (command.type === "capture" && typeof reply.screenshot_hash !== "string") throw evidenceError("capture reply needs its observed screenshot hash", `/transcript/${index}/reply/screenshot_hash`);
     if (command.type === "observe") observations.push({ index, sequence: reply.sequence });
-    if (["key", "pointer"].includes(command.type)) actions.push({ index, sequence: reply.sequence });
+    if (command.type === "key") {
+      if (command.action === "down") heldKeys.add(command.key);
+      else if (!heldKeys.has(command.key)) throw evidenceError("key-up evidence must follow a preceding key-down", `/transcript/${index}/command/action`);
+      else heldKeys.delete(command.key);
+      actions.push({ index, sequence: reply.sequence, type: command.type, action: command.action, key: command.key });
+    }
+    if (command.type === "pointer") {
+      const pointerKey = command.button || "left";
+      if (command.action === "down") heldPointers.add(pointerKey);
+      else if (command.action === "up") {
+        if (!heldPointers.has(pointerKey)) throw evidenceError("pointer-up evidence must follow a preceding pointer-down", `/transcript/${index}/command/action`);
+        heldPointers.delete(pointerKey);
+      }
+      actions.push({ index, sequence: reply.sequence, type: command.type, action: command.action, pointer: pointerKey });
+    }
     if (command.type === "stop") stopped = true;
     previousSequence = reply.sequence;
     previousMonotonic = reply.monotonic_ms;
@@ -229,28 +333,66 @@ function sessionClassification(session) {
   if (session.input_mode !== undefined && session.input_mode !== requested) throw evidenceError("classification and input_mode disagree", "/input_mode");
   if (requested === "actual_play") {
     if (typeof session.operator !== "string" || !session.operator.trim() || typeof session.independent_context_id !== "string" || !session.independent_context_id.trim()) throw evidenceError("actual play requires operator and independent_context_id", "/classification");
-    if (session.source !== "live-browser") throw evidenceError("actual play requires a live-browser session source", "/source");
+    const fixtureOnly = session.source === "qualification-fixture" && session.fixture_only === true;
+    if (session.source !== "live-browser" && !fixtureOnly) throw evidenceError("actual play requires a live-browser session source or an explicit qualification fixture", "/source");
     if (session.headed !== true) throw evidenceError("actual play requires headed evidence", "/headed");
     if (!session.environment?.browser || !session.environment?.browser_version || session.environment.browser_version === "unknown" || !session.environment?.driver) throw evidenceError("actual play requires browser name, version, and driver identity", "/environment");
     const firstAction = actions[0];
     const before = firstAction && observations.find(item => item.index < firstAction.index);
     const after = firstAction && observations.find(item => item.index > firstAction.index);
     if (!firstAction || !before || !after) throw evidenceError("actual play requires a successful fresh observation, ordinary action, and subsequent observation", "/transcript");
+    const beforeItem = transcript[before.index]?.reply;
+    const afterItem = transcript[after.index]?.reply;
+    const changed = snapshotFingerprint(beforeItem.snapshot) !== snapshotFingerprint(afterItem.snapshot)
+      || (beforeItem.screenshot_hash !== undefined && afterItem.screenshot_hash !== undefined
+        && screenshotIdentity(beforeItem.screenshot_hash, `/transcript/${before.index}/reply/screenshot_hash`) !== screenshotIdentity(afterItem.screenshot_hash, `/transcript/${after.index}/reply/screenshot_hash`));
+    if (!firstAction || (firstAction.type === "key" && firstAction.action !== "down") || (firstAction.type === "pointer" && firstAction.action === "up")) throw evidenceError("actual play requires an effective ordinary input, beginning with a press or pointer movement", "/transcript");
+    if (!changed) throw evidenceError("actual play requires a causally observed state or rendered-image change after ordinary input", "/transcript");
     const adaptation = session.adaptation;
     if (!adaptation || typeof adaptation !== "object" || Array.isArray(adaptation) || typeof adaptation.rationale !== "string" || !adaptation.rationale.trim()) throw evidenceError("actual play requires a recorded adaptation rationale", "/adaptation");
     if (adaptation.observation_sequence !== before.sequence || adaptation.action_sequence !== firstAction.sequence || adaptation.subsequent_observation_sequence !== after.sequence) throw evidenceError("adaptation facts do not match the causal transcript order", "/adaptation");
-    return { requested, observations: observations.length, adapted: true, adaptation: { observation_sequence: before.sequence, action_sequence: firstAction.sequence, subsequent_observation_sequence: after.sequence, rationale: adaptation.rationale } };
+    return {
+      requested,
+      observations: observations.length,
+      adapted: true,
+      ...(fixtureOnly ? { fixture_only: true } : {}),
+      observed_facts: [
+        { id: `play-observation-${before.sequence}`, kind: "rendered-state", sequence: before.sequence },
+        { id: `play-action-effect-${firstAction.sequence}`, kind: changed && snapshotFingerprint(beforeItem.snapshot) !== snapshotFingerprint(afterItem.snapshot) ? "state-transition" : "rendered-effect", sequence: firstAction.sequence, after_sequence: after.sequence },
+      ],
+      adaptation: { observation_sequence: before.sequence, action_sequence: firstAction.sequence, subsequent_observation_sequence: after.sequence, rationale: adaptation.rationale },
+    };
   }
-  return { requested, observations: observations.length, adapted: false };
+  return { requested, observations: observations.length, adapted: false, observed_facts: [] };
 }
 
-export function validatePlaySession(session) {
+export function validatePlaySession(session, { receiptVerified = false } = {}) {
   requireHeader(session, "play-session");
   validateStoredSchema(session, schemaValidator.play, "play session");
   const facts = sessionClassification(session);
   if (session.transcript_hash !== sha256(canonicalTranscript(session.transcript))) throw evidenceError("transcript_hash does not match immutable transcript bytes", "/transcript_hash");
   if (session.status === "pass" || session.status === "qualified") throw evidenceError("a play session cannot promote itself to a gate verdict", "/status");
+  if (session.classification === "actual_play" && session.source === "live-browser") {
+    if (!receiptVerified) throw evidenceError("live actual-play admission requires package receipt verification", "/transcript_path");
+    if (session.producer?.name !== "browser_harness.mjs") throw evidenceError("live actual-play evidence must come from the package browser harness", "/producer/name");
+    if (typeof session.transcript_path !== "string" || !session.transcript_path || !/^sha256:[0-9a-f]{64}$/i.test(session.transcript_sha256 || "") || !Array.isArray(session.captures) || session.captures.length === 0) throw evidenceError("live actual-play evidence requires a retained transcript and captured image receipt", "/transcript_path");
+  }
   return { status: "valid", ...facts };
+}
+
+export async function validatePlayReceipt(session, { baseDir = process.cwd(), expectedProducer } = {}) {
+  const facts = validatePlaySession(session, { receiptVerified: true });
+  if (expectedProducer && session.producer?.name !== expectedProducer) throw evidenceError(`play receipt must be produced by ${expectedProducer}`, "/producer/name");
+  if (typeof session.transcript_path !== "string" || !session.transcript_path || !/^sha256:[0-9a-f]{64}$/i.test(session.transcript_sha256 || "")) throw evidenceError("play receipt must retain a hashed transcript byte artifact", "/transcript_path");
+  const transcriptBytes = await hashPath(baseDir, session.transcript_path, "/transcript_path");
+  if (transcriptBytes.hash !== session.transcript_sha256 || transcriptBytes.bytes.toString("utf8") !== canonicalTranscript(session.transcript)) throw evidenceError("play receipt transcript bytes do not match the admitted transcript", "/transcript_sha256");
+  if (!Array.isArray(session.captures) || session.captures.length === 0) throw evidenceError("play receipt must retain captured rendered-image bytes", "/captures");
+  for (const [index, capture] of session.captures.entries()) {
+    if (!capture || typeof capture.path !== "string" || !/^sha256:[0-9a-f]{64}$/i.test(capture.sha256 || "")) throw evidenceError("play receipt capture needs a relative path and sha256 identity", `/captures/${index}`);
+    const bytes = await hashPath(baseDir, capture.path, `/captures/${index}/path`);
+    if (bytes.hash !== capture.sha256) throw evidenceError("play receipt capture hash does not match retained bytes", `/captures/${index}/sha256`);
+  }
+  return { ...facts, receipt: { transcript_path: session.transcript_path, transcript_sha256: session.transcript_sha256, captures: session.captures.map(item => ({ path: item.path, sha256: item.sha256 })) } };
 }
 
 function canonicalTranscript(transcript) {
@@ -465,6 +607,7 @@ function validatePerformanceCoverage(planFacts, performanceEntries, pointer) {
 async function loadEntry(baseDir, entry, index) {
   if (!entry || typeof entry !== "object") throw evidenceError("evidence entry must be an object", "/entries");
   for (const key of ["kind", "path", "sha256", "revision"]) if (!(key in entry)) throw evidenceError(`entry missing ${key}`, "/entries");
+  if (!Object.hasOwn(ENTRY_DOCUMENT_KINDS, entry.kind)) throw evidenceError(`unknown evidence entry kind ${entry.kind}`, "/entries/kind");
   resultIdentity(entry.sha256);
   if (!["same-artifact", "declared-ancestor"].includes(entry.revision)) throw evidenceError(`invalid evidence revision ${entry.revision}`, "/entries/revision");
   const key = entry.id || entry.path;
@@ -472,6 +615,9 @@ async function loadEntry(baseDir, entry, index) {
   if (observed.hash !== entry.sha256) throw evidenceError(`evidence hash mismatch for ${key}`, `/entries/${key}/sha256`);
   let document = null;
   try { document = JSON.parse(observed.bytes.toString("utf8")); } catch { throw evidenceError(`evidence entry ${key} is not JSON`, `/entries/${key}/path`); }
+  if (!document || typeof document !== "object" || Array.isArray(document) || typeof document.kind !== "string") throw evidenceError(`evidence entry ${key} must contain a typed document kind`, `/entries/${key}/document/kind`);
+  if (!KNOWN_DOCUMENT_KINDS.has(document.kind)) throw evidenceError(`unknown evidence document kind ${document.kind}`, `/entries/${key}/document/kind`);
+  if (!ENTRY_DOCUMENT_KINDS[entry.kind].includes(document.kind)) throw evidenceError(`entry kind ${entry.kind} cannot admit document kind ${document.kind}`, `/entries/${key}/kind`);
   const identity = document.id || key;
   if (entry.id && entry.id !== identity) throw evidenceError(`entry id ${entry.id} does not match document id ${identity}`, `/entries/${key}/id`);
   if (document.artifact_commit) {
@@ -479,11 +625,22 @@ async function loadEntry(baseDir, entry, index) {
     if (entry.revision === "same-artifact" && document.artifact_commit !== index.artifact_commit) throw evidenceError(`entry ${identity} is not from the indexed artifact`, `/entries/${key}/revision`);
     if (entry.revision === "declared-ancestor" && !ancestors.includes(document.artifact_commit)) throw evidenceError(`entry ${identity} is from an undeclared artifact commit`, `/entries/${key}/source_commit`);
   }
-  let facts = { status: "valid" };
+  let facts;
+  if (DESCRIPTIVE_ENTRY_KINDS.has(entry.kind)) {
+    if (typeof document.id !== "string" || !document.id) throw evidenceError(`descriptive ${entry.kind} evidence needs a stable document id`, `/entries/${key}/document/id`);
+    if (!isCommitIdentity(document.artifact_commit)) throw evidenceError("descriptive evidence must bind its claims to a full artifact commit", `/entries/${key}/document/artifact_commit`);
+    const claimIds = [...new Set([...(Array.isArray(document.claim_ids) ? document.claim_ids : []), ...(Array.isArray(document.claims) ? document.claims.map(item => typeof item === "string" ? item : item?.id).filter(Boolean) : []), ...(Array.isArray(document.promises) ? document.promises : []), ...(Array.isArray(document.promise_ids) ? document.promise_ids : [])])];
+    if (claimIds.some(item => typeof item !== "string" || !item)) throw evidenceError("descriptive evidence claim identifiers must be non-empty strings", `/entries/${key}/document/claims`);
+    facts = { status: "descriptive", kind: document.kind, claim_ids: claimIds };
+  } else facts = { status: "typed", kind: document.kind };
   if (document.kind === "run-record") { validateStoredSchema(document, schemaValidator.runRecord, "run record"); facts = { status: "schema-valid", kind: document.kind }; }
   if (document.kind === "traceability") { validateStoredSchema(document, schemaValidator.traceability, "traceability"); facts = { status: "schema-valid", kind: document.kind }; }
   if (document.kind === "gate-verdict") { validateStoredSchema(document, schemaValidator.gateVerdict, "gate verdict"); facts = { status: "schema-valid", kind: document.kind }; }
-  if (document.kind === "play-session" || entry.kind === "play-session") facts = validatePlaySession(document);
+  if (document.kind === "play-session" || entry.kind === "play-session") {
+    facts = document.classification === "actual_play" && document.source === "live-browser"
+      ? await validatePlayReceipt(document, { baseDir: dirname(observed.target), expectedProducer: "browser_harness.mjs" })
+      : validatePlaySession(document);
+  }
   if (document.kind === "performance-cell" || entry.kind === "performance") facts = await validatePerformanceCell(document);
   if (document.kind === "asset-manifest" || entry.kind === "manifest" || entry.kind === "asset") facts = await validateAssetManifest(document, { baseDir: dirname(observed.target) });
   if (document.kind === "capture" || entry.kind === "capture") facts = await validateCapture(document, { baseDir: dirname(observed.target) });
@@ -527,6 +684,25 @@ function documentFor(loaded, id, predicate = () => true, allowFallback = false) 
   return loaded.find(item => predicate(item.document, item))?.document;
 }
 
+function authorityDocument(loaded, authority, expectedKinds, pointer) {
+  if (!authority || typeof authority !== "object" || typeof authority.identity !== "string" || !authority.identity) throw evidenceError("authority must name an indexed identity", pointer);
+  const entry = loaded.find(item => item.id === authority.identity && expectedKinds.includes(item.entry.kind));
+  if (!entry) throw evidenceError(`authority ${authority.identity} is not an indexed ${expectedKinds.join(" or ")} record`, pointer);
+  // Authority is about the independently rehashed entry bytes.  An optional
+  // declared digest may be retained for human-facing provenance, but it can
+  // never select a different object than the indexed bytes.
+  if (authority.sha256 !== undefined && authority.sha256 !== entry.observed.hash) {
+    // Existing brief records use `sha256` for the canonical promise payload
+    // while the index entry separately hashes the complete record bytes.  A
+    // legacy record is still bound to its exact indexed identity and bytes;
+    // new records can use entry_sha256 to state the byte binding explicitly.
+    const legacyPayloadDigest = entry.document.kind === "brief" && entry.document.sha256 === authority.sha256;
+    if (!legacyPayloadDigest && authority.entry_sha256 !== entry.observed.hash) throw evidenceError("authority sha256 does not match the independently rehashed indexed entry bytes", `${pointer}/sha256`);
+  }
+  if (authority.entry_sha256 !== undefined && authority.entry_sha256 !== entry.observed.hash) throw evidenceError("authority entry_sha256 does not match the independently rehashed indexed entry bytes", `${pointer}/entry_sha256`);
+  return { entry, document: entry.document, sha256: entry.observed.hash };
+}
+
 function lineageEvidenceIndex(index, loaded) {
   return {
     ...index,
@@ -545,12 +721,29 @@ async function observedGitAncestor(baseDir, ancestor, descendant) {
   }
 }
 
+function gateEvidenceItem(evidence, id, allowedKinds, pointer, label) {
+  const item = evidence.entries.find(candidate => candidate.id === id);
+  if (!item) throw evidenceError(`${label} references missing evidence ${id}`, pointer);
+  if (!allowedKinds.includes(item.entry.kind)) throw evidenceError(`${label} evidence ${id} has entry kind ${item.entry.kind}; expected ${allowedKinds.join(", ")}`, pointer);
+  if (!item.document?.kind || !KNOWN_DOCUMENT_KINDS.has(item.document.kind)) throw evidenceError(`${label} evidence ${id} has no closed typed document kind`, pointer);
+  if (!item.facts || item.facts.status === "typed") throw evidenceError(`${label} evidence ${id} lacks a recomputed semantic fact record`, pointer);
+  return item;
+}
+
 function lineageInputs(index, gate, loaded, record, baseDir) {
   const fixed = record.fixed_inputs || {};
   const selectedCommit = gate === "core" && record?.artifact_commit ? record.artifact_commit : index.artifact_commit;
   const runRecord = documentFor(loaded, fixed.run_record, document => document?.kind === "run-record" && document.artifact_commit === selectedCommit);
   const traceability = documentFor(loaded, fixed.traceability, document => document?.kind === "traceability");
-  const brief = documentFor(loaded, undefined, document => document?.kind === "brief" || document?.kind === "program-brief" || document?.promises || document?.promise_ids, true);
+  const briefAuthority = runRecord?.brief || traceability?.brief;
+  const briefRecord = briefAuthority
+    ? authorityDocument(loaded, briefAuthority, ["brief"], "/lineage/brief")
+    : undefined;
+  const brief = briefRecord?.document || documentFor(loaded, undefined, document => document?.kind === "brief" || document?.kind === "program-brief" || document?.promises || document?.promise_ids, true);
+  const amendmentAuthorities = (runRecord?.amendments || []).map((authority, position) => {
+    const amended = authorityDocument(loaded, authority, ["amendment"], `/lineage/amendments/${position}`);
+    return { ...amended.document, identity: amended.entry.id, sha256: amended.sha256 };
+  });
   const predecessorId = fixed.predecessor_run_record || runRecord?.lineage?.predecessor || runRecord?.predecessor;
   const predecessorRunRecord = predecessorId ? documentFor(loaded, predecessorId, document => document?.kind === "run-record") : undefined;
   const coreId = fixed.accepted_core_verdict || fixed.core_gate_verdict || fixed.core_verdict;
@@ -572,7 +765,7 @@ function lineageInputs(index, gate, loaded, record, baseDir) {
     runRecord,
     predecessorRunRecord,
     brief,
-    amendments: runRecord.amendments || [],
+    amendments: amendmentAuthorities,
     traceability,
     evidenceIndex: lineageEvidenceIndex(index, loaded),
     gateVerdict: record,
@@ -641,9 +834,7 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
     if (!hard || typeof hard !== "object" || !Array.isArray(hard.evidence) || hard.evidence.length === 0) throw evidenceError("each hard gate needs evidence identities; booleans cannot self-qualify", `/gates/${gate}/hard_gates`);
     if (hard.result !== "pass") throw evidenceError(`hard gate ${hard.id} is not passed`, `/gates/${gate}/hard_gates/${hard.id}`);
     for (const id of hard.evidence) {
-      const item = evidence.entries.find(candidate => candidate.id === id);
-      if (!item) throw evidenceError(`hard gate ${hard.id} references missing evidence ${id}`, `/gates/${gate}/hard_gates/${hard.id}`);
-      if (item.entry.kind === "other" || !item.document.kind) throw evidenceError(`hard gate ${hard.id} references untyped evidence ${id}`, `/gates/${gate}/hard_gates/${hard.id}`);
+      gateEvidenceItem(evidence, id, HARD_EVIDENCE_KINDS[hard.id] || ["increment"], `/gates/${gate}/hard_gates/${hard.id}/evidence`, `hard gate ${hard.id}`);
     }
   }
   const dimensions = record.scores;
@@ -653,10 +844,8 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   if (new Set(dimensionIds).size !== dimensionIds.length || requiredDimensions.some(id => !dimensionIds.includes(id)) || dimensionIds.some(id => !requiredDimensions.includes(id))) throw evidenceError("gate dimension identities do not match the frozen rubric", `/gates/${gate}/scores`);
   for (const dimension of dimensions) {
     if (!Number.isInteger(dimension.score) || dimension.score < 0 || dimension.score > 4 || dimension.score < CRITICAL_SCORE_FLOOR || (dimension.floor !== undefined && dimension.floor !== CRITICAL_SCORE_FLOOR)) throw evidenceError(`dimension ${dimension.dimension || "unknown"} is below the frozen floor of ${CRITICAL_SCORE_FLOOR}`, `/gates/${gate}/scores`);
-    if (!Array.isArray(dimension.evidence) || dimension.evidence.length === 0 || dimension.evidence.some(id => {
-      const item = evidence.entries.find(candidate => candidate.id === id);
-      return !item || item.entry.kind === "other" || !item.document.kind;
-    })) throw evidenceError(`dimension ${dimension.dimension} lacks bound typed evidence`, `/gates/${gate}/scores`);
+    if (!Array.isArray(dimension.evidence) || dimension.evidence.length === 0) throw evidenceError(`dimension ${dimension.dimension} lacks bound typed evidence`, `/gates/${gate}/scores`);
+    for (const id of dimension.evidence) gateEvidenceItem(evidence, id, DIMENSION_EVIDENCE_KINDS[dimension.dimension] || ["increment"], `/gates/${gate}/scores/${dimension.dimension}/evidence`, `dimension ${dimension.dimension}`);
   }
   const fixed = record.fixed_inputs || {};
   if (fixed.artifact_commit !== index.artifact_commit && !(historicalCore && fixed.artifact_commit === record.artifact_commit)) throw evidenceError("gate fixed inputs are bound to a different artifact commit", `/gates/${gate}/fixed_inputs/artifact_commit`);
@@ -668,7 +857,7 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   if (!Array.isArray(fixed.play_sessions) || fixed.play_sessions.length < 2 || new Set(fixed.play_sessions).size !== fixed.play_sessions.length) throw evidenceError("gate requires two independent play contexts", `/gates/${gate}/fixed_inputs/play_sessions`);
   const playEntries = fixed.play_sessions.map(id => evidence.entries.find(item => item.id === id));
   if (playEntries.some(item => !item)) throw evidenceError("gate references a missing play session", `/gates/${gate}/fixed_inputs/play_sessions`);
-  if (playEntries.some(item => item.document.kind !== "play-session" || item.document.classification !== "actual_play" || item.document.source !== "live-browser" || item.document.headed !== true || typeof item.document.operator !== "string" || !item.document.operator || typeof item.document.independent_context_id !== "string" || !item.document.independent_context_id)) throw evidenceError("gate play coverage requires live headed actual-play provenance", `/gates/${gate}/fixed_inputs/play_sessions`);
+  if (playEntries.some(item => item.document.kind !== "play-session" || item.document.classification !== "actual_play" || item.document.source !== "live-browser" || item.document.headed !== true || typeof item.document.operator !== "string" || !item.document.operator || typeof item.document.independent_context_id !== "string" || !item.document.independent_context_id || !item.facts?.receipt)) throw evidenceError("gate play coverage requires live headed actual-play provenance with a verified byte receipt", `/gates/${gate}/fixed_inputs/play_sessions`);
   if (new Set(playEntries.map(item => item.document.independent_context_id)).size < 2 || new Set(playEntries.map(item => item.document.operator)).size < 2) throw evidenceError("gate play coverage is not independent by both context and operator", `/gates/${gate}/fixed_inputs/play_sessions`);
   if (typeof fixed.performance_plan !== "string" || !fixed.performance_plan) throw evidenceError("gate requires a frozen performance plan", `/gates/${gate}/fixed_inputs/performance_plan`);
   const performancePlanEntry = evidence.entries.find(item => item.id === fixed.performance_plan && (item.entry.kind === "performance-plan" || item.document.kind === "performance-plan"));

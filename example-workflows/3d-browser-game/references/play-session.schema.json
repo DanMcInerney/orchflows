@@ -19,6 +19,7 @@
     "classification": {"type": "string", "enum": ["actual_play", "scripted_input", "simulated"]},
     "input_mode": {"type": "string", "enum": ["actual_play", "scripted_input", "simulated"]},
     "source": {"enum": ["live-browser", "qualification-fixture"]},
+    "fixture_only": {"const": true},
     "headed": {"const": true},
     "url": {"type": "string", "format": "uri"},
     "operator": {"type": ["string", "null"]},
@@ -26,6 +27,9 @@
     "started_at": {"type": "string", "minLength": 1},
     "ended_at": {"type": "string", "minLength": 1},
     "transcript_hash": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "transcript_path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000]+$"},
+    "transcript_sha256": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "captures": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/capture"}},
     "adaptation": {"$ref": "#/$defs/adaptation"},
     "transcript": {
       "type": "array",
@@ -55,6 +59,7 @@
   },
   "allOf": [{"if": {"properties": {"classification": {"const": "actual_play"}}, "required": ["classification"]}, "then": {"required": ["adaptation"]}}],
   "$defs": {
+    "capture": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000]+$"}, "sha256": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"}, "sequence": {"type": "integer", "minimum": 1}, "label": {"type": ["string", "null"]}}},
     "adaptation": {"type": "object", "additionalProperties": false, "required": ["observation_sequence", "action_sequence", "subsequent_observation_sequence", "rationale"], "properties": {"observation_sequence": {"type": "integer", "minimum": 1}, "action_sequence": {"type": "integer", "minimum": 1}, "subsequent_observation_sequence": {"type": "integer", "minimum": 1}, "rationale": {"type": "string", "minLength": 1}}}
   },
   "additionalProperties": false
