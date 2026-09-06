@@ -384,7 +384,7 @@ export async function validateGateLineage(input = {}) {
   const current = currentCommit(input);
   const entries = indexById(input.evidenceIndex);
   input._entries = entries;
-  if (input.evidenceIndex.artifact_commit && !sameCommit(input.evidenceIndex.artifact_commit, current)) fail("artifact-mismatch", "evidence index and selected artifact differ", "/evidence_index/artifact_commit", current, input.evidenceIndex.artifact_commit);
+  if (input.evidenceIndex.artifact_commit && !sameCommit(input.evidenceIndex.artifact_commit, current) && !(input.gate === "core" && input.historical_core === true)) fail("artifact-mismatch", "evidence index and selected artifact differ", "/evidence_index/artifact_commit", current, input.evidenceIndex.artifact_commit);
   if (input.gateVerdict.artifact_commit && input.gate === "final" && !sameCommit(input.gateVerdict.artifact_commit, current)) fail("artifact-mismatch", "final verdict is not bound to the selected artifact", "/gate_verdict/artifact_commit", current, input.gateVerdict.artifact_commit);
   const predecessor = input.predecessorRunRecord || input.predecessor?.runRecord || input.predecessor;
   if (predecessor) {

@@ -170,7 +170,9 @@ async function readProbeConfig(probe, root) {
   if (probe?.config && typeof probe.config === "object" && !Array.isArray(probe.config)) return validateConfig(probe.config);
   if (typeof probe?.config_path === "string" && probe.config_path) {
     const configPath = relativeWorkspacePath(root, probe.config_path, "/outside_probe/config_path");
-    return validateConfig((await readJson(configPath.target)).value);
+    const loaded = await readJson(configPath.target);
+    if (probe.config_sha256 && loaded.hash !== probe.config_sha256) throw evidenceError("outside probe config hash does not match its bytes", "/outside_probe/config_sha256");
+    return validateConfig(loaded.value);
   }
   return null;
 }
@@ -227,35 +229,77 @@ async function spawnReadyServer(configPath, root, artifactCommit, outputHash, ti
 async function runInteractiveHarness(configPath, commands, artifactCommit, timeoutMs) {
   const command = fixedCommand("harness", ["--config", configPath]);
   const child = spawn(command[0], command.slice(1), { cwd: PACKAGE_ROOT, shell: false, detached: process.platform !== "win32", windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
-  const stdout = [];
   const stderr = [];
-  child.stdout?.on("data", chunk => stdout.push(chunk));
-  child.stderr?.on("data", chunk => stderr.push(chunk));
-  for (const command of commands) child.stdin.write(`${JSON.stringify(command)}\n`);
-  child.stdin.end();
-  const result = await new Promise((resolvePromise, rejectPromise) => {
-    let timer;
-    let timeoutError;
-    child.once("error", rejectPromise);
-    child.once("exit", (code, signal) => { if (!timeoutError) { clearTimeout(timer); resolvePromise({ code, signal }); } });
-    timer = setTimeout(async () => {
-      timeoutError = Object.assign(new Error(`browser harness exceeded ${timeoutMs}ms`), { code: "timeout-process-loss", pointer: "/outside_probe/harness/timeout_ms" });
-      await terminate(child);
-      rejectPromise(timeoutError);
-    }, timeoutMs);
-    timer.unref();
-  });
-  if (result.code !== 0) throw evidenceError(`browser harness exited ${result.code ?? "unknown"}${result.signal ? ` (${result.signal})` : ""}: ${Buffer.concat(stderr).toString("utf8").trim()}`, "/outside_probe/harness");
-  const lines = Buffer.concat(stdout).toString("utf8").split(/\r?\n/).filter(Boolean);
-  if (!lines.length) throw evidenceError("browser harness emitted no JSONL evidence", "/outside_probe/harness/output");
   const parsed = [];
-  for (const line of lines) {
-    try { parsed.push(JSON.parse(line)); }
-    catch (error) { throw evidenceError(`browser harness output is not valid JSONL: ${error.message}`, "/outside_probe/harness/output"); }
+  const reader = createInterface({ input: child.stdout, crlfDelay: Infinity });
+  const lines = [];
+  let pending = [];
+  let streamError;
+  const deliver = value => {
+    const waiter = pending.shift();
+    if (waiter) waiter.resolve(value);
+    else lines.push(value);
+  };
+  reader.on("line", line => {
+    try {
+      const value = JSON.parse(line);
+      parsed.push(value);
+      deliver(value);
+    } catch (error) {
+      streamError = evidenceError(`browser harness output is not valid JSONL: ${error.message}`, "/outside_probe/harness/output");
+      for (const waiter of pending.splice(0)) waiter.reject(streamError);
+    }
+  });
+  child.stderr?.on("data", chunk => stderr.push(chunk));
+  const nextLine = () => {
+    if (streamError) return Promise.reject(streamError);
+    const buffered = lines.shift();
+    if (buffered) return Promise.resolve(buffered);
+    return new Promise((resolvePromise, rejectPromise) => pending.push({ resolve: resolvePromise, reject: rejectPromise }));
+  };
+  let timer;
+  let timeoutError;
+  const processExit = new Promise((resolvePromise, rejectPromise) => {
+    child.once("error", rejectPromise);
+    child.once("exit", (code, signal) => {
+      if (timeoutError) return;
+      clearTimeout(timer);
+      resolvePromise({ code, signal });
+      const error = code === 0 ? null : evidenceError(`browser harness exited ${code ?? "unknown"}${signal ? ` (${signal})` : ""}: ${Buffer.concat(stderr).toString("utf8").trim()}`, "/outside_probe/harness");
+      for (const waiter of pending.splice(0)) {
+        if (error) waiter.reject(error);
+        else waiter.reject(evidenceError("browser harness closed before returning its expected JSONL reply", "/outside_probe/harness/output"));
+      }
+    });
+  });
+  timer = setTimeout(async () => {
+    timeoutError = Object.assign(new Error(`browser harness exceeded ${timeoutMs}ms`), { code: "timeout-process-loss", pointer: "/outside_probe/harness/timeout_ms" });
+    for (const waiter of pending.splice(0)) waiter.reject(timeoutError);
+    await terminate(child);
+  }, timeoutMs);
+  timer.unref();
+  try {
+    const ready = await nextLine();
+    if (ready.type !== "ready" || ready.status !== "ready") throw evidenceError("browser harness did not report a successful ready observation", "/outside_probe/harness/output");
+    for (const input of commands) {
+      child.stdin.write(`${JSON.stringify(input)}\n`);
+      const reply = await nextLine();
+      if (reply.type !== input.type || reply.status !== "ok") throw evidenceError(`browser harness returned an unsuccessful ${input.type} reply`, "/outside_probe/harness/output");
+    }
+    child.stdin.end();
+    const result = await processExit;
+    if (result.code !== 0) throw evidenceError(`browser harness exited ${result.code ?? "unknown"}${result.signal ? ` (${result.signal})` : ""}: ${Buffer.concat(stderr).toString("utf8").trim()}`, "/outside_probe/harness");
+  } catch (error) {
+    await terminate(child);
+    throw error;
+  } finally {
+    reader.close();
+    clearTimeout(timer);
   }
+  if (!parsed.length) throw evidenceError("browser harness emitted no JSONL evidence", "/outside_probe/harness/output");
   const summary = parsed.at(-1);
   if (!summary || summary.status !== "observed" || summary.artifact_commit !== artifactCommit) throw evidenceError("browser harness did not return a bound observed result", "/outside_probe/harness/output");
-  return { child, result, lines: parsed, summary, stderr: Buffer.concat(stderr).toString("utf8") };
+  return { child, result: await processExit, lines: parsed, summary, stderr: Buffer.concat(stderr).toString("utf8") };
 }
 
 async function fileInventory(directory) {
@@ -324,7 +368,7 @@ async function outsideProbe(index, { workspace, baseDir = process.cwd() } = {}) 
     if (finalOutput.sha256 !== build.output.sha256) throw evidenceError("production output changed after the observed harness session", "/outside_probe/build/output");
     const core = await validateGate(index, "core", { baseDir });
     const final = await validateGate(index, "final", { baseDir });
-    return { status: "observed", joined_commit: joinedCommit, evidence_ids: evidence.ids, build, server: server.ready, harness: { ...harnessEvidence, session_id: sessionDocument.id, transcript_hash: sessionDocument.transcript_hash, session_path: sessionPath.path }, captures, gates: { core, final }, cleanup };
+    return { status: "observed", artifact_commit: index.artifact_commit, joined_commit: joinedCommit, observed_at: nowIso(), evidence_ids: evidence.ids, build, server: server.ready, harness: { ...harnessEvidence, session_id: sessionDocument.id, transcript_hash: sessionDocument.transcript_hash, session_path: sessionPath.path }, captures, gates: { core, final }, cleanup };
   } finally {
     if (harnessHandle?.child) cleanup.harness = await terminate(harnessHandle.child);
     if (serverHandle?.child) cleanup.server = await terminate(serverHandle.child);

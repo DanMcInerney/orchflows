@@ -89,11 +89,13 @@ const schemaValidator = (() => {
   const play = ajv.compile(schemaJson("play-session.schema.json"));
   const performanceCell = ajv.compile(schemaJson("performance-cell.schema.json"));
   const performancePlan = ajv.compile(schemaJson("performance-plan.schema.json"));
+  const outsideProbe = ajv.compile(schemaJson("outside-probe.schema.json"));
   const evidenceIndex = ajv.compile(schemaJson("evidence-index.schema.json"));
   const gateVerdict = ajv.compile(schemaJson("gate-verdict.schema.json"));
   const captureMatrix = ajv.compile(schemaJson("capture-matrix.schema.json"));
   const assetManifest = ajv.compile(schemaJson("asset-manifest.schema.json"));
-  return { runRecord, traceability, play, performanceCell, performancePlan, evidenceIndex, gateVerdict, captureMatrix, assetManifest };
+  const outsideProbeResult = ajv.compile({ $ref: "https://orchflows.local/3d-browser-game/outside-probe/v1.json#/$defs/result" });
+  return { runRecord, traceability, play, performanceCell, performancePlan, evidenceIndex, gateVerdict, captureMatrix, assetManifest, outsideProbe, outsideProbeResult };
 })();
 
 function validateStoredSchema(document, validator, label, pointer = "/") {
@@ -118,6 +120,30 @@ function relativeSafe(baseDir, path, pointer) {
   if (typeof path !== "string" || !path || isAbsolute(path)) throw evidenceError("evidence path must be relative", pointer);
   const target = ensureContained(baseDir, resolve(baseDir, path), pointer);
   return { target, path: relative(resolve(baseDir), target).replaceAll("\\", "/") };
+}
+
+async function validateOutsideProbeRegistration(probe, { baseDir = process.cwd() } = {}) {
+  if (!probe || typeof probe !== "object" || Array.isArray(probe)) throw evidenceError("outside probe registration must be an object", "/outside_probe");
+  const facts = {};
+  // `config_path` is resolved inside the joined workspace by outside_probe;
+  // the evidence index may live in a separate evidence directory, so only an
+  // inline config is schema-checked at this seam. The probe re-hashes a
+  // workspace config when it consumes it.
+  facts.config_path = probe.config_path || null;
+  facts.config_sha256 = probe.config_sha256 || null;
+  if (probe.config) validateStoredSchema(probe.config, schemaValidator.outsideProbe, "outside probe config", "/outside_probe/config");
+  if (probe.result) facts.result = { status: probe.result.status, artifact_commit: probe.result.artifact_commit, joined_commit: probe.result.joined_commit };
+  if (probe.result_path) {
+    const observed = await hashPath(baseDir, probe.result_path, "/outside_probe/result_path");
+    if (observed.hash !== probe.result_sha256) throw evidenceError("outside probe result hash does not match its bytes", "/outside_probe/result_sha256");
+    let result;
+    try { result = JSON.parse(observed.bytes.toString("utf8")); }
+    catch (error) { throw evidenceError(`outside probe result is not valid JSON: ${error.message}`, "/outside_probe/result_path"); }
+    validateStoredSchema(result, schemaValidator.outsideProbeResult, "outside probe result", "/outside_probe/result_path");
+    facts.result_path = observed.path;
+    facts.result_sha256 = observed.hash;
+  }
+  return facts;
 }
 
 async function hashPath(baseDir, path, pointer) {
@@ -468,8 +494,8 @@ async function loadEntry(baseDir, entry, index) {
   return { entry, document, observed, id: identity, facts };
 }
 
-function validationReceipt(index, loaded, required, kinds) {
-  return {
+function validationReceipt(index, loaded, required, kinds, outsideProbe) {
+  const receipt = {
     version: "1.0.0",
     kind: "evidence-index-validation",
     index_id: index.id,
@@ -486,6 +512,8 @@ function validationReceipt(index, loaded, required, kinds) {
     required: required.map(item => typeof item === "string" ? { id: item } : { id: item.id, ...(item.kind ? { kind: item.kind } : {}) }).sort((left, right) => left.id.localeCompare(right.id)),
     required_kinds: [...kinds.entries()].map(([kind, count]) => ({ kind, count })).sort((left, right) => left.kind.localeCompare(right.kind)),
   };
+  if (outsideProbe !== undefined) receipt.outside_probe = outsideProbe;
+  return receipt;
 }
 
 function documentFor(loaded, id, predicate = () => true, allowFallback = false) {
@@ -518,7 +546,8 @@ async function observedGitAncestor(baseDir, ancestor, descendant) {
 
 function lineageInputs(index, gate, loaded, record, baseDir) {
   const fixed = record.fixed_inputs || {};
-  const runRecord = documentFor(loaded, fixed.run_record, document => document?.kind === "run-record" && document.artifact_commit === index.artifact_commit);
+  const selectedCommit = gate === "core" && record?.artifact_commit ? record.artifact_commit : index.artifact_commit;
+  const runRecord = documentFor(loaded, fixed.run_record, document => document?.kind === "run-record" && document.artifact_commit === selectedCommit);
   const traceability = documentFor(loaded, fixed.traceability, document => document?.kind === "traceability");
   const brief = documentFor(loaded, undefined, document => document?.kind === "brief" || document?.kind === "program-brief" || document?.promises || document?.promise_ids, true);
   const predecessorId = fixed.predecessor_run_record || runRecord?.lineage?.predecessor || runRecord?.predecessor;
@@ -537,6 +566,8 @@ function lineageInputs(index, gate, loaded, record, baseDir) {
   if (gate === "final" && !coreGateVerdict) throw evidenceError("final gate lineage requires its indexed accepted core verdict", "/lineage/core_gate_verdict");
   return {
     gate,
+    artifact: gate === "core" && record.artifact_commit ? { current_commit: record.artifact_commit } : undefined,
+    historical_core: gate === "core" && record.artifact_commit && record.artifact_commit !== index.artifact_commit,
     runRecord,
     predecessorRunRecord,
     brief,
@@ -553,6 +584,7 @@ function lineageInputs(index, gate, loaded, record, baseDir) {
 export async function validateEvidenceIndex(index, { baseDir = process.cwd(), allowDraft = false } = {}) {
   requireHeader(index, "evidence-index");
   validateStoredSchema(index, schemaValidator.evidenceIndex, "evidence index");
+  const outsideProbe = index.outside_probe === undefined ? undefined : await validateOutsideProbeRegistration(index.outside_probe, { baseDir });
   if (index.promotion && (index.promotion.validator !== "validate_evidence.mjs" || !/^sha256:[0-9a-f]{64}$/i.test(index.promotion.result_identity || ""))) throw evidenceError("evidence index promotion is not a validate_evidence.mjs result identity", "/promotion");
   if (!index.promotion && !(allowDraft && index.status === "draft")) throw evidenceError("evidence index is not promoted by validate_evidence.mjs", "/promotion");
   if (index.promotion && index.status !== "complete") throw evidenceError("a promoted evidence index must be complete", "/status");
@@ -583,7 +615,7 @@ export async function validateEvidenceIndex(index, { baseDir = process.cwd(), al
     if (count < (requirement.count || 1)) throw evidenceError(`missing required evidence kind ${requirement.kind}`, "/required_kinds");
   }
   const requiredReceipt = index.required || index.required_evidence || [];
-  const receipt = validationReceipt(index, loaded, requiredReceipt, kinds);
+  const receipt = validationReceipt(index, loaded, requiredReceipt, kinds, outsideProbe);
   const computedIdentity = sha256(canonicalJson(receipt));
   if (index.promotion && index.promotion.result_identity.toLowerCase() !== computedIdentity) throw evidenceError(`promotion result identity does not match the rehashed validation receipt; expected ${computedIdentity}, observed ${index.promotion.result_identity}`, "/promotion/result_identity");
   return { status: "valid", ids: [...ids], entries: loaded, kinds: Object.fromEntries(kinds), receipt, result_identity: computedIdentity };
@@ -595,7 +627,9 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
   if (!record) throw evidenceError(`missing ${gate} gate record`, `/gates/${gate}`);
   validateStoredSchema(record, schemaValidator.gateVerdict, `${gate} gate verdict`);
   if (record.gate !== gate) throw evidenceError(`gate record is for ${record.gate}, not ${gate}`, `/gates/${gate}/gate`);
-  if (record.artifact_commit && record.artifact_commit !== index.artifact_commit) throw evidenceError("gate record is bound to a different artifact commit", `/gates/${gate}/artifact_commit`);
+  const historicalCore = gate === "core" && record.artifact_commit && record.artifact_commit !== index.artifact_commit;
+  if (historicalCore && !(index.declared_ancestors || []).includes(record.artifact_commit)) throw evidenceError("historical core gate record is not a declared ancestor of the indexed artifact", `/gates/${gate}/artifact_commit`);
+  if (record.artifact_commit && record.artifact_commit !== index.artifact_commit && !historicalCore) throw evidenceError("gate record is bound to a different artifact commit", `/gates/${gate}/artifact_commit`);
   const requiredHard = [...(gate === "core" ? CORE_HARD_GATE_IDS : FINAL_HARD_GATE_IDS)];
   if (gate === "core" && record.fixed_inputs?.final_boss_promised === true) requiredHard.splice(7, 0, "functional-final-boss");
   const hardGates = record.hard_gates;
@@ -624,8 +658,8 @@ export async function validateGate(index, gate, { baseDir = process.cwd() } = {}
     })) throw evidenceError(`dimension ${dimension.dimension} lacks bound typed evidence`, `/gates/${gate}/scores`);
   }
   const fixed = record.fixed_inputs || {};
-  if (fixed.artifact_commit !== index.artifact_commit) throw evidenceError("gate fixed inputs are bound to a different artifact commit", `/gates/${gate}/fixed_inputs/artifact_commit`);
-  if (fixed.evidence_index !== index.id) throw evidenceError("gate fixed inputs must name this promoted evidence index", `/gates/${gate}/fixed_inputs/evidence_index`);
+  if (fixed.artifact_commit !== index.artifact_commit && !(historicalCore && fixed.artifact_commit === record.artifact_commit)) throw evidenceError("gate fixed inputs are bound to a different artifact commit", `/gates/${gate}/fixed_inputs/artifact_commit`);
+  if (fixed.evidence_index !== index.id && !(historicalCore && typeof fixed.evidence_index === "string" && fixed.evidence_index.length > 0)) throw evidenceError("gate fixed inputs must name this promoted evidence index", `/gates/${gate}/fixed_inputs/evidence_index`);
   for (const key of ["traceability", "rubric_revision"]) {
     const item = typeof fixed[key] === "string" ? evidence.entries.find(candidate => candidate.id === fixed[key]) : null;
     if (!item || item.entry.kind === "other" || !item.document.kind || (key === "traceability" && item.document.kind !== "traceability")) throw evidenceError(`gate fixed input ${key} is not bound to typed evidence`, `/gates/${gate}/fixed_inputs/${key}`);
@@ -704,4 +738,4 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\",
   main().catch(error => { const result = resultFromError(error); process.stderr.write(`${result.result.error.message}\n`); process.stdout.write(`${JSON.stringify(result.result)}\n`); process.exitCode = result.exitCode; });
 }
 
-export { requireHeader, sessionClassification, canonicalTranscript, hashPath, validatePerformancePlan, validationReceipt };
+export { requireHeader, sessionClassification, canonicalTranscript, hashPath, validatePerformancePlan, validationReceipt, validateOutsideProbeRegistration };

@@ -11,6 +11,7 @@ from . import common as __dep_common
 ROLE_PROFILES = __dep_common.ROLE_PROFILES
 ROOT = __dep_common.ROOT
 SKIPPED = __dep_common.SKIPPED
+owned_markdown_files = __dep_common.owned_markdown_files
 re = __dep_common.re
 
 from . import standards as __dep_standards
@@ -66,7 +67,7 @@ def validate_names(packages, diag: Diagnostics) -> None:
     for directory in NAME_CHECKED_TREES:
         node = ROOT / directory
         if node.is_dir():
-            paths.extend(sorted(node.rglob("*.md")))
+            paths.extend(owned_markdown_files(node))
     paths.extend(ROOT / name for name in NAME_CHECKED_FILES)
     # A package body is `build_call_graph`'s, which reports an unresolvable
     # name there in its own words; reading it here too would convict one

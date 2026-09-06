@@ -1,7 +1,7 @@
 # 3D browser-game lineage repair
 
 The gate consumer now has a small, pure provenance seam for the two confirmed
-acceptance failures. `scripts/gate_lineage.mjs` accepts typed run-record,
+acceptance failures. `example-workflows/3d-browser-game/scripts/gate_lineage.mjs` accepts typed run-record,
 traceability, evidence-index, and gate-verdict objects. It returns a compact
 valid result or a `LineageError` with a stable code, JSON pointer, expected
 shape, and observed value. `sourceObservation(ancestor, descendant)` remains
@@ -26,8 +26,8 @@ not launch workers or mutate run state.
 The standalone `references/lineage.schema.json` defines the reusable lineage,
 complaint-closure, and core-reproof shapes. Run-record and traceability
 schemas expose those fields while preserving their existing common header and
-closed-object contracts. B1.11 should register the lineage schema with its
-schema validator and invoke the helper after rehashing indexed evidence.
+closed-object contracts. The package validator registers the lineage schema
+and invokes the helper after rehashing indexed evidence.
 
 The deterministic test module covers accepted core and core-to-art-to-final
 fixtures, missing core, pre-core art, unrelated source ancestry, omitted
