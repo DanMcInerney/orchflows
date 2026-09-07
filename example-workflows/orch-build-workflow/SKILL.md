@@ -5,13 +5,16 @@ disable-model-invocation: true
 ---
 
 Require: `request`, one workflow package's intended behavior; `workspace`, its
-git source repository; `scope`, its intended landing scope; `authoring-owner`,
+git source repository; `scope`; `authoring-owner`,
 the applicable authoring guidance; `bound`, each call's budget; and
 `admission`, the static check command, disposable git project, concrete runtime
 request and invocation inputs, and external output probe. Unresolved inputs
 remain explicit gaps until settled.
 
+Write the authoring-owner pointer into a Context file.
+
     tickets.py frame-open <run> --goal-file <authoring-goal> --workflow orch-build-workflow
+      --context-file <authoring-context>
 
 Invoke `checkpointed-build` with `goal` = request at scope, including the
 contract inventory and package boundary from the
@@ -19,7 +22,8 @@ contract inventory and package boundary from the
 static admission, and preservation of authoring-owner in every governed Context;
 `workspace` = workspace; `standard` = orch-workflow-authoring;
 `judge-standard` = orch-workflow-authoring; `narrowings` = [];
-`bound` = bound; and `probe` = admission's static check command.
+`bound` = bound; `context-file` = authoring-context; and
+`probe` = admission's static check command.
 
 Against its fixed returned package, invoke the produced workflow's actual
 named body on admission's disposable project and runtime request. Use ordinary
