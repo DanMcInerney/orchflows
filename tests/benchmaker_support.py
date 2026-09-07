@@ -98,4 +98,3 @@ class CalibrationFixture:
             frozen_revision=None, final_record=None, decision=api.summarize([record], self.policy)['decision'])
         api.write_json(evidence / 'admission.json', value)
         return value
-
