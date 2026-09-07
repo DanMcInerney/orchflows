@@ -23,6 +23,20 @@ class CalibrationFixture:
         self.prompt.write_text('Return source implementing solve(x) = x + 1.', encoding='utf-8')
         self.checks = self.root / 'checks.json'
         api.write_json(self.checks, {'checks': [{'args': [2], 'expected': 3}, {'args': [-1], 'expected': 0}]})
+        benchmark = self.root / 'product' / 'benchmark'
+        benchmark.mkdir()
+        (benchmark / 'prompt.txt').write_bytes(self.prompt.read_bytes())
+        (benchmark / 'starter.py').write_text('def solve(x): return x\n', encoding='utf-8')
+        (benchmark / 'checks.json').write_bytes(self.checks.read_bytes())
+        api.write_json(benchmark / 'cases.json', {'cases': [dict(case_id='case', split=split,
+            prompt='prompt.txt', checks='checks.json', oracle='python-json-solve-v1',
+            input_files={'solution.py': 'starter.py', 'prompt.txt': 'prompt.txt'}) for split in ('development', 'confirmation')]})
+        api.write_json(benchmark / 'manifest.json', dict(schema_version=2, profile='empirical-calibration',
+            target_configuration=self.config, runnable_cases='cases.json'))
+        for command in (['git', 'add', '.'], ['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'committed case inputs']):
+            self.assertEqual(api.run_process(command, cwd=self.root / 'product', timeout=10)['exit_code'], 0)
+        self.revision = api.run_process(['git', 'rev-parse', 'HEAD'], cwd=self.root / 'product', timeout=10)['stdout'].decode().strip()
+
 
     def git_repository(self, path):
         from tests import test_benchmaker_calibration as api
@@ -33,18 +47,24 @@ class CalibrationFixture:
             self.assertEqual(result['exit_code'], 0, result['stderr'])
         return api.run_process(['git', 'rev-parse', 'HEAD'], cwd=path, timeout=10)['stdout'].decode().strip()
 
-    def attempt(self, source='def solve(x): return x + 1', name='attempt', code=None, timeout=5, configuration_observation=None):
+    def attempt(self, source='def solve(x): return x + 1', name='attempt', code=None, timeout=5, configuration_observation=None, split='development'):
         from tests import test_benchmaker_calibration as api
         events = [{'type': 'turn.started'}, {'type': 'item.completed', 'item': {
             'type': 'agent_message', 'text': json.dumps({'source': source})}},
             {'type': 'turn.completed', 'usage': {'input_tokens': 3, 'output_tokens': 4}}]
         script = self.root / (name + '.py')
         script.write_text(code or 'print(' + repr('\n'.join(json.dumps(e) for e in events)) + ')', encoding='utf-8')
-        api.collect([sys.executable, '-u', str(script)], case_repository=self.root, prompt=self.prompt,
+        case_repository = self.root / (name + '-case')
+        case_repository.mkdir()
+        (case_repository / 'solution.py').write_bytes((self.root / 'product' / 'benchmark' / 'starter.py').read_bytes())
+        (case_repository / 'prompt.txt').write_bytes(self.prompt.read_bytes())
+        binding = dict(repository=str(self.root / 'product'), benchmark_revision=self.revision,
+                       manifest='benchmark/manifest.json', case_id='case', split=split)
+        api.collect([sys.executable, '-u', str(script)], case_repository=case_repository, prompt=self.prompt,
                 output=self.root / name, configuration=self.config, timeout=timeout,
-                configuration_observation=configuration_observation)
+                configuration_observation=configuration_observation, case_binding=binding)
         return api.make_record(self.root / name / 'launch.json', self.checks, dict(
-            case_id='case', split='development', round=0, trial=1,
+            case_id='case', split=split, round=0, trial=1,
             target_configuration=self.config, benchmark_revision=self.revision, candidate_kind='agent_attempt'))
 
     def envelope(self, record):
@@ -52,9 +72,7 @@ class CalibrationFixture:
         product = self.root / 'product'
         evidence = self.root / 'evidence'
         evidence.mkdir()
-        (product / 'benchmark').mkdir()
         manifest = product / 'benchmark' / 'manifest.json'
-        api.write_json(manifest, dict(schema_version=2, profile='empirical-calibration', target_configuration=self.config))
         source = self.root / 'source'
         shutil.copytree(api.SCRIPTS.parent, source / 'example-workflows' / 'benchmaker', ignore=shutil.ignore_patterns('__pycache__'))
         shutil.copytree(api.SCRIPTS.parents[2] / 'scripts', source / 'scripts', ignore=shutil.ignore_patterns('__pycache__'))
@@ -71,7 +89,6 @@ class CalibrationFixture:
         pin = tree_digest('workflow', invoked)
         for command in (['git', 'add', '.'], ['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'benchmark fixture']):
             self.assertEqual(api.run_process(command, cwd=product, timeout=10)['exit_code'], 0)
-        self.revision = api.run_process(['git', 'rev-parse', 'HEAD'], cwd=product, timeout=10)['stdout'].decode().strip()
         record['benchmark_revision'] = self.revision
         api.write_json(self.root / 'attempt' / 'attempt.json', record)
         summary = self.root / 'summary.json'
@@ -94,6 +111,7 @@ class CalibrationFixture:
                          qualification_revision=self.revision, validity='VALID',
                          summary=str(summary), criterion_gaps=[])], revision_ledger=[],
             infrastructure_retry_budget=0, selected_development_round=0,
+            development_evidence=dict(validity='VALID', criterion_gaps=[]), terminal_gaps=[],
             development_decision=api.summarize([record], self.policy)['decision'],
             frozen_revision=None, final_record=None, decision=api.summarize([record], self.policy)['decision'])
         api.write_json(evidence / 'admission.json', value)

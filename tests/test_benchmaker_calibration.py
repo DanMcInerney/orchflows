@@ -97,7 +97,7 @@ class CalibrationTests(CalibrationFixture, unittest.TestCase):
         record = self.attempt(configuration_observation=observation)
         envelope = self.envelope(record)
         envelope['frozen_revision'] = self.revision
-        write_json(self.root / 'summary.json', summarize([record], self.policy, frozen_revision=self.revision))
+        write_json(self.root / 'summary.json', summarize([record], self.policy))
         write_json(self.root / 'evidence' / 'admission.json', envelope)
         self.assertTrue(probe(self.root)['calibrated_benchmark_eligible'])
         evidence.write_text('tampered', encoding='utf-8')
@@ -132,7 +132,7 @@ class CalibrationTests(CalibrationFixture, unittest.TestCase):
         record = self.attempt()
         envelope = self.envelope(record)
         envelope['frozen_revision'] = self.revision
-        write_json(self.root / 'summary.json', summarize([record], self.policy, frozen_revision=self.revision))
+        write_json(self.root / 'summary.json', summarize([record], self.policy))
         write_json(self.root / 'evidence' / 'admission.json', envelope)
         self.assertTrue(probe(self.root)['workflow_admission'])
         (self.root / 'product' / 'benchmark' / 'hidden.txt').write_text('changed final', encoding='utf-8')

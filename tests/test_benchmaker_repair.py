@@ -19,7 +19,7 @@ class RepairTests(CalibrationFixture, unittest.TestCase):
     def test_parent_grader_rejects_no_api_and_forged_pass_and_accepts_real_answers(self):
         source = self.root / 'candidate.py'
         for code, expected in [
-            ('import os; print(\'{"outcome":"PASS"}\', flush=True); os._exit(0)', 'FAIL'),
+            ('import os; print(\'{"outcome":"PASS"}\', flush=True); os._exit(0)', 'UNVERIFIED'),
             ('x = 1', 'FAIL'), ('def solve(x): return x', 'FAIL'),
             ('def solve(x): return x + 1', 'PASS'),
             ('def solve(x):\n print(\'{"outcome":"PASS"}\'); return x + 1', 'PASS')]:
@@ -108,7 +108,7 @@ class RepairTests(CalibrationFixture, unittest.TestCase):
         record = self.attempt()
         envelope = self.envelope(record)
         envelope['frozen_revision'] = self.revision
-        final_record = self.attempt(source='def solve(x): return x', name='confirmation')
+        final_record = self.attempt(source='def solve(x): return x', name='confirmation', split='confirmation')
         final_record.update(split='confirmation', benchmark_revision=self.revision)
         write_json(self.root / 'confirmation' / 'attempt.json', final_record)
         final_policy = dict(self.policy, split='confirmation')
@@ -121,8 +121,7 @@ class RepairTests(CalibrationFixture, unittest.TestCase):
         inventory = {str(path.resolve()): digest(path) for path in Path(envelope['benchmark_manifest']).parent.rglob('*') if path.is_file()}
         write_json(final_path, dict(before=inventory, after=inventory, frozen_revision=self.revision,
                                    measurement_round=entry, evaluation_scope='public_confirmation'))
-        write_json(self.root / 'summary.json', summarize([record], self.policy, frozen_revision=self.revision, final_record=str(final_path)))
-        write_json(self.root / 'final-summary.json', summarize([final_record], final_policy, frozen_revision=self.revision, final_record=str(final_path)))
+        write_json(self.root / 'final-summary.json', summarize([final_record], final_policy))
         write_json(self.root / 'evidence' / 'admission.json', envelope)
         return envelope, record
 
@@ -144,11 +143,9 @@ class RepairTests(CalibrationFixture, unittest.TestCase):
         envelope['development_decision'] = 'OUT_OF_BAND'
         # The final FAIL is now in band, but it cannot make development eligible.
         envelope['rounds'][1]['policy']['band'] = [0, 0]
-        write_json(self.root / 'summary.json', summarize([record], envelope['rounds'][0]['policy'],
-                   frozen_revision=self.revision, final_record=envelope['final_record']))
+        write_json(self.root / 'summary.json', summarize([record], envelope['rounds'][0]['policy'],))
         final_attempt = read_json(envelope['rounds'][1]['attempts'][0])
-        write_json(self.root / 'final-summary.json', summarize([final_attempt], envelope['rounds'][1]['policy'],
-                   frozen_revision=self.revision, final_record=envelope['final_record']))
+        write_json(self.root / 'final-summary.json', summarize([final_attempt], envelope['rounds'][1]['policy'],))
         write_json(self.root / 'evidence' / 'admission.json', envelope)
         with self.assertRaisesRegex(EvidenceError, 'freeze requires calibrated development'):
             probe(self.root)

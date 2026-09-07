@@ -23,7 +23,7 @@ establish a second integration repository in the same run.
    sealing. Confirm CLI help/version. Fresh candidate repositories contain only
    their visible starter and prompt; initialize git separately before collection.
 2. `admission.py collect --repository CASE_REPO --schema SCHEMA --prompt PROMPT
-   --configuration CONFIG_JSON --output ABSENT_ATTEMPT_DIRECTORY` invokes the
+   --configuration CONFIG_JSON --case-binding BINDING_JSON --output ABSENT_ATTEMPT_DIRECTORY` invokes the
    fixed native argv in the request, with a 90-second default timeout. It stores
    raw stdout/stderr, prompt, extracted source and `launch.json`. `--executable`
    selects the observed native executable; no shell or safety bypass is used.
@@ -41,7 +41,7 @@ establish a second integration repository in the same run.
    exceptions. This is outcome testing, not a source-style check.
 4. `admission.py summarize --input INPUT_JSON --output SUMMARY_JSON` reads
    `policy`, absolute `attempts` locators, `criterion_gaps`, typed `validity` (VALID/INVALID/UNVERIFIED),
-   `revision_ledger`, optional `frozen_revision` and `final_record`. Policy keys
+   and no later aggregate metadata. Policy keys
    are `case_ids`, `split`, `round`, `trials_per_case`, `target_configuration`,
    optional normalized case `weights`, `band`, `infrastructure_retry_budget`,
    `required_configuration_fields` and `optional_configuration_fields` (dotted
@@ -55,16 +55,19 @@ establish a second integration repository in the same run.
    result). Missing/corrupt evidence exits 1. A declared resolved-configuration
    gap yields UNVERIFIED; an omitted or mismatched configuration fails.
 
-The final measurement executor first commits its complete record collection,
-derives that actual Git commit, then authors the admission index from the observed
-rounds, qualification records, emitted journals, returned findings and artifact
-identities. It mirrors the index into the record subtree and commits again before
-closing. The second commit contains the first; no self-referential commit field
-or rewritten observation is needed. After landing, the driver only runs
+Every terminal calibration branch runs the ordinary `finalize-records` maker
+from the private workflow after the relevant qualification, diagnostic and
+measurement returns. This includes UNVERIFIED/OUT_OF_BAND without final trials,
+failed revisions, and early qualification partials. Its sealed inputs are the
+actual returned identities, selected decision, all immutable round snapshots,
+ledger, spent/remaining bounds and export locator. It copies retired findings
+with their original returned identity and digest, authors the aggregate index
+and not-performed reasons, then commits. It does not rewrite old summaries or
+closed outcomes. After landing, the driver only runs
 `export.py --repository <workspace> --revision <landed-commit> --records <records>
---destination <evidence-export>`. That deterministic command verifies/restores
-all committed bytes, including the index, and prints the durable locator. Root
-then runs the outside probe; it authors no executor evidence.
+--destination <evidence-export>`, then the outside probe. Root authors no executor
+evidence; zero native attempts remain a live-admission gap even with a published
+partial index.
 
 The runtime executor authors the receipt at the following output locator;
 it is not a shipped package resource and prepare never creates it:
@@ -103,7 +106,9 @@ it is not a shipped package resource and prepare never creates it:
     "summary": "absolute summary.json", "criterion_gaps": ["explicit required gaps"]}],
   "revision_ledger": [], "frozen_revision": null, "final_record": null,
   "selected_development_round": 0, "development_decision": "UNVERIFIED",
-  "infrastructure_retry_budget": 1, "decision": "UNVERIFIED"
+  "infrastructure_retry_budget": 1,
+  "development_evidence": {"validity": "VALID", "criterion_gaps": []},
+  "terminal_gaps": [], "decision": "UNVERIFIED"
 }
 ```
 
@@ -141,3 +146,33 @@ satisfy the declared contract, but cannot invent provider metadata. Native event
 unit tests are harness controls, never live-admission evidence. The probe checks
 stored provenance structure and deterministic results; the outside root also
 observes actual emitted tickets and launches to establish execution provenance.
+
+## Committed inputs and evaluator profile
+
+`BINDING_JSON` contains the durable integration `repository`, full
+`benchmark_revision`, repository-relative `manifest`, `case_id` and `split`.
+The committed manifest's `runnable_cases` points to a JSON `cases` array; each
+entry has `case_id`, `split`, `prompt`, `checks`, `oracle: python-json-solve-v1`,
+and `input_files` mapping candidate-relative filenames to benchmark-relative
+committed files. Collection checks and snapshots the exact visible inventory
+before launch. The grader resolves the required checks from that same revision;
+a durable identical copy is allowed, substitute checks are refused. Final
+attempts must name the frozen revision. See [case binding](../../scripts/case_inputs.py).
+
+The [Python boundary](../../scripts/python_boundary.py) admits function-based
+JSON algorithms, ordinary call/exception/mutation behavior, primitive data
+operations and its explicit pure-library exports (including heapq, collections,
+bisect, math and typing). Reflection, arbitrary imports, authority-bearing
+attributes, classes and asynchronous/context-manager code are unsupported.
+Such source is not executed and returns UNVERIFIED with
+`unsupported_source_capabilities`, never a forged completion or candidate FAIL.
+Supported source receives no stream handle, filesystem/process primitive or
+reflection path; its print output cannot become the trusted wrapper's call
+completion. This capability contract is not a host read-isolation claim.
+
+Round summaries contain only their policy, records, qualification/gaps and
+computed observations at publication. They never embed future ledger, freeze or
+final locators. The finalizer's aggregate index owns those fields and
+`development_evidence` from the actual independent diagnosis; `terminal_gaps`
+retains later required gaps. Published summaries are compared locally and stay
+byte-identical across every later revision/freeze/final publication.

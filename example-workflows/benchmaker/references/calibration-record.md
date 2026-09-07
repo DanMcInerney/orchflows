@@ -21,6 +21,7 @@ in a separate record subtree of the same integration repository.
 | `split` | Declared development, confirmation or final split. |
 | `round` | Declared sampling-round identity. |
 | `trial` | Trial index within that case/round. |
+| `case_binding` | Resolved committed manifest/case/split, prompt, input inventory, checks and required oracle; receipt input snapshots bind what the native subject received. |
 | `retry_of` | Null for declared primary samples; otherwise an earlier excluded infrastructure trial index in the same case/round, replaced at most once. |
 | `target_configuration` | Full object or immutable locator to the fixed configuration. |
 | `benchmark_revision` | Full git revision of measured benchmark bytes. |
@@ -35,7 +36,7 @@ in a separate record subtree of the same integration repository.
 | `launch_receipt_locator` | Observed subprocess command, configuration, exit and timing receipt. |
 | `grader_observation_locator` | Separate deterministic grader or anchored oracle observation. |
 | `classification` | `completed`, `candidate_failure`, `task_timeout`, `startup_timeout`, `permission_failure`, `launch_failure` or `environment_failure`. |
-| `evaluator_classification` | `completed` or `environment_failure`; never overwrites the native `classification`. |
+| `evaluator_classification` | `completed`, `environment_failure` or `unsupported`; never overwrites the native `classification`. |
 | `exit_code` | Observed process exit, or unavailable reason where no process started. |
 | `elapsed_seconds` | Observed nonnegative wall time. |
 | `token_usage` | Native-reported usage or explicit unavailable reason. |
@@ -84,9 +85,7 @@ weights/designs remain separate supported implementations or declared gaps.
 | `band_observation` | `IN_BAND`, `OUT_OF_BAND` or `UNVERIFIED` numeric observation, independent of eligibility. |
 | `decision` | `INVALID`, `UNVERIFIED`, `OUT_OF_BAND` or `CALIBRATED`, with required criterion evidence/gaps. |
 | `criterion_gaps` | Missing evidence by criterion, distinguishing required and optional. |
-| `revision_ledger` | Every pre/post draft identity, reason, changed cases, retained strata/weights, audit, full round, spend and selection policy. |
-| `frozen_revision` | Full frozen benchmark git revision, or `null` with reason. |
-| `final_record` | Separate final measurement locator or explicit not-performed reason. |
+
 
 The numeric band observation survives higher-priority validity or evidence
 problems. A finite-suite IN_BAND observation can coexist with UNVERIFIED
@@ -128,3 +127,13 @@ nested unavailable markers remain gaps even when requested and resolved JSON
 are equal. Optional unavailable seed/temperature metadata stays in
 `optional_gaps`. Required instruction, scaffold, delegation and capability
 observations cannot be satisfied by copied placeholders.
+
+`revision_ledger`, `frozen_revision`, `final_record`, diagnostic
+`development_evidence` and `terminal_gaps` belong to the final aggregate index,
+not per-round summaries. Each round's `snapshot_kind` is
+`immutable-round-observation`. It is compared with its own fixed policy,
+qualification and criterion gaps, never future metadata.
+
+An unsupported evaluator capability is an excluded UNVERIFIED oracle observation,
+not an infrastructure event eligible for a retry and not a genuine candidate FAIL.
+The fixed source profile and its limitation are declared before execution.

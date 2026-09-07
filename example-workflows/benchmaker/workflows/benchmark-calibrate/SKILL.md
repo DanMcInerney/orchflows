@@ -13,34 +13,27 @@ with partial artifacts and gaps.
 
     tickets.py frame-open <run> --goal-file <calibration-goal> --workflow benchmark-calibrate
 
-Use [handoff layouts](../../references/calibration.md). Every making/judging goal
-carries the fixed inputs, relevant records and budget. All artifact calls stamp
-package-private benchmark-quality beside the construction standard. Keep the
-exact target configuration unchanged throughout.
+Use [handoff layouts](../../references/calibration.md). Goals carry fixed inputs, records and budget.
 
 ## Development
 
-Start only from VALID qualification covering this draft. Otherwise return its
-INVALID/UNVERIFIED decision and evidence; an evidenced repair may enter the
+Start trials only from VALID qualification. Otherwise select its
+INVALID/UNVERIFIED evidence for Finalize; an evidenced repair may enter the
 bounded revision branch below before attempts.
 
-One ordinary making ticket owns the complete declared round in `records` within the integration workspace. Run actual native attempts as experiment subjects, using
-fresh candidate repositories; collect transcripts, outputs, independent grader
-observations and summary. Export the committed records using the handoff; controls stay separate.
+One maker records a complete native round in fresh repositories: transcripts, outputs, independent grades and summary. Export committed records; separate controls.
 
     tickets.py do <run> --parent <frame> --standard benchmark-quality --standard <standard> --workspace <workspace> --goal-file <attempts>
 
-Give a fresh diagnostic judge the fixed draft and landed attempt commit plus
-qualification findings. Inspect per-case uncertainty, empirical discrimination,
-configuration and validity; never silently re-execute attempts.
+Diagnose landed attempts and qualification findings independently for uncertainty, discrimination, configuration and validity; never re-execute.
 
     tickets.py judge <run> --parent <frame> --standard benchmark-quality --standard <standard> --artifacts git:<draft-sha> git:<attempt-sha> --goal-file <diagnosis> --isolation required
 
 Apply INVALID, then UNVERIFIED, then OUT_OF_BAND/CALIBRATED precedence. Preserve
-numeric band observation. Missing evidence stops dependent work. For evidenced
+numeric band observation. Missing evidence stops trials, then Finalize. For evidenced
 validity defects or construct-preserving difficulty changes, spend at most two
-development revisions, or the smaller declared cap; budget exhaustion returns
-the unmet decision. A score alone authorizes no revision. Fix validity defects before difficulty changes.
+development revisions, or the smaller declared cap; budget exhaustion selects
+the unmet decision for Finalize. A score alone authorizes no revision. Fix validity defects before difficulty changes.
 
     tickets.py do <run> --parent <frame> --standard benchmark-quality --standard <standard> --workspace <workspace> --goal-file <revision>
 
@@ -50,8 +43,7 @@ changed draft with its complete original inputs and new builder identities:
 
     tickets.py frame-open <run> --parent <frame> --goal-file <requalification> --workflow benchmark-qualify
 
-Execute its body; only VALID resumes a complete preregistered round. Retain all
-rounds; select by declared policy.
+Execute its body; only VALID resumes trials. Retain rounds; select by policy.
 
 ## Freeze and measure
 
@@ -64,6 +56,18 @@ Final measurement uses the attempts making call with read-only frozen inputs,
 external outputs and verified access scope; otherwise record public confirmation
 and protection UNVERIFIED. Preserve development decision separately from final
 score/drift. Never: revise after final observations, change target configuration, or substitute controls for agents.
+
+## Finalize
+
+Every terminal branch, including failed revisions, qualification gaps and no-final
+partials, enters one record-finalization maker after relevant returns are landed:
+
+    tickets.py do <run> --parent <frame> --standard benchmark-quality --standard <standard> --workspace <workspace> --goal-file <finalize-records>
+
+Supply actual qualification/diagnostic/measurement returns, selected decision,
+all immutable round identities, ledger, bounds and export locator. It commits
+the aggregate index, not-performed reasons and durable findings copies; it never
+rewrites published summaries. Export that landed commit, then probe.
 
 Return: `tickets.py frame-close <run> <frame> --done <calibration-check>` with
 all round/qualification/diagnostic identities, revision ledger, decision, frozen
