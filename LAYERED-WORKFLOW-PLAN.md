@@ -219,4 +219,3 @@ in this planning ticket. Source reads establish available contracts and
 distribution behavior; they do not prove the proposed builder works. The
 post-change live run is required evidence, and long-term reliability remains
 unmeasured. No child was delegated by this planner.
-
