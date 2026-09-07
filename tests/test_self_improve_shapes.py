@@ -7,6 +7,47 @@ from tests import test_self_improve as support
 
 
 class DiagnosticShapes(unittest.TestCase):
+    def test_correlation_keys_retain_invalid_identities_with_named_gaps(self):
+        case = support.SelfImprove()
+        case.setUp()
+        self.addCleanup(case.doCleanups)
+        for host in ("codex", "claude"):
+            with self.subTest(host=host):
+                rows = []
+                for field in ("run", "ticket"):
+                    for value in (None, True, 42, [], {}, ["bad"], {"bad": "id"}, "valid-id"):
+                        row = support.message()
+                        if host == "claude":
+                            row = {"type": "assistant", "timestamp": support.STAMP, "sessionId": "fixture",
+                                   "cwd": str(case.project), "message": {"content": [{"type": "text", "text": "ok"}]}}
+                        row.update(run="valid-run", ticket="valid-ticket")
+                        row[field] = value
+                        row["fixture_case"] = field + ":" + json.dumps(value)
+                        rows.append(row)
+                expected = {row["fixture_case"]: row for row in rows}
+                if host == "codex":
+                    rows.insert(0, support.meta("fixture", case.project))
+                path = case.write(host + "-correlation.jsonl", rows)
+                original = path.read_bytes()
+                case.selection["sources"] = [{"kind": host, "path": str(path)}]
+                bundle = case.collect()
+                self.assertEqual("partial", bundle["coverage"])
+                self.assertEqual(expected, {o["record"]["fixture_case"]: o["record"] for o in bundle["observations"]})
+                for observation in bundle["observations"]:
+                    row = observation["record"]
+                    valid = all(row[key] is None or isinstance(row[key], str) for key in ("run", "ticket"))
+                    self.assertEqual(valid, observation["supported_shape"])
+                    if not valid:
+                        locator = observation["sources"][0]["locator"]
+                        self.assertTrue(any("invalid " in gap["reason"] and gap["reason"].endswith(" identity at " + locator) for gap in bundle["gaps"]))
+                    if row["run"] == "valid-id":
+                        self.assertIn("valid-id", observation["runs"])
+                self.assertEqual(original, path.read_bytes())
+                case.record(case.analysis(bundle, positive=[o["id"] for o in bundle["observations"]]))
+                closed = case.cli("close", "--review", case.review, "--mode", "review")
+                self.assertTrue(closed["review_completed"])
+                self.assertEqual(bundle["gaps"], closed["gaps"])
+
     def test_malformed_json_fields_remain_partial_retained_observations(self):
         case = support.SelfImprove()
         case.setUp()
@@ -66,7 +107,7 @@ class DiagnosticShapes(unittest.TestCase):
             for index, (kind, base, path, required) in enumerate(sites):
                 if kind != host:
                     continue
-                for value in (None, True, 42, "future_content", [], {}):
+                for value in (None, True, 42, "future_content", [], {}, ["bad"], {"bad": "id"}):
                     if (required == "string" and isinstance(value, str)
                             or required == "boolean" and type(value) is bool
                             or required == "object" and isinstance(value, dict)

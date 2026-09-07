@@ -15,7 +15,20 @@ import improve_codex
 import improve_claude
 
 
+def ticket_key(row, field):
+    values = (row.get("run"), row.get(field))
+    return values if all(isinstance(value, str) and value for value in values) else None
+
+
+def invalid_identities(kind, row):
+    fields = ("run", "ticket", "id") if kind in {"runs", "tickets"} else ("run", "ticket")
+    return [key for key in fields if row.get(key) is not None
+            and (not isinstance(row[key], str) or not row[key])]
+
+
 def known(kind, row):
+    if invalid_identities(kind, row):
+        return False
     rtype = record_type(row)
     if kind == "codex":
         current = improve_codex.shape(row)
@@ -99,7 +112,9 @@ def collect(frozen):
     for source, rows in snapshots:
         if source["format"] == "tickets" and rows:
             row = rows[0][1]
-            ticket_paths[source["path"].replace("\\", "/")] = (row.get("run"), row.get("id"))
+            key = ticket_key(row, "id")
+            if key is not None:
+                ticket_paths[source["path"].replace("\\", "/")] = key
     for (_, rows), node in zip(snapshots, nodes):
         if node["session"] and not node["gaps"]:
             for _, row in rows:
@@ -107,8 +122,9 @@ def collect(frozen):
                 for path, key in ticket_paths.items():
                     if path in content or os.name == "nt" and path.lower() in content.lower():
                         ticket_sessions.setdefault(key, set()).add(node["session"])
-                if row.get("run") and row.get("ticket"):
-                    ticket_sessions.setdefault((row["run"], row["ticket"]), set()).add(node["session"])
+                key = ticket_key(row, "ticket")
+                if key is not None:
+                    ticket_sessions.setdefault(key, set()).add(node["session"])
     for source, rows in snapshots:
         if source["format"] == "runs":
             for _, row in rows:
@@ -127,6 +143,8 @@ def collect(frozen):
         timestamp_ids = {}
         for locator, row in rows:
             location = {"path": source["path"], "sha256": source["sha256"], "locator": locator}
+            source["gaps"].extend("invalid " + key + " identity at " + locator
+                                  for key in invalid_identities(kind, row))
             if not known(kind, row):
                 source["counts"]["unsupported"] += 1
                 source["gaps"].append("unsupported record at " + locator)
@@ -137,7 +155,7 @@ def collect(frozen):
                 source["gaps"].append("invalid session identity at " + locator)
                 sid = None
             if not sid and kind == "tickets":
-                associated = ticket_sessions.get((row.get("run"), row.get("id")), set())
+                associated = ticket_sessions.get(ticket_key(row, "id"), set())
                 if len(associated) == 1:
                     sid = next(iter(associated))
             correlated_node = session_nodes.get(sid, node)
@@ -219,7 +237,11 @@ def collect(frozen):
             if normalized.get("parse_errors"):
                 source["gaps"].append("trace normalization degraded")
             for event in normalized.get("events", []):
-                ids = timestamp_ids.get(event.get("ts"), [])
+                stamp = event.get("ts")
+                if not isinstance(stamp, str):
+                    source["gaps"].append("invalid normalized timestamp")
+                    continue
+                ids = timestamp_ids.get(stamp, [])
                 for oid in ids:
                     observations[oid]["normalized"].append(dict(event, observation_ids=ids))
         if source["gaps"] or source["counts"]["unsupported"]:
