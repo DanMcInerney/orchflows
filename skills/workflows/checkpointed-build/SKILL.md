@@ -1,6 +1,6 @@
 ---
 name: checkpointed-build
-description: Build one artifact in planned waves â€” a cut, isolated making per wave, one judge over the joined tip, bounded repair, closed on a probe.
+description: Build one artifact in planned waves — a cut, isolated making per wave, one judge over the joined tip, bounded repair, closed on a probe.
 disable-model-invocation: true
 ---
 
@@ -22,7 +22,7 @@ Optional `context-file` accompanies every call, including repairs.
 
 Its goal: `goal` cut into waves, every item of a level independent of its
 siblings and every dependency edge an earlier wave's seam. The first wave
-pins the artifact's dependency set â€” each library, its version and the
+pins the artifact's dependency set — each library, its version and the
 lockfile the artifact will carry. A later wave needing one more reports the
 addition as a deviation with the evidence that forced it; nothing else adds
 one.
@@ -52,7 +52,7 @@ for it. Blocks earn *bounded-repair*: "Where the judge blocks, one repair
 `do` is handed the `findings:` line verbatim, then one re-judge; two rounds
 is the bound."
 
-Never: leave `workspace` off any call of this frame â€” the run's integration
+Never: leave `workspace` off any call of this frame — the run's integration
 target is fixed by its first establishment, so a call that defaults it sends
 every later wave's merge at the driver's own tree; open a wave the cut did not
 place at that level; make in a shared tree; hand the judge a standard the waves did not carry, or a candidate rather
