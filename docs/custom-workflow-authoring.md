@@ -37,6 +37,11 @@ path, rather than shadowing a library verb or silently never running. Any
 other collision resolves to the nearest ring and prints one shadow notice
 naming both paths.
 
+The installer generates `/orch-self-improve` as a host entry pointing to
+`self-improve`. The manifest, ring lookup, package identity and frame's
+`--workflow self-improve` retain that single name. This host spelling creates
+no ring item and grants no custom `orch-` prefix exception.
+
 ## Workflow packages
 
 A top-level workflow is the package's public name. Its directory may carry
