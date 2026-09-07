@@ -1,0 +1,136 @@
+{
+  "dispatch_id": "B1.1.8:d1",
+  "assignment_seal": "sha256:bd156c93acced54c7cbd6b6f51df33b1ba2664a21f87112f05d5e9acee33f9bc",
+  "by": "B1.1.8",
+  "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+  "kind": "synthetic adversarial seam controls, no native empirical evidence",
+  "results": [
+    {
+      "name": "grader_accepts_no_solve_stdout_spoof",
+      "observed": {
+        "oracle_outcome": "PASS",
+        "failure_class": null,
+        "source_sha256": "fccd07fcff282e74405acf04022ae7cf65b0a286ac234ad64f6ae7e6cdc19cc4",
+        "checks_sha256": "e142b935d0b3b906ac295b3c20e322c2f0d7e454700ad685463286031ad07b38",
+        "grader_sha256": "b2e069019d6ba8dfbf8ce87839392e19901c43cd7409aba7a20cc5340ef71729",
+        "checks_locator": "C:\\Users\\danhm\\AppData\\Local\\Temp\\tmpwuoein06\\checks.json",
+        "elapsed_seconds": 0.08097629999974743,
+        "exit_code": 0,
+        "timed_out": false,
+        "stdout": "{\"outcome\":\"PASS\"}\r\n",
+        "stderr": ""
+      },
+      "expected": "FAIL: no solve API or outcome checks executed"
+    },
+    {
+      "name": "qualification_unverified_becomes_invalid",
+      "observed": {
+        "workflow_admission": true,
+        "calibrated_benchmark_eligible": false,
+        "decision": "INVALID",
+        "established_native_attempts": 1,
+        "declared_rounds": 1,
+        "criterion_gaps": [
+          "required reference audit unavailable",
+          "resolved_configuration: Native JSON events do not attest the full requested configuration"
+        ]
+      },
+      "expected": "UNVERIFIED; missing proof is not established invalidity"
+    },
+    {
+      "name": "uncommitted_changed_invoked_component_admitted",
+      "observed": {
+        "workflow_admission": true,
+        "calibrated_benchmark_eligible": false,
+        "decision": "UNVERIFIED",
+        "established_native_attempts": 1,
+        "declared_rounds": 1,
+        "criterion_gaps": [
+          "resolved_configuration: Native JSON events do not attest the full requested configuration"
+        ]
+      },
+      "expected": "Reject product package bytes that differ from accepted source/pinned invocation"
+    },
+    {
+      "name": "nested_required_configuration_gaps_calibrated",
+      "observed": {
+        "decision": "CALIBRATED",
+        "criterion_gaps": [],
+        "configuration": {
+          "model": "test-event-control",
+          "reasoning_effort": "low",
+          "cli_version": {
+            "unavailable_reason": "not observed"
+          },
+          "instruction_layers": {
+            "unavailable_reason": "unknown"
+          }
+        }
+      },
+      "expected": "UNVERIFIED when required observed fields are unavailable"
+    },
+    {
+      "name": "extra_valid_trial_uses_infrastructure_retry_budget",
+      "observed": {
+        "estimate": 0.5,
+        "decision": "UNVERIFIED",
+        "per_case": {
+          "case": {
+            "attempted": 2,
+            "valid": 2,
+            "passed": 1,
+            "failed": 1,
+            "invalid": 0,
+            "unverified": 0,
+            "controls": 0,
+            "failure_classes": {
+              "wrong_output": 1
+            },
+            "estimate": 0.5,
+            "interval": [
+              0.09453120573423074,
+              0.9054687942657693
+            ],
+            "interval_assumption": "95% Wilson, independent isolated trials conditional on this fixed case"
+          }
+        }
+      },
+      "expected": "Reject extra valid trials without an infrastructure predecessor/replacement"
+    },
+    {
+      "name": "final_score_overwrites_development_decision",
+      "observed": {
+        "preserved_decision_refusal": "declared decision differs",
+        "rewritten_decision_accepted": {
+          "workflow_admission": true,
+          "calibrated_benchmark_eligible": false,
+          "decision": "OUT_OF_BAND",
+          "established_native_attempts": 2,
+          "declared_rounds": 2,
+          "criterion_gaps": []
+        }
+      },
+      "expected": "Preserve development CALIBRATED and report final OUT_OF_BAND separately"
+    },
+    {
+      "name": "frozen_git_bytes_not_bound_to_before_after",
+      "observed": {
+        "workflow_admission": true,
+        "calibrated_benchmark_eligible": false,
+        "decision": "OUT_OF_BAND",
+        "established_native_attempts": 2,
+        "declared_rounds": 2,
+        "criterion_gaps": []
+      },
+      "expected": "Reject current measured files differing from frozen git revision even when before=after"
+    },
+    {
+      "name": "grader_infra_exclusion_rejected_by_probe",
+      "observed": {
+        "record_classification": "environment_failure",
+        "probe_refusal": "receipt mismatch: classification"
+      },
+      "expected": "Admit typed unavailable oracle as UNVERIFIED; preserve native and grader classifications separately"
+    }
+  ]
+}
