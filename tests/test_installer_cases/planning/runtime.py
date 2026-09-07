@@ -125,7 +125,7 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
                 self.assertNotIn(".orch/friction", line.replace(os.sep, "/"), line)
 class TestClaudeAdapters(unittest.TestCase):
     """Claude gets one skill adapter per canonical name: every package and
-    every workflow, with no selector to mint fewer."""
+    every workflow, plus the self-improve compatibility entry."""
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -144,7 +144,7 @@ class TestClaudeAdapters(unittest.TestCase):
 
     def test_every_package_and_workflow_gets_one_claude_adapter(self):
         plan = self._plan()
-        expected = len(install.discover_packages()) + len(install.discover_workflow_skills())
+        expected = len(install.discover_packages()) + len(install.discover_workflow_skills()) + 1
         self.assertEqual(expected, len(plan.claude_adapters))
         printed = io.StringIO()
         with redirect_stdout(printed):
