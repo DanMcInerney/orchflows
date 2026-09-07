@@ -18,6 +18,7 @@ EXPECTED_WORKFLOWS = {
     "checkpointed-build",
     "drift-canary",
     "evolve",
+    "orch-build-workflow",
     "orch-do",
     "orch-judge",
     "renovate",

@@ -790,7 +790,11 @@ class FrameLawOwnerTest(unittest.TestCase):
             for shipped in ("example-workflows", "skills/workflows")
             for path in sorted((ROOT / shipped).glob("*/SKILL.md"))
         }
-        self.assertEqual(8 + 2, len(self.bodies))
+        for shipped in ("example-workflows", "skills/workflows"):
+            directories = [path for path in (ROOT / shipped).iterdir() if path.is_dir() and path.name != "references"]
+            self.assertTrue(directories)
+            for directory in directories:
+                self.assertIn(directory.name, self.bodies)
 
     def test_no_body_restates_the_journal_command(self):
         self.assertEqual([], sorted(_relaying(self.bodies)))
@@ -837,7 +841,7 @@ class SavedWorkflowShapeTest(unittest.TestCase):
         self.assertEqual([], sorted(_planless(self.bodies)))
 
     def test_dropping_the_flag_from_a_copy_fails_the_check(self):
-        """The can-fail direction (rules/verification.md §8) on copies built
+        """The can-fail direction (rules/verification.md Â§8) on copies built
         beside the tree: one workflow's text at a time, mutated in memory."""
 
         for name, body in self.bodies.items():

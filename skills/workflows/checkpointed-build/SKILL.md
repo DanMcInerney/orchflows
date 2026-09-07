@@ -1,6 +1,6 @@
 ---
 name: checkpointed-build
-description: Build one artifact in planned waves — a cut, isolated making per wave, one judge over the joined tip, bounded repair, closed on a probe.
+description: Build one artifact in planned waves â€” a cut, isolated making per wave, one judge over the joined tip, bounded repair, closed on a probe.
 disable-model-invocation: true
 ---
 
@@ -10,16 +10,19 @@ the names both of those also stamp, `[]` when none; `probe`, the command that
 answers whether the built artifact works; `bound`, each call's budget; and
 `workspace`, the repository the waves cut from.
 
+Optional `context-file` accompanies every call, including repairs.
+
     tickets.py frame-open <run> --goal-file <build-goal> --workflow checkpointed-build
+      [--context-file <context-file>]
 
 **Plan**, one call whose artifact is the cut:
 
     tickets.py do <run> --standard <standard> --parent <frame> --makes cut
-      --goal-file <plan-goal> --workspace <workspace> --bound <bound>
+      --goal-file <plan-goal> [--context-file <context-file>] --workspace <workspace> --bound <bound>
 
 Its goal: `goal` cut into waves, every item of a level independent of its
 siblings and every dependency edge an earlier wave's seam. The first wave
-pins the artifact's dependency set — each library, its version and the
+pins the artifact's dependency set â€” each library, its version and the
 lockfile the artifact will carry. A later wave needing one more reports the
 addition as a deviation with the evidence that forced it; nothing else adds
 one.
@@ -27,7 +30,7 @@ one.
 **Waves**, in the cut's order, one per level:
 
     tickets.py do <run> --standard <standard> --parent <frame> --isolation required
-      [--standard <narrowing> ...] --goal-file <item-goal>
+      [--standard <narrowing> ...] --goal-file <item-goal> [--context-file <context-file>]
       --workspace <workspace> --bound <bound>
 
 *fan-out*: "One `do` per named item, launched together under the frame; the
@@ -42,14 +45,14 @@ carried:
 
     tickets.py judge <run> --standard <judge-standard> --parent <frame>
       [--standard <narrowing> ...] --artifacts git:<tip>
-      --goal-file <judge-goal>
+      --goal-file <judge-goal> [--context-file <context-file>]
 
 Its goal: `goal` against that revision, each block named with the evidence
 for it. Blocks earn *bounded-repair*: "Where the judge blocks, one repair
 `do` is handed the `findings:` line verbatim, then one re-judge; two rounds
 is the bound."
 
-Never: leave `workspace` off any call of this frame — the run's integration
+Never: leave `workspace` off any call of this frame â€” the run's integration
 target is fixed by its first establishment, so a call that defaults it sends
 every later wave's merge at the driver's own tree; open a wave the cut did not
 place at that level; make in a shared tree; hand the judge a standard the waves did not carry, or a candidate rather

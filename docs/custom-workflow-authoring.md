@@ -4,7 +4,10 @@ This file owns custom-item scope, procedure, adapters, and admission. Route the 
 the ordinary smallest-first shapes in [the host block](../templates/host-block.md),
 and carry this exact file path in the sealed ticket's `## Context` as the
 standards-owner and authoring-standard pointer. Decomposition preserves that
-pointer in every member whose work is governed by it.
+pointer in every member whose work is governed by it. Supply the section body
+with optional `--context-file <file>` on `tickets.py do`, `judge`, or
+`frame-open`; minting appends it after generated parent and artifact clauses
+before sealing. Omission keeps the existing Context behavior.
 
 ## Rings
 
