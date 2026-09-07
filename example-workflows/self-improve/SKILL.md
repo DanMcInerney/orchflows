@@ -36,7 +36,7 @@ owner/dependents in an isolated workspace:
 The repair goal names the selected proposal's frozen oracles. Launch and
 land, then judge the landed identity independently:
 
-    tickets.py judge <run> --standard improvement-repair --parent <frame> --goal-file <judge-goal>
+    tickets.py judge <run> --standard improvement-repair --parent <frame> --goal-file <judge-goal> --artifacts git:<landed-commit>
 
 Launch and land the judge. Where the judge blocks, one repair `do` is handed
 the `findings:` line verbatim, then one re-judge; two rounds is the bound.
