@@ -23,7 +23,7 @@ class BuildWorkflowTests(unittest.TestCase):
         self.assertEqual(1, sum(path.name == BUILDER for path, _, _ in workflows))
         with tempfile.TemporaryDirectory() as raw:
             with patch.object(install.Path, "home", return_value=Path(raw)), \
-                    patch("installer.planning.detect_hosts", return_value=(True, True, True)):
+                    patch.object(install.shutil, "which", return_value="mock-host"):
                 plan = install.build_plan()
         for surfaces in (plan.claude_adapters, plan.codex_skills, plan.grok_skills):
             matches = [body for path, body in surfaces if path.parent.name == BUILDER]
