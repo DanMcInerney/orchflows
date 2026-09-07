@@ -364,5 +364,40 @@ class SelfImprove(unittest.TestCase):
         self.assertEqual(1, sum(s['counts']['unsupported'] for s in future['sources']))
 
 
+    def test_source_failure_matrix_never_reports_clean_empty(self):
+        self.selection['projects'] = []
+        valid = json.dumps(meta('matrix', self.project)) + '\n' + json.dumps(message()) + '\n'
+        cases = [('empty', '', 'empty', 0, 0), ('valid', valid, 'complete', 0, 0),
+                 ('malformed', 'bad json\n', 'partial', 1, 0),
+                 ('mixed', valid + 'bad json\n', 'partial', 1, 0),
+                 ('truncated', '{"unfinished":', 'partial', 1, 1)]
+        for name, raw, coverage, malformed, truncated in cases:
+            with self.subTest(name=name):
+                path = self.root / (name + '.jsonl')
+                path.write_text(raw, encoding='utf-8')
+                self.selection['sources'] = [{'kind': 'codex', 'path': str(path)}]
+                bundle = self.collect()
+                self.assertEqual(coverage, bundle['coverage'])
+                self.assertEqual(malformed, bundle['sources'][0]['counts']['malformed'])
+                self.assertEqual(truncated, bundle['sources'][0]['counts']['truncated'])
+                self.assertEqual(bool(malformed), bool(bundle['gaps']))
+        self.selection['sources'] = [{'kind': 'codex', 'path': str(self.root / 'absent.jsonl')}]
+        self.assertEqual('unavailable', self.collect()['coverage'])
+        self.selection['sources'].append({'kind': 'codex', 'path': str(self.root / 'empty.jsonl')})
+        self.assertEqual('partial', self.collect()['coverage'])
+
+    def test_nested_legacy_content_and_opaque_reasoning_are_gaps(self):
+        self.write('nested.jsonl', [meta('nested', self.project), {'timestamp': STAMP, 'type': 'response_item', 'payload': {'type': 'message', 'role': 'assistant', 'content': [{'type': 'future_content', 'data': {}}]}}])
+        bundle = self.collect()
+        self.assertEqual('partial', bundle['coverage'])
+        self.assertEqual(1, bundle['sources'][0]['counts']['unsupported'])
+        self.write('nested.jsonl', [meta('nested', self.project), {'timestamp': STAMP, 'type': 'response_item', 'payload': {'type': 'reasoning', 'summary': [], 'encrypted_content': 'opaque-reasoning'}}])
+        bundle = self.collect()
+        self.assertEqual('partial', bundle['coverage'])
+        self.assertEqual(0, bundle['sources'][0]['counts']['unsupported'])
+        self.assertTrue(any('opaque encrypted' in gap['reason'] for gap in bundle['gaps']))
+        self.assertNotIn('opaque-reasoning', json.dumps(bundle))
+
+
 if __name__ == "__main__":
     unittest.main()

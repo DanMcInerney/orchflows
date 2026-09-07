@@ -78,6 +78,9 @@ def snapshot(path, kind):
                 source["counts"]["malformed"] += 1
                 if index == len(lines) and not text.endswith("\n"):
                     source["counts"]["truncated"] += 1
+    for failure in ("malformed", "truncated"):
+        if source["counts"][failure]:
+            source["gaps"].append(failure + " records: " + str(source["counts"][failure]))
     source["coverage"] = "partial" if source["gaps"] or source["counts"]["malformed"] else "complete" if data else "empty"
     return source, records
 

@@ -2,6 +2,19 @@
 from __future__ import annotations
 
 
+def text_blocks(value, kinds):
+    return isinstance(value, list) and all(
+        isinstance(block, dict) and block.get("type") in kinds
+        and isinstance(block.get("text"), str) for block in value)
+
+
+def opaque(value):
+    if isinstance(value, dict):
+        return any(key == "encrypted_content" and bool(item) or opaque(item)
+                   for key, item in value.items())
+    return isinstance(value, list) and any(opaque(item) for item in value)
+
+
 def metadata_kind(row):
     payload = row.get("payload")
     if not isinstance(payload, dict):
@@ -54,6 +67,12 @@ def agent_message(row):
 def shape(row):
     """None delegates legacy kinds; False keeps novel/malformed forms partial."""
     payload = row.get("payload")
+    if row.get("type") == "response_item" and isinstance(payload, dict):
+        if payload.get("type") == "message":
+            return text_blocks(payload.get("content"), {"input_text", "output_text"})
+        if payload.get("type") == "reasoning":
+            return text_blocks(payload.get("summary", []), {"summary_text"}) and (
+                payload.get("content") is None or text_blocks(payload["content"], {"reasoning_text"}))
     if row.get("type") in {"world_state", "token_usage_record", "inter_agent_communication_metadata"}:
         return metadata_kind(row) is not None
     if isinstance(payload, dict) and payload.get("type") == "item_completed":

@@ -131,9 +131,8 @@ def collect(frozen):
             if not known(kind, row):
                 source["counts"]["unsupported"] += 1
                 source["gaps"].append("unsupported record at " + locator)
-            message = improve_codex.agent_message(row) if kind == "codex" else None
-            if message and any(x.get("type") == "encrypted_content" for x in message["content"]):
-                source["gaps"].append("opaque encrypted agent message content at " + locator)
+            if kind == "codex" and improve_codex.opaque(row):
+                source["gaps"].append("opaque encrypted content at " + locator)
             sid = node["session"] or row.get("session") or row.get("session_id")
             if sid is not None and not isinstance(sid, str):
                 source["gaps"].append("invalid session identity at " + locator)
