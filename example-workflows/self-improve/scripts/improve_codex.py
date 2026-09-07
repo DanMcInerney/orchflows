@@ -13,7 +13,7 @@ def diagnostic_text(value):
         return True
     return isinstance(value, list) and all(
         isinstance(item, str) or isinstance(item, dict) and (
-            item.get("type") in {"text", "input_text", "output_text", "summary_text", "reasoning_text"}
+            item.get("type") in {"text", "Text", "input_text", "output_text", "summary_text", "reasoning_text"}
             and isinstance(item.get("text"), str)
             or item.get("type") == "encrypted_content" and isinstance(item.get("encrypted_content"), str))
         for item in value)

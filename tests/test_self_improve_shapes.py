@@ -28,6 +28,7 @@ class DiagnosticShapes(unittest.TestCase):
             ("claude-malformed", "claude", [claude("assistant", [{"type": "text", "text": {"future": "data"}}])], "partial", True),
             ("claude-opaque", "claude", [claude("assistant", [text, {"type": "redacted_thinking", "data": "opaque-fixture-bytes"}])], "partial", False),
             ("codex-completed-text", "codex", [completed({"type": "AgentMessage", "content": [output]})], "complete", False),
+            ("codex-modern-Text", "codex", [completed({"type": "AgentMessage", "content": [{"type": "Text", "text": "visible success"}]})], "complete", False),
             ("codex-completed-future", "codex", [completed({"type": "AgentMessage", "content": [future]})], "partial", True),
             ("codex-reasoning-future", "codex", [completed({"type": "Reasoning", "summary_text": [], "raw_content": [future]})], "partial", True),
             ("codex-result-text", "codex", [codex({"type": "function_call_output", "call_id": "call", "output": [output]})], "complete", False),
