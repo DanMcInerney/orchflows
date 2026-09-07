@@ -74,7 +74,8 @@ SECRET_TEXT = re.compile(r'''(?ix)(["']?(?:password|passwd|secret|[\w-]*token|ap
 
 def redact(value):
     if isinstance(value, dict):
-        return {str(k): "[REDACTED]" if SECRET_KEY.search(str(k)) or k == "encrypted_content" else redact(v)
+        return {str(k): "[REDACTED]" if SECRET_KEY.search(str(k)) or k == "encrypted_content"
+                or value.get("type") == "redacted_thinking" and k == "data" else redact(v)
                 for k, v in value.items()}
     if isinstance(value, list):
         return [redact(v) for v in value]

@@ -8,6 +8,29 @@ def text_blocks(value, kinds):
         and isinstance(block.get("text"), str) for block in value)
 
 
+def diagnostic_text(value):
+    if isinstance(value, str):
+        return True
+    return isinstance(value, list) and all(
+        isinstance(item, str) or isinstance(item, dict) and (
+            item.get("type") in {"text", "input_text", "output_text", "summary_text", "reasoning_text"}
+            and isinstance(item.get("text"), str)
+            or item.get("type") == "encrypted_content" and isinstance(item.get("encrypted_content"), str))
+        for item in value)
+
+
+def completed_shape(item):
+    if item is None:
+        return False
+    if item["type"] == "AgentMessage":
+        return diagnostic_text(item["content"])
+    if item["type"] == "Reasoning":
+        return diagnostic_text(item["summary_text"]) and diagnostic_text(item["raw_content"])
+    if item["type"] == "CommandExecution":
+        return all(diagnostic_text(item[key]) for key in ("output", "aggregated_output") if key in item)
+    return True
+
+
 def opaque(value):
     if isinstance(value, dict):
         return any(key == "encrypted_content" and bool(item) or opaque(item)
@@ -70,13 +93,21 @@ def shape(row):
     if row.get("type") == "response_item" and isinstance(payload, dict):
         if payload.get("type") == "message":
             return text_blocks(payload.get("content"), {"input_text", "output_text"})
+        if payload.get("type") in {"function_call_output", "custom_tool_call_output"}:
+            return isinstance(payload.get("call_id"), str) and diagnostic_text(payload.get("output"))
+        if payload.get("type") in {"function_call", "custom_tool_call"}:
+            field = "arguments" if payload["type"] == "function_call" else "input"
+            return all(isinstance(payload.get(key), str) for key in ("call_id", "name", field))
         if payload.get("type") == "reasoning":
             return text_blocks(payload.get("summary", []), {"summary_text"}) and (
                 payload.get("content") is None or text_blocks(payload["content"], {"reasoning_text"}))
+    if row.get("type") == "event_msg" and isinstance(payload, dict) and payload.get("type") in {"agent_message", "agent_reasoning", "user_message"}:
+        fields = [payload[key] for key in ("text", "message", "content") if key in payload]
+        return bool(fields) and all(diagnostic_text(value) for value in fields)
     if row.get("type") in {"world_state", "token_usage_record", "inter_agent_communication_metadata"}:
         return metadata_kind(row) is not None
     if isinstance(payload, dict) and payload.get("type") == "item_completed":
-        return completed_item(row) is not None
+        return completed_shape(completed_item(row))
     if isinstance(payload, dict) and payload.get("type") == "agent_message" and row.get("type") == "response_item":
         return agent_message(row) is not None
     return None

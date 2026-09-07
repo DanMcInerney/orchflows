@@ -12,6 +12,7 @@ from improve_common import EvidenceError, canonical, digest, instant, project, r
 from improve_sources import ancestry, discover
 import trace
 import improve_codex
+import improve_claude
 
 
 def known(kind, row):
@@ -32,9 +33,7 @@ def known(kind, row):
                 "agent_message", "user_message", "turn_aborted", "context_compacted"}
         return rtype in {"session_meta", "turn_context", "compacted"} and isinstance(row.get("payload"), dict)
     if kind == "claude":
-        if rtype in {"user", "assistant"}:
-            return isinstance(row.get("message"), dict)
-        return rtype in {"summary", "system", "progress", "file-history-snapshot", "queue-operation"}
+        return improve_claude.shape(row)
     if kind == "friction":
         return "observed" in row and "expected" in row
     if kind == "events":
@@ -131,7 +130,7 @@ def collect(frozen):
             if not known(kind, row):
                 source["counts"]["unsupported"] += 1
                 source["gaps"].append("unsupported record at " + locator)
-            if kind == "codex" and improve_codex.opaque(row):
+            if kind == "codex" and improve_codex.opaque(row) or kind == "claude" and improve_claude.opaque(row):
                 source["gaps"].append("opaque encrypted content at " + locator)
             sid = node["session"] or row.get("session") or row.get("session_id")
             if sid is not None and not isinstance(sid, str):
