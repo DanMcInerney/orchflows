@@ -25,6 +25,7 @@ CANONICAL_WORKFLOW_IDS = frozenset({
     "checkpointed-build",
     "drift-canary",
     "evolve",
+    "orch-build-workflow",
     "orch-do",
     "orch-judge",
     "renovate",

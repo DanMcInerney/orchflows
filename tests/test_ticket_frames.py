@@ -790,7 +790,11 @@ class FrameLawOwnerTest(unittest.TestCase):
             for shipped in ("example-workflows", "skills/workflows")
             for path in sorted((ROOT / shipped).glob("*/SKILL.md"))
         }
-        self.assertEqual(8 + 2, len(self.bodies))
+        for shipped in ("example-workflows", "skills/workflows"):
+            directories = [path for path in (ROOT / shipped).iterdir() if path.is_dir() and path.name != "references"]
+            self.assertTrue(directories)
+            for directory in directories:
+                self.assertIn(directory.name, self.bodies)
 
     def test_no_body_restates_the_journal_command(self):
         self.assertEqual([], sorted(_relaying(self.bodies)))

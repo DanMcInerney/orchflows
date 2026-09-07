@@ -4,7 +4,10 @@ This file owns custom-item scope, procedure, adapters, and admission. Route the 
 the ordinary smallest-first shapes in [the host block](../templates/host-block.md),
 and carry this exact file path in the sealed ticket's `## Context` as the
 standards-owner and authoring-standard pointer. Decomposition preserves that
-pointer in every member whose work is governed by it.
+pointer in every member whose work is governed by it. Supply the section body
+with optional `--context-file <file>` on `tickets.py do`, `judge`, or
+`frame-open`; minting appends it after generated parent and artifact clauses
+before sealing. Omission keeps the existing Context behavior.
 
 ## Rings
 
@@ -281,8 +284,17 @@ what package code runs, what observable evidence shows the package works, and
 which dependency and package identities must remain pinned. They guide the
 artifact; they are not required headings or a step schema.
 
-1. Route existing machinery first. If a stamped spec, skill, or workflow
-   already expresses the request, use it instead of minting another item.
+1. Inventory the relevant existing primitives, workflows, methods, and
+   standards, with each contract's fit or missing responsibility. If a stamped
+   spec or existing item expresses the request, use it. Otherwise compose the
+   smallest useful contracts before introducing a boundary. A new reusable
+   boundary names its actual callers or independent journal reason under
+   [composition](../rules/composition.md) §13; layers organize responsibility,
+   not a depth quota. A first-use component can earn its own journal through
+   a coherent independent contract and observable output; it need not wait
+   for a second caller. Decompose responsibilities top down, then construct
+   and verify the missing lower contracts bottom up before their callers.
+   An ordinary sentence needs no wrapper.
 2. Fix the intended contract, target tier, scope, owner path, and observable
    admission before writing. Apply the overlap rule in
    [composition](../rules/composition.md) §6 and the placement rule in
@@ -311,6 +323,12 @@ artifact; they are not required headings or a step schema.
    internal orchestration in its private helper-workflow folder; call an
    independently useful public workflow by its ordinary top-level name so it
    establishes its own package scope.
+   Keep control flow in workflows, methods in applied skills, and quality in
+   standards. Supply task-specific semantic inputs to reusable calls; use the
+   [standard contract](../contracts/standard.md) for recurring quality
+   tightening, rather than copying a base or adding a standard per invocation.
+   A standard needed after a public call must resolve in that callee's scope:
+   a caller-private standard does not travel merely because its name does.
 5. Build host integrations from the top-level [host records](../hosts/). Use
    the selected record's installed-item template, legal frontmatter, launch
    verb and native fields, role profile, and capability classification. The
@@ -333,6 +351,12 @@ artifact; they are not required headings or a step schema.
    ran, so install only the source identity whose checks you accepted.
 
 ## Workflow admission
+
+When explicitly requested, orch-build-workflow supplies the authoring,
+independent review, and live admission sequence through checkpointed-build.
+Ordinary authoring still takes the smallest-first route above. For a minimal
+live request and an executable output probe, read its
+[dogfood fixture](../example-workflows/orch-build-workflow/references/dogfood.md).
 
 `orchflows check [<ring-dir>]` grades the public workflow body and any private
 workflow, skill, or standard manifests with their existing validators. It
@@ -366,6 +390,9 @@ Review the fixed artifact independently against these owners:
   [token economy](../rules/token-economy.md) §§1–2, 6, 8, 11;
 - overlap, anatomy, and carriage: [composition](../rules/composition.md)
   §§5–6, 10–11;
+- reuse and boundary evidence from the inventory, public/private placement,
+  and standard availability after public calls:
+  [composition](../rules/composition.md);
 - ownership and dependency direction: [visibility](../rules/visibility.md)
   §§2–4;
 - standard purity and section completeness:
@@ -375,5 +402,8 @@ Review the fixed artifact independently against these owners:
   [documentation](documentation.md) laws 6, 9.
 
 Record the item and adapter paths, deterministic admission evidence, boundary
-findings, and verification observations. Failure handling follows
+findings, and verification observations. Distinguish static admission from
+observed execution of the actual body; name the exercised requests, fixed
+package and artifact identities, and runtime gaps. A deeper call graph alone
+is no quality evidence. Failure handling follows
 [composition](../rules/composition.md) §8.

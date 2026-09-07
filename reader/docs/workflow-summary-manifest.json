@@ -1,6 +1,19 @@
 {
   "schema": "orchflows.workflow-summary.v1",
   "workflows": {
+    "orch-build-workflow": {
+      "nodes": [
+        {"id": "contract", "label": "Resolve scope and authoring inputs"},
+        {"id": "build", "label": "Build and review the package"},
+        {"id": "admit", "label": "Invoke in a disposable project"},
+        {"id": "probe", "label": "Verify the external output"}
+      ],
+      "edges": [
+        {"source": "contract", "target": "build", "kind": "sequence"},
+        {"source": "build", "target": "admit", "kind": "sequence"},
+        {"source": "admit", "target": "probe", "kind": "sequence"}
+      ]
+    },
     "bakeoff": {
       "nodes": [
         {"id": "label", "label": "Label the candidates"},

@@ -47,7 +47,7 @@ class WorkflowCatalogTests(unittest.TestCase):
 
         self.assertEqual(
             [
-                "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
+                "benchmaker", "browser-game", "drift-canary", "evolve", "orch-build-workflow", "renovate",
                 "self-improve", "skill-tournament", "super-research",
                 "bakeoff", "checkpointed-build", "orch-do", "orch-judge",
             ],
