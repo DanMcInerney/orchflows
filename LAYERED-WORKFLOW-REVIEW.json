@@ -1,0 +1,70 @@
+{
+  "dispatch_id": "B1.2:d1",
+  "assignment_seal": "sha256:aa4630a8428ea8979d9e718e571b0e3f24b5e3d1cd7966abfdabecfce47a3387",
+  "assigned_name": "B1.2",
+  "reviewed_artifact": "git:16ca3fa547417c26ed29c1cb7f4c78b44528208a",
+  "baseline": "git:9736e28e76672db43c95eed18f0d1df2a9baf6b6",
+  "standard_evidence": {
+    "pinned": "orch-code@sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "source_and_installed_pin_match": true,
+    "applied": "Whole pinned orch-code, its git lens, authoring owner and linked shared law.",
+    "reviewed_narrowing": "orch-workflow-authoring@sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "blocking": true,
+      "class": "contract-fidelity",
+      "title": "Required authoring Context has no supported minting carrier",
+      "location": "example-workflows/orch-build-workflow/SKILL.md:18",
+      "cause": "The new builder and narrowing require a governed Context pointer, but the existing callable minting API only constructs Context from parent and typed artifacts.",
+      "evidence": [
+        "Builder lines 18-19 require preservation of authoring-owner in every governed Context; narrowing lines 7-8 repeats that quality criterion.",
+        "docs/custom-workflow-authoring.md opening paragraph requires the exact owner path in sealed Context, and the frozen plan's Authoring intake acceptance explicitly requires this carriage to planner and maker.",
+        "scripts/tickets_mint.py:184 _context only emits parent and artifact clauses; :254 _minted always uses that result as Context. :301-302 accepts goal-file/details-file, without a Context input.",
+        "Read-only probe intercepted _mint with the owner supplied in both Goal and Details: minted Context was exactly '- parent: B1', without the owner. The callable parser independently returned 'do does not accept --context-file'. Probe exited 0 after asserting these observations; no state was created.",
+        "The global authoring narrowing does link the canonical guide, so this is a precise unmet carrier obligation, not evidence that the guide is unreachable or a claim that every authoring child behaves incorrectly."
+      ],
+      "smallest_remedy": "Provide one supported pre-seal Context carrier in callable minting and thread it through the authoring call, preserving existing Context ownership and seals; test owner preservation through the emitted ticket. Any alternative must reconcile the canonical owner requirement as well as the builder, rather than silently placing a different heading inside Goal.",
+      "scope": "Runtime/API repair exceeds this review-only ticket. The implementation plan permits a scoped core repair only after a reproduced seam failure; this probe supplies that failure for a separately assigned repair."
+    },
+    {
+      "id": "F2",
+      "blocking": true,
+      "class": "correctness",
+      "title": "New public workflow is missing existing inventory integrations",
+      "location": "example-workflows/orch-build-workflow/SKILL.md:2",
+      "cause": "The new shipped public name was added to installer discovery and new tests but not to every existing census/catalog owner.",
+      "evidence": [
+        "Direct source inspection: tests/test_ticket_frames.py:793 hardcodes self.assertEqual(8 + 2, len(self.bodies)), while the comprehension collects both existing workflow homes and therefore includes the new builder.",
+        "Reviewer independently ran FrameLawOwnerTest, test_static_tree_invariants and test_cell_linter together: exit 1, 52 tests in 51.551 seconds, five failures. Three fail at the frame census (10 != 11), one at tests/test_static_tree_invariants_cases/compositions.py:45 missing builder in WORKFLOWS, and one at :76 whose predicate accepts only a literal --standard or nested frame-open command. No cell-linter failure occurred at this fixed source identity.",
+        "Root independently reports the full source suite at the integration gate: 2177 tests, 6 failures. Three are FrameLawOwnerTest's hardcoded census; two are static_tree_invariants' workflow allowlist and nested-frame assumption; one is TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content from installed reader project_workflow_catalog rejecting workflow-summary-manifest.json coverage.",
+        "Root reports the static-tree nested-frame predicate requires a literal nested frame, whereas the new builder lawfully uses checkpointed-build's ordinary public call. Repair the check's representation of the seam, not the lawful composition by introducing a redundant wrapper.",
+        "The full-suite count and installed-reader manifest failure remain explicitly parent-provided observations; the five census/composition failures were independently reproduced here."
+      ],
+      "smallest_remedy": "Reconcile the public workflow summary/catalog owners and existing census checks with the newly shipped name; make composition coverage recognize the actual public call. Derive inventory where appropriate rather than replacing 10 with another brittle count. Keep a can-fail reading for the retained contract."
+    }
+  ],
+  "positive_assessment": [
+    "The authoring procedure inventories existing primitives, methods, workflows and standards, explicitly admits a useful first-use independent contract, and orders top-down decomposition with bottom-up verification. It does not impose a depth quota.",
+    "The public builder supplies every checkpointed-build semantic input, adds distinct authoring/live-admission responsibility, and does not copy its plan/wave/judge/repair mechanics.",
+    "The authoring standard is a global narrowing of orch-code, so another public workflow can resolve it; the deterministic chain is broad-to-narrow and deduplicated.",
+    "The produced receipt fixture preserves its top-level standard in a clone of accepted source, respecting the public callee scope. It does not manufacture private wrappers.",
+    "The builder returns fixed package identity, independent findings and runtime evidence. Its Never and partial-result clauses prevent static checks from becoming a live success claim.",
+    "No implementation or public contract was changed by this reviewer. Source changes are narrowly concentrated in authoring documentation, the builder, its narrowing, a fixture and related tests."
+  ],
+  "observed_checks": [
+    "tools/run_tests.py tests.test_build_workflow tests.test_workflow_ladder_law tests.test_catalog_completeness: exit 0, 21 tests, 3 modules, no failure/error/skip; subprocess timeout 180 seconds; observed complete.",
+    "Read-only review_seams.py: exit 0 under timeout 60 seconds. Removing the discovered builder in memory causes one assertion failure and no errors; dropping the broad standard in memory causes one assertion failure and no errors.",
+    "Receipt probe regression directly executes the fixture Python for missing/corrupt/exact output; assertions require exit 1/1/0. It passed in the scoped run and proves only the executable probe.",
+    "FrameLawOwnerTest plus test_static_tree_invariants and test_cell_linter: exit 1, 52 tests, five independently observed failures detailed in F2. Explicit subprocess timeout 180 seconds; watched finish, with no detached test process remaining.",
+    "git diff --check baseline candidate: exit 0.",
+    "Source and installed orch-code tree digests match the ticket's pinned digest; source narrowing digest recorded above. Digest command exited 0."
+  ],
+  "gaps": [
+    "Root owns full required suite and actual named-builder/produced-workflow live admission. This reviewer did not run or simulate those workflows, dispatch children, or install source.",
+    "Root separately reports an integration test_cell_linter warning ceiling from new scope wording; inspect the exact duplicate evidence in repair. This is not independently established at the fixed source identity by this record.",
+    "Grok adapters lack native disable-model-invocation frontmatter under the existing host contract; the maker explicitly reported this existing limitation. The change preserves existing behavior and does not establish new host enforcement.",
+    "Long-term authoring reliability and unexecuted workflow branches remain unmeasured."
+  ]
+}
