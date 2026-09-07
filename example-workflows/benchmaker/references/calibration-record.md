@@ -1,0 +1,112 @@
+# External calibration record
+
+This data dictionary owns empirical attempt and summary field meanings.
+[Manifest](manifest.md) owns the package index and configuration description;
+[benchmark-quality](../standards/benchmark-quality/STANDARD.md) owns all required
+validity, calibration and protection criteria. Records live outside the frozen
+benchmark package, bind its git revision, and have separate result identities.
+
+## Attempt
+
+An attempt is one actual isolated execution, not a control score or aggregate.
+Its `(benchmark_revision, split, round, case_id, trial)` tuple is unique. Trial
+is a stable attempt index, including excluded infrastructure events; an allowed
+retry remains a separately attributable event with its predecessor/reason.
+Locators resolve relative to the external evidence record's declared workspace.
+
+| Field | Shape and meaning |
+| --- | --- |
+| `case_id` | Stable case id. |
+| `split` | Declared development, confirmation or final split. |
+| `round` | Declared sampling-round identity. |
+| `trial` | Trial index within that case/round. |
+| `target_configuration` | Full object or immutable locator to the fixed configuration. |
+| `benchmark_revision` | Full git revision of measured benchmark bytes. |
+| `candidate_kind` | `agent_attempt` or `control`; provenance determines classification, never the label alone. |
+| `requested_command` | Native argv array, with no shell interpolation. |
+| `resolved_command` | Observed native argv array. |
+| `requested_configuration` | Requested configuration object. |
+| `resolved_configuration` | Observed configuration object; unavailable fields carry reasons, including an `unavailable_reason` object when resolution failed. |
+| `prompt_locator` | Actual candidate-visible input artifact. |
+| `raw_transcript_locator` | Complete native stdout/event transcript artifact. |
+| `result_artifact_locator` | Actual candidate output artifact, or explicit unavailable reason. |
+| `launch_receipt_locator` | Observed subprocess command, configuration, exit and timing receipt. |
+| `grader_observation_locator` | Separate deterministic grader or anchored oracle observation. |
+| `classification` | `completed`, `candidate_failure`, `task_timeout`, `startup_timeout`, `permission_failure`, `launch_failure` or `environment_failure`. |
+| `exit_code` | Observed process exit, or unavailable reason where no process started. |
+| `elapsed_seconds` | Observed nonnegative wall time. |
+| `token_usage` | Native-reported usage or explicit unavailable reason. |
+| `oracle_outcome` | Observed outcome status; unavailable oracle evidence remains explicit. |
+| `failure_class` | Named observed failure class, or explicit none/unavailable reason. |
+| `valid_for_estimate` | Boolean inclusion under the fixed policy. |
+| `exclusion_reason` | Reason for exclusion, otherwise explicit none. |
+
+A launcher/environment/permission failure is distinct from a candidate failing
+its task after a usable environment exists. A completed native process may
+produce missing or wrong source: that is candidate failure, with the transcript
+and failed grader/extraction observation preserved. `task_timeout` after an
+established native turn is a counted failure;
+`startup_timeout` is excluded infrastructure. The predeclared execution
+boundary/policy identifies this distinction; infrastructure exclusions never
+become target failures by omission. An explicit resolved-configuration
+unavailable reason produces UNVERIFIED;
+omitting the configuration is a malformed record. Raw token counts, model
+versions and prices are observations, not synthetic estimates.
+
+Control records use their real provenance and cannot contribute to agent
+pass@1. Legacy known-good/bad scripts remain controls even when wrapped in a
+native-looking receipt. A record schema label alone is no native-execution
+proof; transcript, receipt, output and independent oracle linkage are the
+observable evidence.
+
+## Summary
+
+Each summary identifies `benchmark_revision`, fixed `target_configuration`,
+`split`, `round`, its policy and the complete attempt record locators. The
+finite-suite executable policy uses equal case weights; explicitly different
+weights/designs remain separate supported implementations or declared gaps.
+
+| Field | Meaning |
+| --- | --- |
+| `estimator` | pass@1 definition and computation, never best-of-k. |
+| `weights` | Actual case/stratum weights. |
+| `independent_unit` | Sampling unit and fixed-case repeat interpretation. |
+| `per_case` | `attempted`, `valid`, `passed`, `failed`, `invalid`, `unverified`, `controls`, `failure_classes`, `estimate`, `interval`, `interval_assumption`. |
+| `distinct_cases` | Count of distinct cases, separate from repetitions. |
+| `total_attempts` | Total attempted events, with valid/excluded totals separately represented. |
+| `estimate` | Finite-suite pass@1 or explicit unavailable reason. |
+| `interval` | Bounds, method and assumptions, or `null`; per-case intervals are conditional on their case. |
+| `interval_unavailable_reason` | Reason no aggregate interval is reported, otherwise explicit none. |
+| `band_observation` | `IN_BAND`, `OUT_OF_BAND` or `UNVERIFIED` numeric observation, independent of eligibility. |
+| `decision` | `INVALID`, `UNVERIFIED`, `OUT_OF_BAND` or `CALIBRATED`, with required criterion evidence/gaps. |
+| `criterion_gaps` | Missing evidence by criterion, distinguishing required and optional. |
+| `revision_ledger` | Every pre/post draft identity, reason, changed cases, retained strata/weights, audit, full round, spend and selection policy. |
+| `frozen_revision` | Full frozen benchmark git revision, or `null` with reason. |
+| `final_record` | Separate final measurement locator or explicit not-performed reason. |
+
+The numeric band observation survives higher-priority validity or evidence
+problems. A finite-suite IN_BAND observation can coexist with UNVERIFIED
+calibration when the declared uncertainty or isolation requirement is unmet.
+The record distinguishes conditional per-case uncertainty from population
+inference; repetition count is never substituted for distinct-case sample size.
+Optional configuration comparisons use separate records and paired case
+observations, not a replacement calibration target.
+
+## Final measurement and admission observations
+
+A final record identifies the frozen revision, configuration, cases/sampling
+policy, permitted candidate scope, evidence-access observations, actual
+attempts, recomputed summary and date. Its `evaluation_scope` distinguishes
+`protected_final` from `public_confirmation` or `development`; protection
+status includes the actual access mechanism and adversarial probe observation.
+Before/after measured-byte identity observations demonstrate unchanged frozen
+content. Final failure and drift remain external observations.
+
+Workflow admission and calibrated benchmark eligibility are separate probe
+observations. A useful INVALID/UNVERIFIED/OUT_OF_BAND partial artifact can have
+valid workflow admission evidence while remaining ineligible for calibration
+consumers. An unavailable native tool or zero actual attempts is an explicit
+live-admission gap, not evidence that the workflow executed. Admission receipts
+locate source package commit, runtime run/frame/ticket identities, standard
+pins, landed artifacts, independent findings, outside probe exits, launch and
+case/trial totals, spend and unexecuted branches.
