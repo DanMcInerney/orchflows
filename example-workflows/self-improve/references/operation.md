@@ -59,6 +59,13 @@ coverage counters and gaps. Concurrent changes make coverage partial. Logs
 and excerpts are redacted before persistence/normalization. Original files
 remain read-only. Unknown valid shapes are unsupported coverage, never empty.
 
+Current Codex completed-item envelopes and agent messages retain item identities
+and diagnostic content beside legacy trace events; copied manifestations still
+need agent adjudication. Known usage, world-state and communication metadata are
+redacted context, excluded from incident counts with explicit counters. Encrypted
+message blocks remain opaque gaps: visible text is usable, ciphertext is redacted,
+and no decryption or media interpretation is claimed. Novel item shapes stay partial.
+
 ## Evidence interface
 
 `scripts/self_improve.py collect --selection FILE` returns review ID, bundle

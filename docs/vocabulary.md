@@ -435,16 +435,13 @@ workflow).
 - **lexical cluster** — a deterministic text-similarity group used to navigate
   bounded raw records. It proves neither a shared cause nor a causal owner;
   agent judgment may merge or split it before a proposal qualifies.
-- **coverage record** — the append-only record of which merged change
-  answers which lexical cluster, and from when — one line per change and
-  cluster, appended at merge and never by a cycle. Its **watermark** is
-  the position in an evidence input at or before which a covered
-  cluster is answered; a later matching entry is post-merge recurrence,
-  owned by the change that covered it.
-- **proposal** — one qualified improvement (per `rules/improvement.md`
-  §4) with a single causal owner, one scope — environment | project |
-  workflow, per §3 — and its evidence entries; passive until a human
-  acts on it (§6).
+- **coverage record** — legacy append-only history associating a merged change
+  with a lexical cluster. Its **watermark** records the old input position;
+  neither suppresses new evidence or establishes current effectiveness.
+  [Improvement law](../rules/improvement.md) §§4–6 owns recurrence and verification.
+- **proposal** — a candidate causal fix with evidence and a named owner,
+  qualified and activated under [improvement law](../rules/improvement.md) §§2–6.
+  Implementation, deployment and later-use verification are separate claims.
 - **fixture** — one completed ticket frozen into a self-contained
   replayable unit with golden results; the raw material of tournaments,
   canaries, and **replay** — re-running the friction-producing work

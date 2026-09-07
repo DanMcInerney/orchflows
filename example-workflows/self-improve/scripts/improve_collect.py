@@ -11,11 +11,15 @@ from pathlib import Path
 from improve_common import EvidenceError, canonical, digest, instant, project, redact
 from improve_sources import ancestry, discover
 import trace
+import improve_codex
 
 
 def known(kind, row):
     rtype = row.get("type")
     if kind == "codex":
+        current = improve_codex.shape(row)
+        if current is not None:
+            return current
         if rtype == "response_item":
             payload = row.get("payload")
             return isinstance(payload, dict) and payload.get("type") in {
@@ -45,6 +49,9 @@ def known(kind, row):
 def links(row):
     payload = row.get("payload") if isinstance(row.get("payload"), dict) else row
     result = []
+    item = improve_codex.completed_item(row)
+    if item is not None:
+        result.append({"kind": "completed_item", "id": item["id"]})
     if payload.get("call_id"):
         result.append({"kind": "tool_call", "id": payload["call_id"]})
     content = row.get("message", {}).get("content", []) if isinstance(row.get("message"), dict) else []
@@ -124,6 +131,8 @@ def collect(frozen):
             if not known(kind, row):
                 source["counts"]["unsupported"] += 1
                 source["gaps"].append("unsupported record at " + locator)
+            if kind == "codex" and improve_codex.opaque(row):
+                source["gaps"].append("opaque encrypted content at " + locator)
             sid = node["session"] or row.get("session") or row.get("session_id")
             if sid is not None and not isinstance(sid, str):
                 source["gaps"].append("invalid session identity at " + locator)
@@ -175,12 +184,20 @@ def collect(frozen):
                 elif when is None:
                     source["gaps"].append("unknown time at " + locator)
                 continue
+            metadata = improve_codex.metadata_kind(row) if kind == "codex" else None
+            if metadata:
+                label = "usage" if metadata == "token_usage_record" else metadata
+                excluded["non-diagnostic " + label] += 1
+                structural.append({"source": location, "role": "non-diagnostic context, excluded from counts",
+                                   "session": sid, "project": root, "runs": sorted(runs), "record": redact(row)})
+                continue
             oid = "o-" + digest({"format": kind, "record": row})
             observation = observations.setdefault(oid, {"id": oid, "session": sid, "project": root,
                 "runs": sorted(runs), "timestamp": when.isoformat(), "format": kind,
                 "host": row.get("host") or kind,
                 "supported_shape": known(kind, row),
-                "sources": [], "record": redact(row), "links": links(row), "normalized": []})
+                "sources": [], "record": redact(row), "links": links(row),
+                "normalized": redact(improve_codex.events(row)) if kind == "codex" else []})
             observation["sources"].append(location)
             selected_rows.append(redact(row))
             timestamp_ids.setdefault(stamp, []).append(oid)

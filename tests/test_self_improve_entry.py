@@ -108,3 +108,35 @@ class SelfImproveEntryTests(unittest.TestCase):
                         rings.resolve("workflow", name, home=world["home"],
                                       project=world["project"], lib=world["lib"])
                     self.assertEqual("reserved-name", caught.exception.code)
+
+    def test_installed_collection_resolves_public_trace_facade(self):
+        import json
+        import subprocess
+        import sys
+
+        self.plan.runtime_action = None
+        install.apply_plan(self.plan, accepted_source=install.resolve_source_commit())
+        source = self.home / 'session.jsonl'
+        source.write_text(json.dumps({
+            'timestamp': '2026-09-07T10:00:00Z', 'type': 'session_meta',
+            'payload': {'id': 'installed-session', 'cwd': str(self.home)}}) + '\n' + json.dumps({
+            'timestamp': '2026-09-07T10:01:00Z', 'type': 'response_item',
+            'payload': {'type': 'message', 'role': 'assistant',
+                        'content': [{'type': 'output_text', 'text': 'nearby success'}]}}) + '\n',
+            encoding='utf-8')
+        selection = self.home / 'selection.json'
+        selection.write_text(json.dumps({
+            'mode': 'review', 'timezone': 'America/Indianapolis',
+            'timezone_provenance': 'fixed offset fixture',
+            'as_of': '2026-09-07T07:00:00-04:00',
+            'start': '2026-09-07T10:00:00Z', 'end': '2026-09-07T11:00:00Z',
+            'sources': [{'kind': 'codex', 'path': str(source)}],
+            'projects': [], 'sessions': [], 'runs': [], 'descendants': True,
+            'repair_bound': 2}), encoding='utf-8')
+        command = self.plan.lib_home / 'example-workflows/self-improve/scripts/self_improve.py'
+        environment = dict(os.environ, ORCHFLOWS_STATE_HOME=str(self.home / 'sink'))
+        result = subprocess.run([sys.executable, str(command), 'collect', '--selection', str(selection)],
+                                env=environment, capture_output=True, text=True, timeout=30)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        collected = json.loads(result.stdout)
+        self.assertEqual('complete', collected['coverage'])

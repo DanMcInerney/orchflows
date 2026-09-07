@@ -901,17 +901,21 @@
    "test_self_improve.SelfImprove.test_codex_tracer_descendants_time_project_success_and_original_hash",
    "test_self_improve.SelfImprove.test_concurrent_records_have_one_winner_and_no_lost_predecessor",
    "test_self_improve.SelfImprove.test_cross_review_recurrence_carries_immutable_original_proposal",
+   "test_self_improve.SelfImprove.test_current_codex_items_and_metadata_keep_unknown_shapes_partial",
    "test_self_improve.SelfImprove.test_cycles_orphans_duplicates_missing_metadata_cannot_expand_scope",
    "test_self_improve.SelfImprove.test_drifted_nested_tool_shape_retains_raw_evidence_and_refuses_nonobject_record",
    "test_self_improve.SelfImprove.test_exact_duplicates_keep_each_locator_and_covered_never_filters",
    "test_self_improve.SelfImprove.test_invalid_selection_and_repository_sink_refuse",
    "test_self_improve.SelfImprove.test_nested_and_string_credentials_are_redacted_before_persistence",
+   "test_self_improve.SelfImprove.test_nested_legacy_content_and_opaque_reasoning_are_gaps",
    "test_self_improve.SelfImprove.test_pages_name_complete_collection_and_never_hide_remaining_evidence",
    "test_self_improve.SelfImprove.test_repair_lifecycle_rejects_stale_idempotency_replay_and_reopens",
    "test_self_improve.SelfImprove.test_repair_without_proposal_reports_incomplete_and_review_closes",
    "test_self_improve.SelfImprove.test_sink_run_friction_ticket_association_does_not_import_whole_run",
+   "test_self_improve.SelfImprove.test_source_failure_matrix_never_reports_clean_empty",
    "test_self_improve.SelfImprove.test_unknown_malformed_truncated_missing_and_empty_are_distinct",
    "test_self_improve_entry.SelfImproveEntryTests.test_custom_reserved_workflow_names_still_refuse",
+   "test_self_improve_entry.SelfImproveEntryTests.test_installed_collection_resolves_public_trace_facade",
    "test_self_improve_entry.SelfImproveEntryTests.test_plan_preserves_surfaces_arguments_and_one_canonical_identity",
    "test_self_improve_entry.SelfImproveEntryTests.test_receipt_reinstall_stale_cleanup_and_uninstall_own_entries",
    "test_serial_compat.TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
@@ -4221,6 +4225,14 @@
     "environment",
     "monkeypatch",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_self_improve_entry",
+   "owner": "SelfImproveEntryTests.test_installed_collection_resolves_public_trace_facade",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

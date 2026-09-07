@@ -329,5 +329,75 @@ class SelfImprove(unittest.TestCase):
         self.assertEqual("evidence-refusal", self.cli("record", "--review", self.review, "--file", str(path), expected=2)["kind"])
 
 
+
+    def test_current_codex_items_and_metadata_keep_unknown_shapes_partial(self):
+        rows = [meta('current', self.project),
+            {'timestamp': STAMP, 'type': 'world_state', 'payload': {'full': True, 'state': {'api_key': 'fixture-secret'}}},
+            {'timestamp': STAMP, 'type': 'token_usage_record', 'payload': {'usage': {'total_tokens': 42}}},
+            {'timestamp': STAMP, 'type': 'inter_agent_communication_metadata', 'payload': {'trigger_turn': True}},
+            {'timestamp': STAMP, 'type': 'response_item', 'payload': {'type': 'agent_message', 'author': 'parent', 'recipient': 'child', 'content': [{'type': 'input_text', 'text': 'Retry failed check'}]}}]
+        items = [
+            {'type': 'CommandExecution', 'id': 'call-1', 'command': ['check', 'original'], 'exit_code': 1},
+            {'type': 'AgentMessage', 'id': 'message-1', 'content': 'Nearby check passed'},
+            {'type': 'Reasoning', 'id': 'reason-1', 'summary_text': [], 'raw_content': []},
+            {'type': 'SubAgentActivity', 'id': 'spawn-1', 'agent_thread_id': 'child', 'kind': 'spawn'},
+            {'type': 'FileChange', 'id': 'edit-1', 'changes': {}, 'status': 'completed'}]
+        rows.extend({'timestamp': STAMP, 'type': 'event_msg', 'payload': {'type': 'item_completed', 'item': item}} for item in items)
+        self.write('current.jsonl', rows)
+        bundle = self.collect()
+        self.assertEqual('complete', bundle['coverage'])
+        self.assertEqual(6, len(bundle['observations']))
+        self.assertEqual(3, sum(n for key, n in bundle['excluded'].items() if key.startswith('non-diagnostic ')))
+        self.assertTrue(all(o['supported_shape'] for o in bundle['observations']))
+        self.assertTrue(any(e.get('exit') == 1 for o in bundle['observations'] for e in o['normalized']))
+        self.assertTrue(any(e.get('type') == 'agent_message' for o in bundle['observations'] for e in o['normalized']))
+        self.assertNotIn('fixture-secret', json.dumps(bundle))
+        self.write('encrypted.jsonl', [meta('encrypted', self.project), {'timestamp': STAMP, 'type': 'response_item', 'payload': {'type': 'agent_message', 'content': [{'type': 'input_text', 'text': 'Visible message'}, {'type': 'encrypted_content', 'encrypted_content': 'opaque-fixture-bytes'}]}}])
+        encrypted = self.collect()
+        self.assertEqual('partial', encrypted['coverage'])
+        self.assertEqual(0, sum(s['counts']['unsupported'] for s in encrypted['sources']))
+        self.assertNotIn('opaque-fixture-bytes', json.dumps(encrypted))
+        self.assertTrue(any(e.get('text') == 'Visible message' for o in encrypted['observations'] for e in o['normalized']))
+        self.write('future.jsonl', [meta('future', self.project), {'timestamp': STAMP, 'type': 'event_msg', 'payload': {'type': 'item_completed', 'item': {'type': 'FutureItem', 'id': 'future'}}}])
+        future = self.collect()
+        self.assertEqual('partial', future['coverage'])
+        self.assertEqual(1, sum(s['counts']['unsupported'] for s in future['sources']))
+
+
+    def test_source_failure_matrix_never_reports_clean_empty(self):
+        self.selection['projects'] = []
+        valid = json.dumps(meta('matrix', self.project)) + '\n' + json.dumps(message()) + '\n'
+        cases = [('empty', '', 'empty', 0, 0), ('valid', valid, 'complete', 0, 0),
+                 ('malformed', 'bad json\n', 'partial', 1, 0),
+                 ('mixed', valid + 'bad json\n', 'partial', 1, 0),
+                 ('truncated', '{"unfinished":', 'partial', 1, 1)]
+        for name, raw, coverage, malformed, truncated in cases:
+            with self.subTest(name=name):
+                path = self.root / (name + '.jsonl')
+                path.write_text(raw, encoding='utf-8')
+                self.selection['sources'] = [{'kind': 'codex', 'path': str(path)}]
+                bundle = self.collect()
+                self.assertEqual(coverage, bundle['coverage'])
+                self.assertEqual(malformed, bundle['sources'][0]['counts']['malformed'])
+                self.assertEqual(truncated, bundle['sources'][0]['counts']['truncated'])
+                self.assertEqual(bool(malformed), bool(bundle['gaps']))
+        self.selection['sources'] = [{'kind': 'codex', 'path': str(self.root / 'absent.jsonl')}]
+        self.assertEqual('unavailable', self.collect()['coverage'])
+        self.selection['sources'].append({'kind': 'codex', 'path': str(self.root / 'empty.jsonl')})
+        self.assertEqual('partial', self.collect()['coverage'])
+
+    def test_nested_legacy_content_and_opaque_reasoning_are_gaps(self):
+        self.write('nested.jsonl', [meta('nested', self.project), {'timestamp': STAMP, 'type': 'response_item', 'payload': {'type': 'message', 'role': 'assistant', 'content': [{'type': 'future_content', 'data': {}}]}}])
+        bundle = self.collect()
+        self.assertEqual('partial', bundle['coverage'])
+        self.assertEqual(1, bundle['sources'][0]['counts']['unsupported'])
+        self.write('nested.jsonl', [meta('nested', self.project), {'timestamp': STAMP, 'type': 'response_item', 'payload': {'type': 'reasoning', 'summary': [], 'encrypted_content': 'opaque-reasoning'}}])
+        bundle = self.collect()
+        self.assertEqual('partial', bundle['coverage'])
+        self.assertEqual(0, bundle['sources'][0]['counts']['unsupported'])
+        self.assertTrue(any('opaque encrypted' in gap['reason'] for gap in bundle['gaps']))
+        self.assertNotIn('opaque-reasoning', json.dumps(bundle))
+
+
 if __name__ == "__main__":
     unittest.main()

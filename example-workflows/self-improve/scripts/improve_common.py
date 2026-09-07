@@ -12,7 +12,7 @@ from pathlib import Path
 # Source and installed layouts share the public trace/state facades.
 for ancestor in Path(__file__).resolve().parents:
     for candidate in (ancestor / "scripts", ancestor / "bin"):
-        if (candidate / "state_root.py").is_file():
+        if all((candidate / name).is_file() for name in ("state_root.py", "trace.py")):
             sys.path.insert(0, str(candidate))
             break
     else:
@@ -74,7 +74,7 @@ SECRET_TEXT = re.compile(r'''(?ix)(["']?(?:password|passwd|secret|[\w-]*token|ap
 
 def redact(value):
     if isinstance(value, dict):
-        return {str(k): "[REDACTED]" if SECRET_KEY.search(str(k)) else redact(v)
+        return {str(k): "[REDACTED]" if SECRET_KEY.search(str(k)) or k == "encrypted_content" else redact(v)
                 for k, v in value.items()}
     if isinstance(value, list):
         return [redact(v) for v in value]
