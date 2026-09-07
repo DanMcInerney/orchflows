@@ -188,6 +188,7 @@ SECTION_EXPECTATIONS = {
     ("rules/delegation.md", 10): "Artifact primacy",
     ("rules/improvement.md", 1): "Friction law",
     ("rules/improvement.md", 2): "authorized checked delivery",
+    ("rules/improvement.md", 3): "exactly one causal owner",
     ("rules/improvement.md", 4): "qualifies on a reproduced one-off",
     ("rules/improvement.md", 5): "Replay preserves original",
     ("rules/improvement.md", 6): "separate claims",
