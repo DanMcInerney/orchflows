@@ -248,7 +248,7 @@ def _script_owner(path: Path, composition_names):
 def validate_composition_admission(
     diag: Diagnostics, allowlist=COMPOSITION_PROTOCOL_ALLOWLIST
 ) -> None:
-    """Reject protocol artifacts owned by composition templates.
+    """Reject protocol tiers while admitting conventional package resources.
 
     Ownership is physical inside ``example-workflows/<name>/`` or explicit in the
     bounded name of a shared ``example-workflows/references`` artifact.  The latter
@@ -267,6 +267,11 @@ def validate_composition_admission(
     for directory in directories:
         for path in sorted(directory.rglob("*")):
             kind = _composition_artifact_kind(path) if path.is_file() else None
+            relative = path.relative_to(directory)
+            if kind == "script" and relative.parts[0] == "scripts":
+                continue
+            if kind == "fixture format" and relative.parts[0] == "references":
+                continue
             if kind:
                 findings.append((directory.name, path, kind))
     references = compositions / "references"
@@ -293,7 +298,8 @@ def validate_composition_admission(
         diag.error(
             rel(path),
             f"workflow '{composition}' carries forbidden {kind}; "
-            "a workflow contains only its SKILL.md body and reference prose",
+            "use package scripts/ for concrete boundaries and references/ for fixtures; "
+            "workflow protocol schemas and generic script machinery remain forbidden",
         )
     for composition in sorted(excepted):
         date = allowlist[composition]

@@ -4,13 +4,13 @@
    missing input, tool, or document, surprising output, a contract gap,
    or a workaround — the agent logs and continues, through the installed
    friction logger the host instruction block names, whose fallback that
-   block spells too.
-   Record observations only, never causes. Logging is exempt from every
-   bound. Logging friction is part of completing the task: a session that
-   hit friction and logged nothing failed silently.
-2. Observation changes nothing. Logs and proposals are passive; only a
-   human-reviewed merge activates a change, and only a later matching
-   run verifies it.
+   block spells too. Record observations only, never causes. Logging is
+   exempt from every bound and is part of completing the task.
+2. Observation changes nothing. Logs and proposals are passive evidence;
+   authorized checked delivery activates a change. Implemented means an
+   accepted revision with checks; deployed adds a runtime or installation
+   receipt. Only an independent later matching run verifies effectiveness;
+   the delivery's replay cannot confer later-use verification.
 3. Every finding routes to exactly one causal owner — a library file
    (skill, rule, contract, standard, reference, script, workflow,
    or the host block template), a custom workflow file, a project
@@ -18,36 +18,31 @@
    configuration). The owner fixes the proposal's scope:
    `environment` — host machine state; `project` — the repository the
    friction arose in; `workflow` — library or custom workflow files
-   at any authoring scope.
+   at any authoring scope. Explicit dependents accompany that primary owner.
    Blame classes recorded at joins (caller under-supplied vs child
    under-delivered) are the router.
-4. The deterministic lexical clusters are navigation aids over their
-   bounded raw records. They prove neither a shared cause nor a causal owner;
-   an agent may merge or split them when assigning one owner. The harvester's
-   recurrence flag reports count arithmetic only. A proposal qualifies on
-   recurrence after agent judgment finds the same owner and obstruction at
-   least three times, or across two distinct sessions, where a differing run
-   or host counts when entries carry no session — or on a checked contradiction:
-   an entry whose observed contradiction checks true against its owner's
-   current text qualifies alone. An `environment` owner-assigned group
-   qualifies on a probe — the exact command whose failure reproduces the
-   defect; the probe is its oracle. Other one-off friction remains evidence
-   but does not qualify until it repeats. A recurring owner-assigned group
-   qualifies a `consolidate` proposal
-   instead, targeting bloat rather than incorrectness.
-5. Replay: a proposal whose evidence group includes a replayable item
-   (its ticket and the run's frozen statement still present) must
-   re-run that item against the amended owner and pass before it is
-   proposed for merge. A proposal that cannot replay says so.
-6. The library improves through the same delivery machinery it provides.
-   Scope routes activation: an accepted `workflow` proposal is a root
-   ticket delivered under the code standard with the validator and tests as
-   oracles, whose last act appends the proposal's covered line through
-   `tickets.py improvement --covered`; a `project` proposal, the same
-   machinery in its own repository under its own oracles; an
-   `environment` proposal is actioned directly by the human and verified
-   by its probe passing. The cycle end to end — a deterministic harvest
-   that slices the sink and computes §4's recurrence arithmetic
-   mechanically, then mine, then deliver — is the `self-improve`
-   workflow under `example-workflows/`, one run in the sink per cycle;
-   no standing qualify step remains.
+4. Deterministic lexical clusters are navigation aids over bounded original
+   records, never proof of cause or owner. An agent reconstructs incidents,
+   merging copied manifestations and explaining splits and uncertainty.
+   A proposal qualifies on a reproduced one-off at any owner, a checked
+   contradiction with its reproducing oracle, or independently adjudicated
+   recurrence of the same owner and obstruction: three episodes, or two
+   episodes across distinct sessions (runs/hosts when sessions are absent).
+   Success is evidence too. Uncertain observations remain evidence.
+   Recurrence does not mandate consolidation; causal confidence, impact,
+   cost and risk decide the ranked minimal fix.
+5. Replay preserves original failing inputs, command, fixture identity and
+   acceptance oracle. Before acceptance the amended owner passes that same
+   failure oracle and nearby successful behavior, plus scoped owner checks.
+   An unavailable replay remains an explicit gap and cannot be labelled
+   passed. Original sources and prior evidence remain unchanged.
+6. Improvement uses ordinary delivery machinery. Workflow and project
+   proposals land under their owners' standards and checks; environment
+   actions stay within user authorization and are verified by their probes.
+   Review completion, implementation, deployment and later-use verification
+   are separate claims. New independently diagnosed owner/obstruction
+   recurrence reopens with fresh evidence; uncertain matches await diagnosis.
+   Legacy covered/proposal records remain history, never authority to suppress
+   new evidence or a required final act of repair. The self-improve workflow
+   owns bounded collection, agent diagnosis, persisted proposals and at most
+   one selected causal repair per cycle; deterministic tools do not diagnose.
