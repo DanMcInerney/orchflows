@@ -47,10 +47,13 @@ retain its actual scope while protected-final evidence remains UNVERIFIED.
 
 ## Consumer projection
 
-The admission envelope's existing `qualification.instrument_valid` is true only
-for VALID; INVALID and UNVERIFIED both project to false. Preserve the typed
-`validity` and required criterion gaps beside that boolean so missing evidence
-is not relabeled as demonstrated invalidity by a collector. Its per-case `audits`
+The admission envelope and summary input carry `validity` unchanged as VALID,
+INVALID or UNVERIFIED; no `instrument_valid` boolean is accepted. Admission's
+`qualification.revisions` maps each measured commit to its typed `validity` and
+`criterion_gaps`. Each round binds `qualification_revision` and repeats that
+validity; the probe checks agreement before computing a summary. Missing
+required evidence remains UNVERIFIED, while established invalidity remains INVALID.
+Its per-case `audits`
 rows (`case_id`, `benchmark_revision`, `builder`, `auditor`, `reference_outcome`,
 `inert_outcome`, `near_miss_outcome`, `evidence_locator`) index control observations;
 that compact projection does not replace the separate reference and attack

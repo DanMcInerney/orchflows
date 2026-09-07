@@ -15,77 +15,10 @@ from records import EvidenceError, summarize
 sys.path.remove(str(SCRIPTS))
 
 
-class CalibrationTests(unittest.TestCase):
-    def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
-        self.revision = self.git_repository(self.root / 'product')
-        self.source_revision = self.git_repository(self.root / 'source')
-        self.config = {'model': 'test-event-control', 'reasoning_effort': 'low'}
-        self.policy = dict(case_ids=['case'], split='development', round=0,
-                           trials_per_case=1, target_configuration=self.config, band=[0.3, 0.5])
-        self.prompt = self.root / 'prompt.txt'
-        self.prompt.write_text('Return source implementing solve(x) = x + 1.', encoding='utf-8')
-        self.checks = self.root / 'checks.json'
-        write_json(self.checks, {'checks': [{'args': [2], 'expected': 3}, {'args': [-1], 'expected': 0}]})
+from tests.benchmaker_support import CalibrationFixture
 
-    def git_repository(self, path):
-        path.mkdir()
-        for command in (['git', 'init', '-q'], ['git', '-c', 'user.name=Fixture', '-c',
-                        'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-qm', 'fixture']):
-            result = run_process(command, cwd=path, timeout=10)
-            self.assertEqual(result['exit_code'], 0, result['stderr'])
-        return run_process(['git', 'rev-parse', 'HEAD'], cwd=path, timeout=10)['stdout'].decode().strip()
 
-    def attempt(self, source='def solve(x): return x + 1', name='attempt', code=None, timeout=5, configuration_observation=None):
-        events = [{'type': 'turn.started'}, {'type': 'item.completed', 'item': {
-            'type': 'agent_message', 'text': json.dumps({'source': source})}},
-            {'type': 'turn.completed', 'usage': {'input_tokens': 3, 'output_tokens': 4}}]
-        script = self.root / (name + '.py')
-        script.write_text(code or 'print(' + repr('\n'.join(json.dumps(e) for e in events)) + ')', encoding='utf-8')
-        collect([sys.executable, '-u', str(script)], case_repository=self.root, prompt=self.prompt,
-                output=self.root / name, configuration=self.config, timeout=timeout,
-                configuration_observation=configuration_observation)
-        return make_record(self.root / name / 'launch.json', self.checks, dict(
-            case_id='case', split='development', round=0, trial=1,
-            target_configuration=self.config, benchmark_revision=self.revision, candidate_kind='agent_attempt'))
-
-    def envelope(self, record):
-        product = self.root / 'product'
-        evidence = self.root / 'evidence'
-        evidence.mkdir()
-        manifest = product / 'manifest.json'
-        write_json(manifest, dict(schema_version=2, profile='empirical-calibration', target_configuration=self.config))
-        components = {}
-        for name in ('benchmark-construct', 'benchmark-qualify', 'benchmark-calibrate', 'benchmark-quality', 'benchmark-evidence'):
-            path = product / name
-            path.write_text('---\nname: ' + name + '\n---\n', encoding='utf-8')
-            components[name] = str(path)
-        for command in (['git', 'add', '.'], ['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'benchmark fixture']):
-            self.assertEqual(run_process(command, cwd=product, timeout=10)['exit_code'], 0)
-        self.revision = run_process(['git', 'rev-parse', 'HEAD'], cwd=product, timeout=10)['stdout'].decode().strip()
-        record['benchmark_revision'] = self.revision
-        write_json(self.root / 'attempt' / 'attempt.json', record)
-        summary = self.root / 'summary.json'
-        write_json(summary, summarize([record], self.policy))
-        audit = evidence / 'audit.json'
-        write_json(audit, {'fixture': 'independent audit control'})
-        journal = evidence / 'journal.md'
-        journal.write_text('fixture pin: harness control journal', encoding='utf-8')
-        value = dict(benchmark_manifest=str(manifest), component_locators=components,
-            runtime=dict(run='fixture', frame='fixture', tickets=['fixture'],
-                standard_pins={'maker': ['pin'], 'judge': ['pin']}, artifacts=['fixture'],
-                findings=['fixture'], package_revision=self.source_revision, journal_locators=[str(journal)]),
-            qualification=dict(instrument_valid=True, audits=[dict(case_id='case', benchmark_revision=self.revision,
-                builder='builder-control', auditor='auditor-control', reference_outcome='PASS',
-                inert_outcome='FAIL', near_miss_outcome='FAIL', evidence_locator=str(audit))]),
-            rounds=[dict(policy=self.policy, attempts=[str(self.root / 'attempt' / 'attempt.json')],
-                         summary=str(summary), criterion_gaps=[])], revision_ledger=[],
-            frozen_revision=None, final_record=None, decision=summarize([record], self.policy)['decision'])
-        write_json(evidence / 'admission.json', value)
-        return value
-
+class CalibrationTests(CalibrationFixture, unittest.TestCase):
     def test_tracer_replays_native_source_and_preserves_configuration_gap(self):
         self.envelope(self.attempt())
         result = probe(self.root)
@@ -181,10 +114,11 @@ class CalibrationTests(unittest.TestCase):
     def test_probe_rejects_absent_journal_and_uncommitted_manifest(self):
         envelope = self.envelope(self.attempt())
         journal = self.root / 'evidence' / 'journal.md'
-        journal.write_text('unrelated', encoding='utf-8')
+        original = journal.read_text(encoding='utf-8')
+        journal.write_text(original.replace('id: fixture', 'id: unrelated'), encoding='utf-8')
         with self.assertRaisesRegex(EvidenceError, 'absent from journals'):
             probe(self.root)
-        journal.write_text('fixture pin', encoding='utf-8')
+        journal.write_text(original, encoding='utf-8')
         manifest = Path(envelope['benchmark_manifest'])
         value = json.loads(manifest.read_text())
         value['uncommitted'] = True
@@ -193,22 +127,16 @@ class CalibrationTests(unittest.TestCase):
             probe(self.root)
 
     def test_probe_detects_unlisted_frozen_file(self):
-        from native import digest
+        self.policy['band'] = [1, 1]
+        self.policy['require_resolved_configuration'] = False
         record = self.attempt()
         envelope = self.envelope(record)
         envelope['frozen_revision'] = self.revision
-        final_path = self.root / 'evidence' / 'final.json'
-        envelope['final_record'] = str(final_path)
-        inventory = {str(path.resolve()): digest(path) for path in (self.root / 'product').rglob('*')
-                     if path.is_file() and '.git' not in path.relative_to(self.root / 'product').parts}
-        write_json(final_path, dict(before=inventory, after=inventory, frozen_revision=self.revision,
-            measurement_round=envelope['rounds'][0], evaluation_scope='public_confirmation'))
-        write_json(self.root / 'summary.json', summarize([record], self.policy,
-            frozen_revision=self.revision, final_record=str(final_path)))
+        write_json(self.root / 'summary.json', summarize([record], self.policy, frozen_revision=self.revision))
         write_json(self.root / 'evidence' / 'admission.json', envelope)
         self.assertTrue(probe(self.root)['workflow_admission'])
-        (self.root / 'product' / 'hidden.txt').write_text('changed final', encoding='utf-8')
-        with self.assertRaisesRegex(EvidenceError, 'incomplete frozen'):
+        (self.root / 'product' / 'benchmark' / 'hidden.txt').write_text('changed final', encoding='utf-8')
+        with self.assertRaisesRegex(EvidenceError, 'committed file inventory'):
             probe(self.root)
 
     def test_prepare_cannot_manufacture_receipt_or_completed_benchmark(self):

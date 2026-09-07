@@ -63,3 +63,15 @@ Observe probe exit nonzero before invocation (no output); after the actual live 
 Unexecuted branches are explicit: no second configuration panel, no broad general-repository benchmark, no human expert audit claim, and no protected final result unless actual access isolation is demonstrated. Root can show a fully observed narrow pipeline without asserting precise 30–50% population calibration from nine or fifteen attempts.
 
 Concrete collection, grader, record and envelope interfaces: [admission resources](admission/README.md).
+
+## Integration and durable records
+
+All Git artifact tickets use the same disposable `product` repository. Supply
+`workspace=<root>/product`, `records=records`, and
+`evidence_export=<root>/evidence` to benchmaker. The frozen package is the
+`benchmark` subtree; measurements are committed under the sibling `records`
+subtree with `* -text` Git attributes. Absolute record locators name the durable
+external export, never a disposable ticket worktree. Mirror collected bytes into
+records, land the commit, then verify/export that exact subtree through the
+[record exporter](../scripts/export.py). No separate evidence Git repository
+is established in this run.

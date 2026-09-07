@@ -8,8 +8,8 @@ Require: `target` (fixed identity), `outcome` (intended observable result),
 `sources` (licensed source policy and access/recency limits), evidence-defined
 `rigor`, domain construction `standard`, destination `package`, fixed
 `target_configuration` and preregistered `calibration_policy` using the
-[manifest fields](references/manifest.md). Supply git `workspace`, external git
-`evidence_workspace`, research evidence-store root, native execution mechanism,
+[manifest fields](references/manifest.md). Supply git `workspace`, repository-relative `records`, durable external
+`evidence_export`, research evidence-store root, native execution mechanism,
 candidate `access_policy`, qualification/reference-audit allocation and total
 source/tool/execution bounds. Missing configuration, policy or other required
 input returns UNVERIFIED with available artifacts and named gaps before dependent
@@ -21,8 +21,8 @@ The three private invocations retain this pinned package scope, including
 benchmark-quality and benchmark-evidence. Execute each body's contract; a frame
 alone is no invocation. Each goal carries original semantic inputs and remaining
 bounds. Bind every helper's `workspace` to the supplied construction repository
-and `evidence-workspace` to `evidence_workspace`; records stay outside frozen
-benchmark bytes. Resolve the domain standard in this callee's scope before making.
+and `records` to a subtree outside frozen benchmark bytes; `evidence_export`
+is the durable locator for a committed record export. Resolve the domain standard in this callee's scope before making.
 
 **Construct.** Supply target/outcome, sources/rigor, standard, configuration/policy,
 package/workspace, evidence-store root and bounds to benchmark-construct:
@@ -40,7 +40,7 @@ reference-audit sample to benchmark-qualify:
 
 **Calibrate.** Supply draft and revision-bound qualification, coverage/rigor,
 standard, unchanged configuration/policy, native mechanism, access scope,
-builder identities, qualification budget, both git workspaces and remaining
+builder identities, qualification budget, workspace, records/export and remaining
 bounds to benchmark-calibrate:
 
     tickets.py frame-open <run> --parent <frame> --goal-file <calibration-goal> --workflow benchmark-calibrate

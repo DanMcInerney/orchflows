@@ -14,7 +14,7 @@ REQUIRED = {
     'prompt_locator', 'raw_transcript_locator', 'result_artifact_locator',
     'launch_receipt_locator', 'grader_observation_locator', 'classification',
     'exit_code', 'elapsed_seconds', 'token_usage', 'oracle_outcome',
-    'failure_class', 'valid_for_estimate', 'exclusion_reason',
+    'failure_class', 'valid_for_estimate', 'exclusion_reason', 'evaluator_classification', 'retry_of',
 }
 INFRA = {'permission_failure', 'launch_failure', 'environment_failure', 'startup_timeout'}
 TARGET = {'completed', 'candidate_failure', 'task_timeout'}
@@ -34,14 +34,7 @@ def validate_record(record, policy):
     config = policy['target_configuration']
     require(bool(config) and record['target_configuration'] == config, 'wrong target configuration')
     require(record['requested_configuration'] == config, 'wrong requested configuration')
-    resolved = record['resolved_configuration']
-    require(isinstance(resolved, dict) and bool(resolved), 'missing resolved configuration evidence')
-    if 'unavailable_reason' in resolved:
-        require(bool(resolved['unavailable_reason']), 'empty configuration gap')
-        for key in set(resolved) & set(config):
-            require(resolved[key] == config[key], 'wrong partially resolved configuration')
-    else:
-        require(resolved == config, 'wrong resolved configuration')
+    configuration_gaps(record['resolved_configuration'], config, policy)
     require(record['requested_command'] and record['resolved_command'], 'missing native command')
     require(record['classification'] in INFRA | TARGET, 'unknown classification')
     require(type(record['valid_for_estimate']) is bool, 'validity must be boolean')
@@ -51,6 +44,10 @@ def validate_record(record, policy):
     if record['classification'] in INFRA:
         require(not record['valid_for_estimate'] and record['oracle_outcome'] == 'UNVERIFIED',
                 'infrastructure counted as target outcome')
+    require(record['evaluator_classification'] in {'completed', 'environment_failure'}, 'unknown evaluator classification')
+    if record['evaluator_classification'] == 'environment_failure':
+        require(not record['valid_for_estimate'] and record['oracle_outcome'] == 'UNVERIFIED'
+                and record['failure_class'] == 'grader_environment_failure', 'grader infrastructure counted')
     if record['valid_for_estimate']:
         require(not record['exclusion_reason'] and record['oracle_outcome'] in {'PASS', 'FAIL'},
                 'counted attempt lacks outcome or carries exclusion')
@@ -59,6 +56,77 @@ def validate_record(record, policy):
     if record['classification'] in {'candidate_failure', 'task_timeout'}:
         require(record['valid_for_estimate'] and record['oracle_outcome'] == 'FAIL',
                 'genuine candidate failure excluded')
+
+
+def configuration_gaps(resolved, requested, policy):
+    require(isinstance(resolved, dict) and resolved, 'missing resolved configuration evidence')
+    optional = set(policy.get('optional_configuration_fields', []))
+    required = set(policy.get('required_configuration_fields', []))
+    require(not optional & required, 'ambiguous configuration metadata policy')
+    gaps, optional_gaps = [], []
+
+    def walk(wanted, actual, path):
+        if actual is None or (isinstance(actual, dict) and 'unavailable_reason' in actual):
+            reason = 'not observed' if actual is None else actual['unavailable_reason']
+            require(bool(reason), 'empty configuration gap')
+            is_required = any(path == field or path.startswith(field + '.') for field in required)
+            is_optional = any(path == field or path.startswith(field + '.') for field in optional)
+            destination = optional_gaps if not is_required and (is_optional or
+                not policy.get('require_resolved_configuration', True)) else gaps
+            destination.append('resolved_configuration.' + path + ': ' + str(reason))
+            return
+        if isinstance(wanted, dict) and 'unavailable_reason' in wanted:
+            # A requested placeholder is not an observation, even when copied verbatim.
+            walk(None, {'unavailable_reason': wanted['unavailable_reason']}, path)
+        elif isinstance(wanted, dict):
+            require(isinstance(actual, dict), 'wrong resolved configuration: ' + path)
+            for key, value in wanted.items():
+                walk(value, actual.get(key), (path + '.' + key).strip('.'))
+        elif isinstance(wanted, list):
+            require(isinstance(actual, list) and len(actual) == len(wanted), 'wrong resolved configuration: ' + path)
+            for index, value in enumerate(wanted):
+                walk(value, actual[index], path + '.' + str(index))
+        else:
+            require(actual == wanted, 'wrong resolved configuration: ' + path)
+
+    if 'unavailable_reason' in resolved:
+        for key in requested:
+            walk(requested[key], resolved.get(key, {'unavailable_reason': resolved['unavailable_reason']}), key)
+    else:
+        walk(requested, resolved, '')
+    for path in required:
+        actual = resolved
+        wanted = requested
+        for key in path.split('.'):
+            actual = actual.get(key) if isinstance(actual, dict) else None
+            wanted = wanted.get(key) if isinstance(wanted, dict) else None
+        if wanted is None:
+            walk(None, {'unavailable_reason': 'required field absent from pinned configuration'}, path)
+    return gaps, optional_gaps
+
+
+def check_retries(records, policy):
+    count = policy['trials_per_case']
+    retries = 0
+    for case in policy['case_ids']:
+        attempts = sorted((r for r in records if r['case_id'] == case and r['candidate_kind'] == 'agent_attempt'),
+                          key=lambda r: r['trial'])
+        prior, replaced = {}, set()
+        for record in attempts:
+            predecessor = record['retry_of']
+            if record['trial'] <= count:
+                require(predecessor is None, 'primary sample cannot be a retry')
+            else:
+                require(type(predecessor) is int and predecessor in prior and predecessor not in replaced,
+                        'extra attempt lacks unique infrastructure predecessor')
+                original = prior[predecessor]
+                require(not original['valid_for_estimate'] and (original['classification'] in INFRA or
+                        original['evaluator_classification'] == 'environment_failure'), 'retry predecessor is not infrastructure')
+                replaced.add(predecessor)
+                retries += 1
+            prior[record['trial']] = record
+        require(sum(r['valid_for_estimate'] for r in attempts) <= count, 'undeclared extra valid trials')
+    require(retries <= policy.get('infrastructure_retry_budget', 0), 'global infrastructure retry budget exceeded')
 
 
 def wilson(passes, count):
@@ -72,8 +140,9 @@ def wilson(passes, count):
     return [center - radius, center + radius]
 
 
-def summarize(records, policy, *, criterion_gaps=(), instrument_valid=True,
+def summarize(records, policy, *, criterion_gaps=(), validity='VALID',
               revision_ledger=(), frozen_revision=None, final_record=None):
+    require(validity in {'VALID', 'INVALID', 'UNVERIFIED'}, 'unknown qualification validity')
     ids = policy['case_ids']
     require(ids and len(ids) == len(set(ids)), 'empty or duplicate declared cases')
     require(type(policy['trials_per_case']) is int and policy['trials_per_case'] > 0, 'invalid trial count')
@@ -104,9 +173,10 @@ def summarize(records, policy, *, criterion_gaps=(), instrument_valid=True,
         failure = record['failure_class']
         if failure:
             row['failure_classes'][failure] = row['failure_classes'].get(failure, 0) + 1
-        if 'unavailable_reason' in record['resolved_configuration']:
-            destination = gaps if policy.get('require_resolved_configuration', True) else optional_gaps
-            destination.append('resolved_configuration: ' + str(record['resolved_configuration']['unavailable_reason']))
+        required_gaps, available_gaps = configuration_gaps(record['resolved_configuration'], policy['target_configuration'], policy)
+        gaps.extend(required_gaps)
+        optional_gaps.extend(available_gaps)
+    check_retries(records, policy)
     require(len(revisions) == 1 and next(iter(revisions)), 'missing or mixed benchmark revisions')
     for case, row in per_case.items():
         require(row['attempted'] >= policy['trials_per_case'], 'missing attempts for ' + case)
@@ -127,9 +197,9 @@ def summarize(records, policy, *, criterion_gaps=(), instrument_valid=True,
     low, high = policy.get('band', [0.30, 0.50])
     require(0 <= low <= high <= 1, 'invalid band')
     band = 'UNVERIFIED' if estimate is None else ('IN_BAND' if low <= estimate <= high else 'OUT_OF_BAND')
-    decision = ('INVALID' if not instrument_valid else 'UNVERIFIED' if gaps or estimate is None
+    decision = ('INVALID' if validity == 'INVALID' else 'UNVERIFIED' if validity == 'UNVERIFIED' or gaps or estimate is None
                 else 'OUT_OF_BAND' if band == 'OUT_OF_BAND' else 'CALIBRATED')
-    return dict(benchmark_revision=next(iter(revisions)), target_configuration=policy['target_configuration'],
+    return dict(validity=validity, benchmark_revision=next(iter(revisions)), target_configuration=policy['target_configuration'],
                 split=policy['split'], round=policy['round'], policy=policy,
                 attempt_locators=[str(Path(record['launch_receipt_locator']).with_name('attempt.json')) for record in records],
                 estimator='weighted mean of per-case isolated-trial success rates (pass@1)',
