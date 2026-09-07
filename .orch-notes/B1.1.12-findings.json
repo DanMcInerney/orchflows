@@ -1,0 +1,129 @@
+{
+  "dispatch_id": "B1.1.12:d1",
+  "assignment_seal": "sha256:6d815b8b8c67cb22476cba50c76ef48fd77fcbd0375226b2d25f10b7398d156e",
+  "assigned_name": "B1.1.12",
+  "reviewed_artifact": "git:c63cddd2d0dc3de58ba47af63cd607639770540b",
+  "repair_artifact": "git:b42e1de5722a738cbf2a23d9b1349b27933531bf",
+  "review_complete": false,
+  "findings": [],
+  "standards": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+  },
+  "standard_evidence": "Both complete launch-pinned standards and git lens applied beside original cut and authoring owner. Canonical installed standard tree digests independently rederived equal pins. No added aesthetic or unrelated criteria. Empty findings means no newly established defect within the reduced ordinary-correctness scope, not complete independent acceptance.",
+  "execution_scope": "After automated cybersecurity screening, root narrowed this accepted dispatch to static data consistency, ordinary publication order, configuration requirements, documented evaluator limitations and benign checks. Immutable assignment, profile, identity and absolute lease preserved. No new attack examples, rejected analysis retries, implementation edits or native target trials.",
+  "original_finding_assessments": [
+    {
+      "id": "BMF-01",
+      "assessment": "Original same-repository integration correction retained. The private calibration Finalize section now emits an ordinary finalization maker after all relevant returns on every terminal branch. README and calibration handoff assign actual returned findings and index bytes to that maker, with deterministic export only after landing. BMF-01-R1 is source-corrected; benign publication evidence is recorded separately."
+    },
+    {
+      "id": "BMF-02",
+      "assessment": "Independently unassessed at this repaired tip. The documented bounded evaluator profile and typed unsupported-record rule are present. Maker regression evidence is supplied evidence only. Neither prior direct completion-protocol issue nor general evaluator integrity is independently closed by this review."
+    },
+    {
+      "id": "BMF-03",
+      "assessment": "Source correction removes future revision_ledger/frozen_revision/final_record from summarize and keeps probe comparison local to each immutable round. Aggregate index owns later development_evidence and terminal_gaps; selected development governs calibration and final observations stay separate. BMF-03-R1 benign temporal result is recorded separately."
+    },
+    {
+      "id": "BMF-04",
+      "assessment": "Static correction present: case_inputs resolves prompt, input inventory, checks and oracle through runnable_cases at the named committed revision; record and receipt bindings agree; probe requires nondevelopment attempts use frozen_revision. Ordinary publication execution did not complete independently. Semantic rejection of substituted inputs is maker-supplied only and remains independently unassessed. Earlier complete package/source/runtime/frozen protections are retained in source; no new broad assurance claim."
+    },
+    {
+      "id": "BMF-05",
+      "assessment": "Typed validity preserved in current summarize and probe source. Prior three-state semantic evidence is inherited from B1.1.10, not rerun as a full suite. No independently completed partial publication is claimed after its timeout."
+    },
+    {
+      "id": "BMF-06",
+      "assessment": "Required dotted paths are now resolved independently after recursive observation traversal. Missing or unavailable ancestors produce required gaps despite optional parent/default; unrelated optional gaps remain optional. The exact benign configuration regression result is recorded separately. Independently passed across unavailable/missing parents, both defaults, and fully observed positive branch."
+    },
+    {
+      "id": "BMF-07",
+      "assessment": "Prior attributed-retry correction retained in records source: valid sample cap and unique earlier excluded predecessor remain required. Unsupported evaluator outcomes are distinct from retryable environment failure. Previous semantic controls are inherited evidence, not independently rerun here."
+    },
+    {
+      "id": "BMF-08",
+      "assessment": "Native classification and evaluator classification remain separate. Static record validation requires unsupported results be excluded UNVERIFIED with unsupported_source_capabilities, while environment failures have their distinct reason. Maker reports executable regressions; no independent unsupported-source execution in this reduced review."
+    },
+    {
+      "id": "BMF-09",
+      "assessment": "Package validator and complete benign integration module independently exit 0, including contained resources and literal call resolution. No rule weakening or source edit by reviewer."
+    },
+    {
+      "id": "BMF-10",
+      "assessment": "Validator independently exits 0. Prior canonical disagreement-register compatibility repair is retained; no historic measurement reinterpretation or corpus edit by reviewer."
+    }
+  ],
+  "review_gaps": [
+    {
+      "id": "GAP-EVALUATOR-INDEPENDENCE",
+      "related_findings": [
+        "BMF-02",
+        "BMF-02-R1"
+      ],
+      "reason": "Tool-side cybersecurity screening and explicit root narrowing prohibit retrying the stopped analysis or creating/executing new attack controls. The new evaluator cannot be independently assured in this return. Supplied maker positives and exclusions are not independent acceptance. No inference that it passed."
+    },
+    {
+      "id": "GAP-BINDING-NEGATIVE-CONTROL",
+      "related_findings": [
+        "BMF-04-R1"
+      ],
+      "reason": "Committed-case binding was statically inspected and ordinary positive publication exercised, but adversarial substitution controls were not independently run under the reduced scope. Do not infer rejection assurance from static presence alone."
+    },
+    {
+      "id": "GAP-HOST-READ-ISOLATION",
+      "reason": "README explicitly says subprocess separation is fault containment, not host read isolation. Candidate and grader retain host permissions. No independently observed protected final access control or adversarial probe. This is distinct from direct stdout/completion integrity; neither establishes the other."
+    },
+    {
+      "id": "GAP-LIVE-AND-GATE",
+      "reason": "No actual native target trials, emitted workflow execution or root full-five gate in this reviewer scope. Synthetic native events and ordinary establish/integrate/export fixtures are harness evidence only. Missing live evidence is not itself a source defect."
+    },
+    {
+      "id": "GAP-PUBLICATION-EXECUTION",
+      "related_findings": [
+        "BMF-01-R1",
+        "BMF-03-R1"
+      ],
+      "reason": "The supplied publication sequence was attempted benignly and exceeded its existing 240-second inner timeout; outer suite completed exit 1 with 2 passes and 1 error. No successful child sequence is inferred from unavailable captured output. Static finalizer and summary correction is supported, but actual temporal publication remains supplied maker evidence only. No source impossibility is established by timeout. Exact frozen criterion: original cut requires partial artifacts through ordinary making and immutable separate final records; current ticket asks for current-interface temporal evidence."
+    }
+  ],
+  "supplied_evidence": {
+    "artifact": "git:b42e1de5722a738cbf2a23d9b1349b27933531bf",
+    "report": ".orch-notes/B1.1.11-repair.md",
+    "checks": ".orch-notes/B1.1.11-checks.jsonl",
+    "attribution": "Maker-observed, not this reviewer rerunning. Read complete report and compact command/exit metadata. Initial failures and late corrected passes retained; no all-success claim about the earlier 229-test run."
+  },
+  "observed_checks": {
+    "validator": {
+      "exit_code": 0,
+      "timeout_seconds": 180,
+      "warnings": true
+    },
+    "public_integration": {
+      "exit_code": 0,
+      "timeout_seconds": 60,
+      "tests": 5,
+      "failures": 0,
+      "errors": 0
+    },
+    "bounded_ordinary_sequence": {
+      "exit_code": 1,
+      "timeout_seconds": 300,
+      "tests": 3,
+      "passed": 2,
+      "errors": 1,
+      "elapsed_test_seconds": 288.295,
+      "publication_child_timeout_seconds": 240,
+      "publication_result": "not independently completed; TimeoutExpired",
+      "passed_methods": [
+        "SecondRepairTests.test_required_child_survives_every_unavailable_or_optional_ancestor",
+        "SecondRepairTests.test_finalization_call_is_after_all_terminal_branches"
+      ]
+    }
+  },
+  "recommended_successor_scope": [],
+  "evidence_files": [
+    ".orch-notes/B1.1.12-review.md",
+    ".orch-notes/B1.1.12-checks.json"
+  ]
+}
