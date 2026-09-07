@@ -315,6 +315,12 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
                     findings,
                 )
 
+    def test_package_script_and_reference_fixture_are_admitted_without_exception(self):
+        self._write("example-workflows/probe/SKILL.md")
+        self._write("example-workflows/probe/scripts/collect.py", "# package boundary\n")
+        self._write("example-workflows/probe/references/session-fixtures.json", "{}\n")
+        self.assertEqual([], self._findings(allowlist={}))
+
     def test_browser_game_is_the_one_dated_visible_exception(self):
         self._write("example-workflows/browser-game/SKILL.md")
         self._write(

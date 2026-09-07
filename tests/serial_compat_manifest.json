@@ -897,6 +897,20 @@
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_script_executor_resolving_in_the_tree_is_admitted",
    "test_script_executors.ScriptExecutorAdmissionTest.test_the_refusal_does_not_depend_on_the_ticket_carrying_a_standard",
    "test_script_executors.ScriptExecutorAdmissionTest.test_the_refusal_names_the_path_that_did_not_resolve",
+   "test_self_improve.SelfImprove.test_claude_subagent_tree_and_copied_evidence_links",
+   "test_self_improve.SelfImprove.test_codex_tracer_descendants_time_project_success_and_original_hash",
+   "test_self_improve.SelfImprove.test_concurrent_records_have_one_winner_and_no_lost_predecessor",
+   "test_self_improve.SelfImprove.test_cross_review_recurrence_carries_immutable_original_proposal",
+   "test_self_improve.SelfImprove.test_cycles_orphans_duplicates_missing_metadata_cannot_expand_scope",
+   "test_self_improve.SelfImprove.test_drifted_nested_tool_shape_retains_raw_evidence_and_refuses_nonobject_record",
+   "test_self_improve.SelfImprove.test_exact_duplicates_keep_each_locator_and_covered_never_filters",
+   "test_self_improve.SelfImprove.test_invalid_selection_and_repository_sink_refuse",
+   "test_self_improve.SelfImprove.test_nested_and_string_credentials_are_redacted_before_persistence",
+   "test_self_improve.SelfImprove.test_pages_name_complete_collection_and_never_hide_remaining_evidence",
+   "test_self_improve.SelfImprove.test_repair_lifecycle_rejects_stale_idempotency_replay_and_reopens",
+   "test_self_improve.SelfImprove.test_repair_without_proposal_reports_incomplete_and_review_closes",
+   "test_self_improve.SelfImprove.test_sink_run_friction_ticket_association_does_not_import_whole_run",
+   "test_self_improve.SelfImprove.test_unknown_malformed_truncated_missing_and_empty_are_distinct",
    "test_self_improve_entry.SelfImproveEntryTests.test_custom_reserved_workflow_names_still_refuse",
    "test_self_improve_entry.SelfImproveEntryTests.test_plan_preserves_surfaces_arguments_and_one_canonical_identity",
    "test_self_improve_entry.SelfImproveEntryTests.test_receipt_reinstall_stale_cleanup_and_uninstall_own_entries",
@@ -1306,6 +1320,7 @@
    "test_validator.TestCompositionProtocolAdmission.test_a_script_module_named_for_a_composition_is_refused_by_boundary",
    "test_validator.TestCompositionProtocolAdmission.test_authoring_standard_states_the_protocol_boundary_and_probe_limits",
    "test_validator.TestCompositionProtocolAdmission.test_browser_game_is_the_one_dated_visible_exception",
+   "test_validator.TestCompositionProtocolAdmission.test_package_script_and_reference_fixture_are_admitted_without_exception",
    "test_validator.TestCompositionProtocolAdmission.test_removing_the_browser_game_entry_exposes_its_protocol_artifacts",
    "test_validator.TestCompositionProtocolAdmission.test_schema_fixture_format_and_script_are_refused",
    "test_validator.TestDomainBlindnessAdmission.test_a_canonical_standard_name_in_scripts_is_refused",
@@ -4180,6 +4195,22 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_self_improve",
+   "owner": "SelfImprove.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_self_improve",
+   "owner": "SelfImprove.test_concurrent_records_have_one_winner_and_no_lost_predecessor",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
    ]
   },
   {
