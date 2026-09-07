@@ -107,6 +107,7 @@ class SelfImprove(unittest.TestCase):
         other = self.root / "two" / "bench-stack"
         other.mkdir(parents=True)
         self.write("other.jsonl", [meta("other", other), message("excluded")])
+        main = main.parent / ".." / main.parent.name / main.name
         self.selection["sessions"] = ["parent"]
         original = main.read_bytes()
         bundle = self.collect()
@@ -114,7 +115,7 @@ class SelfImprove(unittest.TestCase):
         self.assertEqual({"parent", "child"}, {o["session"] for o in bundle["observations"]})
         self.assertFalse(any("edge-end" in json.dumps(o) for o in bundle["observations"]))
         self.assertTrue(any(e.get("exit") == 0 for o in bundle["observations"] for e in o["normalized"]))
-        self.assertEqual(hashlib.sha256(original).hexdigest(), next(s["sha256"] for s in bundle["sources"] if os.path.normcase(s["path"]) == os.path.normcase(str(main))))
+        self.assertEqual(hashlib.sha256(original).hexdigest(), next(s["sha256"] for s in bundle["sources"] if os.path.normcase(s["path"]) == os.path.normcase(str(main.resolve()))))
         self.assertEqual(original, main.read_bytes())
         self.record(self.analysis(bundle, positive=[o["id"] for o in bundle["observations"]]))
         result = self.cli("close", "--review", self.review, "--mode", "review")
@@ -243,7 +244,17 @@ class SelfImprove(unittest.TestCase):
             {"record_id": "outcome", "committed_at": STAMP, "content": "Copied original tool failure"}]}]}
         ticket.write_text('---\nrun: R1\nid: A1\ndispatch_v1: ' + json.dumps(dispatch) + '\n---\n\n## Report\nCopied original tool failure\n')
         self.write("parent.jsonl", [meta("parent", self.project), message("parent context")])
-        self.write("child.jsonl", [meta("child", parent="parent"), message(str(ticket))])
+        alias = self.root / "ticket alias"
+        if os.name == "nt":
+            linked = subprocess.run(["cmd", "/c", "mklink", "/J", str(alias), str(ticket.parent)],
+                                    capture_output=True, text=True, timeout=30)
+            self.assertEqual(0, linked.returncode, linked.stdout + linked.stderr)
+        else:
+            alias.symlink_to(ticket.parent, target_is_directory=True)
+        referenced = alias / ticket.name
+        self.assertNotEqual(str(referenced), str(referenced.resolve()))
+        self.assertEqual(ticket.resolve(), referenced.resolve())
+        self.write("child.jsonl", [meta("child", parent="parent"), message("Read `" + str(referenced) + "` for evidence.")])
         friction = self.root / "friction.jsonl"
         friction.write_text(json.dumps({"ts": STAMP, "session": "child", "run": "R1", "observed": "failure", "expected": "success"}) + '\n' +
                             json.dumps({"ts": STAMP, "session": "unrelated", "run": "R1", "observed": "outside", "expected": "success"}) + '\n')
@@ -253,6 +264,10 @@ class SelfImprove(unittest.TestCase):
         bundle = self.collect()
         formats = {o["format"] for o in bundle["observations"]}
         self.assertTrue({"tickets", "friction"} <= formats)
+        source = next(s for s in bundle["sources"] if s["format"] == "tickets")
+        self.assertEqual(os.path.normcase(str(ticket.resolve())), source["path"])
+        self.assertEqual(hashlib.sha256(ticket.read_bytes()).hexdigest(), source["sha256"])
+        self.assertEqual({"child"}, {o["session"] for o in bundle["observations"] if o["format"] == "tickets"})
         self.assertFalse(any(o["session"] == "unrelated" for o in bundle["observations"]))
         self.assertTrue(any(o["record"].get("type") == "ticket_projection" for o in bundle["structural_context"]))
 

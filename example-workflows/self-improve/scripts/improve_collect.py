@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import tempfile
 from collections import Counter
 from pathlib import Path
 
-from improve_common import EvidenceError, canonical, digest, instant, project, redact, record_type
+from improve_common import EvidenceError, canonical, digest, identity, instant, project, redact, record_type
 from improve_sources import ancestry, discover
 import trace
 import improve_codex
@@ -100,6 +99,16 @@ def record_text(value):
     return ""
 
 
+def ticket_references(content):
+    # Resolve transcript aliases by the same identity as snapshotted sources.
+    pattern = r"(?:[A-Za-z]:/|/)[^\n\r`\"<>|\x00]*?\.md(?=$|[\s`\"'.,;:)])"
+    for match in re.finditer(pattern, content, re.IGNORECASE):
+        try:
+            yield identity(match.group())
+        except (OSError, ValueError, RuntimeError):
+            continue
+
+
 def collect(frozen):
     declarations, snapshots = discover(frozen)
     nodes = ancestry(snapshots)
@@ -114,14 +123,14 @@ def collect(frozen):
             row = rows[0][1]
             key = ticket_key(row, "id")
             if key is not None:
-                ticket_paths[source["path"].replace("\\", "/")] = key
+                ticket_paths[source["path"]] = key
     for (_, rows), node in zip(snapshots, nodes):
         if node["session"] and not node["gaps"]:
             for _, row in rows:
                 content = record_text(row)
-                for path, key in ticket_paths.items():
-                    if path in content or os.name == "nt" and path.lower() in content.lower():
-                        ticket_sessions.setdefault(key, set()).add(node["session"])
+                for path in ticket_references(content):
+                    if path in ticket_paths:
+                        ticket_sessions.setdefault(ticket_paths[path], set()).add(node["session"])
                 key = ticket_key(row, "ticket")
                 if key is not None:
                     ticket_sessions.setdefault(key, set()).add(node["session"])
