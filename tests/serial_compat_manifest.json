@@ -912,6 +912,7 @@
    "test_self_improve.SelfImprove.test_sink_run_friction_ticket_association_does_not_import_whole_run",
    "test_self_improve.SelfImprove.test_unknown_malformed_truncated_missing_and_empty_are_distinct",
    "test_self_improve_entry.SelfImproveEntryTests.test_custom_reserved_workflow_names_still_refuse",
+   "test_self_improve_entry.SelfImproveEntryTests.test_installed_collection_resolves_public_trace_facade",
    "test_self_improve_entry.SelfImproveEntryTests.test_plan_preserves_surfaces_arguments_and_one_canonical_identity",
    "test_self_improve_entry.SelfImproveEntryTests.test_receipt_reinstall_stale_cleanup_and_uninstall_own_entries",
    "test_serial_compat.TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
@@ -4221,6 +4222,14 @@
     "environment",
     "monkeypatch",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_self_improve_entry",
+   "owner": "SelfImproveEntryTests.test_installed_collection_resolves_public_trace_facade",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

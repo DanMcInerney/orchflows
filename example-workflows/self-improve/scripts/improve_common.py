@@ -12,7 +12,7 @@ from pathlib import Path
 # Source and installed layouts share the public trace/state facades.
 for ancestor in Path(__file__).resolve().parents:
     for candidate in (ancestor / "scripts", ancestor / "bin"):
-        if (candidate / "state_root.py").is_file():
+        if all((candidate / name).is_file() for name in ("state_root.py", "trace.py")):
             sys.path.insert(0, str(candidate))
             break
     else:
