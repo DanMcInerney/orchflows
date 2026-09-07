@@ -62,6 +62,7 @@ def main():
     child.add_argument('--executable', default='codex')
     child.add_argument('--timeout', type=float, default=90)
     child.add_argument('--configuration-observation')
+    child.add_argument('--case-binding', required=True)
     child = sub.add_parser('summarize')
     child.add_argument('--input', required=True, help='JSON with policy, attempt locators and explicit evidence gaps')
     child.add_argument('--output', required=True)
@@ -73,13 +74,11 @@ def main():
             result = collect(codex_command(args.repository, args.schema, args.executable),
                              case_repository=args.repository, prompt=args.prompt, output=args.output,
                              configuration=read_json(args.configuration), timeout=args.timeout,
-                             configuration_observation=args.configuration_observation)
+                             configuration_observation=args.configuration_observation, case_binding=read_json(args.case_binding))
         elif args.action == 'summarize':
             request = read_json(args.input)
             result = summarize([read_json(path) for path in request['attempts']], request['policy'],
-                               criterion_gaps=request['criterion_gaps'], validity=request['validity'],
-                               revision_ledger=request['revision_ledger'], frozen_revision=request.get('frozen_revision'),
-                               final_record=request.get('final_record'))
+                               criterion_gaps=request['criterion_gaps'], validity=request['validity'])
             write_json(args.output, result)
         else:
             result = probe(args.root)

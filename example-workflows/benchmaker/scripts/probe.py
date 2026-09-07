@@ -41,12 +41,15 @@ def check_attempt(record, policy):
         require(Path(record['result_artifact_locator']).read_text(encoding='utf-8') == parsed['source'], 'source differs from native output')
         require(record['token_usage'] == parsed['token_usage'], 'token usage differs from native output')
     observation = read_json(record['grader_observation_locator'])
+    from case_inputs import check_binding
+    check_binding(record, receipt, observation['checks_locator'])
     require(observation['oracle_outcome'] == record['oracle_outcome'] and
             observation['failure_class'] == record['failure_class'], 'grader linkage mismatch')
     require(digest(observation['checks_locator']) == observation['checks_sha256'], 'grader checks changed')
     if record['classification'] == 'completed':
         require(observation['source_sha256'] == digest(record['result_artifact_locator']), 'graded source differs')
         require(observation['grader_sha256'] == digest(Path(__file__).with_name('grader.py')), 'grader implementation changed')
+        require(observation['boundary_sha256'] == digest(Path(__file__).with_name('python_boundary.py')), 'Python evaluator boundary changed')
         if record['evaluator_classification'] == 'environment_failure':
             require(observation['oracle_outcome'] == 'UNVERIFIED' and
                     any(call.get('launch_error') for call in observation['calls']), 'missing grader setup exclusion evidence')
@@ -94,6 +97,8 @@ def probe(root):
             check_revision(root, revision)
             require(revision == round_record['qualification_revision'], 'qualification revision differs')
         for record in records:
+            if record['split'] != 'development':
+                require(record['benchmark_revision'] == envelope.get('frozen_revision'), 'final attempt does not use frozen revision')
             identity = (record['benchmark_revision'], record['split'], record['round'], record['case_id'], record['trial'])
             require(identity not in identities, 'duplicate cross-round trial')
             identities.add(identity)
@@ -101,10 +106,7 @@ def probe(root):
                 established += int(check_attempt(record, policy))
                 require((record['case_id'], record['benchmark_revision']) in audited, 'case/revision lacks independent audit')
         expected = summarize(records, policy, criterion_gaps=round_record['criterion_gaps'],
-                             validity=round_record['validity'],
-                             revision_ledger=envelope['revision_ledger'],
-                             frozen_revision=envelope.get('frozen_revision'),
-                             final_record=envelope.get('final_record'))
+                             validity=round_record['validity'])
         require(read_json(round_record['summary']) == expected, 'summary differs from recomputed evidence')
         summaries.append(expected)
     retries = sum(sum(record.get('retry_of') is not None for record in [read_json(path) for path in entry['attempts']]) for entry in envelope['rounds'])
@@ -114,12 +116,16 @@ def probe(root):
     development = [summary for summary in summaries if summary['split'] == 'development' and summary['round'] == selected]
     require(len(development) == 1 and selected == development_rounds[-1], 'invalid selected development round')
     development = development[0]
-    require(envelope['development_decision'] == development['decision'], 'development decision differs')
+    evidence = envelope['development_evidence']
+    require(evidence['validity'] in {'VALID', 'INVALID', 'UNVERIFIED'}, 'missing diagnostic validity')
+    development_decision = ('INVALID' if development['decision'] == 'INVALID' or evidence['validity'] == 'INVALID' else
+        'UNVERIFIED' if development['decision'] == 'UNVERIFIED' or evidence['validity'] == 'UNVERIFIED' or evidence['criterion_gaps'] else development['decision'])
+    require(envelope['development_decision'] == development_decision, 'development decision differs')
     require(qualification['validity'] == development['validity'], 'selected qualification differs')
     check_manifest_revision(root, manifest_path, envelope.get('frozen_revision') or development['benchmark_revision'])
     if envelope.get('frozen_revision'):
         check_revision(root, envelope['frozen_revision'])
-        require(development['decision'] == 'CALIBRATED', 'freeze requires calibrated development')
+        require(development_decision == 'CALIBRATED', 'freeze requires calibrated development')
         check_frozen(root, manifest_path, envelope['frozen_revision'])
     final = read_json(envelope['final_record']) if envelope.get('final_record') else None
     if final and not final.get('not_performed_reason'):
@@ -136,20 +142,20 @@ def probe(root):
         check_frozen(root, manifest_path, envelope['frozen_revision'], final['before'])
         check_frozen(root, manifest_path, envelope['frozen_revision'], final['after'])
     final_summaries = [summary for summary in summaries if summary['split'] != 'development']
-    require(not final_summaries or (envelope.get('final_record') and development['decision'] == 'CALIBRATED'),
+    require(not final_summaries or (envelope.get('final_record') and development_decision == 'CALIBRATED'),
             'final attempts require calibrated development and final record')
     require(len(final_summaries) <= 1, 'multiple final measurements')
     require(not final_summaries or (final and not final.get('not_performed_reason')), 'final observations declared not performed')
-    final_gaps = sorted({gap for summary in final_summaries for gap in summary['criterion_gaps']})
+    final_gaps = sorted(set(envelope['terminal_gaps']) | {gap for summary in final_summaries for gap in summary['criterion_gaps']})
     final_invalid = any(summary['validity'] == 'INVALID' for summary in final_summaries)
     final_unverified = any(summary['validity'] == 'UNVERIFIED' for summary in final_summaries)
-    decision = ('INVALID' if final_invalid else 'UNVERIFIED' if final_gaps or final_unverified else development['decision'])
+    decision = ('INVALID' if final_invalid else 'UNVERIFIED' if final_gaps or final_unverified else development_decision)
     require(envelope['decision'] == decision, 'declared decision differs')
     eligible = decision == 'CALIBRATED' and bool(envelope.get('frozen_revision'))
     return dict(workflow_admission=True, calibrated_benchmark_eligible=eligible,
                 decision=decision, established_native_attempts=established,
-                declared_rounds=len(summaries), criterion_gaps=sorted(set(development['criterion_gaps'] + final_gaps)),
-                development_decision=development['decision'],
+                declared_rounds=len(summaries), criterion_gaps=sorted(set(development['criterion_gaps'] + evidence['criterion_gaps'] + final_gaps)),
+                development_decision=development_decision,
                 final_observations=[dict(estimate=row['estimate'], band_observation=row['band_observation'],
                     drift=None if row['estimate'] is None or development['estimate'] is None else row['estimate'] - development['estimate'])
                     for row in final_summaries])

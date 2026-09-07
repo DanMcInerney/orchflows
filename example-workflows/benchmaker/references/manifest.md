@@ -91,3 +91,12 @@ explicit unused reason, retry/exclusion policy, development/final sets,
 revision cap (default two), sample budget and uncertainty rule. Advanced
 sampling designs remain explicit unsupported executable profiles until a
 corresponding implementation exists; they are not silently flattened.
+
+For the concrete Python JSON admission profile, `runnable_cases` points to a
+committed JSON object with a `cases` array. Each entry binds `case_id`, `split`,
+`prompt`, `checks`, `oracle` (`python-json-solve-v1`) and `input_files` (candidate
+filename to committed benchmark-relative file). The prompt is the exact native
+stdin contract; input_files is the complete visible non-Git file inventory.
+The required checks and oracle are resolved at the attempted Git revision, not
+selected from an uncommitted evaluator locator. Final attempts use the frozen
+revision. This executable projection supplements the semantic case fields above.

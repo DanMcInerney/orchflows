@@ -45,6 +45,7 @@ locations alone establishes protected scorer isolation.
 | `diagnosis` | Fixed draft and attempt git artifacts through `--artifacts`; qualification findings through Context; original policy and all prior rounds. Returns findings over validity, per-case failures/uncertainty, empirical discrimination, configuration agreement, missing evidence and construct-preserving revision rationale if supported. No fresh native sample is implicit in judgment. |
 | `revision` | Diagnostic findings and qualification defects; selected predeclared development change; prior draft and research/design identities; unchanged configuration/coverage/weights; remaining budget. Returns a committed changed draft and ledger entry, including new builder identities. Original findings remain locatable. |
 | `requalification` | Changed or frozen revision; original coverage/rigor/standard, qualification budget, access policy, updated builder identities, predeclared audit sample and diagnostic flags. Returns benchmark-qualify's full revision-bound record, not a reused boolean from an earlier revision. |
+| `finalize-records` | Every terminal branch supplies actual qualification/diagnostic/measurement returns, selected decision, immutable round identities, ledger, bounds and durable export locator. One ordinary same-repository maker commits the aggregate index, not-performed reasons and findings copies after those returns. No published summary or sealed outcome is rewritten. |
 | `freeze` | VALID qualified draft and accepted development summary, original configuration and complete fixed final design. Returns the committed lifecycle-frozen package and reserved external journal locators. All final prompts/cases/seeds, references/graders, split/weights, policy and provenance are fixed by this artifact identity. |
 
 A qualification gap may stop execution before any native attempt. A partial
@@ -60,7 +61,7 @@ Package Python uses the interpreter returned by `orchflows env workflow benchmak
 The existing [native collector](../scripts/native.py) `collect` accepts an argv array, fresh case
 repository, visible prompt, unique output directory, fixed configuration,
 explicit timeout and optional observed-configuration evidence. [grader](../scripts/grader.py)
-`make_record` attaches the separately observed oracle result and trial metadata;
+`make_record` verifies the committed case/input/oracle binding and attaches the separately observed oracle result and trial metadata;
 [record calculator](../scripts/records.py) validates and summarizes records. The measurement maker
 allocates absolute locators under `evidence_export`, writes observations there,
 and mirrors those exact bytes into `records` in its candidate before committing.
@@ -79,7 +80,8 @@ Other configurations use an explicitly supplied compatible execution mechanism;
 an unavailable mechanism is a named gap, never a fallback to this fixture.
 `scripts/admission.py summarize --input <request> --output <summary>` takes the
 record-layout policy, attempt locators, criterion gaps, typed `validity`,
-revision ledger and optional frozen/final locators. No boolean qualification projection is accepted.
+and no future aggregate metadata. Ledger and frozen/final locators belong only
+to the aggregate index authored by the post-return finalization maker. No boolean qualification projection is accepted.
 
 The deterministic helpers calculate and validate. The workflow driver decides
 whether a qualified round can proceed, whether evidenced revision is permitted,
@@ -118,3 +120,9 @@ record probe. Synthetic event fixtures prove those checks can fail, not that a
 native agent or this workflow body executed. Actual admission records name the
 source commit, generated adapters, run/frame/tickets, shared standard pins,
 landed artifacts/findings, outside probe exits and unexecuted branches.
+
+Round summaries are immutable local snapshots. The finalizer combines them with
+later diagnostic `development_evidence` and `terminal_gaps` in a new aggregate
+index; old summaries never acquire a later revision ledger or final locator.
+All terminal branches enter the finalization maker, including no-final-measurement
+partials. The driver exports only its landed authored bytes.

@@ -8,7 +8,7 @@ class EvidenceError(ValueError):
 
 
 REQUIRED = {
-    'case_id', 'split', 'round', 'trial', 'target_configuration',
+    'case_id', 'split', 'round', 'trial', 'target_configuration', 'case_binding',
     'benchmark_revision', 'candidate_kind', 'requested_command',
     'resolved_command', 'requested_configuration', 'resolved_configuration',
     'prompt_locator', 'raw_transcript_locator', 'result_artifact_locator',
@@ -44,7 +44,10 @@ def validate_record(record, policy):
     if record['classification'] in INFRA:
         require(not record['valid_for_estimate'] and record['oracle_outcome'] == 'UNVERIFIED',
                 'infrastructure counted as target outcome')
-    require(record['evaluator_classification'] in {'completed', 'environment_failure'}, 'unknown evaluator classification')
+    require(record['evaluator_classification'] in {'completed', 'environment_failure', 'unsupported'}, 'unknown evaluator classification')
+    if record['evaluator_classification'] == 'unsupported':
+        require(not record['valid_for_estimate'] and record['oracle_outcome'] == 'UNVERIFIED'
+                and record['failure_class'] == 'unsupported_source_capabilities', 'unsupported source counted')
     if record['evaluator_classification'] == 'environment_failure':
         require(not record['valid_for_estimate'] and record['oracle_outcome'] == 'UNVERIFIED'
                 and record['failure_class'] == 'grader_environment_failure', 'grader infrastructure counted')
@@ -95,13 +98,21 @@ def configuration_gaps(resolved, requested, policy):
     else:
         walk(requested, resolved, '')
     for path in required:
-        actual = resolved
-        wanted = requested
+        actual, wanted = resolved, requested
+        reason = None
         for key in path.split('.'):
+            if isinstance(actual, dict) and 'unavailable_reason' in actual:
+                reason = actual['unavailable_reason']
             actual = actual.get(key) if isinstance(actual, dict) else None
             wanted = wanted.get(key) if isinstance(wanted, dict) else None
         if wanted is None:
-            walk(None, {'unavailable_reason': 'required field absent from pinned configuration'}, path)
+            reason = 'required field absent from pinned configuration'
+        elif actual is None:
+            reason = reason or 'required field not observed'
+        elif isinstance(actual, dict) and 'unavailable_reason' in actual:
+            reason = actual['unavailable_reason']
+        if reason:
+            gaps.append('resolved_configuration.' + path + ': ' + str(reason))
     return gaps, optional_gaps
 
 
@@ -140,8 +151,7 @@ def wilson(passes, count):
     return [center - radius, center + radius]
 
 
-def summarize(records, policy, *, criterion_gaps=(), validity='VALID',
-              revision_ledger=(), frozen_revision=None, final_record=None):
+def summarize(records, policy, *, criterion_gaps=(), validity='VALID'):
     require(validity in {'VALID', 'INVALID', 'UNVERIFIED'}, 'unknown qualification validity')
     ids = policy['case_ids']
     require(ids and len(ids) == len(set(ids)), 'empty or duplicate declared cases')
@@ -209,7 +219,4 @@ def summarize(records, policy, *, criterion_gaps=(), validity='VALID',
                 interval_unavailable_reason='Purposively selected finite suite; no population sampling model',
                 band_observation=band, decision=decision, criterion_gaps=sorted(set(gaps)),
                 optional_gaps=sorted(set(optional_gaps)),
-                revision_ledger=list(revision_ledger), frozen_revision=frozen_revision,
-                final_record=final_record,
-                frozen_revision_unavailable_reason=None if frozen_revision else 'Not frozen',
-                final_record_unavailable_reason=None if final_record else 'Final measurement not performed')
+                snapshot_kind='immutable-round-observation')

@@ -96,7 +96,7 @@ def classify_execution(result, parsed):
 
 
 def collect(command, *, case_repository, prompt, output, configuration, timeout=90,
-            configuration_observation=None):
+            configuration_observation=None, case_binding=None):
     """Run exactly the caller's declared argv; stores a receipt even on launch failure."""
     observed = None
     if configuration_observation:
@@ -110,6 +110,9 @@ def collect(command, *, case_repository, prompt, output, configuration, timeout=
     resolved = [executable or command[0], *command[1:]]
     prompt_text = Path(prompt).read_text(encoding='utf-8-sig')
     (output / 'prompt.txt').write_text(prompt_text, encoding='utf-8')
+    from case_inputs import capture_inputs
+    require(case_binding is not None, 'missing committed case binding')
+    binding, inputs = capture_inputs(case_binding, case_repository, prompt, output)
     result = run_process(resolved, cwd=case_repository, stdin=prompt_text, timeout=timeout)
     (output / 'stdout.jsonl').write_bytes(result.pop('stdout'))
     (output / 'stderr.txt').write_bytes(result.pop('stderr'))
@@ -120,7 +123,7 @@ def collect(command, *, case_repository, prompt, output, configuration, timeout=
     classification = classify_execution(result, parsed)
     if parsed['source'] is not None:
         (output / 'solution.py').write_text(parsed['source'], encoding='utf-8')
-    receipt = dict(result, classification=classification, requested_command=command,
+    receipt = dict(result, classification=classification, case_binding=binding, input_observations=inputs, requested_command=command,
                    resolved_command=resolved, requested_configuration=configuration,
                    resolved_configuration={'unavailable_reason': 'Native JSON events do not attest the full requested configuration'},
                    prompt_locator=str(output / 'prompt.txt'), raw_transcript_locator=str(output / 'stdout.jsonl'),
