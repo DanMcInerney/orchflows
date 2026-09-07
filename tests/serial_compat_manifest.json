@@ -72,6 +72,11 @@
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_repository_validator_runs_the_browser_game_audit",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_test_or_help_identity_disagreement_is_rejected",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_unlisted_implementation_marker_is_rejected",
+   "test_build_workflow.BuildWorkflowTests.test_authoring_narrowing_expands_in_public_callee_scope",
+   "test_build_workflow.BuildWorkflowTests.test_default_distribution_has_one_manual_roleless_builder",
+   "test_build_workflow.BuildWorkflowTests.test_receipt_probe_rejects_missing_and_corrupt_output",
+   "test_callable_context.CallableContextTest.test_context_survives_builder_frame_planner_maker_and_judge",
+   "test_callable_context.CallableContextTest.test_unreadable_context_refuses_before_ticket_creation",
    "test_catalog_completeness.CatalogCompletenessTests.test_a_standard_takes_the_flat_pointer_and_no_host_surface",
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_name_reaches_every_host_catalog",
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
@@ -1638,6 +1643,7 @@
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_declares_its_name_and_manual_invocation",
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_directory_holds_exactly_one_body",
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_opens_a_frame_calls_or_nests_and_closes",
+   "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_public_call_must_resolve_and_cannot_call_itself",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_slicing_sections_put_proven_seams_on_the_first_frontier",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_no_cut_states_a_superseded_overlap_rule",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_reserves_the_tracer_for_the_unproven_seam",
@@ -2225,6 +2231,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_build_workflow",
+   "owner": "BuildWorkflowTests.test_default_distribution_has_one_manual_roleless_builder",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

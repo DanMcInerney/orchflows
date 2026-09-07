@@ -108,7 +108,7 @@ FRAME_LAW = (
 )
 
 FRAME_OPEN_USAGE = (
-    "frame-open <run> --goal-file F [--details-file D] [--parent ID] "
+    "frame-open <run> --goal-file F [--details-file D] [--context-file C] [--parent ID] "
     "[--done <canonical-json>] [--bound B] [--workflow NAME] "
     f"[{SHAPE_USAGE}]"
 )
@@ -146,6 +146,7 @@ def _cmd_frame_open(rest):
     args = list(rest)
     goal_file = _extract_flag(args, "--goal-file")
     details_file = _extract_flag(args, "--details-file")
+    context_file = _extract_flag(args, "--context-file")
     parent = _extract_flag(args, "--parent")
     done = _extract_flag(args, "--done")
     bound = _extract_flag(args, "--bound") or NEW_DEFAULT_BOUND
@@ -172,6 +173,11 @@ def _cmd_frame_open(rest):
         return failure
     if not goal.strip():
         return {"error": f"goal file {goal_file} is empty; Goal is one observable end result"}
+    context = None
+    if context_file is not None:
+        context, failure = _read_utf8(context_file, "context file")
+        if failure is not None:
+            return failure
     details = None
     if details_file is not None:
         details, failure = _read_utf8(details_file, "details file")
@@ -186,7 +192,7 @@ def _cmd_frame_open(rest):
     workflow_record, workflow_fields, refusal = _workflow_record(workflow, inherited)
     if refusal is not None:
         return refusal
-    sections = [("Goal", goal.strip()), ("Context", _context(parent, None))]
+    sections = [("Goal", goal.strip()), ("Context", _context(parent, None, context))]
     if (details or "").strip():
         sections.append(("Details", details.strip()))
     sections.append((REPORT_SECTION, ""))

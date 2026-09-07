@@ -10,12 +10,15 @@ the names both of those also stamp, `[]` when none; `probe`, the command that
 answers whether the built artifact works; `bound`, each call's budget; and
 `workspace`, the repository the waves cut from.
 
+Optional `context-file` accompanies every call, including repairs.
+
     tickets.py frame-open <run> --goal-file <build-goal> --workflow checkpointed-build
+      [--context-file <context-file>]
 
 **Plan**, one call whose artifact is the cut:
 
     tickets.py do <run> --standard <standard> --parent <frame> --makes cut
-      --goal-file <plan-goal> --workspace <workspace> --bound <bound>
+      --goal-file <plan-goal> [--context-file <context-file>] --workspace <workspace> --bound <bound>
 
 Its goal: `goal` cut into waves, every item of a level independent of its
 siblings and every dependency edge an earlier wave's seam. The first wave
@@ -27,7 +30,7 @@ one.
 **Waves**, in the cut's order, one per level:
 
     tickets.py do <run> --standard <standard> --parent <frame> --isolation required
-      [--standard <narrowing> ...] --goal-file <item-goal>
+      [--standard <narrowing> ...] --goal-file <item-goal> [--context-file <context-file>]
       --workspace <workspace> --bound <bound>
 
 *fan-out*: "One `do` per named item, launched together under the frame; the
@@ -42,7 +45,7 @@ carried:
 
     tickets.py judge <run> --standard <judge-standard> --parent <frame>
       [--standard <narrowing> ...] --artifacts git:<tip>
-      --goal-file <judge-goal>
+      --goal-file <judge-goal> [--context-file <context-file>]
 
 Its goal: `goal` against that revision, each block named with the evidence
 for it. Blocks earn *bounded-repair*: "Where the judge blocks, one repair
