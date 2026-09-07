@@ -8,7 +8,7 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
-from improve_common import EvidenceError, canonical, digest, instant, project, redact
+from improve_common import EvidenceError, canonical, digest, instant, project, redact, record_type
 from improve_sources import ancestry, discover
 import trace
 import improve_codex
@@ -16,19 +16,19 @@ import improve_claude
 
 
 def known(kind, row):
-    rtype = row.get("type")
+    rtype = record_type(row)
     if kind == "codex":
         current = improve_codex.shape(row)
         if current is not None:
             return current
         if rtype == "response_item":
             payload = row.get("payload")
-            return isinstance(payload, dict) and payload.get("type") in {
+            return isinstance(payload, dict) and record_type(payload) in {
                 "message", "function_call", "function_call_output", "custom_tool_call",
                 "custom_tool_call_output", "reasoning", "compaction"}
         if rtype == "event_msg":
             payload = row.get("payload")
-            return isinstance(payload, dict) and payload.get("type") in {
+            return isinstance(payload, dict) and record_type(payload) in {
                 "token_count", "task_started", "task_complete", "agent_reasoning",
                 "agent_message", "user_message", "turn_aborted", "context_compacted"}
         return rtype in {"session_meta", "turn_context", "compacted"} and isinstance(row.get("payload"), dict)
@@ -37,12 +37,12 @@ def known(kind, row):
     if kind == "friction":
         return "observed" in row and "expected" in row
     if kind == "events":
-        return row.get("event") in {"frame-open", "frame-close", "land"}
+        return isinstance(row.get("event"), str) and row["event"] in {"frame-open", "frame-close", "land"}
     if kind == "tickets":
         return rtype in {"ticket_report", "ticket_projection"}
     if kind == "runs":
         return bool(row.get("run") or row.get("id"))
-    return row.get("type") in {"observation", "success", "failure"} and bool(row.get("ts") or row.get("timestamp"))
+    return record_type(row) in {"observation", "success", "failure"} and bool(row.get("ts") or row.get("timestamp"))
 
 
 def links(row):
@@ -56,12 +56,12 @@ def links(row):
     content = row.get("message", {}).get("content", []) if isinstance(row.get("message"), dict) else []
     if isinstance(content, list):
         for block in content:
-            if isinstance(block, dict) and block.get("type") in {"tool_use", "tool_result"}:
+            if isinstance(block, dict) and record_type(block) in {"tool_use", "tool_result"}:
                 result.append({"kind": "tool_call", "id": block.get("id") or block.get("tool_use_id")})
     for key in ("copied_from", "incident_id", "record_id", "dispatch_id"):
         if row.get(key):
             result.append({"kind": key, "id": row[key]})
-    return result
+    return [link for link in result if isinstance(link["id"], str) and link["id"]]
 
 
 def row_project(row):
@@ -172,13 +172,13 @@ def collect(frozen):
                 when = instant(stamp)
             except EvidenceError:
                 when = None
-            context = row.get("type") in {"session_meta", "ticket_projection"} or kind == "runs"
+            context = record_type(row) in {"session_meta", "ticket_projection"} or kind == "runs"
             if when is None or not start <= when < end:
                 excluded["unknown time" if when is None else "outside window"] += 1
                 if context:
                     structural.append({"source": location, "role": "structural context, excluded from counts",
                                        "session": sid, "project": root, "runs": sorted(runs), "record": redact(row)})
-                    if when is None and row.get("type") == "ticket_projection" and not any(r.get("type") == "ticket_report" for _, r in rows):
+                    if when is None and record_type(row) == "ticket_projection" and not any(record_type(r) == "ticket_report" for _, r in rows):
                         source["gaps"].append("legacy ticket report has unknown time")
                 elif when is None:
                     source["gaps"].append("unknown time at " + locator)

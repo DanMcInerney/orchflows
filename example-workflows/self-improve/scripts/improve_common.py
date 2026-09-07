@@ -25,6 +25,12 @@ class EvidenceError(ValueError):
     """A named input, coverage or lifecycle refusal."""
 
 
+def record_type(value):
+    """Only string discriminators may participate in admission or correlation."""
+    kind = value.get("type") if isinstance(value, dict) else None
+    return kind if isinstance(kind, str) else None
+
+
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
 

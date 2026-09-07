@@ -1,10 +1,12 @@
 """Observed current Codex envelopes: diagnostic items versus provenance context."""
 from __future__ import annotations
 
+from improve_common import record_type
+
 
 def text_blocks(value, kinds):
     return isinstance(value, list) and all(
-        isinstance(block, dict) and block.get("type") in kinds
+        isinstance(block, dict) and record_type(block) in kinds
         and isinstance(block.get("text"), str) for block in value)
 
 
@@ -13,9 +15,9 @@ def diagnostic_text(value):
         return True
     return isinstance(value, list) and all(
         isinstance(item, str) or isinstance(item, dict) and (
-            item.get("type") in {"text", "Text", "input_text", "output_text", "summary_text", "reasoning_text"}
+            record_type(item) in {"text", "Text", "input_text", "output_text", "summary_text", "reasoning_text"}
             and isinstance(item.get("text"), str)
-            or item.get("type") == "encrypted_content" and isinstance(item.get("encrypted_content"), str))
+            or record_type(item) == "encrypted_content" and isinstance(item.get("encrypted_content"), str))
         for item in value)
 
 
@@ -42,7 +44,7 @@ def metadata_kind(row):
     payload = row.get("payload")
     if not isinstance(payload, dict):
         return None
-    kind = row.get("type")
+    kind = record_type(row)
     if kind == "world_state" and isinstance(payload.get("full"), bool) and isinstance(payload.get("state"), dict):
         return kind
     if kind == "inter_agent_communication_metadata" and isinstance(payload.get("trigger_turn"), bool):
@@ -56,12 +58,12 @@ def metadata_kind(row):
 
 def completed_item(row):
     payload = row.get("payload")
-    if row.get("type") != "event_msg" or not isinstance(payload, dict) or payload.get("type") != "item_completed":
+    if record_type(row) != "event_msg" or not isinstance(payload, dict) or record_type(payload) != "item_completed":
         return None
     item = payload.get("item")
     if not isinstance(item, dict) or not isinstance(item.get("id"), str):
         return None
-    kind = item.get("type")
+    kind = record_type(item)
     if kind == "CommandExecution":
         command = item.get("command")
         if (isinstance(command, str) or isinstance(command, list) and all(isinstance(x, str) for x in command)) and (item.get("exit_code") is None or type(item["exit_code"]) is int):
@@ -79,10 +81,10 @@ def completed_item(row):
 
 def agent_message(row):
     payload = row.get("payload")
-    if row.get("type") != "response_item" or not isinstance(payload, dict) or payload.get("type") != "agent_message":
+    if record_type(row) != "response_item" or not isinstance(payload, dict) or record_type(payload) != "agent_message":
         return None
     content = payload.get("content")
-    if isinstance(content, list) and all(isinstance(x, dict) and (x.get("type") in {"input_text", "output_text"} and isinstance(x.get("text"), str) or x.get("type") == "encrypted_content" and isinstance(x.get("encrypted_content"), str)) for x in content):
+    if isinstance(content, list) and all(isinstance(x, dict) and (record_type(x) in {"input_text", "output_text"} and isinstance(x.get("text"), str) or record_type(x) == "encrypted_content" and isinstance(x.get("encrypted_content"), str)) for x in content):
         return payload
     return None
 
@@ -90,25 +92,25 @@ def agent_message(row):
 def shape(row):
     """None delegates legacy kinds; False keeps novel/malformed forms partial."""
     payload = row.get("payload")
-    if row.get("type") == "response_item" and isinstance(payload, dict):
-        if payload.get("type") == "message":
+    if record_type(row) == "response_item" and isinstance(payload, dict):
+        if record_type(payload) == "message":
             return text_blocks(payload.get("content"), {"input_text", "output_text"})
-        if payload.get("type") in {"function_call_output", "custom_tool_call_output"}:
+        if record_type(payload) in {"function_call_output", "custom_tool_call_output"}:
             return isinstance(payload.get("call_id"), str) and diagnostic_text(payload.get("output"))
-        if payload.get("type") in {"function_call", "custom_tool_call"}:
+        if record_type(payload) in {"function_call", "custom_tool_call"}:
             field = "arguments" if payload["type"] == "function_call" else "input"
             return all(isinstance(payload.get(key), str) for key in ("call_id", "name", field))
-        if payload.get("type") == "reasoning":
+        if record_type(payload) == "reasoning":
             return text_blocks(payload.get("summary", []), {"summary_text"}) and (
                 payload.get("content") is None or text_blocks(payload["content"], {"reasoning_text"}))
-    if row.get("type") == "event_msg" and isinstance(payload, dict) and payload.get("type") in {"agent_message", "agent_reasoning", "user_message"}:
+    if record_type(row) == "event_msg" and isinstance(payload, dict) and record_type(payload) in {"agent_message", "agent_reasoning", "user_message"}:
         fields = [payload[key] for key in ("text", "message", "content") if key in payload]
         return bool(fields) and all(diagnostic_text(value) for value in fields)
-    if row.get("type") in {"world_state", "token_usage_record", "inter_agent_communication_metadata"}:
+    if record_type(row) in {"world_state", "token_usage_record", "inter_agent_communication_metadata"}:
         return metadata_kind(row) is not None
-    if isinstance(payload, dict) and payload.get("type") == "item_completed":
+    if isinstance(payload, dict) and record_type(payload) == "item_completed":
         return completed_shape(completed_item(row))
-    if isinstance(payload, dict) and payload.get("type") == "agent_message" and row.get("type") == "response_item":
+    if isinstance(payload, dict) and record_type(payload) == "agent_message" and record_type(row) == "response_item":
         return agent_message(row) is not None
     return None
 

@@ -1,6 +1,8 @@
 """Claude diagnostic content validation; trace remains the normalization owner."""
 from __future__ import annotations
 
+from improve_common import record_type
+
 
 def content(value):
     if isinstance(value, str):
@@ -11,7 +13,7 @@ def content(value):
 def block(value):
     if not isinstance(value, dict):
         return False
-    kind = value.get("type")
+    kind = record_type(value)
     if kind == "text":
         return isinstance(value.get("text"), str)
     if kind == "thinking":
@@ -28,8 +30,8 @@ def block(value):
 
 
 def shape(row):
-    if row.get("type") not in {"user", "assistant"}:
-        return row.get("type") in {"summary", "system", "progress", "file-history-snapshot", "queue-operation"}
+    if record_type(row) not in {"user", "assistant"}:
+        return record_type(row) in {"summary", "system", "progress", "file-history-snapshot", "queue-operation"}
     message = row.get("message")
     if not isinstance(message, dict):
         return False
@@ -39,5 +41,5 @@ def shape(row):
 
 def opaque(value):
     if isinstance(value, dict):
-        return value.get("type") == "redacted_thinking" or any(opaque(item) for item in value.values())
+        return record_type(value) == "redacted_thinking" or any(opaque(item) for item in value.values())
     return isinstance(value, list) and any(opaque(item) for item in value)
