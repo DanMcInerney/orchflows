@@ -1,0 +1,56 @@
+Collecting anyio==4.12.1 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 3))
+  Using cached anyio-4.12.1-py3-none-any.whl (113 kB)
+Collecting click==8.1.8 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 7))
+  Using cached click-8.1.8-py3-none-any.whl (98 kB)
+Collecting colorama==0.4.6 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 11))
+  Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Collecting exceptiongroup==1.3.1 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 15))
+  Using cached exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+Collecting h11==0.16.0 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 19))
+  Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting idna==3.19 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 23))
+  Using cached idna-3.19-py3-none-any.whl (68 kB)
+Collecting starlette==0.49.3 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 27))
+  Using cached starlette-0.49.3-py3-none-any.whl (74 kB)
+Collecting typing-extensions==4.16.0 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 31))
+  Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting uvicorn==0.34.3 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 39))
+  Using cached uvicorn-0.34.3-py3-none-any.whl (62 kB)
+Installing collected packages: typing-extensions, idna, h11, exceptiongroup, colorama, click, anyio, uvicorn, starlette
+
+Successfully installed anyio-4.12.1 click-8.1.8 colorama-0.4.6 exceptiongroup-1.3.1 h11-0.16.0 idna-3.19 starlette-0.49.3 typing-extensions-4.16.0 uvicorn-0.34.3
+Collecting anyio==4.12.1 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 3))
+  Using cached anyio-4.12.1-py3-none-any.whl (113 kB)
+Collecting click==8.1.8 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 7))
+  Using cached click-8.1.8-py3-none-any.whl (98 kB)
+Collecting colorama==0.4.6 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 11))
+  Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Collecting exceptiongroup==1.3.1 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 15))
+  Using cached exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+Collecting h11==0.16.0 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 19))
+  Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting idna==3.19 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 23))
+  Using cached idna-3.19-py3-none-any.whl (68 kB)
+Collecting starlette==0.49.3 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 27))
+  Using cached starlette-0.49.3-py3-none-any.whl (74 kB)
+Collecting typing-extensions==4.16.0 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 31))
+  Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting uvicorn==0.34.3 (from -r C:\Users\danhm\.orchflows\worktrees\20260907-layered-workflow-build\B1.4\requirements-runtime.txt (line 39))
+  Using cached uvicorn-0.34.3-py3-none-any.whl (62 kB)
+Installing collected packages: typing-extensions, idna, h11, exceptiongroup, colorama, click, anyio, uvicorn, starlette
+
+Successfully installed anyio-4.12.1 click-8.1.8 colorama-0.4.6 exceptiongroup-1.3.1 h11-0.16.0 idna-3.19 starlette-0.49.3 typing-extensions-4.16.0 uvicorn-0.34.3
+test_build_plan_installs_every_managed_script_with_matching_content (tests.test_installer_cases.planning.script_inventory.TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content) ... ok
+test_build_plan_ships_doclint_the_documentation_oracle (tests.test_installer_cases.planning.script_inventory.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle)
+The test above grades ``SCRIPT_NAMES`` against itself: drop a name ... ok
+test_every_bare_script_a_template_stub_names_is_shipped (tests.test_installer_cases.planning.script_inventory.TestScriptNames.test_every_bare_script_a_template_stub_names_is_shipped)
+A stub that says `python search_plan.py advance` is telling an ... ok
+test_orchflows_check_grades_a_ring_from_the_installed_layout (tests.test_installer_cases.planning.script_inventory.TestScriptNames.test_orchflows_check_grades_a_ring_from_the_installed_layout)
+`orchflows check` calls the library compiler's own check ... ok
+test_the_installed_writers_resolve_their_sink_from_the_flat_layout (tests.test_installer_cases.planning.script_inventory.TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout)
+The scripts land flat in one bin dir, with no ``scripts`` package ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 38.034s
+
+OK
