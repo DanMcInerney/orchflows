@@ -65,6 +65,7 @@ from .packages import (
     split_frontmatter,
     workflow_adapter_body,
 )
+from .workflow_entries import append_self_improve_entries
 from .runtime import private_runtime_action
 from .planning_support import (
     _frontend_plan,
@@ -281,6 +282,15 @@ def build_plan(
                         frontmatter, lib_workflow_dir / WORKFLOW_SKILL_FILE
                     ),
                 )
+            )
+
+        if name == "self-improve":
+            append_self_improve_entries(
+                lib_workflow_dir,
+                claude_adapters if claude_enabled else None,
+                codex_prompts if codex_enabled else None,
+                codex_skills if codex_enabled else None,
+                grok_skills if grok_enabled else None,
             )
 
     # A standard is stamped on a ticket and never invoked, so it gets the

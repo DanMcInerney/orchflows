@@ -897,6 +897,9 @@
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_script_executor_resolving_in_the_tree_is_admitted",
    "test_script_executors.ScriptExecutorAdmissionTest.test_the_refusal_does_not_depend_on_the_ticket_carrying_a_standard",
    "test_script_executors.ScriptExecutorAdmissionTest.test_the_refusal_names_the_path_that_did_not_resolve",
+   "test_self_improve_entry.SelfImproveEntryTests.test_custom_reserved_workflow_names_still_refuse",
+   "test_self_improve_entry.SelfImproveEntryTests.test_plan_preserves_surfaces_arguments_and_one_canonical_identity",
+   "test_self_improve_entry.SelfImproveEntryTests.test_receipt_reinstall_stale_cleanup_and_uninstall_own_entries",
    "test_serial_compat.TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
    "test_serial_compat.TestBoundaryRestoration.test_an_unclassified_boundary_change_fails_the_lane",
    "test_serial_compat.TestBoundaryRestoration.test_selected_module_boundaries_restore_classified_process_state",
@@ -4177,6 +4180,16 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_self_improve_entry",
+   "owner": "SelfImproveEntryTests.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "monkeypatch",
+    "threads"
    ]
   },
   {
