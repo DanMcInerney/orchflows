@@ -1,0 +1,230 @@
+{
+  "dispatch_id": "B1.1.8:d1",
+  "assignment_seal": "sha256:bd156c93acced54c7cbd6b6f51df33b1ba2664a21f87112f05d5e9acee33f9bc",
+  "assigned_name": "B1.1.8",
+  "reviewed_artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+  "baseline": "git:3070a3272f2572321acb1efa994090d88b630d0e",
+  "standards": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+  },
+  "standard_evidence": "Both standards read whole; canonical item-tree digests rederived and equal pinned values. Applied full git lens and authoring owner, shared verification \u00a79, composition, standard purity and frozen cut. Each blocking finding is correctness at the fixed identity and/or disproves frozen acceptance. No aesthetic-only blocking findings.",
+  "findings": [
+    {
+      "id": "BMF-01",
+      "title": "External evidence repository cannot land in the construction run",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/workflows/benchmark-calibrate/SKILL.md",
+      "line": 31,
+      "cause": "Construction first establishes the run integration target in workspace; the attempts call then establishes a different repository under the same run. Run integration is write-once and does not import branches from that second repository. The helper Require also omits the construction workspace later used by revision/freeze.",
+      "evidence": "B1.1.8-workspace-reproduction.json: real workspace.py establish T1 --repo product exit 0; establish T2 --repo separate evidence exit 0; commit external evidence; workspace_return.integrate returns exit 0/outcome absent, explicitly naming another repository, and product has no evidence file. The underlying supported CLI is the door used by do --workspace.",
+      "smallest_remedy": "Keep git artifact tickets in one declared integration repository, storing measurement records outside the frozen benchmark subtree, with an explicit lawful external record export/locator if needed; alternatively use a separately identified invocation/run for the evidence repository and a supported fixed-artifact handoff. Bind every workspace variable in Require and update public/tournament/admission mappings consistently. Do not change library integration law.",
+      "related_owners": [
+        "example-workflows/benchmaker/references/calibration.md:34",
+        "example-workflows/benchmaker/SKILL.md:12",
+        "example-workflows/skill-tournament/SKILL.md"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-02",
+      "title": "Candidate stdout can forge a passing grader result without implementing solve",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/scripts/grader.py",
+      "line": 59,
+      "cause": "Trusted scorer and arbitrary candidate code run in the same process, and the outer grader accepts any stdout object with outcome PASS. A candidate can print the trusted protocol and exit before runpy returns or checks run.",
+      "evidence": "B1.1.8-reproductions.json / grader_accepts_no_solve_stdout_spoof: source containing only import os; print('{\"outcome\":\"PASS\"}',flush=True); os._exit(0) receives oracle_outcome PASS, exit 0, against independent solve(x)=x+1 checks, despite no solve API. Probe replay calls the same vulnerable grade seam.",
+      "smallest_remedy": "Keep expected checks and aggregate verdict calculation in a trusted parent/evaluator process; isolate candidate execution and validate call completion/results rather than accepting a candidate-writable aggregate verdict. Missing API, premature exit and forged scorer stdout must FAIL. Preserve explicit limitations of host read isolation.",
+      "related_owners": [
+        "example-workflows/benchmaker/scripts/probe.py:45"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-03",
+      "title": "Final confirmation overwrites development calibration and eligibility",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/scripts/probe.py",
+      "line": 120,
+      "cause": "The probe selects summaries[-1].decision and gaps even when the last entry is confirmation/final. It ignores the selected development round and development_decision.",
+      "evidence": "B1.1.8-reproductions.json / final_score_overwrites_development_decision: one calibrated development round followed by an out-of-band public confirmation. Preserving decision CALIBRATED raises declared decision differs; rewriting overall decision OUT_OF_BAND passes but loses eligibility. The same path can let a favorable final replace an unmet development decision.",
+      "smallest_remedy": "Explicitly select and validate the declared complete development round; preserve its calibration result and eligibility conditions independently of final numeric estimate/band/drift. Final measurement may add required evidence gaps but must not recalibrate by score or retroactively satisfy development. Update the envelope/summary interface consistently.",
+      "related_owners": [
+        "example-workflows/benchmaker/references/calibration.md:78",
+        "example-workflows/benchmaker/workflows/benchmark-calibrate/SKILL.md:66"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-04",
+      "title": "Probe does not bind invoked package or measured frozen bytes to their git identities",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/scripts/provenance.py",
+      "line": 23,
+      "cause": "The source check verifies HEAD but the invoked product components only need matching names and existing files; the runtime journal check is substring presence. Only the benchmark manifest is compared to its git blob. Final before/after are self-reported equal maps compared to current files, not the frozen revision.",
+      "evidence": "B1.1.8-reproductions.json / uncommitted_changed_invoked_component_admitted: append a different contract under the same benchmark-calibrate name and probe still admits. / frozen_git_bytes_not_bound_to_before_after: modify a file after the freeze commit, then set equal before/after to those changed current bytes; probe still admits. Baseline and counterexample are synthetic harness controls, not claims of native runtime.",
+      "smallest_remedy": "Bind the complete invoked workflow package, including public body/helpers/standards/scripts/resources, to the accepted source export and actual runtime package pin. Resolve recorded journal/artifact/findings identities rather than labels alone. Bind the measured benchmark file set to the named git revision, and verify before/after observations against that frozen tree; retain git as the benchmark version identity. Negative controls should change an existing component while preserving its name and mutate a frozen non-manifest file before inventory capture.",
+      "related_owners": [
+        "example-workflows/benchmaker/scripts/probe.py:101",
+        "example-workflows/benchmaker/scripts/probe.py:107",
+        "example-workflows/benchmaker/scripts/probe.py:116"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-05",
+      "title": "UNVERIFIED qualification is relabeled INVALID by the executable adapter",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/references/qualification.md",
+      "line": 50,
+      "cause": "The documented projection maps both INVALID and UNVERIFIED to instrument_valid=false. summarize treats false as established INVALID ahead of all gaps, and probe passes only this boolean instead of typed validity.",
+      "evidence": "B1.1.8-reproductions.json / qualification_unverified_becomes_invalid: qualification validity UNVERIFIED, instrument_valid false, explicit required-reference gap; recomputed summary and accepted probe decision are INVALID.",
+      "smallest_remedy": "Carry typed VALID/INVALID/UNVERIFIED through summarize, admission CLI, and probe (or use an unambiguous lossless adapter). Missing required evidence must remain UNVERIFIED; established construct invalidity remains INVALID. Keep per-revision qualification binding and explicit gaps.",
+      "related_owners": [
+        "example-workflows/benchmaker/scripts/records.py:130",
+        "example-workflows/benchmaker/scripts/probe.py:94",
+        "example-workflows/benchmaker/scripts/admission.py:71"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-06",
+      "title": "Nested unavailable configuration fields can be called CALIBRATED",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/scripts/records.py",
+      "line": 39,
+      "cause": "The configuration checker recognizes unavailable_reason only at the top level. The documented format and prepare template place unavailable metadata inside individual fields; matching requested/resolved objects are then mistaken for full resolution.",
+      "evidence": "B1.1.8-reproductions.json / nested_required_configuration_gaps_calibrated: required resolution true, cli_version and instruction_layers each contain unavailable_reason, requested/resolved/target objects match; an in-band summary reports CALIBRATED with criterion_gaps [].",
+      "smallest_remedy": "Validate required resolved fields and nested unavailable markers against a predeclared required/optional metadata policy. Explicit unknown instruction/scaffold/delegation/capability observations must produce UNVERIFIED when required; optional unavailable seed/temperature metadata must remain explicit without inventing values. Do not regard equality to requested placeholder objects as observation.",
+      "related_owners": [
+        "example-workflows/benchmaker/scripts/native.py:103",
+        "example-workflows/benchmaker/scripts/admission.py:31"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-07",
+      "title": "Infrastructure retry allowance permits extra scored valid trials",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/scripts/records.py",
+      "line": 113,
+      "cause": "The retry budget bounds total attempt count but never requires an excluded infrastructure predecessor or a replacement relationship. Extra valid target samples enter the estimate; the resulting count mismatch becomes only a gap.",
+      "evidence": "B1.1.8-reproductions.json / extra_valid_trial_uses_infrastructure_retry_budget: policy requires one trial and allows one infrastructure retry; feed valid PASS trial 1 and valid FAIL trial 2, with no infrastructure failure. summarize accepts both and changes estimate from 1.0 to 0.5 (decision UNVERIFIED) instead of rejecting the undeclared extra valid sample.",
+      "smallest_remedy": "Require every retry to identify an eligible infrastructure event and enforce the global predeclared retry allocation; counted valid trials cannot exceed the declared sample. Reject optional extra valid trials rather than admitting an altered partial estimate. Preserve all excluded events and their attribution.",
+      "related_owners": [
+        "example-workflows/benchmaker/references/calibration-record.md:11",
+        "example-workflows/benchmaker/scripts/probe.py:93"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-08",
+      "title": "Typed grader infrastructure exclusion cannot pass its own receipt check",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/scripts/grader.py",
+      "line": 86,
+      "cause": "make_record replaces native completed classification with environment_failure when the grader cannot launch. check_attempt requires classification equality with the original launch receipt, which remains completed.",
+      "evidence": "B1.1.8-reproductions.json / grader_infra_exclusion_rejected_by_probe: inject grader PermissionError at the subprocess boundary after a completed native transcript; make_record creates the intended unverified environment exclusion, then check_attempt rejects receipt mismatch: classification.",
+      "smallest_remedy": "Keep native execution classification and evaluator/estimate validity as separate fields or derive their combined classification consistently from both immutable observations. An unavailable grader must remain an excluded UNVERIFIED oracle event accepted as honest partial evidence, never a candidate failure.",
+      "related_owners": [
+        "example-workflows/benchmaker/scripts/probe.py:12"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-09",
+      "title": "Package script references fail the repository link validator",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/references/calibration.md",
+      "line": 57,
+      "cause": "Backticked scripts/native.py, scripts/grader.py and scripts/records.py are interpreted as canonical installed script references instead of contained package resources.",
+      "evidence": "B1.1.8-scoped-checks.json: scoped runner exit 1, tests.test_validator_cases.repo_and_frontmatter.TestValidatorAgainstRepo.test_repo_passes_clean fails with three names no installed script errors. The package scripts themselves exist under example-workflows/benchmaker/scripts.",
+      "smallest_remedy": "Use package-local Markdown links or an explicit package-relative resource notation that resolves to the actual files. Retain the concrete API documentation; do not weaken the library validator.",
+      "related_owners": [],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    },
+    {
+      "id": "BMF-10",
+      "title": "Research migration leaves the canonical disagreement register term without a consumer",
+      "blocking": true,
+      "classification": "correctness",
+      "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+      "owner": "example-workflows/benchmaker/standards/benchmark-evidence/STANDARD.md",
+      "line": 26,
+      "cause": "The old research charter consumed disagreement register; the migration removes it and the new owner says disagreement and gap registers, so the canonical vocabulary term is no longer used by any shipped consumer.",
+      "evidence": "B1.1.8-scoped-checks.json: test_repo_passes_clean reports docs/vocabulary.md disagreement register has no consumer. git show 3070a3272f2572321acb1efa994090d88b630d0e:example-workflows/references/benchmaker-research.md shows the former disagreement register synthesis artifact.",
+      "smallest_remedy": "Name disagreement register explicitly in the new benchmark-evidence synthesis requirement while keeping gaps separately named. Preserve the canonical semantic term in its real consumer; no vocabulary-law change is needed.",
+      "related_owners": [
+        "example-workflows/benchmaker/../references/benchmaker-research.md",
+        "docs/vocabulary.md:286"
+      ],
+      "standard_basis": "orch-code git: correctness and public contract fidelity; orch-workflow-authoring: semantic handoffs and observed artifact identity; frozen rebuild cut acceptance"
+    }
+  ],
+  "reproduce": [
+    "C:/Users/danhm/.orchflows/runtime/Scripts/python.exe .orch-notes/B1.1.8-reproduce.py",
+    "C:/Users/danhm/.orchflows/runtime/Scripts/python.exe .orch-notes/B1.1.8-workspace-reproduce.py",
+    "C:/Users/danhm/.orchflows/runtime/Scripts/python.exe .orch-notes/B1.1.8-run-checks.py"
+  ],
+  "evidence_files": [
+    ".orch-notes/B1.1.8-reproductions.json",
+    ".orch-notes/B1.1.8-workspace-reproduction.json",
+    ".orch-notes/B1.1.8-scoped-checks.json"
+  ],
+  "observed_checks": {
+    "scoped_tests": {
+      "exit_code": 1,
+      "modules": 14,
+      "tests": 710,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "timeout_seconds": 600,
+      "elapsed_seconds": 109.65
+    },
+    "adversarial_seam_reproductions": {
+      "exit_code": 0,
+      "timeout_seconds": 120,
+      "cases": 8
+    },
+    "supported_workspace_reproduction": {
+      "exit_code": 0,
+      "timeout_seconds": 120
+    },
+    "git_diff_check": {
+      "exit_code": 0
+    }
+  },
+  "positive_observations": [
+    "The public workflow has exactly construct, qualify, calibrate calls; private names resolve in benchmaker scope and are absent from global inventory/adapters in passing integration tests.",
+    "Private quality/research standards carry substantive recurring quality and narrow their reachable bases; no new kernel, scheduler or package dependency was added.",
+    "Qualification prose requires builder-disjoint controls, prompt-first independent reference review, separate attacker context, and typed gaps; calibration bounds development revisions and prohibits final mutation in its prose.",
+    "Legacy case/measure/static-tree checks pass; historical controls remain labeled as harness/control evidence, and evolve is unchanged.",
+    "Scope tests include can-fail corrupt/missing transcript, source mismatch and missing audit/duplicate trials; these are harness evidence only."
+  ],
+  "gaps": [
+    "Actual native disposable invocation, full repository gate, matrix and external live absent/corrupt/passing probe remain root-owned and were not executed or claimed here.",
+    "No protected read isolation or observed model/configuration guarantee is inferred from synthetic fixtures.",
+    "The supported workspace reproduction uses existing disposable test fixture state and real workspace establishment/integration doors; it does not execute a workflow body or dispatch a child.",
+    "This review changes only reserved .orch-notes files; no implementation repairs, package upgrades, global installation or native candidate attempts occurred."
+  ],
+  "successor_scope": []
+}
