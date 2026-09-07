@@ -20,21 +20,30 @@ def prepare(root):
     root.mkdir(parents=True, exist_ok=False)
     for name in ('source', 'product', 'attempts', 'evidence'):
         (root / name).mkdir()
+    (root / 'product' / 'records').mkdir()
+    (root / 'product' / 'records' / '.gitattributes').write_text('* -text\n', encoding='utf-8')
     request = PACKAGE / 'references' / 'live-admission.md'
     (root / 'request.md').write_bytes(request.read_bytes())
     write_json(root / 'submission-schema.json', SUBMISSION_SCHEMA)
     policy = dict(case_ids=['topological-order', 'interval-difference', 'lru-ttl'],
                   split='development', round=0, trials_per_case=2, band=[0.30, 0.50],
                   infrastructure_retry_budget=1, require_resolved_configuration=True,
+                  required_configuration_fields=['model', 'reasoning_effort', 'cli_version',
+                      'instruction_layers', 'scaffold', 'delegation', 'tools_network'],
+                  optional_configuration_fields=['temperature', 'seed'],
                   target_configuration=dict(model='gpt-5.6-sol', reasoning_effort='low',
                       host='codex exec', context='fresh ephemeral; no prior turns', sandbox='read-only',
                       cli_version={'unavailable_reason': 'Confirm native version before sealing'},
                       instruction_layers={'unavailable_reason': 'Inspect loaded instructions before sealing'},
-                      tools_network={'unavailable_reason': 'Observe native capabilities before sealing'}))
+                      tools_network={'unavailable_reason': 'Observe native capabilities before sealing'},
+                      scaffold={'unavailable_reason': 'Pin loaded prompt and scaffold before sealing'},
+                      delegation={'unavailable_reason': 'Observe delegation authority before sealing'},
+                      temperature={'unavailable_reason': 'Provider does not expose this metadata'},
+                      seed={'unavailable_reason': 'Provider does not expose this metadata'}))
     write_json(root / 'policy-input.json', policy)
     result = dict(root=str(root), semantic_goal=str(root / 'request.md'),
                   policy_input=str(root / 'policy-input.json'), schema=str(root / 'submission-schema.json'),
-                  product=str(root / 'product'), evidence=str(root / 'evidence'),
+                  product=str(root / 'product'), records='records', evidence_export=str(root / 'evidence'), evidence=str(root / 'evidence'),
                   next='Invoke actual benchmaker with request.md; prepare creates no results or acceptance receipt')
     return result
 
@@ -68,7 +77,7 @@ def main():
         elif args.action == 'summarize':
             request = read_json(args.input)
             result = summarize([read_json(path) for path in request['attempts']], request['policy'],
-                               criterion_gaps=request['criterion_gaps'], instrument_valid=request['instrument_valid'],
+                               criterion_gaps=request['criterion_gaps'], validity=request['validity'],
                                revision_ledger=request['revision_ledger'], frozen_revision=request.get('frozen_revision'),
                                final_record=request.get('final_record'))
             write_json(args.output, result)

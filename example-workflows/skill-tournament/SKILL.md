@@ -9,8 +9,8 @@ declared mutable surface, which belongs to the campaign and its candidates;
 `policy`, the frozen search policy, promotion rule and margin; `bound`, the
 campaign's budget, which the benchmark's own allocation is never drawn from;
 and `sources`, `rigor`, `standard`, pinned `target_configuration` and preregistered
-`calibration_policy`. Supply benchmark `package`/git `workspace`, external git
-`evidence_workspace`, evidence-store root, native mechanism, `access_policy`,
+`calibration_policy`. Supply benchmark `package`/git `workspace`, repository-relative `records`, durable external
+`evidence_export`, evidence-store root, native mechanism, `access_policy`,
 qualification/reference-audit allocation and separate benchmark bounds.
 Missing benchmark inputs stop before dependent work with named gaps.
 
@@ -24,7 +24,7 @@ opens its own frame under this one, and the ticket tree is the call tree.
 
 **Build the benchmark.** Invoke `benchmaker` with `target=skill`, the
 skill's declared observable outcome as `outcome`, and all benchmark inputs above,
-including configuration/policy and both workspaces. The construction `standard`
+including configuration/policy and workspace and records/export. The construction `standard`
 must resolve in benchmaker's own scope; a tournament-private name cannot cross
 this public boundary. Open its frame under this one and execute its body:
 

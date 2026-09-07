@@ -8,65 +8,79 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import time
 
 from native import digest, read_json, run_process, write_json
 from records import INFRA, require
 
-RUNNER = '''import copy, json, runpy, sys
-source, checks = sys.argv[1:]
-spec = json.load(open(checks, encoding="utf-8-sig"))
+RUNNER = '''import contextlib, json, runpy, sys
+source = sys.argv[1]
+args = json.load(sys.stdin)
 try:
-    solve = runpy.run_path(source)["solve"]
-    failures = []
-    for index, check in enumerate(spec["checks"]):
-        args = copy.deepcopy(check["args"])
-        before = copy.deepcopy(args)
+    with contextlib.redirect_stdout(sys.stderr):
+        namespace = runpy.run_path(source)
+        solve = namespace.get("solve")
+        if not callable(solve):
+            raise RuntimeError("missing solve API")
         try:
             value = solve(*args)
-            passed = "raises" not in check and json.loads(json.dumps(value)) == check["expected"]
+            response = {"returned": True, "value": value, "exception": None, "args_after": args}
         except Exception as error:
-            passed = type(error).__name__ == check.get("raises")
-        if check.get("no_mutation") and args != before:
-            passed = False
-        if not passed:
-            failures.append(index)
-    print(json.dumps({"outcome": "FAIL" if failures else "PASS", "failed_checks": failures}))
-except BaseException as error:
-    print(json.dumps({"outcome": "FAIL", "failure_class": type(error).__name__}))
+            response = {"returned": False, "value": None, "exception": type(error).__name__, "args_after": args}
+    print(json.dumps(response))
+except BaseException:
+    sys.exit(1)
 '''
 
 
 def grade(source, checks, *, timeout=5):
+    """Expected values and the aggregate decision never enter the candidate process."""
     specification = read_json(checks)
     require(isinstance(specification.get('checks'), list) and specification['checks'], 'empty grader checks')
     for check in specification['checks']:
         require('args' in check and ('expected' in check) != ('raises' in check), 'invalid outcome check')
+    calls, failures = [], []
+    outcome, failure = 'PASS', None
     with tempfile.TemporaryDirectory(prefix='benchmaker-grade-') as folder:
         root = Path(folder)
         (root / 'solution.py').write_bytes(Path(source).read_bytes())
-        write_json(root / 'checks.json', specification)
         (root / 'runner.py').write_text(RUNNER, encoding='utf-8')
-        result = run_process([sys.executable, '-I', str(root / 'runner.py'),
-                              str(root / 'solution.py'), str(root / 'checks.json')], cwd=root, timeout=timeout)
-    if result['launch_error']:
-        outcome, failure = 'UNVERIFIED', 'grader_environment_failure'
-    elif result['timed_out']:
-        outcome, failure = 'FAIL', 'grader_timeout'
-    elif result['exit_code'] != 0:
-        outcome, failure = 'FAIL', 'candidate_process_failure'
-    else:
-        try:
-            parsed = json.loads(result['stdout'])
-            require(parsed['outcome'] in {'PASS', 'FAIL'}, 'invalid grader output')
-            outcome, failure = parsed['outcome'], parsed.get('failure_class', 'wrong_output' if parsed['outcome'] == 'FAIL' else None)
-        except (ValueError, KeyError):
-            outcome, failure = 'FAIL', 'candidate_output_interference'
+        deadline = time.monotonic() + timeout
+        for index, check in enumerate(specification['checks']):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                failures.extend(range(index, len(specification['checks'])))
+                break
+            result = run_process([sys.executable, '-I', str(root / 'runner.py'),
+                                  str(root / 'solution.py')], cwd=root,
+                                 stdin=json.dumps(check['args']), timeout=remaining)
+            calls.append(dict(result, stdout=result['stdout'].decode('utf-8', errors='replace'),
+                              stderr=result['stderr'].decode('utf-8', errors='replace')))
+            if result['launch_error']:
+                outcome, failure = 'UNVERIFIED', 'grader_environment_failure'
+                break
+            passed = False
+            if not result['timed_out'] and result['exit_code'] == 0:
+                try:
+                    response = json.loads(result['stdout'])
+                    require(set(response) == {'returned', 'value', 'exception', 'args_after'}
+                            and type(response['returned']) is bool, 'invalid call response')
+                    passed = (response['returned'] and 'expected' in check and response['value'] == check['expected']) or (
+                        not response['returned'] and 'raises' in check and response['exception'] == check['raises'])
+                    if check.get('no_mutation') and response['args_after'] != check['args']:
+                        passed = False
+                except (ValueError, KeyError, TypeError):
+                    pass
+            if not passed:
+                failures.append(index)
+        if outcome != 'UNVERIFIED' and failures:
+            outcome, failure = 'FAIL', 'wrong_output'
     return dict(oracle_outcome=outcome, failure_class=failure, source_sha256=digest(source),
                 checks_sha256=digest(checks), grader_sha256=digest(__file__),
-                checks_locator=str(Path(checks).resolve()), elapsed_seconds=result['elapsed_seconds'],
-                exit_code=result['exit_code'], timed_out=result['timed_out'],
-                stdout=result['stdout'].decode('utf-8', errors='replace'),
-                stderr=result['stderr'].decode('utf-8', errors='replace'))
+                checks_locator=str(Path(checks).resolve()), calls=calls, failed_checks=failures,
+                elapsed_seconds=sum(call['elapsed_seconds'] for call in calls),
+                exit_code=calls[-1]['exit_code'], timed_out=any(call['timed_out'] for call in calls),
+                stdout=calls[-1]['stdout'], stderr=calls[-1]['stderr'])
 
 
 def make_record(receipt_path, checks, identity):
@@ -82,19 +96,21 @@ def make_record(receipt_path, checks, identity):
                            checks_locator=str(Path(checks).resolve()), checks_sha256=digest(checks))
     else:
         observation = grade(source, checks)
-        if observation['oracle_outcome'] == 'UNVERIFIED':
-            classification = 'environment_failure'
+
     observation_path = receipt_path.parent / 'grader.json'
     write_json(observation_path, observation)
     record = dict(identity)
+    record.setdefault('retry_of', None)
     for field in ('requested_command', 'resolved_command', 'requested_configuration',
                   'resolved_configuration', 'prompt_locator', 'raw_transcript_locator',
                   'result_artifact_locator', 'exit_code', 'elapsed_seconds', 'token_usage'):
         record[field] = receipt[field]
-    record.update(classification=classification, launch_receipt_locator=str(receipt_path),
+    valid = classification not in INFRA and observation['oracle_outcome'] != 'UNVERIFIED'
+    record.update(classification=classification, evaluator_classification=(
+                      'environment_failure' if observation['failure_class'] == 'grader_environment_failure' else 'completed'), launch_receipt_locator=str(receipt_path),
                   grader_observation_locator=str(observation_path), oracle_outcome=observation['oracle_outcome'],
-                  failure_class=observation['failure_class'], valid_for_estimate=classification not in INFRA,
-                  exclusion_reason=classification if classification in INFRA else None)
+                  failure_class=observation['failure_class'], valid_for_estimate=valid,
+                  exclusion_reason=None if valid else observation['failure_class'])
     write_json(receipt_path.parent / 'attempt.json', record)
     return record
 

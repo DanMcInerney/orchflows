@@ -31,7 +31,7 @@ class PublicIntegrationTests(unittest.TestCase):
         facts = public_facts(text)
         required = {"target", "outcome", "sources", "rigor", "standard", "package",
                     "target_configuration", "calibration_policy", "workspace",
-                    "evidence_workspace", "access_policy"}
+                    "records", "evidence_export", "access_policy"}
         self.assertLessEqual(required, facts["inputs"])
         self.assertEqual(list(HELPERS), facts["children"])
         self.assertIn("disable-model-invocation: true", text)
@@ -48,7 +48,7 @@ class PublicIntegrationTests(unittest.TestCase):
         text = TOURNAMENT.read_text(encoding="utf-8")
         require = text.split("Require:", 1)[1].split("One skill improves", 1)[0]
         self.assertLessEqual(
-            {"target_configuration", "calibration_policy", "workspace", "evidence_workspace"},
+            {"target_configuration", "calibration_policy", "workspace", "records", "evidence_export"},
             set(re.findall(r"`([a-z_]+)`", require)))
         self.assertRegex(text, r"--parent <frame>.*--workflow benchmaker")
         gate = text.split("Enter the campaign", 1)[1].split("**Spend the campaign", 1)[0]

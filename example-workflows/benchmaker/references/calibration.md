@@ -31,8 +31,11 @@ has a concrete policy projection with its split, round and case ids.
 
 `execution_mechanism` identifies native argv construction, input/output schema,
 observed CLI capability/version, timeout/cleanup and independent grader interface.
-`evidence_workspace` is a separate git result repository; candidate workspaces
-contain only permitted visible inputs. Neither is the protected scorer workspace.
+`workspace` is the one integration repository for construction, attempts,
+revision and freeze. `records` is its repository-relative measurement subtree,
+outside `package`; `evidence_export` is a durable absolute external directory.
+Candidate repositories contain only permitted visible inputs. None of these
+locations alone establishes protected scorer isolation.
 
 ## Making and diagnostic payloads
 
@@ -54,21 +57,29 @@ observation while its calibration decision remains UNVERIFIED.
 ## Concrete collection boundary
 
 Package Python uses the interpreter returned by `orchflows env workflow benchmaker`.
-The existing `scripts/native.py` `collect` accepts an argv array, fresh case
+The existing [native collector](../scripts/native.py) `collect` accepts an argv array, fresh case
 repository, visible prompt, unique output directory, fixed configuration,
-explicit timeout and optional observed-configuration evidence. `scripts/grader.py`
+explicit timeout and optional observed-configuration evidence. [grader](../scripts/grader.py)
 `make_record` attaches the separately observed oracle result and trial metadata;
-`scripts/records.py` validates and summarizes records. The measurement maker
-commits the collection in its evidence workspace before diagnostic judgment.
+[record calculator](../scripts/records.py) validates and summarizes records. The measurement maker
+allocates absolute locators under `evidence_export`, writes observations there,
+and mirrors those exact bytes into `records` in its candidate before committing.
+Commit a `.gitattributes` under the declared record subtree containing `* -text` so Git preserves raw
+transcript bytes and receipt hashes across Windows checkouts.
+After landing, [export.py](../scripts/export.py) with `--repository <workspace>
+--revision <attempt-sha> --records <records> --destination <evidence-export>`
+verifies or restores the durable export from Git. It refuses differing existing
+bytes and never rewrites locators. Diagnostic judgment reads that same Git
+artifact and export. Reserve unique round directories; record exports survive
+candidate worktree retirement.
 
 `scripts/admission.py collect` is the declared small Codex admission adapter,
 not an arbitrary-target launcher: its argv fixes gpt-5.6-sol/low/read-only.
 Other configurations use an explicitly supplied compatible execution mechanism;
 an unavailable mechanism is a named gap, never a fallback to this fixture.
 `scripts/admission.py summarize --input <request> --output <summary>` takes the
-record-layout policy, attempt locators, criterion gaps, instrument validity,
-revision ledger and optional frozen/final locators. A helper's boolean projection
-does not replace qualification's typed INVALID versus UNVERIFIED distinction.
+record-layout policy, attempt locators, criterion gaps, typed `validity`,
+revision ledger and optional frozen/final locators. No boolean qualification projection is accepted.
 
 The deterministic helpers calculate and validate. The workflow driver decides
 whether a qualified round can proceed, whether evidenced revision is permitted,
@@ -94,7 +105,7 @@ protected access is UNVERIFIED. A required protection gap can block measurement
 or eligibility even when development is descriptively in band.
 
 The final result adds final estimate/band/drift alongside the preserved
-development decision. Measurement writes only to the external record repository;
+development decision. Measurement writes only to the record subtree and its external export;
 changed frozen bytes are a failed integrity observation, never repaired as part
 of this invocation. A new benchmark version is a separate later request.
 

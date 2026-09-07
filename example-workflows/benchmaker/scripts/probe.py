@@ -4,7 +4,7 @@ from pathlib import Path
 from grader import grade
 from native import classify_execution, digest, parse_native, read_json
 from records import INFRA, require, summarize
-from provenance import check_runtime, check_revision, check_manifest_revision
+from provenance import check_runtime, check_revision, check_manifest_revision, check_frozen
 
 
 def check_attempt(record, policy):
@@ -24,7 +24,7 @@ def check_attempt(record, policy):
         require(Path(name).name == name and digest(root / name) == expected, 'corrupt raw artifact: ' + name)
     require(Path(record['raw_transcript_locator']).resolve() == (root / 'stdout.jsonl').resolve(), 'transcript linkage mismatch')
     raw = (root / 'stdout.jsonl').read_bytes()
-    if record['classification'] in {'launch_failure', 'permission_failure'} and not raw:
+    if record['classification'] in INFRA and not raw:
         parsed = None
     else:
         parsed = parse_native(raw)
@@ -45,7 +45,12 @@ def check_attempt(record, policy):
             observation['failure_class'] == record['failure_class'], 'grader linkage mismatch')
     require(digest(observation['checks_locator']) == observation['checks_sha256'], 'grader checks changed')
     if record['classification'] == 'completed':
+        require(observation['source_sha256'] == digest(record['result_artifact_locator']), 'graded source differs')
         require(observation['grader_sha256'] == digest(Path(__file__).with_name('grader.py')), 'grader implementation changed')
+        if record['evaluator_classification'] == 'environment_failure':
+            require(observation['oracle_outcome'] == 'UNVERIFIED' and
+                    any(call.get('launch_error') for call in observation['calls']), 'missing grader setup exclusion evidence')
+            return parsed is not None and parsed['established']
         replay = grade(record['result_artifact_locator'], observation['checks_locator'])
         require(replay['oracle_outcome'] == observation['oracle_outcome'] and
                 replay['source_sha256'] == observation['source_sha256'], 'independent outcome replay differs')
@@ -62,13 +67,13 @@ def probe(root):
     require(manifest.get('target_configuration'), 'missing manifest configuration')
     check_runtime(root, envelope['runtime'], envelope['component_locators'])
     qualification = envelope['qualification']
-    require(type(qualification['instrument_valid']) is bool, 'missing validity verdict')
+    require(qualification['validity'] in {'VALID', 'INVALID', 'UNVERIFIED'}, 'missing typed validity verdict')
     audited = set()
     for audit in qualification['audits']:
         require(audit.get('builder') and audit.get('auditor') and audit['builder'] != audit['auditor'], 'absent independent audit identities')
         require(all(audit.get(key) in {'PASS', 'FAIL', 'UNVERIFIED'} for key in
                     ('reference_outcome', 'inert_outcome', 'near_miss_outcome')), 'missing control observations')
-        if qualification['instrument_valid']:
+        if qualification['revisions'][audit['benchmark_revision']]['validity'] == 'VALID':
             require(audit['reference_outcome'] == 'PASS' and audit['inert_outcome'] == 'FAIL'
                     and audit['near_miss_outcome'] == 'FAIL', 'missing discriminating controls')
         require(Path(audit['evidence_locator']).is_file(), 'missing audit evidence')
@@ -79,10 +84,15 @@ def probe(root):
     require(development_rounds == list(range(len(envelope['revision_ledger']) + 1)), 'missing or reordered declared development round')
     for round_record in envelope['rounds']:
         policy = round_record['policy']
+        require(round_record['validity'] in {'VALID', 'INVALID', 'UNVERIFIED'}, 'missing round qualification')
+        bound_qualification = qualification['revisions'][round_record['qualification_revision']]
+        require(round_record['validity'] == bound_qualification['validity'], 'round qualification differs')
+        require(set(bound_qualification['criterion_gaps']) <= set(round_record['criterion_gaps']), 'qualification gaps omitted')
         require(policy['target_configuration'] == manifest['target_configuration'], 'round configuration changed')
         records = [read_json(path) for path in round_record['attempts']]
         for revision in {record['benchmark_revision'] for record in records}:
             check_revision(root, revision)
+            require(revision == round_record['qualification_revision'], 'qualification revision differs')
         for record in records:
             identity = (record['benchmark_revision'], record['split'], record['round'], record['case_id'], record['trial'])
             require(identity not in identities, 'duplicate cross-round trial')
@@ -91,18 +101,28 @@ def probe(root):
                 established += int(check_attempt(record, policy))
                 require((record['case_id'], record['benchmark_revision']) in audited, 'case/revision lacks independent audit')
         expected = summarize(records, policy, criterion_gaps=round_record['criterion_gaps'],
-                             instrument_valid=qualification['instrument_valid'],
+                             validity=round_record['validity'],
                              revision_ledger=envelope['revision_ledger'],
                              frozen_revision=envelope.get('frozen_revision'),
                              final_record=envelope.get('final_record'))
         require(read_json(round_record['summary']) == expected, 'summary differs from recomputed evidence')
         summaries.append(expected)
+    retries = sum(sum(record.get('retry_of') is not None for record in [read_json(path) for path in entry['attempts']]) for entry in envelope['rounds'])
+    require(retries <= envelope['infrastructure_retry_budget'], 'global infrastructure retry allocation exceeded')
     require(established > 0, 'native-tool gap: no actual established agent attempts')
-    check_manifest_revision(root, manifest_path, summaries[-1]['benchmark_revision'])
+    selected = envelope['selected_development_round']
+    development = [summary for summary in summaries if summary['split'] == 'development' and summary['round'] == selected]
+    require(len(development) == 1 and selected == development_rounds[-1], 'invalid selected development round')
+    development = development[0]
+    require(envelope['development_decision'] == development['decision'], 'development decision differs')
+    require(qualification['validity'] == development['validity'], 'selected qualification differs')
+    check_manifest_revision(root, manifest_path, envelope.get('frozen_revision') or development['benchmark_revision'])
     if envelope.get('frozen_revision'):
         check_revision(root, envelope['frozen_revision'])
-    if envelope.get('final_record'):
-        final = read_json(envelope['final_record'])
+        require(development['decision'] == 'CALIBRATED', 'freeze requires calibrated development')
+        check_frozen(root, manifest_path, envelope['frozen_revision'])
+    final = read_json(envelope['final_record']) if envelope.get('final_record') else None
+    if final and not final.get('not_performed_reason'):
         require(envelope.get('frozen_revision') and final.get('before') and final.get('after'), 'missing frozen evidence')
         require(final['before'] == final['after'], 'frozen bytes changed during final measurement')
         require(final.get('frozen_revision') == envelope['frozen_revision'], 'final revision differs')
@@ -112,14 +132,24 @@ def probe(root):
             protection = final.get('protection', {})
             require(protection.get('status') == 'VERIFIED' and protection.get('mechanism') and
                     Path(protection.get('probe_locator', '')).is_file(), 'unverified protected final claim')
-        frozen_root = manifest_path.parent.resolve()
-        actual_files = {str(path.resolve()) for path in frozen_root.rglob('*') if path.is_file() and '.git' not in path.relative_to(frozen_root).parts}
-        require(set(final['after']) == actual_files, 'incomplete frozen file inventory')
-        for path, expected_hash in final['after'].items():
-            require(digest(path) == expected_hash, 'frozen artifact changed')
-    decision = summaries[-1]['decision']
+        require(final['measurement_round']['policy']['split'] != 'development', 'final cannot reuse development attempts')
+        check_frozen(root, manifest_path, envelope['frozen_revision'], final['before'])
+        check_frozen(root, manifest_path, envelope['frozen_revision'], final['after'])
+    final_summaries = [summary for summary in summaries if summary['split'] != 'development']
+    require(not final_summaries or (envelope.get('final_record') and development['decision'] == 'CALIBRATED'),
+            'final attempts require calibrated development and final record')
+    require(len(final_summaries) <= 1, 'multiple final measurements')
+    require(not final_summaries or (final and not final.get('not_performed_reason')), 'final observations declared not performed')
+    final_gaps = sorted({gap for summary in final_summaries for gap in summary['criterion_gaps']})
+    final_invalid = any(summary['validity'] == 'INVALID' for summary in final_summaries)
+    final_unverified = any(summary['validity'] == 'UNVERIFIED' for summary in final_summaries)
+    decision = ('INVALID' if final_invalid else 'UNVERIFIED' if final_gaps or final_unverified else development['decision'])
     require(envelope['decision'] == decision, 'declared decision differs')
     eligible = decision == 'CALIBRATED' and bool(envelope.get('frozen_revision'))
     return dict(workflow_admission=True, calibrated_benchmark_eligible=eligible,
                 decision=decision, established_native_attempts=established,
-                declared_rounds=len(summaries), criterion_gaps=summaries[-1]['criterion_gaps'])
+                declared_rounds=len(summaries), criterion_gaps=sorted(set(development['criterion_gaps'] + final_gaps)),
+                development_decision=development['decision'],
+                final_observations=[dict(estimate=row['estimate'], band_observation=row['band_observation'],
+                    drift=None if row['estimate'] is None or development['estimate'] is None else row['estimate'] - development['estimate'])
+                    for row in final_summaries])

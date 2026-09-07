@@ -7,7 +7,8 @@ disable-model-invocation: true
 Require: fixed `draft`, revision-bound `qualification`, construction `standard`,
 coverage/rigor, `target_configuration`, preregistered `calibration_policy`, native
 execution mechanism, candidate access scope, builder identities, qualification
-budget, git evidence workspace and total bounds. Missing inputs return UNVERIFIED
+budget, git `workspace`, repository-relative `records`, durable external
+`evidence_export` and total bounds. Missing inputs return UNVERIFIED
 with partial artifacts and gaps.
 
     tickets.py frame-open <run> --goal-file <calibration-goal> --workflow benchmark-calibrate
@@ -23,12 +24,11 @@ Start only from VALID qualification covering this draft. Otherwise return its
 INVALID/UNVERIFIED decision and evidence; an evidenced repair may enter the
 bounded revision branch below before attempts.
 
-One ordinary making ticket owns the complete declared round in an external
-evidence workspace. Run actual native attempts as experiment subjects, using
+One ordinary making ticket owns the complete declared round in `records` within the integration workspace. Run actual native attempts as experiment subjects, using
 fresh candidate repositories; collect transcripts, outputs, independent grader
-observations and summary. Controls remain separately classified.
+observations and summary. Export the committed records using the handoff; controls stay separate.
 
-    tickets.py do <run> --parent <frame> --standard benchmark-quality --standard <standard> --workspace <evidence-workspace> --goal-file <attempts>
+    tickets.py do <run> --parent <frame> --standard benchmark-quality --standard <standard> --workspace <workspace> --goal-file <attempts>
 
 Give a fresh diagnostic judge the fixed draft and landed attempt commit plus
 qualification findings. Inspect per-case uncertainty, empirical discrimination,

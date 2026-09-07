@@ -23,8 +23,8 @@ finding carries the search paths and bounds that support it.
 The synthesis fixes a construct definition; a claim register with source and
 falsifying observation per claim; claim-to-case or claim-to-gap mappings; a
 failure atlas distinguishing observed from taxonomy-derived modes and naming
-the deviation each implies; prior-art dispositions; disagreement and gap
-registers; and sourcing mode (mined, authored, generated-then-filtered) justified
+the deviation each implies; prior-art dispositions; disagreement register and gap
+register; and sourcing mode (mined, authored, generated-then-filtered) justified
 by admissible evidence. Concrete exhibited inputs, outputs and traces are
 oracle anchors or have a recorded reason they cannot be cased. Interpretation
 never silently becomes a source observation.

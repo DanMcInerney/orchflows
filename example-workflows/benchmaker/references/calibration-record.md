@@ -12,7 +12,8 @@ An attempt is one actual isolated execution, not a control score or aggregate.
 Its `(benchmark_revision, split, round, case_id, trial)` tuple is unique. Trial
 is a stable attempt index, including excluded infrastructure events; an allowed
 retry remains a separately attributable event with its predecessor/reason.
-Locators resolve relative to the external evidence record's declared workspace.
+Locators are absolute under the durable external export; its bytes are committed
+in a separate record subtree of the same integration repository.
 
 | Field | Shape and meaning |
 | --- | --- |
@@ -20,6 +21,7 @@ Locators resolve relative to the external evidence record's declared workspace.
 | `split` | Declared development, confirmation or final split. |
 | `round` | Declared sampling-round identity. |
 | `trial` | Trial index within that case/round. |
+| `retry_of` | Null for declared primary samples; otherwise an earlier excluded infrastructure trial index in the same case/round, replaced at most once. |
 | `target_configuration` | Full object or immutable locator to the fixed configuration. |
 | `benchmark_revision` | Full git revision of measured benchmark bytes. |
 | `candidate_kind` | `agent_attempt` or `control`; provenance determines classification, never the label alone. |
@@ -33,6 +35,7 @@ Locators resolve relative to the external evidence record's declared workspace.
 | `launch_receipt_locator` | Observed subprocess command, configuration, exit and timing receipt. |
 | `grader_observation_locator` | Separate deterministic grader or anchored oracle observation. |
 | `classification` | `completed`, `candidate_failure`, `task_timeout`, `startup_timeout`, `permission_failure`, `launch_failure` or `environment_failure`. |
+| `evaluator_classification` | `completed` or `environment_failure`; never overwrites the native `classification`. |
 | `exit_code` | Observed process exit, or unavailable reason where no process started. |
 | `elapsed_seconds` | Observed nonnegative wall time. |
 | `token_usage` | Native-reported usage or explicit unavailable reason. |
@@ -68,6 +71,7 @@ weights/designs remain separate supported implementations or declared gaps.
 
 | Field | Meaning |
 | --- | --- |
+| `validity` | Lossless revision-bound VALID, INVALID or UNVERIFIED qualification. |
 | `estimator` | pass@1 definition and computation, never best-of-k. |
 | `weights` | Actual case/stratum weights. |
 | `independent_unit` | Sampling unit and fixed-case repeat interpretation. |
@@ -110,3 +114,17 @@ live-admission gap, not evidence that the workflow executed. Admission receipts
 locate source package commit, runtime run/frame/ticket identities, standard
 pins, landed artifacts, independent findings, outside probe exits, launch and
 case/trial totals, spend and unexecuted branches.
+
+The first `trials_per_case` attempt indices are primary slots. Every later
+attempt names `retry_of`, whose event must be excluded for native or grader
+infrastructure. A predecessor can be replaced only once; valid slots never
+exceed the declared sample, and all replacements share the round's allocated
+`infrastructure_retry_budget`. The admission envelope also declares the global
+retry allocation across every round. No extra valid sampling is a partial estimate.
+
+Configuration policy lists `required_configuration_fields` and
+`optional_configuration_fields` as dotted paths. Fields default to required;
+nested unavailable markers remain gaps even when requested and resolved JSON
+are equal. Optional unavailable seed/temperature metadata stays in
+`optional_gaps`. Required instruction, scaffold, delegation and capability
+observations cannot be satisfied by copied placeholders.
