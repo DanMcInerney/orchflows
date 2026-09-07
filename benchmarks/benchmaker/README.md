@@ -1,7 +1,12 @@
-# The benchmaker case set
+# The historical benchmaker control case set
 
-Sixteen benchmark-building tasks that exercise the `benchmaker`
-composition from every angle it claims to cover. This set supersedes
+Sixteen benchmark-building tasks preserved as contract/control and harness
+evidence for the historical `benchmaker` composition. They do not measure the
+current target agent's pass@1 and do not establish empirical calibration.
+The source workflow now uses independent qualification and bounded calibration;
+see [its public contract](../../example-workflows/benchmaker/SKILL.md).
+
+This set supersedes
 the thirteen-case hand-authored set: it was produced end to end by
 the `benchmaker` composition (`example-workflows/benchmaker/SKILL.md`)
 run against benchmaker's own fixed identity, under the self-benchmarking
@@ -27,7 +32,7 @@ bad one.
 Frozen. One case per row; `tools/validate_cases.py` enforces the
 bijection.
 
-| angle | what it proves about benchmaker | case |
+| angle | historical contract/control behavior exercised | case |
 | --- | --- | --- |
 | deterministic-cli | byte-exact outcome, transcript anchoring, qualification independence | cs-cli-fresh |
 | time-semantics | injected-clock scoring, no invented interface surface | cs-ratelimit-fresh |

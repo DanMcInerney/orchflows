@@ -22,6 +22,25 @@
    "test_architecture_owners.StatedCeilingTest.test_padding_a_copy_past_the_ceiling_fails_the_check",
    "test_architecture_owners.StatedCeilingTest.test_the_map_is_inside_the_ceiling_it_states",
    "test_architecture_owners.StatedCeilingTest.test_the_map_states_a_ceiling",
+   "test_benchmaker_calibration.CalibrationTests.test_duplicate_missing_cases_controls_only_and_wrong_configuration",
+   "test_benchmaker_calibration.CalibrationTests.test_equal_case_estimator_does_not_pool_trials_or_select_best",
+   "test_benchmaker_calibration.CalibrationTests.test_established_task_timeout_is_genuine_failure_startup_is_excluded",
+   "test_benchmaker_calibration.CalibrationTests.test_external_probe_rejects_forged_summary_and_audit_identity",
+   "test_benchmaker_calibration.CalibrationTests.test_independent_grader_discriminates_wrong_and_missing_source",
+   "test_benchmaker_calibration.CalibrationTests.test_infrastructure_never_counts_as_target_failure",
+   "test_benchmaker_calibration.CalibrationTests.test_legacy_manifest_never_enters_empirical_admission",
+   "test_benchmaker_calibration.CalibrationTests.test_observed_configuration_contract_can_be_calibrated",
+   "test_benchmaker_calibration.CalibrationTests.test_optional_configuration_metadata_does_not_block_declared_rigor",
+   "test_benchmaker_calibration.CalibrationTests.test_prepare_cannot_manufacture_receipt_or_completed_benchmark",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_detects_unlisted_frozen_file",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_rejects_absent_journal_and_uncommitted_manifest",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_rejects_missing_and_corrupt_output",
+   "test_benchmaker_calibration.CalibrationTests.test_tracer_replays_native_source_and_preserves_configuration_gap",
+   "test_benchmaker_integration.PublicIntegrationTests.test_generated_project_adapters_expose_only_benchmaker",
+   "test_benchmaker_integration.PublicIntegrationTests.test_package_resource_containment_and_literal_standard_calls",
+   "test_benchmaker_integration.PublicIntegrationTests.test_private_names_resolve_only_inside_public_package",
+   "test_benchmaker_integration.PublicIntegrationTests.test_public_handoff_has_required_inputs_and_ordered_private_calls",
+   "test_benchmaker_integration.PublicIntegrationTests.test_tournament_forwards_configuration_and_gates_frozen_eligibility",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_choice_authorizing_dispositions_require_settled_q12",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_covered_candidate_or_evidence_change_invalidates_disposition",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_each_disposition_is_bound_to_one_branch_shape",
@@ -2254,6 +2273,14 @@
    "module": "tests.test_affected_tests_cases.common",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_benchmaker_calibration",
+   "owner": "<module>",
+   "restoration": "selected-module-boundary",
    "seams": [
     "import-path"
    ]
