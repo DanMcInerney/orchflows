@@ -75,6 +75,7 @@ def load(review):
 def record(review, raw):
     # Redact before comparison and persistence; original source bytes are never copied.
     entry = redact(raw)
+    require(isinstance(entry, dict), "record must be an object")
     path = review_path(review)
     if not path.is_dir():
         raise EvidenceError("review not found")

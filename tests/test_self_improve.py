@@ -317,6 +317,17 @@ class SelfImprove(unittest.TestCase):
         self.assertEqual(bundle["observations"], first["items"] + second["items"])
         self.cli("show", "--review", self.review, "--section", "observations", "--limit", "0", expected=2)
 
+    def test_drifted_nested_tool_shape_retains_raw_evidence_and_refuses_nonobject_record(self):
+        self.write("p.jsonl", [meta("p", self.project), message("nearby success"),
+            {"type": "response_item", "timestamp": STAMP, "payload": {"type": "function_call", "call_id": {}, "name": "tool"}},
+            {"type": "response_item", "timestamp": STAMP, "payload": {"type": "function_call", "call_id": ["bad"], "name": "tool"}}])
+        bundle = self.collect()
+        self.assertEqual("partial", bundle["coverage"])
+        self.assertEqual(3, len(bundle["observations"]))
+        path = self.root / "bad-record.json"
+        path.write_text("[]")
+        self.assertEqual("evidence-refusal", self.cli("record", "--review", self.review, "--file", str(path), expected=2)["kind"])
+
 
 if __name__ == "__main__":
     unittest.main()

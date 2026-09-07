@@ -125,6 +125,9 @@ def collect(frozen):
                 source["counts"]["unsupported"] += 1
                 source["gaps"].append("unsupported record at " + locator)
             sid = node["session"] or row.get("session") or row.get("session_id")
+            if sid is not None and not isinstance(sid, str):
+                source["gaps"].append("invalid session identity at " + locator)
+                sid = None
             if not sid and kind == "tickets":
                 associated = ticket_sessions.get((row.get("run"), row.get("id")), set())
                 if len(associated) == 1:
@@ -193,7 +196,10 @@ def collect(frozen):
                     child.write_text("\n".join(canonical(r) for r in selected_rows) + "\n", encoding="utf-8")
                 else:
                     path.write_text("\n".join(canonical(r) for r in selected_rows) + "\n", encoding="utf-8")
-                normalized = trace.extract_codex(path) if kind == "codex" else trace.extract_claude(path)
+                try:
+                    normalized = trace.extract_codex(path) if kind == "codex" else trace.extract_claude(path)
+                except (TypeError, ValueError, AttributeError, KeyError):
+                    normalized = {"events": [], "parse_errors": ["unsupported trace field shape"]}
             if normalized.get("parse_errors"):
                 source["gaps"].append("trace normalization degraded")
             for event in normalized.get("events", []):
