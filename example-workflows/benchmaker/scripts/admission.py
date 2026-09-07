@@ -9,6 +9,10 @@ from probe import probe
 from records import EvidenceError, summarize
 
 PACKAGE = Path(__file__).resolve().parent.parent
+SUBMISSION_SCHEMA = {
+    'type': 'object', 'properties': {'source': {'type': 'string'}},
+    'required': ['source'], 'additionalProperties': False,
+}
 
 
 def prepare(root):
@@ -18,7 +22,7 @@ def prepare(root):
         (root / name).mkdir()
     request = PACKAGE / 'references' / 'live-admission.md'
     (root / 'request.md').write_bytes(request.read_bytes())
-    (root / 'submission-schema.json').write_bytes((PACKAGE / 'references' / 'admission' / 'submission-schema.json').read_bytes())
+    write_json(root / 'submission-schema.json', SUBMISSION_SCHEMA)
     policy = dict(case_ids=['topological-order', 'interval-difference', 'lru-ttl'],
                   split='development', round=0, trials_per_case=2, band=[0.30, 0.50],
                   infrastructure_retry_budget=1, require_resolved_configuration=True,

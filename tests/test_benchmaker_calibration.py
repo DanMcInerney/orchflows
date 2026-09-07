@@ -214,9 +214,20 @@ class CalibrationTests(unittest.TestCase):
     def test_prepare_cannot_manufacture_receipt_or_completed_benchmark(self):
         result = prepare(self.root / 'fresh')
         self.assertTrue(Path(result['semantic_goal']).is_file())
+        self.assertEqual(json.loads(Path(result['schema']).read_text()), {
+            'type': 'object', 'properties': {'source': {'type': 'string'}},
+            'required': ['source'], 'additionalProperties': False,
+        })
         self.assertEqual(list(Path(result['evidence']).iterdir()), [])
         with self.assertRaises(OSError):
             probe(self.root / 'fresh')
+
+    def test_legacy_manifest_never_enters_empirical_admission(self):
+        envelope = self.envelope(self.attempt())
+        legacy = SCRIPTS.parents[2] / 'tests' / 'fixtures' / 'benchmark' / 'manifest.json'
+        write_json(Path(envelope['benchmark_manifest']), json.loads(legacy.read_text()))
+        with self.assertRaisesRegex(EvidenceError, 'not empirical manifest v2'):
+            probe(self.root)
 
     def test_external_probe_rejects_forged_summary_and_audit_identity(self):
         envelope = self.envelope(self.attempt())
