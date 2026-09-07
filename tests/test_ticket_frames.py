@@ -841,7 +841,7 @@ class SavedWorkflowShapeTest(unittest.TestCase):
         self.assertEqual([], sorted(_planless(self.bodies)))
 
     def test_dropping_the_flag_from_a_copy_fails_the_check(self):
-        """The can-fail direction (rules/verification.md Â§8) on copies built
+        """The can-fail direction (rules/verification.md §8) on copies built
         beside the tree: one workflow's text at a time, mutated in memory."""
 
         for name, body in self.bodies.items():
