@@ -901,6 +901,7 @@
    "test_self_improve.SelfImprove.test_codex_tracer_descendants_time_project_success_and_original_hash",
    "test_self_improve.SelfImprove.test_concurrent_records_have_one_winner_and_no_lost_predecessor",
    "test_self_improve.SelfImprove.test_cross_review_recurrence_carries_immutable_original_proposal",
+   "test_self_improve.SelfImprove.test_current_codex_items_and_metadata_keep_unknown_shapes_partial",
    "test_self_improve.SelfImprove.test_cycles_orphans_duplicates_missing_metadata_cannot_expand_scope",
    "test_self_improve.SelfImprove.test_drifted_nested_tool_shape_retains_raw_evidence_and_refuses_nonobject_record",
    "test_self_improve.SelfImprove.test_exact_duplicates_keep_each_locator_and_covered_never_filters",
