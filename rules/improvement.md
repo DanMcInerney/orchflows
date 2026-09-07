@@ -35,7 +35,7 @@
    acceptance oracle. Before acceptance the amended owner passes that same
    failure oracle and nearby successful behavior, plus scoped owner checks.
    An unavailable replay remains an explicit gap and cannot be labelled
-   passed. Original sources and prior evidence remain unchanged.
+   passed. Retain the byte identities from observation through replay.
 6. Improvement uses ordinary delivery machinery. Workflow and project
    proposals land under their owners' standards and checks; environment
    actions stay within user authorization and are verified by their probes.

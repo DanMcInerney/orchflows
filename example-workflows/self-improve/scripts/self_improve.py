@@ -24,7 +24,11 @@ def main(argv=None):
     write = commands.add_parser("record")
     write.add_argument("--review", required=True)
     write.add_argument("--file", required=True)
-    commands.add_parser("show").add_argument("--review", required=True)
+    show = commands.add_parser("show")
+    show.add_argument("--review", required=True)
+    show.add_argument("--section", choices=("observations", "sources", "context", "gaps", "records"))
+    show.add_argument("--offset", type=int, default=0)
+    show.add_argument("--limit", type=int, default=100)
     close = commands.add_parser("close")
     close.add_argument("--review", required=True)
     close.add_argument("--mode", choices=("review", "repair"), required=True)
@@ -37,7 +41,7 @@ def main(argv=None):
         elif args.command == "record":
             result = improve_store.record(args.review, read_json(args.file))
         elif args.command == "show":
-            result = improve_store.show(args.review)
+            result = improve_store.show(args.review, args.section, args.offset, args.limit)
         else:
             result = improve_store.close(args.review, args.mode)
         print(json.dumps(redact(result), sort_keys=True, ensure_ascii=True))

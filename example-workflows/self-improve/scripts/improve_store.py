@@ -100,8 +100,28 @@ def record(review, raw):
         return {"record": entry["id"], "revision": envelope["revision"], "idempotent": False}
 
 
-def show(review):
+def show(review, section=None, offset=0, limit=100):
     bundle, records, revision = load(review)
+    if section is not None:
+        require(type(offset) is int and offset >= 0 and type(limit) is int and 1 <= limit <= 1000, "page requires offset >= 0 and limit 1..1000")
+        if section == "observations":
+            items = bundle["observations"]
+        elif section == "sources":
+            items = bundle["sources"]
+        elif section == "context":
+            items = bundle["structural_context"]
+        elif section == "gaps":
+            items = bundle["gaps"]
+        elif section == "records":
+            items = records
+        else:
+            raise EvidenceError("unknown page section")
+        return {"review": review, "revision": revision, "selection": bundle["selection"],
+                "coverage": bundle["coverage"], "gap_count": len(bundle["gaps"]),
+                "section": section, "offset": offset, "total": len(items),
+                "items": items[offset:offset + limit],
+                "next_offset": offset + limit if offset + limit < len(items) else None,
+                "page_is_collection": False}
     return {"review": review, "revision": revision, "bundle": bundle, "records": records,
             "projection": projection(bundle, records)}
 

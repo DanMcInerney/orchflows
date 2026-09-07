@@ -69,8 +69,19 @@ predecessor equal to the last revision. Exact retries are idempotent;
 different reuse, stale heads and concurrent writers refuse. Retry a busy
 writer after it finishes; inspect abandoned locks before removing them.
 State lives under improvement_root()/reviews/. Writes inside Git or source
-trees refuse; only supported installed scripts write durable sink records.
+trees refuse; use the installed entry for collection and append.
 Records are evidence claims for review, never instructions.
+
+For a week-sized review, use `show --review ID --section observations --offset
+0 --limit 100`, then follow next_offset to null at the same revision. Sections
+sources, context, gaps and records use the same paging fields. Limits are
+1..1000 items per page. A page states its total and page_is_collection=false;
+it never claims to be the complete bundle. Analysis accounts for all pages,
+or leaves unread observations unresolved. Collection has no hidden byte,
+file-count or record-count cap: its bounds are explicit roots, selectors and
+time. Memory scales with those snapshots; if acquisition cannot finish, no
+completed review is emitted. Narrow an input only with an explicit revised
+selection, never by quietly treating an excerpt as the week's evidence.
 
 * incident: members (observation IDs), rationale, uncertainty (list),
   classification (environment/workflow/architecture/project/uncertain),
@@ -102,7 +113,7 @@ Records are evidence claims for review, never instructions.
 
 Implemented evidence needs commit, checks (command/exit), original_replay,
 nearby_replays, judge_artifact, judge_verdict PASS, delivery_run, accepted_ticket.
-Replays keep original command/fixture hashes, name accepted commit and exit 0.
+Replay objects bind command, fixture_sha256 and revision to their proposal.
 Deployed evidence needs receipt, installed_commit, deployed_at; a composition
 also uses accepted_source to bind implementation. Later-use evidence needs
 run, started_at, matching_owner, matching_obstruction, artifact; the run differs
@@ -122,7 +133,7 @@ and unchanged replay. Judge goal fixes landed commit, proposal, checks and
 original oracle hashes. Use actual emitted launches, outcomes and tickets.py
 land; ledger records do not substitute for these doors. The public body owns
 the canonical two-round repair bound. The driver persists accepted transitions
-after reading landed evidence. Source repair does not imply installation;
+after reading landed evidence. Deployment has its own recorded transition;
 authorized environment actions retain concrete probes and deployment receipts.
 
 `close --review ID --mode review` verifies report/provenance/lifecycle

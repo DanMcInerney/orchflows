@@ -13,9 +13,9 @@ import tempfile
 import unittest
 
 from scripts import state_root
+from tests._repo_root import ROOT
 
 
-ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "example-workflows" / "self-improve" / "scripts"
 COMMAND = SCRIPTS / "self_improve.py"
 STAMP = "2026-09-07T10:00:00Z"
@@ -303,6 +303,19 @@ class SelfImprove(unittest.TestCase):
         sink.mkdir(exist_ok=True)
         (sink / ".git").mkdir()
         self.cli("collect", "--selection", str(path), expected=2)
+
+    def test_pages_name_complete_collection_and_never_hide_remaining_evidence(self):
+        self.write("p.jsonl", [meta("p", self.project), message("first"), message("second")])
+        bundle = self.collect()
+        first = self.cli("show", "--review", self.review, "--section", "observations", "--limit", "1")
+        second = self.cli("show", "--review", self.review, "--section", "observations", "--offset", "1", "--limit", "1")
+        self.assertEqual(2, first["total"])
+        self.assertEqual(1, first["next_offset"])
+        self.assertIsNone(second["next_offset"])
+        self.assertFalse(first["page_is_collection"])
+        self.assertEqual(first["revision"], second["revision"])
+        self.assertEqual(bundle["observations"], first["items"] + second["items"])
+        self.cli("show", "--review", self.review, "--section", "observations", "--limit", "0", expected=2)
 
 
 if __name__ == "__main__":
