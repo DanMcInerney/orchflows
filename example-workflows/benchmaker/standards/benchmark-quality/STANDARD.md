@@ -9,6 +9,11 @@ narrows: orch-code
 ## Instrument validity
 
 Validity (measuring the intended outcome) and target difficulty are separate.
+Direction and final cases/outputs remain comparable to the original outcome
+and subject facts, including relationships and interaction behavior where
+relevant. Task-critical modalities need observed representative input evidence;
+missing listening, ordinary-input or native observation capability is a gap,
+not satisfied by tool presence.
 The smallest useful slice contains visible case contracts, independent outcome
 checks, reference correctness, controls and attributable target evidence.
 Every case has a stable id, construct/failure mapping, provenance, stratum,
@@ -48,7 +53,11 @@ Pin target artifact, actual model/version availability, effort, host/CLI,
 scaffold/prompt, tools/network, delegation, context policy, exposed seed/temperature,
 time/token bounds and grader identity. Requested and resolved values differ
 explicitly; unavailable metadata has a reason. Configuration changes mark
-incomparability. No harness-offset subtraction is valid.
+incomparability. Record the observable native instruction/skill/tool surface
+identity at first and resumed turns, its changes and unavailable portions.
+Matched-comparison claims are qualified when those surfaces differ or remain
+unknown; a valid upstream score retains its meaning. Prompt delivery alone
+proves no native activation. No harness-offset subtraction is valid.
 
 Each counted trial has an actual native launch, prompt, raw transcript, new
 candidate artifact, observed exit/time/usage and independent grader observation,

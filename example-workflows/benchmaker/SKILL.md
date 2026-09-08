@@ -22,7 +22,11 @@ benchmark-quality and benchmark-evidence. Execute each body's contract; a frame
 alone is no invocation. Each goal carries original semantic inputs and remaining
 bounds. Bind every helper's `workspace` to the supplied construction repository
 and `records` to a subtree outside frozen benchmark bytes; `evidence_export`
-is the durable locator for a committed record export. Resolve the domain standard in this callee's scope before making.
+is the durable locator for a committed record export. Before expensive dependent
+work, identify task-critical modalities and native execution/observation
+capabilities; observe a small representative input and retain its identity,
+actual context and limits. Missing capability returns a named UNVERIFIED gap;
+a tool listing alone cannot establish it. Resolve the domain standard in this callee's scope before making.
 
 **Construct.** Supply target/outcome, sources/rigor, standard, configuration/policy,
 package/workspace, evidence-store root and bounds to benchmark-construct:

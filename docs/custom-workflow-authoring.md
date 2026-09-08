@@ -124,7 +124,9 @@ Trust in a bundle is not trust in its prose running as your own reasoning. A
 workflow you authored may drive inline in your session; an imported one
 drives inside a frame you spawn an agent for, unless you decide otherwise for
 that bundle. The convention costs a spawn and buys the same containment a
-sealed child prompt has.
+sealed child prompt has. This is a glue-only driver, not deliverable authority;
+[rules/delegation.md](../rules/delegation.md) §2 and
+[rules/roles.md](../rules/roles.md) §6 still bind each making or judging call.
 
 ## Dependencies
 
@@ -160,12 +162,16 @@ report each missing tool or variable with its line, and never print a
 variable's value. An item's **Node tooling** for its own scripts goes in
 `package.json` plus a committed lockfile beside the manifest; `orchflows
 sync` runs the lockfile install into the item's `node_modules` directory
-under the same trust rule.
+under the same trust rule, serialized per declaring directory. A browser
+readiness observation requires a successful executable probe; it neither fetches
+a browser nor proves task-specific interaction capability.
 
 The **artifact's** own dependencies are none of those three. A game's
 three.js, a site's build tool and their lockfiles belong to the workspace's
 own manifest, installed by the child in its worktree as part of making the
-artifact and committed with it. Orchflows never owns them; a workflow that
+artifact and committed with it. Workspace preparation recognizes root package
+locks and explicitly selected package/tool directories; it never recursively
+installs discovered manifests. Orchflows never owns those dependencies; a workflow that
 needs them present for its `done` probe declares the toolchain in its own
 `tools.txt` instead. An item that declares nothing runs as it always did, and
 what it imports is its own suite's claim to make. A standard declares nothing at
@@ -199,19 +205,19 @@ a `tools.txt` inside one are refused.
 ## What a workflow is made of
 
 A workflow is a skill whose prose calls other skills, down to two callables.
-`tickets.py do` makes one artifact through one stamped standard;
+`tickets.py do` makes one coherent result through its stamped standards;
 `tickets.py judge` reads fixed artifacts and returns findings. Each call is
 one minting command: it mints the ticket, seals it, pins the standard digest,
 takes the lease, establishes the workspace, and emits the `launch` you
-invoke verbatim. Every call resolves exactly one adapter — that call's
-workspace semantics and evidence discipline — so two domains in one
-deliverable are two calls and a handoff, never one call with two tastes.
-Depth mixes standards freely, because callables never share a workspace.
+invoke verbatim. Orthogonal domain guidance can compose on that one ticket
+under the [standard contract](../contracts/standard.md). Each call resolves
+one workspace adapter separately; incompatible workspace semantics require
+separation under [topology](../rules/topology.md) §6. Competing legacy adapter
+hints still refuse unless an explicit adapter or concrete target resolves them.
 
 `tickets.py frame-open` opens the invocation's frame and `frame-close` ends
 it. A frame is standard-less and lease-less: it is a journal, not
-standard-governed work, and its driver is the session you are already talking
-to. Write the calls in whatever order, parallelism, branching or bounded
+standard-governed work, and its driver has glue-only authority. Write the calls in whatever order, parallelism, branching or bounded
 repetition the job needs — that prose *is* the control flow, and there is no
 engine under it to keep in step. That prose is also the frame's shape, so a
 saved workflow's root `frame-open` names `--workflow <name>` instead of
@@ -227,6 +233,21 @@ the head of a wave rather than only after a crash — and your body states
 neither. `tickets.py frame-open` prints the frame law with the payload it
 returns, so the driver reads it at the moment it opens the frame; a body
 that restates it is a second owner of it.
+
+Use the current emitted host binding and command help. Host entries supply
+`--host <host>` on `do`, `judge`, and `dispatch`. Inspect a ticket's normalized
+package/standard pins through `tickets.py show <run> <id> --pins`; inspect
+bounded text with `tickets.py show <run> <id> --section Report --offset 0 --limit 4096`
+and continue from its returned `next_offset` until null. Neither inspection
+changes assignment authority.
+
+An executor closing from a local note carries its exact issued authority:
+
+    tickets.py dispatch-outcome <run> <id> --assignment-seal <seal>
+      --dispatch-id <dispatch-id> --by <assigned-name> --note-file <path>
+
+The full canonical envelope instead travels through `--file`; a caller relays
+it unchanged. The [dispatch contract](../contracts/dispatch.md) owns both forms.
 
 ## Deterministic calls, or a planning `do`
 
@@ -296,15 +317,20 @@ artifact; they are not required headings or a step schema.
    and verify the missing lower contracts bottom up before their callers.
    An ordinary sentence needs no wrapper.
 2. Fix the intended contract, target tier, scope, owner path, and observable
-   admission before writing. Apply the overlap rule in
+   admission before writing. Identify each task-critical modality and capability
+   (such as listening, vision, ordinary input or native context observation),
+   and observe a small representative input before expensive work depends on
+   it. Record the observed context, input identity and limits; tool presence
+   alone proves no usable capability. Carry unavailable evidence as a gap,
+   without lowering the criterion. Apply the overlap rule in
    [composition](../rules/composition.md) §6 and the placement rule in
    [token economy](../rules/token-economy.md) §6.
 3. For a skill, use the anatomy and carriage rules in
    [composition](../rules/composition.md) §§5, 10–11. For a standard, follow
    [standard authoring](standard-authoring.md) and the
    [standard contract](../contracts/standard.md), which owns the
-   frontmatter and every section — `## Lens`'s `### root` entry included, so
-   a custom standard a planner freezes a root against fills it like any other.
+   frontmatter, nonempty guidance, optional Lens layout and purity. Cover the
+   domain questions the assignment needs; headings do not prove coverage.
 4. For a workflow, write it step by step rather than from a template. For
    each step ask the four questions in *Which work earns a callable* above:
    none of the four and the step is a sentence in your prose, one or more
@@ -322,7 +348,8 @@ artifact; they are not required headings or a step schema.
    the tickets it opened, is its deterministic admission. Keep a repeated
    internal orchestration in its private helper-workflow folder; call an
    independently useful public workflow by its ordinary top-level name so it
-   establishes its own package scope.
+   establishes its own package scope. Respect its named/manual invocation
+   contract: public availability alone does not authorize a protected campaign.
    Keep control flow in workflows, methods in applied skills, and quality in
    standards. Supply task-specific semantic inputs to reusable calls; use the
    [standard contract](../contracts/standard.md) for recurring quality
@@ -366,13 +393,22 @@ literal Orchflows commands: a command at the start of a line, a
 `python .../tickets.py` form, or a complete command in a Markdown code span.
 It resolves literal `--workflow`, `--standard`, and `--skill` names in package
 scope, rejects obsolete flags such as `--pack` and `--sheet`, and rejects a
-literal private workflow cycle.
+literal private workflow cycle. The first `frame-open --workflow` naming the
+containing workflow declares its own invocation, with or without `--parent`;
+subsequent self-named frames and frames naming other workflows are call edges.
+This declaration convention does not authorize recursive invocation.
 
 Placeholders, computed names, branches, and natural-language implications are
 not execution facts. The checker reports once for each workflow body that
 these remain unchecked; it neither interprets arbitrary prose nor certifies
 that a branch ran. Prove runtime composition with the existing frame, `do`,
 `judge`, admission, pin, and `land` doors against a disposable project.
+
+At admission, exercise the task-critical capabilities identified in Procedure
+against representative inputs before their expensive dependent branches. A
+missing listening or ordinary-input decision capability stays explicit; retain
+the sample and route to a capable evidence source under the existing authority
+and budget. Repeating an unchanged unavailable context is no new evidence.
 
 A package may keep a small fixture in `references/`, a concrete boundary in
 its package script directory, and an optional trusted probe in the public
@@ -395,11 +431,18 @@ Review the fixed artifact independently against these owners:
   [composition](../rules/composition.md);
 - ownership and dependency direction: [visibility](../rules/visibility.md)
   §§2–4;
-- standard purity and section completeness:
+- standard purity and substantive domain coverage:
   [standard contract](../contracts/standard.md);
 - vocabulary: [vocabulary](vocabulary.md), using its meanings and no others;
 - implemented enforcement and non-normative illustrations:
   [documentation](documentation.md) laws 6, 9.
+
+Compare direction and final output with the original requested outcome and
+canonical subject facts, including visible relationships/connectors and actual
+interaction behavior where relevant. An intermediate approval or readable
+labels cannot substitute for that comparison. Record which native instruction
+and tool context was observable, changes across resumed turns, and unknowns;
+qualify claims that depend on an unobserved or changed capability.
 
 Record the item and adapter paths, deterministic admission evidence, boundary
 findings, and verification observations. Distinguish static admission from
