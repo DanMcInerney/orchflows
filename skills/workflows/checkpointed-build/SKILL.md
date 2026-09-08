@@ -45,7 +45,7 @@ carried:
 
     tickets.py judge <run> --standard <judge-standard> --parent <frame>
       [--standard <narrowing> ...] --artifacts git:<tip>
-      --goal-file <judge-goal> [--context-file <context-file>]
+      --goal-file <judge-goal> [--context-file <context-file>] --workspace <workspace>
 
 Its goal: `goal` against that revision, each block named with the evidence
 for it. Blocks earn *bounded-repair*: "Where the judge blocks, one repair

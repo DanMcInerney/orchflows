@@ -39,6 +39,12 @@ Each Q-01–Q-12 field is recorded independently with its disposition,
 authority kind, owner, rationale, evidence and revision; each omitted
 material field carries a stable open-question or decision identity; a
 settled decision keeps its revision and invalidation trigger.
+Before pricing dependent production or play review, identify task-critical
+vision, listening and ordinary-input decision capabilities in the existing
+record. Observe a small representative interaction at the required cadence;
+record input/context identities and limits. Tool presence or fixed input scripts
+do not establish adaptive play. An unavailable capability remains an empirical
+gap, reopened only with changed capability.
 `browser_game_validate.py` runs against it before filing.
 
 <!-- BGW-TRACE[implementation:experiment-validity|PJ-16,PJ-17] -->
@@ -56,7 +62,10 @@ trigger identity stays `inactive`.
 <!-- BGW-TRACE[implementation:kind-separation|AUTH-05,PJ-18,PJ-19,PJ-28] -->
 <!-- BGW-TRACE[implementation:evidence-identity|PJ-08,PJ-24] -->
 **Checkpoint**, one `judge --standard orch-content` over both artifact
-lines: exactly one disposition — `advance`, `revise`, `experiment`,
+lines: compare direction and evidence to the original brief and settled
+subject facts, including visual relationships and actual interaction behavior;
+technical reachability alone does not establish intuitiveness or fun. Preserve
+capability gaps rather than lowering acceptance. Return exactly one disposition — `advance`, `revise`, `experiment`,
 `user-decision-required` or `stop` — bound to its governing requirement, the
 fixed record revision and evidence identity. Its findings validate
 against the

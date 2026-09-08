@@ -173,8 +173,8 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
 
         The skills tier once held role-bearing driver skills, and the rule
         here read the tier name. `skills/workflows/` now holds reusable
-        workflows: prose an orchestrator runs in place, invoked by name and
-        never forked into a child, which is why the installer renders its
+        workflows: glue-only prose invoked by name; physical containment never
+        grants role-bearing authority. The installer renders their
         host surfaces as a flat pointer and refuses to render a role-bearing
         one without a profile row.
         """
@@ -359,10 +359,8 @@ class TestStandardAnatomy(_IsolatedTree):
         `orchflows new standard` writes -- a hand-rolled one drifts from what a
         real standard must carry and reds these cases on its own defects.
 
-        `kind` is the artifact kind `adapter` emits: the scaffold writes a
-        `git` standard, so a fixture that changes the adapter changes the
-        manifest's `## Lens` entry to match, or the section check reds the
-        root itself and hides the narrowing finding under test.
+        `kind` varies optional Lens navigation independently of the legacy
+        adapter hint; neither declares supported artifact kinds.
         """
 
         name = name or self.STANDARD
@@ -414,7 +412,7 @@ class TestStandardAnatomy(_IsolatedTree):
         self.assertEqual([], self._errors(result.stdout, "market-brief"))
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_a_root_only_section_inside_a_narrowing_is_refused(self):
+    def test_arbitrary_narrowing_headings_are_allowed(self):
         """Narrowing prose has no mechanically reserved heading names."""
 
         self._write_root()
@@ -472,7 +470,7 @@ class TestStandardAnatomy(_IsolatedTree):
             result.stdout,
         )
 
-    def test_a_lens_entry_keyed_by_a_kind_the_named_standard_never_emits_is_refused(self):
+    def test_lens_labels_do_not_declare_artifact_support(self):
         """Lens labels guide readers and make no artifact-support claim."""
 
         self._write_root()
@@ -485,7 +483,7 @@ class TestStandardAnatomy(_IsolatedTree):
         self.assertEqual([], self._errors(result.stdout, "market-brief"))
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_a_named_standard_whose_kind_no_lens_entry_carries_is_refused(self):
+    def test_base_adapter_does_not_constrain_lens_labels(self):
         """A base adapter does not constrain a narrowing's Lens labels."""
 
         self._write_root("orch-paper-standard", adapter="document-tree", kind="doc")
@@ -519,7 +517,7 @@ class TestStandardAnatomy(_IsolatedTree):
             result.stdout,
         )
 
-    def test_a_missing_required_section_is_refused(self):
+    def test_headings_without_domain_guidance_are_refused(self):
         self._write_root()
         self._write_narrowing(
             "market-brief",
