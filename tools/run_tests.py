@@ -255,7 +255,8 @@ def run_module(module: str, import_root: Path, verbosity: int, jobs: int = 1) ->
     # rather than lossy: a Windows child otherwise writes its failure text
     # in the console codepage, cp1252, and every non-ASCII character in an
     # assertion message reaches this process as U+FFFD.
-    receipt, out, err = run_command(command, import_root, 1800, env=child_env(jobs))
+    receipt, out, err = run_command(command, Path.cwd(), 1800,
+                                   env=child_env(jobs), source_tree=import_root)
     returncode = receipt["exit_status"]
     if receipt["outcome"] != "completed":
         returncode = 124 if receipt["outcome"] == "timeout" else 127

@@ -138,25 +138,26 @@ def _terminate(child) -> None:
 
 
 def run_command(argv, tree, timeout: float, *, command=None, refusal=None,
-                env=None):
+                env=None, source_tree=None):
     """Return (receipt, raw stdout, raw stderr), including failed supervision.
 
     Failure to persist raises OSError: callers must refuse rather than advance
     without evidence. An initial refusal is persisted without spawning a child.
     """
     root = Path(tree or Path.cwd()).resolve()
+    source = root if source_tree is None else Path(source_tree).resolve()
     directory = state_root.state_root() / "verification" / uuid.uuid4().hex
     directory.mkdir(parents=True)
-    path = directory / "receipt.json"
+    path = directory / "command.json"
     out_path, err_path = directory / "stdout.bin", directory / "stderr.bin"
     project = state_root.find_repo_root(root)
     record = {
         "kind": "command-verification/v1", "command": command,
-        "argv": list(argv), "cwd": str(root),
+        "argv": list(argv), "cwd": str(root), "source_tree": str(source),
         "project": None if project is None else str(project),
         "started_at": stamp(), "ended_at": None, "exit_status": None,
         "outcome": "running", "timeout_seconds": timeout,
-        "artifact_before": artifact_identity(root), "artifact_after": None,
+        "artifact_before": artifact_identity(source), "artifact_after": None,
         "changed_tree": None, "stdout_path": str(out_path),
         "stderr_path": str(err_path),
     }
@@ -193,7 +194,7 @@ def run_command(argv, tree, timeout: float, *, command=None, refusal=None,
             os.fsync(out.fileno())
             os.fsync(err.fileno())
     raw_out, raw_err = out_path.read_bytes(), err_path.read_bytes()
-    record.update(ended_at=stamp(), artifact_after=artifact_identity(root),
+    record.update(ended_at=stamp(), artifact_after=artifact_identity(source),
                   stdout_sha256=digest(raw_out), stderr_sha256=digest(raw_err))
     record["changed_tree"] = record["artifact_before"] != record["artifact_after"]
     record["evidence"] = _write(path, record)
