@@ -23,6 +23,7 @@ from scripts import orchflows_node, state_root
 from scripts.tickets_format import TERMINAL_STATES, VALID_STATUSES, _parse_frontmatter
 from scripts.tickets_admission import ADMISSION_PENDING
 from .models import _frontend_manifest_identity
+from . import runtime
 
 
 def _protects_payload(data):
@@ -127,6 +128,11 @@ def _stage(plan, root, old=None):
         if name == "bin" and live.exists():
             owned = {Path(entry["path"]) for entry in (old or {}).get("files", [])
                      if entry.get("kind") == "script"}
+            for source, destination in copies:
+                if (destination.is_file() and destination not in owned
+                        and _digest(destination) != _digest(source)):
+                    raise RuntimeError(f"unowned installation script collision at {destination}; "
+                                       "resolve the conflicting helper before retrying")
             # The flat bin is shared with operator-authored helpers. Only
             # receipt-owned scripts may disappear when the source drops them.
             for relative in _files(live):
@@ -212,12 +218,18 @@ def publication(plan, old):
     recover = False
     try:
         payloads = _stage(plan, root, old)
+        # Planning predates this lock. Re-observe the runtime here, and pass
+        # verified reuse through without entering the mutating ensure path.
+        runtime_action = (runtime.private_runtime_action(runtime.private_runtime_home())
+                          if plan.runtime_action is not None else None)
         active = _active(plan, bool(old) or plan.lib_home.exists() or plan.bin_dir.exists())
         changes = []
         for live, stage in payloads:
             before, after = _files(live), _files(stage)
             changes.extend(str(live / relative) for relative in before.keys() | after.keys()
                            if before.get(relative) != after.get(relative))
+        if runtime_action not in (None, "reuse"):
+            changes.append(str(runtime.private_runtime_home()))
         if active:
             if changes:
                 raise RuntimeError("installation would change bytes protected by active references: "
@@ -227,7 +239,8 @@ def publication(plan, old):
             payloads = []
         if changes and (plan.bin_dir / "tickets.py").is_file():
             required = ("tickets_install_guard.py", "tickets_issue.py", "tickets_attempts.py",
-                        "tickets_dispatch_facade.py", "tickets_mint.py", "tickets_frame.py", "tickets_seal.py")
+                        "tickets_dispatch_facade.py", "tickets_mint.py", "tickets_frame.py", "tickets_seal.py",
+                        "tickets_lifecycle.py")
             coordinated = all((plan.bin_dir / name).is_file() and "installation_lock" in
                               (plan.bin_dir / name).read_text(encoding="utf-8") for name in required)
             if not coordinated:
@@ -256,7 +269,7 @@ def publication(plan, old):
                 live.replace(backup)
             moves.append((live, backup if existed else None))
             stage.replace(live)
-        yield
+        yield runtime_action
         (_state(plan) / "tickets").mkdir(parents=True, exist_ok=True)
     except BaseException as error:
         failures = []

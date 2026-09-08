@@ -220,11 +220,11 @@ def apply_plan(
         old_lib_files = {str(path.resolve()) for path in plan.lib_home.rglob("*") if path.is_file()}
         existed = {str(destination) for _, destination in (*plan.scripts, *plan.frontend_assets)
                    if destination.is_file()}
-        with publication(plan, old_receipt):
-            return _apply_published(plan, source_commit, keep_role_agents, old_lib_files, existed)
+        with publication(plan, old_receipt) as runtime_action:
+            return _apply_published(plan, source_commit, keep_role_agents, old_lib_files, existed, runtime_action)
 
 
-def _apply_published(plan, source_commit, keep_role_agents, old_lib_files, existed):
+def _apply_published(plan, source_commit, keep_role_agents, old_lib_files, existed, runtime_action):
     old_receipt = _load_json(plan.receipt_path)
     diverged = _diverged_role_agents(plan, old_receipt)
     # A kept agent stays in the plan so ``_remove_stale`` still counts it as
@@ -250,7 +250,7 @@ def _apply_published(plan, source_commit, keep_role_agents, old_lib_files, exist
         old_entry = old_entries.get((str(path), kind), {})
         return old_entry.get("details") or details
 
-    if plan.runtime_action is not None:
+    if runtime_action not in (None, "reuse"):
         # This lands before the first runtime mutation. If anything below
         # fails, uninstall can still discover the retained runtime.
         _record_runtime_intent(plan, old_receipt)
