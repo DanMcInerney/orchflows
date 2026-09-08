@@ -79,8 +79,8 @@ def inspect_metadata(data, seconds, fps, require_audio):
         if audio.get('codec_name') != 'aac':
             raise ProbeError('delivery audio must be AAC')
         rate = number(audio.get('sample_rate'), 'audio sample rate')
-        if rate not in (44100, 48000):
-            raise ProbeError('delivery audio sample rate must be 44100 or 48000')
+        if rate != 48000:
+            raise ProbeError('delivery audio sample rate must be 48000')
         # AAC encoder priming/tail can extend container/audio duration. Compare
         # streams; allow two AAC packets plus one video frame, not arbitrary drift.
         tolerance = 2048 / rate + 1 / fps

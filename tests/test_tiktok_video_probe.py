@@ -60,6 +60,17 @@ class VideoProbeTests(unittest.TestCase):
             with patch.object(probe, 'run_cli', side_effect=[readings[0], probe.ProbeError('decode failed')]):
                 self.assertEqual(1, self.invoke(root))
 
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'final.mp4').write_bytes(b'fixture')
+            for rate, expected in ((44100, 1), (48000, 0)):
+                data = metadata()
+                data['streams'][1]['sample_rate'] = str(rate)
+                readings = [(json.dumps(data), ''), ('', ''),
+                            ('', '{"input_i":"-16.1","input_tp":"-2.2"}')]
+                with self.subTest(rate=rate), patch.object(probe, 'run_cli', side_effect=readings):
+                    self.assertEqual(expected, self.invoke(root))
+
     def test_endpoints_allow_aac_padding_but_reject_drift(self):
         for seconds in (1, 120):
             good = metadata(seconds)
