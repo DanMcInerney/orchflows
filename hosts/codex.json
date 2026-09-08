@@ -31,7 +31,7 @@
   },
   "launch": {
     "verb": "spawn_agent",
-    "native_fields": ["agent_type", "fork_turns", "model", "model_reasoning_effort", "service_tier"]
+    "native_fields": ["agent_type", "fork_turns"]
   },
   "role_profiles": {
     "planner": {

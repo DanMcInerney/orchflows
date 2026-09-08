@@ -198,6 +198,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         note.write_text("the closing note", encoding="utf-8")
         self.run_command(
             "dispatch-outcome", "run", "T", "--note-file", str(note),
+            "--assignment-seal", seal, "--dispatch-id", "D1", "--by", "worker",
         )
         joined = self.run_command(
             "dispatch-join", "run", "T", "--assignment-seal", seal,

@@ -230,6 +230,10 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             "joined_by": content.get("joined_by"),
             "operation": "join", "outcome_record_id": OUTCOME_RECORD_ID,
         }
+        # Persisted pre-status joins remain readable; their stored disposition
+        # governs replay. New joins bind it in both request and receipt.
+        if "status" in content:
+            expected["status"] = content["status"]
         if content != expected or identity_failure("join-owner", content.get("joined_by")) is not None:
             return _invalid(f"join record '{record_id}' has invalid content")
         outcome = next((
@@ -246,6 +250,8 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
         # longer carries a status for this to check itself against.
         if joined.get("status") not in JOIN_STATUSES:
             return _invalid(f"join record '{record_id}' records an invalid disposition")
+        if "status" in content and content["status"] != joined["status"]:
+            return _invalid(f"join record '{record_id}' disposition differs from its request")
         expected_join = {
             "protocol": PROTOCOL, "run": run, "id": ticket_id,
             "assignment_seal": attempt["assignment_seal"],
@@ -294,20 +300,29 @@ def state(data: dict):
     return stored_state(data)
 
 
+def record_replays(prior: dict, content, kind: str) -> bool:
+    """Legacy join receipts supply the disposition omitted from their request."""
+    if prior.get("content") == canonical_json(content):
+        return True
+    if kind != "join" or not isinstance(content, dict):
+        return False
+    legacy = {key: value for key, value in content.items() if key != "status"}
+    return (prior.get("content") == canonical_json(legacy)
+            and prior.get("success", {}).get("join", {}).get("status") == content.get("status"))
+
+
 def status_ownership_returned(data: dict) -> bool:
-    """Whether this ticket's dispatch lifecycle ever took its status."""
+    """Cancellation may grade ended histories with no outcome or join."""
 
     parsed, failure = stored_state(data)
     if failure is not None or not isinstance(parsed, dict):
         return False
     attempts = parsed.get("attempts") or []
-    if len(attempts) != 1 or attempts[0].get("state") == "live":
-        return False
-    if attempts[0].get("state") == "retired":
-        return True
-    return all(
-        record.get("kind") == "lifecycle"
-        for record in attempts[0].get("records") or []
+    return bool(attempts) and all(
+        attempt.get("state") in {"retired", "replaced"}
+        and not any(record.get("kind") in {"outcome", "join"}
+                    for record in attempt.get("records", []))
+        for attempt in attempts
     )
 
 

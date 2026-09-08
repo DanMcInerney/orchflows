@@ -8,7 +8,7 @@ from pathlib import Path
 from scripts.rings import LIB_DIRS
 
 from .foundation import HOST_ADAPTERS_DIR, PROFILE_ROLES, REPO_ROOT
-from .hosts import GROK_EFFORTS, GROK_MODEL_CENSUS, load_host_adapters, load_role_profiles
+from .hosts import GROK_EFFORTS, GROK_MODEL_CENSUS, host_entry_line, load_host_adapters, load_role_profiles
 
 # Where the library keeps workflows, in the resolver's order.
 # ``scripts/rings.py`` owns the fact; the installer reads it so a workflow
@@ -218,7 +218,7 @@ def workflow_adapter_body(name: str, lib_workflow_dir: Path, frontmatter: str) -
         "its Require names what the caller supplies, its call lines are the\n"
         "commands to run, and its Return is the close. A workflow is only\n"
         "ever invoked by name -- never on a host's own reading of this\n"
-        "description.\n"
+        "description.\n" + host_entry_line("claude")
     )
 
 
@@ -262,7 +262,7 @@ def claude_role_adapter_text(frontmatter: str, lib_skill_md: Path) -> str:
     before the contract the include pulls in."""
 
     role = frontmatter_field(frontmatter, "role")
-    return host_legal_frontmatter(frontmatter) + fork_arrival_preamble(role) + f"@{lib_skill_md}\n"
+    return host_legal_frontmatter(frontmatter) + host_entry_line("claude") + fork_arrival_preamble(role) + f"@{lib_skill_md}\n"
 
 
 def by_name_pointer_text(frontmatter: str, role, lib_skill_md: Path) -> str:
@@ -289,7 +289,7 @@ def codex_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md: P
         f"fork_turns `{binding['fork_turns']}`, passing the "
         "emitted launch prompt and exact named skill; refuse execution when that "
         "matching role child is missing or mismatched; there is no inline "
-        f"fallback.\n\n{FORK_ARRIVAL_CLAUSE}\n"
+        f"fallback.\n\n{FORK_ARRIVAL_CLAUSE}\n" + host_entry_line("codex")
     )
 
 
@@ -329,10 +329,11 @@ ROLE_INSTRUCTIONS = (
 
 def render_codex_agent(name: str, profile: dict) -> str:
     binding = profile["codex"]
+    instructions = f"Your established role is {name}. " + ROLE_INSTRUCTIONS
     lines = [
         f"name = {json.dumps(binding['agent_type'])}",
         f"description = {json.dumps(_role_description(name))}",
-        f"developer_instructions = {json.dumps(ROLE_INSTRUCTIONS)}",
+        f"developer_instructions = {json.dumps(instructions)}",
         f"model = {json.dumps(binding['model'])}",
         f"model_reasoning_effort = {json.dumps(binding['model_reasoning_effort'])}",
     ]
@@ -356,7 +357,7 @@ def render_claude_agent(name: str, profile: dict) -> str:
         "deliver it or a pointer to it via SendMessage to your spawner as your final "
         "action - plain final text is not delivered to your caller."
     )
-    lines.extend(["---", "", ROLE_INSTRUCTIONS + claude_transport])
+    lines.extend(["---", "", f"Your established role is {name}. " + ROLE_INSTRUCTIONS + claude_transport])
     return "\n".join(lines) + "\n"
 
 

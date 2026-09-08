@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import nullcontext
 from datetime import datetime, timezone
 if __package__:
+    from .tickets_install_guard import guarded_dispatch_open as _cmd_dispatch_open, guarded_dispatch_replace as _cmd_dispatch_replace
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
         _set_frontmatter_field, canonical_json, is_frame, parse_canonical_json,
@@ -15,7 +16,7 @@ if __package__:
     from .tickets_transitions import CLAIMED, SUSPENDED
     from .tickets_dispatch_schema import (
         LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX, OUTCOME_RECORD_ID, PROTOCOL,
-        RECORD_KINDS,
+        RECORD_KINDS, record_replays,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
         record_id_namespace_ok as _namespace_ok, state as _state,
@@ -26,6 +27,7 @@ if __package__:
         _write_text_atomically,
     )
 else:
+    from tickets_install_guard import guarded_dispatch_open as _cmd_dispatch_open, guarded_dispatch_replace as _cmd_dispatch_replace
     from tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
         _set_frontmatter_field, canonical_json, is_frame, parse_canonical_json,
@@ -36,7 +38,7 @@ else:
     from tickets_transitions import CLAIMED, SUSPENDED
     from tickets_dispatch_schema import (
         LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX, OUTCOME_RECORD_ID, PROTOCOL,
-        RECORD_KINDS,
+        RECORD_KINDS, record_replays,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
         record_id_namespace_ok as _namespace_ok, state as _state,
@@ -57,12 +59,12 @@ DISPATCH_COMMIT_USAGE = (
 )
 DISPATCH_RETIRE_USAGE = (
     "dispatch-retire <run> <id> --assignment-seal <seal> "
-    "--dispatch-id <id> --record-id <id>"
+    "--dispatch-id <id> --record-id <lifecycle:id>"
 )
 DISPATCH_REPLACE_USAGE = (
     "dispatch-replace <run> <id> --assignment-seal <seal> "
     "--dispatch-id <current-id> --record-id <lifecycle:id> "
-    "--replacement-dispatch-id <new-id> --by <name> "
+    "--replacement-dispatch-id <new-id> --by <replacement-executor-name> "
     "--lease-expires-at <absolute-iso> [--supersede-live]"
 )
 
@@ -80,7 +82,7 @@ def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dic
         "state": attempt["state"],
     }}
 
-def _cmd_dispatch_open(rest, *, _lock_held=False):
+def _dispatch_open(rest, *, _lock_held=False):
     args = list(rest)
     owner = _extract_flag(args, "--by")
     dispatch_id = _extract_flag(args, "--dispatch-id")
@@ -266,7 +268,7 @@ def _commit_record(
                 (item for item in records if item.get("record_id") == record_id), None
             )
             if prior is not None:
-                if prior.get("content") != normalized:
+                if not record_replays(prior, content, record_kind):
                     return _classification(
                         "idempotency-conflict",
                         f"record_id '{record_id}' was already committed with "
@@ -401,7 +403,7 @@ def _cmd_dispatch_retire(rest, *, _lock_held=False):
         record_kind="lifecycle", _lock_held=_lock_held,
     )
 
-def _cmd_dispatch_replace(rest):
+def _dispatch_replace(rest):
     args = list(rest)
     assignment_seal = _extract_flag(args, "--assignment-seal")
     dispatch_id = _extract_flag(args, "--dispatch-id")

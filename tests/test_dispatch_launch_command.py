@@ -183,7 +183,7 @@ class DispatchLaunchTest(unittest.TestCase):
             # S7(b), 2026-09-01: hygiene for a background command the child
             # itself supersedes, reusing this same command-running sentence
             # rather than opening a third surface.
-            "kill anything you background once it is superseded",
+            "Terminate superseded processes",
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, prompt)
@@ -191,7 +191,12 @@ class DispatchLaunchTest(unittest.TestCase):
         # every fact once: the prompt states, never restates
         self.assertEqual(1, prompt.count(state["lease_expires_at"]))
         self.assertEqual(1, prompt.count(str(standard)))
-        self.assertEqual(1, prompt.count(state["assignment_seal"]))
+        filing = [line.split() for line in prompt.splitlines() if "--assignment-seal" in line]
+        self.assertEqual(2, len(filing))
+        for arguments in filing:
+            self.assertEqual(state["assignment_seal"], arguments[arguments.index("--assignment-seal") + 1])
+            self.assertEqual(state["dispatch_id"], arguments[arguments.index("--dispatch-id") + 1])
+            self.assertEqual(state["owner"], arguments[arguments.index("--by") + 1])
         self.assertEqual(1, prompt.count(str(friction)))
         self.assertEqual(1, prompt.count(str(skill)))
         # the standing gate line is the one scope statement, rendered once
@@ -257,7 +262,7 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual("orch_worker", result["launch"]["agent"])
         self.assertEqual("gpt-6-astra", result["launch"]["model"])
         self.assertEqual("low", result["launch"]["effort"])
-        self.assertEqual("fast", result["launch"]["fields"]["service_tier"])
+        self.assertEqual({"agent_type": "orch_worker", "fork_turns": "none"}, result["launch"]["fields"])
 
     def test_a_sealed_profile_override_resolves_the_planner_binding(self):
         """rules/roles.md clause 4 through the whole facade: the sealed

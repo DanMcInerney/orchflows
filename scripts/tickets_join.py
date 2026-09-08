@@ -95,6 +95,7 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         "joined_by": joined_by,
         "operation": "join",
         "outcome_record_id": outcome_record_id,
+        "status": disposition,
     }
 
     def join(text, _data, attempt, _state):
