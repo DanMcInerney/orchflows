@@ -311,12 +311,15 @@ def _land_transaction(run, ticket_id, identity, outcome_file, driver_status):
             absent or integrated.get("error") or "candidate integration refused"
         ), "steps": steps}
     tree = (integrated.get("response") or {}).get("main_root")
-    decision, refusal = tickets_done.resolve(
-        run, ticket_id, path.parent, path, data, tree, driver_status,
-        identity["by"],
-    )
+    try:
+        decision, refusal = tickets_done.resolve(
+            run, ticket_id, path.parent, path, data, tree, driver_status,
+            identity["by"],
+        )
+    except OSError as error:
+        return {"error": str(error), "steps": steps}
     if refusal is not None:
-        return refusal
+        return {**refusal, "steps": steps}
     # `action == "close"` is the one shape `tickets_done.resolve` returns
     # only through `advance_action`'s two-identical-repair-rounds close: the
     # other route to `status == "stalled"` decides through a `decision` with

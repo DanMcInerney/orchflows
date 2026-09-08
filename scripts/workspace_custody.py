@@ -37,11 +37,16 @@ def _read_manifest(directory):
         return {'version': 1, 'files': []}
     try:
         data = json.loads(path.read_text(encoding='utf-8'))
-        if data.get('version') != 1 or not isinstance(data.get('files'), list):
+        if not isinstance(data, dict) or data.get('version') != 1 or not isinstance(data.get('files'), list):
             raise ValueError('invalid custody manifest shape')
+        sources = set()
         for entry in data['files']:
             if not isinstance(entry, dict) or set(entry) != {'source', 'destination', 'sha256'}:
                 raise ValueError('invalid custody entry')
+            source = Path(entry['source'])
+            if not source.is_absolute() or str(source.resolve()) != entry['source'] or entry['source'] in sources:
+                raise ValueError('custody source is noncanonical or duplicated')
+            sources.add(entry['source'])
             _verified_destination(directory, entry)
         return data
     except (OSError, ValueError, TypeError) as error:
@@ -53,6 +58,8 @@ def _verified_destination(directory, entry):
     if not isinstance(digest, str) or not re.fullmatch(r'[0-9a-f]{64}', digest):
         raise ValueError('invalid custody hash')
     destination = directory / 'bytes' / digest
+    if directory.is_symlink() or (directory / 'bytes').is_symlink():
+        raise ValueError('linked custody directory is not owned storage')
     if (str(destination.absolute()) != entry['destination']
             or destination.resolve().parent != (directory / 'bytes').resolve()
             or destination.is_symlink()):
@@ -135,6 +142,8 @@ def archive(run, ticket_id, workspace, *, references=()):
     """Copy producer bytes and atomically commit source/destination hashes."""
     target = Path(workspace).resolve()
     directory = _directory(run, ticket_id)
+    if directory.is_symlink() or (directory / 'bytes').is_symlink():
+        raise Refused('linked custody directory is not owned storage')
     manifest = _read_manifest(directory)
     entries = {entry['source']: entry for entry in manifest['files']}
     report = _report_text(run, ticket_id)
@@ -157,6 +166,8 @@ def archive(run, ticket_id, workspace, *, references=()):
             raise Refused(f'producer evidence changed after custody was recorded: {source}')
         destination = directory / 'bytes' / digest
         destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.is_symlink():
+            raise Refused('linked custody blob is not owned storage')
         if destination.exists():
             if destination.read_bytes() != raw:
                 raise Refused(f'custody bytes disagree with their hash at {destination}')
@@ -182,6 +193,9 @@ def release_scratch(workspace, custody):
     tracked = set(read('ls-files', '-z').split('\0'))
     for entry in custody['files']:
         source = Path(entry['source'])
+        if not source.is_absolute() or source != source.resolve():
+            raise Refused('custody source is not canonical')
+        _verified_destination(Path(custody['manifest']).parent, entry)
         try:
             relative = source.relative_to(target)
         except ValueError:

@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -255,7 +256,7 @@ class ReliabilityWorkspaceTests(unittest.TestCase):
         with mock.patch.object(workspace.workspace_candidate, 'prepare', return_value=({}, 0)) as prepare:
             workspace._cmd_prepare(['testrun', 'T1', '--package', 'apps/client', '--package', 'tools/compiler', '--tool-directory', 'tools/browser'])
             prepare.assert_called_once_with('testrun', 'T1', packages=('apps/client', 'tools/compiler'), tools=('tools/browser',))
-        with self.assertRaises(workspace_git.Refused):
+        with self.assertRaises(workspace.Refused):
             workspace._cmd_prepare(['testrun', 'T1', '--package'])
 
     def test_archive_cli_releases_only_referenced_unchanged_scratch(self):
@@ -270,3 +271,98 @@ class ReliabilityWorkspaceTests(unittest.TestCase):
         self.assertEqual(b'outside check evidence', workspace_custody.archived_path('testrun', 'T1', source).read_bytes())
         self.assertTrue(candidate['path'].exists())
         self.assertEqual('removed', workspace_return.retire('testrun', 'T1')[0]['retire']['outcome'])
+
+    def test_tampered_manifest_cannot_release_noncanonical_or_duplicate_sources(self):
+        ticket, candidate = self.candidate()
+        tree = candidate['path']
+        source = tree / '.orch-notes' / 'check.log'
+        source.parent.mkdir()
+        source.write_bytes(b'keep')
+        self.report(ticket, str(source))
+        custody = workspace_custody.archive('testrun', 'T1', tree)
+        path = Path(custody['manifest'])
+        original = path.read_text()
+        for changed in ('traversal', 'duplicate'):
+            data = json.loads(original)
+            if changed == 'traversal':
+                data['files'][0]['source'] = str(source.parent / '..' / '.orch-notes' / 'check.log')
+            else:
+                data['files'].append(dict(data['files'][0]))
+            path.write_text(json.dumps(data))
+            with self.assertRaises(workspace_git.Refused):
+                workspace_custody.archive('testrun', 'T1', tree)
+            self.assertEqual(b'keep', source.read_bytes())
+        path.write_text(original)
+        malicious = json.loads(original)
+        malicious['manifest'] = str(path)
+        malicious['files'][0]['source'] = str(source.parent / '..' / '.orch-notes' / 'check.log')
+        with self.assertRaises(workspace_git.Refused):
+            workspace_custody.release_scratch(tree, malicious)
+        self.assertEqual(b'keep', source.read_bytes())
+
+    def test_public_land_retries_after_post_merge_interruption(self):
+        goal = self.tmp / 'goal.md'
+        goal.write_text('Deliver a file checked by the done command.')
+        command = subprocess.list2cmdline([Path(sys.executable).as_posix(), "-c", "from pathlib import Path; assert Path('delivery.txt').read_text() == 'work'"])
+        done = json.dumps({'form': 'command', 'value': command}, sort_keys=True, separators=(',', ':'))
+        minted = self.command('do', 'interrupted', '--standard', 'orch-code', '--goal-file', str(goal), '--workspace', str(self.main), '--done', done)
+        tid = minted['do']['id']
+        ticket = state_root.tickets_root() / 'interrupted' / (tid + '.md')
+        data = tickets._parse_frontmatter(ticket.read_text())
+        attempt = json.loads(data['dispatch_v1'])['attempts'][0]
+        tree = Path(attempt['workspace_path'])
+        tip = commit_in(tree, {'delivery.txt': 'work'}, 'delivery')
+        envelope = {'protocol': 'orchflows.dispatch.v1', 'run': 'interrupted', 'id': tid,
+                    'assignment_seal': data['assignment_seal'], 'dispatch_id': attempt['dispatch_id'],
+                    'outcome_record_id': 'outcome', 'by': attempt['owner'], 'evidence': 'artifact: git:' + tip}
+        close = self.tmp / 'closed.json'
+        close.write_text(json.dumps(envelope, sort_keys=True, separators=(',', ':')))
+        self.command('dispatch-outcome', 'interrupted', tid, '--file', str(close))
+        identity = ['land', 'interrupted', tid, '--assignment-seal', data['assignment_seal'], '--dispatch-id', attempt['dispatch_id'], '--outcome-record-id', 'outcome', '--by', 'join']
+        with mock.patch.object(tickets_land.tickets_done, 'resolve', side_effect=OSError('interrupted after merge')):
+            refused = tickets._dispatch(identity)
+        self.assertIn('error', refused)
+        self.assertEqual('merged', refused['steps'][-1]['outcome'])
+        revision = git(self.main, 'rev-parse', 'HEAD').strip()
+        self.assertEqual('work', (self.main / 'delivery.txt').read_text())
+        self.assertTrue(tree.exists())
+        landed = self.command(*identity)
+        self.assertEqual('complete', landed['land']['status'])
+        self.assertEqual(0, landed['land']['done']['exit'])
+        self.assertEqual('replayed', next(step for step in landed['land']['steps'] if step['step'] == 'workspace-integrate')['outcome'])
+        self.assertEqual(revision, git(self.main, 'rev-parse', 'HEAD').strip())
+        self.assertFalse(tree.exists())
+
+    def test_git_hook_timeout_preserves_committed_merge_for_explicit_recovery(self):
+        ticket, candidate = self.candidate()
+        tree = candidate['path']
+        commit_in(tree, {'delivery.txt': 'work'}, 'delivery')
+        hooks = self.tmp / 'hooks'
+        hooks.mkdir()
+        hook = hooks / 'post-merge'
+        hook.write_bytes(b'#!/bin/sh\necho ready > .git/hook-ready\nsleep 30\n')
+        hook.chmod(0o755)
+        git(self.main, 'config', 'core.hooksPath', str(hooks))
+        real_run = workspace_process.run
+        def bounded(argv, **kwargs):
+            if 'merge' in argv and '--no-ff' in argv:
+                kwargs['timeout'] = 5
+            return real_run(argv, **kwargs)
+        arguments = ('testrun', 'T1', tree, candidate['branch'], baseline_of(ticket))
+        started = time.monotonic()
+        with mock.patch.object(workspace_process, 'run', side_effect=bounded):
+            with self.assertRaises(workspace_git.Refused) as raised:
+                workspace_return.integrate(*arguments)
+        self.assertLess(time.monotonic() - started, 27, raised.exception.detail)
+        self.assertIsNone(raised.exception.detail['cleanup_error'])
+        self.assertEqual(5, raised.exception.detail['timeout'])
+        self.assertTrue((self.main / '.git' / 'hook-ready').is_file())
+        revision = git(self.main, 'rev-parse', 'HEAD').strip()
+        self.assertEqual('work', (self.main / 'delivery.txt').read_text())
+        with self.assertRaisesRegex(workspace_git.Refused, 'unfinished merge'):
+            workspace_return.integrate(*arguments)
+        git(self.main, 'merge', '--quit')
+        hook.unlink()
+        result, code = workspace_return.integrate(*arguments)
+        self.assertEqual((0, 'replayed'), (code, result['integrate']['outcome']))
+        self.assertEqual(revision, git(self.main, 'rev-parse', 'HEAD').strip())

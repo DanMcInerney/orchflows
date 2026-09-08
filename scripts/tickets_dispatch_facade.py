@@ -112,11 +112,19 @@ def _cmd_dispatch(rest):
     else:
         from tickets_install_guard import installation_lock
     with installation_lock():
-        return _dispatch_guarded(rest)
+        dispatched = _dispatch_guarded(rest)
+    if "error" in dispatched:
+        return dispatched
+    args = list(rest)
+    workspace = _extract_flag(args, "--workspace")
+    for flag in ("--by", "--dispatch-id", "--lease-expires-at", "--host"):
+        _extract_flag(args, flag)
+    run, ticket_id = args
+    return {**dispatched, "prepare": _workspace_prepare(run, ticket_id, workspace)}
 
 
 def _dispatch_guarded(rest):
-    """Compose ready, workspace, attempt, launch, and preparation."""
+    """Compose admission and claim-to-launch under the installation lock."""
 
     args = list(rest)
     owner = _extract_flag(args, "--by")
@@ -148,11 +156,8 @@ def _dispatch_guarded(rest):
         )
     if "error" in dispatched:
         return dispatched
-    # Outside the lock, and last: preparing the tree is a package manager's
-    # minutes against a directory that belongs to this one item, and every
-    # second of it inside the critical section is a second every sibling
-    # waits. Its verdict rides along; it never decides the dispatch.
-    return {**dispatched, "prepare": _workspace_prepare(run, ticket_id, workspace)}
+    # The outer facade releases publication protection before preparation.
+    return dispatched
 
 
 def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,

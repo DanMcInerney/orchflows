@@ -74,6 +74,7 @@ workspace_git = __import__("workspace_git")
 workspace_candidate = __import__("workspace_candidate")
 workspace_record = __import__("workspace_record")
 workspace_return = __import__("workspace_return")
+workspace_custody = __import__("workspace_custody")
 # Re-exported, never respelled: the names are declared beside the writes and
 # the refusals that use them.
 ISOLATION_KEY = workspace_git.ISOLATION_KEY
@@ -231,10 +232,6 @@ def _cmd_prepare(rest):
 
 def _cmd_archive(rest):
     """Preserve named evidence without integrating, joining, or retiring."""
-    if __package__:
-        from . import workspace_custody
-    else:
-        import workspace_custody
     release = '--release-scratch' in rest
     run, ticket_id = _positional([arg for arg in rest if arg != '--release-scratch'], 2, 'archive')
     target = state_root.candidate_paths(run, ticket_id)['path']
