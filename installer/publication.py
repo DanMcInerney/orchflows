@@ -1,110 +1,18 @@
-"""Stage the executable payload and retain a recoverable old installation.
-
-The installation lock precedes all run locks. Issuance and dispatch take the
-same lock, so the nonterminal-reference census remains valid until receipt
-publication. Any pinned or role-bearing nonterminal invocation
-conservatively protects every existing lib/bin byte, including bytes
-that were removed from the source checkout. Receipt identity alone is not a
-payload change.
-"""
+"""Stage executable payloads and retain the old installation for failure recovery."""
 
 from __future__ import annotations
 
 import ast
 import hashlib
 import json
-import re
 import shutil
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
-from scripts import orchflows_node, state_root
-from scripts.tickets_format import TERMINAL_STATES, VALID_STATUSES, _parse_frontmatter
-from scripts.tickets_admission import ADMISSION_PENDING
+from scripts import orchflows_node
 from .models import _frontend_manifest_identity
 from . import runtime
-
-
-def _coordinated_attempts(path):
-    try:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-    except (OSError, SyntaxError, UnicodeError):
-        return False
-    bindings = {(name.name, name.asname) for node in ast.walk(tree)
-                if isinstance(node, ast.ImportFrom) and node.module == "tickets_install_guard"
-                for name in node.names}
-    return {("guarded_dispatch_open", "_cmd_dispatch_open"),
-            ("guarded_dispatch_replace", "_cmd_dispatch_replace")} <= bindings
-
-
-def _protects_payload(data):
-    """Unpinned glue owns no executable invocation; malformed pins refuse."""
-    stamped = False
-    draft = data.get("status") == ADMISSION_PENDING and not data.get("assignment_seal")
-    standards = data.get("standards") or []
-    if not isinstance(standards, list):
-        raise ValueError("standards reference is not a list")
-    for value in standards:
-        if draft and isinstance(value, str) and "@" not in value:
-            continue
-        if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*@sha256:[0-9a-f]{64}", value):
-            raise ValueError(f"malformed stamped standard reference: {value!r}")
-        stamped = True
-    for name in ("skill", "workflow"):
-        value, digest = data.get(name), data.get(name + "_digest")
-        if not value and not digest:
-            continue
-        if draft and value and not digest:
-            continue
-        if not isinstance(value, str) or not value or not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
-            raise ValueError(f"malformed stamped {name} reference")
-        stamped = True
-    if stamped:
-        return True
-    if data.get("frame") in (True, "true") and data.get("profile") in (None, "none") and data.get("executor") in (None, "none"):
-        return False
-    if draft:
-        return False
-    if data.get("profile") in ("orch-worker", "orch-planner") or data.get("executor") in ("orch-do", "orch-judge"):
-        return True
-    raise ValueError("nonterminal record has no recognized frame, draft or invocation identity")
-
-
-def _state(plan):
-    if plan.scope_home.resolve() == state_root.orchflows_home().resolve():
-        return state_root.state_root()
-    return plan.scope_home / "state"
-
-
-def _active(plan, previously_installed):
-    root = _state(plan) / "tickets"
-    if not root.exists() and not previously_installed:
-        return []
-    try:
-        if not root.is_dir() or root.is_symlink():
-            raise OSError("ticket census directory is missing or not a regular directory")
-        active = []
-        for run in root.iterdir():
-            if not run.is_dir() or run.is_symlink():
-                raise OSError(f"unexpected ticket census entry: {run}")
-            for path in run.iterdir():
-                if path.suffix != ".md":
-                    continue
-                if not path.is_file() or path.is_symlink():
-                    raise OSError(f"unreadable ticket reference: {path}")
-                data = _parse_frontmatter(path.read_text(encoding="utf-8"))
-                if data.get("id") != path.stem or data.get("run") != run.name:
-                    raise ValueError(f"ticket identity does not match its installed location: {path}")
-                status = data.get("status")
-                if status not in VALID_STATUSES:
-                    raise ValueError(f"unknown ticket status at {path}: {status!r}")
-                if status not in TERMINAL_STATES and _protects_payload(data):
-                    active.append(str(path))
-        return active
-    except (OSError, ValueError, TypeError) as error:
-        raise RuntimeError(f"active-reference census unavailable at {root}: {error}; "
-                           "restore readable installed ticket state before retrying installation") from error
 
 
 def _files(root):
@@ -234,33 +142,6 @@ def publication(plan, old):
         # verified reuse through without entering the mutating ensure path.
         runtime_action = (runtime.private_runtime_action(runtime.private_runtime_home())
                           if plan.runtime_action is not None else None)
-        active = _active(plan, bool(old) or plan.lib_home.exists() or plan.bin_dir.exists())
-        changes = []
-        for live, stage in payloads:
-            before, after = _files(live), _files(stage)
-            changes.extend(str(live / relative) for relative in before.keys() | after.keys()
-                           if before.get(relative) != after.get(relative))
-        if runtime_action not in (None, "reuse"):
-            changes.append(str(runtime.private_runtime_home()))
-        if active:
-            if changes:
-                raise RuntimeError("installation would change bytes protected by active references: "
-                                   + ", ".join(active) + "; first changed path: " + changes[0]
-                                   + "; finish or retire owning assignments, then retry")
-            # No directory rename gap for readers of unchanged active bytes.
-            payloads = []
-        if changes and (plan.bin_dir / "tickets.py").is_file():
-            required = ("tickets_install_guard.py", "tickets_issue.py",
-                        "tickets_dispatch_facade.py", "tickets_mint.py", "tickets_frame.py", "tickets_seal.py",
-                        "tickets_lifecycle.py")
-            coordinated = all((plan.bin_dir / name).is_file() and "installation_lock" in
-                              (plan.bin_dir / name).read_text(encoding="utf-8") for name in required)
-            coordinated = coordinated and _coordinated_attempts(plan.bin_dir / "tickets_attempts.py")
-            if not coordinated:
-                raise RuntimeError("installed writers do not coordinate with installation; old bytes retained. "
-                                   "Use the offline migration in installer/README.md: finish all active work, "
-                                   "stop old clients and disable launches, park the old bin intact, then rerun. "
-                                   "A new lock alone cannot exclude old writers.")
         for index, path in enumerate(sorted(_surface_paths(plan, old))):
             if path.is_symlink() or (path.exists() and not path.is_file()):
                 raise FileExistsError(f"installation surface is not a regular file: {path}")
@@ -283,7 +164,6 @@ def publication(plan, old):
             moves.append((live, backup if existed else None))
             stage.replace(live)
         yield runtime_action
-        (_state(plan) / "tickets").mkdir(parents=True, exist_ok=True)
     except BaseException as error:
         failures = []
         for path, backup in surfaces.items():

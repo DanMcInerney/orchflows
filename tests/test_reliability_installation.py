@@ -26,37 +26,6 @@ class PublicationTests(unittest.TestCase):
                     lib_copies=[(source, home / "lib" / "module.py")],
                     scripts=[(source, home / "bin" / "module.py")]), source
 
-    def active(self, plan, content="---\nid: B1\nrun: r\nstatus: claimed\nexecutor: orch-do\nprofile: orch-worker\n---\n"):
-        path = plan.scope_home / "state" / "tickets" / "r" / "B1.md"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content)
-        return path
-
-    def test_active_reference_refuses_changed_bytes_but_allows_receipt_only_change(self):
-        with tempfile.TemporaryDirectory() as raw:
-            plan, source = self.fixture(Path(raw))
-            application.apply_plan(plan, "old")
-            self.active(plan)
-            application.apply_plan(plan, "receipt-only")
-            before = plan.receipt_path.read_bytes()
-            source.write_text("VALUE = 2\n")
-            with self.assertRaisesRegex(RuntimeError, "protected by active references"):
-                application.apply_plan(plan, "new")
-            self.assertEqual(before, plan.receipt_path.read_bytes())
-            self.assertEqual("VALUE = 1\n", (plan.lib_home / "module.py").read_text())
-
-    def test_unreadable_or_missing_active_state_fails_closed(self):
-        with tempfile.TemporaryDirectory() as raw:
-            plan, _ = self.fixture(Path(raw))
-            application.apply_plan(plan, "old")
-            path = self.active(plan, "invalid")
-            with self.assertRaisesRegex(RuntimeError, "census unavailable"):
-                application.apply_plan(plan, "new")
-            path.unlink()
-            path.parent.rmdir()
-            path.parent.parent.rmdir()
-            with self.assertRaisesRegex(RuntimeError, "restore readable"):
-                application.apply_plan(plan, "new")
 
     def test_copy_and_probe_fail_before_live_payload_changes(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -137,42 +106,6 @@ class PublicationTests(unittest.TestCase):
             self.assertEqual("old", adapter.read_text())
             self.assertEqual("VALUE = 1\n", (plan.lib_home / "module.py").read_text())
 
-    def test_old_writers_refuse_upgrade_until_offline_entrypoint_is_parked(self):
-        with tempfile.TemporaryDirectory() as raw:
-            plan, source = self.fixture(Path(raw))
-            application.apply_plan(plan, "old")
-            (plan.bin_dir / "tickets.py").write_text("# old unsynchronized writer\n")
-            before = plan.receipt_path.read_bytes()
-            source.write_text("VALUE = 2\n")
-            with self.assertRaisesRegex(RuntimeError, "old bytes retained"):
-                application.apply_plan(plan, "new")
-            self.assertEqual(before, plan.receipt_path.read_bytes())
-            # Disposable offline simulation: no hosts or writers are running.
-            parked = plan.scope_home / "bin-offline-fixture"
-            plan.bin_dir.replace(parked)
-            application.apply_plan(plan, "new")
-            self.assertTrue((parked / "tickets.py").is_file())
-            self.assertEqual("VALUE = 2\n", (plan.bin_dir / "module.py").read_text())
-
-    def test_unpinned_frame_and_draft_allow_update_but_pinned_frame_and_runtime_change_refuse(self):
-        with tempfile.TemporaryDirectory() as raw:
-            plan, source = self.fixture(Path(raw))
-            application.apply_plan(plan, "old")
-            frame = self.active(plan, "---\nid: B1\nrun: r\nstatus: claimed\nframe: true\n---\n")
-            draft = frame.with_name("B2.md")
-            draft.write_text("---\nid: B2\nrun: r\nstatus: pending\nstandards: [demo]\n---\n")
-            source.write_text("VALUE = 2\n")
-            application.apply_plan(plan, "new")
-            frame.write_text("---\nid: B1\nrun: r\nstatus: claimed\nframe: true\nworkflow: demo\nworkflow_digest: sha256:" + "a" * 64 + "\n---\n")
-            runtime = Path(raw) / "runtime.py"
-            runtime.write_text("VALUE = 3\n")
-            plan.scripts = [(runtime, plan.bin_dir / "module.py")]
-            with self.assertRaisesRegex(RuntimeError, "protected by active references"):
-                application.apply_plan(plan, "runtime-change")
-            self.assertEqual("VALUE = 2\n", (plan.bin_dir / "module.py").read_text())
-            frame.write_text("---\nid: B1\nrun: r\nstatus: claimed\nframe: true\nworkflow: demo\nworkflow_digest: malformed\n---\n")
-            with self.assertRaisesRegex(RuntimeError, "census unavailable"):
-                application.apply_plan(plan, "malformed-pin")
 
     def test_clean_flat_and_reader_import_and_architecture_link(self):
         with tempfile.TemporaryDirectory() as raw:
