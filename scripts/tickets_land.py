@@ -31,10 +31,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 if __package__:
-    from . import tickets_done, tickets_report_note
+    from . import tickets_done, tickets_report_note, workspace_custody, workspace_process
+    from .tickets_registry import EXECUTOR_REGISTRY
     from .tickets_format import (
         REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
-        _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
+        _executor_of, _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
     from .tickets_adapters import AdapterError, adapter_for_ticket, derived_isolation
     from .tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
@@ -50,9 +51,12 @@ if __package__:
 else:  # pragma: no cover - direct/installed flat script path
     import tickets_done
     import tickets_report_note
+    import workspace_custody
+    import workspace_process
+    from tickets_registry import EXECUTOR_REGISTRY
     from tickets_format import (
         REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
-        _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
+        _executor_of, _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
     from tickets_adapters import AdapterError, adapter_for_ticket, derived_isolation
     from tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
@@ -177,6 +181,11 @@ def _integrate_workspace(run: str, ticket_id: str, data: dict, status, path, by)
     if not isolated:
         return {"step": "workspace-integrate", "outcome": SKIPPED, "reason": "not isolated"}
     try:
+        if EXECUTOR_REGISTRY.get(_executor_of(data), {}).get("files_findings"):
+            tree = _recorded_workspace(data)
+            custody = workspace_custody.archive(run, ticket_id, tree)
+            return {"step": "workspace-integrate", "outcome": "evidence-returned",
+                    "response": {"main_root": tree, "custody": custody}}
         candidate = _candidate(run, ticket_id)
         response, _code = candidate.integrate(
             run, ticket_id, _recorded_workspace(data), data.get(BRANCH_KEY),
@@ -231,11 +240,12 @@ def _retire_workspace(run: str, ticket_id: str, status: str, data: dict) -> dict
         return {"step": "workspace-retire", "outcome": SKIPPED, "reason": "not isolated"}
     script = Path(__file__).with_name("workspace.py").resolve()
     try:
-        completed = subprocess.run(
+        completed = workspace_process.run(
             [sys.executable, str(script), "retire", run, ticket_id],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=workspace_process.RETIRE_TIMEOUT_SECONDS,
         )
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
         return {"step": "workspace-retire", "outcome": "refused",
                 "error": f"workspace retire failed: {error}"}
     try:
@@ -245,7 +255,7 @@ def _retire_workspace(run: str, ticket_id: str, status: str, data: dict) -> dict
                 "error": f"workspace retire returned invalid JSON: {error}"}
     if not isinstance(response, dict) or "error" in response or completed.returncode:
         return {"step": "workspace-retire", "outcome": "refused", "response": response}
-    return {"step": "workspace-retire", "outcome": "removed", "response": response}
+    return {"step": "workspace-retire", "outcome": response.get("retire", {}).get("outcome", "refused"), "response": response}
 
 
 def _done_outcome(decision: dict) -> str:
@@ -301,12 +311,15 @@ def _land_transaction(run, ticket_id, identity, outcome_file, driver_status):
             absent or integrated.get("error") or "candidate integration refused"
         ), "steps": steps}
     tree = (integrated.get("response") or {}).get("main_root")
-    decision, refusal = tickets_done.resolve(
-        run, ticket_id, path.parent, path, data, tree, driver_status,
-        identity["by"],
-    )
+    try:
+        decision, refusal = tickets_done.resolve(
+            run, ticket_id, path.parent, path, data, tree, driver_status,
+            identity["by"],
+        )
+    except OSError as error:
+        return {"error": str(error), "steps": steps}
     if refusal is not None:
-        return refusal
+        return {**refusal, "steps": steps}
     # `action == "close"` is the one shape `tickets_done.resolve` returns
     # only through `advance_action`'s two-identical-repair-rounds close: the
     # other route to `status == "stalled"` decides through a `decision` with

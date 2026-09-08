@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 if __package__:
+    from . import workspace_process
     from .tickets_assignment import (
         dispatch_assignment, workspace_establishment_finding,
     )
@@ -29,6 +30,7 @@ if __package__:
     from .tickets_transitions import CLAIMED, SUSPENDED
     from .workspace_record import PATH_KEY
 else:
+    import workspace_process
     from tickets_assignment import dispatch_assignment, workspace_establishment_finding
     from tickets_attempts import (
         LAUNCH_RECORD_ID, _cmd_dispatch_open, _cmd_dispatch_retire,
@@ -53,12 +55,12 @@ def _workspace(source: Path, verb: str, arguments: list):
 
     script = Path(__file__).with_name("workspace.py").resolve()
     try:
-        completed = subprocess.run(
+        completed = workspace_process.run(
             [sys.executable, str(script), verb, *arguments],
             cwd=str(source), capture_output=True, text=True,
-            encoding="utf-8", errors="replace",
+            encoding="utf-8", errors="replace", timeout=workspace_process.FACADE_TIMEOUT_SECONDS,
         )
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
         return None, {"error": f"workspace {verb} failed: {error}"}
     try:
         response = json.loads(completed.stdout)
@@ -104,7 +106,25 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
 
 
 def _cmd_dispatch(rest):
-    """Compose ready, workspace, attempt, launch, and preparation."""
+    """Keep publication outside the whole claim-to-launch transaction."""
+    if __package__:
+        from .tickets_install_guard import installation_lock
+    else:
+        from tickets_install_guard import installation_lock
+    with installation_lock():
+        dispatched = _dispatch_guarded(rest)
+    if "error" in dispatched:
+        return dispatched
+    args = list(rest)
+    workspace = _extract_flag(args, "--workspace")
+    for flag in ("--by", "--dispatch-id", "--lease-expires-at", "--host"):
+        _extract_flag(args, flag)
+    run, ticket_id = args
+    return {**dispatched, "prepare": _workspace_prepare(run, ticket_id, workspace)}
+
+
+def _dispatch_guarded(rest):
+    """Compose admission and claim-to-launch under the installation lock."""
 
     args = list(rest)
     owner = _extract_flag(args, "--by")
@@ -136,11 +156,8 @@ def _cmd_dispatch(rest):
         )
     if "error" in dispatched:
         return dispatched
-    # Outside the lock, and last: preparing the tree is a package manager's
-    # minutes against a directory that belongs to this one item, and every
-    # second of it inside the critical section is a second every sibling
-    # waits. Its verdict rides along; it never decides the dispatch.
-    return {**dispatched, "prepare": _workspace_prepare(run, ticket_id, workspace)}
+    # The outer facade releases publication protection before preparation.
+    return dispatched
 
 
 def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
