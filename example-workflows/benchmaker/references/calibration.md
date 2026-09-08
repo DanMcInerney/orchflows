@@ -45,12 +45,12 @@ locations alone establishes protected scorer isolation.
 | `diagnosis` | Fixed draft and attempt git artifacts through `--artifacts`; qualification findings through Context; original policy and all prior rounds. Returns findings over validity, per-case failures/uncertainty, empirical discrimination, configuration agreement, missing evidence and construct-preserving revision rationale if supported. No fresh native sample is implicit in judgment. |
 | `revision` | Diagnostic findings and qualification defects; selected predeclared development change; prior draft and research/design identities; unchanged configuration/coverage/weights; remaining budget. Returns a committed changed draft and ledger entry, including new builder identities. Original findings remain locatable. |
 | `requalification` | Changed or frozen revision; original coverage/rigor/standard, qualification budget, access policy, updated builder identities, predeclared audit sample and diagnostic flags. Returns benchmark-qualify's full revision-bound record, not a reused boolean from an earlier revision. |
-| `finalize-records` | Every terminal branch supplies actual qualification/diagnostic/measurement returns, selected decision, immutable round identities, ledger, bounds and durable export locator. One ordinary same-repository maker commits the aggregate index, not-performed reasons and findings copies after those returns. No published summary or sealed outcome is rewritten. |
+| `finalize-records` | Every terminal branch supplies actual qualification/diagnostic/measurement returns, selected decision, immutable round identities, ledger, bounds and durable export locator. One ordinary same-repository maker commits the aggregate index, not-performed reasons and findings copies after those returns. |
 | `freeze` | VALID qualified draft and accepted development summary, original configuration and complete fixed final design. Returns the committed lifecycle-frozen package and reserved external journal locators. All final prompts/cases/seeds, references/graders, split/weights, policy and provenance are fixed by this artifact identity. |
 
 A qualification gap may stop execution before any native attempt. A partial
 record then indexes the draft, available findings, unmet inputs and an explicit
-not-performed final record; it makes no live-admission claim. A failed revision
+not-performed final record with zero measured trials. A failed revision
 retains its preceding rounds and partial candidate evidence. A complete round
 with unresolved configuration or sampling evidence retains its numeric band
 observation while its calibration decision remains UNVERIFIED.
