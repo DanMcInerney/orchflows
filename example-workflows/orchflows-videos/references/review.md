@@ -1,20 +1,19 @@
 # Production review boundary
 
-The public tiktok-video workflow calls private video-production. This helper earns
+The public orchflows-videos workflow calls private video-production. This helper earns
 its own journal because rendering has an isolated git output, costly repairs and
 independent audiovisual acceptance. It accepts any independently accepted semantic
-script/storyboard document plus findings identity; it does not import a sibling's
+script/storyboard Git commit plus findings identity; it does not import a sibling's
 file layout. orch-do/land own isolated making and integration, orch-judge owns
-independence, render-video owns the method, and video-quality tightens orch-code.
+independence, render-video owns the method, and short-videos tightens orch-code.
 No research, creative or rendering wrapper is introduced here.
 
 ## Preparing calls
 
-Retain the public package scope when opening video-production. Select its
-production standard through the helper's intent table; orch-code resolves from
-library scope. Making, judging and repairs use that same ordered chain at
-identical digests, including the marketing narrowing when selected. Record expanded pins from
-issued tickets, package digest, run/frame/ticket identities, accepted document and
+Retain the public package scope when opening video-production. Stamp orchflows-marketing-videos, resolving orch-code -> short-videos ->
+orchflows-marketing-videos in that scope. Making, judging and repairs use that same ordered chain at
+identical digests, including the orchflows-marketing-videos narrowing. Record expanded pins from
+issued tickets, package digest, run/frame/ticket identities, accepted direction commit and
 findings identities and authoring-owner in Context. An independent judge reads the
 same immutable render and source, not a maker's mutable preview. Repair goals
 preserve accepted direction and target only evidenced findings.
@@ -40,11 +39,11 @@ capabilities or call a technical pass a completed audiovisual review.
 
 ## Outside probe interface
 
-Resolve the interpreter through `orchflows env workflow tiktok-video`, then from
+Resolve the interpreter through `orchflows env workflow orchflows-videos`, then from
 the produced project's root run the foundation probe in the unchanged project
 bundle:
 
-    <resolved-interpreter> .orchflows/workflows/tiktok-video/scripts/probe.py --project . --video output/final.mp4 --seconds <approved-seconds>
+    <resolved-interpreter> .orchflows/workflows/orchflows-videos/scripts/probe.py --project . --video output/final.mp4 --seconds <approved-seconds>
 
 Pass `--audio optional` only for approved silence; defaults are required audio,
 30fps, -16 LUFS +/-2 and -1 dBTP. Explicit approved changes use `--fps`, `--lufs`,
@@ -62,12 +61,9 @@ blocked judge; bounded repair exhaustion retains findings and partial output.
 
 ## Static authoring evidence versus runtime admission
 
-At this lower-contract wave the public composer is deliberately absent. A disposable
-owner fixture can contain the unchanged foundation and these private files with a
-minimal public invocation solely to exercise the existing package checker. Record
-that fixture's static resolution and unresolved-method negative control as such;
-synthetic owner prose does not prove the actual public workflow executed. The
-composer and joined gate own finished-package checking and later named invocation.
+Static package resolution and mutated controls do not prove the actual public
+workflow executed. The joined gate and outer caller own full source checking and
+later named invocation.
 
 Runtime acceptance must name fixed package and git output, generated adapter paths
 when used, shared maker/judge pins, actual dispatch and landing identities,
