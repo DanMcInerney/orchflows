@@ -50,7 +50,7 @@ export function SessionsView({ route, state }: SessionsViewProps) {
         <div>
           <p className="eyebrow"><LockKeyhole aria-hidden="true" /> Safe metadata index</p>
           <h1 id="sessions-title">Sessions</h1>
-          <p>Discoverable session identities and agent counts, without conversation content.</p>
+          <p>Agent-session metadata shows discovered agents and their topology. Now shows execution runs. Conversation content stays private.</p>
         </div>
         <div className="hero__metric" aria-label={`${model.items.length} discoverable sessions`}>
           <strong>{model.items.length}</strong><span>sessions</span>
@@ -94,7 +94,7 @@ export function SessionsView({ route, state }: SessionsViewProps) {
               <li key={item.id} data-diagnostic={item.diagnostics.length > 0 || undefined}>
                 <a href={`/sessions/${encodeURIComponent(item.id)}`} aria-label={`Open ${sessionLabel(item)}`}>
                   <span className="sessions-view__identity">
-                    <strong>{sessionLabel(item)}</strong>
+                    <strong>{sessionLabel(item)}</strong><span className="sessions-view__open">Open agent graph →</span>
                     <span className="mono">{item.id}</span>
                   </span>
                   <span className="sessions-view__unknown" data-unknown={!item.client || undefined}>
