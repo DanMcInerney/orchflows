@@ -236,6 +236,11 @@ def child_env(jobs: int = 1) -> dict:
     return env
 
 def run_module(module: str, import_root: Path, verbosity: int, jobs: int = 1) -> dict:
+    # Direct script invocation starts with tools/ on sys.path, not its parent.
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from scripts.tickets_done_evidence import run_command
+
     handle, result_path = tempfile.mkstemp(prefix="run_tests_", suffix=".json")
     os.close(handle)
     command = [
@@ -250,12 +255,16 @@ def run_module(module: str, import_root: Path, verbosity: int, jobs: int = 1) ->
     # rather than lossy: a Windows child otherwise writes its failure text
     # in the console codepage, cp1252, and every non-ASCII character in an
     # assertion message reaches this process as U+FFFD.
-    completed = subprocess.run(
-        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=child_env(jobs)
-    )
+    receipt, out, err = run_command(command, Path.cwd(), 1800,
+                                   env=child_env(jobs), source_tree=import_root)
+    returncode = receipt["exit_status"]
+    if receipt["outcome"] != "completed":
+        returncode = 124 if receipt["outcome"] == "timeout" else 127
+    elif receipt["changed_tree"]:
+        returncode = returncode or 1
     finished = time.monotonic()
     duration = finished - started
-    output = completed.stdout.decode("utf-8", "replace")
+    output = (out + err).decode("utf-8", "replace")
     try:
         record = json.loads(Path(result_path).read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -268,21 +277,22 @@ def run_module(module: str, import_root: Path, verbosity: int, jobs: int = 1) ->
             "expected_failures": 0,
             "unexpected": 0,
             "ok": False,
-            "note": "child wrote no result (exit %d)" % completed.returncode,
+            "note": "child wrote no result (exit %d)" % returncode,
         }
     finally:
         try:
             os.unlink(result_path)
         except OSError:
             pass
-    if completed.returncode and record.get("ok"):
+    if returncode and record.get("ok"):
         record["ok"] = False
-        record["note"] = "child exited %d after reporting success" % completed.returncode
+        record["note"] = "child exited %d after reporting success" % returncode
     record["duration"] = duration
     record["started"] = started
     record["finished"] = finished
     record["output"] = output
-    record["returncode"] = completed.returncode
+    record["returncode"] = returncode
+    record["evidence"] = receipt["evidence"]
     return record
 
 # --- reporting --------------------------------------------------------

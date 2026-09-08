@@ -25,9 +25,9 @@ from __future__ import annotations
 import os
 import shlex
 import shutil
-import subprocess
 
 if __package__:
+    from . import tickets_done_evidence
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_format import (
         DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
@@ -45,6 +45,7 @@ if __package__:
         locked_ticket_write,
     )
 else:  # pragma: no cover - direct/installed flat script path
+    import tickets_done_evidence
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import (
         DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
@@ -223,24 +224,36 @@ def _spawnable(word: str):
 def _command_reading(command: str, tree):
     """Run the frozen command in the integrated tree; exit 0 is the verdict."""
 
-    argv = shlex.split(str(command))
-    if not argv:
-        return None, {"error": "done command is empty"}
-    argv[0], refusal = _spawnable(argv[0])
-    if refusal is not None:
-        return None, refusal
     try:
-        completed = subprocess.run(
-            argv, cwd=None if tree is None else str(tree), capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
-            timeout=COMMAND_TIMEOUT_SECONDS,
+        argv = shlex.split(str(command))
+        if argv:
+            argv[0], refusal = _spawnable(argv[0])
+        else:
+            refusal = {"error": "done command is empty"}
+    except ValueError as error:
+        argv, refusal = [], {"error": str(error)}
+    try:
+        record, out, err = tickets_done_evidence.run_command(
+            argv, tree, COMMAND_TIMEOUT_SECONDS, command=command,
+            refusal=None if refusal is None else refusal["error"],
         )
-    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
-        return None, {"error": f"done command failed to run: {error}"}
+    except OSError as error:
+        return None, {"error": f"done command evidence could not be persisted: {error}"}
+    if record["outcome"] != "completed":
+        return None, {"error": (refusal or {}).get("error") or
+                      f"done command failed to run: {record.get('error')}",
+                      "evidence": record["evidence"], "reading": record}
+    stable = not record["changed_tree"] and all(
+        record[key]["kind"] != "unavailable"
+        for key in ("artifact_before", "artifact_after")
+    )
     return {
-        "form": "command", "command": command, "exit": completed.returncode,
-        "done": completed.returncode == 0, "tree": None if tree is None else str(tree),
-        "stdout": completed.stdout[-4000:], "stderr": completed.stderr[-4000:],
+        **record, "form": "command", "command": command,
+        "exit": record["exit_status"],
+        "done": record["exit_status"] == 0 and stable,
+        "tree": None if tree is None else str(tree),
+        "stdout": out.decode("utf-8", "replace")[-4000:],
+        "stderr": err.decode("utf-8", "replace")[-4000:],
     }, None
 
 
@@ -248,10 +261,15 @@ def verification_line(reading: dict) -> str:
     """The one sentence `land` files, for either form."""
 
     if reading.get("form") == "command":
-        return COMMAND_VERIFICATION.format(
+        line = COMMAND_VERIFICATION.format(
             command=reading["command"], exit=reading["exit"],
             tree=reading.get("tree") or "the caller's own checkout",
         )
+        if reading.get("evidence"):
+            reference = reading["evidence"]
+            line += (f"; evidence {reference['path']} sha256:{reference['sha256']}"
+                     f"; changed_tree={reading.get('changed_tree')}")
+        return line
     return CHECK_VERIFICATION.format(
         criterion=reading["criterion"], status=reading.get("status"),
         ticket=reading.get("verdict_ticket"),

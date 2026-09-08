@@ -34,9 +34,12 @@ CHEAP = ("validate.py", "install.py", "diff")
 COMMAND_KEYS = {
     "argv", "started_at", "ended_at", "exit_status",
     "stdout_sha256", "stderr_sha256", "cached",
+    "evidence", "observed_exit", "outcome", "artifact_before",
+    "artifact_after", "changed_tree",
 }
 RECORD_KEYS = {
     "kind", "repository_identity", "tree_identity", "dirty", "commands", "exit",
+    "changed_tree", "artifact_after", "cache_scope",
 }
 # Spelled out rather than imported: a record's kind is what a reader of the
 # JSON matches on, so renaming the constant must not rename the contract.
@@ -330,7 +333,8 @@ class TestWhatIsNeverStored(RunRequiredCase):
             "validate.py": {"touch": str(self.repo / "written-by-a-check.txt")},
         })
         status, payload, _, _ = self.invoke()
-        self.assertEqual(0, status)
+        self.assertEqual(1, status)
+        self.assertTrue(payload["changed_tree"])
         self.assertFalse(payload["dirty"])
         self.assertEqual([], self.cache_entries())
 
