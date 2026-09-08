@@ -56,3 +56,5 @@
 @media (forced-colors: active) {
   .sessions-view__index, .sessions-view__diagnostic, .sessions-view__list li[data-diagnostic] { border-color: CanvasText; }
 }
+
+.sessions-view__identity .sessions-view__open { color: var(--accent); font-size: var(--type-base); font-weight: 700; }

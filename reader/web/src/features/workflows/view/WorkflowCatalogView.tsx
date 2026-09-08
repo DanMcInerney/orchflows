@@ -1,3 +1,4 @@
+import { RouteState, RefreshStatus } from "../../../shared/transport/RouteState";
 import { BookOpen, Boxes, GitBranch, SearchX } from "lucide-react";
 
 import type { FeatureState } from "../../../shared/transport/types";
@@ -35,8 +36,7 @@ function EmptyCatalog() {
 }
 
 export function WorkflowCatalogView({ route, state }: WorkflowCatalogViewProps) {
-  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!route.fixture && (state.status === "loading" || state.status === "error")) return <RouteState state={state} context={{ title: "Workflows", description: "Workflow definitions and their authored summaries.", parents: [{ label: "Now", href: "/now" }] }} />;
 
   const workflows = state.model?.workflows ?? [];
   const compositions = workflows.filter((workflow) => workflow.type === "composition").length;
@@ -44,7 +44,7 @@ export function WorkflowCatalogView({ route, state }: WorkflowCatalogViewProps) 
 
   return (
     <main className="foundation-view workflows-view" data-view="workflow-catalog" data-fixture={route.fixture || "live"}>
-      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
+      {state.status === "stale" && <RefreshStatus state={state} />}
       <header className="workflows-hero">
         <div>
           <p className="eyebrow"><Boxes aria-hidden="true" /> Definition library</p>

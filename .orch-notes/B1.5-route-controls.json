@@ -1,0 +1,54 @@
+[
+  {
+    "mode": "previous-public-route",
+    "argv": [
+      "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+      "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.5\\.orch-notes\\B1.5-route-controls.py",
+      "previous-public-route"
+    ],
+    "timeout_seconds": 120,
+    "observed_exit": 1,
+    "expected_exit": 1,
+    "stdout": "",
+    "stderr": "test_literal_sequence_resolves_in_correct_public_scope (tests.test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope) ... FAIL\n\n======================================================================\nFAIL: test_literal_sequence_resolves_in_correct_public_scope (tests.test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.5\\tests\\test_tiktok_video_package.py\", line 75, in test_literal_sequence_resolves_in_correct_public_scope\n    self.assertEqual(['tiktok-video', 'video-direction',\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                      'video-production'], calls)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Lists differ: ['tiktok-video', 'video-direction', 'video-production'] != ['tiktok-video', 'super-research', 'video-direction', 'video-production']\n\nFirst differing element 1:\n'video-direction'\n'super-research'\n\nSecond list contains 1 additional elements.\nFirst extra element 3:\n'video-production'\n\n- ['tiktok-video', 'video-direction', 'video-production']\n+ ['tiktok-video', 'super-research', 'video-direction', 'video-production']\n?                 ++++++++++++++++++\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.012s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "mode": "unwanted-acquisition",
+    "argv": [
+      "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+      "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.5\\.orch-notes\\B1.5-route-controls.py",
+      "unwanted-acquisition"
+    ],
+    "timeout_seconds": 120,
+    "observed_exit": 1,
+    "expected_exit": 1,
+    "stdout": "",
+    "stderr": "test_literal_sequence_resolves_in_correct_public_scope (tests.test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope) ... FAIL\n\n======================================================================\nFAIL: test_literal_sequence_resolves_in_correct_public_scope (tests.test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.5\\tests\\test_tiktok_video_package.py\", line 90, in test_literal_sequence_resolves_in_correct_public_scope\n    self.assertFalse({'super-research', 'research-acquire', 'html-dossier'}\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                     & set(re.findall(r'[a-z]+(?:-[a-z]+)+', body)), path)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'research-acquire'} is not false : C:\\Users\\danhm\\AppData\\Local\\Temp\\tmp7__ntv7v\\tiktok-video\\SKILL.md\n\n----------------------------------------------------------------------\nRan 1 test in 0.015s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "mode": "missing-research-review-pin",
+    "argv": [
+      "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+      "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.5\\.orch-notes\\B1.5-route-controls.py",
+      "missing-research-review-pin"
+    ],
+    "timeout_seconds": 120,
+    "observed_exit": 1,
+    "expected_exit": 1,
+    "stdout": "",
+    "stderr": "test_literal_sequence_resolves_in_correct_public_scope (tests.test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope) ... FAIL\n\n======================================================================\nFAIL: test_literal_sequence_resolves_in_correct_public_scope (tests.test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.5\\tests\\test_tiktok_video_package.py\", line 80, in test_literal_sequence_resolves_in_correct_public_scope\n    self.assertEqual(3, len(research))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\nAssertionError: 3 != 2\n\n----------------------------------------------------------------------\nRan 1 test in 0.015s\n\nFAILED (failures=1)\n"
+  },
+  {
+    "mode": "corrected",
+    "argv": [
+      "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+      "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.5\\.orch-notes\\B1.5-route-controls.py",
+      "corrected"
+    ],
+    "timeout_seconds": 120,
+    "observed_exit": 0,
+    "expected_exit": 0,
+    "stdout": "",
+    "stderr": "test_literal_sequence_resolves_in_correct_public_scope (tests.test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.234s\n\nOK\n"
+  }
+]

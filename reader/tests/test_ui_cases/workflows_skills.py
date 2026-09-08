@@ -49,10 +49,9 @@ class WorkflowSkillTests(unittest.TestCase):
             (edge["kind"], edge["from"], edge["to"])
             for edge in detail["edges"]
         }
-        self.assertIn(
-            ("script-call", "workflow:orch-do", "script:bin/standards.py"),
-            edge_tuples,
-        )
+        # The current kernel contract delegates evidence to pinned standards;
+        # it no longer carries a literal standards.py reference.
+        self.assertEqual(set(), edge_tuples)
         # A kernel skill calls no skill (rules/composition.md 1): orch-do's
         # body names no other skill by backticked call.
         self.assertFalse(any(kind == "skill-call" for kind, _from, _to in edge_tuples))
@@ -79,7 +78,7 @@ class WorkflowSkillTests(unittest.TestCase):
         self.assertEqual(
             {
                 "workflow:evolve",
-                "skill:orch-code",
+                "standard:orch-code",
                 "script:bin/search_plan.py",
                 "script:bin/tickets.py",
             },
@@ -93,7 +92,7 @@ class WorkflowSkillTests(unittest.TestCase):
         )
         self.assertEqual(
             identity.source_id("lib/standards/orch-code/STANDARD.md"),
-            by_id["skill:orch-code"]["source_id"],
+            by_id["standard:orch-code"]["source_id"],
         )
         self.assertEqual(
             sorted(
@@ -142,7 +141,7 @@ Return: the result.
             [{
                 "code": "unresolved-reference",
                 "subject_id": "script:tools/validate.py",
-                "message": "The canonical call does not resolve to an installed source.",
+                "message": "The source reference does not resolve to an installed source.",
             }],
             detail["diagnostics"],
         )
@@ -187,6 +186,22 @@ Return: the result.
             [(item["code"], item["subject_id"]) for item in detail["diagnostics"]],
         )
         self.assertNotIn("skill:orch-also-missing", {node["id"] for node in detail["nodes"]})
+
+    def test_standard_operands_are_references_not_skill_invocations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._skill(root, "workflows", "demo", "Use `runner.py do --standard orch-code`, then `runner.py judge --standard=orch-code`. Also `--standard orch-missing`. Reference `orch-code`. Use `orch-target`.\n")
+            self._skill(root, "kernel", "orch-target", "Require: input.\nReturn: output.\n")
+            self._script(root, "runner.py", "pass\n")
+            standard = root / "standards" / "orch-code" / "STANDARD.md"
+            standard.parent.mkdir(parents=True)
+            standard.write_text("---\nname: orch-code\n---\nA standard.\n", encoding="utf-8")
+            detail = skills.project_workflow_skill(root, "demo")
+        self.assertEqual({"orch-target"}, {node["label"] for node in detail["nodes"] if node["kind"] == "skill"})
+        self.assertEqual({"orch-code", "orch-missing"}, {node["label"] for node in detail["nodes"] if node["kind"] == "standard"})
+        self.assertEqual(2, sum(edge["kind"] == "standard-reference" for edge in detail["edges"]))
+        self.assertEqual([("unresolved-reference", "standard:orch-missing")], [(item["code"], item["subject_id"]) for item in detail["diagnostics"]])
+        self.assertTrue(all(edge["label"].startswith("references ") for edge in detail["edges"]))
 
     @staticmethod
     def _skill(root: Path, tier: str, name: str, body: str) -> None:

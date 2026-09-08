@@ -46,7 +46,7 @@ function model(overrides: Partial<TicketDetail> = {}): InspectorModel {
     },
     sections: { goal: "Hold the drill level in one design language." },
     report: "The recorded report.",
-    pack: "orch-design-pack",
+    standard: "orch-design",
     history: [],
     raw: "",
     ...overrides
@@ -88,7 +88,7 @@ describe("ticket detail continuity with the workflows exemplar", () => {
     expect(text(hero?.querySelector("h1#ticket-title"))).toBe("G1");
     expect(text(hero?.querySelector(".inspector-lede"))).toBe("Every dependency is met and the report is recorded.");
     expect(Array.from(hero?.querySelectorAll(".inspector-identities span") ?? []).map(text))
-      .toEqual(["orch-tdd", "orch-design-pack", "bound 90m"]);
+      .toEqual(["orch-tdd", "orch-design", "bound 90m"]);
 
     const stats = Array.from(hero?.querySelectorAll(".inspector-stats > div") ?? []).map((cell) => [
       text(cell.querySelector("dt")),
@@ -223,7 +223,7 @@ describe("ticket detail continuity with the workflows exemplar", () => {
       expect(inspectorCss, `${row} carries the catalog row hover surface`)
         .toContain(`${row}:hover { background: var(--surface-2); }`);
     }
-    expect(inspectorCss).toContain("font: 760 var(--type-display)/1.1 var(--font-mono)");
+    expect(inspectorCss).toContain("font: 760 var(--type-page-title)/1.2 var(--font-ui)");
     expect(inspectorCss).toContain("font: 720 var(--type-metric)/1 var(--font-mono)");
   });
 });

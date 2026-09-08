@@ -67,7 +67,7 @@ def project_workflow(root=LIBRARY_ROOT, workflow_id: str = ""):
     projected = {node["source_id"] for node in detail["nodes"] if "source_id" in node}
     if inventory != projected:
         raise WorkflowProjectionError("workflow source inventory is inconsistent")
-    return detail
+    return {**detail, "summary": owner["summary"], "description": owner["description"]}
 
 
 source_inventory = sources.source_inventory

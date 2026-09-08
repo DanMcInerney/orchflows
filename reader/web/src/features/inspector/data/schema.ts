@@ -44,6 +44,7 @@ function ticket(value: unknown): value is TicketDetail {
   return record(value)
     && record(value.readiness)
     && typeof value.id === "string"
+    && optionalText(value.title)
     && typeof value.status === "string"
     && typeof value.executor === "string"
     && typeof value.bound === "string"
@@ -58,7 +59,7 @@ function ticket(value: unknown): value is TicketDetail {
     && strings(value.readiness.causal_chain)
     && record(value.sections)
     && typeof value.report === "string"
-    && typeof value.pack === "string"
+    && typeof value.standard === "string"
     && Array.isArray(value.history)
     && typeof value.raw === "string"
     && executorSource(value.executor_source)

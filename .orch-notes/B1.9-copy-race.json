@@ -1,0 +1,23 @@
+{
+  "assigned_name": "B1.9",
+  "dispatch_id": "B1.9:d1",
+  "assignment_seal": "sha256:d0248ed1b363d3318780b1014c9dbd3a29711fa2ca0373bc79592d584751bc2a",
+  "copy_policy_ignores_notes": false,
+  "visited_fixture": [
+    "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\.orch-notes\\tmpao127mec"
+  ],
+  "shutil_error": "[('C:\\\\Users\\\\danhm\\\\.orchflows\\\\worktrees\\\\20260908-video-creator\\\\B1.9\\\\.orch-notes\\\\tmpao127mec', 'C:\\\\Users\\\\danhm\\\\.orchflows\\\\worktrees\\\\20260908-video-creator\\\\orch-B1.9-copy-control-2i2uj1js\\\\copy\\\\.orch-notes\\\\tmpao127mec', \"[WinError 3] The system cannot find the path specified: 'C:\\\\\\\\Users\\\\\\\\danhm\\\\\\\\.orchflows\\\\\\\\worktrees\\\\\\\\20260908-video-creator\\\\\\\\B1.9\\\\\\\\.orch-notes\\\\\\\\tmpao127mec'\")]",
+  "all_temporary_roots_removed": true,
+  "method": "Actual VideoPackageTests fixture and actual COPY_SKIPS callback; deterministic cleanup after copytree enumerates notes and before descent. Copies only notes subtree, not full repository; this isolates the hosted interleaving without schedule luck.",
+  "hosted_log": "C:\\Users\\danhm\\AppData\\Local\\Temp\\video-fixture-fixed-ci-windows.log",
+  "hosted_log_sha256": "7e4035bfe9a51f7917ba0884d0df5fbf1940af2fd1752cf02f1b4bc6bbd2998b",
+  "hosted_excerpt": [
+    "2026-09-08T13:06:01.7679922Z HEAD is now at d57806e Merge 10565acdfa35f4a768a4dc803c9d9b5c5c66744d into ce78596e27a37ba6c6b6aaf11b5b40dd4a2e4bb0",
+    "2026-09-08T13:06:10.7034363Z ok   tests.test_tiktok_video_package                5 tests    1.69s",
+    "2026-09-08T13:08:32.6142899Z ERROR: test_a_copy_naming_the_repository_location_fails (tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_a_copy_naming_the_repository_location_fails)",
+    "2026-09-08T13:08:32.6155622Z     shutil.copytree(ROOT, copy, ignore=cls.COPY_SKIPS, symlinks=True)",
+    "2026-09-08T13:08:32.6161296Z shutil.Error: [('D:\\\\a\\\\orchflows\\\\orchflows\\\\.orch-notes\\\\tmpo7gdnpkb', 'C:\\\\Users\\\\RUNNER~1\\\\AppData\\\\Local\\\\Temp\\\\friction-locations-ohrco5y2\\\\copy\\\\.orch-notes\\\\tmpo7gdnpkb', \"[WinError 3] The system cannot find the path specified: 'D:\\\\\\\\a\\\\\\\\orchflows\\\\\\\\orchflows\\\\\\\\.orch-notes\\\\\\\\tmpo7gdnpkb'\")]",
+    "2026-09-08T13:08:32.6443892Z 54 modules, 1287 tests: 0 failures, 1 errors, 12 skipped",
+    "2026-09-08T13:08:32.7466567Z ##[error]Process completed with exit code 1."
+  ]
+}

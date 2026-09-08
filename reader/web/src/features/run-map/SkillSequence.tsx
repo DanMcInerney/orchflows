@@ -28,7 +28,7 @@ const SEAM_LABEL: Record<Exclude<SkillContinuity, "first">, string> = {
 };
 
 function stepName(step: SkillStep): string {
-  return `${step.skill}, ticket ${step.ticket.id}, ${PHASE_WORD[step.phase]}, ${CONTINUITY_WORD[step.continuity]}`;
+  return `${step.ticket.title || step.skill}, ticket ${step.ticket.id}, ${PHASE_WORD[step.phase]}, ${CONTINUITY_WORD[step.continuity]}`;
 }
 
 export interface SkillSequenceProps {
@@ -81,8 +81,10 @@ export function SkillSequence({ runId, fixture, tickets }: SkillSequenceProps) {
               <span className="run-skills__glyph" data-status={step.ticket.readiness.state} aria-hidden="true">
                 {statusGlyph(step.ticket.readiness.state)}
               </span>
-              <b>{step.skill}</b>
+              <b>{step.ticket.title || step.skill}</b>
+              <span className="run-skills__state">{step.ticket.readiness.state}</span>
               <span className="run-skills__ticket">{step.ticket.id}</span>
+              {step.ticket.title && <span className="run-skills__executor">{step.skill}</span>}
               <span className="run-skills__agent">{step.agent || "unclaimed"}</span>
             </a>
           </li>

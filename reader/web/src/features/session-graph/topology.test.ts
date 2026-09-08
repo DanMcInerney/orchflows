@@ -50,7 +50,8 @@ describe("session topology", () => {
   it("leaves unreadable activity unknown and names the diagnostic", () => {
     const unreadable = { ...agent("agent-unreadable", null), unreadable: true, state: "running", evidence: "claimed" };
     const topology = sessionTopology(session([unreadable]));
-    expect(topology.nodes[1]).toMatchObject({ state: "unknown", evidence: "metadata unreadable" });
+    expect(topology.nodes[1]).toMatchObject({ state: "unknown", evidence: "metadata unreadable", depth: null });
+    expect(topology.nodes[0].state).toBe("unknown");
     expect(topology.diagnostics).toContain("Unreadable subagent metadata remains unknown.");
   });
 });

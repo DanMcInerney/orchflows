@@ -54,7 +54,7 @@
 .run-skills__tally dd { margin: var(--space-1) 0 0; color: var(--text-strong); font: 720 var(--type-metric)/1 var(--font-mono); }
 .run-skills__track { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--space-3) 0; margin: 0; padding: var(--space-4) var(--space-5); list-style: none; }
 .run-skills__step { min-width: 0; display: flex; align-items: stretch; }
-.run-skills__seam { width: 30px; flex: 0 0 30px; display: grid; align-content: center; justify-items: center; gap: 2px; color: var(--text-faint); }
+.run-skills__seam { width: 30px; flex: 0 0 30px; display: grid; align-content: center; justify-items: center; gap: var(--space-1); color: var(--text-faint); }
 .run-skills__seam i { font-style: normal; font-size: var(--type-lg); }
 .run-skills__seam em { font-style: normal; font-size: var(--type-2xs); font-weight: 760; letter-spacing: .06em; text-transform: uppercase; }
 .run-skills__seam[data-continuity="new-subagent"] { width: 68px; flex: 0 0 68px; color: var(--accent); }
@@ -68,7 +68,7 @@
 .run-skills__glyph[data-status="ready"] { color: var(--status-ready); }
 .run-skills__glyph[data-status="waiting"] { color: var(--status-waiting); }
 .run-skills__glyph[data-status="complete"] { color: var(--status-complete); }
-.run-skills__node b { grid-column: 2; overflow-wrap: anywhere; color: var(--text-strong); font-size: var(--type-xs); font-weight: 700; }
+.run-skills__node b { grid-column: 2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; color: var(--text-strong); font-size: var(--type-base); font-weight: 700; }
 .run-skills__ticket, .run-skills__agent { grid-column: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .run-skills__ticket { margin-top: var(--space-1); color: var(--text-muted); font: var(--type-2xs)/1.4 var(--font-mono); }
 .run-skills__agent { color: var(--text-faint); font: var(--type-2xs)/1.4 var(--font-mono); }
@@ -100,6 +100,7 @@
 .run-map__canvas .react-flow__background pattern circle { fill: var(--border-subtle); }
 .run-map__canvas .react-flow__node-ticket { width: 184px; border: 0; background: transparent; }
 .run-map__canvas .react-flow__node-group { width: 280px; border: 0; background: transparent; }
+.run-map__canvas .react-flow__node[role="button"] { cursor: pointer; }
 .run-map__canvas .react-flow__node:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 .run-map__canvas .react-flow__edge-path { stroke: var(--status-waiting); stroke-width: 1.5; }
 .run-map__canvas .react-flow__edge-text { fill: var(--text-strong); font: 700 var(--type-xs) var(--font-mono); }
@@ -237,3 +238,8 @@
   .run-map__minimap { border-color: CanvasText; }
   .run-map__minimap line, .run-map__minimap rect { stroke: CanvasText; }
 }
+
+.run-skills__state { grid-column: 2; color: var(--text); font-size: var(--type-base); text-transform: capitalize; }
+.run-map__hero h1 { font-family: var(--font-ui); overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+
+.run-skills__executor { grid-column: 2; color: var(--text-muted); font-size: var(--type-sm); overflow-wrap: anywhere; }

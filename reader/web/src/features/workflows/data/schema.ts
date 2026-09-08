@@ -67,6 +67,8 @@ export interface DiagnosticPayload {
 }
 
 export interface WorkflowDetailPayload {
+  summary?: SummaryPayload;
+  description?: string;
   schema: "orchflows.workflow-detail.v1";
   id: string;
   type: "composition" | "workflow-skill";
@@ -131,7 +133,7 @@ function catalogItem(value: unknown): value is CatalogItemPayload {
 function detailNode(value: unknown): value is DetailNodePayload {
   return exact(value, ["id", "kind", "label"], ["source_id"])
     && string(value.id)
-    && oneOf(value.kind, ["workflow", "work", "skill", "script"])
+    && oneOf(value.kind, ["workflow", "work", "skill", "script", "standard"])
     && string(value.label)
     && (!Object.hasOwn(value, "source_id") || string(value.source_id));
 }
@@ -139,7 +141,7 @@ function detailNode(value: unknown): value is DetailNodePayload {
 function detailEdge(value: unknown): value is DetailEdgePayload {
   return exact(value, ["id", "kind", "from", "to", "label"])
     && string(value.id)
-    && oneOf(value.kind, ["dependency", "executor", "skill-call", "script-call", "loop"])
+    && oneOf(value.kind, ["dependency", "executor", "skill-call", "script-call", "loop", "standard-reference"])
     && string(value.from)
     && string(value.to)
     && string(value.label);
@@ -163,7 +165,9 @@ export function catalogSchema(value: unknown): WorkflowCatalogPayload {
 }
 
 export function detailSchema(value: unknown): WorkflowDetailPayload {
-  if (!exact(value, ["schema", "id", "type", "nodes", "edges", "relations", "diagnostics"])
+  if (!exact(value, ["schema", "id", "type", "nodes", "edges", "relations", "diagnostics"], ["summary", "description"])
+    || (Object.hasOwn(value, "summary") && !summary(value.summary))
+    || (Object.hasOwn(value, "description") && !string(value.description))
     || value.schema !== "orchflows.workflow-detail.v1"
     || !string(value.id)
     || !oneOf(value.type, ["composition", "workflow-skill"])
@@ -181,7 +185,8 @@ export function detailSchema(value: unknown): WorkflowDetailPayload {
 }
 
 export function sourceSchema(value: unknown): WorkflowSourcePayload {
-  if (!exact(value, ["schema", "id", "text", "sha256", "language", "redacted"])
+  if (!exact(value, ["schema", "id", "text", "sha256", "language", "redacted"], ["label"])
+    || (Object.hasOwn(value, "label") && !string(value.label))
     || value.schema !== "orchflows.workflow-source.v1"
     || !string(value.id)
     || !string(value.text)

@@ -34,7 +34,7 @@ export interface TopologyNode {
   kind: "session" | "agent";
   label: string;
   type: string;
-  depth: number;
+  depth: number | null;
   state: string;
   evidence: string;
   modified: string;
@@ -115,7 +115,7 @@ export function sessionTopology(session: SessionDetail): SessionTopology {
     label: "Orchestrator",
     type: "session",
     depth: 0,
-    state: session.agents.some((agent) => agent.state === "running") ? "running" : "unknown",
+    state: session.agents.some((agent) => !agent.unreadable && agent.state === "running") ? "running" : "unknown",
     evidence: `${session.agent_count} recorded subagents`,
     modified: session.modified,
     unreadable: false
@@ -125,7 +125,7 @@ export function sessionTopology(session: SessionDetail): SessionTopology {
     kind: "agent",
     label: agent.id,
     type: agent.type || "unknown type",
-    depth: agent.depth ?? 0,
+    depth: agent.depth,
     state: agent.unreadable ? "unknown" : (agent.state || "unknown"),
     evidence: agent.unreadable ? "metadata unreadable" : (agent.evidence || "no activity evidence"),
     modified: agent.modified,

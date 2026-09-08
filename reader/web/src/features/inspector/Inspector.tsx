@@ -1,3 +1,5 @@
+import { executionRunRoute } from "../../shared/routes/executionRoutes";
+import { RouteState, RefreshStatus } from "../../shared/transport/RouteState";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
   Activity, AlertTriangle, ArrowRight, CheckCircle2, CircleHelp, Clock3,
@@ -65,8 +67,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
     return () => window.removeEventListener("popstate", sync);
   }, [route.fixture, route.run, route.ticket]);
 
-  if (!route.fixture && featureState.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!route.fixture && featureState.status === "error") return <div className="notice" role="status">{featureState.error.message}</div>;
+  if (!route.fixture && (featureState.status === "loading" || featureState.status === "error")) return <RouteState state={featureState} context={{ title: "Ticket", identity: route.ticket, description: "Evidence for the selected ticket. Your selected tab is preserved while the reader retries.", parents: [{ label: "Now", href: "/now" }, { label: route.run, href: executionRunRoute.build({ run: route.run, fixture: route.fixture }) }] }} />;
 
   if (!ticket) {
     return <section className="foundation-view ticket-inspector" aria-labelledby="ticket-title"><EmptyEvidence title="Ticket unavailable">The selected ticket is not present in the safe reader projection.</EmptyEvidence></section>;
@@ -90,7 +91,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
   ];
   const identities = [
     ticket.executor || "executor unavailable",
-    ticket.pack || "pack unavailable",
+    ticket.standard || "standard unavailable",
     ticket.bound ? `bound ${ticket.bound}` : "bound unavailable"
   ];
 
@@ -102,7 +103,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
 
   return (
     <section className="foundation-view ticket-inspector" data-state={state} data-fixture={route.fixture || "live"} aria-labelledby="ticket-title">
-      {featureState.status === "stale" && <div className="notice" role="status">{featureState.error.message}</div>}
+      {featureState.status === "stale" && <RefreshStatus state={featureState} />}
       <div className="inspector-breadcrumb" aria-label="Ticket location">
         <span>Now</span><ArrowRight aria-hidden="true" /><span className="mono">{route.run}</span><ArrowRight aria-hidden="true" />
         <strong className="mono">{ticket.id}</strong>
@@ -111,7 +112,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
         <div className="inspector-hero__identity">
           <p className="eyebrow">Inspector evidence</p>
           <div className="inspector-hero__title">
-            <h1 id="ticket-title">{ticket.id}</h1>
+            <h1 id="ticket-title">{ticket.title || ticket.id}</h1>
             <div className="inspector-status" data-state={state} aria-label={`Ticket state: ${state}`}>
               <StateGlyph state={state} /><span>{state}</span><small>{ticket.status}</small>
             </div>
