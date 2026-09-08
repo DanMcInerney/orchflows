@@ -106,13 +106,8 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
 
 
 def _cmd_dispatch(rest):
-    """Keep publication outside the whole claim-to-launch transaction."""
-    if __package__:
-        from .tickets_install_guard import installation_lock
-    else:
-        from tickets_install_guard import installation_lock
-    with installation_lock():
-        dispatched = _dispatch_guarded(rest)
+    """Prepare the workspace after the claim-to-launch transaction."""
+    dispatched = _dispatch_admitted(rest)
     if "error" in dispatched:
         return dispatched
     args = list(rest)
@@ -123,8 +118,8 @@ def _cmd_dispatch(rest):
     return {**dispatched, "prepare": _workspace_prepare(run, ticket_id, workspace)}
 
 
-def _dispatch_guarded(rest):
-    """Compose admission and claim-to-launch under the installation lock."""
+def _dispatch_admitted(rest):
+    """Compose admission and the claim-to-launch transaction."""
 
     args = list(rest)
     owner = _extract_flag(args, "--by")
@@ -156,7 +151,6 @@ def _dispatch_guarded(rest):
         )
     if "error" in dispatched:
         return dispatched
-    # The outer facade releases publication protection before preparation.
     return dispatched
 
 

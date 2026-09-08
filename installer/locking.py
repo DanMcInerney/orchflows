@@ -1,9 +1,4 @@
-"""Serialize pin creation with publication, before acquiring any run lock.
-
-The lock lives outside replaced lib/bin trees. Nested mint -> dispatch calls
-reuse it in one thread; another thread or process must wait. No state is
-inferred from lock-file existence, so a crashed owner cannot strand a lease.
-"""
+"""Serialize concurrent installers outside the payload directories they replace."""
 
 from __future__ import annotations
 
@@ -13,46 +8,15 @@ from pathlib import Path
 import threading
 import time
 
-if __package__:
-    from . import state_root
-else:
-    import state_root
-
 _LOCAL_LOCK = threading.RLock()
 _HELD = threading.local()
 LOCK_TIMEOUT_SECONDS = 120
 
 
-def guarded_dispatch_open(rest, *, _lock_held=False):
-    if __package__:
-        from .tickets_attempts import _dispatch_open
-    else:
-        from tickets_attempts import _dispatch_open
-    if _lock_held:
-        return _dispatch_open(rest, _lock_held=True)
-    try:
-        with installation_lock():
-            return _dispatch_open(rest)
-    except OSError as error:
-        return {"error": f"unable to guard dispatch open: {error}"}
-
-
-def guarded_dispatch_replace(rest):
-    if __package__:
-        from .tickets_attempts import _dispatch_replace
-    else:
-        from tickets_attempts import _dispatch_replace
-    try:
-        with installation_lock():
-            return _dispatch_replace(rest)
-    except OSError as error:
-        return {"error": f"unable to guard dispatch replacement: {error}"}
-
-
 @contextmanager
-def installation_lock(home=None):
-    """Hold the shared installation lock; order is installation then run."""
-    root = Path(home) if home is not None else state_root.orchflows_home()
+def installation_lock(home):
+    """Hold installer exclusion; lock-file existence never implies ownership."""
+    root = Path(home)
     path = root.resolve() / ".install.lock"
     deadline = time.monotonic() + LOCK_TIMEOUT_SECONDS
     if not _LOCAL_LOCK.acquire(timeout=LOCK_TIMEOUT_SECONDS):

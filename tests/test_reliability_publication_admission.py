@@ -1,4 +1,4 @@
-"""Publication admission preserves operator bytes and active runtime dependencies."""
+"""Publication preserves operator bytes and verifies private runtime health."""
 
 import json
 import re
@@ -64,26 +64,6 @@ class PublicationAdmissionTests(unittest.TestCase):
         plan.runtime_action = 'reuse'  # deliberately stale planning input
         return plan, source, home
 
-    def test_active_runtime_repair_refuses_actual_swap_from_stale_reuse_plan(self):
-        with tempfile.TemporaryDirectory() as raw:
-            plan, source, home = self.runtime_fixture(Path(raw))
-            self.active(plan)
-            before = plan.receipt_path.read_bytes()
-            built = []
-            def build(stage):
-                built.append(stage)
-                (stage / 'dependency.txt').write_text('NEW DEPENDENCY')
-            with patch.object(runtime, 'private_runtime_home', return_value=home), patch.object(
-                runtime, 'private_runtime_action', return_value='repair'
-            ), patch.object(runtime, '_build_private_runtime', side_effect=build), patch.object(
-                runtime, 'private_runtime_is_healthy', return_value=True
-            ):
-                with self.assertRaisesRegex(RuntimeError, 'protected by active references'):
-                    application.apply_plan(plan, 'repair')
-            self.assertEqual([], built)
-            self.assertEqual('OLD ACTIVE DEPENDENCY', (home / 'dependency.txt').read_text())
-            self.assertEqual(before, plan.receipt_path.read_bytes())
-            self.assertEqual([], list(plan.scope_home.glob('.runtime-*')))
 
     def test_verified_runtime_reuse_does_not_enter_mutating_ensure(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -97,9 +77,11 @@ class PublicationAdmissionTests(unittest.TestCase):
             self.assertEqual('reuse', receipt['source_commit'])
             self.assertEqual('OLD ACTIVE DEPENDENCY', (home / 'dependency.txt').read_text())
 
-    def test_quiescent_runtime_repair_uses_real_swap_and_retires_backup(self):
+    def test_runtime_repair_ignores_active_history_and_legacy_writer(self):
         with tempfile.TemporaryDirectory() as raw:
             plan, _, home = self.runtime_fixture(Path(raw))
+            self.active(plan)
+            (plan.bin_dir / 'tickets.py').write_text('# legacy writer\n')
             def build(stage):
                 (stage / 'dependency.txt').write_text('NEW DEPENDENCY')
             with patch.object(runtime, 'private_runtime_home', return_value=home), patch.object(
@@ -111,30 +93,3 @@ class PublicationAdmissionTests(unittest.TestCase):
             self.assertEqual('repair', receipt['source_commit'])
             self.assertEqual('NEW DEPENDENCY', (home / 'dependency.txt').read_text())
             self.assertEqual([], list(plan.scope_home.glob('.runtime-*')))
-
-    def test_legacy_lifecycle_writer_requires_quiet_window_for_runtime_only_repair(self):
-        with tempfile.TemporaryDirectory() as raw:
-            plan, _, home = self.runtime_fixture(Path(raw))
-            for name in ('tickets.py', 'tickets_install_guard.py', 'tickets_issue.py',
-                         'tickets_dispatch_facade.py', 'tickets_mint.py',
-                         'tickets_frame.py', 'tickets_seal.py'):
-                (plan.bin_dir / name).write_text('# installation_lock\n')
-            attempts = ('from tickets_install_guard import guarded_dispatch_open as _cmd_dispatch_open, '
-                        'guarded_dispatch_replace as _cmd_dispatch_replace\n')
-            before = plan.receipt_path.read_bytes()
-            with patch.object(runtime, 'private_runtime_home', return_value=home), patch.object(
-                runtime, 'private_runtime_action', return_value='repair'
-            ), patch.object(application, '_create_private_runtime') as create:
-                for missing in ('lifecycle', 'open', 'replace'):
-                    with self.subTest(missing=missing):
-                        (plan.bin_dir / 'tickets_lifecycle.py').write_text(
-                            '# legacy lifecycle writer\n' if missing == 'lifecycle' else '# installation_lock\n')
-                        # A name in a comment cannot stand in for the guarded binding.
-                        changed = attempts if missing == 'lifecycle' else attempts.replace(
-                            ' as _cmd_dispatch_' + missing, ' as unguarded_' + missing)
-                        (plan.bin_dir / 'tickets_attempts.py').write_text(changed + '# ' + attempts)
-                        with self.assertRaisesRegex(RuntimeError, 'old bytes retained'):
-                            application.apply_plan(plan, 'repair')
-                        create.assert_not_called()
-            self.assertEqual(before, plan.receipt_path.read_bytes())
-            self.assertEqual('OLD ACTIVE DEPENDENCY', (home / 'dependency.txt').read_text())

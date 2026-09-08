@@ -604,6 +604,11 @@
    "test_installer.TestUnreadableReceipt.test_install_refuses_rather_than_overwriting_a_corrupt_receipt",
    "test_installer.TestUnreadableReceipt.test_load_json_returns_none_only_for_an_absent_file",
    "test_installer.TestUnreadableReceipt.test_uninstall_refuses_a_corrupt_receipt_rather_than_finding_none",
+   "test_installer_locking.InstallationGuardTest.test_nested_lock_releases_after_failure_and_excludes_other_thread",
+   "test_installer_locking.InstallationGuardTest.test_process_cannot_enter_until_publication_lock_releases",
+   "test_installer_ordinary_update.OrdinaryUpdateTests.test_concurrent_installers_wait_before_staging_and_publish_in_order",
+   "test_installer_ordinary_update.OrdinaryUpdateTests.test_fresh_install_and_update_need_no_state_directory",
+   "test_installer_ordinary_update.OrdinaryUpdateTests.test_upgrade_ignores_old_writers_and_unreadable_ticket_history",
    "test_lens_key.LensKeyTest.test_a_judge_is_keyed_by_the_one_kind_on_its_context",
    "test_lens_key.LensKeyTest.test_a_judge_over_two_kinds_gets_no_key",
    "test_lens_key.LensKeyTest.test_a_making_do_citing_a_predecessor_keeps_its_adapter_kind",
@@ -824,28 +829,19 @@
    "test_reliability_installation.DependencyTests.test_execution_redirects_bytecode_without_weakening_executable_trust",
    "test_reliability_installation.DependencyTests.test_root_npm_and_only_explicit_nested_preparation",
    "test_reliability_installation.DependencyTests.test_same_package_ensure_rechecks_under_lock_and_failure_can_retry",
-   "test_reliability_installation.PublicationTests.test_active_reference_refuses_changed_bytes_but_allows_receipt_only_change",
    "test_reliability_installation.PublicationTests.test_clean_flat_and_reader_import_and_architecture_link",
    "test_reliability_installation.PublicationTests.test_copy_and_probe_fail_before_live_payload_changes",
    "test_reliability_installation.PublicationTests.test_declared_node_payload_is_prepared_without_incidental_dependencies",
    "test_reliability_installation.PublicationTests.test_failed_rollback_retains_intact_backup_and_recovery_map",
-   "test_reliability_installation.PublicationTests.test_old_writers_refuse_upgrade_until_offline_entrypoint_is_parked",
    "test_reliability_installation.PublicationTests.test_receipt_failure_restores_adapter_and_payload",
    "test_reliability_installation.PublicationTests.test_second_payload_rename_failure_rolls_back_and_retry_works",
-   "test_reliability_installation.PublicationTests.test_unpinned_frame_and_draft_allow_update_but_pinned_frame_and_runtime_change_refuse",
-   "test_reliability_installation.PublicationTests.test_unreadable_or_missing_active_state_fails_closed",
    "test_reliability_integration.InstalledCompositionTests.test_diagnostics_consumes_public_report_pages_and_refuses_bad_page",
    "test_reliability_integration.InstalledCompositionTests.test_flat_and_reader_payloads_import_shared_process_owner",
-   "test_reliability_integration.RawPublicationTests.test_nested_issue_reuses_locks_already_held_by_mint",
-   "test_reliability_integration.RawPublicationTests.test_publication_lock_failure_refuses_before_any_raw_mutation",
-   "test_reliability_integration.RawPublicationTests.test_raw_issue_and_seal_acquire_installation_before_run_lock",
-   "test_reliability_integration.RawPublicationTests.test_raw_new_excludes_publication_before_pin_resolution",
+   "test_reliability_integration.RawIssuanceTests.test_nested_issue_reuses_locks_already_held_by_mint",
    "test_reliability_integration.ReceiptPublicationTests.test_post_spawn_receipt_failure_reaps_unbound_suspended_child",
    "test_reliability_integration.ReceiptPublicationTests.test_receipt_replace_waits_out_transient_reader_refusal",
-   "test_reliability_publication_admission.PublicationAdmissionTests.test_active_runtime_repair_refuses_actual_swap_from_stale_reuse_plan",
-   "test_reliability_publication_admission.PublicationAdmissionTests.test_legacy_lifecycle_writer_requires_quiet_window_for_runtime_only_repair",
    "test_reliability_publication_admission.PublicationAdmissionTests.test_owned_replacement_preserves_noncolliding_unknown_helper",
-   "test_reliability_publication_admission.PublicationAdmissionTests.test_quiescent_runtime_repair_uses_real_swap_and_retires_backup",
+   "test_reliability_publication_admission.PublicationAdmissionTests.test_runtime_repair_ignores_active_history_and_legacy_writer",
    "test_reliability_publication_admission.PublicationAdmissionTests.test_unowned_collision_refuses_without_changing_live_bytes_or_receipt",
    "test_reliability_publication_admission.PublicationAdmissionTests.test_verified_runtime_reuse_does_not_enter_mutating_ensure",
    "test_reliability_workspace.ReliabilityWorkspaceTests.test_archive_cli_releases_only_referenced_unchanged_scratch",
@@ -1295,7 +1291,6 @@
    "test_ticket_frames.ShapeGrammarOwnerTest.test_the_prose_and_the_printed_notation_carry_the_same_anchors",
    "test_ticket_landing_preflight.LandingPreflightTests.test_stale_attempt_and_conflicting_join_cannot_run_done",
    "test_ticket_landing_preflight.LandingPreflightTests.test_wrong_seal_and_missing_outcome_leave_target_and_done_untouched",
-   "test_ticket_landing_preflight.LifecyclePublicationTests.test_public_reopening_waits_for_publication_and_cancellation_does_not",
    "test_ticket_pins.PinnedItemDoorTest.test_a_narrowing_edited_under_the_seal_is_refused_at_the_door",
    "test_ticket_pins.PinnedItemDoorTest.test_a_nearer_ring_shadowing_a_stamped_level_is_refused",
    "test_ticket_pins.PinnedItemDoorTest.test_a_root_edited_under_the_seal_is_refused_at_the_door",
@@ -1346,13 +1341,7 @@
    "test_ticket_reliability_admission.AdmissionReliabilityTest.test_malformed_validation_refuses_before_sealing",
    "test_ticket_reliability_admission.AdmissionReliabilityTest.test_mint_refuses_changed_parent_before_issuing",
    "test_ticket_reliability_admission.AdmissionReliabilityTest.test_parent_generation_and_cycle_controls",
-   "test_ticket_reliability_admission.MintPublicationLockTest.test_callable_holds_publication_lock_before_body",
-   "test_ticket_reliability_admission.MintPublicationLockTest.test_lock_failure_refuses_before_mint",
-   "test_ticket_reliability_dispatch.FramePublicationTest.test_first_frame_waits_for_publication_before_resolving_pins",
    "test_ticket_reliability_dispatch.FramePublicationTest.test_frame_close_files_its_own_explicit_identity",
-   "test_ticket_reliability_dispatch.FramePublicationTest.test_publication_lock_refusal_leaves_first_frame_uncreated",
-   "test_ticket_reliability_dispatch.InstallationGuardTest.test_nested_lock_releases_after_failure_and_excludes_other_thread",
-   "test_ticket_reliability_dispatch.InstallationGuardTest.test_process_cannot_enter_until_publication_lock_releases",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_join_disposition_conflicts_and_joined_status_cannot_be_overwritten",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_legacy_join_replays_only_its_stored_disposition_without_rewrite",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_old_envelope_replays_after_replacement_and_expiry_but_conflict_refuses",
@@ -3844,11 +3833,36 @@
    ]
   },
   {
+   "module": "tests.test_installer_locking",
+   "owner": "InstallationGuardTest.test_nested_lock_releases_after_failure_and_excludes_other_thread",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
    "module": "tests.test_installer_managed",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
    "seams": [
     "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_installer_ordinary_update",
+   "owner": "OrdinaryUpdateTests.test_concurrent_installers_wait_before_staging_and_publish_in_order",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_installer_ordinary_update",
+   "owner": "OrdinaryUpdateTests.test_upgrade_ignores_old_writers_and_unreadable_ticket_history",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
@@ -4337,35 +4351,10 @@
   },
   {
    "module": "tests.test_reliability_integration",
-   "owner": "RawPublicationTests.test_nested_issue_reuses_locks_already_held_by_mint",
+   "owner": "RawIssuanceTests.test_nested_issue_reuses_locks_already_held_by_mint",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_reliability_integration",
-   "owner": "RawPublicationTests.test_publication_lock_failure_refuses_before_any_raw_mutation",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_reliability_integration",
-   "owner": "RawPublicationTests.test_raw_issue_and_seal_acquire_installation_before_run_lock",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_reliability_integration",
-   "owner": "RawPublicationTests.test_raw_new_excludes_publication_before_pin_resolution",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch",
-    "threads"
    ]
   },
   {
@@ -4387,23 +4376,7 @@
   },
   {
    "module": "tests.test_reliability_publication_admission",
-   "owner": "PublicationAdmissionTests.test_active_runtime_repair_refuses_actual_swap_from_stale_reuse_plan",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_reliability_publication_admission",
-   "owner": "PublicationAdmissionTests.test_legacy_lifecycle_writer_requires_quiet_window_for_runtime_only_repair",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_reliability_publication_admission",
-   "owner": "PublicationAdmissionTests.test_quiescent_runtime_repair_uses_real_swap_and_retires_backup",
+   "owner": "PublicationAdmissionTests.test_runtime_repair_ignores_active_history_and_legacy_writer",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -5179,15 +5152,6 @@
    ]
   },
   {
-   "module": "tests.test_ticket_landing_preflight",
-   "owner": "LifecyclePublicationTests.test_public_reopening_waits_for_publication_and_cancellation_does_not",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "environment",
-    "monkeypatch"
-   ]
-  },
-  {
    "module": "tests.test_ticket_pins",
    "owner": "StampedCallableTest.setUp",
    "restoration": "selected-module-boundary",
@@ -5202,39 +5166,6 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"
-   ]
-  },
-  {
-   "module": "tests.test_ticket_reliability_admission",
-   "owner": "MintPublicationLockTest.test_callable_holds_publication_lock_before_body",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_ticket_reliability_admission",
-   "owner": "MintPublicationLockTest.test_lock_failure_refuses_before_mint",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_ticket_reliability_dispatch",
-   "owner": "FramePublicationTest.test_first_frame_waits_for_publication_before_resolving_pins",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch",
-    "threads"
-   ]
-  },
-  {
-   "module": "tests.test_ticket_reliability_dispatch",
-   "owner": "InstallationGuardTest.test_nested_lock_releases_after_failure_and_excludes_other_thread",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "threads"
    ]
   },
   {

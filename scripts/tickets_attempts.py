@@ -5,7 +5,6 @@ from __future__ import annotations
 from contextlib import nullcontext
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_install_guard import guarded_dispatch_open as _cmd_dispatch_open, guarded_dispatch_replace as _cmd_dispatch_replace
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
         _set_frontmatter_field, canonical_json, is_frame, parse_canonical_json,
@@ -27,7 +26,6 @@ if __package__:
         _write_text_atomically,
     )
 else:
-    from tickets_install_guard import guarded_dispatch_open as _cmd_dispatch_open, guarded_dispatch_replace as _cmd_dispatch_replace
     from tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
         _set_frontmatter_field, canonical_json, is_frame, parse_canonical_json,
@@ -82,7 +80,7 @@ def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dic
         "state": attempt["state"],
     }}
 
-def _dispatch_open(rest, *, _lock_held=False):
+def _cmd_dispatch_open(rest, *, _lock_held=False):
     args = list(rest)
     owner = _extract_flag(args, "--by")
     dispatch_id = _extract_flag(args, "--dispatch-id")
@@ -409,7 +407,7 @@ def _cmd_dispatch_retire(rest, *, _lock_held=False):
         record_kind="lifecycle", _lock_held=_lock_held,
     )
 
-def _dispatch_replace(rest):
+def _cmd_dispatch_replace(rest):
     args = list(rest)
     assignment_seal = _extract_flag(args, "--assignment-seal")
     dispatch_id = _extract_flag(args, "--dispatch-id")

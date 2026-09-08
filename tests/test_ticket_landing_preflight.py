@@ -2,16 +2,11 @@
 import json
 import os
 from pathlib import Path
-import subprocess
-import sys
 import tempfile
-import time
 import unittest
 from unittest import mock
 
 from scripts import state_root, tickets, tickets_land
-from installer import application, publication
-from installer.models import Plan
 from tests.test_workspace_cases.common import make_repo, git, commit_in
 
 
@@ -79,50 +74,3 @@ class LandingPreflightTests(unittest.TestCase):
         done.assert_not_called()
         self.assertEqual(before, git(self.main, 'rev-parse', 'HEAD').strip())
         self.assertFalse((self.main / 'conflict.txt').exists())
-
-
-class LifecyclePublicationTests(unittest.TestCase):
-    def test_public_reopening_waits_for_publication_and_cancellation_does_not(self):
-        with tempfile.TemporaryDirectory() as raw, mock.patch.dict(os.environ, dict(os.environ)):
-            root = Path(raw).resolve()
-            home = root / 'home'
-            os.environ[state_root.ENV_VAR] = str(home / 'state')
-            source = root / 'source.py'
-            source.write_text('VALUE=1\n')
-            plan = Plan(lib_home=home / 'lib', scope_home=home, bin_dir=home / 'bin', receipt_path=home / 'receipt.json', lib_copies=[(source, home / 'lib/module.py')], scripts=[(source, home / 'bin/module.py')])
-            application.apply_plan(plan, 'old')
-            created = tickets._dispatch(['new', 'resume', 'B1', '--executor', 'orch-do', '--goal', 'Keep pinned work.', '--context', 'Disposable fixture.', '--standard', 'orch-code'])
-            self.assertNotIn('error', created, created)
-            self.assertNotIn('error', tickets._dispatch(['set-status', 'resume', 'B1', 'failed']))
-            ready = root / 'ready'
-            script = "from pathlib import Path; import sys; from scripts import tickets; Path(sys.argv[1]).write_text('ready'); result=tickets._dispatch(['set-status','resume','B1','suspended']); print(result); sys.exit('error' in result)"
-            processes = []
-            real_active = publication._active
-            def competing(current, old):
-                census = real_active(current, old)
-                self.assertEqual([], census)
-                process = subprocess.Popen([sys.executable, '-c', script, str(ready)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                processes.append(process)
-                deadline = time.monotonic() + 10
-                while not ready.exists() and time.monotonic() < deadline:
-                    time.sleep(0.01)
-                self.assertTrue(ready.exists())
-                with self.assertRaises(subprocess.TimeoutExpired):
-                    process.wait(timeout=0.3)
-                cancellation = subprocess.run([sys.executable, 'scripts/tickets.py', 'set-status', 'resume', 'B1', 'failed'], capture_output=True, text=True, timeout=10)
-                self.assertEqual(0, cancellation.returncode, cancellation.stdout + cancellation.stderr)
-                self.assertEqual([], real_active(current, old))
-                return census
-            source.write_text('VALUE=2\n')
-            try:
-                with mock.patch.object(publication, '_active', side_effect=competing):
-                    application.apply_plan(plan, 'new')
-                output, error = processes[0].communicate(timeout=10)
-                self.assertEqual(0, processes[0].returncode, output + error)
-                self.assertTrue(real_active(plan, True))
-                self.assertEqual('VALUE=2\n', (plan.lib_home / 'module.py').read_text())
-            finally:
-                for process in processes:
-                    if process.poll() is None:
-                        process.kill()
-                    process.communicate(timeout=10)

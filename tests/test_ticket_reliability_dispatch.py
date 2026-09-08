@@ -4,55 +4,17 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-import subprocess
-import sys
-import threading
 import unittest
 from unittest import mock
 
 from scripts.tickets_format import _parse_frontmatter, _set_frontmatter_field, canonical_json
-from scripts.tickets_install_guard import installation_lock
 from tests import test_dispatch_v1 as fixtures
 from tests import _retired_commands as commands
 from tests.test_ticket_frames import FrameSinkTest
 
 
 class FramePublicationTest(FrameSinkTest):
-    def test_first_frame_waits_for_publication_before_resolving_pins(self):
-        from scripts import tickets_frame
-        from scripts import state_root
-        entered = threading.Event()
-        started = threading.Event()
-        answers = []
-        original = tickets_frame._workflow_record
 
-        def resolve(*args):
-            entered.set()
-            return original(*args)
-
-        def open_frame():
-            started.set()
-            answers.append(self.frame())
-
-        worker = threading.Thread(target=open_frame)
-        with mock.patch.object(tickets_frame, "_workflow_record", side_effect=resolve):
-            try:
-                with installation_lock(state_root.orchflows_home()):
-                    worker.start()
-                    self.assertTrue(started.wait(2))
-                    self.assertFalse(entered.wait(0.1))
-                    self.assertFalse(self.run_dir().exists())
-            finally:
-                worker.join(130)
-        self.assertFalse(worker.is_alive())
-        self.assertTrue(entered.is_set())
-        self.assertEqual(1, len(answers))
-
-    def test_publication_lock_refusal_leaves_first_frame_uncreated(self):
-        with mock.patch("scripts.tickets_frame.installation_lock", side_effect=OSError("busy")):
-            answer = self.call("frame-open", self.RUN, "--goal-file", str(self.goal_file), expect_error=True)
-        self.assertIn("unable to guard frame open", answer["error"])
-        self.assertFalse(self.run_dir().exists())
 
     def test_frame_close_files_its_own_explicit_identity(self):
         opened = self.frame()
@@ -217,55 +179,3 @@ class ReliabilityDispatchTest(unittest.TestCase):
             self.assertEqual(str(standard / "STANDARD.md"), inspected["ticket_pins"]["standards"][0]["path"])
             (package / "SKILL.md").write_text("changed package", encoding="utf-8")
             self.assertIn("error", tickets_pins.inspect_ticket_pins("run", "T", data))
-
-
-class InstallationGuardTest(unittest.TestCase):
-    def test_nested_lock_releases_after_failure_and_excludes_other_thread(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as directory:
-            entered = threading.Event()
-            def acquire():
-                with installation_lock(directory):
-                    entered.set()
-            with installation_lock(directory):
-                with installation_lock(directory):
-                    worker = threading.Thread(target=acquire)
-                    worker.start()
-                    self.assertFalse(entered.wait(0.05))
-            worker.join(5)
-            self.assertFalse(worker.is_alive())
-            self.assertTrue(entered.is_set())
-            with self.assertRaises(ValueError):
-                with installation_lock(directory):
-                    raise ValueError("release")
-            with installation_lock(directory):
-                pass
-
-    def test_process_cannot_enter_until_publication_lock_releases(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as directory:
-            marker = Path(directory) / "entered"
-            ready = Path(directory) / "ready"
-            script = "from scripts.tickets_install_guard import installation_lock; from pathlib import Path; import sys\nPath(sys.argv[3]).write_text('ready')\nwith installation_lock(sys.argv[1]): Path(sys.argv[2]).write_text('entered')"
-            with installation_lock(directory):
-                process = subprocess.Popen([sys.executable, "-c", script, directory, str(marker), str(ready)])
-                try:
-                    import time
-                    deadline = time.monotonic() + 5
-                    while not ready.exists() and time.monotonic() < deadline:
-                        time.sleep(0.01)
-                    self.assertTrue(ready.exists())
-                    self.assertFalse(marker.exists())
-                    with self.assertRaises(subprocess.TimeoutExpired):
-                        process.wait(timeout=0.15)
-                except BaseException:
-                    process.kill()
-                    process.wait(timeout=5)
-                    raise
-            try:
-                self.assertEqual(0, process.wait(timeout=10))
-            finally:
-                if process.poll() is None:
-                    process.kill()
-                    process.wait(timeout=5)
-            self.assertEqual("entered", marker.read_text())

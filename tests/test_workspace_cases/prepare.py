@@ -409,8 +409,8 @@ class TestPreparationIsOutsideEveryLock(unittest.TestCase):
 
     def test_the_facade_prepares_after_it_lets_the_lock_go(self):
         lanes = [dispatch_facade._cmd_dispatch]
-        if hasattr(dispatch_facade, "_dispatch_guarded"):
-            lanes.append(dispatch_facade._dispatch_guarded)
+        if hasattr(dispatch_facade, "_dispatch_admitted"):
+            lanes.append(dispatch_facade._dispatch_admitted)
         for lane in lanes:
             tree = ast.parse(inspect.getsource(lane))
             for node in ast.walk(tree):

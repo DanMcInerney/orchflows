@@ -211,10 +211,7 @@ def apply_plan(
     plan: Plan, source_commit: str | None, keep_role_agents: bool | None = None
 ) -> dict:
     from .publication import publication
-    try:
-        from scripts.tickets_install_guard import installation_lock
-    except ImportError:
-        from tickets_install_guard import installation_lock
+    from .locking import installation_lock
     with installation_lock(plan.scope_home):
         old_receipt = _load_json(plan.receipt_path)
         old_lib_files = {str(path.resolve()) for path in plan.lib_home.rglob("*") if path.is_file()}

@@ -1,92 +1,17 @@
 """Joined publication boundaries, portable imports, and shared containment."""
-from contextlib import contextmanager
 from pathlib import Path
 import os
 import tempfile
-import threading
 import unittest
 from unittest import mock
 
-from scripts import tickets_issue, tickets_seal
-from scripts.tickets_install_guard import installation_lock
+from scripts import tickets_issue
 
 
-class RawPublicationTests(unittest.TestCase):
-    def test_raw_new_excludes_publication_before_pin_resolution(self):
-        with tempfile.TemporaryDirectory() as raw:
-            entered, attempted = threading.Event(), threading.Event()
-            result = []
-            @contextmanager
-            def guard():
-                attempted.set()
-                with installation_lock(raw):
-                    yield
-            def pins(*args):
-                entered.set()
-                return None, {"error": "pin control"}
-            def issue():
-                result.append(tickets_issue._cmd_new([
-                    "run", "T", "--executor", "orch-do", "--goal", "Make.", "--context", "Context.",
-                ]))
-            with mock.patch.object(tickets_issue, "installation_lock", guard), mock.patch.object(
-                tickets_issue, "pinned_items", pins,
-            ):
-                worker = threading.Thread(target=issue)
-                try:
-                    with installation_lock(raw):
-                        worker.start()
-                        self.assertTrue(attempted.wait(5))
-                        self.assertFalse(entered.wait(.05))
-                finally:
-                    worker.join(5)
-                self.assertFalse(worker.is_alive())
-            self.assertTrue(entered.is_set())
-            self.assertEqual([{"error": "pin control"}], result)
-
-    def test_raw_issue_and_seal_acquire_installation_before_run_lock(self):
-        events = []
-        @contextmanager
-        def install():
-            events.append("installation")
-            yield
-            events.append("released")
-        @contextmanager
-        def run(*args):
-            self.assertEqual(["installation"], events)
-            events.append("run")
-            raise OSError("run control")
-            yield
-        with mock.patch.object(tickets_issue, "installation_lock", install), mock.patch.object(
-            tickets_issue, "_run_lock", run,
-        ):
-            self.assertIn("error", tickets_issue._issue_ticket("r", "T", "unused"))
-        self.assertEqual(["installation", "run"], events)
-        events.clear()
-        original = tickets_seal._store_bindings()
-        with mock.patch.object(tickets_seal, "installation_lock", install), mock.patch.object(
-            tickets_seal, "_store_bindings", return_value=(original[0], run, *original[2:]),
-        ):
-            self.assertIn("error", tickets_seal._cmd_seal(["r", "T", "--cut-generation", "unused"]))
-        self.assertEqual(["installation", "run", "released"], events)
-
-    def test_publication_lock_failure_refuses_before_any_raw_mutation(self):
-        for module, method, args, body in (
-            (tickets_issue, "_cmd_new", ["r"], "_cmd_new_locked"),
-            (tickets_seal, "_cmd_seal", ["r"], "_cmd_seal_locked"),
-            (tickets_issue, "_issue_ticket", ["r", "T", "unused"], "_run_lock"),
-        ):
-            with self.subTest(method=method), mock.patch.object(
-                module, "installation_lock", side_effect=OSError("publication unavailable"),
-            ), mock.patch.object(module, body) as mutation:
-                self.assertIn("error", getattr(module, method)(*args))
-                mutation.assert_not_called()
-
+class RawIssuanceTests(unittest.TestCase):
     def test_nested_issue_reuses_locks_already_held_by_mint(self):
-        with mock.patch.object(tickets_issue, "installation_lock") as install, mock.patch.object(
-            tickets_issue, "_run_lock",
-        ) as run, mock.patch.object(tickets_issue, "ticket_defects", return_value=["control"]):
+        with mock.patch.object(tickets_issue, "_run_lock") as run, mock.patch.object(tickets_issue, "ticket_defects", return_value=["control"]):
             self.assertIn("error", tickets_issue._issue_ticket("r", "T", "unused", _lock_held=True))
-            install.assert_not_called()
             run.assert_not_called()
 
 class ReceiptPublicationTests(unittest.TestCase):

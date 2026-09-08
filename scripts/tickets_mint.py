@@ -35,7 +35,6 @@ if __package__:
         _parse_frontmatter, _read_utf8, _set_frontmatter_field,
         done_defects, next_mint_id,
     )
-    from .tickets_install_guard import installation_lock
     from .tickets_generations import assignment_digest
     from .tickets_pins import pin_fields
     from .tickets_issue import (
@@ -59,7 +58,6 @@ else:  # pragma: no cover - direct/installed flat script path
         _parse_frontmatter, _read_utf8, _set_frontmatter_field,
         done_defects, next_mint_id,
     )
-    from tickets_install_guard import installation_lock
     from tickets_generations import assignment_digest
     from tickets_pins import pin_fields
     from tickets_issue import (
@@ -299,16 +297,6 @@ def _launched(run: str, ticket_id: str, bound: str, host, workspace):
 
 
 def _cmd_callable(rest, *, judge: bool):
-    # Pin resolution and first issuance must share publication's lock, before
-    # any run lock; nested dispatch reuses it in the same thread.
-    try:
-        with installation_lock():
-            return _cmd_callable_locked(rest, judge=judge)
-    except OSError as error:
-        return {"error": f"callable refused: {error}"}
-
-
-def _cmd_callable_locked(rest, *, judge: bool):
     """Mint, seal, open, establish, and emit one callable's launch."""
 
     usage = JUDGE_USAGE if judge else DO_USAGE
