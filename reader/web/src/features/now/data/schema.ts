@@ -16,6 +16,7 @@ function strings(value: unknown): value is string[] {
 function ticket(value: unknown): value is NowTicket {
   if (!record(value) || !record(value.readiness)) return false;
   return typeof value.id === "string"
+    && optionalString(value.title)
     && typeof value.status === "string"
     && typeof value.executor === "string"
     && typeof value.bound === "string"

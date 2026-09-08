@@ -32,10 +32,10 @@ export function SummaryFlow({ workflowId, summary, nodeStates, nodeHref }: Summa
         <div className="workflow-summary__nodes" style={{ flexWrap: "wrap" }}>
           {summary.nodes.map((node, index) => {
             const href = nodeHref?.(node.id);
-            const chip = <>{index > 0 && <i>→</i>}<b>{node.label}</b></>;
+            const chip = <>{index > 0 && <i>→</i>}<b>{node.label}{nodeStates?.[node.id] && <small className="workflow-summary__status">{nodeStates[node.id]}</small>}</b></>;
             return href ? (
               <a className="workflow-summary__node" data-state={nodeStates?.[node.id]} key={node.id}
-                href={href} aria-label={`Open ${node.label} in the run map`}>{chip}</a>
+                href={href} aria-label={`Open ${node.label} in the run map${nodeStates?.[node.id] ? `; ${nodeStates[node.id]}` : ""}`}>{chip}</a>
             ) : (
               <span className="workflow-summary__node" data-state={nodeStates?.[node.id]} key={node.id}>{chip}</span>
             );

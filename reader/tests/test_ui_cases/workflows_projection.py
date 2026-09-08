@@ -34,12 +34,14 @@ class WorkflowProjectionTests(unittest.TestCase):
             with self.subTest(workflow=item["id"]):
                 detail = workflows.project_workflow(ROOT, item["id"])
                 self.assertEqual(
-                    {"schema", "id", "type", "nodes", "edges", "relations", "diagnostics"},
+                    {"schema", "id", "type", "nodes", "edges", "relations", "diagnostics", "summary", "description"},
                     set(detail),
                 )
                 self.assertEqual("orchflows.workflow-detail.v1", detail["schema"])
                 self.assertEqual(item["id"], detail["id"])
                 self.assertEqual(item["type"], detail["type"])
+                self.assertEqual(item["summary"], detail["summary"])
+                self.assertEqual(item["description"], detail["description"])
                 self.assertEqual(
                     sorted(
                         detail["edges"],
@@ -80,7 +82,7 @@ class WorkflowProjectionTests(unittest.TestCase):
 
         self.assertEqual(200, status)
         self.assertEqual(
-            {"schema", "id", "text", "sha256", "language", "redacted"},
+            {"schema", "id", "label", "text", "sha256", "language", "redacted"},
             set(source),
         )
         self.assertEqual("orchflows.workflow-source.v1", source["schema"])

@@ -5,6 +5,7 @@ export type ReadinessCause = "pending_dependency" | "suspended_handoff" | "faile
 
 export interface TicketSummary {
   id: string;
+  title?: string;
   status: string;
   executor: string;
   bound: string;
@@ -24,7 +25,7 @@ export interface TicketSummary {
 export interface TicketDetail extends TicketSummary {
   sections: Record<string, string>;
   report: string;
-  pack: string;
+  standard: string;
   history: Array<{ ts: string; event: string; agent: string; detail: string }>;
   raw: string;
   linked_friction?: Array<Record<string, unknown>>;
@@ -193,7 +194,7 @@ export function fixtureTicket(location: InspectorRoute): TicketDetail | null {
       ...(historical ? fixtureHistoricalSections : {})
     },
     report: recorded ? fixtureReport : "",
-    pack: "orch-design-pack",
+    standard: "orch-design",
     history: [],
     raw: raw ? fixtureRaw : ""
   };
@@ -237,7 +238,7 @@ export function detailRows(ticket: TicketDetail | null): Array<{ label: string; 
     { label: "Dependencies", value: ticket.depends_on.length ? ticket.depends_on.join(", ") : "None", mono: true },
     { label: "Limit", value: ticket.bound || "Unavailable" },
     { label: "Claim", value: ticket.claimed_by && ticket.claimed_at ? `${ticket.claimed_by} · ${ticket.claimed_at}` : "Unclaimed" },
-    { label: "Pack", value: ticket.pack || "Unavailable", mono: true }
+    { label: "Standard", value: ticket.standard || "Unavailable", mono: true }
   ];
 }
 

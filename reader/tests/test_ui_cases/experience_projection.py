@@ -102,6 +102,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         )
         selected = projected["ticket"]
         self.assertEqual("G1", selected["id"])
+        self.assertEqual(selected["sections"]["goal"].splitlines()[0][:160], selected["title"])
         # The projection carries the one Report plus whatever section names
         # the sink still holds, each as recorded prose; nothing re-parses a
         # verdict table out of an earlier contract's section.
@@ -209,8 +210,19 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             {"verify-build", "audit-licenses", "smoke", "capture", "audit", "diff"},
             frontend_subcommands(),
         )
-        for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):
+        for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "expectKeyboardParity"):
             self.assertIn(scenario, experience_harness)
+        self.assertRegex(
+            experience_harness,
+            r'import\s*\{[^}]*\bexpectReducedMotion\b[^}]*\}\s*from\s*"\./manifest-contract"',
+        )
+        self.assertIn('reducedMotion: "reduce"', experience_harness)
+        self.assertIn("await expectReducedMotion(page, identity)", experience_harness)
+        manifest_contract = (ROOT / "reader" / "web" / "src" / "manifest-contract.ts").read_text(encoding="utf-8")
+        self.assertIn("export async function expectReducedMotion(page: Page, identity: ViewIdentity)", manifest_contract)
+        self.assertIn('matchMedia("(prefers-reduced-motion: reduce)").matches', manifest_contract)
+        self.assertIn("seconds(style.animationDuration) || seconds(style.transitionDuration)", manifest_contract)
+        self.assertRegex(manifest_contract, r'expect\(moving,[^\n]*\)\.toEqual\(\[\]\)')
 
 
 class ExperienceProjectionTest(unittest.TestCase):

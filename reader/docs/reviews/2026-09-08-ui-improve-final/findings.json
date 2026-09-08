@@ -1,0 +1,53 @@
+{
+  "schema": "orchflows.ui-review.v1",
+  "reviewer": "B1.5",
+  "dispatch_id": "B1.5:d1",
+  "assignment_seal": "sha256:4793c1df282fecc5fa8697823f9cf34aeacb40cad5f68d2f86cf5f3498601a07",
+  "reviewed_commit": "09921d2bc7aa8c03aa384da4a3322c878954cc46",
+  "method": "orch-judge",
+  "profile": "orch_planner",
+  "standards": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "orch-design": "sha256:01c20cc2cdfed763aac3f0ac1d036b5c2ee002173f0270c2a47b4c7a921511fe"
+  },
+  "verdict": "One verification repair required before the root close gate; no remaining original rendered defect established in covered identities.",
+  "findings": [
+    {
+      "id": "R01",
+      "priority": "P1",
+      "blocking": true,
+      "cause": "The reduced-motion contract consumer was not reconciled with the extracted browser helper.",
+      "title": "Update the experience contract to follow manifest-contract.ts",
+      "source": [
+        {
+          "path": "reader/tests/test_ui_cases/experience_projection.py",
+          "line": 179
+        },
+        {
+          "path": "reader/tests/test_ui_cases/experience_projection.py",
+          "line": 213
+        },
+        {
+          "path": "reader/web/src/manifest-contract.ts",
+          "line": 126
+        },
+        {
+          "path": "reader/web/src/smoke.spec.ts",
+          "line": 397
+        }
+      ],
+      "reproduction": "Run the verified Python interpreter with -m unittest reader.tests.test_ui_cases.experience_projection.ExperienceFoundationContractTests.test_safe_projection_tokens_shell_and_manifest_form_one_contract at the reviewed commit.",
+      "observed": "Exit 1 twice: prefers-reduced-motion: reduce is absent from smoke.spec.ts because the actual scenario now lives in imported expectReducedMotion in manifest-contract.ts. The 22-test scoped run has the same single failure.",
+      "expected": "The maintained contract verifies the imported helper and its invocation without rejecting the current valid extraction.",
+      "evidence": [
+        "foundation-contract-recheck.log",
+        "scoped-python.log",
+        "manifest-audit.log"
+      ],
+      "rendered_evidence": "All 64 source manifest audits, including reduced motion, passed. This finding concerns the required verification consumer, not an alleged rendered reduced-motion failure.",
+      "smallest_remedy": "Reconcile this consumer with the helper boundary, preserving proof that smoke imports/calls expectReducedMotion and that the helper checks the reduced-motion scenario. Do not remove the scenario requirement or add dummy prose to satisfy a grep.",
+      "blocking_basis": "The unchanged required experience check deterministically fails on the joined artifact; required checks must not be weakened. orch-code git correctness and contract fidelity; verification section 9.",
+      "successor_scope": "One bounded test-consumer repair followed by the affected check and root-owned full required gate."
+    }
+  ]
+}

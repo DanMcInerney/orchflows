@@ -18,6 +18,7 @@ function ticket(value: unknown): value is TicketSummary {
   return record(value)
     && record(value.readiness)
     && typeof value.id === "string"
+    && (value.title === undefined || typeof value.title === "string")
     && typeof value.status === "string"
     && typeof value.executor === "string"
     && typeof value.bound === "string"
