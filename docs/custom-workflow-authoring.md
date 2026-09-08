@@ -47,8 +47,9 @@ no ring item and grants no custom `orch-` prefix exception.
 
 ## Workflow packages
 
-A top-level workflow is the package's public name. Its directory may carry
-these conventional private parts without another manifest or export list:
+For package visibility, name resolution, pinning, and resource containment,
+apply [composition](../rules/composition.md). Author the conventional
+parts below the public entry:
 
 | path below `workflows/<public-name>/` | use |
 | --- | --- |
@@ -58,28 +59,12 @@ these conventional private parts without another manifest or export list:
 | `references/` | fixtures and material the package prose or scripts read |
 | `scripts/<file>` | concrete machine boundaries and optional probes |
 
-Only the ordinary item at the ring's top-level `workflows/<public-name>` is
-public. `orchflows list`, global name lookup, and generated host adapters do
-not expose the nested items. A call owned by the public workflow resolves a
-name in its private folders first and then continues through the caller's
-ordinary project, home, imports, and library rings. Calling another public
-top-level workflow starts that workflow's package scope. Calling a private
-helper keeps the enclosing public scope. This convention composes workflows
-without a path namespace or another workflow notation.
-
-Every named frame records the public owner, a digest of the whole package,
-and the contained workflow entry it read. Its callable children inherit those
-fields. Later admission and dispatch doors resolve the public name again,
+Later admission and dispatch doors resolve the public name again,
 recheck project trust, contain the entry below that owner, and compare the
 package digest before resolving private standards or skills. A change to a
 script, fixture, reference, helper, or manifest therefore invalidates an
 already sealed package identity. A path, dictionary, or private name cannot
 grant package scope.
-
-Files and relative links stay below the public package directory. A manifest
-may also link to canonical library law under `contracts/`, `docs/`, or
-`rules/`; those are citations, not package resources. Put any other material
-the package needs in its own `references/` directory.
 
 ## Scope and landing
 
@@ -204,9 +189,9 @@ a `tools.txt` inside one are refused.
 
 ## What a workflow is made of
 
-A workflow is a skill whose prose calls other skills, down to two callables.
-`tickets.py do` makes one coherent result through its stamped standards;
-`tickets.py judge` reads fixed artifacts and returns findings. Each call is
+A workflow is a skill whose prose calls other skills, down to the
+[making](../skills/kernel/orch-do/SKILL.md) and
+[judging](../skills/kernel/orch-judge/SKILL.md) contracts. Each call is
 one minting command: it mints the ticket, seals it, pins the standard digest,
 takes the lease, establishes the workspace, and emits the `launch` you
 invoke verbatim. Orthogonal domain guidance can compose on that one ticket
@@ -246,8 +231,8 @@ An executor closing from a local note carries its exact issued authority:
     tickets.py dispatch-outcome <run> <id> --assignment-seal <seal>
       --dispatch-id <dispatch-id> --by <assigned-name> --note-file <path>
 
-The full canonical envelope instead travels through `--file`; a caller relays
-it unchanged. The [dispatch contract](../contracts/dispatch.md) owns both forms.
+For a complete canonical envelope, use `--file` under the
+[dispatch contract](../contracts/dispatch.md), which owns both forms.
 
 ## Deterministic calls, or a planning `do`
 
@@ -329,8 +314,7 @@ artifact; they are not required headings or a step schema.
    [composition](../rules/composition.md) §§5, 10–11. For a standard, follow
    [standard authoring](standard-authoring.md) and the
    [standard contract](../contracts/standard.md), which owns the
-   frontmatter, nonempty guidance, optional Lens layout and purity. Cover the
-   domain questions the assignment needs; headings do not prove coverage.
+   frontmatter, nonempty guidance, optional Lens layout and purity.
 4. For a workflow, write it step by step rather than from a template. For
    each step ask the four questions in *Which work earns a callable* above:
    none of the four and the step is a sentence in your prose, one or more
