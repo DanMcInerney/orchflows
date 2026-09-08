@@ -194,3 +194,22 @@
   .session-agent-node[data-selected="true"] { outline: 3px solid Highlight; }
   .session-graph-canvas .session-edge--inferred .react-flow__edge-path { stroke-dasharray: 7 5; }
 }
+
+.session-agent-overview { padding: var(--space-4); }
+.session-agent-overview p { margin: 0 0 var(--space-3); color: var(--text-muted); font-size: var(--type-base); }
+.session-agent-overview label { display: grid; gap: var(--space-2); font-size: var(--type-base); }
+.session-agent-overview input { width: 100%; min-height: var(--row-compact); padding: var(--space-2); border: 1px solid var(--border-strong); border-radius: var(--radius-control); background: var(--surface-2); color: var(--text); }
+.session-agent-list { display: grid; gap: var(--space-2); max-height: 320px; overflow-y: auto; padding: var(--space-1); margin: var(--space-3) 0; }
+.session-agent-list button { display: grid; gap: var(--space-1); min-height: var(--row-comfortable); padding: var(--space-3); text-align: left; border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--surface-2); color: var(--text); }
+.session-agent-list strong { font-size: var(--type-base); overflow-wrap: anywhere; }
+.session-agent-list span { font-size: var(--type-md); color: var(--text-muted); }
+.session-agent-list button[aria-pressed="true"] { border-color: var(--accent); background: var(--selected-surface); }
+.session-topology-toggle { min-height: var(--row-compact); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-control); background: var(--surface-raised); color: var(--accent); font-size: var(--type-base); }
+.session-graph-inspector { position: sticky; top: var(--space-4); }
+.session-graph-inspector h2 { overflow-wrap: anywhere; }
+.session-agent-list button:focus-visible, .session-topology-toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+@media (max-width: 760px) {
+  .session-graph-layout { display: flex; flex-direction: column; }
+  .session-graph-inspector { position: static; }
+}
+.session-graph-inspector h2 { scroll-margin-top: var(--space-6); }
