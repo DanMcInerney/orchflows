@@ -85,6 +85,32 @@ class LaunchResolutionTest(unittest.TestCase):
                 spec, _ = launch.launch_spec(resolved, self.assignment(role))
                 self.assertEqual(expected, spec["effort"])
 
+    def test_codex_native_arguments_carry_the_whole_prompt_without_config_overrides(self):
+        record, _ = launch.resolve_host("codex")
+        spec, failure = launch.launch_spec(record, self.assignment("worker"))
+        self.assertIsNone(failure)
+        # This named-role native call rejects per-call model/effort overrides.
+        def native_call(*, task_name, agent_type, fork_turns, message):
+            return task_name, agent_type, fork_turns, message
+        values = native_call(task_name="child_1", message=spec["prompt"], **spec["fields"])
+        self.assertEqual(("child_1", "orch_worker", "none", spec["prompt"]), values)
+        with self.assertRaises(TypeError):
+            native_call(task_name="child_1", message=spec["prompt"], service_tier="fast", **spec["fields"])
+
+    def test_claude_declared_native_carriage_and_rendered_role_are_distinct(self):
+        from installer.packages import render_claude_agent, render_codex_agent
+        for role in ("planner", "worker"):
+            record, _ = launch.resolve_host("claude")
+            spec, failure = launch.launch_spec(record, self.assignment(role))
+            self.assertIsNone(failure)
+            self.assertEqual({"context", "agent", "model", "effort"}, set(spec["fields"]))
+            self.assertEqual(f"orch-{role}", spec["fields"]["agent"])
+            codex, _ = launch.resolve_host("codex")
+            profile = {"role": role, "claude": record["role_profiles"][role]["binding"],
+                       "codex": codex["role_profiles"][role]["binding"]}
+            for rendered in (render_claude_agent(f"orch-{role}", profile), render_codex_agent(f"orch-{role}", profile)):
+                self.assertIn(f"Your established role is orch-{role}.", rendered)
+
     def test_a_changed_model_in_the_record_changes_the_launch(self):
         """The can-fail direction, on a copy in memory: a resolver that had
         stopped reading the record would still return today's model."""
@@ -290,6 +316,7 @@ class LandTest(unittest.TestCase):
     def commit_outcome(self, note="delivered and verified"):
         return self.run_command(
             "dispatch-outcome", "run", "T", "--note", note,
+            "--assignment-seal", self.seal, "--dispatch-id", "D1", "--by", "worker",
         )
 
     def land(self, *extra, status="complete"):
@@ -313,7 +340,7 @@ class LandTest(unittest.TestCase):
         self.assertEqual(
             {"dispatch-outcome": "skipped", "workspace-integrate": "absent",
              "done": "graded", "dispatch-join": "committed",
-             "workspace-retire": "removed"},
+             "workspace-retire": "absent"},
             self.steps(landed),
         )
         self.assertIn("ready", landed["land"]["frontier"])
@@ -354,7 +381,7 @@ class LandTest(unittest.TestCase):
         self.assertEqual(
             {"dispatch-outcome": "committed", "workspace-integrate": "absent",
              "done": "graded", "dispatch-join": "committed",
-             "workspace-retire": "removed"},
+             "workspace-retire": "absent"},
             self.steps(landed),
         )
         self.assertIn("delivered", self.ticket_path().read_text(encoding="utf-8"))

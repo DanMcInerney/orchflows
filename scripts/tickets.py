@@ -79,6 +79,17 @@ derived_isolation = _tickets_adapters_module.derived_isolation
 adapter_standard = _tickets_pins_module.adapter_standard
 binding_findings = _tickets_admission_module.binding_findings
 grade_admission = _tickets_admission_module.grade_admission
+
+
+def section_page(text: str, section: str, offset: int = 0, limit: int = 4096) -> dict:
+    """Read a bounded section from an already acquired immutable ticket text."""
+    if __package__:
+        from .tickets_issue_render import section_page as read_page
+    else:
+        from tickets_issue_render import section_page as read_page
+    return read_page(text, section, offset, limit)
+
+
 _GENERATION_EXPORTS = frozenset({"assignment_digest", "assignment_payload"})
 
 

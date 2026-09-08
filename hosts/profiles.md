@@ -14,9 +14,19 @@ record, then regenerate the derived adapters with
 `tickets.py dispatch --host <host>` resolves the role against that record and
 returns the resolved binding as its `launch` object. The starting agent is the
 orchestrator; only children carry profiles.
+Host-specific entries pass their host explicitly on `do`, `judge`, and
+`dispatch`. Generic callers retain the documented flag, environment, then
+Claude compatibility default; that default does not detect the current host.
+Codex's role binding owns model, effort, and tier in its installed agent
+configuration. Its native launch carries only agent type and fresh-context
+selection; those configuration keys are not per-call native arguments.
 
 - Invoke the emitted `launch` verbatim. Never substitute a blocked model or
   profile, and never retype a field the launch already carries.
+  Load committed JSON and copy the prompt as one complete value into the
+  native message/prompt argument, with the emitted native fields. No opaque
+  launch-handle capability is assumed. The rendered role instructions name
+  the established role; model or effort alone does not establish a mismatch.
 - The granular `dispatch-open`, `dispatch-retire`, and `dispatch-replace`
   operations stay public for recovery; reach for them when a transaction has to
   be resumed, never to hand-assemble one that would have succeeded. A lost
