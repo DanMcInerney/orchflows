@@ -19,7 +19,7 @@ from unittest.mock import patch
 _IMPORT_PATH = sys.path[:]
 
 import install
-from scripts import doclint, rings, tickets_frame, tickets_pins
+from scripts import doclint, rings, standards, tickets_frame, tickets_pins
 from tools.validate_support import packages, workflows
 from tests._repo_root import ROOT
 
@@ -28,7 +28,8 @@ sys.path[:] = _IMPORT_PATH
 
 PACKAGE = ROOT / 'example-workflows/tiktok-video'
 PRIVATE = {'video-direction', 'video-production', 'render-video',
-           'video-script-quality', 'video-quality'}
+           'video-script-quality', 'video-quality',
+           'marketing-script-quality', 'marketing-video-quality'}
 
 
 class VideoPackageTests(unittest.TestCase):
@@ -102,7 +103,38 @@ class VideoPackageTests(unittest.TestCase):
         with self.assertRaises(rings.RingError):
             rings.resolve('standard', 'video-quality', owner='super-research',
                           trust=False, **self.options)
+        for helper, parameter, base, general, marketing in (
+                ('video-direction', 'script-standard', 'orch-content', 'video-script-quality',
+                 'marketing-script-quality'),
+                ('video-production', 'production-standard', 'orch-code', 'video-quality',
+                 'marketing-video-quality')):
+            body = (PACKAGE / f'workflows/{helper}/SKILL.md').read_text(encoding='utf-8')
+            branch_calls = list(workflows._commands(body))
+            rows = dict(re.findall(r'^\| (marketing[^|]*|non-marketing) \| ([a-z-]+) \|$',
+                                   body, re.MULTILINE))
+            self.assertEqual({general, marketing}, set(rows.values()))
+            self.assertEqual(general, rows['non-marketing'])
+            for selected in (general, marketing):
+                calls = [command.replace(f'<{parameter}>', selected)
+                         for command in branch_calls if f'--standard <{parameter}>' in command]
+                self.assertEqual(2, len(calls), (helper, selected))
+                self.assertEqual(1, sum('tickets.py do ' in command for command in calls))
+                self.assertEqual(1, sum('tickets.py judge ' in command for command in calls))
+                stamps = [[name for kind, name in workflows.NAME_FLAG_RE.findall(command)
+                           if kind == 'standard'] for command in calls]
+                self.assertEqual([[base, selected]] * 2, stamps)
+                chain = standards.resolve_chain(stamps[0], owner='tiktok-video',
+                                                trust=False, **self.options)
+                expected = [base, general] + ([marketing] if selected == marketing else [])
+                self.assertEqual(expected, [link['name'] for link in chain])
         copied = self.copy()
+        narrowing = copied / 'standards/marketing-script-quality/STANDARD.md'
+        original = narrowing.read_text(encoding='utf-8')
+        narrowing.write_text(original.replace('narrows: video-script-quality',
+                                             'narrows: missing-video-parent'), encoding='utf-8')
+        self.assertTrue(self.grade(copied).has_errors)
+        narrowing.write_text(original, encoding='utf-8')
+        self.assertFalse(self.grade(copied).has_errors)
         (copied / 'workflows/video-direction/SKILL.md').unlink()
         self.assertTrue(self.grade(copied).has_errors)
 

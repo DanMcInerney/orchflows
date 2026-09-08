@@ -16,8 +16,15 @@ evidence and named gaps without making an accepted direction.
 
 This private journal fixes the message independently before tiktok-video hands
 it to production. [Creative handoff](../../references/creative.md) describes
-the document; quality belongs to video-script-quality. Preserve the supplied
+the document; quality belongs to the selected script standard. Preserve the supplied
 authoring-owner pointer in every governed downstream Context.
+
+Resolve `<script-standard>` from the carried intent and record it in the handoff:
+
+| Intent | script-standard |
+| --- | --- |
+| marketing (including mixed promotion/education) | marketing-script-quality |
+| non-marketing | video-script-quality |
 
 **Make.** Use `orch-do` for one original script/storyboard answering the brief's
 throughline. Transfer all Require inputs through the carriers above. Separate
@@ -25,7 +32,7 @@ provisional timing from measured audio, and explain which observations informed
 the choices for this subject and audience.
 
     tickets.py do <run> --parent <frame> --standard orch-content
-      --standard video-script-quality --goal-file <script-goal>
+      --standard <script-standard> --goal-file <script-goal>
       --context-file <direction-context> --workspace <document-directory>
       --workspace-adapter document-tree --bound <per-call-bound>
 
@@ -36,13 +43,14 @@ scope so the private standard resolves. A changed pin requires new making and
 judgment; it cannot silently replace the reviewed guidance.
 
     tickets.py judge <run> --parent <frame> --standard orch-content
-      --standard video-script-quality --artifacts doc:<revision>
+      --standard <script-standard> --artifacts doc:<revision>
       --goal-file <review-goal> --context-file <direction-context>
       --workspace-adapter document-tree --bound <per-call-bound>
 
 "Where the judge blocks, one repair `do` is handed the
 `findings:` line verbatim, then one re-judge; two rounds is the bound."
-Repairs preserve the brief, pins and evidence and address the fixed findings.
+Repairs repeat the selected making branch; repair and re-judge preserve its
+ordered standard digests, brief and evidence and address the fixed findings.
 An exhausted review or unavailable required evidence returns the latest document
 as partial, independent findings and gaps; no accepted identity is inferred.
 

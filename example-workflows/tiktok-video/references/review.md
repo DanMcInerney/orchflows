@@ -10,10 +10,10 @@ No research, creative or rendering wrapper is introduced here.
 
 ## Preparing calls
 
-Retain the public package scope when opening video-production. Literal private
-names are video-production, render-video and video-quality; orch-code resolves
-from library scope. Both making and judging resolve the ordered standards
-orch-code then video-quality at identical digests. Record the expanded pins from
+Retain the public package scope when opening video-production. Select its
+production standard through the helper's intent table; orch-code resolves from
+library scope. Making, judging and repairs use that same ordered chain at
+identical digests, including the marketing narrowing when selected. Record expanded pins from
 issued tickets, package digest, run/frame/ticket identities, accepted document and
 findings identities and authoring-owner in Context. An independent judge reads the
 same immutable render and source, not a maker's mutable preview. Repair goals
@@ -29,7 +29,7 @@ not a renamed method or presumed fallback.
 
 The review goal requests complete exported motion playback, sampled frames at
 semantic beats/transitions, script versus caption comparison and final-mix hearing
-where supported, under the full video-quality standard. Ask for timestamped
+where supported, under the full selected standard chain. Ask for timestamped
 observations and defects, distinguishing technical, visual and audible evidence.
 When hearing is unavailable, independent text, signal and timing inspection still
 proceeds. Supply the exact mix and short audition with script to a listening-capable
