@@ -1,0 +1,6 @@
+Authoring owner: C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md. Preserve this pointer in every governed descendant Context.
+Root ticket: C:/Users/danhm/.orchflows/state/tickets/20260908-orchflows-videos/B1.md; full authoring Goal snapshot: research/orchflows-videos-cut/FULL-GOAL.md.
+Fixed source workspace: C:/Users/danhm/.codex/worktrees/25da/orchflows-public. Baseline at cut: 91a1fc2a3f27845b38ba42f9b0a14fd0b8b19396.
+Cut owner: research/orchflows-videos-cut/PLAN.md. Read whole; prescriptions have the Goal-preserving deviation rule.
+Before issuance the parent appends the actual B1.1 artifact line verbatim, actual research findings/review coverage and gaps, and the cut artifact line. This template deliberately has no invented evidence identity. A judge also receives the actual landed author artifact, joined tip, complete original Goal, and PLAN.md joined-review instructions. No normative authoring before the actual research handoff.
+Verified Python: C:/Users/danhm/.orchflows/runtime/Scripts/python.exe. Use --host codex on issuance and fixed source --workspace on all calls, including repair and judge. No delegation by the child. Full required suite runs only at final joined gate; all started checks are supervised to observed exit.
