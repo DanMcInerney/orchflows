@@ -72,8 +72,23 @@ class VideoPackageTests(unittest.TestCase):
         calls = [name for command in workflows._commands(text)
                  for kind, name in workflows.NAME_FLAG_RE.findall(command)
                  if kind == 'workflow']
-        self.assertEqual(['tiktok-video', 'super-research', 'video-direction',
+        self.assertEqual(['tiktok-video', 'video-direction',
                           'video-production'], calls)
+        commands = list(workflows._commands(text))
+        research = [command for command in commands
+                    if ('standard', 'orch-research') in workflows.NAME_FLAG_RE.findall(command)]
+        self.assertEqual(3, len(research))
+        self.assertEqual(2, sum('tickets.py do ' in command for command in research))
+        self.assertEqual(1, sum('tickets.py judge ' in command for command in research))
+        for command in research:
+            self.assertIn('--parent <frame>', command)
+            self.assertIn('--goal-file', command)
+            self.assertIn('--context-file', command)
+        for path in [PACKAGE / 'SKILL.md', PACKAGE / 'references/admission.md',
+                     PACKAGE / 'references/inventory.md']:
+            body = path.read_text(encoding='utf-8')
+            self.assertFalse({'super-research', 'research-acquire', 'html-dossier'}
+                             & set(re.findall(r'[a-z]+(?:-[a-z]+)+', body)), path)
         self.assertFalse(self.grade().has_errors)
         for kind, name in [('workflow', 'video-direction'),
                            ('workflow', 'video-production'),
