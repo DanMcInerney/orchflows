@@ -11,6 +11,8 @@ import io
 import json
 import os
 from pathlib import Path
+import signal
+import subprocess
 import sys
 import tempfile
 import time
@@ -186,6 +188,59 @@ class DurableDoneTest(unittest.TestCase):
             self.assertIn(b"late-output", out)
         finally:
             time.sleep(.8)  # The counterexample's child has a fixed half-second life.
+
+    @unittest.skipUnless(os.name == "nt", "Windows job handle lifetime")
+    def test_killed_supervisor_keeps_running_evidence_and_stops_its_job(self):
+        supervisor_pid, child_pid, heartbeat = [self.root / name for name in (
+            "supervisor-pid", "child-pid", "heartbeat")]
+        child_code = ("import os,time\nfrom pathlib import Path\n"
+                      f"Path({str(child_pid)!r}).write_text(str(os.getpid()))\n"
+                      "print('stream-before-interrupt',flush=True)\n"
+                      f"for _ in range(200):\n Path({str(heartbeat)!r}).write_text(str(time.time()))\n time.sleep(.1)\n")
+        supervisor = ("import os,sys\nfrom pathlib import Path\n"
+                      "from scripts.tickets_done_evidence import run_command\n"
+                      f"Path({str(supervisor_pid)!r}).write_text(str(os.getpid()))\n"
+                      f"run_command([sys.executable,'-c',{child_code!r}],{str(self.tree)!r},20)\n")
+        process = subprocess.Popen([sys.executable, "-c", supervisor],
+                                   cwd=str(Path(__file__).resolve().parents[1]),
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        success = False
+        try:
+            deadline, stored = time.monotonic() + 10, None
+            while time.monotonic() < deadline:
+                for path in (self.root / "state" / "verification").glob("*/command.json"):
+                    stored = json.loads(path.read_text(encoding="utf-8"))
+                    stream = Path(stored["stdout_path"])
+                    if stream.exists() and b"stream-before-interrupt" in stream.read_bytes():
+                        break
+                if stored and heartbeat.exists() and b"stream-before-interrupt" in Path(stored["stdout_path"]).read_bytes():
+                    break
+                time.sleep(.02)
+            self.assertIsNotNone(stored)
+            self.assertTrue(heartbeat.exists(), json.dumps(stored, indent=1))
+            os.kill(int(supervisor_pid.read_text()), signal.SIGTERM)
+            process.communicate(timeout=5)
+            self.assertNotEqual(0, process.returncode)
+            time.sleep(.2)
+            before = heartbeat.read_bytes()
+            time.sleep(.3)
+            self.assertEqual(before, heartbeat.read_bytes())
+            stored = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual("running", stored["outcome"])
+            self.assertIsNone(stored["ended_at"])
+            self.assertIn(b"stream-before-interrupt", Path(stored["stdout_path"]).read_bytes())
+            success = True
+        finally:
+            if not success:
+                for path in (child_pid, supervisor_pid):
+                    if path.exists():
+                        try:
+                            os.kill(int(path.read_text()), signal.SIGTERM)
+                        except OSError:  # the fixture process may already have exited
+                            pass
+            if process.poll() is None:
+                process.kill()
+            process.communicate(timeout=5)
 
     def test_old_verification_reading_remains_readable(self):
         line = tickets_done.verification_line({"form": "command", "command": "old",
