@@ -68,7 +68,7 @@ The changed package requires a new named invocation; an old frame cannot qualify
 new bytes. Finish or preserve every old-package dispatch before replacing its
 bundle. Prefer a separate disposable git checkout and document directory for the
 corrected admission, retaining the old project, accepted research, direction,
-review records and rendered candidate unchanged. No prior record is rewritten.
+review records and rendered candidate unchanged.
 
 After independent source judgment and the joined required suite, copy the whole
 accepted package to the new project's .orchflows/workflows/tiktok-video. Record
