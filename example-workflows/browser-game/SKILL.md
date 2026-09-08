@@ -30,8 +30,8 @@ questions for root. Neither blocks the other.
 <!-- BGW-TRACE[implementation:program-record|PJ-03,PJ-07] -->
 <!-- BGW-TRACE[implementation:question-authority|PJ-06,PJ-09,PJ-10] -->
 <!-- BGW-TRACE[implementation:decision-safety|PJ-22] -->
-**Record**, `do --standard orch-content --isolation required`: one
-versioned record in `workspace` for `brief`, conforming to the
+**Record**, `do --standard orch-content --isolation required`:
+versioned program record in `workspace` for `brief`, conforming to the
 [program-record schema](../references/browser-game-program-record.schema.json)
 and [intake-authority policy](../references/browser-game-intake-policy.json).
 Record each Q-01–Q-12 field's disposition, authority kind, owner, rationale,
