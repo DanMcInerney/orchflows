@@ -1,6 +1,7 @@
 """Ticket lifecycle support."""
 
 from __future__ import annotations
+from contextlib import nullcontext
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
@@ -45,6 +46,10 @@ if __package__:
     from .tickets_dispatch_schema import status_ownership_returned
 else:
     from tickets_dispatch_schema import status_ownership_returned
+if __package__:
+    from .tickets_install_guard import installation_lock
+else:
+    from tickets_install_guard import installation_lock
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 
 
@@ -207,7 +212,10 @@ def _cmd_set_status(rest):
     if len(rest) != 3:
         return {'error': f'usage: {SET_STATUS_USAGE}'}
     try:
-        with locked_ticket_write(rest[0], rest[1]) as ticket_path:
+        # A nonterminal target can restore a pinned reference after census.
+        # Publication exclusion must precede the run lock; cancellation is free.
+        exclusion = installation_lock() if rest[2] not in TERMINAL_STATES else nullcontext()
+        with exclusion, locked_ticket_write(rest[0], rest[1]) as ticket_path:
             return _set_status_under_run_lock(rest, ticket_path=ticket_path)
     except TicketWriteRefused as refused:
         return refused.payload
