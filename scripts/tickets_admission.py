@@ -137,8 +137,8 @@ def _canonical_json(value) -> bytes:
     return canonical_json(value).encode("utf-8")
 
 
-def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignments=None):
-    """The sealed ticket one lawful post-seal chain binds its admission through."""
+def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignments=None, snapshot_ids=None):
+    """Locate the sealed anchor after validating its post-seal chain."""
     sealed_assignments = dict(sealed_assignments or {})
     visited = {ticket_id}
     current_id, current_text, current_data = ticket_id, text, data
@@ -146,6 +146,8 @@ def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignm
         parent_id = post_seal_parent(current_id, current_data, siblings)
         if parent_id is None or parent_id in visited:
             return None
+        if snapshot_ids is not None:
+            snapshot_ids.add(parent_id)
         parent = _parse_frontmatter(siblings[parent_id])
         if any(
             str(current_data.get(field) or "") != str(parent.get(field) or "")
@@ -158,6 +160,33 @@ def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignm
             return parent_id
         visited.add(parent_id)
         current_id, current_text, current_data = parent_id, siblings[parent_id], parent
+
+
+def validated_document(value) -> bool:
+    """Validate containers and the receipt binding before consuming sink JSON."""
+    if not isinstance(value, dict):
+        return False
+    draft, receipt = value.get("draft"), value.get("receipt")
+    if not isinstance(draft, dict) or not isinstance(receipt, dict):
+        return False
+    assignments = draft.get("assignments")
+    if not isinstance(assignments, list) or any(
+        not isinstance(item, dict)
+        or not isinstance(item.get("id"), str)
+        or not isinstance(item.get("digest"), str)
+        for item in assignments
+    ):
+        return False
+    if not all(isinstance(draft.get(key), dict) for key in ("cut_payload", "root_payload")):
+        return False
+    if not all(isinstance(draft.get(key), str) for key in ("cut_generation", "root_generation")):
+        return False
+    return receipt == {
+        "cut_generation": draft["cut_generation"],
+        "root_generation": draft["root_generation"],
+        "draft_digest": "sha256:" + hashlib.sha256(_canonical_json(draft)).hexdigest(),
+        "state": "validated",
+    }
 
 
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
@@ -185,6 +214,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             if status not in RESULT_BEARING_STATES:
                 findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
     findings.extend(binding_findings(ticket_id, data))
+    snapshot_ids = {ticket_id, *dependencies}
     sealed_record = None
     runs_root = context.get("runs_root")
     run = str(data.get("run") or context.get("run") or "")
@@ -207,19 +237,30 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
                 "root_id": root_match.group(2) if root_match is not None else None,
                 "state": "sealed",
             }
-            if not isinstance(sealed_record, dict) or any(sealed_record.get(key) != value for key, value in expected.items()):
+            if not isinstance(sealed_record, dict):
+                sealed_record = {}
+            sealed_assignments = sealed_record.get("assignment_seals")
+            if not isinstance(sealed_assignments, dict) or any(
+                not isinstance(key, str) or not isinstance(value, str)
+                for key, value in sealed_assignments.items()
+            ):
+                findings.append(finding("seal-state-mismatch", "assignment_seals", "sealed assignments must map ticket IDs to seals"))
+                sealed_assignments = {}
+            if any(sealed_record.get(key) != value for key, value in expected.items()):
                 findings.append(finding("seal-state-mismatch", "cut_generation", "sealed state names another generation"))
             draft = validated.get("draft") if isinstance(validated, dict) else None
-            if not isinstance(draft, dict) or sealed_record.get("receipt") != validated.get("receipt") or draft.get("cut_generation") != cut_generation:
+            if not validated_document(validated) or sealed_record.get("receipt") != validated.get("receipt") or draft.get("cut_generation") != cut_generation:
                 findings.append(finding("validation-receipt-mismatch", "cut_generation", "sealed state does not bind the validation receipt"))
-            sealed_assignments = sealed_record.get("assignment_seals") or {}
             sealed_parent = sealed_parent_target(
                 ticket_id, text, data, siblings, assignment_digest,
-                sealed_assignments,
+                sealed_assignments, snapshot_ids,
             )
             if sealed_parent is not None:
                 parent = _parse_frontmatter(siblings[sealed_parent])
-                if sealed_assignments.get(sealed_parent) != parent.get("assignment_seal"):
+                if (
+                    sealed_assignments.get(sealed_parent) != parent.get("assignment_seal")
+                    or parent.get("assignment_seal") != assignment_digest(sealed_parent, siblings[sealed_parent])
+                ):
                     findings.append(finding(
                         "sealed-parent-mismatch", "assignment_seal",
                         "sealed state does not bind the parent this child was minted under",
@@ -233,7 +274,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
         receipt = f"{adapter or 'ticket'}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
     return {
         "adapter": adapter, "findings": ordered, "receipt": receipt,
-        "snapshot_ids": sorted({ticket_id, *dependencies}),
+        "snapshot_ids": sorted(snapshot_ids),
     }
 
 
