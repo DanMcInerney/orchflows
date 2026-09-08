@@ -1,6 +1,6 @@
 export type SummaryEdgeKind = "sequence" | "branch" | "loop";
-export type DetailNodeKind = "workflow" | "work" | "skill" | "script";
-export type DetailEdgeKind = "dependency" | "executor" | "skill-call" | "script-call" | "loop";
+export type DetailNodeKind = "workflow" | "work" | "skill" | "script" | "standard";
+export type DetailEdgeKind = "dependency" | "executor" | "skill-call" | "script-call" | "loop" | "standard-reference";
 export type WorkflowDiagnosticCode = "duplicate-node" | "dangling-edge" | "unresolved-reference";
 
 export interface SummaryNode {
@@ -65,6 +65,8 @@ export interface WorkflowDiagnostic {
 }
 
 interface WorkflowDetailBase {
+  summary?: WorkflowSummary;
+  description?: string;
   id: string;
   nodes: WorkflowDetailNode[];
   edges: WorkflowDetailEdge[];
@@ -85,6 +87,7 @@ export interface WorkflowSkillDetailModel extends WorkflowDetailBase {
 export type WorkflowDetailModel = CompositionDetailModel | WorkflowSkillDetailModel;
 
 export interface WorkflowSourceModel {
+  label?: string;
   schema: "orchflows.workflow-source.v1";
   id: string;
   text: string;

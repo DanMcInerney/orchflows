@@ -28,7 +28,7 @@ class WorkflowHttpTests(unittest.TestCase):
                 detail = json.loads(detail_response[2])
                 source_id = next(
                     node["source_id"] for node in detail["nodes"]
-                    if node["id"] == "work:evolve/02-campaign"
+                    if node["id"] == "workflow:evolve"
                 )
                 source_response = fetch(
                     server, f"/api/v1/workflows/evolve/sources/{source_id}"

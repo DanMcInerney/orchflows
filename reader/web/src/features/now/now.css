@@ -45,7 +45,7 @@
 .now-run-card[data-band="completed"] { border-left-color: var(--status-complete); }
 .now-run-card__identity { min-width: 0; }
 .now-run-card__meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
-.now-run-card__meta span { display: inline-flex; align-items: center; gap: var(--space-1); padding: 2px var(--space-2); border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text-faint); font-size: var(--type-2xs); font-weight: 740; letter-spacing: .06em; text-transform: uppercase; }
+.now-run-card__meta span { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text-faint); font-size: var(--type-2xs); font-weight: 740; letter-spacing: .06em; text-transform: uppercase; }
 .now-run-card__meta svg { width: 12px; height: 12px; }
 .now-run-card[data-band="attention"] .now-run-card__state { border-color: var(--status-border-attention); color: var(--status-attention); }
 .now-run-card[data-band="active"] .now-run-card__state { border-color: var(--status-border-running); color: var(--status-running); }
@@ -104,3 +104,5 @@
   .now-hero dl, .now-toolbar, .now-folder, .now-empty { border: 1px solid CanvasText; }
   .now-run-card__meta span, .now-run-card__task > svg { forced-color-adjust: none; }
 }
+
+.now-run-card__meta .now-run-card__state, .now-run-card__open, .now-run-card__task { font-size: var(--type-base); }

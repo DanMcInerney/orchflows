@@ -23,7 +23,7 @@ function SourceNavigation({ route }: { route: WorkflowSourceRoute }) {
         <span aria-hidden="true">/</span>
         <a href={parentHref(route)}>{route.workflowId}</a>
         <span aria-hidden="true">/</span>
-        <span aria-current="page" style={{ minWidth: 0, overflowWrap: "anywhere" }}>{route.sourceId}</span>
+        <span aria-current="page" style={{ minWidth: 0, overflowWrap: "anywhere" }}>Source</span>
       </nav>
       <a className="workflow-source__back" href={parentHref(route)}><ArrowLeft aria-hidden="true" /> Back to {route.workflowId}</a>
     </>
@@ -62,12 +62,13 @@ export function WorkflowSourceView({ route, state }: WorkflowSourceViewProps) {
       <SourceNavigation route={route} />
       {state.status === "stale" && <div className="notice" role="status">Source refresh failed. Showing the last safe projection.</div>}
       <header className="workflow-source__hero">
-        <div><p className="eyebrow"><Code2 aria-hidden="true" /> Contained source</p><h1>{route.sourceId}</h1><p>Read-only text associated with <strong>{route.workflowId}</strong>.</p></div>
+        <div><p className="eyebrow"><Code2 aria-hidden="true" /> Contained source</p><h1>{source.label || `${route.workflowId} source`}</h1><p>Read-only text associated with <strong>{route.workflowId}</strong>.</p></div>
         <span><LockKeyhole aria-hidden="true" /> Inert projection</span>
       </header>
       <section className="workflow-source__reader" aria-labelledby="workflow-source-reader-title">
         <header><div><p className="eyebrow">Closed metadata</p><h2 id="workflow-source-reader-title">Source contents</h2></div></header>
         <dl aria-label="Source metadata">
+          <div><dt>Identity</dt><dd><code>{source.id}</code></dd></div>
           <div><dt>Language</dt><dd>{source.language}</dd></div>
           <div><dt>SHA-256</dt><dd><code>{source.sha256}</code></dd></div>
           <div><dt>Redaction</dt><dd>{source.redacted ? "Host details redacted" : "No redaction required"}</dd></div>
