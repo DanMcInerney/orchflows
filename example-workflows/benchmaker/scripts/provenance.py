@@ -104,16 +104,18 @@ def check_revision(root, revision):
 
 
 def check_manifest_revision(root, manifest, revision):
-    relative = Path(manifest).resolve().relative_to(root / 'product').as_posix()
-    require(normalized(git(root / 'product', 'show', revision + ':' + relative)) == normalized(Path(manifest).read_bytes()),
+    product = (Path(root) / 'product').resolve()
+    relative = Path(manifest).resolve().relative_to(product).as_posix()
+    require(normalized(git(product, 'show', revision + ':' + relative)) == normalized(Path(manifest).read_bytes()),
             'landed manifest differs from measured git revision')
 
 
 def check_frozen(root, manifest, revision, observations=None):
+    product = (Path(root) / 'product').resolve()
     directory = Path(manifest).resolve().parent
-    relative = directory.relative_to(root / 'product').as_posix()
+    relative = directory.relative_to(product).as_posix()
     require(relative != '.', 'benchmark must have a dedicated frozen subtree')
-    files = compare_tree(directory, tree_files(root / 'product', revision, relative))
+    files = compare_tree(directory, tree_files(product, revision, relative))
     inventory = {str(path.resolve()): digest(path) for path in files.values()}
     if observations is not None:
         require(observations == inventory, 'frozen observations differ from committed inventory')

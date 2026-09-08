@@ -26,6 +26,26 @@ class CalibrationTests(CalibrationFixture, unittest.TestCase):
         self.assertFalse(result['calibrated_benchmark_eligible'])
         self.assertEqual(result['decision'], 'UNVERIFIED')
 
+    def test_probe_accepts_equivalent_paths_and_rejects_outside_product(self):
+        from provenance import check_manifest_revision, check_frozen
+        envelope = self.envelope(self.attempt())
+        manifest = self.root / 'evidence' / '..' / 'product' / 'benchmark' / 'manifest.json'
+        envelope['benchmark_manifest'] = str(manifest)
+        write_json(self.root / 'evidence' / 'admission.json', envelope)
+        with self.subTest(seam='probe'):
+            self.assertTrue(probe(self.root)['workflow_admission'])
+        root_alias = self.root / 'product' / '..'
+        with self.subTest(seam='manifest revision'):
+            check_manifest_revision(root_alias, manifest, self.revision)
+        with self.subTest(seam='frozen tree'):
+            self.assertTrue(check_frozen(root_alias, manifest, self.revision))
+        outside = self.root / 'evidence' / 'manifest.json'
+        outside.write_bytes(manifest.read_bytes())
+        envelope['benchmark_manifest'] = str(self.root / 'product' / '..' / 'evidence' / 'manifest.json')
+        write_json(self.root / 'evidence' / 'admission.json', envelope)
+        with self.assertRaisesRegex(EvidenceError, 'disposable product'):
+            probe(self.root)
+
     def test_probe_rejects_missing_and_corrupt_output(self):
         with self.assertRaises(OSError):
             probe(self.root)

@@ -21,7 +21,7 @@ spec.loader.exec_module(exports)
 
 class RecordLandingTests(unittest.TestCase):
     def test_same_repository_attempt_lands_and_exports_after_candidate_retirement(self):
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+        with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             product, run_dir = common.make_repo(root)
             common.make_ticket(run_dir, 'T1')

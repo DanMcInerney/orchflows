@@ -32,6 +32,7 @@
    "test_benchmaker_calibration.CalibrationTests.test_observed_configuration_contract_can_be_calibrated",
    "test_benchmaker_calibration.CalibrationTests.test_optional_configuration_metadata_does_not_block_declared_rigor",
    "test_benchmaker_calibration.CalibrationTests.test_prepare_cannot_manufacture_receipt_or_completed_benchmark",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_accepts_equivalent_paths_and_rejects_outside_product",
    "test_benchmaker_calibration.CalibrationTests.test_probe_detects_unlisted_frozen_file",
    "test_benchmaker_calibration.CalibrationTests.test_probe_rejects_absent_journal_and_uncommitted_manifest",
    "test_benchmaker_calibration.CalibrationTests.test_probe_rejects_missing_and_corrupt_output",
@@ -2298,6 +2299,14 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_benchmaker_round2",
+   "owner": "PublicationSequenceTests.test_published_rounds_survive_landed_partial_and_final_indexes",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
