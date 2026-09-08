@@ -29,6 +29,7 @@ SHARED_READER_MODULES = (
     "tickets_readiness.py",
     "tickets_registry.py",
     "tickets_shapes.py",
+    "workspace_process.py",
 )
 
 

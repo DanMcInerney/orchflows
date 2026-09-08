@@ -91,6 +91,12 @@ def _is_build_artifact(path: Path) -> bool:
 
     if path.suffix in _BUILD_ARTIFACT_SUFFIXES:
         return True
+    if "node_modules" in path.parts:
+        root = Path(*path.parts[:path.parts.index("node_modules")])
+        if (root / "SKILL.md").is_file() and (root / "package.json").is_file() and any(
+            (root / lock).is_file() for lock in ("package-lock.json", "pnpm-lock.yaml")
+        ):
+            return True
     return any(part in _BUILD_ARTIFACT_DIR_NAMES for part in path.parts)
 
 

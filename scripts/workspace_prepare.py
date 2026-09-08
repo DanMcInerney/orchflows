@@ -20,15 +20,21 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+try:
+    from scripts import orchflows_node, orchflows_tools
+except ImportError:
+    import orchflows_node
+    import orchflows_tools
 
 LOCKFILE = "pnpm-lock.yaml"
 INSTALL_ARGV = ("install", "--frozen-lockfile", "--prefer-offline")
-VERSION_ARGV = ("exec", "playwright", "--version")
-# ten minutes for a cold install off a populated store; seconds for a version
-# string, which is a process start and a print
+# Ten minutes for a cold install; a short bounded headless blank-page probe
+# establishes browser readiness without fetching a browser or visiting a site.
 CEILING_SECONDS = 600
-VERSION_CEILING_SECONDS = 120
+VERSION_CEILING_SECONDS = 15
 BROWSER_ENV_VAR = "ORCHFLOWS_BROWSER_EXECUTABLE"
 CACHE_ENV_VAR = "PLAYWRIGHT_BROWSERS_PATH"
 CACHE_DIRECTORY = "ms-playwright"
@@ -37,8 +43,11 @@ BROWSER_PREFIX = "chromium"
 
 def _run(argv, cwd, env, timeout):
     """Run one prepared command in the tree, output captured, never inherited."""
-
-    return subprocess.run(
+    try:
+        from scripts.workspace_process import run
+    except ImportError:
+        from workspace_process import run
+    return run(
         list(argv),
         cwd=str(cwd),
         env=dict(env),
@@ -51,12 +60,20 @@ def _run(argv, cwd, env, timeout):
 def _frontend(top: Path, pnpm, env, run) -> str:
     """``installed``, ``skipped: <reason>`` or ``failed: <exit>``."""
 
-    if not (top / LOCKFILE).is_file():
-        return "skipped: no-lockfile"
-    if pnpm is None:
-        return "skipped: pnpm-missing"
+    pinned = orchflows_node.lockfile_of(top)
+    if pinned is None:
+        unsupported = next((name for name in ("yarn.lock", "bun.lock", "bun.lockb") if (top / name).is_file()), None)
+        if unsupported:
+            return f"skipped: unsupported-lockfile {unsupported}"
+        return "skipped: missing-lockfile" if (top / "package.json").is_file() else "skipped: no-lockfile"
+    lockfile, command = pinned
+    manager = shutil.which(command[0], path=env.get("PATH"))
+    if manager is None:
+        return f"skipped: {command[0]}-missing"
+    arguments = INSTALL_ARGV if lockfile.name == LOCKFILE else command[1:]
     try:
-        completed = run([pnpm, *INSTALL_ARGV], top, env, CEILING_SECONDS)
+        with orchflows_node.package_lock(top):
+            completed = run([manager, *arguments], top, env, CEILING_SECONDS)
     except subprocess.TimeoutExpired:
         return "failed: timeout"
     except OSError as error:  # a pnpm on PATH the platform cannot launch
@@ -79,35 +96,45 @@ def _cache_root(env) -> Path:
     return home / ".cache" / CACHE_DIRECTORY
 
 
-def _cached_browser(env) -> bool:
-    """Whether a chromium build is already in the cache directory."""
+def _cached_browser(env):
+    """Executable candidates in known Playwright Chromium layouts."""
 
     try:
-        return any(
-            child.name.startswith(BROWSER_PREFIX) for child in _cache_root(env).iterdir()
-        )
+        return [candidate for child in _cache_root(env).iterdir()
+                if child.name.startswith(BROWSER_PREFIX) and child.is_dir()
+                for relative in ("chrome-win/chrome.exe", "chrome-win64/chrome.exe",
+                                 "chrome-linux/chrome", "chrome-linux64/chrome",
+                                 "chrome-mac/Chromium.app/Contents/MacOS/Chromium",
+                                 "chrome-headless-shell-linux64/headless_shell",
+                                 "chrome-headless-shell-win64/headless_shell.exe")
+                if (candidate := child / relative).is_file()]
     except OSError:  # no cache directory at all is an answer, not an error
-        return False
+        return []
 
 
 def _browser(top: Path, pnpm, env, run, declared: bool) -> str:
     """``present``, ``missing``, or ``unknown`` -- never a fetch."""
 
     named = (env.get(BROWSER_ENV_VAR) or "").strip()
-    if named and Path(named).exists():
-        return "present"
-    if pnpm is None or not declared:
+    if not named and (pnpm is None or not declared):
         return "unknown"
-    try:
-        completed = run([pnpm, *VERSION_ARGV], top, env, VERSION_CEILING_SECONDS)
-    except (subprocess.TimeoutExpired, OSError):
-        return "unknown"
-    if completed.returncode != 0:
-        return "unknown"
-    return "present" if _cached_browser(env) else "missing"
+    candidates = [Path(named)] if named else _cached_browser(env)
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            with tempfile.TemporaryDirectory(prefix="orchflows-browser-probe-") as profile:
+                completed = run([str(candidate), "--headless", "--disable-gpu", "--no-sandbox",
+                                 "--no-first-run", f"--user-data-dir={profile}",
+                                 "--dump-dom", "about:blank"], top, env, VERSION_CEILING_SECONDS)
+        except (subprocess.TimeoutExpired, OSError):
+            continue
+        if completed.returncode == 0:
+            return "present"
+    return "missing" if named or declared or candidates else "unknown"
 
 
-def prepare(top, env=None, run=_run) -> dict:
+def prepare(top, env=None, run=_run, *, packages=(), tools=()) -> dict:
     """Install what the tree declares and report what a render check would find."""
 
     top = Path(top)
@@ -115,8 +142,42 @@ def prepare(top, env=None, run=_run) -> dict:
     # resolved against the PATH being passed on, never the ambient one: a
     # caller that hands this a stripped environment means it
     pnpm = shutil.which("pnpm", path=env.get("PATH"))
-    declared = (top / LOCKFILE).is_file()
-    return {
+    declared = orchflows_node.lockfile_of(top) is not None
+    def contained(value):
+        path = (top / value).resolve()
+        if Path(value).is_absolute() or top.resolve() not in (path, *path.parents):
+            raise ValueError(f"preparation directory must be relative and inside workspace: {value}")
+        if not path.is_dir():
+            raise ValueError(f"preparation directory missing: {value}")
+        return path
+
+    # Only exact caller declarations run. A nested manifest is not consent
+    # to execute its install hooks or tool probes.
+    package_paths = [(value, contained(value)) for value in packages]
+    tool_paths = [(value, contained(value)) for value in tools]
+    for value, path in tool_paths:
+        if orchflows_tools.tools_of(path) is None:
+            raise ValueError(f"tool preparation directory has no tools.txt declaration: {value}")
+    result = {
         "frontend": _frontend(top, pnpm, env, run),
         "playwright_browser": _browser(top, pnpm, env, run, declared),
     }
+    if packages:
+        result["packages"] = {str(value): _frontend(path, pnpm, env, run)
+                              for value, path in package_paths}
+    if tools:
+        result["tools"] = {str(value): orchflows_tools.check(
+            path, environ=env, which=lambda name: shutil.which(name, path=env.get("PATH")),
+            runner=lambda argv, timeout: _tool_probe(argv, path, env, run, timeout),
+        ) for value, path in tool_paths}
+    return result
+
+
+def _tool_probe(argv, top, env, run, timeout):
+    argv = [shutil.which(argv[0], path=env.get("PATH")) or argv[0], *argv[1:]]
+    try:
+        completed = run(argv, top, env, timeout)
+    except (subprocess.TimeoutExpired, OSError):
+        return None, ""
+    output = (completed.stdout or b"") + (completed.stderr or b"")
+    return completed.returncode, output.decode(errors="replace") if isinstance(output, bytes) else output
