@@ -842,6 +842,12 @@
    "test_reliability_integration.RawPublicationTests.test_raw_new_excludes_publication_before_pin_resolution",
    "test_reliability_integration.ReceiptPublicationTests.test_post_spawn_receipt_failure_reaps_unbound_suspended_child",
    "test_reliability_integration.ReceiptPublicationTests.test_receipt_replace_waits_out_transient_reader_refusal",
+   "test_reliability_publication_admission.PublicationAdmissionTests.test_active_runtime_repair_refuses_actual_swap_from_stale_reuse_plan",
+   "test_reliability_publication_admission.PublicationAdmissionTests.test_legacy_lifecycle_writer_requires_quiet_window_for_runtime_only_repair",
+   "test_reliability_publication_admission.PublicationAdmissionTests.test_owned_replacement_preserves_noncolliding_unknown_helper",
+   "test_reliability_publication_admission.PublicationAdmissionTests.test_quiescent_runtime_repair_uses_real_swap_and_retires_backup",
+   "test_reliability_publication_admission.PublicationAdmissionTests.test_unowned_collision_refuses_without_changing_live_bytes_or_receipt",
+   "test_reliability_publication_admission.PublicationAdmissionTests.test_verified_runtime_reuse_does_not_enter_mutating_ensure",
    "test_reliability_workspace.ReliabilityWorkspaceTests.test_archive_cli_releases_only_referenced_unchanged_scratch",
    "test_reliability_workspace.ReliabilityWorkspaceTests.test_checkout_conversion_does_not_redefine_producer_evidence_bytes",
    "test_reliability_workspace.ReliabilityWorkspaceTests.test_git_hook_timeout_preserves_committed_merge_for_explicit_recovery",
@@ -1028,6 +1034,7 @@
    "test_self_improve_shapes.DiagnosticShapes.test_correlation_keys_retain_invalid_identities_with_named_gaps",
    "test_self_improve_shapes.DiagnosticShapes.test_malformed_json_fields_remain_partial_retained_observations",
    "test_self_improve_shapes.DiagnosticShapes.test_nested_host_content_preserves_known_text_tools_and_declares_gaps",
+   "test_self_improve_shapes.DiagnosticShapes.test_selected_attribution_failures_reach_public_gap_pages_once",
    "test_serial_compat.TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
    "test_serial_compat.TestBoundaryRestoration.test_an_unclassified_boundary_change_fails_the_lane",
    "test_serial_compat.TestBoundaryRestoration.test_selected_module_boundaries_restore_classified_process_state",
@@ -1286,6 +1293,9 @@
    "test_ticket_frames.SavedWorkflowShapeTest.test_the_scaffolded_workflow_states_a_plan",
    "test_ticket_frames.ShapeGrammarOwnerTest.test_a_construct_dropped_from_either_side_is_caught",
    "test_ticket_frames.ShapeGrammarOwnerTest.test_the_prose_and_the_printed_notation_carry_the_same_anchors",
+   "test_ticket_landing_preflight.LandingPreflightTests.test_stale_attempt_and_conflicting_join_cannot_run_done",
+   "test_ticket_landing_preflight.LandingPreflightTests.test_wrong_seal_and_missing_outcome_leave_target_and_done_untouched",
+   "test_ticket_landing_preflight.LifecyclePublicationTests.test_public_reopening_waits_for_publication_and_cancellation_does_not",
    "test_ticket_pins.PinnedItemDoorTest.test_a_narrowing_edited_under_the_seal_is_refused_at_the_door",
    "test_ticket_pins.PinnedItemDoorTest.test_a_nearer_ring_shadowing_a_stamped_level_is_refused",
    "test_ticket_pins.PinnedItemDoorTest.test_a_root_edited_under_the_seal_is_refused_at_the_door",
@@ -4376,6 +4386,38 @@
    ]
   },
   {
+   "module": "tests.test_reliability_publication_admission",
+   "owner": "PublicationAdmissionTests.test_active_runtime_repair_refuses_actual_swap_from_stale_reuse_plan",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_reliability_publication_admission",
+   "owner": "PublicationAdmissionTests.test_legacy_lifecycle_writer_requires_quiet_window_for_runtime_only_repair",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_reliability_publication_admission",
+   "owner": "PublicationAdmissionTests.test_quiescent_runtime_repair_uses_real_swap_and_retires_backup",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_reliability_publication_admission",
+   "owner": "PublicationAdmissionTests.test_verified_runtime_reuse_does_not_enter_mutating_ensure",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
    "module": "tests.test_reliability_workspace",
    "owner": "ReliabilityWorkspaceTests.setUp",
    "restoration": "selected-module-boundary",
@@ -5109,6 +5151,40 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_landing_preflight",
+   "owner": "LandingPreflightTests.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_landing_preflight",
+   "owner": "LandingPreflightTests.test_stale_attempt_and_conflicting_join_cannot_run_done",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_landing_preflight",
+   "owner": "LandingPreflightTests.test_wrong_seal_and_missing_outcome_leave_target_and_done_untouched",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_landing_preflight",
+   "owner": "LifecyclePublicationTests.test_public_reopening_waits_for_publication_and_cancellation_does_not",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "monkeypatch"
    ]
   },
   {

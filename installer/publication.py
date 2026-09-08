@@ -26,6 +26,18 @@ from .models import _frontend_manifest_identity
 from . import runtime
 
 
+def _coordinated_attempts(path):
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, UnicodeError):
+        return False
+    bindings = {(name.name, name.asname) for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom) and node.module == "tickets_install_guard"
+                for name in node.names}
+    return {("guarded_dispatch_open", "_cmd_dispatch_open"),
+            ("guarded_dispatch_replace", "_cmd_dispatch_replace")} <= bindings
+
+
 def _protects_payload(data):
     """Unpinned glue owns no executable invocation; malformed pins refuse."""
     stamped = False
@@ -238,11 +250,12 @@ def publication(plan, old):
             # No directory rename gap for readers of unchanged active bytes.
             payloads = []
         if changes and (plan.bin_dir / "tickets.py").is_file():
-            required = ("tickets_install_guard.py", "tickets_issue.py", "tickets_attempts.py",
+            required = ("tickets_install_guard.py", "tickets_issue.py",
                         "tickets_dispatch_facade.py", "tickets_mint.py", "tickets_frame.py", "tickets_seal.py",
                         "tickets_lifecycle.py")
             coordinated = all((plan.bin_dir / name).is_file() and "installation_lock" in
                               (plan.bin_dir / name).read_text(encoding="utf-8") for name in required)
+            coordinated = coordinated and _coordinated_attempts(plan.bin_dir / "tickets_attempts.py")
             if not coordinated:
                 raise RuntimeError("installed writers do not coordinate with installation; old bytes retained. "
                                    "Use the offline migration in installer/README.md: finish all active work, "
