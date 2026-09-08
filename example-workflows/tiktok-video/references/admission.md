@@ -14,24 +14,35 @@ limits before dependent work. Supply the resolved authoring-owner path in each
 governed Context; do not embed one author's home into reusable assignments.
 The per-call bound is 45 minutes for the planned admission.
 
-The first named call is super-research, even when prepared packets already exist.
-Ask one bounded question about this brief's references and the current rendering
-decision, naming official sources and limiting each source operation to its hard
-cap. Prepared packets dated 2026-09-08 cover four official n8n/Zapier/Gumloop/Make
+The named tiktok-video frame owns two ordinary research calls. Prepare the
+brief-specific question and numbered sub-questions: (1) which market/reference
+observations inform this subject, audience and intent, and (2) which renderer
+fits its technical, provider and license constraints? Each orch-do Goal carries
+only its own numbered sub-question. Context supplies the source policy, recency
+window, run-scoped evidence store, source/tool bound and rigor bar: primary
+citations with dates and inspectable locations for decision-bearing claims.
+Independent orch-judge receives the complete question and both actual packets
+under the makers' same orch-research digest; it checks support, independence,
+coverage, disagreement, freshness and rigor, including undeclared gaps.
+
+Prepared packets dated 2026-09-08 cover four official n8n/Zapier/Gumloop/Make
 videos, Remotion versus HyperFrames and local stock-voice feasibility. Pass their
 actual supplied paths/identities, relevance and provenance; do not assume another
-machine has them. Refresh decision-sensitive gaps only. Request actual available
-playback inspection with timestamps, exposed metrics and sampling limits, citation
-and read dates, contradictions and unavailable hearing. Counts establish no
-retention, conversion or causal superiority. Freeze as_of at or after new reads.
+machine has them. An accepted dossier is also a reusable attributed input, not a
+required output stage. Both lanes assess applicability and missing evidence,
+returning new packet identities that cite reused inputs. Refresh only
+decision-sensitive gaps. Preserve available playback inspection timestamps,
+exposed metrics and sampling limits, citation/read dates, contradictions and
+unavailable hearing. Counts establish no retention, conversion or causal
+superiority. Research needs no mandatory HTML conversion or acquisition protocol.
 
-The public research workflow resolves the library html-dossier standard in its own scope.
-Never pass video-script-quality or video-quality into that public scope. Consume
-its actual returned dossier and coverage findings, then pin one renderer and
-its dependencies before original script production. The foundation supports
-Remotion 4.0.522; the prepared HyperFrames 0.8.31 comparison is an alternative,
-not a tested automatic fallback. Refresh sources if license or technical needs
-change; qualify a changed main renderer before depending on it.
+After independently accepted coverage, pin one renderer and its dependencies
+before original script production. The foundation supports Remotion 4.0.522;
+the prepared HyperFrames 0.8.31 comparison is an alternative, not a tested
+automatic fallback. Refresh sources if license or technical needs change;
+qualify a changed main renderer before depending on it. Required verification
+gaps return partial evidence; a technically usable renderer alone does not
+establish research coverage.
 
 Direction receives the full brief and rights/provider limits, research identity,
 renderer constraints/pins, document directory, voice contract, numeric document
@@ -51,35 +62,47 @@ unaccepted repair or a planned output path is not an accepted identity. Each
 frame-open at a call site establishes the invocation; drive that body's procedure
 in the resulting frame, not a second self-open.
 
-## Supply the outside research verifier
+## Fresh-pin continuation and acceptance
 
-The existing super-research Return needs a dossier verifier but names no
-executable. The admission caller supplies it without editing that public
-workflow: outside the research children, obtain an independent orch-judge over
-the actual HTML doc identity with orch-content and the library html-dossier
-standard, using the report maker's exact ordered pins and document-tree adapter.
-The judging goal covers every load-bearing claim's citation and date, every
-returned loss and contradiction, and every unanswered sub-question. Supply the
-bounded question, actual source/coverage records and the fixed dossier. This is
-external verification for the research close, not a replacement research wrapper.
+The changed package requires a new named invocation; an old frame cannot qualify
+new bytes. Finish or preserve every old-package dispatch before replacing its
+bundle. Prefer a separate disposable git checkout and document directory for the
+corrected admission, retaining the old project, accepted research, direction,
+review records and rendered candidate unchanged. No prior record is rewritten.
 
-Inspect that real review's exact-revision artifact binding, pins and findings.
-Only blocker-free findings permit a semantic acceptance claim. Freeze the actual
-review evidence snapshot with its ticket identity, reviewed doc identity,
-standards and findings; record its SHA256. Then use the concrete two-file command
-in [creative](creative.md), substituting the HTML document's path/hash and this
-review snapshot's path/hash. Run it outside children against disposable absent
-and corrupt controls and then the fixed actual files. Supply that exact argument
-vector as super-research's outside verifier. It verifies immutable bytes; the
-independent judgment supplies citation/date/loss completeness. A hash alone never
-proves semantics. A changed dossier requires fresh review, not a new expected hash.
+After independent source judgment and the joined required suite, copy the whole
+accepted package to the new project's .orchflows/workflows/tiktok-video. Record
+source commit and copied package digest, resolve trust through the normal door,
+run the static check and generate project adapters as below. Do not substitute
+an old installed package receipt for this fresh identity. Open tiktok-video by
+the public command in its body using a fresh run and the original complete brief.
+Execute its actual research do/do/judge sequence with ordinary emitted launches
+and land commands. The new research tickets carry the new package identity and
+shared research standard pin; their packet inputs cite the old evidence and
+accepted dossier by actual identity, with dates, provenance and gaps. Merely
+minting tickets or replaying old findings does not exercise this route.
 
-Direction uses the same integrity boundary with its own separately reviewed
-Markdown document. Missing review, blockers, unavailable required evidence or
-failed integrity returns the latest partial document and findings with named
-gaps; it does not establish an accepted dependent handoff. This supplied-verifier
-path is concrete admission guidance; its actual judge and probe observations
-remain to be performed by the live caller.
+After fresh coverage, assess whether its renderer decision and findings change
+the accepted direction. Supply that fixed direction and its review as attributed
+inputs to video-direction. Its ordinary maker can retain applicable document
+bytes while recording why they still answer the new inputs; its new independent
+judge binds the returned identity under the current package and shared pins.
+Then pass the accepted direction and existing rendered candidate to
+video-production in a separate workspace. Its ordinary maker may preserve
+applicable source/output bytes after checking the new handoff and provenance;
+only necessary repairs require re-rendering. Its ordinary independent review
+and outside probe must cover the actual returned candidate under the fresh pins.
+No synthetic tickets, special bypass or old invocation certifies this new route.
+
+Direction's outside integrity boundary remains the concrete two-file command in
+[creative](creative.md), using its fixed document and actual independent review
+snapshot after inspecting exact artifact/pin binding and blocker-free findings.
+Run absent/corrupt controls and actual files. Research acceptance comes from its
+landed evidence packets and independent coverage findings, without a document
+adapter or extra dossier stage. Missing review or required evidence preserves
+partial artifacts and named gaps. Record fresh run/frame/tickets, standard and
+package digests, reused and returned identities, findings and outside exits;
+unexecuted branches and unheard audio remain gaps.
 
 ## Commands and planned request
 

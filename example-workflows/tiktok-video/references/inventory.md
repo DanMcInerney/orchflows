@@ -6,7 +6,7 @@ No legacy pack, mandatory variant count or fixed cut quota is retained.
 
 | Contract | Actual consumer and reason |
 | --- | --- |
-| super-research (existing public workflow) | tiktok-video asks a brief-specific market and tooling question; its independent coverage journal and cited dossier precede creative work. Its own public scope resolves orch-research, research-acquire, orch-content and html-dossier. |
+| orch-do and orch-judge with orch-research (existing primitives and standard) | tiktok-video owns market/reference and renderer lanes plus independent coverage review. Separate evidence packets permit parallel work and reuse with provenance; the judge covers their joined decision handoff. No acquisition method or document-format dependency is added. |
 | video-direction (private workflow) | tiktok-video fixes an independently reviewed original document before expensive rendering. Its independent journal can return useful partial direction. |
 | video-production (private workflow) | tiktok-video hands it the actual accepted document and findings. It owns isolated rendered output and audiovisual review/repair; its semantic input does not depend on the direction helper's layout. |
 | orch-do and orch-judge (existing primitives) | Direction uses orch-content plus video-script-quality; production uses orch-code plus video-quality. They retain their ordinary landing and evidence contracts. |

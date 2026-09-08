@@ -16,27 +16,41 @@ Read [admission](references/admission.md) for required input preparation,
 verifiers and partial-result handling; [inventory](references/inventory.md)
 identifies the package boundaries and qualified resources.
 
-**Research first.** Invoke `super-research` for one bounded brief-specific
-question: which market/reference observations inform this subject, audience and
-intent, and does current Remotion-versus-HyperFrames evidence change the renderer
-choice? Supply named live primary sources, window where applicable, frozen as_of
-at or after reads and a hard per-step cap. Ask for actual available playback
-inspection, citations, dates, exposed metrics with sampling limits, contradictions
-and gaps. Reuse applicable prepared evidence explicitly with provenance; refresh
-only decision-sensitive gaps. This public call resolves its own standards.
+**Research first.** Own two ordinary `orch-do` lanes under `orch-research`,
+using the questions, source policy, bounds and evidence carriers in
+[admission](references/admission.md). Run market/reference and renderer research
+in parallel when useful. Assess prepared evidence for relevance and gaps;
+refresh only decision-sensitive gaps.
 
-    tickets.py frame-open <run> --parent <frame> --goal-file <research-question> --workflow super-research
+    tickets.py do <run> --parent <frame> --standard orch-research
+      --goal-file <market-question> --context-file <market-context> --bound <per-call-bound>
 
-Consume the actual dossier identity and coverage findings, never a planned path.
-Missing required verification returns partial research and prevents an accepted
-handoff. Pin one main renderer and dependency identity before original artifact
-production, carrying the evidence, license branch and decision into both helpers.
+    tickets.py do <run> --parent <frame> --standard orch-research
+      --goal-file <renderer-question> --context-file <renderer-context> --bound <per-call-bound>
+
+The market packet returns cited dated observations and available viewing evidence;
+the renderer packet returns the current comparison and constraints/pins.
+Compare actual packets after both exist, preserving provenance and gaps without
+requiring format conversion.
+
+    tickets.py judge <run> --parent <frame> --standard orch-research
+      --artifacts evidence:<market-id> --artifacts evidence:<renderer-id>
+      --goal-file <coverage-goal> --context-file <research-context> --bound <per-call-bound>
+
+Use the makers' exact research standard digest for independent coverage review.
+It checks the original question, both lanes and their relevance/gap assessment.
+Only blocker-free coverage of the required decisions permits an accepted
+handoff; missing required evidence preserves partial packets and findings.
+"Where the judge blocks, one repair `do` is handed the
+`findings:` line verbatim, then one re-judge; two rounds is the bound."
+A repair remains a single research lane. Pin one main renderer and dependency
+identity before original artifact production, carrying the accepted packet
+identities, coverage findings, license branch and decision into both helpers.
 
 **Direction.** Invoke `video-direction` with the complete brief, actual research
 identity and gaps, renderer constraints/pins, rights/provider limits, target
 document directory, voice contract, numeric document budget, citation policy,
-per-call bound and outside document verifier. At 1s reduce to one readable idea,
-explicitly deciding voice/CTA omission; at 120s budget explanation and proof.
+per-call bound and outside document verifier.
 
     tickets.py frame-open <run> --parent <frame> --goal-file <direction-goal> --workflow video-direction
       --context-file <direction-context>
