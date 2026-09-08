@@ -16,6 +16,10 @@ Read [admission](references/admission.md) for required input preparation,
 verifiers and partial-result handling; [inventory](references/inventory.md)
 identifies the package boundaries and qualified resources.
 
+Carry promotional intent, including mixed education/marketing, into both helpers.
+For example provenance, read the non-normative
+[reference observations](references/marketing-reference.md).
+
 **Research first.** Own two ordinary `orch-do` lanes under `orch-research`,
 using the questions, source policy, bounds and evidence carriers in
 [admission](references/admission.md). Run market/reference and renderer research
@@ -28,10 +32,8 @@ refresh only decision-sensitive gaps.
     tickets.py do <run> --parent <frame> --standard orch-research
       --goal-file <renderer-question> --context-file <renderer-context> --bound <per-call-bound>
 
-The market packet returns cited dated observations and available viewing evidence;
-the renderer packet returns the current comparison and constraints/pins.
-Compare actual packets after both exist, preserving provenance and gaps without
-requiring format conversion.
+Compare both actual packets, preserving dated observations, viewing evidence,
+renderer comparison/constraints/pins, provenance and gaps without format conversion.
 
     tickets.py judge <run> --parent <frame> --standard orch-research
       --artifacts evidence:<market-id> --artifacts evidence:<renderer-id>
@@ -55,7 +57,7 @@ per-call bound and outside document verifier.
     tickets.py frame-open <run> --parent <frame> --goal-file <direction-goal> --workflow video-direction
       --context-file <direction-context>
 
-Drive each invoked body in its opened frame, without opening its entry twice.
+Drive each body in its opened frame without reopening.
 Only its independently accepted document and actual findings feed
 `video-production`, with the brief, renderer decision, assets/rights/provider
 constraints, git workspace, owner pointer and per-call bound.

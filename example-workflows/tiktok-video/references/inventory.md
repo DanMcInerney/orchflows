@@ -12,6 +12,7 @@ No legacy pack, mandatory variant count or fixed cut quota is retained.
 | orch-do and orch-judge (existing primitives) | Direction uses orch-content plus video-script-quality; production uses orch-code plus video-quality. They retain their ordinary landing and evidence contracts. |
 | render-video (private applied skill) | Production making consumes the frame-driven rendering and measured-caption method. |
 | video-script-quality and video-quality (private narrowings) | Direction and production maker/judge pairs respectively share these exact pins. Script originality/timing and rendered audiovisual quality have different artifact seams. |
+| marketing-script-quality and marketing-video-quality (private narrowings) | Marketing intent selects one at each existing seam, narrowing video-script-quality and video-quality respectively. Direction owns promise/support planning; production owns its perceptual realization. Each maker, judge and repair shares the selected chain's pins. Other intents retain the general standards. |
 
 No new research wrapper, planner, generic engine, role or base adapter is needed.
 Checkpointed-build and orch-build-workflow are existing package-authoring and
@@ -36,6 +37,8 @@ admission workflows, not extra layers of a video invocation.
   Python dependency; tools.txt declares node and npm.
 - [admission](admission.md): concrete static and later external commands, live
   request, remaining runtime obligations and gap handling.
+- [marketing reference](marketing-reference.md): non-normative supplied example
+  observations and inspection limits, separate from the marketing quality law.
 
 The artifact lock pins Remotion/@remotion 4.0.522, React/React DOM 19.2.8,
 Kokoro.js 1.2.1 and transformers 3.8.1. Browser/font/model/stock-voice hashes are
@@ -50,7 +53,7 @@ unexecuted alternative requiring a separately qualified boundary if selected.
 Canonical installer discovery automatically includes this top-level owner.
 Generated Claude skill, Codex prompt/redirect skill and Grok skill adapters point
 to it without a child-role binding. Nested video-direction, video-production,
-render-video and both standards stay absent from global catalogs/adapters and
+render-video and all private standards stay absent from global catalogs/adapters and
 resolve only through the public owner's package scope. Do not hand-write adapters.
 The reader's closed summary manifest and canonical ID set include tiktok-video;
 its compact graph shows research, direction and production. README is not an

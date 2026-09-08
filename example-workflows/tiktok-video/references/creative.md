@@ -4,7 +4,7 @@ The public tiktok-video workflow consumes research before calling private
 video-direction; production consumes its independently accepted document.
 This journal earns its boundary by fixing message, original expression and
 story timing before expensive rendering. It reuses orch-do and orch-judge
-with orch-content plus the private video-script-quality narrowing. It does
+with orch-content plus the private standard selected by direction's intent table. It does
 not wrap public research, implement rendering or introduce a separate method.
 The public owner establishes package scope; a private name alone cannot.
 
@@ -30,7 +30,7 @@ captions, sound and assets. Optional cells say none. Tables are a convenience,
 not a serialization protocol or substitute for a comprehensible story.
 
 The frame record carries the accepted doc identity, latest partial doc identity,
-independent findings/review identities, exact shared standard pins, production
+independent findings/review identities, intent selection, exact shared standard pins, production
 handoff and gaps. Acceptance requires the independent review of that revision;
 a newer unreviewed repair is only partial. Production receives this fixed record,
 including permission limits, timing assumptions and unobserved audio questions.
