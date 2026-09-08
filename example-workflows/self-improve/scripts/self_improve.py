@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import sqlite3
 
 from improve_common import EvidenceError, read_json, redact, safe_sink, selection
 from improve_collect import collect
@@ -20,7 +21,10 @@ import improve_store
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("collect").add_argument("--selection", required=True)
+    collect_command = commands.add_parser("collect")
+    collect_command.add_argument("--selection", required=True)
+    collect_command.add_argument("--disk-budget", type=int, default=2147483648)
+    collect_command.add_argument("--record-budget", type=int, default=8388608)
     write = commands.add_parser("record")
     write.add_argument("--review", required=True)
     write.add_argument("--file", required=True)
@@ -37,7 +41,7 @@ def main(argv=None):
         if args.command == "collect":
             frozen = selection(read_json(args.selection))
             safe_sink(frozen["sources"])
-            result = improve_store.create(collect(frozen))
+            result = improve_store.create(collect(frozen, args.disk_budget, args.record_budget))
         elif args.command == "record":
             result = improve_store.record(args.review, read_json(args.file))
         elif args.command == "show":
@@ -46,6 +50,10 @@ def main(argv=None):
             result = improve_store.close(args.review, args.mode)
         print(json.dumps(redact(result), sort_keys=True, ensure_ascii=True))
         return 3 if args.command == "close" and args.mode == "repair" and not result["repair_completed"] else 0
+    except sqlite3.Error as exc:
+        print(json.dumps({"kind": "evidence-refusal", "coverage": "partial", "error": redact(str(exc)),
+                          "continuation": "restore spool storage and retry the same frozen selection; no complete collection claimed"}))
+        return 2
     except (EvidenceError, OSError, KeyError, TypeError, ValueError) as exc:
         # OSError paths may themselves contain credentials. Never return raw inputs.
         print(json.dumps({"error": redact(str(exc)), "kind": "evidence-refusal"}, ensure_ascii=True))
