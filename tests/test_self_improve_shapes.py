@@ -1,5 +1,6 @@
 """Nested diagnostic coverage through the public collector and review close."""
 import copy
+import hashlib
 import json
 import unittest
 
@@ -7,6 +8,66 @@ from tests import test_self_improve as support
 
 
 class DiagnosticShapes(unittest.TestCase):
+    def test_selected_attribution_failures_reach_public_gap_pages_once(self):
+        case = support.SelfImprove()
+        case.setUp()
+        self.addCleanup(case.doCleanups)
+        for host in ("codex", "claude"):
+            if host == "codex":
+                call = {"type": "response_item", "timestamp": support.STAMP, "payload": {
+                    "type": "function_call", "name": "exec_command", "call_id": "call",
+                    "arguments": '{"cmd":"false"}'}}
+                output = {"type": "response_item", "timestamp": support.STAMP, "payload": {
+                    "type": "function_call_output", "call_id": "call", "output": "Exit code: 7"}}
+            else:
+                call = {"type": "assistant", "timestamp": support.STAMP, "sessionId": "fixture",
+                        "cwd": str(case.project), "message": {"content": [{"type": "tool_use",
+                        "id": "call", "name": "Bash", "input": {"command": "false"}}]}}
+                output = dict(call, type="user", message={"content": [{"type": "tool_result",
+                              "tool_use_id": "call", "content": "Exit code: 7", "is_error": True}]})
+            excluded = dict(output, timestamp=case.selection["end"])
+            for label, rows, expected in (("valid", [call, output], 0),
+                                           ("orphan", [output], 1),
+                                           ("ambiguous", [call, call, output], 2),
+                                           ("excluded", [call, output, excluded], 0)):
+                with self.subTest(host=host, case=label):
+                    path = case.write(host + "-" + label + ".jsonl",
+                                      ([support.meta("fixture", case.project)] if host == "codex" else []) + rows)
+                    original = path.read_bytes()
+                    case.selection["sources"] = [{"kind": host, "path": str(path)}]
+                    bundle = case.collect()
+                    coverage = "partial" if expected else "complete"
+                    self.assertEqual(coverage, bundle["coverage"])
+                    source = bundle["sources"][0]
+                    self.assertEqual(coverage, source["coverage"])
+                    self.assertEqual(expected, source["gap_count"])
+                    observations = {o["id"]: o for o in bundle["observations"]}
+                    page = case.cli("show", "--review", case.review, "--section", "gaps", "--limit", "1")
+                    self.assertEqual(expected, page["gap_count"])
+                    self.assertEqual(coverage, page["coverage"])
+                    self.assertEqual(page, case.cli("show", "--review", case.review, "--section", "gaps", "--limit", "1"))
+                    gaps = list(page["items"])
+                    while page["next_offset"] is not None:
+                        page = case.cli("show", "--review", case.review, "--section", "gaps",
+                                        "--limit", "1", "--offset", str(page["next_offset"]))
+                        gaps.extend(page["items"])
+                    self.assertEqual(expected, len(gaps))
+                    self.assertEqual(bundle["gaps"], gaps)
+                    for gap in gaps:
+                        observation = observations[gap["observation_id"]]
+                        self.assertIn(gap["reason"], observation["attribution_gaps"])
+                        self.assertEqual("selection-or-diagnostic", gap["scope"])
+                        self.assertEqual(observation["sources"][0],
+                                         {key: gap[key] for key in ("path", "sha256", "locator")})
+                    for observation in observations.values():
+                        self.assertEqual(hashlib.sha256(original).hexdigest(), observation["sources"][0]["sha256"])
+                        self.assertEqual("call", observation["links"][0]["id"])
+                    if not expected:
+                        event = next(e for o in observations.values() for e in o["normalized"] if e["type"] == "tool_call")
+                        self.assertEqual(7, event["exit"])
+                        self.assertIn(event["result_observation_id"], observations)
+                    self.assertEqual(original, path.read_bytes())
+
     def test_correlation_keys_retain_invalid_identities_with_named_gaps(self):
         case = support.SelfImprove()
         case.setUp()
@@ -165,7 +226,7 @@ class DiagnosticShapes(unittest.TestCase):
             ("codex-modern-Text", "codex", [completed({"type": "AgentMessage", "content": [{"type": "Text", "text": "visible success"}]})], "complete", False),
             ("codex-completed-future", "codex", [completed({"type": "AgentMessage", "content": [future]})], "partial", True),
             ("codex-reasoning-future", "codex", [completed({"type": "Reasoning", "summary_text": [], "raw_content": [future]})], "partial", True),
-            ("codex-result-text", "codex", [codex({"type": "function_call_output", "call_id": "call", "output": [output]})], "complete", False),
+            ("codex-result-text", "codex", [codex({"type": "function_call", "name": "exec_command", "call_id": "call", "arguments": '{"cmd":"check"}'}), codex({"type": "function_call_output", "call_id": "call", "output": [output]})], "complete", False),
             ("codex-result-future", "codex", [codex({"type": "function_call_output", "call_id": "call", "output": [future]})], "partial", True),
             ("codex-message-future", "codex", [codex({"type": "message", "role": "assistant", "content": [output, future]})], "partial", True),
             ("codex-event-text", "codex", [{"timestamp": support.STAMP, "type": "event_msg", "payload": {"type": "agent_message", "message": "visible success"}}], "complete", False),

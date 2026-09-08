@@ -239,13 +239,17 @@ def collect(frozen, disk_budget=2147483648, record_budget=8388608):
                 normalize(row, kind, observation, observations, pending)
             except (TypeError, ValueError, AttributeError, KeyError):
                 source["gaps"].append("trace normalization degraded at " + locator)
+            for message in observation.get("attribution_gaps", []):
+                source["gaps"].append(dict(location, observation_id=oid, reason=message,
+                                           scope="selection-or-diagnostic"))
             observations.append(observation, observation["timestamp"] + oid)
         pending.close()
         if source["gaps"] or source["counts"]["unsupported"]:
             source["coverage"] = "partial"
         for message in source["gaps"]:
-            gaps.append({"path": source["path"], "reason": message,
-                         "scope": "source-integrity" if message in source["acquisition_gaps"] else "selection-or-diagnostic"})
+            gaps.append(message if isinstance(message, dict) else {
+                "path": source["path"], "reason": message,
+                "scope": "source-integrity" if message in source["acquisition_gaps"] else "selection-or-diagnostic"})
     for declared in declarations:
         if declared["coverage"] == "unavailable":
             gaps.append({"path": declared["path"], "reason": "expected source missing"})
