@@ -2,8 +2,8 @@
 
 The installation lock precedes all run locks. Issuance and dispatch take the
 same lock, so the nonterminal-reference census remains valid until receipt
-publication. Until per-reference resolution is available, any nonterminal
-ticket conservatively protects every existing lib/bin byte, including bytes
+publication. Any pinned or role-bearing nonterminal invocation
+conservatively protects every existing lib/bin byte, including bytes
 that were removed from the source checkout. Receipt identity alone is not a
 payload change.
 """
@@ -21,13 +21,14 @@ from pathlib import Path
 
 from scripts import orchflows_node, state_root
 from scripts.tickets_format import TERMINAL_STATES, VALID_STATUSES, _parse_frontmatter
+from scripts.tickets_admission import ADMISSION_PENDING
 from .models import _frontend_manifest_identity
 
 
 def _protects_payload(data):
     """Unpinned glue owns no executable invocation; malformed pins refuse."""
     stamped = False
-    draft = data.get("status") == "pending" and not data.get("assignment_seal")
+    draft = data.get("status") == ADMISSION_PENDING and not data.get("assignment_seal")
     standards = data.get("standards") or []
     if not isinstance(standards, list):
         raise ValueError("standards reference is not a list")
@@ -115,7 +116,7 @@ def _digest(path):
     return digest.hexdigest()
 
 
-def _stage(plan, root):
+def _stage(plan, root, old=None):
     payloads = []
     for name, live, copies in (("lib", plan.lib_home, plan.lib_copies),
                                ("bin", plan.bin_dir, plan.scripts if plan.manage_host_surfaces else [])):
@@ -123,6 +124,17 @@ def _stage(plan, root):
             continue
         stage = root / name
         stage.mkdir()
+        if name == "bin" and live.exists():
+            owned = {Path(entry["path"]) for entry in (old or {}).get("files", [])
+                     if entry.get("kind") == "script"}
+            # The flat bin is shared with operator-authored helpers. Only
+            # receipt-owned scripts may disappear when the source drops them.
+            for relative in _files(live):
+                source = live / relative
+                if source not in owned:
+                    target = stage / relative
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, target)
         for source, destination in copies:
             relative = destination.relative_to(live)
             target = stage / relative
@@ -199,7 +211,7 @@ def publication(plan, old):
     moves, surfaces = [], {}
     recover = False
     try:
-        payloads = _stage(plan, root)
+        payloads = _stage(plan, root, old)
         active = _active(plan, bool(old) or plan.lib_home.exists() or plan.bin_dir.exists())
         changes = []
         for live, stage in payloads:
@@ -225,7 +237,7 @@ def publication(plan, old):
                                    "A new lock alone cannot exclude old writers.")
         for index, path in enumerate(sorted(_surface_paths(plan, old))):
             if path.is_symlink() or (path.exists() and not path.is_file()):
-                raise RuntimeError(f"installation surface is not a regular file: {path}")
+                raise FileExistsError(f"installation surface is not a regular file: {path}")
             backup = root / "surfaces" / str(index)
             if path.exists():
                 backup.parent.mkdir(exist_ok=True)

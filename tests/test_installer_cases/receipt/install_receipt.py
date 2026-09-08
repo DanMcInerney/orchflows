@@ -11,6 +11,7 @@ class TestInstallReceipt(unittest.TestCase):
             root = Path(tmp)
             project = root / "project"
             project.mkdir()
+            (project / ".orchflows" / "state" / "tickets").mkdir(parents=True)
             source = root / "source.md"
             source.write_text("new library\n", encoding="utf-8")
             script_source = root / "tool.py"
@@ -104,6 +105,7 @@ class TestInstallReceipt(unittest.TestCase):
             self.assertEqual("before\n", mine.read_text(encoding="utf-8"))
 
     def _role_agent_plan(self, project: Path, **kwargs) -> "install.Plan":
+        (project / ".orchflows" / "state" / "tickets").mkdir(parents=True, exist_ok=True)
         defaults = dict(
             lib_home=project / ".orchflows" / "lib",
             scope_home=project / ".orchflows",
@@ -231,6 +233,7 @@ class TestInstallReceipt(unittest.TestCase):
             old_agent.write_text('name = "orch-worker"\n', encoding="utf-8")
             receipt = project / ".orchflows" / "receipt.json"
             receipt.parent.mkdir(parents=True)
+            (receipt.parent / "state" / "tickets").mkdir(parents=True)
             receipt.write_text(
                 json.dumps(
                     {

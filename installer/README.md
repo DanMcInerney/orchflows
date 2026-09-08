@@ -18,7 +18,9 @@ payload even if the current census is empty. No flag disables this check.
 For that one migration, the operator must arrange an offline maintenance
 window:
 
-1. Finish or retire all nonterminal assignments and frames. Preserve the
+1. Finish or retire every role-bearing or pinned nonterminal assignment
+   and frame. Verified unpinned role-none frames and unstamped pending
+   drafts may remain. Preserve the
    installed state directory; removing it is not a way to pass the census.
 2. Stop every host session, scheduler and standalone process capable of
    invoking the old installation, and prevent new invocations for the

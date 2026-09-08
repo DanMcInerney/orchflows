@@ -93,7 +93,7 @@ def _is_build_artifact(path: Path) -> bool:
         return True
     if "node_modules" in path.parts:
         root = Path(*path.parts[:path.parts.index("node_modules")])
-        if (root / "package.json").is_file() and any(
+        if (root / "SKILL.md").is_file() and (root / "package.json").is_file() and any(
             (root / lock).is_file() for lock in ("package-lock.json", "pnpm-lock.yaml")
         ):
             return True

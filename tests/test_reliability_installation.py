@@ -1,7 +1,7 @@
 """Disposable publication and dependency failure controls; no network installs."""
 
 import json
-import os
+import re
 import shutil
 import subprocess
 import sys
@@ -109,6 +109,19 @@ class PublicationTests(unittest.TestCase):
             self.assertEqual(1, len(roots))
             self.assertTrue((roots[0] / "recovery.json").is_file())
             self.assertEqual("VALUE = 1\n", (roots[0] / "lib-old" / "module.py").read_text())
+            self.assertEqual("VALUE = 1\n", (roots[0] / "bin-old" / "module.py").read_text())
+            with self.assertRaisesRegex(RuntimeError, "unfinished installation recovery"):
+                application.apply_plan(plan, "retry-before-recovery")
+            # Replay the documented offline recovery in this disposable home.
+            journal = json.loads((roots[0] / "recovery.json").read_text())
+            for entry in journal["payloads"]:
+                Path(entry["backup"]).replace(Path(entry["live"]))
+            for name, backup in journal["surfaces"].items():
+                if backup:
+                    shutil.copy2(backup, name)
+            roots[0].replace(Path(raw) / "recovered-transaction")
+            application.apply_plan(plan, "retry-after-recovery")
+            self.assertEqual("VALUE = 2\n", (plan.lib_home / "module.py").read_text())
 
     def test_receipt_failure_restores_adapter_and_payload(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -179,8 +192,11 @@ class PublicationTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertIn(str(plan.bin_dir), result.stdout)
             self.assertIn(str(plan.lib_home), result.stdout)
+            guide = plan.lib_home / "docs" / "custom-workflow-authoring.md"
+            link = re.search(r"\[ARCHITECTURE.md\]\(([^)]+)\)", guide.read_text(encoding="utf-8"))
+            self.assertIsNotNone(link)
             self.assertEqual((repo / "ARCHITECTURE.md").read_bytes(),
-                             (plan.lib_home / "docs" / ".." / "ARCHITECTURE.md").read_bytes())
+                             (guide.parent / link.group(1)).read_bytes())
             (plan.bin_dir / "_bootstrap.py").unlink()
             (plan.lib_home / "scripts" / "_bootstrap.py").unlink()
             failed = subprocess.run([sys.executable, "-I", "-c", code], cwd=raw,

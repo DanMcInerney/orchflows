@@ -20,6 +20,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 try:
@@ -30,11 +31,10 @@ except ImportError:
 
 LOCKFILE = "pnpm-lock.yaml"
 INSTALL_ARGV = ("install", "--frozen-lockfile", "--prefer-offline")
-VERSION_ARGV = ("exec", "playwright", "--version")
-# ten minutes for a cold install off a populated store; seconds for a version
-# string, which is a process start and a print
+# Ten minutes for a cold install; a short bounded headless blank-page probe
+# establishes browser readiness without fetching a browser or visiting a site.
 CEILING_SECONDS = 600
-VERSION_CEILING_SECONDS = 120
+VERSION_CEILING_SECONDS = 15
 BROWSER_ENV_VAR = "ORCHFLOWS_BROWSER_EXECUTABLE"
 CACHE_ENV_VAR = "PLAYWRIGHT_BROWSERS_PATH"
 CACHE_DIRECTORY = "ms-playwright"
@@ -43,8 +43,11 @@ BROWSER_PREFIX = "chromium"
 
 def _run(argv, cwd, env, timeout):
     """Run one prepared command in the tree, output captured, never inherited."""
-
-    return subprocess.run(
+    try:
+        from scripts.workspace_process import run
+    except ImportError:
+        from workspace_process import run
+    return run(
         list(argv),
         cwd=str(cwd),
         env=dict(env),
@@ -113,12 +116,17 @@ def _browser(top: Path, pnpm, env, run, declared: bool) -> str:
     """``present``, ``missing``, or ``unknown`` -- never a fetch."""
 
     named = (env.get(BROWSER_ENV_VAR) or "").strip()
+    if not named and (pnpm is None or not declared):
+        return "unknown"
     candidates = [Path(named)] if named else _cached_browser(env)
     for candidate in candidates:
         if not candidate.is_file():
             continue
         try:
-            completed = run([str(candidate), "--version"], top, env, VERSION_CEILING_SECONDS)
+            with tempfile.TemporaryDirectory(prefix="orchflows-browser-probe-") as profile:
+                completed = run([str(candidate), "--headless", "--disable-gpu", "--no-sandbox",
+                                 "--no-first-run", f"--user-data-dir={profile}",
+                                 "--dump-dom", "about:blank"], top, env, VERSION_CEILING_SECONDS)
         except (subprocess.TimeoutExpired, OSError):
             continue
         if completed.returncode == 0:
