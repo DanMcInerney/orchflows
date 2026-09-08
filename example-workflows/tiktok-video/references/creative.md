@@ -20,8 +20,7 @@ inside Git; the judge reads the resulting doc identity with the same adapter.
 The call bound and outside document
 verifier travel with the invocation. This is ordinary prose, not a new schema.
 
-Keep this authoring owner in governed downstream Context:
-C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md.
+Keep the supplied, resolved authoring-owner pointer in governed downstream Context. The invocation supplies its host-local path; this reusable package does not fix a user home.
 
 The document contains a brief recap and throughline; a timed script/storyboard;
 a short explanation connecting this brief's research to creative choices;

@@ -10,7 +10,7 @@ global FFmpeg, paid provider, or graph-layout library is required.
 ## Copy and render
 
 Copy every file beside the [scaffold manifest](scaffold/package.json), including its dotfile and public/fonts,
-to the video project's root. Run `npm ci --no-audit --no-fund` there. The committed
+to the video project's root. Also copy [render.cjs](../scripts/scaffold/render.cjs) and [voice.mjs](../scripts/scaffold/voice.mjs) into that same root; their relative asset paths are artifact-root paths. Run `npm ci --no-audit --no-fund` there. The committed
 package-lock.json is the dependency identity; retain it in the produced project.
 Use `node render.cjs 1 output/final.mp4` for the silent technical tracer or
 `node render.cjs 30 output/final.mp4 mix.wav` when public/mix.wav is the final mix.
