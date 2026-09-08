@@ -3,7 +3,6 @@
 Source acceptance, fixed package identity, generated adapters and actual named
 invocation are separate evidence. The joined gate runs the command in
 [source-check.txt](source-check.txt); ordinary authoring runs affected tests.
-No static check proves execution of this body.
 
 ## Distribution
 
@@ -47,8 +46,7 @@ semantics and isolated making/review with the identical expanded video chain.
 Direction produces a NEW committed Markdown plan and independent review; its
 [verifier](creative.md) binds that commit's bytes and review. Production receives
 that accepted identity, actual findings, research, constraints, timing assumptions
-and gaps. Drive each opened helper frame without reopening its declaration.
-Missing review or exhausted repair retains partial artifacts, never acceptance.
+and gaps. Missing review or exhausted repair retains partial artifacts, never acceptance.
 
 ## Disposable invocation
 

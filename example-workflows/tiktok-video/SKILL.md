@@ -5,7 +5,7 @@ disable-model-invocation: true
 ---
 
 Require: the original legacy brief, constraints and available evidence, including
-partial inputs and identities.
+partial inputs and identities, and an outside result verifier.
 
     tickets.py frame-open <run> --goal-file <legacy-goal> --workflow tiktok-video
       --context-file <legacy-context>
@@ -17,14 +17,16 @@ its scope before any private helper or standard resolves.
     tickets.py frame-open <run> --parent <frame> --goal-file <legacy-goal> --workflow orchflows-videos
       --context-file <legacy-context>
 
-Drive the new body in that frame. For an incompatible generic brief, return an
+Drive the new body in that frame; reuse its outside output probe for the forwarded
+result. For an incompatible generic brief, return an
 explicit scope/migration result preserving the brief and partial evidence: the
 new owner serves Orchflows marketing; independently reusable short-videos can
-still guide a separately scoped code assignment. Do not manufacture brand intent.
+still guide a separately scoped code assignment. The supplied verifier binds the
+fixed scope result to the original inputs. Do not manufacture brand intent.
 
 Never: resolve the new owner's private names in this compatibility scope, duplicate
 its rendering flow, discard partial inputs, or rewrite historical pinned artifacts.
 
-Return: `tickets.py frame-close <run> <frame>`; forwarded result identities and
+Return: `tickets.py frame-close <run> <frame> --done <outside-result-verifier>`; forwarded result identities and
 findings verbatim when invoked, otherwise the scope/migration explanation with
 original inputs, partial evidence and gaps (`[]` when none).

@@ -31,8 +31,7 @@ c3d6b8beb19a8748e68e7356a76183c74b552f02739784c640bbf2200e26b1f0 respectively.
 They pin Remotion/@remotion 4.0.522, React/React DOM 19.2.8, kokoro-js 1.2.1 and
 transformers 3.8.1; retain the scaffold name to preserve lock identity.
 The render.cjs, voice.mjs, probe.py and font/provenance bytes are unchanged.
-Node 24.15.0 is prior host evidence, not a new qualification. Artifact dependencies
-belong in the produced project; tools.txt declares the package's node/npm boundary.
+Node 24.15.0 is prior host evidence, not a new qualification. tools.txt declares the package's node/npm boundary.
 Resolve Python with `orchflows env workflow orchflows-videos`.
 
 Discovery generates public orchflows-videos and compatibility tiktok-video host
