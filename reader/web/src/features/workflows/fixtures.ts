@@ -135,6 +135,18 @@ const workflows: WorkflowCatalogItem[] = [
 export const catalogFixture: WorkflowCatalogModel = { workflows };
 
 export const detailFixture: WorkflowDetailModel = {
+  description: "Freeze evaluation, check eligibility, run the bounded campaign and report the result.",
+  summary: { nodes: [
+    { id: "work:evolve/00-eval", label: "Freeze evaluation" },
+    { id: "work:evolve/01-eligibility", label: "Check eligibility" },
+    { id: "work:evolve/02-campaign", label: "Run campaign" },
+    { id: "work:evolve/03-result", label: "Report result" },
+  ], edges: [
+    { source: "work:evolve/00-eval", target: "work:evolve/01-eligibility", kind: "sequence" },
+    { source: "work:evolve/01-eligibility", target: "work:evolve/02-campaign", kind: "sequence" },
+    { source: "work:evolve/02-campaign", target: "work:evolve/02-campaign", kind: "loop" },
+    { source: "work:evolve/02-campaign", target: "work:evolve/03-result", kind: "sequence" },
+  ] },
   id: "evolve",
   type: "composition",
   tier: "T3",
@@ -172,6 +184,7 @@ export const detailFixture: WorkflowDetailModel = {
 };
 
 export const workflowSkillDetailFixture: WorkflowDetailModel = {
+  summary: workflows.find((workflow) => workflow.id === "orch-spec")!.summary,
   id: "orch-spec",
   type: "workflow-skill",
   tier: "T1",

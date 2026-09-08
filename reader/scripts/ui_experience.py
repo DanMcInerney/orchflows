@@ -270,7 +270,10 @@ def _run_record(root: Path, run: str):
     }
     indexed = {_text(ticket.get("id")): ticket for ticket in tickets}
     records = [
-        _ticket_summary(ticket, explanations, indexed, malformed_ids)
+        dict(
+            _ticket_summary(ticket, explanations, indexed, malformed_ids),
+            title=_redact_host_paths(_text(ticket.get("goal")), root, ticket).strip().split("\n", 1)[0][:160],
+        )
         for ticket in tickets
     ]
     workflow = _run_workflow(root, run)

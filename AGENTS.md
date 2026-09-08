@@ -27,7 +27,10 @@ git diff --check
 `python tools/run_required.py` runs the five, cached by tree; a gate
 passes `--no-cache`. While working,
 `python tools/run_tests.py --scope <changed-paths>` runs only the
-affected shards; the five decide the tip. Adding or removing tests
+affected shards. Parallel units preview with
+`python tools/affected_tests.py --format json <changed-paths>` (space-separated).
+If shared infrastructure selects the repository, units run exact owner controls;
+the joined gate runs all five. Adding or removing tests
 regenerates the manifest with
 `python tools/run_serial_compat.py --write-manifest`.
 

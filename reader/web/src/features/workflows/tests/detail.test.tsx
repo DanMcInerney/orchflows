@@ -50,7 +50,7 @@ describe("WorkflowDetailView", () => {
     expect(within(graph).getByRole("button", { name: "Select Composition definition evolve" })).not.toBeNull();
     expect(within(graph).queryByRole("heading", { name: "Additional canonical calls" })).toBeNull();
 
-    const companion = screen.getByRole("region", { name: "Complete ordered topology" });
+    const companion = screen.getByRole("region", { name: "Complete topology and references" });
     const companionNodes = within(companion).getByRole("list", { name: "Workflow nodes" });
     const companionRelations = within(companion).getByRole("list", { name: "Workflow relations" });
     expect(within(companionNodes).getAllByRole("listitem")).toHaveLength(detailFixture.nodes.length);
@@ -64,28 +64,24 @@ describe("WorkflowDetailView", () => {
     expect(within(companion).getAllByRole("link", { name: /^View source for / })).toHaveLength(
       detailFixture.nodes.filter((node) => node.sourceId).length,
     );
-    expect(container.querySelector(".workflow-detail__layout")?.firstElementChild?.classList.contains("workflow-detail__graph-panel")).toBe(true);
+    expect(container.querySelector(".workflow-detail__full")?.hasAttribute("open")).toBe(false);
   });
 
-  it("keeps the primary graph before the announced inspector at the compact breakpoint", () => {
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: query === "(max-width: 1024px)",
-      media: query,
-      onchange: null,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    }));
-
-    const { container } = render(
-      <WorkflowDetailView route={{ workflowId: "evolve", fixture: "complex-loop" }} state={ready(detailFixture)} />,
-    );
-    const layout = container.querySelector(".workflow-detail__layout");
-    expect(layout?.firstElementChild?.classList.contains("workflow-detail__graph-panel")).toBe(true);
-    expect(layout?.lastElementChild?.classList.contains("workflow-inspector")).toBe(true);
-    expect(screen.getByRole("complementary").getAttribute("aria-live")).toBe("polite");
+  it("starts with a compact semantic overview and reveals selected template details", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<WorkflowDetailView route={{ workflowId: "evolve", fixture: "complex-loop" }} state={ready(detailFixture)} />);
+    expect(container.querySelector(".workflow-detail__full")?.hasAttribute("open")).toBe(false);
+    const steps = screen.getByRole("list", { name: "Semantic workflow steps" });
+    expect(within(steps).getAllByRole("button")).toHaveLength(4);
+    const eligibility = within(steps).getByRole("button", { name: /Check eligibility/ });
+    eligibility.focus();
+    await user.keyboard("{Enter}");
+    expect(eligibility.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("complementary", { name: "01-eligibility" }).getAttribute("aria-live")).toBe("polite");
+    expect(container.querySelector(".workflow-overview__template")).not.toBeNull();
+    expect(container.querySelector(".workflow-selection-drawer")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Close selected details" }));
+    expect(screen.queryByRole("complementary")).toBeNull();
   });
 
   it("selects graph nodes and edges with Enter or Space in a persistent inspector", async () => {
@@ -127,7 +123,7 @@ describe("WorkflowDetailView", () => {
     }
   });
 
-  it("shows a callable workflow as ordered skill and script calls", () => {
+  it("labels lexical names as references without unsupported call numbering", () => {
     render(
       <WorkflowDetailView
         route={{ workflowId: "orch-spec", fixture: "callable" }}
@@ -135,7 +131,7 @@ describe("WorkflowDetailView", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Skills and scripts called" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Referenced skills and scripts" })).not.toBeNull();
     expect(workflowSkillDetailFixture.nodes.map((node) => node.id)).toEqual([
       "workflow:orch-spec",
       "skill:orch-decompose",
@@ -147,10 +143,11 @@ describe("WorkflowDetailView", () => {
     const graph = screen.getByRole("group", { name: "Exact topology for orch-spec" });
     expect(within(graph).getByRole("button", { name: "Select Workflow definition orch-spec" })).not.toBeNull();
     expect(within(graph).getAllByRole("listitem")).toHaveLength(5);
-    expect(within(graph).getByRole("button", { name: "Select Called skill orch-investigate" })).not.toBeNull();
-    expect(within(graph).getByRole("button", { name: "Select Called script bin/tickets.py" })).not.toBeNull();
+    expect(within(graph).getByRole("button", { name: "Select Referenced skill orch-investigate" })).not.toBeNull();
+    expect(within(graph).getByRole("button", { name: "Select Referenced script bin/tickets.py" })).not.toBeNull();
+    expect(graph.textContent).not.toMatch(/Call \d|canonical relation order|invokes the skills/);
     expect(graph.querySelectorAll("[data-workflow-connector]")).toHaveLength(workflowSkillDetailFixture.edges.length);
-    expect(screen.getByRole("list", { name: "Workflow calls" }).children).toHaveLength(5);
+    expect(screen.getByRole("list", { name: "Workflow references" }).children).toHaveLength(5);
     expect(Array.from(graph.querySelectorAll("[data-call-source]")).map((item) => ({
       source: item.getAttribute("data-call-source"),
       target: item.getAttribute("data-call-target"),
@@ -170,7 +167,7 @@ describe("WorkflowDetailView", () => {
 
     expect(screen.getByRole("heading", { name: "1 topology diagnostic" })).not.toBeNull();
     expect(screen.getByText("Executor reference could not be resolved.")).not.toBeNull();
-    expect(screen.queryByRole("button", { name: /edit|delete|run|retry|start/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^(edit|delete|run|retry|start)$/i })).toBeNull();
   });
 
   it("explains a definition with no projected topology", () => {

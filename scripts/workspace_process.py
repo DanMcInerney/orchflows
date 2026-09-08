@@ -5,6 +5,11 @@ import os
 import signal
 import subprocess
 
+if __package__:
+    from .process_job import WindowsJob as _WindowsJob
+else:
+    from process_job import WindowsJob as _WindowsJob
+
 GIT_TIMEOUT_SECONDS = 120
 FACADE_TIMEOUT_SECONDS = 900
 RETIRE_TIMEOUT_SECONDS = 180
@@ -25,7 +30,12 @@ def run(argv, *, timeout, **kwargs):
     try:
         process = subprocess.Popen(argv, **kwargs)
         if job is not None:
-            job.start(process)
+            try:
+                job.bind_and_resume(process)
+            except BaseException:
+                process.kill()
+                process.wait(timeout=CLEANUP_TIMEOUT_SECONDS)
+                raise
     except BaseException:
         if job is not None:
             job.close()
@@ -64,65 +74,3 @@ def run(argv, *, timeout, **kwargs):
     if check:
         completed.check_returncode()
     return completed
-
-
-class _WindowsJob:
-    """Own a suspended command and all descendants before any code can run."""
-
-    def __init__(self):
-        import ctypes
-        from ctypes import wintypes
-        self.ctypes = ctypes
-        class Basic(ctypes.Structure):
-            _fields_ = [('process_time', ctypes.c_longlong), ('job_time', ctypes.c_longlong),
-                        ('flags', wintypes.DWORD), ('minimum', ctypes.c_size_t),
-                        ('maximum', ctypes.c_size_t), ('processes', wintypes.DWORD),
-                        ('affinity', ctypes.c_size_t), ('priority', wintypes.DWORD),
-                        ('scheduling', wintypes.DWORD)]
-        class Counters(ctypes.Structure):
-            _fields_ = [(name, ctypes.c_ulonglong) for name in
-                        ('read_ops', 'write_ops', 'other_ops', 'read_bytes', 'write_bytes', 'other_bytes')]
-        class Limits(ctypes.Structure):
-            _fields_ = [('basic', Basic), ('io', Counters), ('process_memory', ctypes.c_size_t),
-                        ('job_memory', ctypes.c_size_t), ('peak_process', ctypes.c_size_t),
-                        ('peak_job', ctypes.c_size_t)]
-        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-        self.kernel = kernel
-        kernel.CreateJobObjectW.argtypes = (ctypes.c_void_p, wintypes.LPCWSTR)
-        kernel.CreateJobObjectW.restype = wintypes.HANDLE
-        kernel.SetInformationJobObject.argtypes = (wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD)
-        kernel.SetInformationJobObject.restype = wintypes.BOOL
-        kernel.AssignProcessToJobObject.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
-        kernel.AssignProcessToJobObject.restype = wintypes.BOOL
-        kernel.CloseHandle.argtypes = (wintypes.HANDLE,)
-        kernel.CloseHandle.restype = wintypes.BOOL
-        self.handle = kernel.CreateJobObjectW(None, None)
-        if not self.handle:
-            raise ctypes.WinError(ctypes.get_last_error())
-        limits = Limits()
-        limits.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-        if not kernel.SetInformationJobObject(self.handle, 9, ctypes.byref(limits), ctypes.sizeof(limits)):
-            error = ctypes.WinError(ctypes.get_last_error())
-            self.close()
-            raise error
-
-    def start(self, process):
-        ctypes = self.ctypes
-        try:
-            if not self.kernel.AssignProcessToJobObject(self.handle, int(process._handle)):
-                raise ctypes.WinError(ctypes.get_last_error())
-            resume = ctypes.WinDLL('ntdll').NtResumeProcess
-            resume.argtypes = (ctypes.c_void_p,)
-            resume.restype = ctypes.c_long
-            result = resume(int(process._handle))
-            if result:
-                raise OSError(f'NtResumeProcess failed: {result}')
-        except BaseException:
-            process.kill()
-            process.wait(timeout=CLEANUP_TIMEOUT_SECONDS)
-            raise
-
-    def close(self):
-        if self.handle:
-            self.kernel.CloseHandle(self.handle)
-            self.handle = None

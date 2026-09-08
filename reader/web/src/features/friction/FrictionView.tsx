@@ -1,3 +1,4 @@
+import { RouteState, RefreshStatus } from "../../shared/transport/RouteState";
 import {
   AlertTriangle,
   ArrowRight,
@@ -107,12 +108,11 @@ export function FrictionView({ route, state }: FrictionViewProps) {
   const unreadable = fixtureEmpty ? 0 : Math.max(0, state.model?.unreadable ?? 0);
   const visibleItems = items.slice(0, visibleLimit);
 
-  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!route.fixture && (state.status === "loading" || state.status === "error")) return <RouteState state={state} context={{ title: "Friction", description: "Recorded operational friction and its available context.", parents: [{ label: "Now", href: "/now" }] }} />;
 
   return (
     <div className="friction-view foundation-view" data-view="friction" data-state={items.length ? "populated" : "empty"}>
-      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
+      {state.status === "stale" && <RefreshStatus state={state} />}
       <IntegrityNotice skipped={skipped} unreadable={unreadable} />
       <header className="friction-hero">
         <div>

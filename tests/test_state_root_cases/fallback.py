@@ -210,7 +210,7 @@ class TestThereIsNoFallback(SinkFixture):
         names = ["_bootstrap.py", "console.py", "friction.py",
                  "orchflows_bundle.py", "orchflows_home.py", "standards.py",
                  "standards_support.py", "rings.py", "rings_trust.py",
-                 "state_root.py", "workspace_git.py", "workspace_record.py", "workspace_process.py", "workspace_custody.py"] + [
+                 "state_root.py", "workspace_git.py", "workspace_record.py", "workspace_process.py", "workspace_custody.py", "process_job.py"] + [
             path.name for path in SCRIPTS_DIR.glob("tickets*.py")
         ]
         for name in names:

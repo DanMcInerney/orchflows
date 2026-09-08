@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   Diagnostic,
   FeatureData,
@@ -21,6 +21,7 @@ export interface PollingTransport<Route, Payload, Model> {
 
 interface PollingTransportOptions<Model> {
   onState: (state: FeatureState<Model>) => void;
+  onRequest?: (pending: boolean) => void;
   environment?: TransportEnvironment;
 }
 
@@ -104,6 +105,7 @@ export function createPollingTransport<Route, Payload, Model>(
     const currentRequest = ++requestSequence;
     const currentData = data;
     const currentRoute = route;
+    options.onRequest?.(true);
 
     try {
       const request = currentData.request(currentRoute);
@@ -112,9 +114,9 @@ export function createPollingTransport<Route, Payload, Model>(
         requestInit(request, etag, controller.signal),
       );
       if (currentGeneration !== generation || currentRequest !== requestSequence) return;
-      etag = response.headers.get("ETag") ?? etag;
       if (response.status === 304) {
         if (!hasModel) publishFailure(DIAGNOSTICS.unavailable);
+        else if (state.status === "stale") publish({ status: "ready", model: model as Model, error: null });
         return;
       }
       if (response.status === 404) {
@@ -127,10 +129,13 @@ export function createPollingTransport<Route, Payload, Model>(
       }
       try {
         const payload = currentData.schema(await response.json());
+        if (currentGeneration !== generation || currentRequest !== requestSequence) return;
         model = currentData.project(payload);
         hasModel = true;
+        etag = response.headers.get("ETag");
         publish({ status: "ready", model, error: null });
       } catch {
+        if (currentGeneration !== generation || currentRequest !== requestSequence) return;
         publishFailure(DIAGNOSTICS["invalid-payload"]);
       }
     } catch {
@@ -139,6 +144,7 @@ export function createPollingTransport<Route, Payload, Model>(
     } finally {
       if (currentGeneration === generation && currentRequest === requestSequence) {
         activeRequest = null;
+        options.onRequest?.(false);
         scheduleNext();
       }
     }
@@ -178,12 +184,16 @@ export function usePollingTransport<Route, Payload, Model>(
   data: FeatureData<Route, Payload, Model>,
 ): FeatureState<Model> {
   const [state, setState] = useState<FeatureState<Model>>(LOADING);
+  const [refreshing, setRefreshing] = useState(false);
+  const current = useRef<PollingTransport<Route, Payload, Model> | null>(null);
+  const refresh = useCallback(async () => { await current.current?.refresh(); }, []);
 
   useEffect(() => {
-    const transport = createPollingTransport<Route, Payload, Model>({ onState: setState });
+    const transport = createPollingTransport<Route, Payload, Model>({ onState: setState, onRequest: setRefreshing });
+    current.current = transport;
     void transport.start(route, data);
-    return () => transport.stop();
+    return () => { current.current = null; transport.stop(); };
   }, [route, data]);
 
-  return state;
+  return { ...state, refresh, refreshing, autoRefresh: data.polling(state.model) !== false };
 }

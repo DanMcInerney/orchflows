@@ -16,6 +16,7 @@ SHARED_READER_MODULES = (
     # dependency, imported before anything else is safe to import.
     "_bootstrap.py",
     "console.py",
+    "process_job.py",
     "standards.py",
     "standards_support.py",
     "rings.py",

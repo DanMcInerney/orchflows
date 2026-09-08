@@ -32,6 +32,7 @@
    path; `scripts/state_root.py` is the resolver, and the derived candidate
    worktrees it also roots — `$ORCHFLOWS_WORKTREES_HOME`, else the worktrees
    directory beside the sink — hold workspace content, never run state.
+   Both override paths must be absolute after tilde expansion.
    Each record names the
    project it arose in as a field, never by where it sits.
    There is no fallback: a run-state write that cannot reach that root

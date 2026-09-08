@@ -127,6 +127,17 @@
         {"source": "acquire", "target": "report", "kind": "sequence"}
       ]
     },
+    "tiktok-video": {
+      "nodes": [
+        {"id": "research", "label": "Inspect brief-specific evidence"},
+        {"id": "direction", "label": "Fix and review original direction"},
+        {"id": "production", "label": "Render and review the video"}
+      ],
+      "edges": [
+        {"source": "research", "target": "direction", "kind": "sequence"},
+        {"source": "direction", "target": "production", "kind": "sequence"}
+      ]
+    },
     "orch-judge": {
       "nodes": [
         {"id": "ledger", "label": "Read the fixed review ledger"},

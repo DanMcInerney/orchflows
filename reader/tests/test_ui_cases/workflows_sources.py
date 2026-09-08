@@ -218,7 +218,7 @@ class WorkflowSourceTests(unittest.TestCase):
 
         self.assertEqual(200, status)
         self.assertEqual(
-            {"schema", "id", "text", "sha256", "language", "redacted"},
+            {"schema", "id", "label", "text", "sha256", "language", "redacted"},
             set(payload),
         )
         self.assertEqual("orchflows.workflow-source.v1", payload["schema"])

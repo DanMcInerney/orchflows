@@ -1,0 +1,186 @@
+{
+  "assigned_name": "B1.5",
+  "dispatch_id": "B1.5:d1",
+  "assignment_seal": "sha256:2cf9037284e5babed64bf7d901e9920225dc3a58e7c7f4cca4ab8f03153f4da2",
+  "reviewed_artifact": "git:bd8d24d2e4ae1cd14062b9d373205db28574460b",
+  "maker_artifact": "git:dbbaaf6738419d4325e00508be37a253b7d1c874",
+  "prior_artifact": "git:1256584e51c7a4d7068a7d5d555bb5fd7f07bf48",
+  "package": {
+    "path": "example-workflows/tiktok-video",
+    "digest": "sha256:30b1e8537c9a2e5bf732ca903e047baa1bfbbbcad461df1b88ef7dbac2b952b8"
+  },
+  "standard_evidence": {
+    "pins": {
+      "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+      "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+    },
+    "read_whole_and_rederived": true,
+    "owner": "C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md",
+    "application": "Full orch-code git lens and workflow-authoring narrowing; authoring owner, composition, token economy, visibility, standard contract, vocabulary, documentation and verification read. Research and preserved private quality/helper contracts inspected as package evidence."
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "blocking": true,
+      "priority": "P2",
+      "class": "frozen-completion-criterion",
+      "path": "example-workflows/tiktok-video/references/admission.md",
+      "line": 71,
+      "title": "Redundant historical-state sentence makes the required gate fail",
+      "evidence": "The clean fixed-tip no-cache gate exits 1. WarningCeilingTest.test_the_tree_holds_at_or_under_the_cross_tier_ceiling observes 30 cross-tier warnings against ceiling 29. The sole added warning compares rules/topology.md: The predecessor state is not rewritten with the new admission sentence: No prior record is rewritten (similarity 0.61). Completed Linux CI reports the identical failure.",
+      "cause": "The correction repeats existing topology law in package admission prose, adding a warning to an already full ratchet.",
+      "smallest_remedy": "Delete only No prior record is rewritten from admission.md line 71. The immediately preceding concrete requirement already retains the old project, research, direction, review records and rendered candidate unchanged. Preserve that requirement, historical evidence, the ordinary research route, and the warning ceiling.",
+      "criterion": "Ticket explicitly requires the joined full suite; rules/verification.md section 9 permits blocking when a frozen completion criterion is false.",
+      "successor_scope": [
+        "example-workflows/tiktok-video/references/admission.md"
+      ],
+      "validation": "Run the affected warning-ratchet and package regressions after repair, then independent joined review/full gate on the repaired identity. Fresh package pins and actual named admission follow outside this review."
+    }
+  ],
+  "cause_threads": [
+    {
+      "cause": "Duplicate topology law exceeds existing cross-tier warning ceiling",
+      "findings": [
+        "R1"
+      ]
+    }
+  ],
+  "acceptance_observations": [
+    "Public SKILL.md lines 19-48 owns ordinary research do/do/judge with orch-research. The makers receive distinct market/reference and renderer questions; judge receives both actual packets, complete question and same research digest. Parallel work is permitted and accepted coverage precedes renderer pins and creative production.",
+    "Current public body and admission/inventory omit super-research, research-acquire and html-dossier dependencies. Prepared research/dossier remain attributed inputs; relevance/gap assessment precedes decision-sensitive refresh, without mandatory HTML conversion or repeated external acquisition merely for routing.",
+    "Cited/read dates, viewing timestamps and unavailable hearing, exposed-count sampling/causal limits, contradictions, evidence gaps, originality and renderer/license constraints remain explicit. Private direction and production still retain separate document and Git workspaces, shared maker/judge pins, review/repair and technical-versus-audible acceptance boundaries.",
+    "Exactly four paths differ from prior tip: public body, admission, inventory and existing package test. Helper, quality standard, method, renderer/probe/scaffold/lock and immutable historical records are unchanged. Catalog already says research/direction/production and needs no correction.",
+    "Fresh-pin handoff is supported as proposed: preserve old dispatch/artifacts, copy accepted whole package into separate project, normal trust/check/sync, fresh named frame, execute/land ordinary research pair and coverage judge, then ordinary direction and production maker/judge reuse with new pin bindings and outside probes. This review does not claim any of it executed."
+  ],
+  "gate": {
+    "commands": [
+      {
+        "argv": [
+          "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+          "tools/validate.py"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:40:26.012200Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:40:00.495427Z",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "32e75eee5d3f75ac6a5fe216d851772ca2cb9a141d2f7f368d61856f9cbd2088"
+      },
+      {
+        "argv": [
+          "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+          "tools/run_tests.py"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:43:22.529745Z",
+        "exit_status": 1,
+        "started_at": "2026-09-08T12:40:26.014328Z",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "39d9beba548cd05dd54712431d71f8d021233be103695548d8fe98f68e0fa40c"
+      },
+      {
+        "argv": [
+          "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+          "tools/run_serial_compat.py"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:43:29.495493Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:43:22.529832Z",
+        "stderr_sha256": "f73ea0b42741dbf7adab6a5267e58651cda7cc24bdcbf5348b702f36c771dc37",
+        "stdout_sha256": "c08bce26ffbbd89a82773a17ee1be1a21749950afe320cb082833289ff9e24ee"
+      },
+      {
+        "argv": [
+          "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+          "install.py",
+          "--dry-run"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:40:03.652967Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:40:00.495564Z",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "166597c17f27a9fa17d8dee50af4dbd42cf6c44baed6c2e0fa7cf8e95c87ef93"
+      },
+      {
+        "argv": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:40:00.735716Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:40:00.495860Z",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "dirty": false,
+    "exit": 1,
+    "kind": "required-check-run/v1",
+    "repository_identity": "bd8d24d2e4ae1cd14062b9d373205db28574460b",
+    "tree_identity": "ad053e7036e8ed22b78170861bb56e313e8c4cd2"
+  },
+  "gate_summary": "All five finished under outer timeout 1800s. Validate 0; tests 1 (108 modules,2251 tests,1 failure,0 errors,14 skips); serial 0 (12 tests,1 skip); install dry-run 0; whitespace 0. Full gate 1, not accepted.",
+  "controls": {
+    "route": "Bounded disposable copies: previous-public-route 1, unwanted-acquisition 1, missing-research-review-pin 1, corrected 0; harness 0. Actual source untouched. The same existing test detects unwanted route and missing standard shape.",
+    "prior_warning_comparison": "Restored all four correction paths from prior git in a disposable validator clone. Warning set is prior 29/current 30, one added and none removed. Clone validator/harness exit 1 owing to omitted benchmarks directory and serial-manifest drift, so this is only warning-set evidence and is not a passing baseline gate."
+  },
+  "ci": {
+    "run": "34227219010",
+    "job": "102064175185",
+    "revision": "bd8d24d2e4ae1cd14062b9d373205db28574460b",
+    "log_sha256": "3b0c93dcf86b89aab3e51bfbdab91d7541f70cab0cdbd4752f1020f07b770f84",
+    "observation": "Root acquired completed Linux job via gh api, exit 0. Judge read supplied log; identical 30 > 29 warning-ratchet failure,108 modules/2251 tests,1 failure,0 errors,5 skips. No hosted success claimed."
+  },
+  "evidence_files": [
+    {
+      "path": ".orch-notes/B1.5-required.json",
+      "sha256": "fe17e318ee85a02006a0047340f4b079030f9a8aebf6b7c8f7a0ac322da2712d",
+      "identity_bytes": "Git blob bytes; text normalized to LF at commit"
+    },
+    {
+      "path": ".orch-notes/B1.5-required.log",
+      "sha256": "d5e6919e7a16fca1adaecbb0a26c51d293863f7ca29aad54913ae25b2cd37c3c",
+      "identity_bytes": "Git blob bytes; text normalized to LF at commit"
+    },
+    {
+      "path": ".orch-notes/B1.5-route-controls.json",
+      "sha256": "c265073aedcae6327f04b5ee0a4c8115b2703acdad1477ec97e483dfecdee4be",
+      "identity_bytes": "Git blob bytes; text normalized to LF at commit"
+    },
+    {
+      "path": ".orch-notes/B1.5-route-controls.py",
+      "sha256": "e1edbfa6cfcb683425b908a18da79fbf73f3569503c94db8d8b52b5b3198e9b3",
+      "identity_bytes": "Git blob bytes; text normalized to LF at commit"
+    },
+    {
+      "path": ".orch-notes/B1.5-baseline-control.json",
+      "sha256": "71fbb80415061685f1ed7471f4c16d6c9089c14c8b7bbf8da3342d774c259ff3",
+      "identity_bytes": "Git blob bytes; text normalized to LF at commit"
+    },
+    {
+      "path": ".orch-notes/B1.5-baseline-control.py",
+      "sha256": "fa3713dfae1b4e15acfdd3f50b5050b1cf0a13e58c072ceecf7731a535965b47",
+      "identity_bytes": "Git blob bytes; text normalized to LF at commit"
+    }
+  ],
+  "gaps": [
+    "Full gate blocks at R1; no corrected-source acceptance or installation authorized by this review.",
+    "Fresh named invocation with corrected package, generated project adapters, research launches/landings and downstream reused output judgments remain root-owned and unobserved here.",
+    "Final 30-second output, audible/rights acceptance, endpoint creative quality and alternative renderer execution are outside this correction review. Prior evidence remains attributed and its gaps are not erased."
+  ],
+  "scope_accounting": "Only durable review/evidence added. No repairs, source/runtime/global installation, package bytes, historical record changes, external research acquisition, video rendering, paid actions, social publication, PR merge or delegation. Prescribed static review and full gate completed; no substantive deviation. All started checks returned.",
+  "command_accounting": {
+    "exit_0": "All Get-Content reads (including truncated reads and bounded recovery), acceptance/review-progress/gate-failure ticket filings, all friction filings, git diff and status commands, successful rg discovery/content searches, scratch Set-Content scripts, canonical pin derivation, CI log extraction and source error extraction. Route harness 0 (expected child exits separately recorded). Four baseline git-show subprocesses 0. Get-Item and Get-CimInstance diagnostics 0.",
+    "exit_1": [
+      "Full required-suite wrapper and tools/run_tests.py as recorded above.",
+      "Optional rg reader/data: missing guessed path; recovered via rg --files.",
+      "Optional rg scripts/cell_linter.py scripts/cell_linter*: missing guessed path and invalid Windows wildcard argument.",
+      "Disposable prior-validator and harness: clone omissions described above; no pass claimed."
+    ],
+    "notes": "Output truncation, missing paths, gate failure and clone-control limitations were logged as friction. Tool process yields were watched within this turn; none was detached or abandoned. Closing creation/commit/filing exits are recorded in the ticket outcome."
+  }
+}

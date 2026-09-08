@@ -416,6 +416,8 @@ class ComposableIntegrationTest(unittest.TestCase):
         )
         self._call(
             "dispatch-outcome", RUN, ticket_id,
+            "--assignment-seal", attempt["assignment_seal"],
+            "--dispatch-id", attempt["dispatch_id"], "--by", ticket_id,
             "--note", "; ".join(lines[1:]),
         )
         landed = self._call(

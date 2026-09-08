@@ -1,0 +1,16 @@
+[
+  {
+    "temporary_drive": "C",
+    "patched_validator_drive": "C",
+    "expected_ValueError": false,
+    "observed_ValueError": false,
+    "result": "temp\\video\\SKILL.md"
+  },
+  {
+    "temporary_drive": "C",
+    "patched_validator_drive": "D",
+    "expected_ValueError": true,
+    "observed_ValueError": true,
+    "result": "'C:\\\\temp\\\\video\\\\SKILL.md' is not in the subpath of 'D:\\\\'"
+  }
+]

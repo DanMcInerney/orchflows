@@ -1,0 +1,219 @@
+{
+  "assigned_name": "B1.7",
+  "dispatch_id": "B1.7:d1",
+  "assignment_seal": "sha256:608c484c415d1dbbb84ccc256d60203d8fe0d9599e67ce8bb663a4b2778d2a50",
+  "reviewed_artifact": "git:05290a079127759f6ae1307dbcda4e6d3e800a6c",
+  "maker_repair_artifact": "git:ee69ff96de9ec5cb4be144c5c01944803cbdc4dc",
+  "package": {
+    "path": "example-workflows/tiktok-video",
+    "digest": "sha256:d13322cae66f674b0b9bd19d92fc9fbd40ff2139cc3c9ebb95d28884edc1eb42"
+  },
+  "standard_evidence": {
+    "pins": {
+      "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+      "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+    },
+    "read_whole_and_rederived": true,
+    "owner": "C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md",
+    "application": "Whole orch-code including git lens and orch-workflow-authoring narrowing. Authoring owner, composition, token economy, visibility, standard contract, vocabulary, documentation and verification guidance read; research standard, private helpers, method and quality standards inspected as scoped evidence."
+  },
+  "findings": [
+    {
+      "id": "R2",
+      "blocking": true,
+      "priority": "P2",
+      "class": "correctness",
+      "path": "tests/test_tiktok_video_package.py",
+      "line": 37,
+      "title": "Copied-package fixture crashes when temp and checkout use different Windows drives",
+      "evidence": "Completed CI run 34228812102, job 102069466007, Python3.13 Windows shard1: test_contained_links_and_escape_control and test_literal_sequence_resolves_in_correct_public_scope error in packages.rel. TemporaryDirectory chose C:/Users/RUNNER~1/AppData/Local/Temp while grade patches packages.ROOT to Path(ROOT.anchor), D:/. Path.relative_to raises ValueError before intended negative diagnostics. 54 modules/1287 tests, 0 failures,2 errors,12 skipped; process exit1. Local same-drive gate passes. PureWindowsPath control separately confirms same-drive relative_to succeeds and different-drive raises.",
+      "cause": "Fixture assumes system temporary directory shares repository drive; two negative package mutations share this setup/grade boundary.",
+      "history": "The same setUp and grade implementation exists at accepted prior tip1256584e51c7a4d7068a7d5d555bb5fd7f07bf48. Newly observed pre-existing failure, not attributed to ordinary research correction or R1 repair.",
+      "smallest_remedy": "Keep temporary fixture on the repository drive, e.g. TemporaryDirectory(dir=ROOT.parent), with existing cleanup and all negative assertions retained. Do not weaken validators or assertions, or alter package bytes.",
+      "criterion": "Code correctness at supported CI boundary; AGENTS.md local green is provisional pending checks.yml matrix. rules/verification.md section9 permits this blocking correctness finding.",
+      "successor_scope": [
+        "tests/test_tiktok_video_package.py"
+      ],
+      "validation": "Run package/probe scoped tests and drive-layout can-fail evidence in repair; independent joined full gate and completed Windows CI on repaired identity. A test-only repair leaves the package digest unchanged."
+    }
+  ],
+  "cause_threads": [
+    {
+      "cause": "Cross-drive fixture assumption",
+      "findings": [
+        "R2"
+      ]
+    }
+  ],
+  "resolved_prior_findings": [
+    {
+      "id": "R1",
+      "prior_findings": "research/tiktok-video-cut/research-owner-review.json@git:44a0b3b2d115aaed5382ad23caa8e94948b5d382",
+      "prior_reading": "On bd8d24d2e4ae1cd14062b9d373205db28574460b, no-cache gate exit1: cross-tier warning count30 exceeds unchanged ceiling29. Other four checks exit0. This remains historical failure.",
+      "current_reading": "Repair removes only No prior record is rewritten from admission.md. Concrete old-artifact retention remains. Current clean source gate exit0, cross-tier warnings29; no ceiling/test weakening.",
+      "resolved": true
+    }
+  ],
+  "acceptance_observations": [
+    "The public tiktok-video body owns two ordinary orch-do/ orch-research lanes, optionally parallel, followed by orch-judge over both actual packets under exact maker research digest. Required coverage precedes renderer pins and original production.",
+    "Semantic questions, source policy/recency/rigor/bounds/store, cited dated observations, available viewing timestamps, metrics sampling/causality limits, contradictions and gaps remain explicit. Existing evidence and accepted dossier are attributed inputs after relevance assessment; no duplicate external acquisition or HTML conversion is mandatory.",
+    "Current public body/admission/inventory has no super-research, research-acquire or html-dossier dependency. Controls reject old public call, reintroduced acquisition method and missing research judge pin.",
+    "Exactly four current correction paths differ from prior tip: public body, admission, inventory, existing package test. git diff --exit-code confirms scripts, scaffold/lock, private helpers/method/standards, creative/renderer/review references unchanged. Historical review is untouched. Catalog already describes research then direction then production.",
+    "Public/private literal name resolution and contained resource controls pass locally. Helpers retain distinct document/git workspaces, identical maker/judge standards, original-expression constraints, partial returns and separation of technical probe from actual motion/listening acceptance.",
+    "Fresh-pin handoff is supported as proposed: preserve old dispatch evidence; separate project copy of accepted whole package, normal trust/check/sync; fresh actual named public frame with new ordinary research do/do/judge launches/landings; ordinary downstream maker/review may retain relevant direction/render bytes after assessing new inputs. Current output probe and independent review bind returned candidate under fresh pins. This handoff was assessed, not executed here."
+  ],
+  "local_gate": {
+    "commands": [
+      {
+        "argv": [
+          "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+          "tools/validate.py"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:56:45.869928Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:56:22.259965Z",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "6f3a717f993558a4a1167a9277e03edd75ca6e774a9fffd3e89f2acf347f7846"
+      },
+      {
+        "argv": [
+          "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+          "tools/run_tests.py"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:59:36.819356Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:56:45.870329Z",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "ae19f89bb9a8caecb4207f45f4b512f7e2a448078ed928725833b327b8c65666"
+      },
+      {
+        "argv": [
+          "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+          "tools/run_serial_compat.py"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:59:42.448912Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:59:36.819455Z",
+        "stderr_sha256": "7560bb2e1edea77491596764c6d27b2e897987ed88a0a7d7aac84d2ef7b59a9a",
+        "stdout_sha256": "c2d6801308b3eaaea0f7e6a7c262fdc45867435b6fa933a7fcc560f2819ccbb7"
+      },
+      {
+        "argv": [
+          "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+          "install.py",
+          "--dry-run"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:56:24.868786Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:56:22.260093Z",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "2a7cd92dcb448e56e96637a3f812a6bdb468f74344cec5ee6ff1aaa965da6a49"
+      },
+      {
+        "argv": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "cached": false,
+        "ended_at": "2026-09-08T12:56:22.310789Z",
+        "exit_status": 0,
+        "started_at": "2026-09-08T12:56:22.260235Z",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "dirty": false,
+    "exit": 0,
+    "kind": "required-check-run/v1",
+    "repository_identity": "05290a079127759f6ae1307dbcda4e6d3e800a6c",
+    "tree_identity": "08b08dd98ae1e9c2340c22e3a3cec64dffc20b73"
+  },
+  "local_gate_summary": "Watched all five to completion within 1800s outer timeout; wrapper0,validate0,tests0 (108 modules/2251 tests/0 failures/0 errors/14 skips),serial0 (12 tests/1 skip),install dry-run0,git diff --check0. This local result does not erase hosted failure.",
+  "hosted_evidence": {
+    "run": "34228812102",
+    "job": "102069466007",
+    "checked_merge": "4e41a9dbf432253490fc1643381f13e560a55fe4",
+    "source_head": "05290a079127759f6ae1307dbcda4e6d3e800a6c",
+    "base": "ce78596e27a37ba6c6b6aaf11b5b40dd4a2e4bb0",
+    "log_sha256": "e868398ee704aca5673b0cff04eea7ed1351f1959821e99142bde51a8ab88dea",
+    "acquisition": "Root supplied completed gh job log with observed acquisition exit0. Judge read fixed log and checked merge identity printed by checkout; no hosted command was dispatched by this judge.",
+    "observed_process_exit": 1,
+    "excerpt_normalization": "Selected timestamp lines with trailing whitespace removed; original complete log digest above is unchanged."
+  },
+  "controls": {
+    "route": "previous-public-route1;unwanted-acquisition1;missing-research-review-pin1;corrected0; harness0 with 600s outer/120s child bounds. Previous git-show subprocess0. Target unchanged.",
+    "drive": [
+      {
+        "temporary_drive": "C",
+        "patched_validator_drive": "C",
+        "expected_ValueError": false,
+        "observed_ValueError": false,
+        "result": "temp\\video\\SKILL.md"
+      },
+      {
+        "temporary_drive": "C",
+        "patched_validator_drive": "D",
+        "expected_ValueError": true,
+        "observed_ValueError": true,
+        "result": "'C:\\\\temp\\\\video\\\\SKILL.md' is not in the subpath of 'D:\\\\'"
+      }
+    ]
+  },
+  "evidence_files": [
+    {
+      "path": ".orch-notes/B1.7-required.json",
+      "sha256": "72650e8a989dfc03b09e2d8633795bd7d9e3c59c135ed1868863b68e8d10a1fc",
+      "identity_bytes": "UTF-8 text, BOM removed and line endings normalized to LF"
+    },
+    {
+      "path": ".orch-notes/B1.7-required.log",
+      "sha256": "b59fd5f72fe5844a190084825402f13e82c27945e4bd5461a705a9578e55bf88",
+      "identity_bytes": "UTF-8 text, BOM removed and line endings normalized to LF"
+    },
+    {
+      "path": ".orch-notes/B1.7-route-controls.py",
+      "sha256": "69a7e2f1f9db8284d739388455ab9bef0b8602835d77ddece33e5bc990a1a528",
+      "identity_bytes": "UTF-8 text, BOM removed and line endings normalized to LF"
+    },
+    {
+      "path": ".orch-notes/B1.7-route-controls.json",
+      "sha256": "93861cd8ce365f8f257b9f4d3ffc02c091ea6085a465e5ec54e326689a3d690a",
+      "identity_bytes": "UTF-8 text, BOM removed and line endings normalized to LF"
+    },
+    {
+      "path": ".orch-notes/B1.7-pins.json",
+      "sha256": "96139ac773fca3d2c0ec395d5515b7406a86a1b5cc9d78b5d3514d68ab03b012",
+      "identity_bytes": "UTF-8 text, BOM removed and line endings normalized to LF"
+    },
+    {
+      "path": ".orch-notes/B1.7-ci-windows-excerpt.log",
+      "sha256": "e36b0c73194d0a5ce75fa706a9a732af65f48637b61ca8e4e132d42d55cf24a5",
+      "identity_bytes": "UTF-8 text, BOM removed and line endings normalized to LF"
+    },
+    {
+      "path": ".orch-notes/B1.7-cross-drive-control.json",
+      "sha256": "017210a4e5b61cf1830e171747ee9167760e3cdd2c23df94600000744d0ca067",
+      "identity_bytes": "UTF-8 text, BOM removed and line endings normalized to LF"
+    }
+  ],
+  "gaps": [
+    "R2 prevents complete cross-platform source acceptance despite locally green suite and no new package-authoring defect.",
+    "Corrected actual named live admission, generated project adapters and current-pin research/direction/production returns remain root-owned and unobserved here.",
+    "No actual 30-second audiovisual or rights acceptance in this source review; old-package output, unheard audio, alternative renderer and endpoint creative quality retain their existing evidence limits.",
+    "No other completed hosted job was independently inspected; root reports Linux/frontend pass but no broader hosted pass is inferred."
+  ],
+  "scope_accounting": "Only new durable review/evidence files written. No source repair, installation, home/global/runtime mutation, acquisition, rendering, paid provider, social publication, PR merge or delegation. Prescribed source review and joined gate completed. All dispatched checks returned; no background work remains. Terminal disposition belongs to join.",
+  "command_accounting": {
+    "exit_0": "All read/discovery/rg/git diff/status/log/show commands, scratch creation, pin derivation, acceptance/review-progress/gate-evidence filings and friction filings, route-control wrapper/harness, completed full gate and its five children. CI reader commands0, preserving observed hosted child1. PureWindowsPath control asserts expected outcomes. Review-generation/commit/close observations follow in ticket outcome.",
+    "exit_1": [
+      "Batched Get-Content attempted absent guessed tests/test_warning_ceiling.py; logged and recovered via rg. All other reads in batch succeeded; output truncation recovered in bounded reads.",
+      "Initial staged git diff --cached --check rejected whitespace in newly copied CI excerpt and control script. Friction logged; trimmed new evidence whitespace only, retained original complete CI log hash, then reran staged check."
+    ],
+    "limits": "Gate runner buffered output until completion; PTY session was watched within same turn and never detached. Evidence reads are not fresh external research."
+  }
+}

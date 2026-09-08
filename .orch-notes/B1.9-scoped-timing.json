@@ -1,0 +1,61 @@
+{
+ "effective_workers": 2,
+ "interpreter": {
+  "executable": "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+  "version": "3.13.9"
+ },
+ "limitations": [
+  "CPU and disk utilization are not sampled."
+ ],
+ "modules": [
+  {
+   "duration_seconds": 1.068004,
+   "errors": 0,
+   "expected_failures": 0,
+   "failures": 0,
+   "finished_seconds": 1.069736,
+   "module": "tests.test_tiktok_video_package",
+   "ok": true,
+   "skipped": 0,
+   "started_seconds": 0.001732,
+   "tests": 5,
+   "unexpected": 0
+  },
+  {
+   "duration_seconds": 0.277914,
+   "errors": 0,
+   "expected_failures": 0,
+   "failures": 0,
+   "finished_seconds": 0.27974,
+   "module": "tests.test_tiktok_video_probe",
+   "ok": true,
+   "skipped": 0,
+   "started_seconds": 0.001826,
+   "tests": 6,
+   "unexpected": 0
+  }
+ ],
+ "occupancy": {
+  "capacity_ratio": 0.626493,
+  "peak_active_workers": 2
+ },
+ "ok": true,
+ "outcomes": {
+  "errors": 0,
+  "expected_failures": 0,
+  "failures": 0,
+  "skipped": 0,
+  "tests": 11,
+  "unexpected": 0
+ },
+ "platform": {
+  "description": "win32",
+  "system": "nt"
+ },
+ "recorded_at_utc": "2026-09-08T13:10:17Z",
+ "requested_workers": 2,
+ "revision": "10565acdfa35f4a768a4dc803c9d9b5c5c66744d",
+ "schema": "orchflows.test-timing.v1",
+ "summed_module_time_seconds": 1.345918,
+ "wall_time_seconds": 1.074167
+}

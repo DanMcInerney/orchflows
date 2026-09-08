@@ -1,0 +1,36 @@
+{
+  "reviewer": "B1.5",
+  "dispatch_id": "B1.5:d1",
+  "assignment_seal": "sha256:4793c1df282fecc5fa8697823f9cf34aeacb40cad5f68d2f86cf5f3498601a07",
+  "reviewed_commit": "09921d2bc7aa8c03aa384da4a3322c878954cc46",
+  "method": "orch-judge",
+  "profile": "orch_planner",
+  "standards": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "orch-design": "sha256:01c20cc2cdfed763aac3f0ac1d036b5c2ee002173f0270c2a47b4c7a921511fe"
+  },
+  "orch-code": {
+    "correctness": "R01 blocks a green required verification reading; other scoped workflow/source and three detached safety regressions pass. Frontend timing observation is disclosed.",
+    "contract_fidelity": "Canonical standard-only API shape accepted; contained sources, separate standard operands, URL continuity and explicit stale recovery checked.",
+    "diff_and_shape": "No product changes made by review. Feature ownership/helper extraction follows existing idiom; the extraction consumer mismatch is cause R01. Source/raw navigation remains read-only.",
+    "can_fail_evidence": "R01 failed twice without altering the fixed tree. Original maker red/green artifacts were read as historical evidence; independent browser assertions fail on missing visibility/activation and did expose the documented harness/transport observations. No product mutation to manufacture a red.",
+    "detached_safety": "Exact diff against accepted 29b06158f361df1b49da65d600357fa3bdb216ec for workspace_return.py and detached_integration_cases.py was empty (exit 0); all three destination safety regressions passed."
+  },
+  "orch-design": {
+    "identity_set": "view-manifest.json at wide 1440x1024 and compact 1024x768, 64 identities; extra selected/recovery/forced-color/stress/nested/current-live captures.",
+    "design_language": "Dark palette and cyan navigation preserved; summary/task/status precede disclosures; readable list precedes dense graph; compact selection appears in visible inspector. Operational sampled labels 14px; status spacing 4px 8px traces to token scale.",
+    "accessibility": "64 direct compiled Axe WCAG22AA scans without violations; source audit covers reflow, forced colors and reduced motion; real activation and non-color text separately checked.",
+    "state_and_consistency": "9-route API pending/error/retry and stale recovery independently replayed across both breakpoints. Drawers, tabs, source links, statuses and lists carry consistent affordances.",
+    "limits": [
+      "The full repository required suite is intentionally not run here: the sealed ticket assigns it to the root close after review/repair.",
+      "Frontend test run: 149/150 passed; one workflow lazy-import lookup exceeded its one-second wait under concurrent checks. The affected two-test module passed on the isolated recheck. This observation does not establish a product blocker; the root gate remains decisive.",
+      "Two synthetic graph runs returning identical HTTP 200 bodies without ETags hid all 25 graph nodes after rapid interaction. This was not reproduced with canonical ETag/304 behavior or changing metadata with changing ETags (all 75 graph activations per width passed). Retain the synthetic observation as unresolved, not an established canonical-feed defect or a universal graph claim.",
+      "Run objective headings still inherit existing first-ticket Goal semantics. Tickets using plural standards retain an empty scalar standard in the existing API projection, shown as Unavailable; this does not trigger the original pack/schema rejection. No expansion into objective or plural-standard projection redesign was authorized.",
+      "Manifest capture/audit starts Vite. Its 64 source identities are distinct from the independently captured and Axe-scanned 64 committed-distribution identities. Scratch normalized build matched all 45 committed distribution files.",
+      "The manifest keyboard audit tests programmatic focus reach, not complete sequential Tab order. Separate real pointer/Enter/Space activations prove the graph affordances requested by F02.",
+      "No user-approved goldens were supplied. Captures support judgment, not pixel-golden approval. Representative captures were inspected visually; all 64 compiled identities were captured and mechanically scanned, not all individually judged by eye.",
+      "Recovery covers API pending/503/retry/stale refresh, not arbitrary failed JavaScript chunk downloads. Current live data changes independently of the fixed code identity; the captured timestamp and selected IDs bound those observations."
+    ]
+  },
+  "pin_verification": "Both full standards were read. Installed standards_support.tree_digest independently matched the pinned directory identities; raw file hash is not the standards identity."
+}

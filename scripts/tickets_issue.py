@@ -5,6 +5,7 @@ from contextlib import nullcontext
 from datetime import datetime, timezone
 
 if __package__:
+    from .tickets_install_guard import installation_lock
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
@@ -20,6 +21,7 @@ if __package__:
         _run_lock, _segment_error, _tickets_root, _write_identity,
     )
 else:
+    from tickets_install_guard import installation_lock
     from tickets_admission import ADMISSION_PENDING
     from tickets_emission import grade_run_emission
     from tickets_format import (
@@ -115,6 +117,14 @@ def _invalidate_assignment(text):
 
 
 def _cmd_new(rest):
+    try:
+        with installation_lock():
+            return _cmd_new_locked(rest)
+    except OSError as error:
+        return {"error": f"new refused: {error}"}
+
+
+def _cmd_new_locked(rest):
     """Create one current-format ticket."""
     args = list(rest)
     executor = _extract_flag(args, "--executor")
@@ -203,7 +213,14 @@ def _project_file_ticket(
 
 
 def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = False):
-    """Write one ticket into the run, graded, under the run lock."""
+    """Write under installation then run lock; nested callers hold both."""
+    if not _lock_held:
+        try:
+            with installation_lock():
+                with _run_lock(run):
+                    return _issue_ticket(run, ticket_id, text, _lock_held=True)
+        except OSError as error:
+            return {"error": f"unwritable ticket: {error}"}
 
     defects = ticket_defects(text)
     if defects:
