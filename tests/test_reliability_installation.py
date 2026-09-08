@@ -26,7 +26,7 @@ class PublicationTests(unittest.TestCase):
                     lib_copies=[(source, home / "lib" / "module.py")],
                     scripts=[(source, home / "bin" / "module.py")]), source
 
-    def active(self, plan, content="---\nid: B1\nrun: r\nstatus: claimed\n---\n"):
+    def active(self, plan, content="---\nid: B1\nrun: r\nstatus: claimed\nexecutor: orch-do\nprofile: orch-worker\n---\n"):
         path = plan.scope_home / "state" / "tickets" / "r" / "B1.md"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content)
@@ -140,6 +140,26 @@ class PublicationTests(unittest.TestCase):
             application.apply_plan(plan, "new")
             self.assertTrue((parked / "tickets.py").is_file())
             self.assertEqual("VALUE = 2\n", (plan.bin_dir / "module.py").read_text())
+
+    def test_unpinned_frame_and_draft_allow_update_but_pinned_frame_and_runtime_change_refuse(self):
+        with tempfile.TemporaryDirectory() as raw:
+            plan, source = self.fixture(Path(raw))
+            application.apply_plan(plan, "old")
+            frame = self.active(plan, "---\nid: B1\nrun: r\nstatus: claimed\nframe: true\n---\n")
+            draft = frame.with_name("B2.md")
+            draft.write_text("---\nid: B2\nrun: r\nstatus: pending\nstandards: [demo]\n---\n")
+            source.write_text("VALUE = 2\n")
+            application.apply_plan(plan, "new")
+            frame.write_text("---\nid: B1\nrun: r\nstatus: claimed\nframe: true\nworkflow: demo\nworkflow_digest: sha256:" + "a" * 64 + "\n---\n")
+            runtime = Path(raw) / "runtime.py"
+            runtime.write_text("VALUE = 3\n")
+            plan.scripts = [(runtime, plan.bin_dir / "module.py")]
+            with self.assertRaisesRegex(RuntimeError, "protected by active references"):
+                application.apply_plan(plan, "runtime-change")
+            self.assertEqual("VALUE = 2\n", (plan.bin_dir / "module.py").read_text())
+            frame.write_text("---\nid: B1\nrun: r\nstatus: claimed\nframe: true\nworkflow: demo\nworkflow_digest: malformed\n---\n")
+            with self.assertRaisesRegex(RuntimeError, "census unavailable"):
+                application.apply_plan(plan, "malformed-pin")
 
     def test_clean_flat_and_reader_import_and_architecture_link(self):
         with tempfile.TemporaryDirectory() as raw:

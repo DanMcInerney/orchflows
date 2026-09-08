@@ -13,6 +13,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import re
 import shutil
 import tempfile
 from contextlib import contextmanager
@@ -21,6 +22,39 @@ from pathlib import Path
 from scripts import orchflows_node, state_root
 from scripts.tickets_format import TERMINAL_STATES, VALID_STATUSES, _parse_frontmatter
 from .models import _frontend_manifest_identity
+
+
+def _protects_payload(data):
+    """Unpinned glue owns no executable invocation; malformed pins refuse."""
+    stamped = False
+    draft = data.get("status") == "pending" and not data.get("assignment_seal")
+    standards = data.get("standards") or []
+    if not isinstance(standards, list):
+        raise ValueError("standards reference is not a list")
+    for value in standards:
+        if draft and isinstance(value, str) and "@" not in value:
+            continue
+        if not isinstance(value, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*@sha256:[0-9a-f]{64}", value):
+            raise ValueError(f"malformed stamped standard reference: {value!r}")
+        stamped = True
+    for name in ("skill", "workflow"):
+        value, digest = data.get(name), data.get(name + "_digest")
+        if not value and not digest:
+            continue
+        if draft and value and not digest:
+            continue
+        if not isinstance(value, str) or not value or not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+            raise ValueError(f"malformed stamped {name} reference")
+        stamped = True
+    if stamped:
+        return True
+    if data.get("frame") in (True, "true") and data.get("profile") in (None, "none") and data.get("executor") in (None, "none"):
+        return False
+    if draft:
+        return False
+    if data.get("profile") in ("orch-worker", "orch-planner") or data.get("executor") in ("orch-do", "orch-judge"):
+        return True
+    raise ValueError("nonterminal record has no recognized frame, draft or invocation identity")
 
 
 def _state(plan):
@@ -51,7 +85,7 @@ def _active(plan, previously_installed):
                 status = data.get("status")
                 if status not in VALID_STATUSES:
                     raise ValueError(f"unknown ticket status at {path}: {status!r}")
-                if status not in TERMINAL_STATES:
+                if status not in TERMINAL_STATES and _protects_payload(data):
                     active.append(str(path))
         return active
     except (OSError, ValueError, TypeError) as error:
@@ -181,7 +215,7 @@ def publication(plan, old):
             payloads = []
         if changes and (plan.bin_dir / "tickets.py").is_file():
             required = ("tickets_install_guard.py", "tickets_issue.py", "tickets_attempts.py",
-                        "tickets_dispatch_facade.py", "tickets_mint.py", "tickets_frame.py")
+                        "tickets_dispatch_facade.py", "tickets_mint.py", "tickets_frame.py", "tickets_seal.py")
             coordinated = all((plan.bin_dir / name).is_file() and "installation_lock" in
                               (plan.bin_dir / name).read_text(encoding="utf-8") for name in required)
             if not coordinated:

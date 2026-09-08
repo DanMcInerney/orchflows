@@ -3,9 +3,13 @@
 An install stages the library, scripts and browser distribution before
 replacing them. It takes `tickets_install_guard.installation_lock` before
 any run lock; issuance and dispatch use the same ordering. Missing or
-unreadable ticket state refuses publication. Every nonterminal ticket,
-including a frame or suspended assignment, conservatively protects the
-whole existing payload. Identical bytes can receive a new receipt without
+unreadable ticket state refuses publication. Every active pinned invocation
+or role-bearing worker, including a pinned frame or suspended assignment,
+conservatively protects the whole existing payload: an emitted close command
+also depends on the runtime scripts. Verified unpinned role-none frames and
+unstamped pending drafts do not block an update; sealing takes the same
+installation lock before creating their pins. Unknown identities or malformed
+pins fail closed. Identical bytes can receive a new receipt without
 moving the active directories. A payload change requires closing or
 retiring its active owners through the ordinary lifecycle.
 
