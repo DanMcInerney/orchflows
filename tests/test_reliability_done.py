@@ -7,6 +7,7 @@ context managers / cleanups (selected-module-boundary serial classification).
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -136,10 +137,12 @@ class DurableDoneTest(unittest.TestCase):
                              for call in spawn.call_args_list))
 
     def test_interrupted_supervision_cannot_publish_success(self):
-        child = mock.Mock(pid=12345, returncode=-1)
+        child = mock.Mock(pid=12345, returncode=-1,
+                          stdout=io.BytesIO(), stderr=io.BytesIO())
         child.wait.side_effect = KeyboardInterrupt
         with mock.patch.object(evidence, "artifact_identity", return_value={"kind": "git-source"}), \
                 mock.patch.object(evidence.subprocess, "Popen", return_value=child), \
+                mock.patch.object(evidence, "_WindowsJob", return_value=None), \
                 mock.patch.object(evidence, "_terminate") as cleanup:
             reading, refusal = tickets_done._command_reading(command("pass"), self.tree)
         self.assertIsNone(reading)
@@ -164,14 +167,25 @@ class DurableDoneTest(unittest.TestCase):
             f"marker = Path({str(marker)!r})\n"
             "for _ in range(200):\n marker.write_text(str(time.time()))\n time.sleep(.1)\n",
             encoding="utf-8")
-        code = ("import subprocess,sys,time; "
-                f"subprocess.Popen([sys.executable,{str(child_script)!r}]); time.sleep(20)")
+        code = ("import subprocess,sys; "
+                f"subprocess.Popen([sys.executable,{str(child_script)!r}])")
         record, _, _ = evidence.run_command([sys.executable, "-c", code], self.tree, 2)
         self.assertEqual("timeout", record["outcome"])
         self.assertNotIn("cleanup_error", record)
         before = marker.read_bytes()
         time.sleep(.3)
         self.assertEqual(before, marker.read_bytes())
+
+    def test_inherited_streams_are_drained_before_success(self):
+        child_code = "import time; time.sleep(.5); print('late-output',flush=True)"
+        code = ("import subprocess,sys; "
+                f"subprocess.Popen([sys.executable,'-c',{child_code!r}])")
+        try:
+            record, out, _ = evidence.run_command([sys.executable, "-c", code], self.tree, 3)
+            self.assertEqual("completed", record["outcome"])
+            self.assertIn(b"late-output", out)
+        finally:
+            time.sleep(.8)  # The counterexample's child has a fixed half-second life.
 
     def test_old_verification_reading_remains_readable(self):
         line = tickets_done.verification_line({"form": "command", "command": "old",

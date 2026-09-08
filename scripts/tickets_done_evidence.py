@@ -13,6 +13,8 @@ import json
 import os
 import signal
 import subprocess
+import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -103,6 +105,100 @@ def _write(path: Path, record: dict) -> dict:
     return {"path": str(path), "sha256": digest(raw)}
 
 
+class _WindowsJob:
+    """Contain descendants before the suspended initial thread can execute."""
+    def __init__(self):
+        import ctypes
+        from ctypes import wintypes
+        self.ctypes, self.types = ctypes, wintypes
+        self.api = ctypes.WinDLL("kernel32", use_last_error=True)
+        self.api.CreateJobObjectW.restype = wintypes.HANDLE
+        self.api.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+        self.api.OpenThread.restype = wintypes.HANDLE
+        self.api.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+        self.api.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+        self.api.CloseHandle.argtypes = [wintypes.HANDLE]
+        self.api.ResumeThread.argtypes = [wintypes.HANDLE]
+        self.handle = self.api.CreateJobObjectW(None, None)
+        if not self.handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+
+    def bind_and_resume(self, child):
+        ctypes, types, api = self.ctypes, self.types, self.api
+        if not api.AssignProcessToJobObject(self.handle, int(child._handle)):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+        class ThreadEntry(ctypes.Structure):
+            _fields_ = [(name, types.DWORD) for name in (
+                "size", "usage", "thread", "process", "base", "delta", "flags")]
+
+        api.Thread32First.argtypes = [types.HANDLE, ctypes.POINTER(ThreadEntry)]
+        api.Thread32Next.argtypes = [types.HANDLE, ctypes.POINTER(ThreadEntry)]
+        snapshot = api.CreateToolhelp32Snapshot(4, 0)  # TH32CS_SNAPTHREAD
+        if snapshot == ctypes.c_void_p(-1).value:
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            entry = ThreadEntry()
+            entry.size = ctypes.sizeof(entry)
+            found = api.Thread32First(snapshot, ctypes.byref(entry))
+            while found:
+                if entry.process == child.pid:
+                    thread = api.OpenThread(2, False, entry.thread)  # THREAD_SUSPEND_RESUME
+                    if not thread:
+                        raise ctypes.WinError(ctypes.get_last_error())
+                    try:
+                        if api.ResumeThread(thread) == -1:
+                            raise ctypes.WinError(ctypes.get_last_error())
+                        return
+                    finally:
+                        api.CloseHandle(thread)
+                found = api.Thread32Next(snapshot, ctypes.byref(entry))
+            raise OSError("suspended command has no initial thread")
+        finally:
+            api.CloseHandle(snapshot)
+
+    def terminate(self):
+        if not self.api.TerminateJobObject(self.handle, 1):
+            raise self.ctypes.WinError(self.ctypes.get_last_error())
+        ctypes, types = self.ctypes, self.types
+
+        class Accounting(ctypes.Structure):
+            _fields_ = [("user", ctypes.c_longlong), ("kernel", ctypes.c_longlong),
+                        ("period_user", ctypes.c_longlong), ("period_kernel", ctypes.c_longlong),
+                        ("faults", types.DWORD), ("total", types.DWORD),
+                        ("active", types.DWORD), ("terminated", types.DWORD)]
+
+        self.api.QueryInformationJobObject.argtypes = [
+            types.HANDLE, ctypes.c_int, ctypes.c_void_p, types.DWORD, ctypes.c_void_p]
+        deadline = time.monotonic() + 30
+        while True:
+            accounting = Accounting()
+            if not self.api.QueryInformationJobObject(
+                self.handle, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None):
+                raise ctypes.WinError(ctypes.get_last_error())
+            if accounting.active == 0:
+                return
+            if time.monotonic() >= deadline:
+                raise OSError("command job still has active descendants after termination")
+            time.sleep(.01)
+
+    def close(self):
+        self.api.CloseHandle(self.handle)
+
+
+def _drain(pipe, stream, errors):
+    try:
+        with pipe:
+            while True:
+                raw = pipe.read1(65536)
+                if not raw:
+                    break
+                stream.write(raw)
+                stream.flush()
+    except (OSError, ValueError) as error:
+        errors.append(str(error))
+
+
 def _terminate(child) -> None:
     """Stop the owned process tree, then reap its immediate child."""
     if os.name == "nt":
@@ -162,33 +258,75 @@ def run_command(argv, tree, timeout: float, *, command=None, refusal=None,
         "stderr_path": str(err_path),
     }
     _write(path, record)
-    child = None
+    child, job, pumps, stream_errors = None, None, [], []
     with out_path.open("wb") as out, err_path.open("wb") as err:
         try:
             if refusal is not None:
                 record.update(outcome="spawn-failed", error=refusal)
             else:
+                if os.name == "nt":
+                    job = _WindowsJob()
+                deadline = time.monotonic() + timeout
                 child = subprocess.Popen(
-                    list(argv), cwd=str(root), stdout=out, stderr=err, env=env,
+                    list(argv), cwd=str(root), stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE, env=env,
                     start_new_session=os.name != "nt",
+                    creationflags=4 if job is not None else 0,  # CREATE_SUSPENDED
                 )
                 record["pid"] = child.pid
                 _write(path, record)
-                record["exit_status"] = child.wait(timeout=timeout)
+                if job is not None:
+                    job.bind_and_resume(child)
+                for pipe, stream in ((child.stdout, out), (child.stderr, err)):
+                    pump = threading.Thread(target=_drain, args=(pipe, stream, stream_errors), daemon=True)
+                    pump.start()
+                    pumps.append(pump)
+                record["exit_status"] = child.wait(timeout=max(0, deadline - time.monotonic()))
+                for pump in pumps:
+                    pump.join(timeout=max(0, deadline - time.monotonic()))
+                    if pump.is_alive():
+                        raise subprocess.TimeoutExpired(list(argv), timeout)
+                if stream_errors:
+                    raise OSError("; ".join(stream_errors))
                 record["outcome"] = "completed"
         except subprocess.TimeoutExpired as error:
             record.update(outcome="timeout", error=str(error))
         except (KeyboardInterrupt, SystemExit) as error:
             record.update(outcome="interrupted", error=type(error).__name__)
         except (OSError, ValueError) as error:
-            record.update(outcome="spawn-failed", error=str(error))
+            record.update(outcome="spawn-failed" if child is None else "supervision-failed", error=str(error))
         finally:
-            if child is not None and record["outcome"] != "completed":
-                try:
-                    _terminate(child)
+            try:
+                if job is not None:
+                    job.terminate()
+                elif child is not None and record["outcome"] == "completed":
+                    try:
+                        os.killpg(child.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                if child is not None and record["outcome"] != "completed":
+                    if job is None:
+                        _terminate(child)
+                    else:
+                        child.wait(timeout=30)
                     record["exit_status"] = child.returncode
-                except (OSError, subprocess.SubprocessError) as error:
-                    record["cleanup_error"] = str(error)
+            except (OSError, subprocess.SubprocessError) as error:
+                record["cleanup_error"] = str(error)
+                if record["outcome"] == "completed":
+                    record.update(outcome="supervision-failed", error=str(error))
+                if child is not None and child.poll() is None:
+                    try:
+                        _terminate(child)
+                        record["exit_status"] = child.returncode
+                    except (OSError, subprocess.SubprocessError) as cleanup_error:
+                        record["cleanup_error"] += f"; {cleanup_error}"
+            finally:
+                if job is not None:
+                    job.close()
+            for pump in pumps:
+                pump.join(timeout=30)
+                if pump.is_alive():
+                    record.update(outcome="supervision-failed", cleanup_error="output stream did not close")
             out.flush()
             err.flush()
             os.fsync(out.fileno())
