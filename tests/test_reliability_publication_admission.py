@@ -116,16 +116,25 @@ class PublicationAdmissionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             plan, _, home = self.runtime_fixture(Path(raw))
             for name in ('tickets.py', 'tickets_install_guard.py', 'tickets_issue.py',
-                         'tickets_attempts.py', 'tickets_dispatch_facade.py', 'tickets_mint.py',
+                         'tickets_dispatch_facade.py', 'tickets_mint.py',
                          'tickets_frame.py', 'tickets_seal.py'):
                 (plan.bin_dir / name).write_text('# installation_lock\n')
-            (plan.bin_dir / 'tickets_lifecycle.py').write_text('# legacy lifecycle writer\n')
+            attempts = ('from tickets_install_guard import guarded_dispatch_open as _cmd_dispatch_open, '
+                        'guarded_dispatch_replace as _cmd_dispatch_replace\n')
             before = plan.receipt_path.read_bytes()
             with patch.object(runtime, 'private_runtime_home', return_value=home), patch.object(
                 runtime, 'private_runtime_action', return_value='repair'
             ), patch.object(application, '_create_private_runtime') as create:
-                with self.assertRaisesRegex(RuntimeError, 'old bytes retained'):
-                    application.apply_plan(plan, 'repair')
-                create.assert_not_called()
+                for missing in ('lifecycle', 'open', 'replace'):
+                    with self.subTest(missing=missing):
+                        (plan.bin_dir / 'tickets_lifecycle.py').write_text(
+                            '# legacy lifecycle writer\n' if missing == 'lifecycle' else '# installation_lock\n')
+                        # A name in a comment cannot stand in for the guarded binding.
+                        changed = attempts if missing == 'lifecycle' else attempts.replace(
+                            ' as _cmd_dispatch_' + missing, ' as unguarded_' + missing)
+                        (plan.bin_dir / 'tickets_attempts.py').write_text(changed + '# ' + attempts)
+                        with self.assertRaisesRegex(RuntimeError, 'old bytes retained'):
+                            application.apply_plan(plan, 'repair')
+                        create.assert_not_called()
             self.assertEqual(before, plan.receipt_path.read_bytes())
             self.assertEqual('OLD ACTIVE DEPENDENCY', (home / 'dependency.txt').read_text())
