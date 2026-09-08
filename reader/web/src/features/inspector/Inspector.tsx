@@ -90,7 +90,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
   ];
   const identities = [
     ticket.executor || "executor unavailable",
-    ticket.pack || "pack unavailable",
+    ticket.standard || "standard unavailable",
     ticket.bound ? `bound ${ticket.bound}` : "bound unavailable"
   ];
 

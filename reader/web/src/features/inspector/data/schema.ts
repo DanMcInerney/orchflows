@@ -58,7 +58,7 @@ function ticket(value: unknown): value is TicketDetail {
     && strings(value.readiness.causal_chain)
     && record(value.sections)
     && typeof value.report === "string"
-    && typeof value.pack === "string"
+    && typeof value.standard === "string"
     && Array.isArray(value.history)
     && typeof value.raw === "string"
     && executorSource(value.executor_source)
