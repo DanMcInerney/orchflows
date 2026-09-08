@@ -340,7 +340,7 @@ class LandTest(unittest.TestCase):
         self.assertEqual(
             {"dispatch-outcome": "skipped", "workspace-integrate": "absent",
              "done": "graded", "dispatch-join": "committed",
-             "workspace-retire": "removed"},
+             "workspace-retire": "absent"},
             self.steps(landed),
         )
         self.assertIn("ready", landed["land"]["frontier"])
@@ -381,7 +381,7 @@ class LandTest(unittest.TestCase):
         self.assertEqual(
             {"dispatch-outcome": "committed", "workspace-integrate": "absent",
              "done": "graded", "dispatch-join": "committed",
-             "workspace-retire": "removed"},
+             "workspace-retire": "absent"},
             self.steps(landed),
         )
         self.assertIn("delivered", self.ticket_path().read_text(encoding="utf-8"))

@@ -42,6 +42,7 @@ if __package__:
         lease_of, parse_canonical_json, parse_done, unjudged_reason,
     )
     from .tickets_issue import NEW_DEFAULT_BOUND
+    from .tickets_install_guard import installation_lock
     from .tickets_join import JOIN_STATUSES, _cmd_dispatch_join
     from .tickets_lifecycle import _cmd_ready
     from .tickets_outcome import _cmd_dispatch_outcome
@@ -72,6 +73,7 @@ else:  # pragma: no cover - direct/installed flat script path
         lease_of, parse_canonical_json, parse_done, unjudged_reason,
     )
     from tickets_issue import NEW_DEFAULT_BOUND
+    from tickets_install_guard import installation_lock
     from tickets_join import JOIN_STATUSES, _cmd_dispatch_join
     from tickets_lifecycle import _cmd_ready
     from tickets_outcome import _cmd_dispatch_outcome
@@ -141,6 +143,15 @@ def _frame_fields(run: str, parent, done, bound: str, workflow_fields=None) -> d
 
 
 def _cmd_frame_open(rest):
+    """Hold publication exclusion before resolving or sealing any frame pins."""
+    try:
+        with installation_lock():
+            return _frame_open(rest)
+    except OSError as error:
+        return {"error": f"unable to guard frame open: {error}"}
+
+
+def _frame_open(rest):
     """Mint one frame, seal its goal, and open the attempt its journal rides."""
 
     args = list(rest)
@@ -573,6 +584,8 @@ def _closed_under_run_lock(run, frame_id, path, attempt, census, reason,
             return refusal
     filed = _cmd_dispatch_outcome([
         run, frame_id, "--note", _closing_note(census, reason, status, shape),
+        "--assignment-seal", attempt["assignment_seal"],
+        "--dispatch-id", attempt["dispatch_id"], "--by", attempt["owner"],
     ], _lock_held=True)
     if "error" in filed:
         return filed

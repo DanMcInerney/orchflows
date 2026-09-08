@@ -262,7 +262,7 @@ def claude_role_adapter_text(frontmatter: str, lib_skill_md: Path) -> str:
     before the contract the include pulls in."""
 
     role = frontmatter_field(frontmatter, "role")
-    return host_legal_frontmatter(frontmatter) + host_entry_line("claude") + fork_arrival_preamble(role) + f"@{lib_skill_md}\n"
+    return host_legal_frontmatter(frontmatter) + fork_arrival_preamble(role) + f"@{lib_skill_md}\n" + host_entry_line("claude")
 
 
 def by_name_pointer_text(frontmatter: str, role, lib_skill_md: Path) -> str:
@@ -353,9 +353,9 @@ def render_claude_agent(name: str, profile: dict) -> str:
     if binding.get("effort"):
         lines.append(f"effort: {binding['effort']}")
     claude_transport = (
-        " Write your contracted return into the dispatch's durable artifact, then "
-        "deliver it or a pointer to it via SendMessage to your spawner as your final "
-        "action - plain final text is not delivered to your caller."
+        " Write your contracted return into the durable artifact, then "
+        "deliver it or its pointer via SendMessage to your spawner as your final "
+        "action; plain final text never reaches your caller."
     )
     lines.extend(["---", "", f"Your established role is {name}. " + ROLE_INSTRUCTIONS + claude_transport])
     return "\n".join(lines) + "\n"

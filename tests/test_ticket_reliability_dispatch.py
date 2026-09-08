@@ -14,6 +14,50 @@ from scripts.tickets_format import _parse_frontmatter, _set_frontmatter_field, c
 from scripts.tickets_install_guard import installation_lock
 from tests import test_dispatch_v1 as fixtures
 from tests import _retired_commands as commands
+from tests.test_ticket_frames import FrameSinkTest
+
+
+class FramePublicationTest(FrameSinkTest):
+    def test_first_frame_waits_for_publication_before_resolving_pins(self):
+        from scripts import tickets_frame
+        from scripts import state_root
+        entered = threading.Event()
+        started = threading.Event()
+        answers = []
+        original = tickets_frame._workflow_record
+
+        def resolve(*args):
+            entered.set()
+            return original(*args)
+
+        def open_frame():
+            started.set()
+            answers.append(self.frame())
+
+        worker = threading.Thread(target=open_frame)
+        with mock.patch.object(tickets_frame, "_workflow_record", side_effect=resolve):
+            try:
+                with installation_lock(state_root.orchflows_home()):
+                    worker.start()
+                    self.assertTrue(started.wait(2))
+                    self.assertFalse(entered.wait(0.1))
+                    self.assertFalse(self.run_dir().exists())
+            finally:
+                worker.join(130)
+        self.assertFalse(worker.is_alive())
+        self.assertTrue(entered.is_set())
+        self.assertEqual(1, len(answers))
+
+    def test_publication_lock_refusal_leaves_first_frame_uncreated(self):
+        with mock.patch("scripts.tickets_frame.installation_lock", side_effect=OSError("busy")):
+            answer = self.call("frame-open", self.RUN, "--goal-file", str(self.goal_file), expect_error=True)
+        self.assertIn("unable to guard frame open", answer["error"])
+        self.assertFalse(self.run_dir().exists())
+
+    def test_frame_close_files_its_own_explicit_identity(self):
+        opened = self.frame()
+        answer = self.call("frame-close", self.RUN, opened["id"], "--status", "limited")
+        self.assertEqual("limited", answer["frame_close"]["status"])
 
 
 class ReliabilityDispatchTest(unittest.TestCase):

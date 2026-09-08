@@ -303,7 +303,7 @@ def _commit_record(
                 )
             if expected_seal is not None and expected_seal != seal:
                 return _classification(
-                    "assignment-mismatch", "result operation names another assignment seal"
+                    "assignment-mismatch", f"assignment_seal {expected_seal!r} differs; expected {seal!r}"
                 )
             if expected_owner is not None and expected_owner != attempt.get("owner"):
                 return _classification(

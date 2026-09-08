@@ -225,12 +225,15 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
             return text, None, _classification("outcome-invalid", str(error))
         return updated, {"outcome": content}, None
 
-    return _commit_record(
+    answer = _commit_record(
         run, ticket_id, content["dispatch_id"], OUTCOME_RECORD_ID, content,
         mutate=commit_outcome, expected_seal=content["assignment_seal"],
         expected_owner=content["by"], record_kind="outcome",
         _lock_held=_lock_held,
     )
+    if answer.get("code") == "assignment-mismatch":
+        return {**answer, "code": "outcome-invalid"}
+    return answer
 
 __all__ = (
     "CANONICAL_DUMP", "DISPATCH_OUTCOME_USAGE", "_cmd_dispatch_outcome",
