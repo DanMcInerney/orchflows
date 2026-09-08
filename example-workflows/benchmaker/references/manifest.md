@@ -1,7 +1,6 @@
 # Benchmark manifest profiles
 
-This is the data dictionary for the package-owned index. Mandatory benchmark
-quality is in [benchmark-quality](../standards/benchmark-quality/STANDARD.md);
+Mandatory benchmark quality is in [benchmark-quality](../standards/benchmark-quality/STANDARD.md);
 research quality is in [benchmark-evidence](../standards/benchmark-evidence/STANDARD.md).
 The [calibration record](calibration-record.md) owns empirical event and summary
 fields. These references define layouts, not additional qualification policy.

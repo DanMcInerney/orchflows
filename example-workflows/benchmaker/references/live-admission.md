@@ -15,7 +15,7 @@ Budget: 6 initial development attempts, up to 6 complete revision attempts, up t
 
 ## Case briefs supplied to construction
 
-The constructor authors compact buggy `solution.py` files and public prompts from these exact semantics. It authors reference solutions and independent outcome checks; this handoff intentionally supplies no answer code. Known-good reference and inert/near-miss variants are controls. Candidate attempts must return new actual source from the fixed agent; copying a control into a measurement row is forbidden.
+The constructor authors compact buggy candidate modules named `solution` with the `.py` file extension and public prompts from these exact semantics. It authors reference solutions and independent outcome checks; this handoff intentionally supplies no answer code. Known-good reference and inert/near-miss variants are controls. Candidate attempts must return new actual source from the fixed agent; copying a control into a measurement row is forbidden.
 
 | Stratum / development case | Required public API and behavior | Allowed difficulty revision, declared before scores |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ codex exec --ignore-user-config --ephemeral --json --sandbox read-only
   -C <fresh-case-repository> --output-schema <submission-schema.json> -
 ```
 
-Send the case's visible brief and starter via stdin. Require output schema `{"type":"object","properties":{"source":{"type":"string"}},"required":["source"],"additionalProperties":false}`. The prompt states: return a complete replacement `solution.py` in `source`, implement the public API exactly, do not return benchmark scores or grader claims. Do not include target answers or other attempts. Record actual permitted tools/network from the native launch/config observations; `read-only` restricts writes, not every read or network route. Do not assert unsupported capability denials from prose alone.
+Send the case's visible brief and starter via stdin. Require output schema `{"type":"object","properties":{"source":{"type":"string"}},"required":["source"],"additionalProperties":false}`. The prompt states: return the complete replacement source for that candidate module in `source`, implement the public API exactly, do not return benchmark scores or grader claims. Do not include target answers or other attempts. Record actual permitted tools/network from the native launch/config observations; `read-only` restricts writes, not every read or network route. Do not assert unsupported capability denials from prose alone.
 
 Each attempt starts from a newly initialized git repository containing only its visible starter and prompt, with no reused history, result files, solutions or sibling trial output. The assigned measurement executor runs the native command with subprocess timeout=90, captures stdout/stderr/exit/elapsed time, reads the native completion event, extracts the final structured source, and saves it outside the candidate repository as a separately identified output. Evaluate that source using a clean grader process with an explicit short timeout, isolated from the trusted scorer files as the environment permits. Code execution permissions are limited to the disposable environment; the agent is not handed the trusted scorer's write path. A broken/missing grader environment invalidates an attempt; a well-formed attempt producing wrong code fails the target outcome.
 
