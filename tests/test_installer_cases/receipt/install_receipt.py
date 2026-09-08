@@ -46,6 +46,12 @@ class TestInstallReceipt(unittest.TestCase):
                 ],
             )
 
+            # A replacement is receipt-owned; an operator's differing helper
+            # at this destination must instead refuse publication.
+            plan.receipt_path.write_text(json.dumps({"files": [{
+                "path": str(script_dest), "kind": "script",
+                "sha256": digest(script_dest),
+            }]}), encoding="utf-8")
             receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             self.assertEqual(4, receipt["version"])

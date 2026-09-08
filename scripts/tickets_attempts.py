@@ -209,7 +209,7 @@ def _record_response(run: str, ticket_id: str, dispatch_id: str, record_id: str)
 def _commit_record(
     run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
     expected_seal=None, expected_owner=None, require_live_lease=True,
-    record_kind="generic", _lock_held=False,
+    record_kind="generic", _lock_held=False, validate=None, _preflight=False,
 ):
     """Commit or replay one record and its optional ticket mutation atomically."""
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
@@ -309,6 +309,12 @@ def _commit_record(
                 return _classification(
                     "identity-mismatch", "result writer does not match the dispatch attempt owner"
                 )
+            if validate is not None:
+                failure = validate(data, attempt)
+                if failure is not None:
+                    return failure
+            if _preflight:
+                return {"preflight": True}
             if mutate is None:
                 success = _record_response(run, ticket_id, dispatch_id, record_id)
                 updated = text
