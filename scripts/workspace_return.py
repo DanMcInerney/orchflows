@@ -49,7 +49,17 @@ def integrate(run: str, ticket_id: str, workspace, branch, baseline=None):
     read_root = workspace_git._git_out(root)
     before = read_root("rev-parse", "HEAD")
     standing = workspace_git._current_branch(read_root)
-    if standing != into:
+    detached_progress = (
+        into.startswith(workspace_git.DETACHED_PREFIX)
+        and standing.startswith(workspace_git.DETACHED_PREFIX)
+        and workspace_git._is_ancestor(
+            lambda *args: workspace_git._git(str(root), *args),
+            workspace_git._tip_ref(into), before,
+        )
+    )
+    # The recorded path fixes the checkout; a detached revision fixes its
+    # ancestry, not the HEAD value after each successful merge.
+    if standing != into and not detached_progress:
         raise Refused(
             f"{root} stands on {standing!r}, not the {into!r} this run's first "
             f"establishment recorded as its integration target. Nothing merges "

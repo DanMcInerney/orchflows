@@ -1,4 +1,5 @@
-import { ArrowLeft, Code2, FileQuestion, FileWarning, LockKeyhole } from "lucide-react";
+import { RouteState, RefreshStatus } from "../../../shared/transport/RouteState";
+import { ArrowLeft, Code2, LockKeyhole } from "lucide-react";
 
 import type { FeatureState } from "../../../shared/transport/types";
 import type { WorkflowSourceModel } from "../model";
@@ -30,37 +31,23 @@ function SourceNavigation({ route }: { route: WorkflowSourceRoute }) {
   );
 }
 
-function ClosedSourceState({ route, kind }: { route: WorkflowSourceRoute; kind: "loading" | "missing" | "unreadable" | "unavailable" }) {
-  const content = {
-    loading: ["Waiting for source", "The reader is preparing a safe, contained source projection."],
-    missing: ["Source not found", "This opaque source identity is not associated with this workflow."],
-    unreadable: ["Source is unreadable", "Safe source metadata could not be projected for this cataloged identity."],
-    unavailable: ["Source is unavailable", "The source reader is temporarily unavailable. No file details were exposed."],
-  } as const;
-  const [title, message] = content[kind];
-  return (
-    <main className="foundation-view workflows-view workflow-source" data-view="workflow-source" data-fixture={route.fixture || "live"}>
-      <SourceNavigation route={route} />
-      <section className="workflow-source__state" aria-labelledby="workflow-source-state-title">
-        {kind === "missing" ? <FileQuestion aria-hidden="true" /> : <FileWarning aria-hidden="true" />}
-        <div><h1 id="workflow-source-state-title">{title}</h1><p>{message}</p></div>
-      </section>
-    </main>
-  );
-}
-
 export function WorkflowSourceView({ route, state }: WorkflowSourceViewProps) {
-  if (state.status === "loading") return <ClosedSourceState route={route} kind="loading" />;
-  if (state.status === "error") {
-    const kind = state.error.code === "not-found" ? "missing" : state.error.code === "invalid-payload" ? "unreadable" : "unavailable";
-    return <ClosedSourceState route={route} kind={kind} />;
-  }
+  if (state.status === "loading" || state.status === "error") return <RouteState state={state} context={{
+    title: `${route.workflowId} source`, identity: route.sourceId,
+    description: "Read-only source for the selected workflow definition.",
+    failure: state.error ? {
+      "not-found": { title: "Source not found", message: "This opaque source identity is not associated with this workflow." },
+      "invalid-payload": { title: "Source is unreadable", message: "Safe source metadata could not be projected for this cataloged identity." },
+      unavailable: { title: "Source is unavailable", message: "The source reader is temporarily unavailable. No file details were exposed." },
+    }[state.error.code] : undefined,
+    parents: [{ label: "Workflows", href: listRoute.build({ fixture: route.fixture }) }, { label: route.workflowId, href: parentHref(route) }],
+  }} />;
 
   const source = state.model;
   return (
     <main className="foundation-view workflows-view workflow-source" data-view="workflow-source" data-fixture={route.fixture || "live"}>
       <SourceNavigation route={route} />
-      {state.status === "stale" && <div className="notice" role="status">Source refresh failed. Showing the last safe projection.</div>}
+      {state.status === "stale" && <RefreshStatus state={state} />}
       <header className="workflow-source__hero">
         <div><p className="eyebrow"><Code2 aria-hidden="true" /> Contained source</p><h1>{source.label || `${route.workflowId} source`}</h1><p>Read-only text associated with <strong>{route.workflowId}</strong>.</p></div>
         <span><LockKeyhole aria-hidden="true" /> Inert projection</span>

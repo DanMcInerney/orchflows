@@ -35,7 +35,8 @@ describe("Now view", () => {
     expect(screen.queryByRole("heading", { name: "Past runs" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Resume live" }));
     expect(screen.getByRole("button", { name: "Needs attention" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByText("Live · checking for changes")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Pause live" })).toBeTruthy();
+    expect(document.querySelector(".now-live")?.getAttribute("data-paused")).toBe("false");
   });
 
   it("keeps empty, unreadable, and unknown projections explicit", () => {

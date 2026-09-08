@@ -1,3 +1,4 @@
+import { RouteState, RefreshStatus } from "../../../shared/transport/RouteState";
 import { AlertTriangle, ArrowLeft, Braces, GitBranch, Link2, Network, SearchX } from "lucide-react";
 import { useState } from "react";
 
@@ -174,8 +175,7 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
     id: firstNode?.id ?? "",
     occurrenceId: firstOccurrence,
   });
-  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!route.fixture && (state.status === "loading" || state.status === "error")) return <RouteState state={state} context={{ title: route.workflowId, identity: route.workflowId, description: "The selected workflow definition and its source references.", parents: [{ label: "Workflows", href: listRoute.build({ fixture: route.fixture }) }] }} />;
   const model = state.model;
   if (!model || model.nodes.length === 0) return <EmptyDetail route={route} />;
 
@@ -213,7 +213,7 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
 
   return (
     <main className="foundation-view workflows-view workflow-detail" data-view="workflow-detail" data-fixture={route.fixture || "live"}>
-      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
+      {state.status === "stale" && <RefreshStatus state={state} />}
       <nav className="workflow-breadcrumbs" aria-label="Breadcrumb">
         <a href={listRoute.build({ fixture: route.fixture })}>Workflows</a><span aria-hidden="true">/</span><span aria-current="page">{model.id}</span>
       </nav>

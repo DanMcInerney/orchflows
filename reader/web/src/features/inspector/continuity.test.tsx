@@ -223,7 +223,7 @@ describe("ticket detail continuity with the workflows exemplar", () => {
       expect(inspectorCss, `${row} carries the catalog row hover surface`)
         .toContain(`${row}:hover { background: var(--surface-2); }`);
     }
-    expect(inspectorCss).toContain("font: 760 var(--type-display)/1.1 var(--font-mono)");
+    expect(inspectorCss).toContain("font: 760 var(--type-page-title)/1.2 var(--font-ui)");
     expect(inspectorCss).toContain("font: 720 var(--type-metric)/1 var(--font-mono)");
   });
 });

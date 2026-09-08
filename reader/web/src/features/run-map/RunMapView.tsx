@@ -1,3 +1,4 @@
+import { RouteState, RefreshStatus } from "../../shared/transport/RouteState";
 import {
   Background,
   Controls,
@@ -55,7 +56,7 @@ const FILTERS: Array<{ id: RunMapFilter; label: string }> = [
 ];
 
 function initialLevel(identity: string): DisclosureLevel {
-  if (identity === "summary-active" || identity === "completed") return 1;
+  if (identity === "live" || identity === "summary-active" || identity === "completed") return 1;
   if (identity === "blocked-causal") return 3;
   return 2;
 }
@@ -67,11 +68,11 @@ function compactWorkspace(): boolean {
 function FleetView({ runs }: { runs: RunSummary[] }) {
   return (
     <section className="run-fleet" aria-labelledby="fleet-heading">
-      <header><p className="run-map__eyebrow">Level 0 · fleet</p><h2 id="fleet-heading">Current workflows</h2></header>
+      <header><p className="run-map__eyebrow">Level 0 · fleet</p><h2 id="fleet-heading">Execution runs</h2></header>
       <div className="run-fleet__list">
         {runs.map((run) => (
           <a key={run.id} className="run-fleet__row" href={`/runs/${encodeURIComponent(run.id)}`}>
-            <span className="run-fleet__identity"><CircleDot aria-hidden="true" /><strong>{run.id}</strong></span>
+            <span className="run-fleet__identity"><CircleDot aria-hidden="true" /><strong>{run.objective || run.id}</strong></span>
             <span className="run-fleet__macro" aria-label={`${run.ticket_count} work items`}>
               {Array.from({ length: Math.min(run.ticket_count, 6) }, (_, index) => <i key={index} />)}
             </span>
@@ -100,7 +101,7 @@ function SummaryView({ run, onGroup, onExpand }: {
         {groups.map((group) => (
           <button key={group.id} type="button" className="run-summary__group" data-status={group.id} onClick={() => onGroup(group)}>
             <span className="run-summary__glyph" aria-hidden="true">{statusGlyph(group.id)}</span>
-            <span><strong>{group.label}</strong><small>{group.statuses.join(" / ")} · {group.ticketIds.join(", ")}</small></span>
+            <span><strong>{group.label}</strong><small>{group.ticketIds.map((id) => run.tickets.find((item) => item.id === id)?.title || id).join(" · ")}</small></span>
             <b>{group.ticketIds.length}</b><ChevronRight aria-hidden="true" />
           </button>
         ))}
@@ -271,23 +272,22 @@ export function RunMapView({ route, state }: RunMapViewProps) {
     setCausal((current) => current ? null : authoritativeCausalFocus(selectedTicket, run.tickets));
   }
 
-  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!route.fixture && (state.status === "loading" || state.status === "error")) return <RouteState state={state} context={{ title: "Execution run", identity: route.run, description: "Readiness, current work, and dependencies for this execution run.", parents: [{ label: "Now", href: "/now" }] }} />;
   if (!run) return (
     <div className="foundation-view run-map" data-view="run-map"><div className="run-map__empty"><GitBranch aria-hidden="true" /><h1>No workflow selected</h1><p>Choose a workflow from the fleet to inspect its canonical graph.</p></div></div>
   );
 
   return (
     <div className="foundation-view run-map" data-view="run-map" data-fixture={identity} data-paused={paused}>
-      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
+      {state.status === "stale" && <RefreshStatus state={state} />}
       <section className="run-map__hero" aria-labelledby="run-map-title">
         <div>
-          <p className="run-map__eyebrow"><GitBranch aria-hidden="true" />Workflows · read-only topology</p>
-          <h1 id="run-map-title">{run.id}</h1>
+          <p className="run-map__eyebrow"><GitBranch aria-hidden="true" />Execution run · read-only topology</p>
+          <h1 id="run-map-title">{state.model?.runs.find((item) => item.id === run.id)?.objective || run.id}</h1>
           <p>Expand from a faithful readiness summary into every canonical dependency.</p>
         </div>
         <div className="run-map__live">
-          <span className={paused ? "is-paused" : "is-live"}><CircleDot aria-hidden="true" />{paused ? "snapshot held" : "safe live feed"}</span>
+          <span className={paused ? "is-paused" : "is-live"}><CircleDot aria-hidden="true" />{paused ? "snapshot held" : state.status === "stale" ? "refresh failed · last read shown" : "automatic checks enabled"}</span>
           <button type="button" onClick={() => setPaused((current) => !current)} aria-pressed={paused}>
             {paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}{paused ? "Resume live" : "Pause live"}
           </button>
@@ -302,7 +302,6 @@ export function RunMapView({ route, state }: RunMapViewProps) {
         {level === 3 && <><ChevronRight aria-hidden="true" /><span aria-current="page">Inspector</span></>}
       </nav>
 
-      <SkillSequence runId={run.id} fixture={route.fixture} tickets={run.tickets} />
 
       {level === 0 && <FleetView runs={state.model?.runs ?? []} />}
       {level === 1 && <SummaryView run={run} onGroup={openGroup} onExpand={() => setLevel(2)} />}
@@ -316,7 +315,7 @@ export function RunMapView({ route, state }: RunMapViewProps) {
             </button>
           </header>
           <div className="run-map__toolbar" aria-label="Graph filters">
-            <label className="run-map__search"><Search aria-hidden="true" /><span className="sr-only">Search by ticket id or executor</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ticket or executor" /></label>
+            <label className="run-map__search"><Search aria-hidden="true" /><span className="sr-only">Search by task, ticket id or executor</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search task or ticket" /></label>
             <div className="run-map__filters" role="group" aria-label="Filter work items">
               {FILTERS.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}
             </div>
@@ -363,6 +362,8 @@ export function RunMapView({ route, state }: RunMapViewProps) {
         </article>
         {level === 3 && !compact && <Inspector run={run} fixture={route.fixture} ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={closeInspector} />}
       </section>}
+
+      <SkillSequence runId={run.id} fixture={route.fixture} tickets={run.tickets} />
 
       {diagnostics.length > 0 && <section className="run-map__diagnostics" aria-labelledby="diagnostics-heading">
         <header><AlertTriangle aria-hidden="true" /><div><p className="run-map__eyebrow">Topology diagnostics</p><h2 id="diagnostics-heading">{diagnostics.length} canonical graph {diagnostics.length === 1 ? "issue" : "issues"}</h2></div></header>

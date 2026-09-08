@@ -81,7 +81,7 @@ export function Shell() {
               );
             })}
             <div className="rail__status">
-              <RefreshCw aria-hidden="true" /><span>Safe live feed</span>
+              <RefreshCw aria-hidden="true" /><span>Read-only data</span>
             </div>
           </nav>
           <section className="content" aria-live="polite">
@@ -90,7 +90,7 @@ export function Shell() {
               : (
                 <section className="foundation-view" aria-labelledby="not-found-title">
                   <h1 id="not-found-title">View not found</h1>
-                  <p>The requested reader view is not registered.</p>
+                  <p>The requested reader view is not registered.</p><a href="/now">Back to Now</a>
                 </section>
               )}
           </section>

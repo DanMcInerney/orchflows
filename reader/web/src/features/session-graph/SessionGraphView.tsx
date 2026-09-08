@@ -1,3 +1,4 @@
+import { RouteState, RefreshStatus } from "../../shared/transport/RouteState";
 import {
   Background,
   Controls,
@@ -158,8 +159,7 @@ export function SessionGraphView({ route, state }: SessionGraphViewProps) {
     setSelection(id);
     inspector.current?.querySelector("h2")?.scrollIntoView?.({ block: window.innerWidth <= 760 ? "start" : "nearest", behavior: "instant" });
   };
-  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!route.fixture && (state.status === "loading" || state.status === "error")) return <RouteState state={state} context={{ title: "Agent session", identity: route.session, description: "Discovered agents and safe topology for the selected session.", parents: [{ label: "Sessions", href: "/sessions" }] }} />;
   if (!session || !topology) return <EmptySession requested={route.session} />;
 
   const inspected = selectedNode(topology, selection);
@@ -169,7 +169,7 @@ export function SessionGraphView({ route, state }: SessionGraphViewProps) {
 
   return (
     <div className="foundation-view session-graph-view" data-view="session-graph" data-fixture={route.fixture || "live"}>
-      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
+      {state.status === "stale" && <RefreshStatus state={state} />}
       {topology.diagnostics.length > 0 && (
         <section className="session-graph-alert" aria-labelledby="session-graph-alert-title">
           <AlertTriangle aria-hidden="true" />
