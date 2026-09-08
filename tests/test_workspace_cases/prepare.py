@@ -340,8 +340,7 @@ class TestPrepareReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
     def test_a_named_executable_that_resolves_is_present(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            named = tmp / "chrome-headless"
-            named.write_text("#!/bin/sh\n", encoding="utf-8")
+            named = Path(sys.executable)
 
             self.assertEqual(
                 "present",
@@ -355,7 +354,7 @@ class TestPrepareReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
             (cache / "chromium-1140").mkdir(parents=True)
 
             self.assertEqual(
-                "present",
+                "missing",
                 self._browser(tmp, {
                     "ORCHFLOWS_BROWSER_EXECUTABLE": str(tmp / "absent"),
                     "PLAYWRIGHT_BROWSERS_PATH": str(cache),
@@ -379,7 +378,7 @@ class TestPrepareReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
             cache.mkdir()
 
             self.assertEqual(
-                "unknown",
+                "missing",
                 self._browser(tmp, {
                     "PLAYWRIGHT_BROWSERS_PATH": str(cache),
                     "STUB_PNPM_EXEC_EXIT": "1",

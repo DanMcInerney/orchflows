@@ -27,6 +27,10 @@ import hashlib
 import json
 import shutil
 import subprocess
+import tempfile
+import time
+import os
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -43,6 +47,45 @@ MODULES_DIR = "node_modules"
 STAMP_NAME = "orchflows-node.json"
 STAMP_SCHEMA = 1
 RUNTIME = "node"
+LOCK_TIMEOUT = 600
+
+
+@contextmanager
+def package_lock(item_dir):
+    """Serialize preparations outside the executable/trusted package tree."""
+
+    identity = os.path.normcase(str(Path(item_dir).resolve()))
+    root = Path(tempfile.gettempdir()) / "orchflows-node-locks"
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / (hashlib.sha256(identity.encode()).hexdigest() + ".lock")
+    with path.open("a+b") as handle:
+        handle.seek(0, 2)
+        if not handle.tell():
+            handle.write(b"\0")
+            handle.flush()
+        deadline = time.monotonic() + LOCK_TIMEOUT
+        while True:
+            handle.seek(0)
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except (BlockingIOError, PermissionError):
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(f"dependency preparation lock timed out: {item_dir}")
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            if os.name == "nt":
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 # Lockfile to install command, in the order a directory is searched. The
 # manager is the lockfile's own: a `pnpm-lock.yaml` installed by npm is a
 # second resolution of a tree somebody already pinned.
@@ -124,7 +167,7 @@ def install(
 
     argv = [orchflows_tools.executable(command[0], which), *command[1:]]
     try:
-        completed = subprocess.run(argv, cwd=str(item_dir), check=False)
+        completed = subprocess.run(argv, cwd=str(item_dir), check=False, timeout=600)
     except OSError as error:
         raise RuntimeError(
             f"node dependency installation could not start in {item_dir} "
@@ -170,20 +213,24 @@ def ensure(
         return {**outcome, "action": "skipped", "detail": NO_MANAGER_REMEDY.format(
             kind=kind, name=name, lockfile=lockfile.name, manager=command[0],
         )}
-    decided = action(item_dir, lockfile)
-    if decided == "install":
-        (installer or install)(item_dir, command)
-        modules_dir(item_dir).mkdir(parents=True, exist_ok=True)
-        stamp = {
-            "schema": STAMP_SCHEMA,
-            "kind": kind,
-            "name": name,
-            "lockfile": str(lockfile),
-            "lock_sha256": digest(lockfile),
-        }
-        (modules_dir(item_dir) / STAMP_NAME).write_text(
-            json.dumps(stamp, sort_keys=True) + "\n", encoding="utf-8"
-        )
+    with package_lock(item_dir):
+        decided = action(item_dir, lockfile)
+        if decided == "install":
+            expected = digest(lockfile)
+            stamp_path = modules_dir(item_dir) / STAMP_NAME
+            stamp_path.unlink(missing_ok=True)
+            (installer or install)(item_dir, command)
+            if digest(lockfile) != expected:
+                raise RuntimeError(f"lockfile changed during dependency preparation: {lockfile}; retry")
+            modules_dir(item_dir).mkdir(parents=True, exist_ok=True)
+            stamp = {
+                "schema": STAMP_SCHEMA,
+                "kind": kind,
+                "name": name,
+                "lockfile": str(lockfile),
+                "lock_sha256": expected,
+            }
+            stamp_path.write_text(json.dumps(stamp, sort_keys=True) + "\n", encoding="utf-8")
     return {**outcome, "action": decided, "lockfile": str(lockfile),
             "command": " ".join(command)}
 

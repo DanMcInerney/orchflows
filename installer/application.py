@@ -21,7 +21,6 @@ from scripts import orchflows_home
 
 from .managed_text import upsert_import_line, upsert_marked_block
 from .models import Plan
-from .models import _frontend_manifest_identity
 from .presentation import print_summary
 from .runtime import (
     _create_private_runtime,
@@ -151,61 +150,6 @@ def _remove_stale(old_receipt, kind: str, keep_paths: set, boundary: Path) -> No
         _prune_empty_dirs(path.parent, boundary)
 
 
-def _apply_frontend(plan: Plan) -> None:
-    """Stage and verify the immutable distribution before replacing it."""
-
-    home = plan.frontend_home
-    expected = plan.frontend_manifest_sha256
-    if home is None or expected is None:
-        return
-    if plan.frontend_action == "refuse":
-        raise RuntimeError(
-            f"install requires healthy frontend assets at {home}"
-        )
-    if plan.frontend_action == "reuse":
-        if _frontend_manifest_identity(home) != expected:
-            raise RuntimeError(f"frontend assets changed after planning: {home}")
-        return
-    if home.is_symlink() or (home.exists() and not home.is_dir()):
-        raise RuntimeError(f"refusing to replace frontend path that is not a directory: {home}")
-
-    home.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=".ui-stage-", dir=home.parent))
-    backup = None
-    committed = False
-    try:
-        for source, destination in plan.frontend_assets:
-            relative = destination.relative_to(home)
-            staged_destination = staging / relative
-            staged_destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, staged_destination)
-        if _frontend_manifest_identity(staging) != expected:
-            raise RuntimeError("staged frontend assets do not match the planned manifest")
-
-        if home.exists():
-            backup = Path(tempfile.mkdtemp(prefix=".ui-backup-", dir=home.parent))
-            backup.rmdir()
-            home.replace(backup)
-        try:
-            staging.replace(home)
-            committed = True
-        except BaseException:
-            if backup is not None and not home.exists():
-                try:
-                    backup.replace(home)
-                    backup = None
-                except OSError:
-                    # The prior generation is still complete at ``backup``.
-                    # Keep the only recoverable generation after two failures.
-                    pass
-            raise
-    finally:
-        if staging.exists():
-            shutil.rmtree(staging)
-        if committed and backup is not None and backup.exists():
-            shutil.rmtree(backup)
-
-
 def _diverged_role_agents(plan: Plan, old_receipt: dict | None) -> list:
     """Role agents on disk whose content is not what this install would write.
 
@@ -266,6 +210,21 @@ def _prompt_keep_role_agents(diverged: list) -> bool:
 def apply_plan(
     plan: Plan, source_commit: str | None, keep_role_agents: bool | None = None
 ) -> dict:
+    from .publication import publication
+    try:
+        from scripts.tickets_install_guard import installation_lock
+    except ImportError:
+        from tickets_install_guard import installation_lock
+    with installation_lock(plan.scope_home):
+        old_receipt = _load_json(plan.receipt_path)
+        old_lib_files = {str(path.resolve()) for path in plan.lib_home.rglob("*") if path.is_file()}
+        existed = {str(destination) for _, destination in (*plan.scripts, *plan.frontend_assets)
+                   if destination.is_file()}
+        with publication(plan, old_receipt):
+            return _apply_published(plan, source_commit, keep_role_agents, old_lib_files, existed)
+
+
+def _apply_published(plan, source_commit, keep_role_agents, old_lib_files, existed):
     old_receipt = _load_json(plan.receipt_path)
     diverged = _diverged_role_agents(plan, old_receipt)
     # A kept agent stays in the plan so ``_remove_stale`` still counts it as
@@ -299,24 +258,17 @@ def apply_plan(
 
     # Library tree: fully installer-owned, replaced wholesale. Thin project
     # plans carry no lib_copies and never touch a project's ``.orchflows/lib``.
-    old_lib_files = set()
-    if plan.lib_copies:
-        if plan.lib_home.exists():
-            old_lib_files = {str(path.resolve()) for path in plan.lib_home.rglob("*") if path.is_file()}
-            shutil.rmtree(plan.lib_home)
-        for src, dest in plan.lib_copies:
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dest)
+    # The whole lib/bin payload was validated and published together by
+    # ``publication``; its old generation remains available for rollback.
 
     for directory in plan.runtime_dirs:
         directory.mkdir(parents=True, exist_ok=True)
 
     frontend_existed = {
-        str(destination): destination.is_file()
+        str(destination): str(destination) in existed
         for _, destination in plan.frontend_assets
     }
-    if plan.frontend_action is not None:
-        _apply_frontend(plan)
+    # Frontend assets share the payload transaction and its rollback.
 
     written_files = []
 
@@ -339,9 +291,7 @@ def apply_plan(
         # stays on disk forever.
         _remove_stale(old_receipt, "script", {str(dest) for _, dest in plan.scripts}, plan.bin_dir)
         for src, dest in plan.scripts:
-            action = install_action(dest, "script", dest.is_file())
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dest)
+            action = install_action(dest, "script", str(dest) in existed)
             written_files.append(_installed_file(dest, "script", action))
 
         _remove_stale(
@@ -420,10 +370,11 @@ def apply_plan(
     # inside the wholesale-replaced library tree, so the rmtree above already
     # cleared any prior generation — no per-file stale sweep is needed.
     for dest, content in plan.by_name:
-        existed = dest.is_file()
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(content, encoding="utf-8")
-        written_files.append(_installed_file(dest, "by-name", install_action(dest, "by-name", existed)))
+        pointer_existed = str(dest.resolve()) in old_lib_files
+        if not plan.lib_copies:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(content, encoding="utf-8")
+        written_files.append(_installed_file(dest, "by-name", install_action(dest, "by-name", pointer_existed)))
 
     written_blocks = []
     for block in plan.blocks:
