@@ -45,7 +45,7 @@
 .now-run-card[data-band="completed"] { border-left-color: var(--status-complete); }
 .now-run-card__identity { min-width: 0; }
 .now-run-card__meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
-.now-run-card__meta span { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text-faint); font-size: var(--type-2xs); font-weight: 740; letter-spacing: .06em; text-transform: uppercase; }
+.now-run-card__meta span { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text-faint); font-size: var(--type-sm); font-weight: 740; letter-spacing: .06em; text-transform: uppercase; }
 .now-run-card__meta svg { width: 12px; height: 12px; }
 .now-run-card[data-band="attention"] .now-run-card__state { border-color: var(--status-border-attention); color: var(--status-attention); }
 .now-run-card[data-band="active"] .now-run-card__state { border-color: var(--status-border-running); color: var(--status-running); }
@@ -53,7 +53,7 @@
 .now-objective-summary { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: var(--space-2) 0 var(--space-1); font-size: var(--type-title-md); line-height: 1.35; overflow-wrap: anywhere; }
 .now-objective-summary a { color: var(--text-strong); text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .now-objective-summary a:hover { color: var(--accent); }
-.now-run-card__task { display: flex; align-items: flex-start; gap: var(--space-2); margin: 0; color: var(--text-muted); font-size: var(--type-sm); line-height: 1.55; overflow-wrap: anywhere; }
+.now-run-card__task { display: flex; align-items: flex-start; gap: var(--space-2); margin: 0; color: var(--text-muted); font-size: var(--type-base); line-height: 1.55; overflow-wrap: anywhere; }
 .now-run-card__task > svg { width: 14px; height: 14px; flex: 0 0 auto; margin-top: 2px; color: var(--text-faint); }
 .now-run-card[data-band="attention"] .now-run-card__task > svg { color: var(--status-attention); }
 .now-run-card[data-band="active"] .now-run-card__task > svg { color: var(--status-running); }
@@ -66,7 +66,7 @@
 .now-objective-details { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: var(--type-xs); }
 .now-objective-details summary { width: max-content; color: var(--accent); cursor: pointer; font-weight: 700; }
 .now-objective-details p { max-height: 220px; margin: var(--space-2) 0 0; padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--surface-2); overflow: auto; overflow-wrap: anywhere; }
-.now-run-card__open { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: var(--space-3); color: var(--accent); font-size: var(--type-sm); font-weight: 700; }
+.now-run-card__open { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: var(--space-3); color: var(--accent); font-size: var(--type-base); font-weight: 700; }
 .now-run-card__open svg { width: 14px; }
 
 .now-view .workflow-summary__node[data-state="attention"] b { border-color: var(--status-attention); color: var(--status-attention); }

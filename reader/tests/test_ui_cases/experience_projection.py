@@ -102,6 +102,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         )
         selected = projected["ticket"]
         self.assertEqual("G1", selected["id"])
+        self.assertEqual(selected["sections"]["goal"].splitlines()[0][:160], selected["title"])
         # The projection carries the one Report plus whatever section names
         # the sink still holds, each as recorded prose; nothing re-parses a
         # verdict table out of an earlier contract's section.

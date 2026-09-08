@@ -11,6 +11,7 @@ export interface Readiness {
 
 export interface TicketSummary {
   id: string;
+  title?: string;
   status: string;
   executor: string;
   bound: string;
@@ -356,7 +357,7 @@ export function filterTickets(
   const normalized = query.trim().toLocaleLowerCase();
   const critical = new Set(path);
   return tickets.filter((ticket) => {
-    const searchMatches = !normalized || `${ticket.id} ${ticket.executor}`.toLocaleLowerCase().includes(normalized);
+    const searchMatches = !normalized || `${ticket.title ?? ""} ${ticket.id} ${ticket.executor}`.toLocaleLowerCase().includes(normalized);
     const filterMatches = filter === "all"
       || (filter === "active" && ticket.readiness.state === "running")
       || (filter === "problems" && (ticket.readiness.state === "attention" || ticket.readiness.state === "unknown" || ticket.unreadable))

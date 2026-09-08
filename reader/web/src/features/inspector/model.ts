@@ -5,6 +5,7 @@ export type ReadinessCause = "pending_dependency" | "suspended_handoff" | "faile
 
 export interface TicketSummary {
   id: string;
+  title?: string;
   status: string;
   executor: string;
   bound: string;

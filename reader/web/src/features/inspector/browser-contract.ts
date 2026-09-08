@@ -10,7 +10,7 @@ export async function expectLiveTicket(page: Page, origin: string) {
   const payload = await response.json();
   expect(payload.ticket).toHaveProperty("standard");
   expect(payload.ticket).not.toHaveProperty("pack");
-  await expect(page.getByRole("heading", { level: 1, name: "G1" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: payload.ticket.title || "G1" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Goal", exact: true })).toBeVisible();
   await expect(page.locator(".inspector-card--objective")).toContainText(payload.ticket.sections.goal);
   const details = page.getByRole("tab", { name: "Details", exact: true });

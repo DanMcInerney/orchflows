@@ -1,3 +1,4 @@
+import { RouteState, RefreshStatus } from "../../shared/transport/RouteState";
 import { AlertTriangle, CheckCircle2, Clock3, FolderSearch, LockKeyhole, Search, UsersRound } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -30,12 +31,11 @@ export function SessionsView({ route, state }: SessionsViewProps) {
     : model.items;
   const diagnostics = diagnosticCount(model);
 
-  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!route.fixture && (state.status === "loading" || state.status === "error")) return <RouteState state={state} context={{ title: "Sessions", description: "Agent-session metadata and topology. Now shows execution runs.", parents: [{ label: "Now", href: "/now" }] }} />;
 
   return (
     <div className="foundation-view sessions-view" data-view="sessions" data-fixture={route.fixture || "live"}>
-      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
+      {state.status === "stale" && <RefreshStatus state={state} />}
       {model.diagnostics.length > 0 && (
         <div className="sessions-view__diagnostic" role="status">
           <AlertTriangle aria-hidden="true" />

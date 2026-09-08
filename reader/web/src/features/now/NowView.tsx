@@ -1,3 +1,4 @@
+import { RouteState, RefreshStatus } from "../../shared/transport/RouteState";
 import { AlertTriangle, ArrowRight, Check, Circle, Clock3, Filter, FolderGit2, Pause, Play, Radio, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { executionRunRoute, executionTicketRoute } from "../../shared/routes/executionRoutes";
@@ -153,11 +154,10 @@ export default function NowView({ route, state }: NowViewProps) {
   const runningRuns = running.reduce((total, folder) => total + folder.runs.length, 0);
   const folders = new Set([...running, ...past].map((folder) => folder.label)).size;
 
-  if (!fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!route.fixture && (state.status === "loading" || state.status === "error")) return <RouteState state={state} context={{ title: "Now", description: "Execution runs grouped by folder. Agent-session topology is available in Sessions.", parents: [{ label: "Sessions", href: "/sessions" }] }} />;
 
   return <div className="foundation-view now-view" data-fixture={route.fixture || "live"}>
-    {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
+    {state.status === "stale" && <RefreshStatus state={state} />}
     <header className="now-hero">
       <div>
         <p className="eyebrow"><Radio aria-hidden="true" /> Execution overview</p>
@@ -176,7 +176,7 @@ export default function NowView({ route, state }: NowViewProps) {
       <button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>All runs</button>
       <button type="button" aria-pressed={filter === "attention"} onClick={() => setFilter("attention")}>Needs attention</button>
       <div className="now-live" role="status" aria-live="polite" data-paused={paused}>
-        <span>{paused ? <Pause aria-hidden="true" /> : <Radio aria-hidden="true" />}{paused ? "Live paused" : "Live · checking for changes"}</span>
+        <span>{paused ? <Pause aria-hidden="true" /> : <Radio aria-hidden="true" />}{paused ? "Live paused" : state.status === "stale" ? "Refresh failed · last read shown" : "Live · automatic checks enabled"}</span>
         <button type="button" aria-pressed={paused} onClick={() => setPaused((value) => !value)}>{paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}{paused ? "Resume live" : "Pause live"}</button>
       </div>
     </div>

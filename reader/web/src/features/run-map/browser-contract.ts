@@ -24,3 +24,12 @@ export async function expectRunActivation(page: Page, origin: string) {
     await expect(node).toBeFocused();
   }
 }
+
+export async function expectRunIdentity(page: Page, origin: string, run: string) {
+  const response = await page.request.get(`${origin}/api/v1/views/run-map?run=${encodeURIComponent(run)}`);
+  expect(response.status()).toBe(200);
+  const payload = await response.json();
+  const summary = payload.runs.find((item: { id: string }) => item.id === run);
+  await expect(page.getByRole("heading", { level: 1, name: summary?.objective || run })).toBeVisible();
+  await expect(page.locator(".run-map__crumbs")).toContainText(run);
+}
