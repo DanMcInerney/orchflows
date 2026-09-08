@@ -15,7 +15,7 @@ describe("Now view", () => {
     expect(container.querySelector(".foundation-view.now-view")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Now" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Running now" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Past sessions" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Past runs" })).toBeTruthy();
     expect(screen.getAllByLabelText(/Nonvisual summary for/)).toHaveLength(5);
     expect(screen.getByRole("link", { name: /Open run: Restore installed-reader portability/ }).getAttribute("href"))
       .toBe("/runs/20260819-portability-repair?fixture=mixed-live");
@@ -32,7 +32,7 @@ describe("Now view", () => {
     expect(screen.getByText("Render the live fleet")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Needs attention" }));
     expect(screen.getByText("No runs match this filter.")).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Past sessions" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Past runs" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Resume live" }));
     expect(screen.getByRole("button", { name: "Needs attention" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("Live · checking for changes")).toBeTruthy();
@@ -40,8 +40,8 @@ describe("Now view", () => {
 
   it("keeps empty, unreadable, and unknown projections explicit", () => {
     render(<NowView state={empty} route={{ fixture: "no-active-runs" }} />);
-    expect(screen.getByText("No session is running")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Past sessions" })).toBeTruthy();
+    expect(screen.getByText("No run is running")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Past runs" })).toBeTruthy();
     cleanup();
     render(<NowView state={empty} route={{ fixture: "unreadable-data" }} />);
     expect(screen.getByText("Unreadable canonical data")).toBeTruthy();

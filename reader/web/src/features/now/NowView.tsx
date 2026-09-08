@@ -64,9 +64,10 @@ function groupHref(run: FleetRun, groupId: string, fixture: string): string | un
 function CausalBanner({ run }: { run: FleetRun }) {
   const badge = blockedBadge(run.tickets);
   if (!badge) return null;
+  const title = (id: string) => run.tickets.find((ticket) => ticket.id === id)?.title || id;
   return <p className="now-run-card__causal" role="status" data-cause={badge.cause}>
     <AlertTriangle aria-hidden="true" />
-    <span><strong>{badge.ticketId}</strong> is {badge.reason} on <strong>{badge.blockingTicket}</strong>.</span>
+    <span><strong>{title(badge.ticketId)}</strong> is {badge.reason} on <strong>{title(badge.blockingTicket)}</strong>.</span>
   </p>;
 }
 
@@ -87,8 +88,8 @@ function RunCard({ run, fixture }: { run: FleetRun; fixture: string }) {
       <CausalBanner run={run} />
       <details className="now-objective-details"><summary>Full objective</summary><p>{run.objective}</p></details>
       <a className="now-run-card__open" href={href}
-        aria-label={`${finished(run) ? "Open full run" : "Open live workflow"} for ${run.objective}`}>
-        {finished(run) ? "Open full run" : "Open live workflow"} <ArrowRight aria-hidden="true" />
+        aria-label={`${finished(run) ? "Open full run" : "Open run map"} for ${run.objective}`}>
+        {finished(run) ? "Open full run" : "Open run map"} <ArrowRight aria-hidden="true" />
       </a>
     </div>
     {unknown ? <div className="now-unknown" role="status">
@@ -107,7 +108,7 @@ function FolderPanel({ folder, fixture, id, note }: { folder: NowFolder; fixture
       </div>
       <p>{note}</p>
     </header>
-    <ul className="now-folder__list" aria-label={`Sessions in ${folder.label}`}>
+    <ul className="now-folder__list" aria-label={`Runs in ${folder.label}`}>
       {folder.runs.map((run) => <RunCard key={run.id} run={run} fixture={fixture} />)}
     </ul>
   </section>;
@@ -121,7 +122,7 @@ function FolderBand({ id, eyebrow, heading, folders, fixture, note, empty }: {
   return <section className="now-band" aria-labelledby={`${id}-heading`}>
     <header>
       <div><p className="eyebrow">{eyebrow}</p><h2 id={`${id}-heading`}>{heading}</h2></div>
-      <p>{plural(runs, "session")} · {plural(folders.length, "folder")}</p>
+      <p>{plural(runs, "run")} · {plural(folders.length, "folder")}</p>
     </header>
     {folders.length ? folders.map((folder, index) => <FolderPanel
       key={folder.key} folder={folder} fixture={fixture} id={`${id}-folder-${index}`} note={note(folder)} />) : empty}
@@ -131,7 +132,7 @@ function FolderBand({ id, eyebrow, heading, folders, fixture, note, empty }: {
 function EmptyCurrent({ filtered }: { filtered: boolean }) {
   return <div className="now-empty" role="status">
     {filtered ? <Filter aria-hidden="true" /> : <Check aria-hidden="true" />}
-    <strong>{filtered ? "No runs match this filter." : "No session is running"}</strong>
+    <strong>{filtered ? "No runs match this filter." : "No run is running"}</strong>
     <span>{filtered ? "Choose All runs to restore every folder." : "Nothing is active or waiting for attention right now."}</span>
   </div>;
 }
@@ -161,7 +162,7 @@ export default function NowView({ route, state }: NowViewProps) {
       <div>
         <p className="eyebrow"><Radio aria-hidden="true" /> Execution overview</p>
         <h1>Now</h1>
-        <p>Sessions running right now, grouped by the folder they run in. Finished sessions sit below, most recent folder first.</p>
+        <p>Runs running right now, grouped by the folder they run in. Finished runs sit below, most recent folder first.</p>
       </div>
       <dl aria-label="Now summary">
         <div><dt>Running</dt><dd>{runningRuns}</dd></div>
@@ -181,11 +182,11 @@ export default function NowView({ route, state }: NowViewProps) {
     </div>
     <main className="now-hierarchy">
       <FolderBand id="now-running" eyebrow="Live execution" heading="Running now" folders={running}
-        fixture={route.fixture} note={(folder) => plural(folder.runs.length, "session")}
+        fixture={route.fixture} note={(folder) => plural(folder.runs.length, "run")}
         empty={<EmptyCurrent filtered={filter === "attention"} />} />
-      {filter === "all" && <FolderBand id="now-past" eyebrow="Finished" heading="Past sessions" folders={past}
+      {filter === "all" && <FolderBand id="now-past" eyebrow="Finished" heading="Past runs" folders={past}
         fixture={route.fixture} note={(folder) => `Newest finish ${folder.newestTerminal || "unrecorded"}`}
-        empty={<div className="now-empty"><Clock3 aria-hidden="true" /><strong>No past sessions</strong><span>Finished work will appear here, grouped by folder.</span></div>} />}
+        empty={<div className="now-empty"><Clock3 aria-hidden="true" /><strong>No past runs</strong><span>Finished work will appear here, grouped by folder.</span></div>} />}
     </main>
     <p className="now-privacy">Only canonical status and metadata are shown. Prompts, tools, outputs, files, and conversations remain private.</p>
   </div>;

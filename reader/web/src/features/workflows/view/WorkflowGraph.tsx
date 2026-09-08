@@ -11,13 +11,15 @@ function relationVerb(edge: WorkflowDetailEdge): string {
   if (edge.kind === "loop") return "loops to";
   if (edge.kind === "dependency") return "continues to";
   if (edge.kind === "executor") return "is executed by";
-  if (edge.kind === "skill-call") return "calls skill";
-  return "calls script";
+  if (edge.kind === "standard-reference") return "references standard";
+  if (edge.kind === "skill-call") return "references skill";
+  return "references script";
 }
 
 function relationType(edge: WorkflowDetailEdge): string {
-  if (edge.kind === "skill-call") return "skill call";
-  if (edge.kind === "script-call") return "script call";
+  if (edge.kind === "standard-reference") return "standard reference";
+  if (edge.kind === "skill-call") return "skill reference";
+  if (edge.kind === "script-call") return "script reference";
   return edge.kind;
 }
 
@@ -260,11 +262,11 @@ function CallableFlow({ model, selection, onSelect }: WorkflowGraphProps) {
             selection={selection}
             onSelect={onSelect}
           />
-          <p>This callable workflow invokes the skills and scripts below in canonical relation order.</p>
+          <p>These names occur in source code spans. References do not establish invocation, order, repetition or loop behavior.</p>
         </div>
       )}
-      <ol className="workflow-step-flow__sequence" aria-label="Called skills and scripts">
-        {calls.map((edge, index) => {
+      <ul className="workflow-step-flow__sequence" aria-label="Referenced skills and scripts">
+        {calls.map((edge) => {
           const target = nodes.get(edge.to);
           return (
             <li
@@ -281,21 +283,21 @@ function CallableFlow({ model, selection, onSelect }: WorkflowGraphProps) {
                 <RelationControl edge={edge} labels={labels} selection={selection} onSelect={onSelect} />
               </div>
               <article className="workflow-step-card workflow-step-card--call">
-                <header><span>Call {index + 1}</span><small>{edge.kind === "skill-call" ? "Skill" : "Script"}</small></header>
+                <header><span>Reference</span><small>{edge.kind === "skill-call" ? "Skill" : "Script"}</small></header>
                 {target ? (
                   <NodeButton
                     node={target}
-                    context={target.kind === "script" ? "Called script" : "Called skill"}
+                    context={target.kind === "script" ? "Referenced script" : "Referenced skill"}
                     occurrenceId={`node:${edge.id}:target`}
                     selection={selection}
                     onSelect={onSelect}
                   />
-                ) : <p className="workflow-step-card__unresolved">Unresolved call target</p>}
+                ) : <p className="workflow-step-card__unresolved">Unresolved reference</p>}
               </article>
             </li>
           );
         })}
-      </ol>
+      </ul>
       {(remainingNodes.length > 0 || remainingEdges.length > 0) && (
         <section className="workflow-step-flow__additional" aria-labelledby="workflow-additional-relations">
           <h3 id="workflow-additional-relations">Additional canonical relations</h3>

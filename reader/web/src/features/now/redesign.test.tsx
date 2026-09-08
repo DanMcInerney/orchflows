@@ -17,13 +17,13 @@ function card(runId: string): HTMLElement {
 }
 
 describe("Now folder hierarchy", () => {
-  it("puts running sessions above past sessions, each grouped by its folder leaf", () => {
+  it("puts running runs above past runs, each grouped by its folder leaf", () => {
     const { container } = render(<NowView state={empty} route={{ fixture: "mixed-live" }} />);
     const bands = headings(container, "h2");
-    expect(bands).toEqual(["Running now", "Past sessions"]);
+    expect(bands).toEqual(["Running now", "Past runs"]);
 
     const running = screen.getByRole("region", { name: "Running now" });
-    const past = screen.getByRole("region", { name: "Past sessions" });
+    const past = screen.getByRole("region", { name: "Past runs" });
     expect(running.compareDocumentPosition(past) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     expect(headings(running, "h3")).toEqual(["orchflows-public", "atlas-web"]);
@@ -37,7 +37,7 @@ describe("Now folder hierarchy", () => {
 
   it("orders past folder sections by newest terminal_at descending, not alphabetically", () => {
     const { container } = render(<NowView state={empty} route={{ fixture: "mixed-live" }} />);
-    const past = screen.getByRole("region", { name: "Past sessions" });
+    const past = screen.getByRole("region", { name: "Past runs" });
     expect(headings(past, "h3")).toEqual(["orchflows-public", "ledger-service"]);
     expect([...headings(past, "h3")].sort()).not.toEqual(headings(past, "h3"));
 
@@ -56,13 +56,13 @@ describe("Now folder hierarchy", () => {
     const flow = within(live).getByLabelText("Summary flow for 20260819-ui-experience");
     expect(flow.classList.contains("workflow-summary")).toBe(true);
     expect([...flow.querySelectorAll(".workflow-summary__node b")].map((node) => node.textContent))
-      .toEqual(["Brief", "Plan", "Work ×3", "Review", "Verify"]);
+      .toEqual(["Briefcomplete", "Plancomplete", "Work ×3running", "Reviewwaiting", "Verifywaiting"]);
     expect([...flow.querySelectorAll(".workflow-summary__node")].map((node) => node.getAttribute("data-state")))
       .toEqual(["complete", "complete", "running", "waiting", "waiting"]);
     expect(within(flow).getByLabelText("Nonvisual summary for 20260819-ui-experience").textContent)
       .toContain("Step: Work ×3; running");
 
-    const workChip = within(flow).getByRole("link", { name: "Open Work ×3 in the run map" });
+    const workChip = within(flow).getByRole("link", { name: "Open Work ×3 in the run map; running" });
     expect(workChip.getAttribute("href")).toBe("/runs/20260819-ui-experience?fixture=mixed-live&group=02-now%2C03-workflows%2C04-sessions");
     expect(flow.querySelector(".workflow-summary__visual")?.getAttribute("aria-hidden")).toBeNull();
     workChip.focus();
@@ -73,7 +73,7 @@ describe("Now folder hierarchy", () => {
     expect(within(live).getByRole("link", { name: "Open ticket: Render dependency maps" }).getAttribute("href"))
       .toBe("/runs/20260819-ui-experience/tickets/03-workflows?fixture=mixed-live");
 
-    const open = within(live).getByRole("link", { name: /^Open live workflow for/ });
+    const open = within(live).getByRole("link", { name: /^Open run map for/ });
     expect(open.getAttribute("href")).toBe("/runs/20260819-ui-experience?fixture=mixed-live");
     expect(open.classList.contains("now-run-card__open")).toBe(true);
   });
@@ -92,7 +92,7 @@ describe("Now folder hierarchy", () => {
     render(<NowView state={empty} route={{ fixture: "needs-attention" }} />);
     const blocked = card("20260819-portability-repair");
     const badge = within(blocked).getByRole("status");
-    expect(badge.textContent).toBe("01-repair is blocked by upstream work on 00-scope.");
+    expect(badge.textContent).toBe("Repair the portability seam is blocked by upstream work on Confirm the compatibility boundary.");
     expect(card("20260818-ui-platform").querySelector(".now-run-card__causal")).toBeNull();
   });
 
@@ -100,8 +100,8 @@ describe("Now folder hierarchy", () => {
     render(<NowView state={empty} route={{ fixture: "no-active-runs" }} />);
     const summary = screen.getByLabelText("Now summary");
     expect(summary.textContent).toBe("Running0Folders2Finished2");
-    expect(screen.getByText("No session is running")).toBeTruthy();
-    expect(headings(screen.getByRole("region", { name: "Past sessions" }), "h3"))
+    expect(screen.getByText("No run is running")).toBeTruthy();
+    expect(headings(screen.getByRole("region", { name: "Past runs" }), "h3"))
       .toEqual(["orchflows-public", "ledger-service"]);
     expect(nowFixture("no-active-runs").runs.every((run) => run.terminalAt)).toBe(true);
   });
