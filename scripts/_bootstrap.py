@@ -9,7 +9,6 @@ and this is its one code owner; every other reader imports it from here.
 from __future__ import annotations
 
 from pathlib import Path
-import os
 import sys
 import tempfile
 
@@ -22,5 +21,4 @@ ROOT = Path(__file__).resolve().parent.parent
 # Execution must not add bytecode to a content-trusted package. Keep source
 # and dependency trees fully covered by trust rather than ignoring them.
 _cache = str(Path(tempfile.gettempdir()) / "orchflows-python-cache")
-os.environ["PYTHONPYCACHEPREFIX"] = _cache
 sys.pycache_prefix = _cache

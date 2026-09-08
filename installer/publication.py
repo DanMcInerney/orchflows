@@ -34,7 +34,7 @@ def _protects_payload(data):
     for value in standards:
         if draft and isinstance(value, str) and "@" not in value:
             continue
-        if not isinstance(value, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*@sha256:[0-9a-f]{64}", value):
+        if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*@sha256:[0-9a-f]{64}", value):
             raise ValueError(f"malformed stamped standard reference: {value!r}")
         stamped = True
     for name in ("skill", "workflow"):
