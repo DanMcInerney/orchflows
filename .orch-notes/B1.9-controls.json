@@ -1,0 +1,184 @@
+{
+  "assigned_name": "B1.9",
+  "dispatch_id": "B1.9:d1",
+  "assignment_seal": "sha256:d0248ed1b363d3318780b1014c9dbd3a29711fa2ca0373bc79592d584751bc2a",
+  "reviewed_artifact": "git:10565acdfa35f4a768a4dc803c9d9b5c5c66744d",
+  "controls": [
+    {
+      "mode": "before",
+      "repository": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9",
+      "temp_default": "D:\\orch-B1.9-cross-drive-5r00gkpu",
+      "tests": 5,
+      "failures": 0,
+      "errors": 2,
+      "roots": [
+        {
+          "test": "fixture_control.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner",
+          "fixture": "D:\\orch-B1.9-cross-drive-5r00gkpu\\tmpbxu2lkzv",
+          "drive": "D:",
+          "cleaned": true
+        },
+        {
+          "test": "fixture_control.VideoPackageTests.test_contained_links_and_escape_control",
+          "fixture": "D:\\orch-B1.9-cross-drive-5r00gkpu\\tmp6i1ux_zj",
+          "drive": "D:",
+          "cleaned": true
+        },
+        {
+          "test": "fixture_control.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output",
+          "fixture": "D:\\orch-B1.9-cross-drive-5r00gkpu\\tmpp4763y2y",
+          "drive": "D:",
+          "cleaned": true
+        },
+        {
+          "test": "fixture_control.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope",
+          "fixture": "D:\\orch-B1.9-cross-drive-5r00gkpu\\tmpini2wrqt",
+          "drive": "D:",
+          "cleaned": true
+        },
+        {
+          "test": "fixture_control.VideoPackageTests.test_stale_package_cannot_authorize_existing_frame",
+          "fixture": "D:\\orch-B1.9-cross-drive-5r00gkpu\\tmpt65r_84s",
+          "drive": "D:",
+          "cleaned": true
+        }
+      ],
+      "commands": [
+        {
+          "argv": [
+            "git",
+            "show",
+            "ac22b24b^:tests/test_tiktok_video_package.py"
+          ],
+          "exit": 0
+        }
+      ],
+      "stderr": "test_canonical_discovery_exposes_only_public_owner (fixture_control.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner) ... ok\ntest_contained_links_and_escape_control (fixture_control.VideoPackageTests.test_contained_links_and_escape_control) ... ERROR\ntest_document_verifier_rejects_absent_and_stale_output (fixture_control.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output) ... ok\ntest_literal_sequence_resolves_in_correct_public_scope (fixture_control.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope) ... ERROR\ntest_stale_package_cannot_authorize_existing_frame (fixture_control.VideoPackageTests.test_stale_package_cannot_authorize_existing_frame) ... ok\n\n======================================================================\nERROR: test_contained_links_and_escape_control (fixture_control.VideoPackageTests.test_contained_links_and_escape_control)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tests\\test_tiktok_video_package.py\", line 119, in test_contained_links_and_escape_control\n    copied = self.copy()\n                    ~~^^\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tests\\test_tiktok_video_package.py\", line 47, in grade\n    def grade(self, package=PACKAGE, options=None):\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n            workflows.validate_workflow_packages(\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\workflows.py\", line 265, in validate_workflow_packages\n    structure.validate_templates(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        diag, roots=[package / rings.RING_DIRS[\"workflow\"]],\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\structure.py\", line 388, in validate_templates\n    label = rel(manifest)\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\packages.py\", line 55, in rel\n    return str(path.relative_to(ROOT)).replace(\"\\\\\", \"/\")\n               ~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\Users\\danhm\\AppData\\Roaming\\uv\\python\\cpython-3.13.9-windows-x86_64-none\\Lib\\pathlib\\_local.py\", line 385, in relative_to\n    raise ValueError(f\"{str(self)!r} is not in the subpath of {str(other)!r}\")\nValueError: 'D:\\\\orch-B1.9-cross-drive-5r00gkpu\\\\tmp6i1ux_zj\\\\project\\\\.orchflows\\\\workflows\\\\tiktok-video\\\\workflows\\\\video-direction\\\\SKILL.md' is not in the subpath of 'C:\\\\'\n\n======================================================================\nERROR: test_literal_sequence_resolves_in_correct_public_scope (fixture_control.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tests\\test_tiktok_video_package.py\", line 106, in test_literal_sequence_resolves_in_correct_public_scope\n    trust=False, **self.options)\n    ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tests\\test_tiktok_video_package.py\", line 47, in grade\n    def grade(self, package=PACKAGE, options=None):\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n            workflows.validate_workflow_packages(\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\workflows.py\", line 265, in validate_workflow_packages\n    structure.validate_templates(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        diag, roots=[package / rings.RING_DIRS[\"workflow\"]],\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\structure.py\", line 388, in validate_templates\n    label = rel(manifest)\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\packages.py\", line 55, in rel\n    return str(path.relative_to(ROOT)).replace(\"\\\\\", \"/\")\n               ~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\Users\\danhm\\AppData\\Roaming\\uv\\python\\cpython-3.13.9-windows-x86_64-none\\Lib\\pathlib\\_local.py\", line 385, in relative_to\n    raise ValueError(f\"{str(self)!r} is not in the subpath of {str(other)!r}\")\nValueError: 'D:\\\\orch-B1.9-cross-drive-5r00gkpu\\\\tmpini2wrqt\\\\project\\\\.orchflows\\\\workflows\\\\tiktok-video\\\\workflows\\\\video-production\\\\SKILL.md' is not in the subpath of 'C:\\\\'\n\n----------------------------------------------------------------------\nRan 5 tests in 1.144s\n\nFAILED (errors=2)\n",
+      "source_sha256_utf8": "74f046b91cbdb53e3266c688c1e5e3c2b60d817fcf677db3350f765035cd68b3"
+    },
+    {
+      "mode": "after",
+      "repository": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9",
+      "temp_default": "D:\\orch-B1.9-cross-drive-5r00gkpu",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "roots": [
+        {
+          "test": "fixture_control.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner",
+          "fixture": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\.orch-notes\\tmpzb5mtse9",
+          "drive": "C:",
+          "cleaned": true
+        },
+        {
+          "test": "fixture_control.VideoPackageTests.test_contained_links_and_escape_control",
+          "fixture": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\.orch-notes\\tmphdoxel1v",
+          "drive": "C:",
+          "cleaned": true
+        },
+        {
+          "test": "fixture_control.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output",
+          "fixture": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\.orch-notes\\tmpzop0cpbs",
+          "drive": "C:",
+          "cleaned": true
+        },
+        {
+          "test": "fixture_control.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope",
+          "fixture": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\.orch-notes\\tmpfqwvy7b4",
+          "drive": "C:",
+          "cleaned": true
+        },
+        {
+          "test": "fixture_control.VideoPackageTests.test_stale_package_cannot_authorize_existing_frame",
+          "fixture": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\.orch-notes\\tmp_se07ult",
+          "drive": "C:",
+          "cleaned": true
+        }
+      ],
+      "commands": [],
+      "stderr": "test_canonical_discovery_exposes_only_public_owner (fixture_control.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner) ... ok\ntest_contained_links_and_escape_control (fixture_control.VideoPackageTests.test_contained_links_and_escape_control) ... ok\ntest_document_verifier_rejects_absent_and_stale_output (fixture_control.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output) ... ok\ntest_literal_sequence_resolves_in_correct_public_scope (fixture_control.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope) ... ok\ntest_stale_package_cannot_authorize_existing_frame (fixture_control.VideoPackageTests.test_stale_package_cannot_authorize_existing_frame) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.813s\n\nOK\n",
+      "source_sha256_utf8": "2a28a6e1784f6f295bbeebf98d7b0e41a14685d34d473052f14545443f076f6f"
+    }
+  ],
+  "temporary_base_removed": true,
+  "scanner_fixture_removed": true,
+  "scan_exclusion": {
+    "vocabulary": {
+      "files": 500,
+      "fixture_included": false
+    },
+    "markdown_links": {
+      "files": 513,
+      "fixture_included": false
+    },
+    "documented_paths": {
+      "files": 91,
+      "fixture_included": false
+    }
+  },
+  "package_digest": "sha256:d13322cae66f674b0b9bd19d92fc9fbd40ff2139cc3c9ebb95d28884edc1eb42",
+  "standard_digest": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+  "all_methods_except_setup_ast_identical": true,
+  "commands": [
+    {
+      "argv": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\.orch-notes\\B1.9-controls.py",
+        "before"
+      ],
+      "exit": 1,
+      "stdout": "test_canonical_discovery_exposes_only_public_owner (fixture_control.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner) ... ok\r\ntest_contained_links_and_escape_control (fixture_control.VideoPackageTests.test_contained_links_and_escape_control) ... ERROR\r\ntest_document_verifier_rejects_absent_and_stale_output (fixture_control.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output) ... ok\r\ntest_literal_sequence_resolves_in_correct_public_scope (fixture_control.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope) ... ERROR\r\ntest_stale_package_cannot_authorize_existing_frame (fixture_control.VideoPackageTests.test_stale_package_cannot_authorize_existing_frame) ... ok\r\n\r\n======================================================================\r\nERROR: test_contained_links_and_escape_control (fixture_control.VideoPackageTests.test_contained_links_and_escape_control)\r\n----------------------------------------------------------------------\r\nTraceback (most recent call last):\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tests\\test_tiktok_video_package.py\", line 119, in test_contained_links_and_escape_control\r\n    copied = self.copy()\r\n                    ~~^^\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tests\\test_tiktok_video_package.py\", line 47, in grade\r\n    def grade(self, package=PACKAGE, options=None):\r\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    ...<2 lines>...\r\n            workflows.validate_workflow_packages(\r\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\workflows.py\", line 265, in validate_workflow_packages\r\n    structure.validate_templates(\r\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\r\n        diag, roots=[package / rings.RING_DIRS[\"workflow\"]],\r\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    )\r\n    ^\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\structure.py\", line 388, in validate_templates\r\n    label = rel(manifest)\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\packages.py\", line 55, in rel\r\n    return str(path.relative_to(ROOT)).replace(\"\\\\\", \"/\")\r\n               ~~~~~~~~~~~~~~~~^^^^^^\r\n  File \"C:\\Users\\danhm\\AppData\\Roaming\\uv\\python\\cpython-3.13.9-windows-x86_64-none\\Lib\\pathlib\\_local.py\", line 385, in relative_to\r\n    raise ValueError(f\"{str(self)!r} is not in the subpath of {str(other)!r}\")\r\nValueError: 'D:\\\\orch-B1.9-cross-drive-5r00gkpu\\\\tmp6i1ux_zj\\\\project\\\\.orchflows\\\\workflows\\\\tiktok-video\\\\workflows\\\\video-direction\\\\SKILL.md' is not in the subpath of 'C:\\\\'\r\n\r\n======================================================================\r\nERROR: test_literal_sequence_resolves_in_correct_public_scope (fixture_control.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope)\r\n----------------------------------------------------------------------\r\nTraceback (most recent call last):\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tests\\test_tiktok_video_package.py\", line 106, in test_literal_sequence_resolves_in_correct_public_scope\r\n    trust=False, **self.options)\r\n    ^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tests\\test_tiktok_video_package.py\", line 47, in grade\r\n    def grade(self, package=PACKAGE, options=None):\r\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    ...<2 lines>...\r\n            workflows.validate_workflow_packages(\r\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\workflows.py\", line 265, in validate_workflow_packages\r\n    structure.validate_templates(\r\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\r\n        diag, roots=[package / rings.RING_DIRS[\"workflow\"]],\r\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    )\r\n    ^\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\structure.py\", line 388, in validate_templates\r\n    label = rel(manifest)\r\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\tools\\validate_support\\packages.py\", line 55, in rel\r\n    return str(path.relative_to(ROOT)).replace(\"\\\\\", \"/\")\r\n               ~~~~~~~~~~~~~~~~^^^^^^\r\n  File \"C:\\Users\\danhm\\AppData\\Roaming\\uv\\python\\cpython-3.13.9-windows-x86_64-none\\Lib\\pathlib\\_local.py\", line 385, in relative_to\r\n    raise ValueError(f\"{str(self)!r} is not in the subpath of {str(other)!r}\")\r\nValueError: 'D:\\\\orch-B1.9-cross-drive-5r00gkpu\\\\tmpini2wrqt\\\\project\\\\.orchflows\\\\workflows\\\\tiktok-video\\\\workflows\\\\video-production\\\\SKILL.md' is not in the subpath of 'C:\\\\'\r\n\r\n----------------------------------------------------------------------\r\nRan 5 tests in 1.144s\r\n\r\nFAILED (errors=2)\r\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.9\\.orch-notes\\B1.9-controls.py",
+        "after"
+      ],
+      "exit": 0,
+      "stdout": "test_canonical_discovery_exposes_only_public_owner (fixture_control.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner) ... ok\r\ntest_contained_links_and_escape_control (fixture_control.VideoPackageTests.test_contained_links_and_escape_control) ... ok\r\ntest_document_verifier_rejects_absent_and_stale_output (fixture_control.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output) ... ok\r\ntest_literal_sequence_resolves_in_correct_public_scope (fixture_control.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope) ... ok\r\ntest_stale_package_cannot_authorize_existing_frame (fixture_control.VideoPackageTests.test_stale_package_cannot_authorize_existing_frame) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 5 tests in 0.813s\r\n\r\nOK\r\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "tools/run_tests.py",
+        "tests.test_tiktok_video_package",
+        "tests.test_tiktok_video_probe",
+        "--no-cache",
+        "-j",
+        "2",
+        "--timing-file",
+        ".orch-notes/B1.9-scoped-timing.json"
+      ],
+      "exit": 0,
+      "stdout": "running 2 modules across 2 workers\r\nok   tests.test_tiktok_video_probe                  6 tests    0.28s\r\nok   tests.test_tiktok_video_package                5 tests    1.07s\r\n\r\n----------------------------------------------------------------------\r\n2 modules, 11 tests: 0 failures, 0 errors, 0 skipped\r\nwall 1.07s across 2 workers (summed module time 1.35s)\r\nslowest modules:\r\n     1.07s  tests.test_tiktok_video_package\r\n     0.28s  tests.test_tiktok_video_probe\r\nOK\r\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--exit-code",
+        "05290a079127759f6ae1307dbcda4e6d3e800a6c",
+        "10565acdfa35f4a768a4dc803c9d9b5c5c66744d",
+        "--",
+        "example-workflows/tiktok-video"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "show",
+        "ac22b24b^:tests/test_tiktok_video_package.py"
+      ],
+      "exit": 0,
+      "stdout": "\"\"\"Public video composition at discovery, resolution and integrity seams.\n\nThese are static admission checks with mutated disposable controls, never\nclaims that prose ran or that endpoint creative/audio quality was judged.\n\"\"\"\nfrom __future__ import annotations\n\nimport re\nimport hashlib\nimport shlex\nimport subprocess\nimport sys\nimport shutil\nimport tempfile\nimport unittest\nfrom pathlib import Path\nfrom unittest.mock import patch\n\n_IMPORT_PATH = sys.path[:]\n\nimport install\nfrom scripts import doclint, rings, tickets_frame, tickets_pins\nfrom tools.validate_support import packages, workflows\nfrom tests._repo_root import ROOT\n\n# Imported runtime entry points can add their installed library to sys.path.\nsys.path[:] = _IMPORT_PATH\n\nPACKAGE = ROOT / 'example-workflows/tiktok-video'\nPRIVATE = {'video-direction', 'video-production', 'render-video',\n           'video-script-quality', 'video-quality'}\n\n\nclass VideoPackageTests(unittest.TestCase):\n    def setUp(self):\n        original_path = sys.path[:]\n        self.addCleanup(lambda: sys.path.__setitem__(slice(None), original_path))\n        self.tmp = tempfile.TemporaryDirectory()\n        self.addCleanup(self.tmp.cleanup)\n        self.root = Path(self.tmp.name)\n        self.options = {'project': self.root / 'project',\n                        'home': self.root / 'home', 'lib': ROOT}\n\n    def grade(self, package=PACKAGE, options=None):\n        diag = packages.Diagnostics()\n        with patch.object(packages, 'ROOT', Path(ROOT.anchor)):\n            workflows.validate_workflow_packages(\n                ROOT, [(package, package / 'SKILL.md')], diag,\n                standard_roots=[ROOT / 'standards'],\n                overrides=options or self.options)\n        return diag\n\n    def copy(self):\n        target = self.root / 'project/.orchflows/workflows/tiktok-video'\n        shutil.copytree(PACKAGE, target)\n        return target\n\n    def test_canonical_discovery_exposes_only_public_owner(self):\n        found = {p.name for p, _, _ in install.discover_workflow_skills(ROOT)}\n        self.assertIn('tiktok-video', found)\n        self.assertFalse(PRIVATE & found)\n        records = rings.inventory(**self.options)\n        names = {r['name'] for r in records}\n        self.assertIn('tiktok-video', names)\n        self.assertFalse(PRIVATE & names)\n        for name in ('video-direction', 'video-production'):\n            with self.assertRaises(rings.RingError):\n                rings.resolve('workflow', name, trust=False, **self.options)\n\n    def test_literal_sequence_resolves_in_correct_public_scope(self):\n        text = (PACKAGE / 'SKILL.md').read_text(encoding='utf-8')\n        calls = [name for command in workflows._commands(text)\n                 for kind, name in workflows.NAME_FLAG_RE.findall(command)\n                 if kind == 'workflow']\n        self.assertEqual(['tiktok-video', 'video-direction',\n                          'video-production'], calls)\n        commands = list(workflows._commands(text))\n        research = [command for command in commands\n                    if ('standard', 'orch-research') in workflows.NAME_FLAG_RE.findall(command)]\n        self.assertEqual(3, len(research))\n        self.assertEqual(2, sum('tickets.py do ' in command for command in research))\n        self.assertEqual(1, sum('tickets.py judge ' in command for command in research))\n        for command in research:\n            self.assertIn('--parent <frame>', command)\n            self.assertIn('--goal-file', command)\n            self.assertIn('--context-file', command)\n        for path in [PACKAGE / 'SKILL.md', PACKAGE / 'references/admission.md',\n                     PACKAGE / 'references/inventory.md']:\n            body = path.read_text(encoding='utf-8')\n            self.assertFalse({'super-research', 'research-acquire', 'html-dossier'}\n                             & set(re.findall(r'[a-z]+(?:-[a-z]+)+', body)), path)\n        self.assertFalse(self.grade().has_errors)\n        for kind, name in [('workflow', 'video-direction'),\n                           ('workflow', 'video-production'),\n                           ('skill', 'render-video'),\n                           ('standard', 'video-quality'),\n                           ('standard', 'video-script-quality')]:\n            record = rings.resolve(kind, name, owner='tiktok-video',\n                                   trust=False, **self.options)\n            self.assertTrue(record['private'])\n        with self.assertRaises(rings.RingError):\n            rings.resolve('standard', 'video-quality', owner='super-research',\n                          trust=False, **self.options)\n        copied = self.copy()\n        (copied / 'workflows/video-direction/SKILL.md').unlink()\n        self.assertTrue(self.grade(copied).has_errors)\n\n    def test_contained_links_and_escape_control(self):\n        for path in PACKAGE.rglob('*.md'):\n            for target in re.findall(r'\\]\\(([^)]+)\\)', path.read_text(encoding='utf-8')):\n                resolved = doclint.resolve_link(path, target)\n                if resolved is not None:\n                    self.assertTrue(resolved.is_file(), (path, target))\n                    self.assertTrue(resolved.resolve().is_relative_to(PACKAGE.resolve()),\n                                    (path, target))\n        copied = self.copy()\n        with (copied / 'SKILL.md').open('a', encoding='utf-8') as out:\n            out.write('\\n[escape](../../../../outside.md)\\n')\n        self.assertTrue(self.grade(copied).has_errors)\n\n    def test_stale_package_cannot_authorize_existing_frame(self):\n        copied = self.copy()\n        expected = tickets_pins.tree_digest('workflow', copied)\n        parent = self.root / 'B1.md'\n        parent.write_text('---\\nworkflow: tiktok-video\\nworkflow_digest: ' + expected\n                          + '\\nworkflow_entry: SKILL.md\\n---\\n', encoding='utf-8')\n        def resolved(*args):\n            return {'dir': str(copied), 'ring': 'project',\n                    'digest': tickets_pins.tree_digest('workflow', copied)}\n        with patch.object(tickets_pins, 'resolved', side_effect=resolved):\n            self.assertIsNone(tickets_frame.workflow_context(self.root, 'B1')[1])\n            with (copied / 'references/admission.md').open('a', encoding='utf-8') as out:\n                out.write('\\nChanged admission evidence.\\n')\n            self.assertIsNotNone(tickets_frame.workflow_context(self.root, 'B1')[1])\n            (copied / 'SKILL.md').unlink()\n            self.assertIsNotNone(tickets_frame.workflow_context(self.root, 'B1')[1])\n\n    def test_document_verifier_rejects_absent_and_stale_output(self):\n        text = (PACKAGE / 'references/creative.md').read_text(encoding='utf-8')\n        command = next(line.strip() for line in text.splitlines()\n                       if line.strip().startswith('<verified-python> -c '))\n        argv = shlex.split(command)\n        document, review = self.root / 'script.md', self.root / 'review.md'\n        fixed = [b'Original script', b'Independent review of fixed script']\n        digests = [hashlib.sha256(data).hexdigest() for data in fixed]\n        command = [sys.executable, '-c', argv[2], str(document), digests[0],\n                   str(review), digests[1]]\n        def reading():\n            return subprocess.run(command, capture_output=True, timeout=10).returncode\n        self.assertNotEqual(0, reading())\n        document.write_bytes(fixed[0])\n        review.write_bytes(fixed[1])\n        self.assertEqual(0, reading())\n        document.write_bytes(b'Unreviewed revision')\n        self.assertNotEqual(0, reading())\n        document.write_bytes(fixed[0])\n        review.write_bytes(b'Changed review')\n        self.assertNotEqual(0, reading())\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+      "stderr": ""
+    }
+  ]
+}

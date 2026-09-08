@@ -1314,6 +1314,17 @@
    "test_tickets_grade.GradeSnapshotTest.test_no_reader_reconstructs_a_verdict_out_of_a_report",
    "test_tickets_grade.GradeSnapshotTest.test_one_member_decomposition_is_refused",
    "test_tickets_grade.GradeSnapshotTest.test_the_review_ledger_module_is_gone",
+   "test_tiktok_video_package.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner",
+   "test_tiktok_video_package.VideoPackageTests.test_contained_links_and_escape_control",
+   "test_tiktok_video_package.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output",
+   "test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope",
+   "test_tiktok_video_package.VideoPackageTests.test_stale_package_cannot_authorize_existing_frame",
+   "test_tiktok_video_probe.VideoProbeTests.test_audio_settings_and_silent_clipped_or_off_target_signal_fail",
+   "test_tiktok_video_probe.VideoProbeTests.test_endpoints_allow_aac_padding_but_reject_drift",
+   "test_tiktok_video_probe.VideoProbeTests.test_malformed_tool_output_and_timeout_return_nonzero",
+   "test_tiktok_video_probe.VideoProbeTests.test_missing_corrupt_and_actual_decode_boundary",
+   "test_tiktok_video_probe.VideoProbeTests.test_stream_contract_rejects_wrong_size_fps_codec_and_color",
+   "test_tiktok_video_probe.VideoProbeTests.test_toolchain_must_match_local_qualified_lock",
    "test_trace.TestClaudeAdapter.test_clean_fixture_shape_and_fields",
    "test_trace.TestClaudeAdapter.test_cli_exits_zero_on_malformed_input",
    "test_trace.TestClaudeAdapter.test_malformed_fixture_yields_partial_trace",
@@ -4946,6 +4957,54 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "<module>",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "VideoPackageTests.grade",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "VideoPackageTests.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "VideoPackageTests.test_stale_package_cannot_authorize_existing_frame",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_probe",
+   "owner": "VideoProbeTests.test_malformed_tool_output_and_timeout_return_nonzero",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_probe",
+   "owner": "VideoProbeTests.test_missing_corrupt_and_actual_decode_boundary",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
