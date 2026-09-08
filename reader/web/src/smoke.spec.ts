@@ -1,3 +1,5 @@
+import { expectLiveTicket } from "./features/inspector/browser-contract";
+import { expectRunActivation } from "./features/run-map/browser-contract";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { type ChildProcess } from "node:child_process";
@@ -347,9 +349,9 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   const workflowCatalog = page.getByRole("list", { name: "Workflow definitions" });
   await expect(workflowCatalog.locator(":scope > li")).toHaveCount(13);
   await expect(workflowCatalog.locator("a[href^='/runs/']")).toHaveCount(0);
-  await page.getByRole("link", { name: "fix", exact: true }).click();
-  await expect(page).toHaveURL(/\/workflows\/fix$/);
-  await expect(page.getByRole("heading", { level: 1, name: "fix" })).toBeVisible();
+  await page.getByRole("link", { name: "evolve", exact: true }).click();
+  await expect(page).toHaveURL(/\/workflows\/evolve$/);
+  await expect(page.getByRole("heading", { level: 1, name: "evolve" })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole("heading", { level: 1, name: "Workflows" })).toBeVisible();
 
@@ -462,6 +464,22 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   await expect(page.locator(".friction-record")).toHaveCount(100);
   await expect(page.getByText("Showing 100 of 130 records")).toBeVisible();
 });
+
+for (const [breakpoint, width, height] of [["wide", 1440, 1024], ["compact", 1024, 768]] as const) {
+  test(`live ticket contract ${breakpoint}`, async ({ page }, testInfo) => {
+    test.skip(!experienceMode || !["smoke", "contract"].includes(action));
+    await page.setViewportSize({ width, height });
+    await expectLiveTicket(page, origin);
+    await page.screenshot({ path: testInfo.outputPath("ticket-overview.png"), fullPage: true });
+  });
+  test(`run graph activation ${breakpoint}`, async ({ page }, testInfo) => {
+    test.skip(!experienceMode || !["smoke", "contract"].includes(action));
+    await page.setViewportSize({ width, height });
+    await expectRunActivation(page, origin);
+    await page.locator('.react-flow__node[data-id="G2"]').press("Enter");
+    await page.screenshot({ path: testInfo.outputPath("run-keyboard-selection.png"), fullPage: true });
+  });
+}
 
 test("capture every manifest identity", async ({ page }) => {
   test.skip(action !== "capture");

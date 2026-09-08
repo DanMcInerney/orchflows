@@ -100,6 +100,7 @@
 .run-map__canvas .react-flow__background pattern circle { fill: var(--border-subtle); }
 .run-map__canvas .react-flow__node-ticket { width: 184px; border: 0; background: transparent; }
 .run-map__canvas .react-flow__node-group { width: 280px; border: 0; background: transparent; }
+.run-map__canvas .react-flow__node[role="button"] { cursor: pointer; }
 .run-map__canvas .react-flow__node:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 .run-map__canvas .react-flow__edge-path { stroke: var(--status-waiting); stroke-width: 1.5; }
 .run-map__canvas .react-flow__edge-text { fill: var(--text-strong); font: 700 var(--type-xs) var(--font-mono); }
