@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import copy
 import json
+from contextlib import contextmanager
+import unittest
+from unittest import mock
 
 from scripts import tickets_admission as admission, tickets_lifecycle, tickets_mint, tickets_seal
 from scripts.tickets_format import _set_frontmatter_field
@@ -73,7 +76,7 @@ class AdmissionReliabilityTest(SealedRunTest):
                 else:
                     self.assertIn("error", result)
                     self.assertEqual(snapshot["T.1.1"], self.ticket_path("T.1.1").read_text(encoding="utf-8"))
-                path.write_text(snapshot[changed_id], encoding="utf-8")
+            path.write_text(snapshot[changed_id], encoding="utf-8")
 
     def test_malformed_sealed_containers_refuse(self):
         self.child("T.1", "T")
@@ -120,3 +123,34 @@ class AdmissionReliabilityTest(SealedRunTest):
         data, refusal = tickets_mint._sealed_parent(path.parent, "T")
         self.assertIsNone(data)
         self.assertIn("error", refusal)
+
+
+class MintPublicationLockTest(unittest.TestCase):
+    def test_callable_holds_publication_lock_before_body(self):
+        events = []
+
+        @contextmanager
+        def lock():
+            events.append("acquired")
+            yield
+            events.append("released")
+
+        def body(rest, *, judge):
+            self.assertEqual(["acquired"], events)
+            self.assertEqual(["run"], rest)
+            self.assertTrue(judge)
+            return {"made": True}
+
+        with mock.patch.object(tickets_mint, "installation_lock", lock), mock.patch.object(
+            tickets_mint, "_cmd_callable_locked", body,
+        ):
+            self.assertEqual({"made": True}, tickets_mint._cmd_callable(["run"], judge=True))
+        self.assertEqual(["acquired", "released"], events)
+
+    def test_lock_failure_refuses_before_mint(self):
+        with mock.patch.object(tickets_mint, "installation_lock", side_effect=OSError("lock unavailable")), mock.patch.object(
+            tickets_mint, "_cmd_callable_locked",
+        ) as body:
+            result = tickets_mint._cmd_callable(["run"], judge=False)
+        self.assertIn("error", result)
+        body.assert_not_called()

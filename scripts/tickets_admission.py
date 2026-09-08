@@ -138,7 +138,7 @@ def _canonical_json(value) -> bytes:
 
 
 def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignments=None, snapshot_ids=None):
-    """The sealed ticket one lawful post-seal chain binds its admission through."""
+    """Locate the sealed anchor after validating its post-seal chain."""
     sealed_assignments = dict(sealed_assignments or {})
     visited = {ticket_id}
     current_id, current_text, current_data = ticket_id, text, data
@@ -157,8 +157,6 @@ def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignm
         if str(current_data.get("assignment_seal") or "") != digest(current_id, current_text):
             return None
         if parent_id in sealed_assignments:
-            if str(parent.get("assignment_seal") or "") != digest(parent_id, siblings[parent_id]):
-                return None
             return parent_id
         visited.add(parent_id)
         current_id, current_text, current_data = parent_id, siblings[parent_id], parent
@@ -259,7 +257,10 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             )
             if sealed_parent is not None:
                 parent = _parse_frontmatter(siblings[sealed_parent])
-                if sealed_assignments.get(sealed_parent) != parent.get("assignment_seal"):
+                if (
+                    sealed_assignments.get(sealed_parent) != parent.get("assignment_seal")
+                    or parent.get("assignment_seal") != assignment_digest(sealed_parent, siblings[sealed_parent])
+                ):
                     findings.append(finding(
                         "sealed-parent-mismatch", "assignment_seal",
                         "sealed state does not bind the parent this child was minted under",

@@ -776,6 +776,8 @@ class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
     def close(self, *, note="delivered"):
         return retired_commands.run([
             "dispatch-outcome", "run", "T", "--note", note,
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--by", "worker",
         ])
 
     def test_a_note_repeating_a_streamed_line_still_closes(self):
