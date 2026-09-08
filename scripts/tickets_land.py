@@ -39,7 +39,7 @@ if __package__:
     )
     from .tickets_adapters import AdapterError, adapter_for_ticket, derived_isolation
     from .tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
-    from .tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
+    from .tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects, dispatch_join_preflight
     from .tickets_outcome import _cmd_dispatch_outcome
     from .tickets_lifecycle import _cmd_ready
     from .tickets_result import _append_event
@@ -60,7 +60,7 @@ else:  # pragma: no cover - direct/installed flat script path
     )
     from tickets_adapters import AdapterError, adapter_for_ticket, derived_isolation
     from tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
-    from tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
+    from tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects, dispatch_join_preflight
     from tickets_outcome import _cmd_dispatch_outcome
     from tickets_lifecycle import _cmd_ready
     from tickets_result import _append_event
@@ -286,6 +286,9 @@ def _land_transaction(run, ticket_id, identity, outcome_file, driver_status):
     path, data = _ticket(run, ticket_id)
     if path is None:
         return {"error": f"unreadable ticket for landing: {run}/{ticket_id}"}
+    inspected = dispatch_join_preflight(run, ticket_id, data, identity, driver_status)
+    if "error" in inspected:
+        return inspected
     # Before the merge, not after it. This refusal reads the ticket's own
     # frontmatter and needs no integrated tree, and asking it second is how
     # one `land` merged a candidate into the run's checkout and then refused
