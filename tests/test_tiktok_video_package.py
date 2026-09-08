@@ -35,10 +35,8 @@ class VideoPackageTests(unittest.TestCase):
     def setUp(self):
         original_path = sys.path[:]
         self.addCleanup(lambda: sys.path.__setitem__(slice(None), original_path))
-        # Diagnostics need the repository drive; scratch stays outside scans.
-        scratch = ROOT / ".orch-notes"
-        scratch.mkdir(exist_ok=True)
-        self.tmp = tempfile.TemporaryDirectory(dir=scratch)
+        # Diagnostics need the repository drive; stay outside repository copies.
+        self.tmp = tempfile.TemporaryDirectory(dir=ROOT.parent)
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.options = {'project': self.root / 'project',
