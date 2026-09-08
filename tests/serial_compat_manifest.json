@@ -22,6 +22,41 @@
    "test_architecture_owners.StatedCeilingTest.test_padding_a_copy_past_the_ceiling_fails_the_check",
    "test_architecture_owners.StatedCeilingTest.test_the_map_is_inside_the_ceiling_it_states",
    "test_architecture_owners.StatedCeilingTest.test_the_map_states_a_ceiling",
+   "test_benchmaker_calibration.CalibrationTests.test_duplicate_missing_cases_controls_only_and_wrong_configuration",
+   "test_benchmaker_calibration.CalibrationTests.test_equal_case_estimator_does_not_pool_trials_or_select_best",
+   "test_benchmaker_calibration.CalibrationTests.test_established_task_timeout_is_genuine_failure_startup_is_excluded",
+   "test_benchmaker_calibration.CalibrationTests.test_external_probe_rejects_forged_summary_and_audit_identity",
+   "test_benchmaker_calibration.CalibrationTests.test_independent_grader_discriminates_wrong_and_missing_source",
+   "test_benchmaker_calibration.CalibrationTests.test_infrastructure_never_counts_as_target_failure",
+   "test_benchmaker_calibration.CalibrationTests.test_legacy_manifest_never_enters_empirical_admission",
+   "test_benchmaker_calibration.CalibrationTests.test_observed_configuration_contract_can_be_calibrated",
+   "test_benchmaker_calibration.CalibrationTests.test_optional_configuration_metadata_does_not_block_declared_rigor",
+   "test_benchmaker_calibration.CalibrationTests.test_prepare_cannot_manufacture_receipt_or_completed_benchmark",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_accepts_equivalent_paths_and_rejects_outside_product",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_detects_unlisted_frozen_file",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_rejects_absent_journal_and_uncommitted_manifest",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_rejects_missing_and_corrupt_output",
+   "test_benchmaker_calibration.CalibrationTests.test_tracer_replays_native_source_and_preserves_configuration_gap",
+   "test_benchmaker_integration.PublicIntegrationTests.test_generated_project_adapters_expose_only_benchmaker",
+   "test_benchmaker_integration.PublicIntegrationTests.test_package_resource_containment_and_literal_standard_calls",
+   "test_benchmaker_integration.PublicIntegrationTests.test_private_names_resolve_only_inside_public_package",
+   "test_benchmaker_integration.PublicIntegrationTests.test_public_handoff_has_required_inputs_and_ordered_private_calls",
+   "test_benchmaker_integration.PublicIntegrationTests.test_tournament_forwards_configuration_and_gates_frozen_eligibility",
+   "test_benchmaker_landing.RecordLandingTests.test_same_repository_attempt_lands_and_exports_after_candidate_retirement",
+   "test_benchmaker_repair.RepairTests.test_favorable_final_cannot_repair_unmet_development",
+   "test_benchmaker_repair.RepairTests.test_final_out_of_band_does_not_replace_calibrated_development",
+   "test_benchmaker_repair.RepairTests.test_frozen_nonmanifest_mutation_before_self_report_is_rejected",
+   "test_benchmaker_repair.RepairTests.test_grader_setup_exclusion_keeps_native_receipt_and_is_admitted",
+   "test_benchmaker_repair.RepairTests.test_nested_configuration_gaps_and_optional_metadata",
+   "test_benchmaker_repair.RepairTests.test_only_attributed_infrastructure_replacements_can_extend_launches",
+   "test_benchmaker_repair.RepairTests.test_package_byte_mutation_and_runtime_label_spoof_are_rejected",
+   "test_benchmaker_repair.RepairTests.test_parent_grader_rejects_no_api_and_forged_pass_and_accepts_real_answers",
+   "test_benchmaker_repair.RepairTests.test_typed_qualification_keeps_all_three_states_through_probe",
+   "test_benchmaker_round2.PublicationSequenceTests.test_published_rounds_survive_landed_partial_and_final_indexes",
+   "test_benchmaker_round2.SecondRepairTests.test_fd_spoof_and_reflection_are_unsupported_while_real_calls_complete",
+   "test_benchmaker_round2.SecondRepairTests.test_finalization_call_is_after_all_terminal_branches",
+   "test_benchmaker_round2.SecondRepairTests.test_required_child_survives_every_unavailable_or_optional_ancestor",
+   "test_benchmaker_round2.SecondRepairTests.test_substitute_checks_and_wrong_case_inputs_are_rejected_semantically",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_choice_authorizing_dispositions_require_settled_q12",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_covered_candidate_or_evidence_change_invalidates_disposition",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_each_disposition_is_bound_to_one_branch_shape",
@@ -2256,6 +2291,22 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_benchmaker_calibration",
+   "owner": "<module>",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_benchmaker_round2",
+   "owner": "PublicationSequenceTests.test_published_rounds_survive_landed_partial_and_final_indexes",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

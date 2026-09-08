@@ -8,8 +8,11 @@ Require: `skill`, the fixed skill identity being evolved; `surface`, its
 declared mutable surface, which belongs to the campaign and its candidates;
 `policy`, the frozen search policy, promotion rule and margin; `bound`, the
 campaign's budget, which the benchmark's own allocation is never drawn from;
-and `sources`, `rigor` and `standard`, which this workflow carries down into the
-nested benchmark.
+and `sources`, `rigor`, `standard`, pinned `target_configuration` and preregistered
+`calibration_policy`. Supply benchmark `package`/git `workspace`, repository-relative `records`, durable external
+`evidence_export`, evidence-store root, native mechanism, `access_policy`,
+qualification/reference-audit allocation and separate benchmark bounds.
+Missing benchmark inputs stop before dependent work with named gaps.
 
 One skill improves against one benchmark built and qualified for it —
 *freeze*: "Fix the identity before any candidate exists and forbid every
@@ -20,15 +23,19 @@ opens its own frame under this one, and the ticket tree is the call tree.
 
 
 **Build the benchmark.** Invoke `benchmaker` with `target=skill`, the
-skill's declared observable outcome as `outcome`, `sources`, `rigor`, `standard`
-and this workflow's benchmark location as `package`, opening its frame under
-this one:
+skill's declared observable outcome as `outcome`, and all benchmark inputs above,
+including configuration/policy and workspace and records/export. The construction `standard`
+must resolve in benchmaker's own scope; a tournament-private name cannot cross
+this public boundary. Open its frame under this one and execute its body:
 
-    tickets.py frame-open <run> --parent <frame> --goal-file <benchmark-goal>
+    tickets.py frame-open <run> --parent <frame> --goal-file <benchmark-goal> --workflow benchmaker
 
-Its qualified result is recorded in the package manifest at the one Git
-revision that versions the benchmark, and that revision stays fixed for the
-whole campaign.
+Enter the campaign only with revision-bound VALID qualification, CALIBRATED
+development evidence meeting the declared policy, an eligible frozen git
+revision, and final-evaluation evidence satisfying required rigor. Pending,
+INVALID, UNVERIFIED, OUT_OF_BAND or legacy controls-only results stop here with
+their evidence and gaps. Keep final score/drift separate from development
+calibration. The eligible benchmark revision stays fixed for the campaign.
 
 **Spend the campaign.** Invoke `evolve` under this frame the same way, with
 `target=skill`, the skill's current fixed result/evidence as `incumbent`,
