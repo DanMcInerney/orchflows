@@ -87,6 +87,9 @@ if __package__:  # in-repo package imports
         _is_codex_boilerplate,
         _process_codex_file,
         extract_codex,
+        codex_events,
+        agent_message, completed_item, completed_shape, diagnostic_text,
+        metadata_kind, opaque, shape, text_blocks,
     )
 else:  # installed flat beside trace.py
     import console
@@ -130,6 +133,9 @@ else:  # installed flat beside trace.py
         _is_codex_boilerplate,
         _process_codex_file,
         extract_codex,
+        codex_events,
+        agent_message, completed_item, completed_shape, diagnostic_text,
+        metadata_kind, opaque, shape, text_blocks,
     )
 
 

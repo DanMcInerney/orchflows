@@ -280,8 +280,9 @@ class SelfImprove(unittest.TestCase):
         covered.write_text('{"matcher":[".*"],"watermark":"2099-01-01T00:00:00Z"}\n')
         before = covered.read_bytes()
         bundle = self.collect()
-        self.assertEqual(1, len(bundle["observations"]))
-        self.assertEqual(2, len(bundle["observations"][0]["sources"]))
+        self.assertEqual(2, len(bundle["observations"]))
+        self.assertEqual({"line:2", "line:3"}, {o["sources"][0]["locator"] for o in bundle["observations"]})
+        self.assertEqual(2, len({o["id"] for o in bundle["observations"]}))
         self.assertEqual(before, covered.read_bytes())
 
     def test_cross_review_recurrence_carries_immutable_original_proposal(self):
