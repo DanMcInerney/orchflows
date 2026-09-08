@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 
 if __package__:
+    from .tickets_install_guard import installation_lock
     from .tickets_admission import refresh_admissions, validated_document
     from .tickets_format import _parse_frontmatter, canonical_json
     from .tickets_generations import (
@@ -27,6 +28,7 @@ if __package__:
     )
     from .tickets_generations import correction_decision
 else:  # pragma: no cover - direct/installed flat script path
+    from tickets_install_guard import installation_lock
     from tickets_admission import refresh_admissions, validated_document
     from tickets_format import _parse_frontmatter, canonical_json
     _generations = __import__("tickets_generations")
@@ -191,6 +193,14 @@ def _cmd_draft_validate(rest) -> dict:
 
 
 def _cmd_seal(rest) -> dict:
+    try:
+        with installation_lock():
+            return _cmd_seal_locked(rest)
+    except OSError as error:
+        return {"error": f"seal refused: {error}"}
+
+
+def _cmd_seal_locked(rest) -> dict:
     args = list(rest)
     cut_generation = _extract(args, "--cut-generation")
     if len(args) != 2 or cut_generation is None:

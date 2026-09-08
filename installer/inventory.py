@@ -21,10 +21,13 @@ from pathlib import Path
 # ``console.py``, ``rings.py``, and ``_bootstrap.py`` (imported by
 # ``state_root.py`` before anything else is safe to import). All four have to
 # land in the flat layout or the import fails there and nowhere else.
+# The shared process job primitive is also shipped explicitly: it belongs
+# to both the workspace and ticket command families.
 SCRIPT_NAMES = (
     "_bootstrap.py",
     "browser_game_validate.py",
     "console.py",
+    "process_job.py",
     "doclint.py",
     "friction.py",
     "harvest.py",

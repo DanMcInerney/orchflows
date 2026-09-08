@@ -307,7 +307,8 @@ class TestNoFallback(unittest.TestCase):
             self.block_the_sink(tmp)
             before = self.listing(repo)
             for args in (
-                ("dispatch-outcome", "testrun", "T1", "--note", "a line"),
+                ("dispatch-outcome", "testrun", "T1", "--note", "a line",
+                 "--assignment-seal", "sha256:" + "a" * 64, "--dispatch-id", "D1", "--by", "T1"),
                 ("set-status", "testrun", "T1", "complete"),
                 ("result", "testrun", "T1", "--file", str(body)),
             ):

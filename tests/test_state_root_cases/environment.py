@@ -106,7 +106,7 @@ class TestOneResolverOwnsBothFacts(unittest.TestCase):
                 "state_root.py runs something at import time",
             )
 
-    def test_the_bootstrap_leaf_imports_nothing_beyond_pathlib(self):
+    def test_the_bootstrap_leaf_imports_only_standard_library(self):
         """Spec prescription: the leaf imports stdlib only, no `scripts.*`."""
 
         tree = ast.parse(BOOTSTRAP_PY.read_text(encoding="utf-8"))
@@ -116,7 +116,7 @@ class TestOneResolverOwnsBothFacts(unittest.TestCase):
                 imported.update(alias.name.split(".")[0] for alias in node.names)
             elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
                 imported.add(node.module.split(".")[0])
-        self.assertEqual({"__future__", "pathlib"}, imported)
+        self.assertEqual({"__future__", "pathlib", "sys", "tempfile"}, imported)
         for node in tree.body:
             self.assertIsInstance(
                 node,

@@ -19,11 +19,10 @@ disable-model-invocation: true
 <!-- BGW-TRACE[help:instance-validation|PJ-05,PJ-06,PJ-09,PJ-10,PJ-22,PJ-24,PJ-25,PJ-28] -->
 <!-- BGW-TRACE[implementation:closed-surface|PJ-20] -->
 
-Require: one incomplete product request as `brief`, and `workspace`, the
-git-backed product repository — the only invocation inputs. Missing fields
-never become defaults: an empirical gap becomes a declared experiment, a
-`kind: user-only` gap one verbatim question for the root to relay, and
-neither blocks the other.
+Require: `brief`, one incomplete product request, and `workspace`, its
+git-backed repository; no other inputs. Never default missing fields:
+empirical gaps become declared experiments, `kind: user-only` gaps verbatim
+questions for root. Neither blocks the other.
 
     tickets.py frame-open <run> --goal-file <program-goal> --workflow browser-game
 
@@ -32,46 +31,44 @@ neither blocks the other.
 <!-- BGW-TRACE[implementation:question-authority|PJ-06,PJ-09,PJ-10] -->
 <!-- BGW-TRACE[implementation:decision-safety|PJ-22] -->
 **Record**, `do --standard orch-content --isolation required`: one
-versioned program record in `workspace` for `brief`, conforming to its
+versioned record in `workspace` for `brief`, conforming to the
 [program-record schema](../references/browser-game-program-record.schema.json)
 and [intake-authority policy](../references/browser-game-intake-policy.json).
-Each Q-01–Q-12 field is recorded independently with its disposition,
-authority kind, owner, rationale, evidence and revision; each omitted
-material field carries a stable open-question or decision identity; a
-settled decision keeps its revision and invalidation trigger.
-Before pricing dependent production or play review, identify task-critical
-vision, listening and ordinary-input decision capabilities in the existing
-record. Observe a small representative interaction at the required cadence;
-record input/context identities and limits. Tool presence or fixed input scripts
-do not establish adaptive play. An unavailable capability remains an empirical
-gap, reopened only with changed capability.
+Record each Q-01–Q-12 field's disposition, authority kind, owner, rationale,
+evidence and revision independently; omitted material fields carry stable
+open-question/decision identities; settled decisions retain revision and
+invalidation trigger.
+Before pricing dependent production/play review, record task-critical vision,
+listening and ordinary-input decision capabilities. Observe representative
+interaction at required cadence, binding input/context identities and limits.
+Tool presence or fixed scripts cannot prove adaptive play. Unavailable
+capabilities remain empirical gaps until capability changes.
 `browser_game_validate.py` runs against it before filing.
 
 <!-- BGW-TRACE[implementation:experiment-validity|PJ-16,PJ-17] -->
 <!-- BGW-TRACE[implementation:conditional-fidelity|PJ-23] -->
 <!-- BGW-TRACE[implementation:revalidation|PJ-25] -->
 **Evidence**, `do --standard orch-research` handed the record's artifact
-line: one fixed evidence packet for the independently schedulable empirical
-fields affecting the record's next transition. Each experiment matches its
-source field's open `decision_id`, predeclares every required field and
-settles only its matched cells. Negative, null and inconclusive results stay
-visible; a control or experiment without the policy's complete recorded
-trigger identity stays `inactive`.
+line: a fixed evidence packet for independently schedulable empirical fields
+affecting the next transition. Each experiment matches its source field's open
+`decision_id`, predeclares required fields and settles only matched cells.
+Negative, null and inconclusive results stay visible; controls/experiments
+without the policy's complete recorded trigger identity stay `inactive`.
 
 <!-- BGW-TRACE[implementation:checkpoint-disposition|PJ-05] -->
 <!-- BGW-TRACE[implementation:kind-separation|AUTH-05,PJ-18,PJ-19,PJ-28] -->
 <!-- BGW-TRACE[implementation:evidence-identity|PJ-08,PJ-24] -->
 **Checkpoint**, one `judge --standard orch-content` over both artifact
-lines: compare direction and evidence to the original brief and settled
-subject facts, including visual relationships and actual interaction behavior;
-technical reachability alone does not establish intuitiveness or fun. Preserve
-capability gaps rather than lowering acceptance. Return exactly one disposition — `advance`, `revise`, `experiment`,
+lines: compare direction/evidence with the original brief and settled subject
+facts, including visual relationships and actual interaction. Technical
+reachability cannot establish intuitiveness or fun; preserve capability gaps
+without lowering acceptance. Return exactly one disposition — `advance`, `revise`, `experiment`,
 `user-decision-required` or `stop` — bound to its governing requirement, the
 fixed record revision and evidence identity. Its findings validate
 against the
 [checkpoint contract](../references/browser-game-checkpoint.schema.json).
-Only where that disposition is lawful does one further
-`do --standard orch-content` materialize the
+Only a lawful disposition permits
+`do --standard orch-content` to materialize the
 [standard-separated successor plan](../references/browser-game-program-record.schema.json#/$defs/successorPlanRevision),
 each ordered entry preserving its artifact identity, artifact kind, matching
 standard, run/root identities, dependencies and `planned`/`opened`
@@ -81,11 +78,10 @@ Never: invent a stack, cohort, support promise, budget, fallback, provider
 or release policy; settle a user-only field from evidence
 or paraphrase its question before relay; represent absence as agreement or
 overwrite a settled decision; infer `advance` from task completion; open a
-successor whose kind, standard, predecessor identity, dependency or root identity
-is unresolved; hide one artifact kind behind another's identity; or file
+successor with unresolved kind, standard, predecessor identity, dependency or root identity; hide one artifact kind behind another's
+identity; or file
 anything the instance validator rejects.
 
 Return: `tickets.py frame-close <run> <frame> --done <check>` on the terminal
-checkpoint — record and evidence identities, disposition, open question or
-successor identities and the invalidation boundary, all observable without
-historical input.
+checkpoint, with record/evidence identities, disposition, open-question/successor
+identities and invalidation boundary, observable without historical input.
