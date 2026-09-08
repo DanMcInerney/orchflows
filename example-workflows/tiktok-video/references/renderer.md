@@ -2,9 +2,7 @@
 
 The private render-video method serves the production maker. It contains no
 dispatch or review loop. The public tiktok-video workflow and private production
-workflow own calls; their stamped standards own quality. The copied scaffold
-owns artifact dependencies; this package's probe uses only Python's standard
-library and the project's locked Node CLI. No package runtime npm install,
+workflow own calls; their stamped standards own quality. The probe uses Python's standard library and the project's locked Node CLI. No package runtime npm install,
 global FFmpeg, paid provider, or graph-layout library is required.
 
 ## Copy and render

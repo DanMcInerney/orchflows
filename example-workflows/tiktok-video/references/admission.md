@@ -25,7 +25,7 @@ playback inspection with timestamps, exposed metrics and sampling limits, citati
 and read dates, contradictions and unavailable hearing. Counts establish no
 retention, conversion or causal superiority. Freeze as_of at or after new reads.
 
-The public research workflow resolves its own private html-dossier standard.
+The public research workflow resolves the library html-dossier standard in its own scope.
 Never pass video-script-quality or video-quality into that public scope. Consume
 its actual returned dossier and coverage findings, then pin one renderer and
 its dependencies before original script production. The foundation supports
@@ -51,28 +51,40 @@ unaccepted repair or a planned output path is not an accepted identity. Each
 frame-open at a call site establishes the invocation; drive that body's procedure
 in the resulting frame, not a second self-open.
 
-## Research verifier limit and partial evidence
+## Supply the outside research verifier
 
-The existing public super-research Return requires an outside dossier verifier,
-but it supplies no concrete executable for semantic citation/date/loss coverage.
-This package does not rename doclint into such a verifier or claim a hash proves
-those semantics. Before closing research, the admission caller must supply a
-concrete verifier covering that Return and record its failing controls and actual
-reading. If unavailable, report the actual partial dossier, coverage findings
-and this gap; do not claim research completion or an accepted dependent direction.
-This is a carried runtime prerequisite, not a change to the public callee.
+The existing super-research Return needs a dossier verifier but names no
+executable. The admission caller supplies it without editing that public
+workflow: outside the research children, obtain an independent orch-judge over
+the actual HTML doc identity with orch-content and the library html-dossier
+standard, using the report maker's exact ordered pins and document-tree adapter.
+The judging goal covers every load-bearing claim's citation and date, every
+returned loss and contradiction, and every unanswered sub-question. Supply the
+bounded question, actual source/coverage records and the fixed dossier. This is
+external verification for the research close, not a replacement research wrapper.
 
-For the direction's Markdown document, [creative](creative.md) provides a concrete
-outside integrity command over the document and independently reviewed evidence
-snapshot, after semantic review binding is inspected. Missing or changed bytes
-fail; the fixed review of that exact document supplies quality acceptance.
-Absent/corrupt controls use disposable files, never damage accepted outputs.
+Inspect that real review's exact-revision artifact binding, pins and findings.
+Only blocker-free findings permit a semantic acceptance claim. Freeze the actual
+review evidence snapshot with its ticket identity, reviewed doc identity,
+standards and findings; record its SHA256. Then use the concrete two-file command
+in [creative](creative.md), substituting the HTML document's path/hash and this
+review snapshot's path/hash. Run it outside children against disposable absent
+and corrupt controls and then the fixed actual files. Supply that exact argument
+vector as super-research's outside verifier. It verifies immutable bytes; the
+independent judgment supplies citation/date/loss completeness. A hash alone never
+proves semantics. A changed dossier requires fresh review, not a new expected hash.
+
+Direction uses the same integrity boundary with its own separately reviewed
+Markdown document. Missing review, blockers, unavailable required evidence or
+failed integrity returns the latest partial document and findings with named
+gaps; it does not establish an accepted dependent handoff. This supplied-verifier
+path is concrete admission guidance; its actual judge and probe observations
+remain to be performed by the live caller.
 
 ## Commands and planned request
 
-From the accepted source checkout, the joined gate's exact static command is:
-
-    & 'C:/Users/danhm/.orchflows/runtime/Scripts/python.exe' tools/run_required.py --no-cache
+From the accepted source checkout, run the exact joined gate command in
+[the source-check command file](source-check.txt).
 
 For scoped package composition checks from source:
 

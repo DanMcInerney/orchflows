@@ -16,10 +16,15 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+_IMPORT_PATH = sys.path[:]
+
 import install
 from scripts import doclint, rings, tickets_frame, tickets_pins
 from tools.validate_support import packages, workflows
 from tests._repo_root import ROOT
+
+# Imported runtime entry points can add their installed library to sys.path.
+sys.path[:] = _IMPORT_PATH
 
 PACKAGE = ROOT / 'example-workflows/tiktok-video'
 PRIVATE = {'video-direction', 'video-production', 'render-video',
@@ -28,6 +33,8 @@ PRIVATE = {'video-direction', 'video-production', 'render-video',
 
 class VideoPackageTests(unittest.TestCase):
     def setUp(self):
+        original_path = sys.path[:]
+        self.addCleanup(lambda: sys.path.__setitem__(slice(None), original_path))
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)

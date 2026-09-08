@@ -4958,10 +4958,26 @@
   },
   {
    "module": "tests.test_tiktok_video_package",
+   "owner": "<module>",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
    "owner": "VideoPackageTests.grade",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "VideoPackageTests.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "import-path"
    ]
   },
   {
