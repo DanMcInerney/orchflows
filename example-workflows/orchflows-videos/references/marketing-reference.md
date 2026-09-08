@@ -24,4 +24,4 @@ mechanism and support, with focal hierarchy, alternating visual density and a
 product-connected payoff. These are design hypotheses suggested by this case,
 not claims that its format caused retention or conversion. Future briefs choose
 their own expression, evidence, rhythm and visual language. The package's
-marketing standards own the reusable review criteria; this record adds none.
+marketing standard owns the reusable review criteria; this record adds none.
