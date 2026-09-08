@@ -63,8 +63,8 @@ def check_attempt(record, policy):
 def probe(root):
     root = Path(root).resolve()
     envelope = read_json(root / 'evidence' / 'admission.json')
-    manifest_path = Path(envelope['benchmark_manifest'])
-    require(manifest_path.is_relative_to(root / 'product'), 'benchmark must land in disposable product')
+    manifest_path = Path(envelope['benchmark_manifest']).resolve()
+    require(manifest_path.is_relative_to((root / 'product').resolve()), 'benchmark must land in disposable product')
     manifest = read_json(manifest_path)
     require(manifest.get('schema_version') == 2 and manifest.get('profile') == 'empirical-calibration', 'not empirical manifest v2')
     require(manifest.get('target_configuration'), 'missing manifest configuration')

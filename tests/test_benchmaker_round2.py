@@ -1,5 +1,6 @@
 """Second-repair counterexamples; native events and sample counts are synthetic."""
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -89,9 +90,13 @@ class SecondRepairTests(CalibrationFixture, unittest.TestCase):
 
 class PublicationSequenceTests(unittest.TestCase):
     def test_published_rounds_survive_landed_partial_and_final_indexes(self):
+        environment = {key: value for key, value in os.environ.items()
+                       if key not in {'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL',
+                                      'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'}}
+        environment.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM='1')
         result = subprocess.run([sys.executable, '-m', 'tests.benchmaker_publication_probe'],
                                 cwd=Path(__file__).resolve().parents[1], capture_output=True,
-                                text=True, timeout=240)
+                                text=True, timeout=240, env=environment)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 

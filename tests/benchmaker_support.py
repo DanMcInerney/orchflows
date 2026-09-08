@@ -41,8 +41,11 @@ class CalibrationFixture:
     def git_repository(self, path):
         from tests import test_benchmaker_calibration as api
         path.mkdir()
-        for command in (['git', 'init', '-q'], ['git', '-c', 'user.name=Fixture', '-c',
-                        'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-qm', 'fixture']):
+        # Integration runs ordinary Git merges; worktrees inherit this local identity.
+        for command in (['git', 'init', '-q'],
+                        ['git', 'config', '--local', 'user.name', 'Fixture'],
+                        ['git', 'config', '--local', 'user.email', 'fixture@example.invalid'],
+                        ['git', 'commit', '--allow-empty', '-qm', 'fixture']):
             result = api.run_process(command, cwd=path, timeout=10)
             self.assertEqual(result['exit_code'], 0, result['stderr'])
         return api.run_process(['git', 'rev-parse', 'HEAD'], cwd=path, timeout=10)['stdout'].decode().strip()
