@@ -1,0 +1,746 @@
+--- tools/validate.py
+WARN contracts/standard.md: cross-tier near-duplicate at 0.56 with example-workflows/tiktok-video/references/review.md: 'The maker and judge read that same ordered set at the same digests' ~ 'Both making and judging resolve the ordered standards orch-code then video-quality at identical digests'
+WARN docs/custom-workflow-authoring.md: cross-tier near-duplicate at 1.00 with example-workflows/tiktok-video/workflows/video-production/SKILL.md: 'two rounds is the bound' ~ 'two rounds is the bound'
+WARN example-workflows/browser-game: dated 2026-08-28 workflow-protocol exception admits existing fixture format, schema, workflow-named script machinery; the allowlist grants no exception to another workflow
+WARN rules/composition.md: cross-tier near-duplicate at 0.56 with docs/custom-workflow-authoring.md: "A call to a top-level public workflow starts that workflow's scope" ~ "A top-level workflow is the package's public name"
+WARN rules/composition.md: cross-tier near-duplicate at 0.56 with docs/custom-workflow-authoring.md: 'Local resource links stay in the package' ~ 'Files and relative links stay below the public package directory'
+WARN rules/composition.md: cross-tier near-duplicate at 0.68 with docs/custom-workflow-authoring.md: 'The frame and each child pin that public owner, its whole-tree digest, and the contained workflow entry they read' ~ 'Every named frame records the public owner, a digest of the whole package, and the contained workflow entry it read'
+WARN rules/composition.md: cross-tier near-duplicate at 0.70 with docs/custom-workflow-authoring.md: 'A top-level workflow is the public owner of its directory' ~ "A top-level workflow is the package's public name"
+WARN rules/composition.md: cross-tier near-duplicate at 0.74 with docs/custom-workflow-authoring.md: "A call to a top-level public workflow starts that workflow's scope" ~ "Calling another public top-level workflow starts that workflow's package scope"
+WARN rules/composition.md: cross-tier near-duplicate at 0.81 with docs/custom-workflow-authoring.md: 'Links out may cite only canonical library law under `contracts/`, `docs/`, or `rules/`' ~ 'A manifest may also link to canonical library law under `contracts/`, `docs/`, or `rules/`'
+WARN rules/composition.md: cross-tier near-duplicate at 0.88 with docs/custom-workflow-authoring.md: 'a call to a private helper keeps its enclosing public scope' ~ 'Calling a private helper keeps the enclosing public scope'
+WARN rules/topology.md: cross-tier near-duplicate at 0.55 with contracts/work-item.md: 'deterministic repository gates decide the joined tip' ~ 'Repository-global deterministic gates still apply at the integrated tip'
+WARN rules/topology.md: cross-tier near-duplicate at 0.61 with example-workflows/tiktok-video/references/admission.md: 'The predecessor state is not rewritten' ~ 'No prior record is rewritten'
+WARN rules/topology.md: cross-tier near-duplicate at 0.63 with contracts/work-item.md: 'The predecessor state is not rewritten' ~ 'The predecessor ticket and run remain historical state and are not rewritten'
+WARN rules/topology.md: cross-tier near-duplicate at 0.66 with contracts/work-item.md: "A semantic successor opens only after the accepted predecessor result identity resolves and cites it in the successor root's Context" ~ 'A semantic change after seal is not an in-run amendment: after the accepted predecessor result identity resolves, it opens a successor run whose root `## Context` cites that identity'
+WARN rules/topology.md: cross-tier near-duplicate at 0.67 with contracts/work-item.md: 'Within a physical run the `root_generation` ordinal is `1`' ~ 'Its `root_generation` uses ordinal `1`'
+WARN rules/topology.md: cross-tier near-duplicate at 0.75 with contracts/result.md: 'deterministic repository gates decide the joined tip' ~ 'Deterministic repository-global gates run on the integrated tip'
+WARN rules/topology.md: cross-tier near-duplicate at 0.76 with contracts/work-item.md: 'compare-and-swap sealing refuses changed bytes' ~ 'compare-and-swap sealing refuses a stale snapshot'
+WARN rules/topology.md: cross-tier near-duplicate at 0.78 with contracts/work-item.md: 'Digests cover Goal, Context, optional Details, dependencies, exact executor binding, and necessary system identity' ~ 'Sealing fingerprints Goal, Context, optional Details, exact executor, dependencies, and necessary system identity'
+WARN rules/visibility.md: cross-tier near-duplicate at 0.56 with docs/vocabulary-authoring.md: 'a cross-package link to a non-public reference is a defect' ~ 'a fork of a spelling is a defect'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.56 with skills/kernel/orch-judge/SKILL.md: 'Require: one claimed ticket with stamped standard digests, a resolved child profile, and its semantic assignment' ~ 'Require: one immutable review ledger naming the fixed artifacts, Goal, assignment evidence, the standard digests, and a resolved child profile'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.61 with skills/kernel/orch-judge/SKILL.md: 'Local inspection is evidence in this result, never independent acceptance' ~ "treat a maker's local inspection as independent acceptance"
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.69 with skills/kernel/orch-judge/SKILL.md: 'claim local inspection is independent' ~ "treat a maker's local inspection as independent acceptance"
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.71 with skills/kernel/orch-judge/SKILL.md: 'Stream the executor record as work is produced, then commit the reserved outcome' ~ 'Stream the review report and commit the reserved outcome'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.75 with skills/kernel/orch-judge/SKILL.md: 'invent a domain rule outside the resolved standards or shared rules' ~ 'or import criteria outside the resolved standards and shared rules'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.78 with skills/kernel/orch-judge/SKILL.md: 'Return: the completed ticket with status, result identity, and the standard evidence record' ~ 'Return: the completed review ticket with status, the findings file path, its evidence, and the standard evidence record'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.90 with skills/kernel/orch-judge/SKILL.md: 'Never: treat this profile-neutral contract as permission for root or `role: none` glue to make the deliverable' ~ 'Never: treat this profile-neutral contract as permission for root or `role: none` glue to perform the review'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.93 with skills/kernel/orch-judge/SKILL.md: 'change profile or writer mid-assignment' ~ 'change profile or reviewer mid-assignment'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 1.00 with skills/kernel/orch-judge/SKILL.md: 'A standard that explicitly narrows a base tightens that base' ~ 'A standard that explicitly narrows a base tightens that base'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 1.00 with skills/kernel/orch-judge/SKILL.md: 'All applicable pinned guidance composes' ~ 'All applicable pinned guidance composes'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 1.00 with skills/kernel/orch-judge/SKILL.md: 'orthogonal standards apply beside one another' ~ 'orthogonal standards apply beside one another'
+WARN skills/workflows/checkpointed-build/SKILL.md: cross-tier near-duplicate at 0.96 with docs/custom-workflow-authoring.md: 'two rounds is the bound."' ~ 'two rounds is the bound'
+--- tools/run_tests.py
+WARN .orchflows\skills\research-acquire\scripts\super_research\adapters\bluesky.py: 509 physical lines (presumption 500)
+WARN .orchflows\skills\research-acquire\scripts\super_research\adapters\scholarly.py: 555 physical lines (presumption 500)
+WARN .orchflows\skills\research-acquire\scripts\super_research\probes.py: 633 physical lines (presumption 500)
+WARN .orchflows\skills\research-acquire\scripts\super_research\runner.py: 525 physical lines (presumption 500)
+WARN .orchflows\skills\research-acquire\scripts\super_research\smoke.py: 502 physical lines (presumption 500)
+WARN .orchflows\skills\research-acquire\tests\test_dependency_boundary_cases\support.py: 514 physical lines (presumption 500)
+WARN .orchflows\skills\research-acquire\tests\test_keyless_cases\support.py: 533 physical lines (presumption 500)
+WARN .orchflows\skills\research-acquire\tests\test_scholarly.py: 759 physical lines (presumption 500)
+WARN benchmarks\benchmaker\cases\cs-nondet-fresh\probe\check.py: 507 physical lines (presumption 500)
+WARN installer\application.py: 510 physical lines (presumption 500)
+WARN reader\web\src\features\run-map\RunMapView.tsx: 519 physical lines (presumption 500)
+WARN reader\web\src\smoke.spec.ts: 510 physical lines (presumption 500)
+WARN scripts\harvest.py: 516 physical lines (presumption 500)
+WARN scripts\tickets_frame.py: 696 physical lines (presumption 500)
+WARN tests\fixtures\benchmark\runner_core.py: 505 physical lines (presumption 500)
+WARN tests\test_dispatch_v1.py: 1207 physical lines (presumption 500)
+WARN tests\test_harvest.py: 591 physical lines (presumption 500)
+WARN tests\test_installer_cases\planning\scoped_hosts.py: 800 physical lines (presumption 500)
+WARN tests\test_installer_cases\support.py: 508 physical lines (presumption 500)
+WARN tests\test_lock_discipline.py: 508 physical lines (presumption 500)
+WARN tests\test_orchflows_check.py: 625 physical lines (presumption 500)
+WARN tests\test_orchflows_tooling.py: 734 physical lines (presumption 500)
+WARN tests\test_rings.py: 525 physical lines (presumption 500)
+WARN tests\test_run_required.py: 523 physical lines (presumption 500)
+WARN tests\test_run_tests.py: 581 physical lines (presumption 500)
+WARN tests\test_staleness_and_remedies.py: 1015 physical lines (presumption 500)
+WARN tests\test_ticket_callables.py: 782 physical lines (presumption 500)
+WARN tests\test_ticket_done_predicate.py: 615 physical lines (presumption 500)
+WARN tests\test_ticket_frames.py: 982 physical lines (presumption 500)
+WARN tests\test_ticket_pins.py: 703 physical lines (presumption 500)
+WARN tests\test_ticket_semantic_contract.py: 529 physical lines (presumption 500)
+WARN tests\test_validator_cases\availability_and_packages.py: 534 physical lines (presumption 500)
+WARN tests\test_workspace_cases\candidate_cases.py: 654 physical lines (presumption 500)
+WARN tests\test_workspace_cases\integration_cases.py: 538 physical lines (presumption 500)
+WARN tests\test_workspace_cases\start_cases.py: 509 physical lines (presumption 500)
+WARN tools\affected_tests.py: 515 physical lines (presumption 500)
+WARN tools\run_serial_compat.py: 523 physical lines (presumption 500)
+WARN tools\run_tests.py: 515 physical lines (presumption 500)
+WARN tools\validate_support\duplication.py: 515 physical lines (presumption 500)
+source-size presumption: warnings=39; authored_sources=1024; generated_sources=34; presumption=500; manifests=reader/web/dist/.vite/orchflows-generated.json
+running 108 modules across 24 workers
+ok   tests.test_browser_game_checkpoint             6 tests    0.75s
+ok   tests.test_architecture_owners                 5 tests    0.76s
+ok   tests.test_browser_game_program_record         7 tests    0.75s
+ok   tests.test_browser_game_intake_policy         10 tests    0.78s
+ok   tests.test_browser_game_instances             14 tests    0.79s
+ok   tests.test_browser_game_composition            4 tests    0.88s
+ok   tests.test_benchmaker_integration              5 tests    1.18s
+ok   tests.test_checkpointed_build                  2 tests    0.45s
+ok   tests.test_constitution                        9 tests    0.54s
+ok   tests.test_command_surface                     5 tests    0.64s
+ok   tests.test_catalog_completeness               11 tests    1.41s
+ok   tests.test_build_workflow                      3 tests    1.71s
+ok   tests.test_browser_game_traceability           9 tests    1.88s
+ok   tests.test_dispatch_standalone                 3 tests    1.95s
+ok   tests.test_callable_context                    2 tests    3.42s
+ok   tests.test_dispatch_launch_lines              14 tests    2.69s
+ok   tests.test_console_io                          9 tests    3.16s
+ok   tests.test_fact_registry                      11 tests    0.79s
+ok   tests.test_install_doctor_parity               5 tests    0.97s
+ok   tests.test_install_doctor                      9 tests    1.56s
+ok   tests.test_install_doctor_quick                8 tests    0.62s
+ok   tests.test_harvest                            42 tests    1.86s
+ok   tests.test_doclint                            22 tests    4.34s
+ok   tests.test_install_support_packages            2 tests    0.57s
+ok   tests.test_installer                          10 tests    0.99s
+ok   tests.test_events                             13 tests    4.99s
+ok   tests.test_installer_managed                  58 tests    1.16s
+ok   tests.test_installer_wrappers                  7 tests    0.77s
+ok   tests.test_lens_key                            4 tests    0.59s
+ok   tests.test_dispatch_launch_command            11 tests    6.80s
+ok   tests.test_lifecycle_render                    8 tests    0.45s
+ok   tests.test_minimal_acceptance                  2 tests    0.33s
+ok   tests.test_benchmaker_landing                  1 tests    8.51s
+ok   tests.test_installer_runtime                  20 tests    1.80s
+ok   tests.test_dispatch_launch                    21 tests    8.40s
+ok   tests.test_multi_standard                      5 tests    2.89s
+ok   tests.test_orchflows_check                    24 tests    2.66s
+ok   tests.test_dispatch_launch_record             13 tests    9.84s
+ok   tests.test_lock_discipline                    27 tests    3.61s
+ok   tests.test_preflight                           1 tests    0.41s
+ok   tests.test_registry_census                     9 tests    0.35s
+ok   tests.test_friction                           64 tests    8.53s  (skipped=2)
+ok   tests.test_orchflows_envs                     14 tests    2.91s
+ok   tests.test_orchflows_tooling                  30 tests    1.47s
+ok   tests.test_composable_integration              1 tests   11.79s
+ok   tests.test_ring_adapters                      15 tests    1.24s
+ok   tests.test_rings                              30 tests    1.22s
+ok   tests.test_run_tests_scope                    21 tests    0.65s
+ok   tests.test_script_executors                    9 tests    0.32s
+ok   tests.test_search_plan                        26 tests    1.04s
+ok   tests.test_dispatch_v1                        44 tests   13.46s
+ok   tests.test_orchflows_cli                      21 tests    8.34s
+ok   tests.test_project_binding                    13 tests    5.96s
+ok   tests.test_serial_compat_manifest_regression     1 tests    0.36s
+ok   tests.test_serial_compat_hardening             4 tests    2.78s
+ok   tests.test_shapes_render                       5 tests    0.47s
+ok   tests.test_regen                              19 tests    6.80s
+ok   tests.test_skill_fork_governance              10 tests    0.62s
+ok   tests.test_source_sizes                        5 tests    0.55s
+ok   tests.test_serial_compat                      16 tests   18.41s
+ok   tests.test_self_improve_entry                  4 tests    5.27s
+ok   tests.test_run_report                         49 tests    7.26s
+ok   tests.test_standards                          22 tests    2.00s
+ok   tests.test_serial_manifest                    15 tests    3.70s
+ok   tests.test_thin_orchestrator                   7 tests    0.73s
+ok   tests.test_super_research_runner               5 tests    3.74s
+ok   tests.test_static_tree_invariants             28 tests    6.16s
+ok   tests.test_ticket_done_spawn                   3 tests    0.56s
+ok   tests.test_orchflows_bundle                   11 tests   17.54s
+ok   tests.test_run_tests                          42 tests   14.02s
+ok   tests.test_ticket_protocol                     8 tests    0.44s
+ok   tests.test_ticket_semantic_contract           17 tests    1.78s
+ok   tests.test_tickets_bound                      15 tests    0.61s
+ok   tests.test_tickets_grade                       6 tests    0.55s
+ok   tests.test_state_root                         35 tests   12.18s
+ok   tests.test_ticket_frames                      49 tests    5.74s
+ok   tests.test_tiktok_video_probe                  6 tests    0.46s
+ok   tests.test_staleness_and_remedies             52 tests   12.98s
+ok   tests.test_tiktok_video_package                5 tests    2.02s
+ok   tests.test_trace                              29 tests    1.42s
+ok   tests.test_affected_tests                     51 tests   32.44s
+ok   tests.test_verification_model                 12 tests    0.35s
+ok   tests.test_windows_semantics                  13 tests    0.30s  (skipped=10)
+ok   tests.test_workflow_ladder_generator           6 tests    0.44s
+ok   tests.test_workflow_ladder_law                 7 tests    0.34s
+ok   tests.test_ticket_applied_skill               19 tests   13.39s
+ok   tests.test_ticket_pins                        36 tests   10.43s
+ok   tests.test_validate_measures                 102 tests    5.60s
+ok   tests.test_installer_planning                 15 tests   37.15s  (skipped=2)
+ok   tests.test_self_improve                       17 tests   26.94s
+ok   tests.test_self_improve_shapes                 3 tests   27.40s
+ok   tests.test_installer_hosts                    46 tests   36.12s
+ok   tests.test_installer_receipt                  52 tests   37.45s
+ok   tests.test_ticket_callables                   29 tests   23.83s
+ok   tests.test_tickets                           138 tests   45.10s
+ok   tests.test_validate_cases_schema              45 tests   16.28s
+FAIL tests.test_cell_linter                        22 tests   48.22s  (failures=1)
+ok   tests.test_verify_at                          20 tests   16.64s
+ok   tests.test_ticket_done_predicate              15 tests   26.84s
+ok   tests.test_super_research_suite                1 tests   32.69s
+ok   tests.test_benchmaker_round2                   5 tests   64.56s
+ok   tests.test_installer_shared                   27 tests   69.62s
+ok   tests.test_validate                           57 tests   70.13s
+ok   tests.test_benchmaker_repair                   9 tests   72.10s
+ok   tests.test_run_required                       42 tests   74.97s
+ok   tests.test_validator                          85 tests   43.50s
+ok   tests.test_benchmaker_calibration             15 tests   85.35s
+ok   tests.test_workspace                         155 tests  170.75s
+
+======================================================================
+FAILED MODULE: tests.test_cell_linter (exit 1)
+======================================================================
+....................F.
+======================================================================
+FAIL: test_the_tree_holds_at_or_under_the_cross_tier_ceiling (tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_the_tree_holds_at_or_under_the_cross_tier_ceiling)
+The copies P3 deletes, counted while they are still here. The
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\danhm\.orchflows\worktrees\20260908-video-creator\B1.5\tests\test_cell_linter_cases\warning_ratchets.py", line 68, in test_the_tree_holds_at_or_under_the_cross_tier_ceiling
+    self.assertIsNone(
+    ~~~~~~~~~~~~~~~~~^
+        ceiling_breach(len(found), CROSS_TIER_WARNING_CEILING, CROSS_TIER),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        "\n".join(found),
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: '30 WARN (cross-tier near-duplicate), ceiling 29' is not None : WARN contracts/standard.md: cross-tier near-duplicate at 0.56 with example-workflows/tiktok-video/references/review.md: 'The maker and judge read that same ordered set at the same digests' ~ 'Both making and judging resolve the ordered standards orch-code then video-quality at identical digests'
+WARN docs/custom-workflow-authoring.md: cross-tier near-duplicate at 1.00 with example-workflows/tiktok-video/workflows/video-production/SKILL.md: 'two rounds is the bound' ~ 'two rounds is the bound'
+WARN rules/composition.md: cross-tier near-duplicate at 0.56 with docs/custom-workflow-authoring.md: "A call to a top-level public workflow starts that workflow's scope" ~ "A top-level workflow is the package's public name"
+WARN rules/composition.md: cross-tier near-duplicate at 0.56 with docs/custom-workflow-authoring.md: 'Local resource links stay in the package' ~ 'Files and relative links stay below the public package directory'
+WARN rules/composition.md: cross-tier near-duplicate at 0.68 with docs/custom-workflow-authoring.md: 'The frame and each child pin that public owner, its whole-tree digest, and the contained workflow entry they read' ~ 'Every named frame records the public owner, a digest of the whole package, and the contained workflow entry it read'
+WARN rules/composition.md: cross-tier near-duplicate at 0.70 with docs/custom-workflow-authoring.md: 'A top-level workflow is the public owner of its directory' ~ "A top-level workflow is the package's public name"
+WARN rules/composition.md: cross-tier near-duplicate at 0.74 with docs/custom-workflow-authoring.md: "A call to a top-level public workflow starts that workflow's scope" ~ "Calling another public top-level workflow starts that workflow's package scope"
+WARN rules/composition.md: cross-tier near-duplicate at 0.81 with docs/custom-workflow-authoring.md: 'Links out may cite only canonical library law under `contracts/`, `docs/`, or `rules/`' ~ 'A manifest may also link to canonical library law under `contracts/`, `docs/`, or `rules/`'
+WARN rules/composition.md: cross-tier near-duplicate at 0.88 with docs/custom-workflow-authoring.md: 'a call to a private helper keeps its enclosing public scope' ~ 'Calling a private helper keeps the enclosing public scope'
+WARN rules/topology.md: cross-tier near-duplicate at 0.55 with contracts/work-item.md: 'deterministic repository gates decide the joined tip' ~ 'Repository-global deterministic gates still apply at the integrated tip'
+WARN rules/topology.md: cross-tier near-duplicate at 0.61 with example-workflows/tiktok-video/references/admission.md: 'The predecessor state is not rewritten' ~ 'No prior record is rewritten'
+WARN rules/topology.md: cross-tier near-duplicate at 0.63 with contracts/work-item.md: 'The predecessor state is not rewritten' ~ 'The predecessor ticket and run remain historical state and are not rewritten'
+WARN rules/topology.md: cross-tier near-duplicate at 0.66 with contracts/work-item.md: "A semantic successor opens only after the accepted predecessor result identity resolves and cites it in the successor root's Context" ~ 'A semantic change after seal is not an in-run amendment: after the accepted predecessor result identity resolves, it opens a successor run whose root `## Context` cites that identity'
+WARN rules/topology.md: cross-tier near-duplicate at 0.67 with contracts/work-item.md: 'Within a physical run the `root_generation` ordinal is `1`' ~ 'Its `root_generation` uses ordinal `1`'
+WARN rules/topology.md: cross-tier near-duplicate at 0.75 with contracts/result.md: 'deterministic repository gates decide the joined tip' ~ 'Deterministic repository-global gates run on the integrated tip'
+WARN rules/topology.md: cross-tier near-duplicate at 0.76 with contracts/work-item.md: 'compare-and-swap sealing refuses changed bytes' ~ 'compare-and-swap sealing refuses a stale snapshot'
+WARN rules/topology.md: cross-tier near-duplicate at 0.78 with contracts/work-item.md: 'Digests cover Goal, Context, optional Details, dependencies, exact executor binding, and necessary system identity' ~ 'Sealing fingerprints Goal, Context, optional Details, exact executor, dependencies, and necessary system identity'
+WARN rules/visibility.md: cross-tier near-duplicate at 0.56 with docs/vocabulary-authoring.md: 'a cross-package link to a non-public reference is a defect' ~ 'a fork of a spelling is a defect'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.56 with skills/kernel/orch-judge/SKILL.md: 'Require: one claimed ticket with stamped standard digests, a resolved child profile, and its semantic assignment' ~ 'Require: one immutable review ledger naming the fixed artifacts, Goal, assignment evidence, the standard digests, and a resolved child profile'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.61 with skills/kernel/orch-judge/SKILL.md: 'Local inspection is evidence in this result, never independent acceptance' ~ "treat a maker's local inspection as independent acceptance"
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.69 with skills/kernel/orch-judge/SKILL.md: 'claim local inspection is independent' ~ "treat a maker's local inspection as independent acceptance"
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.71 with skills/kernel/orch-judge/SKILL.md: 'Stream the executor record as work is produced, then commit the reserved outcome' ~ 'Stream the review report and commit the reserved outcome'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.75 with skills/kernel/orch-judge/SKILL.md: 'invent a domain rule outside the resolved standards or shared rules' ~ 'or import criteria outside the resolved standards and shared rules'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.78 with skills/kernel/orch-judge/SKILL.md: 'Return: the completed ticket with status, result identity, and the standard evidence record' ~ 'Return: the completed review ticket with status, the findings file path, its evidence, and the standard evidence record'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.90 with skills/kernel/orch-judge/SKILL.md: 'Never: treat this profile-neutral contract as permission for root or `role: none` glue to make the deliverable' ~ 'Never: treat this profile-neutral contract as permission for root or `role: none` glue to perform the review'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 0.93 with skills/kernel/orch-judge/SKILL.md: 'change profile or writer mid-assignment' ~ 'change profile or reviewer mid-assignment'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 1.00 with skills/kernel/orch-judge/SKILL.md: 'A standard that explicitly narrows a base tightens that base' ~ 'A standard that explicitly narrows a base tightens that base'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 1.00 with skills/kernel/orch-judge/SKILL.md: 'All applicable pinned guidance composes' ~ 'All applicable pinned guidance composes'
+WARN skills/kernel/orch-do/SKILL.md: cross-tier near-duplicate (within skills) at 1.00 with skills/kernel/orch-judge/SKILL.md: 'orthogonal standards apply beside one another' ~ 'orthogonal standards apply beside one another'
+WARN skills/workflows/checkpointed-build/SKILL.md: cross-tier near-duplicate at 0.96 with docs/custom-workflow-authoring.md: 'two rounds is the bound."' ~ 'two rounds is the bound'
+
+----------------------------------------------------------------------
+Ran 22 tests in 47.343s
+
+FAILED (failures=1)
+
+----------------------------------------------------------------------
+108 modules, 2251 tests: 1 failures, 0 errors, 14 skipped
+wall 170.76s across 24 workers (summed module time 1363.98s)
+slowest modules:
+   170.75s  tests.test_workspace
+    85.35s  tests.test_benchmaker_calibration
+    74.97s  tests.test_run_required
+    72.10s  tests.test_benchmaker_repair
+    70.13s  tests.test_validate
+FAILED: tests.test_cell_linter
+--- tools/run_serial_compat.py
+{"boundaries": [{"changed": [], "module": "test_installer", "remaining": [], "restored": [], "unexpected": []}, {"changed": [], "module": "test_project_binding", "remaining": [], "restored": [], "unexpected": []}, {"changed": [], "module": "tests.test_state_root_cases.repository", "remaining": [], "restored": [], "unexpected": []}, {"changed": [], "module": "tests.test_state_root_cases.environment", "remaining": [], "restored": [], "unexpected": []}, {"changed": [], "module": "tests.test_static_tree_invariants_cases.repository_shape", "remaining": [], "restored": [], "unexpected": []}, {"changed": ["module-cache"], "module": "test_tickets", "remaining": [], "restored": ["module-cache"], "unexpected": []}, {"changed": [], "module": "test_run_tests", "remaining": [], "restored": [], "unexpected": []}], "discovery": {"count": 2251}, "interpreter": {"executable": "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe", "pid": 26620, "version": "3.13.9"}, "manifest": {"sha256": "86932466c08d9b08409d798eafa0a388d8a5f41e7e3e17147565e0e186976ab4"}, "mode": "selected", "ok": true, "outcomes": {"errors": 0, "expected_failures": 0, "failures": 0, "skipped": 1, "tests": 12, "unexpected_successes": 0}, "recorded_at_utc": "2026-09-08T12:43:29Z", "revision": "bd8d24d2e4ae1cd14062b9d373205db28574460b", "schema": "orchflows.serial-compat-observation.v1", "sentinels": {"count": 12}, "wall_time_seconds": 6.681561, "worktree_clean": true}
+selected module: test_installer (4 sentinels)
+s...
+----------------------------------------------------------------------
+Ran 4 tests in 0.086s
+
+OK (skipped=1)
+selected module: test_project_binding (1 sentinels)
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.486s
+
+OK
+selected module: tests.test_state_root_cases.repository (1 sentinels)
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.013s
+
+OK
+selected module: tests.test_state_root_cases.environment (3 sentinels)
+...
+----------------------------------------------------------------------
+Ran 3 tests in 1.816s
+
+OK
+selected module: tests.test_static_tree_invariants_cases.repository_shape (1 sentinels)
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.262s
+
+OK
+selected module: test_tickets (1 sentinels)
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.025s
+
+OK
+selected module: test_run_tests (1 sentinels)
+.
+----------------------------------------------------------------------
+Ran 1 test in 2.328s
+
+OK
+--- install.py --dry-run
+detected Claude Code CLI: yes
+detected Codex CLI: yes
+detected grok CLI: yes
+source commit: bd8d24d2e4ae1cd14062b9d373205db28574460b
+library home: C:\Users\danhm\.orchflows\lib
+bin dir: C:\Users\danhm\.orchflows\bin
+private runtime: reuse C:\Users\danhm\.orchflows\runtime
+frontend distribution: reuse C:\Users\danhm\.orchflows\ui (manifest cfcd000932b049932cb0558082331c5608178946457e912552e75c6228ac5bcf)
+home ring: C:\Users\danhm\.orchflows (skills, standards, workflows, lib.version, .gitignore block)
+
+runtime directories (4):
+  mkdir: C:\Users\danhm\.orchflows\state\tickets
+  mkdir: C:\Users\danhm\.orchflows\state\runs
+  mkdir: C:\Users\danhm\.orchflows\state\friction
+  mkdir: C:\Users\danhm\.orchflows\state\improvement\proposals
+
+library files (181):
+  copy: C:\Users\danhm\.orchflows\lib\contracts\bundle.md
+  copy: C:\Users\danhm\.orchflows\lib\contracts\dispatch.md
+  copy: C:\Users\danhm\.orchflows\lib\contracts\result.md
+  copy: C:\Users\danhm\.orchflows\lib\contracts\shapes.json
+  copy: C:\Users\danhm\.orchflows\lib\contracts\standard.md
+  copy: C:\Users\danhm\.orchflows\lib\contracts\verdict.md
+  copy: C:\Users\danhm\.orchflows\lib\contracts\work-item.md
+  copy: C:\Users\danhm\.orchflows\lib\contracts\worklog.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\composition.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\delegation.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\improvement.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\loops.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\roles.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\token-economy.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\topology.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\verification.md
+  copy: C:\Users\danhm\.orchflows\lib\rules\visibility.md
+  copy: C:\Users\danhm\.orchflows\lib\docs\banner.png
+  copy: C:\Users\danhm\.orchflows\lib\docs\custom-workflow-authoring.md
+  copy: C:\Users\danhm\.orchflows\lib\docs\documentation.md
+  copy: C:\Users\danhm\.orchflows\lib\docs\library-review.md
+  copy: C:\Users\danhm\.orchflows\lib\docs\lifecycle.md
+  copy: C:\Users\danhm\.orchflows\lib\docs\search-plan-protocol.md
+  copy: C:\Users\danhm\.orchflows\lib\docs\standard-authoring.md
+  copy: C:\Users\danhm\.orchflows\lib\docs\vocabulary-authoring.md
+  copy: C:\Users\danhm\.orchflows\lib\docs\vocabulary.md
+  copy: C:\Users\danhm\.orchflows\lib\skills\kernel\orch-do\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\skills\kernel\orch-judge\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\skills\workflows\.gitkeep
+  copy: C:\Users\danhm\.orchflows\lib\skills\workflows\bakeoff\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\skills\workflows\checkpointed-build\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\.gitkeep
+  copy: C:\Users\danhm\.orchflows\lib\standards\html-dossier\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\market-brief\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\orch-code\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\orch-content\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\orch-data\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\orch-design\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\orch-research\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\orch-workflow-authoring\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\standards\standard-craft\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\references\admission\README.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\references\calibration-record.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\references\calibration.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\references\live-admission.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\references\manifest.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\references\qualification.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\admission.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\case_inputs.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\export.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\grader.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\native.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\probe.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\provenance.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\python_boundary.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\scripts\records.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\standards\benchmark-evidence\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\standards\benchmark-quality\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\workflows\benchmark-calibrate\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\workflows\benchmark-construct\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\benchmaker\workflows\benchmark-qualify\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\browser-game\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\browser-game\traceability.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\drift-canary\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\evolve\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\orch-build-workflow\references\dogfood.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\orch-build-workflow\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\references\benchmaker-manifest.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\references\benchmaker-protocol.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\references\benchmaker-research.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\references\browser-game-checkpoint.schema.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\references\browser-game-instance-fixtures.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\references\browser-game-intake-policy.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\references\browser-game-program-record.schema.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\references\evolve-generation.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\renovate\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\references\operation.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\scripts\improve_claude.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\scripts\improve_codex.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\scripts\improve_collect.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\scripts\improve_common.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\scripts\improve_lifecycle.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\scripts\improve_sources.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\scripts\improve_store.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\scripts\self_improve.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\standards\improvement-repair\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\self-improve\standards\improvement-review\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\skill-tournament\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\super-research\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\admission.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\creative.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\inventory.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\renderer.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\review.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\.gitignore
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\browser-provenance.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\font-provenance.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\index.tsx
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\model-provenance.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\package-lock.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\package.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\phrases.json
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\public\fonts\Inter.ttf
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\scaffold\public\fonts\OFL.txt
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\references\source-check.txt
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\scripts\probe.py
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\scripts\scaffold\render.cjs
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\scripts\scaffold\voice.mjs
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\skills\render-video\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\standards\video-quality\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\standards\video-script-quality\STANDARD.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\tools.txt
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\workflows\video-direction\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\example-workflows\tiktok-video\workflows\video-production\SKILL.md
+  copy: C:\Users\danhm\.orchflows\lib\templates\host-block.md
+  copy: C:\Users\danhm\.orchflows\lib\hosts\claude.json
+  copy: C:\Users\danhm\.orchflows\lib\hosts\codex.json
+  copy: C:\Users\danhm\.orchflows\lib\hosts\grok.json
+  copy: C:\Users\danhm\.orchflows\lib\hosts\profiles.md
+  copy: C:\Users\danhm\.orchflows\lib\installer\host_adapters\claude.json
+  copy: C:\Users\danhm\.orchflows\lib\installer\host_adapters\codex.json
+  copy: C:\Users\danhm\.orchflows\lib\installer\host_adapters\grok.json
+  copy: C:\Users\danhm\.orchflows\lib\THIRD_PARTY_NOTICES.md
+  copy: C:\Users\danhm\.orchflows\lib\reader\__init__.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\__init__.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_api.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_artifacts_projection.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_assets.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_discovery.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_experience.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_friction_projection.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_layout.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_model.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_readiness.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_runs_projection.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_sessions.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_sessions_projection.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_ticket_model.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_workflows_catalog.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_workflows_identity.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_workflows_projection.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_workflows_skills.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_workflows_sources.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\scripts\ui_workflows_summary.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\_bootstrap.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\console.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\standards.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\standards_support.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\rings.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\rings_trust.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\state_root.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\tickets_adapters.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\tickets_bound.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\tickets_format.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\tickets_lifecycle.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\tickets_markdown.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\tickets_readiness.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\tickets_registry.py
+  copy: C:\Users\danhm\.orchflows\lib\scripts\tickets_shapes.py
+  copy: C:\Users\danhm\.orchflows\lib\reader\docs\view-manifest.json
+  copy: C:\Users\danhm\.orchflows\lib\reader\docs\workflow-summary-manifest.json
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\__init__.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\browser_game.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\bundle.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\carriage.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\common.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\duplication.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\friction.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\lifecycle_literals.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\lint.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\names.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\packages.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\standards.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\structure.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\tooling.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\vocabulary.py
+  copy: C:\Users\danhm\.orchflows\lib\validate_support\workflows.py
+
+flat name index (23):
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-do\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-judge\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\bakeoff\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\checkpointed-build\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\benchmaker\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\browser-game\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\drift-canary\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\evolve\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-build-workflow\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\renovate\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\self-improve\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\skill-tournament\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\super-research\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\tiktok-video\SKILL.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\html-dossier\STANDARD.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\market-brief\STANDARD.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-code\STANDARD.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-content\STANDARD.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-data\STANDARD.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-design\STANDARD.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-research\STANDARD.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\orch-workflow-authoring\STANDARD.md
+  write: C:\Users\danhm\.orchflows\lib\by-name\standard-craft\STANDARD.md
+
+scripts (82):
+  install: C:\Users\danhm\.orchflows\bin\_bootstrap.py
+  install: C:\Users\danhm\.orchflows\bin\browser_game_validate.py
+  install: C:\Users\danhm\.orchflows\bin\console.py
+  install: C:\Users\danhm\.orchflows\bin\doclint.py
+  install: C:\Users\danhm\.orchflows\bin\friction.py
+  install: C:\Users\danhm\.orchflows\bin\harvest.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows.py
+  install: C:\Users\danhm\.orchflows\bin\standards.py
+  install: C:\Users\danhm\.orchflows\bin\rings.py
+  install: C:\Users\danhm\.orchflows\bin\search_plan.py
+  install: C:\Users\danhm\.orchflows\bin\state_root.py
+  install: C:\Users\danhm\.orchflows\bin\tickets.py
+  install: C:\Users\danhm\.orchflows\bin\trace.py
+  install: C:\Users\danhm\.orchflows\bin\ui.py
+  install: C:\Users\danhm\.orchflows\bin\workspace.py
+  install: C:\Users\danhm\.orchflows\bin\harvest_cluster.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows_adapters.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows_bundle.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows_check.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows_envs.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows_home.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows_node.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows_scaffold.py
+  install: C:\Users\danhm\.orchflows\bin\orchflows_tools.py
+  install: C:\Users\danhm\.orchflows\bin\rings_trust.py
+  install: C:\Users\danhm\.orchflows\bin\search_plan_advance.py
+  install: C:\Users\danhm\.orchflows\bin\search_plan_archive.py
+  install: C:\Users\danhm\.orchflows\bin\search_plan_projection.py
+  install: C:\Users\danhm\.orchflows\bin\search_plan_protocol.py
+  install: C:\Users\danhm\.orchflows\bin\standards_support.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_adapters.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_admission.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_assignment.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_attempts.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_bound.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_commands.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_context.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_dispatch.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_dispatch_facade.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_dispatch_guards.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_dispatch_identity.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_dispatch_launch.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_dispatch_launch_lines.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_dispatch_schema.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_dispatch_validate.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_done.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_emission.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_format.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_frame.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_generations.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_grade.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_issue.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_issue_render.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_join.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_land.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_lifecycle.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_lint.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_markdown.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_mint.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_outcome.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_pins.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_project.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_readiness.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_registry.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_report_note.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_result.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_seal.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_shape_line.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_shapes.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_stamp_generation.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_store.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_store_writes.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_transitions.py
+  install: C:\Users\danhm\.orchflows\bin\tickets_worklog.py
+  install: C:\Users\danhm\.orchflows\bin\trace_claude.py
+  install: C:\Users\danhm\.orchflows\bin\trace_codex.py
+  install: C:\Users\danhm\.orchflows\bin\trace_render.py
+  install: C:\Users\danhm\.orchflows\bin\workspace_candidate.py
+  install: C:\Users\danhm\.orchflows\bin\workspace_git.py
+  install: C:\Users\danhm\.orchflows\bin\workspace_prepare.py
+  install: C:\Users\danhm\.orchflows\bin\workspace_record.py
+  install: C:\Users\danhm\.orchflows\bin\workspace_return.py
+
+frontend assets (45):
+  copy: C:\Users\danhm\.orchflows\ui\.vite\manifest.json
+  copy: C:\Users\danhm\.orchflows\ui\.vite\orchflows-generated.json
+  copy: C:\Users\danhm\.orchflows\ui\assets\arrow-left-Dp5AE850.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\arrow-right-BXGZRLAW.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\circle-check-CAg-xf0a.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\clock-3-CeJ2z50N.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\code-xml-DH0tYApW.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\createLucideIcon-Ct0G_dhG.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\elk-worker.min-D8OVqK8T.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\elk.worker-B9IS_a7U.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\esm-BRcUNsYe.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\executionRoutes-DvI61L8d.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\file-question-mark-CGOZidAX.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\FrictionView-46h6RYaJ.css
+  copy: C:\Users\danhm\.orchflows\ui\assets\FrictionView-BK1FQR_2.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\git-branch-Oc79H51m.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\index-BS_ZtwaL.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\index-D5F5Jq25.css
+  copy: C:\Users\danhm\.orchflows\ui\assets\Inspector-Bj4lNnRl.css
+  copy: C:\Users\danhm\.orchflows\ui\assets\Inspector-DiMK5iEe.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\layout.worker-swefnyWY.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\link-2-CMrves2t.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\lock-keyhole-dmpjtIT7.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\model-Okx1th0z.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\network-WujX5hnQ.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\NowView-Bnv8rx-q.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\NowView-DY0rAuDz.css
+  copy: C:\Users\danhm\.orchflows\ui\assets\radio-nz6-ow8o.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\react-dom-CEQGG5yC.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\RunMapView-DIaT3XtH.css
+  copy: C:\Users\danhm\.orchflows\ui\assets\RunMapView-EBRdQnKt.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\search-BwD1lxRJ.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\search-x-_EkLKMuR.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\SessionGraphView-107HWZaj.css
+  copy: C:\Users\danhm\.orchflows\ui\assets\SessionGraphView-DUIDhqeo.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\SessionsView-D3HhrT2_.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\SessionsView-VzBoUBd6.css
+  copy: C:\Users\danhm\.orchflows\ui\assets\shield-alert-GDcNi70R.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\styles-CXjzkzui.css
+  copy: C:\Users\danhm\.orchflows\ui\assets\SummaryFlow-CWejObCw.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\triangle-alert-BtUBX7nb.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\WorkflowCatalogView-BPL8BaiB.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\WorkflowDetailView-D3u3pamR.js
+  copy: C:\Users\danhm\.orchflows\ui\assets\WorkflowSourceView-8yJwsGX7.js
+  copy: C:\Users\danhm\.orchflows\ui\index.html
+
+Claude Code skill adapters (15):
+  write: C:\Users\danhm\.claude\skills\orch-do\SKILL.md
+  write: C:\Users\danhm\.claude\skills\orch-judge\SKILL.md
+  write: C:\Users\danhm\.claude\skills\bakeoff\SKILL.md
+  write: C:\Users\danhm\.claude\skills\checkpointed-build\SKILL.md
+  write: C:\Users\danhm\.claude\skills\benchmaker\SKILL.md
+  write: C:\Users\danhm\.claude\skills\browser-game\SKILL.md
+  write: C:\Users\danhm\.claude\skills\drift-canary\SKILL.md
+  write: C:\Users\danhm\.claude\skills\evolve\SKILL.md
+  write: C:\Users\danhm\.claude\skills\orch-build-workflow\SKILL.md
+  write: C:\Users\danhm\.claude\skills\renovate\SKILL.md
+  write: C:\Users\danhm\.claude\skills\self-improve\SKILL.md
+  write: C:\Users\danhm\.claude\skills\orch-self-improve\SKILL.md
+  write: C:\Users\danhm\.claude\skills\skill-tournament\SKILL.md
+  write: C:\Users\danhm\.claude\skills\super-research\SKILL.md
+  write: C:\Users\danhm\.claude\skills\tiktok-video\SKILL.md
+
+Codex prompts (15):
+  write: C:\Users\danhm\.codex\prompts\orch-do.md
+  write: C:\Users\danhm\.codex\prompts\orch-judge.md
+  write: C:\Users\danhm\.codex\prompts\bakeoff.md
+  write: C:\Users\danhm\.codex\prompts\checkpointed-build.md
+  write: C:\Users\danhm\.codex\prompts\benchmaker.md
+  write: C:\Users\danhm\.codex\prompts\browser-game.md
+  write: C:\Users\danhm\.codex\prompts\drift-canary.md
+  write: C:\Users\danhm\.codex\prompts\evolve.md
+  write: C:\Users\danhm\.codex\prompts\orch-build-workflow.md
+  write: C:\Users\danhm\.codex\prompts\renovate.md
+  write: C:\Users\danhm\.codex\prompts\self-improve.md
+  write: C:\Users\danhm\.codex\prompts\orch-self-improve.md
+  write: C:\Users\danhm\.codex\prompts\skill-tournament.md
+  write: C:\Users\danhm\.codex\prompts\super-research.md
+  write: C:\Users\danhm\.codex\prompts\tiktok-video.md
+
+Codex redirect skills (15):
+  write: C:\Users\danhm\.codex\skills\orch-do\SKILL.md
+  write: C:\Users\danhm\.codex\skills\orch-judge\SKILL.md
+  write: C:\Users\danhm\.codex\skills\bakeoff\SKILL.md
+  write: C:\Users\danhm\.codex\skills\checkpointed-build\SKILL.md
+  write: C:\Users\danhm\.codex\skills\benchmaker\SKILL.md
+  write: C:\Users\danhm\.codex\skills\browser-game\SKILL.md
+  write: C:\Users\danhm\.codex\skills\drift-canary\SKILL.md
+  write: C:\Users\danhm\.codex\skills\evolve\SKILL.md
+  write: C:\Users\danhm\.codex\skills\orch-build-workflow\SKILL.md
+  write: C:\Users\danhm\.codex\skills\renovate\SKILL.md
+  write: C:\Users\danhm\.codex\skills\self-improve\SKILL.md
+  write: C:\Users\danhm\.codex\skills\orch-self-improve\SKILL.md
+  write: C:\Users\danhm\.codex\skills\skill-tournament\SKILL.md
+  write: C:\Users\danhm\.codex\skills\super-research\SKILL.md
+  write: C:\Users\danhm\.codex\skills\tiktok-video\SKILL.md
+
+Claude Code role agents (2):
+  write: C:\Users\danhm\.claude\agents\orch-planner.md
+  write: C:\Users\danhm\.claude\agents\orch-worker.md
+
+Codex role agents (2):
+  write: C:\Users\danhm\.codex\agents\orch_planner.toml
+  write: C:\Users\danhm\.codex\agents\orch_worker.toml
+
+Grok skills (15):
+  write: C:\Users\danhm\.grok\skills\orch-do\SKILL.md
+  write: C:\Users\danhm\.grok\skills\orch-judge\SKILL.md
+  write: C:\Users\danhm\.grok\skills\bakeoff\SKILL.md
+  write: C:\Users\danhm\.grok\skills\checkpointed-build\SKILL.md
+  write: C:\Users\danhm\.grok\skills\benchmaker\SKILL.md
+  write: C:\Users\danhm\.grok\skills\browser-game\SKILL.md
+  write: C:\Users\danhm\.grok\skills\drift-canary\SKILL.md
+  write: C:\Users\danhm\.grok\skills\evolve\SKILL.md
+  write: C:\Users\danhm\.grok\skills\orch-build-workflow\SKILL.md
+  write: C:\Users\danhm\.grok\skills\renovate\SKILL.md
+  write: C:\Users\danhm\.grok\skills\self-improve\SKILL.md
+  write: C:\Users\danhm\.grok\skills\orch-self-improve\SKILL.md
+  write: C:\Users\danhm\.grok\skills\skill-tournament\SKILL.md
+  write: C:\Users\danhm\.grok\skills\super-research\SKILL.md
+  write: C:\Users\danhm\.grok\skills\tiktok-video\SKILL.md
+
+Grok role agents (2):
+  write: C:\Users\danhm\.grok\agents\orch-planner.md
+  write: C:\Users\danhm\.grok\agents\orch-worker.md
+
+host configuration files (3):
+  Claude Code concurrency settings: C:\Users\danhm\.claude\settings.json
+  Codex agent limits: C:\Users\danhm\.codex\config.toml
+  Grok subagent limits: C:\Users\danhm\.grok\config.toml
+
+host instruction file: C:\Users\danhm\.orchflows\host-block.md
+
+Grok instruction file: C:\Users\danhm\.grok\rules\orchflows.md
+
+managed blocks (1):
+  Codex AGENTS.md instruction block: C:\Users\danhm\.codex\AGENTS.md
+
+managed imports (1):
+  Claude Code instruction import: C:\Users\danhm\.claude\CLAUDE.md -> @C:\Users\danhm\.orchflows\host-block.md
+
+receipt: C:\Users\danhm\.orchflows\receipt.json
+
+planned entries: 409
+--- git diff --check

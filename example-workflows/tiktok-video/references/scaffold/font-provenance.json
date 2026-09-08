@@ -1,0 +1,16 @@
+[
+  {
+    "path": "public/fonts/Inter.ttf",
+    "url": "https://raw.githubusercontent.com/google/fonts/0b58fb370093f9a9f4ff785d94405710b79de67c/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+    "commit": "0b58fb370093f9a9f4ff785d94405710b79de67c",
+    "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031"
+  },
+  {
+    "path": "public/fonts/OFL.txt",
+    "url": "https://raw.githubusercontent.com/google/fonts/0b58fb370093f9a9f4ff785d94405710b79de67c/ofl/inter/OFL.txt",
+    "commit": "0b58fb370093f9a9f4ff785d94405710b79de67c",
+    "sha256": "5dd548d31a85f756e01d63e00d7faf1e324103ed3e9102fcbbabf2cc2db6dd39",
+    "upstream_sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+    "normalization": "Trailing line whitespace removed; license wording unchanged."
+  }
+]

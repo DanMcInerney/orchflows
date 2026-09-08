@@ -76,7 +76,8 @@ class PublicIntegrationTests(unittest.TestCase):
 
     def test_generated_project_adapters_expose_only_benchmaker(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            # Match the resolver when Windows temp uses a short-path alias.
+            root = Path(temporary).resolve()
             project = root / "project"
             destination = project / ".orchflows" / "workflows" / "benchmaker"
             shutil.copytree(PACKAGE, destination, ignore=shutil.ignore_patterns("__pycache__"))

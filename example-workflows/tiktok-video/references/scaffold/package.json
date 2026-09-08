@@ -1,0 +1,21 @@
+{
+  "name": "tiktok-video-artifact",
+  "private": true,
+  "dependencies": {
+    "remotion": "4.0.522",
+    "@remotion/cli": "4.0.522",
+    "@remotion/renderer": "4.0.522",
+    "@remotion/bundler": "4.0.522",
+    "@remotion/captions": "4.0.522",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "kokoro-js": "1.2.1",
+    "@huggingface/transformers": "3.8.1"
+  },
+  "version": "1.0.0",
+  "scripts": {
+    "render": "node render.cjs",
+    "studio": "remotion studio index.tsx",
+    "voice": "node voice.mjs"
+  }
+}

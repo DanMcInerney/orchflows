@@ -1,0 +1,367 @@
+{
+  "assigned_name": "B1.3",
+  "dispatch_id": "B1.3:d1",
+  "assignment_seal": "sha256:362db3fbce5bcc0cc5db3faa572f53a650e7fe2b22273bd24e5b020e444cc4a5",
+  "reviewed_artifact": "git:50e310d16e4e608d739790330b303d596f724d29",
+  "repair_artifact": "git:a6c26c099e60b24c6a73d23daa1727e4dee1f0ee",
+  "accepted_video_artifact": "git:52c1672bd2c81881b7393c09169d00b0a076df54",
+  "standard_evidence": {
+    "pins": {
+      "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+      "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+    },
+    "read_whole": [
+      "C:/Users/danhm/.orchflows/lib/standards/orch-code/STANDARD.md",
+      "C:/Users/danhm/.orchflows/lib/standards/orch-workflow-authoring/STANDARD.md"
+    ],
+    "owner": "C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md",
+    "application": "Whole pinned guidance and git lens applied to focused CI repair, maker B1.2 Report, actual test/setup, adapter and public sync caller. Whole authoring owner and verification read. No new workflow/method/quality boundary, public name, dependency, generated adapter or package contract; prior independently accepted video evidence remains bounded to identical package bytes."
+  },
+  "findings": [],
+  "cause_threads": [],
+  "assessment": [
+    "Only tests/test_benchmaker_integration.py changes: root=Path(temporary).resolve() with a reason comment. Exact manifest substring, two-adapter count, public-only slug and manual-only flag assertions are preserved.",
+    "rings._bundle_root canonicalizes inventory paths. orchflows_adapters.pointer_for compares relative_to lexically and falls back to native absolute spelling when project retains an alias. Old fixture therefore fails its portable manifest assertion under a real Windows short alias. Public orchflows._sync_project obtains bundle.parent from rings.project_ring, which already resolves the starting path; repaired fixture matches the public caller and tests/test_ring_adapters.py _world idiom.",
+    "Base and accepted-video test and adapter blobs are identical, proving the fixture mismatch predates the video branch. Fixed production adapter blob is unchanged. No correctness or frozen-criterion defect established for this focused repair.",
+    "Old test source was extracted with git show and compiled only in isolated child memory. Four 5-test suites establish ordinary and actual GetShortPathNameW alias before/after behavior without modifying the candidate. The old-alias failure was the manifest assertion, not alias setup or tool failure.",
+    "Repair stays in canonical test ownership, introduces no wrapper or additional persistent test, and reuses fixture normalization. Authoring scope and fixed-package separation are preserved."
+  ],
+  "identities": {
+    "head": "50e310d16e4e608d739790330b303d596f724d29",
+    "blobs": {
+      "ce78596e27a37ba6c6b6aaf11b5b40dd4a2e4bb0": {
+        "tests/test_benchmaker_integration.py": "bc3a48caa459aa5d8555969223620495abc2006a",
+        "scripts/orchflows_adapters.py": "613f179d01209983e15754c1cbdc2eabe64f3104"
+      },
+      "52c1672bd2c81881b7393c09169d00b0a076df54": {
+        "tests/test_benchmaker_integration.py": "bc3a48caa459aa5d8555969223620495abc2006a",
+        "scripts/orchflows_adapters.py": "613f179d01209983e15754c1cbdc2eabe64f3104"
+      },
+      "50e310d16e4e608d739790330b303d596f724d29": {
+        "tests/test_benchmaker_integration.py": "c85f3b96b3ce8d8c4b6c4fa71bf390bdafe64370",
+        "scripts/orchflows_adapters.py": "613f179d01209983e15754c1cbdc2eabe64f3104"
+      }
+    },
+    "package_trees": {
+      "52c1672bd2c81881b7393c09169d00b0a076df54": "445174aaeeb9ed22c2c857f26c2754bdcc50c8a9",
+      "50e310d16e4e608d739790330b303d596f724d29": "445174aaeeb9ed22c2c857f26c2754bdcc50c8a9"
+    },
+    "package_digest": "sha256:23a53260a91aeebdca0cc1e05fb971879eba4a83faf5f55dc45053f245dbd13a",
+    "standard_pins": {
+      "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+      "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+    },
+    "changed": [
+      "tests/test_benchmaker_integration.py"
+    ],
+    "commands": [
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "HEAD"
+        ],
+        "exit": 0,
+        "stdout": "50e310d16e4e608d739790330b303d596f724d29"
+      },
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "ce78596e27a37ba6c6b6aaf11b5b40dd4a2e4bb0:tests/test_benchmaker_integration.py"
+        ],
+        "exit": 0,
+        "stdout": "bc3a48caa459aa5d8555969223620495abc2006a"
+      },
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "ce78596e27a37ba6c6b6aaf11b5b40dd4a2e4bb0:scripts/orchflows_adapters.py"
+        ],
+        "exit": 0,
+        "stdout": "613f179d01209983e15754c1cbdc2eabe64f3104"
+      },
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "52c1672bd2c81881b7393c09169d00b0a076df54:tests/test_benchmaker_integration.py"
+        ],
+        "exit": 0,
+        "stdout": "bc3a48caa459aa5d8555969223620495abc2006a"
+      },
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "52c1672bd2c81881b7393c09169d00b0a076df54:scripts/orchflows_adapters.py"
+        ],
+        "exit": 0,
+        "stdout": "613f179d01209983e15754c1cbdc2eabe64f3104"
+      },
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "50e310d16e4e608d739790330b303d596f724d29:tests/test_benchmaker_integration.py"
+        ],
+        "exit": 0,
+        "stdout": "c85f3b96b3ce8d8c4b6c4fa71bf390bdafe64370"
+      },
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "50e310d16e4e608d739790330b303d596f724d29:scripts/orchflows_adapters.py"
+        ],
+        "exit": 0,
+        "stdout": "613f179d01209983e15754c1cbdc2eabe64f3104"
+      },
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "52c1672bd2c81881b7393c09169d00b0a076df54:example-workflows/tiktok-video"
+        ],
+        "exit": 0,
+        "stdout": "445174aaeeb9ed22c2c857f26c2754bdcc50c8a9"
+      },
+      {
+        "argv": [
+          "git",
+          "rev-parse",
+          "50e310d16e4e608d739790330b303d596f724d29:example-workflows/tiktok-video"
+        ],
+        "exit": 0,
+        "stdout": "445174aaeeb9ed22c2c857f26c2754bdcc50c8a9"
+      },
+      {
+        "argv": [
+          "git",
+          "diff",
+          "--name-only",
+          "52c1672bd2c81881b7393c09169d00b0a076df54",
+          "50e310d16e4e608d739790330b303d596f724d29"
+        ],
+        "exit": 0,
+        "stdout": "tests/test_benchmaker_integration.py"
+      }
+    ]
+  },
+  "independent_probes": [
+    {
+      "name": "old-ordinary",
+      "argv": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.3\\.orch-notes\\verify_ci.py",
+        "test-child",
+        "old",
+        "ordinary"
+      ],
+      "exit": 0,
+      "timeout_seconds": 180,
+      "elapsed_seconds": 0.957900299996254,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "1b42816a1d31c352230bbec33a5ba8ae44b869f7acb1f0dac4af78f21518bec5"
+    },
+    {
+      "name": "old-alias",
+      "argv": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.3\\.orch-notes\\verify_ci.py",
+        "test-child",
+        "old",
+        "alias"
+      ],
+      "exit": 1,
+      "timeout_seconds": 180,
+      "elapsed_seconds": 0.5780923999991501,
+      "stdout_sha256": "b80aa42f57f2d357be1ea64222001a16efc0420b63c595cc01d52a1ceb06e5f9",
+      "stderr_sha256": "6f0d82e652ab13240cbd3e598e8ebbf1020c4a22ce2f5fe8a9b751e1caf68ddb"
+    },
+    {
+      "name": "fixed-ordinary",
+      "argv": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.3\\.orch-notes\\verify_ci.py",
+        "test-child",
+        "fixed",
+        "ordinary"
+      ],
+      "exit": 0,
+      "timeout_seconds": 180,
+      "elapsed_seconds": 0.6429107000003569,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "25f9311ec7c8ec356333786f9f392a0a2fc976d129ae03ea3bd43beaa1908789"
+    },
+    {
+      "name": "fixed-alias",
+      "argv": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.3\\.orch-notes\\verify_ci.py",
+        "test-child",
+        "fixed",
+        "alias"
+      ],
+      "exit": 0,
+      "timeout_seconds": 180,
+      "elapsed_seconds": 0.48072449999745004,
+      "stdout_sha256": "2929bc704adab58f0997f2c45d266ac7688274820aa8f30c8051fad20fc51889",
+      "stderr_sha256": "ca588a2d380c00073e7a36d6c45624c6b1d6badd95c2e0d040634f6ddb3794b3"
+    }
+  ],
+  "probe_details": {
+    "test_class": "tests.test_benchmaker_integration.PublicIntegrationTests",
+    "tests_per_run": 5,
+    "expected_exits": {
+      "old-ordinary": 0,
+      "old-alias": 1,
+      "fixed-ordinary": 0,
+      "fixed-alias": 0
+    },
+    "old_alias_failures": 1,
+    "old_alias_errors": 0,
+    "actual_alias": {
+      "long": "C:\\Users\\danhm\\AppData\\Local\\Temp\\orchflows independent long alias vghz0nap",
+      "alias": "C:\\Users\\danhm\\AppData\\Local\\Temp\\ORCHFL~2"
+    },
+    "can_fail_evidence": "Old source at accepted_video_artifact fails the same hosted expected .orchflows/workflows/benchmaker/SKILL.md assertion while fixed source passes; in-memory source uses fixed filename for import context, so traceback source display is not old source identity.",
+    "harness": ".orch-notes/verify_ci.py; full stdout/stderr hashes recorded for all four runs."
+  },
+  "gaps": [
+    "Captured CI run34200286545 logs show the native resolved runneradmin manifest path and both Windows shard failures, but not the original tempfile spelling. Exact hosted alias is inferred from matching independent reproduction. Successful hosted CI after this repair is not observed here.",
+    "Local required gates do not substitute for hosted OS/Python matrix; skips remain stated.",
+    "This review does not re-invoke unchanged tiktok-video, rerender costly fixtures, or establish named workflow runtime admission, final visual/caption craft, actual hearing, polished 1s/120s endpoint quality or production licensing. Prior accepted review research/tiktok-video-cut/repaired-review.json retains those limitations; root owns subsequent runtime evidence."
+  ],
+  "scope_accounting": "Followed assigned scope without deviation. This judge authors only ci-review.json and reserved scratch/report evidence. No fixes, video/package/production edits, installation, publishing or children. Join owns terminal status.",
+  "command_accounting": {
+    "zero_exit_groups": [
+      "Skill/ticket reads; whole standards/owner/verification reads (truncated batch owner/verification reread separately); AGENTS.md, tests, adapter, caller, runner, prior review, CI configuration/log reads; git status/diff/stat checks; successful rg discovery; scratch mkdir/script writes; identity script and its ten git commands; initial acceptance and alias-and-identity Report records; three friction commands; independent probe harness; child git show extraction twice.",
+      "Gate wrapper exit 0 after observed completion; gate JSON/log summary reads exit 0; public project_ring source read, extra whitespace and clean status checks exit 0; review draft script write/run exit 0."
+    ],
+    "nonzero_searches": [
+      {
+        "command": "rg -n digest/def scripts/workflow_package*.py",
+        "exit": 1,
+        "reason": "Literal wildcard path invalid on Windows"
+      },
+      {
+        "command": "rg -n digest scripts --glob *package*",
+        "exit": 1,
+        "reason": "No matches"
+      },
+      {
+        "command": "rg -n digest scripts/rings*.py --glob *.py",
+        "exit": 1,
+        "reason": "Literal wildcard path invalid on Windows"
+      },
+      {
+        "command": "rg caller scripts/orchflows.py scripts/orchflows_sync.py",
+        "exit": 1,
+        "reason": "Guessed second file absent; actual caller returned"
+      }
+    ],
+    "friction": "All lookup/output issues logged and resolved; no source mutation workaround. Test exits appear in independent_probes and full gate below. Final review write, validation, git commit and closing commands are accounted in the ticket outcome after observation."
+  },
+  "gates": {
+    "execution": {
+      "name": "required-gate",
+      "argv": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "tools/run_required.py",
+        "--no-cache",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "timeout_seconds": 1800,
+      "elapsed_seconds": 174.45656429999508,
+      "stdout_sha256": "34c9bed6049be6442ed926e8e315291a0c8d03cd7d3c2a0c70ca60badaa51807",
+      "stderr_sha256": "e67d4f9dcf9a535a600d2e5d8cbecd718988f673c917e0f9938199cf10b26fcb"
+    },
+    "record": {
+      "commands": [
+        {
+          "argv": [
+            "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+            "tools/validate.py"
+          ],
+          "cached": false,
+          "ended_at": "2026-09-08T08:17:28.197351Z",
+          "exit_status": 0,
+          "started_at": "2026-09-08T08:17:03.322840Z",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6f3a717f993558a4a1167a9277e03edd75ca6e774a9fffd3e89f2acf347f7846"
+        },
+        {
+          "argv": [
+            "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+            "tools/run_tests.py"
+          ],
+          "cached": false,
+          "ended_at": "2026-09-08T08:19:52.288419Z",
+          "exit_status": 0,
+          "started_at": "2026-09-08T08:17:28.197892Z",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ec7693870e12329c8f8e1cdea5d67593d42da0c1e397073b1e3c6d4db661b4fd"
+        },
+        {
+          "argv": [
+            "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+            "tools/run_serial_compat.py"
+          ],
+          "cached": false,
+          "ended_at": "2026-09-08T08:19:57.322804Z",
+          "exit_status": 0,
+          "started_at": "2026-09-08T08:19:52.288468Z",
+          "stderr_sha256": "73f1752bd21b417371a84a1438df80d8b66380923e3cdbbac7c913b9b4ac52cc",
+          "stdout_sha256": "df8041b3c476875a4a2bc7010a5641f4466e862da2ebf967fd20e39af0bae4e9"
+        },
+        {
+          "argv": [
+            "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+            "install.py",
+            "--dry-run"
+          ],
+          "cached": false,
+          "ended_at": "2026-09-08T08:17:05.715791Z",
+          "exit_status": 0,
+          "started_at": "2026-09-08T08:17:03.323132Z",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "eed33faf8e2212af70e7e75cb33b37ec152947ff87118d96a182c438373457bb"
+        },
+        {
+          "argv": [
+            "git",
+            "diff",
+            "--check"
+          ],
+          "cached": false,
+          "ended_at": "2026-09-08T08:17:03.393998Z",
+          "exit_status": 0,
+          "started_at": "2026-09-08T08:17:03.323306Z",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "dirty": false,
+      "exit": 0,
+      "kind": "required-check-run/v1",
+      "repository_identity": "50e310d16e4e608d739790330b303d596f724d29",
+      "tree_identity": "1324f692cb70a2628470850b15a3f9bc2fd1a3eb"
+    },
+    "summary": {
+      "modules": 108,
+      "tests": 2251,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 14,
+      "serial_tests": 12,
+      "serial_failures": 0,
+      "serial_errors": 0,
+      "serial_skipped": 1
+    },
+    "coverage": "Full five required checks watched to completion on clean fixed commit before adding only this evidence JSON. No expensive unchanged video rendering repeated."
+  }
+}
