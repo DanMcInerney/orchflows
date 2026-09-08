@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 if __package__:
+    from . import workspace_process
     from .tickets_assignment import (
         dispatch_assignment, workspace_establishment_finding,
     )
@@ -29,6 +30,7 @@ if __package__:
     from .tickets_transitions import CLAIMED, SUSPENDED
     from .workspace_record import PATH_KEY
 else:
+    import workspace_process
     from tickets_assignment import dispatch_assignment, workspace_establishment_finding
     from tickets_attempts import (
         LAUNCH_RECORD_ID, _cmd_dispatch_open, _cmd_dispatch_retire,
@@ -53,12 +55,12 @@ def _workspace(source: Path, verb: str, arguments: list):
 
     script = Path(__file__).with_name("workspace.py").resolve()
     try:
-        completed = subprocess.run(
+        completed = workspace_process.run(
             [sys.executable, str(script), verb, *arguments],
             cwd=str(source), capture_output=True, text=True,
-            encoding="utf-8", errors="replace",
+            encoding="utf-8", errors="replace", timeout=workspace_process.FACADE_TIMEOUT_SECONDS,
         )
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
         return None, {"error": f"workspace {verb} failed: {error}"}
     try:
         response = json.loads(completed.stdout)
@@ -104,6 +106,16 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
 
 
 def _cmd_dispatch(rest):
+    """Keep publication outside the whole claim-to-launch transaction."""
+    if __package__:
+        from .tickets_install_guard import installation_lock
+    else:
+        from tickets_install_guard import installation_lock
+    with installation_lock():
+        return _dispatch_guarded(rest)
+
+
+def _dispatch_guarded(rest):
     """Compose ready, workspace, attempt, launch, and preparation."""
 
     args = list(rest)

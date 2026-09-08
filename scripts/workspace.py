@@ -118,7 +118,8 @@ VERDICTS = {
 # ``<sub> --help``.
 COMMAND_USAGE = {
     "establish": "workspace.py establish <run> <id> [--repo <source-tree>]",
-    "prepare": "workspace.py prepare <run> <id>",
+    "prepare": "workspace.py prepare <run> <id> [--package <relative-dir>] [--tool-directory <relative-dir>]",
+    "archive": "workspace.py archive <run> <id> [--release-scratch]",
     "retire": "workspace.py retire <run> <id> [--force]",
     "start": "workspace.py start <run> <id>",
     "check": "workspace.py check <run> <id> --base <rev> [--repo <path>]",
@@ -127,6 +128,7 @@ COMMAND_HELP = {
     "establish": "create and record the candidate worktree this item's identity derives",
     "prepare": "install what the recorded workspace declares; takes no run lock",
     "retire": "remove that derived worktree, leaving every stamp that names it",
+    "archive": "archive referenced candidate evidence with verified producer-byte hashes",
     "start": "record the standard workspace the caller already stands in; never creates one",
     "check": "from the integrating checkout: grade isolation and report the actual diff",
 }
@@ -212,8 +214,34 @@ def _cmd_establish(rest):
 def _cmd_prepare(rest):
     """Install what the recorded workspace declares. It writes no ticket."""
 
-    run, ticket_id = _positional(rest, 2, "prepare")
-    return workspace_candidate.prepare(run, ticket_id)
+    args = list(rest)
+    declarations = {}
+    for flag, key in (("--package", "packages"), ("--tool-directory", "tools")):
+        values = []
+        while flag in args:
+            value = _extract_flag(args, flag)
+            if value is None or value.startswith('-'):
+                raise Refused(f"{flag} takes <relative-dir>")
+            values.append(value)
+        if values:
+            declarations[key] = tuple(values)
+    run, ticket_id = _positional(args, 2, "prepare")
+    return workspace_candidate.prepare(run, ticket_id, **declarations)
+
+
+def _cmd_archive(rest):
+    """Preserve named evidence without integrating, joining, or retiring."""
+    if __package__:
+        from . import workspace_custody
+    else:
+        import workspace_custody
+    release = '--release-scratch' in rest
+    run, ticket_id = _positional([arg for arg in rest if arg != '--release-scratch'], 2, 'archive')
+    target = state_root.candidate_paths(run, ticket_id)['path']
+    custody = workspace_custody.archive(run, ticket_id, target)
+    if release and target.is_dir():
+        workspace_custody.release_scratch(target, custody)
+    return {'archive': {'run': run, 'id': ticket_id, **custody}}, EXIT_OK
 
 def _cmd_retire(rest):
     """Remove the derived worktree. It reads and writes no ticket."""
@@ -403,6 +431,7 @@ def main(argv=None) -> int:
     handlers = {
         "establish": _cmd_establish, "prepare": _cmd_prepare,
         "retire": _cmd_retire, "start": _cmd_start, "check": _cmd_check,
+        "archive": _cmd_archive,
     }
     command = arguments[0] if arguments else None
     if command in HELP_FLAGS:

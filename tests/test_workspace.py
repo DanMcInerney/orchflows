@@ -19,6 +19,9 @@ from tests.test_workspace_cases.cli_cases import (  # noqa: F401
     NoFormatCallsTest,
     TestHelpAndVantage,
 )
+from tests.test_workspace_cases.detached_integration_cases import (  # noqa: F401
+    TestDetachedIntegrationContinuity,
+)
 from tests.test_workspace_cases.document_cases import (  # noqa: F401
     TestTheDocumentLaneObservesTheTreeItStandsIn,
     TestTheRefusalSurvivesForWhatCannotBeGiven,
@@ -131,7 +134,7 @@ class WorkspaceAdapterSelectionTest(unittest.TestCase):
 
     def test_plain_existing_directory_infers_document_tree(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
-            tickets_adapters.subprocess, "run",
+            tickets_adapters.workspace_process, "run",
             return_value=types.SimpleNamespace(returncode=128, stdout="", stderr="not a repository"),
         ):
             self.assertEqual("document-tree", tickets_adapters.infer_adapter(tmp).key)
@@ -140,7 +143,7 @@ class WorkspaceAdapterSelectionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / ".git").mkdir()
             with mock.patch.object(
-                tickets_adapters.subprocess, "run",
+                tickets_adapters.workspace_process, "run",
                 return_value=types.SimpleNamespace(
                     returncode=128, stdout="", stderr="dubious ownership",
                 ),

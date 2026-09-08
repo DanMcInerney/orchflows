@@ -19,7 +19,7 @@ class RuntimeInterpreterBoundaryTests(unittest.TestCase):
             return subprocess.CompletedProcess(args[0], 0, b"", b"")
 
         with mock.patch.dict(os.environ, caller, clear=False):
-            with mock.patch.object(workspace.workspace_git.subprocess, "run", side_effect=run_in_caller):
+            with mock.patch.object(workspace.workspace_git.workspace_process, "run", side_effect=run_in_caller):
                 self.assertEqual((0, "", ""), workspace._git("status", "--porcelain"))
 
         self.assertEqual(1, len(observed))

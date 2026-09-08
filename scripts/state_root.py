@@ -42,12 +42,19 @@ MUTANTS_SUBPATH = "mutants"
 DRAFTS_SUBPATH = "drafts"
 
 
+def _absolute_override(value: str, name: str) -> Path:
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        raise ValueError(f"{name} must name an absolute path (after tilde expansion): {value!r}")
+    return path
+
+
 def state_root() -> Path:
     """The sink root. Set-but-empty reads as unset."""
 
     override = os.environ.get(ENV_VAR, "").strip()
     if override:
-        return Path(override).expanduser()
+        return _absolute_override(override, ENV_VAR)
     return Path.home().joinpath(*DEFAULT_HOME_SUBPATH)
 
 
@@ -81,7 +88,7 @@ def worktrees_root() -> Path:
 
     override = os.environ.get(WORKTREES_ENV_VAR, "").strip()
     if override:
-        return Path(override).expanduser()
+        return _absolute_override(override, WORKTREES_ENV_VAR)
     return orchflows_home() / WORKTREES_SUBPATH
 
 

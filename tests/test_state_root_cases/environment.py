@@ -167,8 +167,8 @@ class TestTheOverrideAndTheDefault(unittest.TestCase):
         self.assertEqual(Path.home() / ".orchflows" / "state", resolved)
 
     def test_a_set_value_wins_and_a_tilde_is_expanded(self):
-        with mock.patch.dict(os.environ, {ENV_VAR: "/tmp/some-sink"}):
-            self.assertEqual(Path("/tmp/some-sink"), state_root.state_root())
+        with mock.patch.dict(os.environ, {ENV_VAR: str(Path(tempfile.gettempdir()).resolve() / "some-sink")}):
+            self.assertEqual((Path(tempfile.gettempdir()).resolve() / "some-sink"), state_root.state_root())
         with mock.patch.dict(os.environ, {ENV_VAR: "~/elsewhere"}):
             self.assertEqual(Path.home() / "elsewhere", state_root.state_root())
 
