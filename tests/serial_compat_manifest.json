@@ -604,11 +604,6 @@
    "test_installer.TestUnreadableReceipt.test_install_refuses_rather_than_overwriting_a_corrupt_receipt",
    "test_installer.TestUnreadableReceipt.test_load_json_returns_none_only_for_an_absent_file",
    "test_installer.TestUnreadableReceipt.test_uninstall_refuses_a_corrupt_receipt_rather_than_finding_none",
-   "test_installer_locking.InstallationGuardTest.test_nested_lock_releases_after_failure_and_excludes_other_thread",
-   "test_installer_locking.InstallationGuardTest.test_process_cannot_enter_until_publication_lock_releases",
-   "test_installer_ordinary_update.OrdinaryUpdateTests.test_concurrent_installers_wait_before_staging_and_publish_in_order",
-   "test_installer_ordinary_update.OrdinaryUpdateTests.test_fresh_install_and_update_need_no_state_directory",
-   "test_installer_ordinary_update.OrdinaryUpdateTests.test_upgrade_ignores_old_writers_and_unreadable_ticket_history",
    "test_lens_key.LensKeyTest.test_a_judge_is_keyed_by_the_one_kind_on_its_context",
    "test_lens_key.LensKeyTest.test_a_judge_over_two_kinds_gets_no_key",
    "test_lens_key.LensKeyTest.test_a_making_do_citing_a_predecessor_keeps_its_adapter_kind",
@@ -835,6 +830,11 @@
    "test_reliability_installation.PublicationTests.test_failed_rollback_retains_intact_backup_and_recovery_map",
    "test_reliability_installation.PublicationTests.test_receipt_failure_restores_adapter_and_payload",
    "test_reliability_installation.PublicationTests.test_second_payload_rename_failure_rolls_back_and_retry_works",
+   "test_reliability_installation_locking.InstallationGuardTest.test_nested_lock_releases_after_failure_and_excludes_other_thread",
+   "test_reliability_installation_locking.InstallationGuardTest.test_process_cannot_enter_until_publication_lock_releases",
+   "test_reliability_installation_ordinary_update.OrdinaryUpdateTests.test_concurrent_installers_wait_before_staging_and_publish_in_order",
+   "test_reliability_installation_ordinary_update.OrdinaryUpdateTests.test_fresh_install_and_update_need_no_state_directory",
+   "test_reliability_installation_ordinary_update.OrdinaryUpdateTests.test_upgrade_ignores_old_writers_and_unreadable_ticket_history",
    "test_reliability_integration.InstalledCompositionTests.test_diagnostics_consumes_public_report_pages_and_refuses_bad_page",
    "test_reliability_integration.InstalledCompositionTests.test_flat_and_reader_payloads_import_shared_process_owner",
    "test_reliability_integration.RawIssuanceTests.test_nested_issue_reuses_locks_already_held_by_mint",
@@ -3833,36 +3833,11 @@
    ]
   },
   {
-   "module": "tests.test_installer_locking",
-   "owner": "InstallationGuardTest.test_nested_lock_releases_after_failure_and_excludes_other_thread",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "threads"
-   ]
-  },
-  {
    "module": "tests.test_installer_managed",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
    "seams": [
     "module-cache"
-   ]
-  },
-  {
-   "module": "tests.test_installer_ordinary_update",
-   "owner": "OrdinaryUpdateTests.test_concurrent_installers_wait_before_staging_and_publish_in_order",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch",
-    "threads"
-   ]
-  },
-  {
-   "module": "tests.test_installer_ordinary_update",
-   "owner": "OrdinaryUpdateTests.test_upgrade_ignores_old_writers_and_unreadable_ticket_history",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
    ]
   },
   {
@@ -4328,6 +4303,31 @@
    "module": "tests.test_reliability_installation",
    "owner": "PublicationTests.test_second_payload_rename_failure_rolls_back_and_retry_works",
    "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_reliability_installation_locking",
+   "owner": "InstallationGuardTest.test_nested_lock_releases_after_failure_and_excludes_other_thread",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_reliability_installation_ordinary_update",
+   "owner": "OrdinaryUpdateTests.test_concurrent_installers_wait_before_staging_and_publish_in_order",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_reliability_installation_ordinary_update",
+   "owner": "OrdinaryUpdateTests.test_upgrade_ignores_old_writers_and_unreadable_ticket_history",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
