@@ -338,7 +338,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             self.assertEqual("1", claude["env"]["EXISTING"])
             self.assertEqual("20", claude["env"]["CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"])
             codex = install.tomllib.loads(configs["codex-config"].content)
-            self.assertEqual(20, codex["agents"]["max_threads"])
+            self.assertEqual(15, codex["agents"]["max_threads"])
             self.assertEqual(1, codex["agents"]["max_depth"])
             self.assertTrue(codex["agents"]["custom"])
             self.assertEqual(1, codex["other"]["value"])
@@ -702,7 +702,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
         )
         parsed = install.tomllib.loads(rendered)
 
-        self.assertEqual(20, parsed["agents"]["max_threads"])
+        self.assertEqual(15, parsed["agents"]["max_threads"])
         self.assertEqual(1, parsed["agents"]["max_depth"])
         self.assertEqual(3, details["previous"]["agents.max_threads"])
         self.assertEqual(2, details["previous"]["agents.max_depth"])
