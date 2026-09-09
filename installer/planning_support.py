@@ -16,6 +16,7 @@ SHARED_READER_MODULES = (
     # dependency, imported before anything else is safe to import.
     "_bootstrap.py",
     "console.py",
+    "process_job.py",
     "standards.py",
     "standards_support.py",
     "rings.py",
@@ -29,6 +30,7 @@ SHARED_READER_MODULES = (
     "tickets_readiness.py",
     "tickets_registry.py",
     "tickets_shapes.py",
+    "workspace_process.py",
 )
 
 

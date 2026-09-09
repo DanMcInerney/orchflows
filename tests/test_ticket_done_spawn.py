@@ -25,6 +25,13 @@ WINDOWS_ONLY = "a .CMD shim is only a shim on Windows"
 
 
 class DoneCommandSpawnTest(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        state = mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory.name})
+        state.start()
+        self.addCleanup(state.stop)
+
     def _on_path(self, name: str, body: str) -> None:
         """Put one fake command on this process's PATH for one test."""
 

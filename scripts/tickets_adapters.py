@@ -8,10 +8,11 @@ import subprocess
 from pathlib import Path
 
 try:
-    from scripts import rings
+    from scripts import rings, workspace_process
     from scripts.tickets_markdown import dequote
 except ImportError:
     import rings
+    import workspace_process
     from tickets_markdown import dequote
 
 
@@ -26,13 +27,8 @@ class Adapter:
     establishes_isolation: bool
     deterministic_gate: bool
     workspace_strategy: str
-    # Whether a child of this adapter must commit in the tree it stands in
-    # for its bytes to survive: true for git and document-tree, false for
-    # evidence-store, whose identity is a lane packet no commit stands
-    # behind. Distinct from `establishes_isolation and workspace_strategy
-    # == "git"` (whether the landing merges a candidate branch): a
-    # document-tree child commits straight onto the coordinator's own
-    # branch, so it must commit but has no isolated candidate to merge.
+    # Git identities survive through commits in the candidate. Other
+    # adapters preserve external artifact identities without that promise.
     commits_in_place: bool
 
 
@@ -178,12 +174,12 @@ def infer_adapter(target) -> Adapter:
             "workspace-target-invalid", f"workspace target is not a directory: {path}",
         )
     try:
-        result = subprocess.run(
+        result = workspace_process.run(
             ["git", "-C", str(path), "rev-parse", "--is-inside-work-tree"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=False,
+            check=False, timeout=workspace_process.GIT_TIMEOUT_SECONDS,
         )
-    except OSError as error:
+    except (OSError, subprocess.TimeoutExpired) as error:
         raise AdapterError(
             "workspace-adapter-unavailable",
             f"cannot inspect workspace target {path} with git: {error}",

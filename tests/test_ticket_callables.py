@@ -488,6 +488,7 @@ class RepairRoundAdmissionTest(CallableSinkTest):
 
         self._issue(
             "dispatch-outcome", callable_id, "--note", "delivered and verified",
+            "--assignment-seal", seal, "--dispatch-id", f"{callable_id}:d1", "--by", callable_id,
         )
         landed = self._issue(
             "land", callable_id, "--assignment-seal", seal,
@@ -531,6 +532,8 @@ class CallableLandingTest(CallableSinkTest):
         self.assertNotIn("error", filed, filed)
         closed = tickets._dispatch([
             "dispatch-outcome", self.RUN, ticket_id,
+            "--assignment-seal", attempt["assignment_seal"],
+            "--dispatch-id", attempt["dispatch_id"], "--by", ticket_id,
             "--note", f"delivered; artifact: {artifact}",
         ])
         self.assertNotIn("error", closed, closed)

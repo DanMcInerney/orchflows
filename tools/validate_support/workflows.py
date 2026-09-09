@@ -190,6 +190,7 @@ def _validate_commands(package_records, manifests, diag, overrides) -> None:
 
     for owner, manifest in package_records:
         node = str(manifest.resolve())
+        declared_frame = False
         for command in _commands(packages._read_source(manifest)):
             for retired in RETIRED_FLAGS:
                 if re.search(rf"(?:^|\s){re.escape(retired)}(?:\s|$)", command):
@@ -217,10 +218,14 @@ def _validate_commands(package_records, manifests, diag, overrides) -> None:
                 if (
                     kind == "workflow"
                     and _command_verb(command) == "frame-open"
-                    and "--parent" in command.split()
                 ):
                     target = str(Path(str(record["path"])).resolve())
-                    if target in node_by_path:
+                    # The first self-named frame opens this body's invocation,
+                    # even when the caller supplied its parent. Later self
+                    # frames are recursive calls, not another declaration.
+                    if target == node and not declared_frame:
+                        declared_frame = True
+                    elif target in node_by_path:
                         graph[node].add(target)
         diag.warn(
             packages.rel(manifest),

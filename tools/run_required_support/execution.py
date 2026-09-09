@@ -9,46 +9,40 @@ exactly what a check's evidence must not pass through.
 
 from __future__ import annotations
 
-import subprocess
-import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
 
 from tools.run_required_support.identity import digest
+from scripts.tickets_done_evidence import run_command
 
-
-def stamp(seconds: float) -> str:
-    """One UTC timestamp, to the microsecond, with a Z rather than an offset."""
-
-    moment = datetime.fromtimestamp(seconds, tz=timezone.utc)
-    return moment.isoformat().replace("+00:00", "Z")
+CHECK_TIMEOUT_SECONDS = 1800
 
 
 def run_one(name: str, argv, cwd):
     """Run one check to completion; return its record and its raw streams."""
 
-    started = time.time()
-    try:
-        done = subprocess.run(
-            list(argv),
-            cwd=str(cwd),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        status, out, err = done.returncode, done.stdout, done.stderr
-    except OSError as error:
-        # A check that cannot start is a failed check, not a refusal: the
-        # other four still have something to say about this tree.
-        status, out, err = 127, b"", str(error).encode("utf-8")
-    ended = time.time()
+    receipt, out, err = run_command(argv, cwd, CHECK_TIMEOUT_SECONDS)
+    status = receipt["exit_status"]
+    if receipt["outcome"] != "completed":
+        status = 124 if receipt["outcome"] == "timeout" else 127
+    elif receipt["changed_tree"] or any(
+        receipt[key]["kind"] == "unavailable"
+        for key in ("artifact_before", "artifact_after")
+    ):
+        status = status or 1
     record = {
         "argv": list(argv),
-        "started_at": stamp(started),
-        "ended_at": stamp(ended),
+        "started_at": receipt["started_at"],
+        "ended_at": receipt["ended_at"],
         "exit_status": status,
         "stdout_sha256": digest(out),
         "stderr_sha256": digest(err),
         "cached": False,
+        "evidence": receipt["evidence"],
+        "observed_exit": receipt["exit_status"],
+        "outcome": receipt["outcome"],
+        "artifact_before": receipt["artifact_before"],
+        "artifact_after": receipt["artifact_after"],
+        "changed_tree": receipt["changed_tree"],
     }
     return name, record, out, err
 

@@ -27,7 +27,7 @@ from scripts import tickets
 from scripts import tickets_done
 from scripts import tickets_report_note
 from scripts import tickets_store
-from scripts.tickets_format import _sections, parse_canonical_json
+from scripts.tickets_format import _sections, canonical_json, parse_canonical_json
 
 # The interpreter every predicate below is run through: a bare `python` is a
 # Windows Store stub, and a fixture that shipped one would be testing the
@@ -41,6 +41,19 @@ def _command(code: int) -> str:
 
 def _done(form: str, value: str) -> str:
     return json.dumps({"form": form, "value": value}, sort_keys=True)
+
+
+def _close_outcome(seal):
+    """Carry the executor identity explicitly across both outcome versions."""
+    with tempfile.TemporaryDirectory() as temporary:
+        path = Path(temporary) / "outcome.json"
+        path.write_text(canonical_json({
+            "protocol": "orchflows.dispatch.v1", "run": "run", "id": "T",
+            "assignment_seal": seal, "dispatch_id": "D1",
+            "outcome_record_id": "outcome", "by": "worker",
+            "evidence": "delivered and verified",
+        }), encoding="utf-8")
+        return retired_commands.run(["dispatch-outcome", "run", "T", "--file", str(path)])
 
 
 class DonePredicateGrammarTest(unittest.TestCase):
@@ -174,9 +187,8 @@ class LandDonePredicateTest(unittest.TestCase):
         self.seal = parse_canonical_json(tickets._parse_frontmatter(
             self.ticket_path().read_text(encoding="utf-8")
         )["dispatch_v1"])["attempts"][0]["assignment_seal"]
-        self.run_command(
-            "dispatch-outcome", "run", "T", "--note", "delivered and verified",
-        )
+        closed = _close_outcome(self.seal)
+        self.assertNotIn("error", closed, closed)
 
     def land(self, *extra):
         return retired_commands.run([
@@ -431,9 +443,7 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
         return path
 
     def close(self):
-        closed = retired_commands.run([
-            "dispatch-outcome", "run", "T", "--note", "delivered and verified",
-        ])
+        closed = _close_outcome(self.seal)
         self.assertNotIn("error", closed, closed)
 
     def land(self, *extra):

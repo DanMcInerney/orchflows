@@ -15,7 +15,7 @@ if __package__:
     from .tickets_transitions import CLAIMED, SUSPENDED
     from .tickets_dispatch_schema import (
         LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX, OUTCOME_RECORD_ID, PROTOCOL,
-        RECORD_KINDS,
+        RECORD_KINDS, record_replays,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
         record_id_namespace_ok as _namespace_ok, state as _state,
@@ -36,7 +36,7 @@ else:
     from tickets_transitions import CLAIMED, SUSPENDED
     from tickets_dispatch_schema import (
         LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX, OUTCOME_RECORD_ID, PROTOCOL,
-        RECORD_KINDS,
+        RECORD_KINDS, record_replays,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
         record_id_namespace_ok as _namespace_ok, state as _state,
@@ -57,12 +57,12 @@ DISPATCH_COMMIT_USAGE = (
 )
 DISPATCH_RETIRE_USAGE = (
     "dispatch-retire <run> <id> --assignment-seal <seal> "
-    "--dispatch-id <id> --record-id <id>"
+    "--dispatch-id <id> --record-id <lifecycle:id>"
 )
 DISPATCH_REPLACE_USAGE = (
     "dispatch-replace <run> <id> --assignment-seal <seal> "
     "--dispatch-id <current-id> --record-id <lifecycle:id> "
-    "--replacement-dispatch-id <new-id> --by <name> "
+    "--replacement-dispatch-id <new-id> --by <replacement-executor-name> "
     "--lease-expires-at <absolute-iso> [--supersede-live]"
 )
 
@@ -207,7 +207,7 @@ def _record_response(run: str, ticket_id: str, dispatch_id: str, record_id: str)
 def _commit_record(
     run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
     expected_seal=None, expected_owner=None, require_live_lease=True,
-    record_kind="generic", _lock_held=False,
+    record_kind="generic", _lock_held=False, validate=None, _preflight=False,
 ):
     """Commit or replay one record and its optional ticket mutation atomically."""
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
@@ -266,7 +266,7 @@ def _commit_record(
                 (item for item in records if item.get("record_id") == record_id), None
             )
             if prior is not None:
-                if prior.get("content") != normalized:
+                if not record_replays(prior, content, record_kind):
                     return _classification(
                         "idempotency-conflict",
                         f"record_id '{record_id}' was already committed with "
@@ -301,12 +301,18 @@ def _commit_record(
                 )
             if expected_seal is not None and expected_seal != seal:
                 return _classification(
-                    "assignment-mismatch", "result operation names another assignment seal"
+                    "assignment-mismatch", f"assignment_seal {expected_seal!r} differs; expected {seal!r}"
                 )
             if expected_owner is not None and expected_owner != attempt.get("owner"):
                 return _classification(
                     "identity-mismatch", "result writer does not match the dispatch attempt owner"
                 )
+            if validate is not None:
+                failure = validate(data, attempt)
+                if failure is not None:
+                    return failure
+            if _preflight:
+                return {"preflight": True}
             if mutate is None:
                 success = _record_response(run, ticket_id, dispatch_id, record_id)
                 updated = text

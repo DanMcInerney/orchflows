@@ -325,7 +325,7 @@ def establish(run: str, ticket_id: str, *, source, held: bool, seams: dict,
     )
 
 
-def prepare(run: str, ticket_id: str):
+def prepare(run: str, ticket_id: str, *, packages=(), tools=()):
     """Install what this item's recorded tree declares, holding no lock."""
 
     path, data, _ = _loaded(run, ticket_id)
@@ -347,7 +347,7 @@ def prepare(run: str, ticket_id: str):
             "id": ticket_id,
             "ticket": str(path),
             PATH_KEY: str(top),
-            **workspace_prepare.prepare(top),
+            **workspace_prepare.prepare(top, **({"packages": packages, "tools": tools} if packages or tools else {})),
         }
     }, EXIT_OK
 

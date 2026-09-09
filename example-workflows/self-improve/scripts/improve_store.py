@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import sqlite3
 import os
 import uuid
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from pathlib import Path
 
+from improve_spool import Rows, encoded
 from improve_common import EvidenceError, canonical, digest, read_json, redact, safe_sink
 from improve_lifecycle import close_probe, projection, require, validate
 
@@ -50,9 +53,30 @@ def create(bundle):
     path = root / "reviews" / review
     path.mkdir(parents=True, exist_ok=False)
     (path / "records").mkdir()
-    atomic(path / "bundle.json", bundle)
-    return {"review": review, "bundle": str(path / "bundle.json"), "revision": digest(bundle),
-            "coverage": bundle["coverage"], "selection": bundle["selection"], "gaps": bundle["gaps"]}
+    hasher = hashlib.sha256()
+    with (path / "bundle.json").open("wb") as stream:
+        for chunk in encoded(bundle):
+            data = chunk.encode("utf-8")
+            stream.write(data)
+            hasher.update(data)
+    revision = hasher.hexdigest()
+    counts = {}
+    with closing(sqlite3.connect(path / "pages.sqlite")) as pages, pages:
+        pages.execute("CREATE TABLE pages (section TEXT, position INTEGER, body TEXT, digest TEXT, PRIMARY KEY(section,position))")
+        for section, key in (("observations", "observations"), ("sources", "sources"),
+                             ("context", "structural_context"), ("gaps", "gaps")):
+            counts[section] = len(bundle[key])
+            for index, item in enumerate(bundle[key]):
+                body = "".join(encoded(item))
+                pages.execute("INSERT INTO pages VALUES (?,?,?,?)", (section, index, body, hashlib.sha256(body.encode()).hexdigest()))
+    summary = {"review": review, "bundle": str(path / "bundle.json"), "revision": revision,
+               "coverage": bundle["coverage"], "selection": bundle["selection"],
+               "occurrence_identity": bundle.get("occurrence_identity", "legacy; attribution may be ambiguous"),
+               "gap_count": counts["gaps"], "counts": counts, "acquisition": bundle.get("acquisition"),
+               "pages": {section: {"section": section, "offset": 0} for section in counts}}
+    atomic(path / "summary.json", summary)
+    return summary
+
 
 
 def load(review):
@@ -102,6 +126,28 @@ def record(review, raw):
 
 
 def show(review, section=None, offset=0, limit=100):
+    if section is not None and section != "records" and (review_path(review) / "summary.json").is_file():
+        require(type(offset) is int and offset >= 0 and type(limit) is int and 1 <= limit <= 1000, "page requires offset >= 0 and limit 1..1000")
+        path = review_path(review)
+        summary = read_json(path / "summary.json")
+        safe_sink(summary["selection"]["sources"])
+        require(section in summary["counts"], "unknown page section")
+        items = []
+        with closing(sqlite3.connect("file:" + path.joinpath("pages.sqlite").as_posix() + "?mode=ro", uri=True)) as pages:
+            for body, expected in pages.execute("SELECT body,digest FROM pages WHERE section=? AND position>=? ORDER BY position LIMIT ?", (section, offset, limit)):
+                require(hashlib.sha256(body.encode()).hexdigest() == expected, "corrupt evidence page")
+                items.append(json.loads(body))
+        total = summary["counts"][section]
+        revision = summary["revision"]
+        for file in sorted((path / "records").glob("*.json")):
+            envelope = read_json(file)
+            require(envelope["record"]["predecessor"] == revision and envelope["revision"] == digest(envelope["record"]), "corrupt ledger predecessor")
+            revision = envelope["revision"]
+        return {"review": review, "revision": revision, "selection": summary["selection"],
+                "coverage": summary["coverage"], "gap_count": summary["gap_count"],
+                "section": section, "offset": offset, "total": total, "items": items,
+                "next_offset": offset + limit if offset + limit < total else None,
+                "page_is_collection": False}
     bundle, records, revision = load(review)
     if section is not None:
         require(type(offset) is int and offset >= 0 and type(limit) is int and 1 <= limit <= 1000, "page requires offset >= 0 and limit 1..1000")

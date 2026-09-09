@@ -34,10 +34,7 @@
     "launch": {
       "native_fields": [
         "agent_type",
-        "fork_turns",
-        "model",
-        "model_reasoning_effort",
-        "service_tier"
+        "fork_turns"
       ],
       "verb": "spawn_agent"
     },
@@ -79,5 +76,5 @@
     "schema_version": 1
   },
   "source": "hosts/codex.json",
-  "source_sha256": "895348a117c9dc4204b63402a749a72aab31f0ec928bf080c02183c4d5e7169e"
+  "source_sha256": "b5f73dd325899c5d91d7ce29c79cf684a5d21540e9d4ba92576da85fc24e4e41"
 }

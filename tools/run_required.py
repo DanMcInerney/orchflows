@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the five required checks once, and never twice for the same tree.
+"""Run the five required source checks, with an explicitly scoped replay cache.
 
 The order and the membership are `AGENTS.md`'s; this runner only decides
 when a check may be skipped, and the answer is: only when an identical tree
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -39,6 +40,8 @@ RECORD_KIND = "required-check-run/v1"
 # passing itself off as the execution its caller asked for.
 REPLAY_KIND = "required-check-replay/v1"
 REFUSAL_KIND = "required-check-refusal/v1"
+CACHE_SCOPE = ("source checks with selected runtime inputs; ignored dependencies, "
+               "installed entry points and host capabilities require uncached probes")
 
 # `AGENTS.md`'s five, in `AGENTS.md`'s order. `cheap` is what may share a
 # phase: the two long checks each want the whole machine, so they are run
@@ -77,8 +80,9 @@ def interpreter_version(interpreter: str) -> str:
             [interpreter, "--version"],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            timeout=30,
         )
-    except OSError as error:
+    except (OSError, subprocess.TimeoutExpired) as error:
         raise Refusal("interpreter is not runnable: {0}".format(error))
     if done.returncode != 0:
         raise Refusal(
@@ -133,7 +137,7 @@ def main(argv=None) -> int:
     args = parse_args(argv)
     try:
         return _run(args)
-    except (Refusal, identity.NotAGitCheckout) as error:
+    except (Refusal, identity.NotAGitCheckout, OSError) as error:
         emit(sys.stderr, "run_required: {0}\n".format(error))
         if args.format == "json":
             emit(
@@ -199,7 +203,7 @@ def verdict_note(payload) -> str:
     """
 
     if payload["kind"] == REPLAY_KIND:
-        return "  (replay; --no-cache executes the five)"
+        return "  (source-check replay; --no-cache executes the five; host probes uncached)"
     return "  (dirty)" if payload["dirty"] else ""
 
 
@@ -211,7 +215,10 @@ def report(outcomes, payload, form: str) -> None:
         emit(stream, "--- {0}\n".format(display(record["argv"])))
         for raw in (out, err):
             if raw:
-                emit(stream, raw.decode("utf-8", "replace"))
+                emit(stream, raw.decode("utf-8", "replace")[-4000:])
+        if record.get("evidence"):
+            emit(stream, "\nevidence {0} sha256:{1}\n".format(
+                record["evidence"]["path"], record["evidence"]["sha256"]))
     if form == "json":
         emit(sys.stdout, json.dumps(payload, indent=1, sort_keys=True) + "\n")
         return
@@ -233,7 +240,7 @@ def report(outcomes, payload, form: str) -> None:
 
 
 def key_for(tree: str, working: str, planned, interpreter: str, version: str) -> str:
-    """Everything that could change a verdict, in one sha256."""
+    """Source and selected runtime identity, never installed-host acceptance."""
 
     return identity.cache_key([
         RECORD_KIND,
@@ -243,6 +250,12 @@ def key_for(tree: str, working: str, planned, interpreter: str, version: str) ->
         interpreter,
         sys.platform,
         version,
+        identity.digest(Path(interpreter).read_bytes()),
+        json.dumps({name: os.environ.get(name) for name in (
+            "PYTHON_CPU_COUNT", "PYTHONPATH", "PYTHONHOME", "PATH",
+            "ORCHFLOWS_TEST_PARALLELISM",
+        )}, sort_keys=True),
+        CACHE_SCOPE,
     ])
 
 
@@ -272,13 +285,20 @@ def _run(args) -> int:
 
     outcomes = execute(planned, repo)
     records = [record for _, record, _, _ in outcomes]
+    after_working, after_dirty = identity.working_digest(repo, skip)
+    after_tree, after_commit = identity.tree_identity(repo), identity.head_commit(repo)
+    changed = (working, tree, commit) != (after_working, after_tree, after_commit)
     payload = {
         "kind": RECORD_KIND,
         "repository_identity": commit,
         "tree_identity": tree,
         "dirty": dirty,
         "commands": records,
-        "exit": 0 if all(r["exit_status"] == 0 for r in records) else 1,
+        "exit": 0 if not changed and all(r["exit_status"] == 0 for r in records) else 1,
+        "changed_tree": changed,
+        "artifact_after": {"commit": after_commit, "tree": after_tree,
+                           "working_sha256": after_working, "dirty": after_dirty},
+        "cache_scope": CACHE_SCOPE,
     }
     if _storable(args, repo, skip, tree, working, dirty, payload):
         cache.store(repo, key, payload)

@@ -13,6 +13,7 @@ takes no run lock and every caller reaches it as its own verb, against the
 """
 
 import inspect  # noqa: E402  not among the names ``common`` re-exports
+import ast
 import shutil  # noqa: E402  the same
 
 from .common import *  # noqa: F401,F403
@@ -86,6 +87,7 @@ def run_workspace_under(cwd: Path, environment: dict, *args):
     base = git_env()
     for name in ("ORCHFLOWS_BROWSER_EXECUTABLE", "PLAYWRIGHT_BROWSERS_PATH"):
         base.pop(name, None)
+    base["PLAYWRIGHT_BROWSERS_PATH"] = str(cwd / ".test-browser-cache")
     base.update(environment)
     return subprocess.run(
         [sys.executable, str(WORKSPACE_PY), *args],
@@ -340,8 +342,7 @@ class TestPrepareReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
     def test_a_named_executable_that_resolves_is_present(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            named = tmp / "chrome-headless"
-            named.write_text("#!/bin/sh\n", encoding="utf-8")
+            named = stub_pnpm(tmp / "browser-bin")
 
             self.assertEqual(
                 "present",
@@ -355,7 +356,7 @@ class TestPrepareReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
             (cache / "chromium-1140").mkdir(parents=True)
 
             self.assertEqual(
-                "present",
+                "missing",
                 self._browser(tmp, {
                     "ORCHFLOWS_BROWSER_EXECUTABLE": str(tmp / "absent"),
                     "PLAYWRIGHT_BROWSERS_PATH": str(cache),
@@ -379,7 +380,7 @@ class TestPrepareReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
             cache.mkdir()
 
             self.assertEqual(
-                "unknown",
+                "missing",
                 self._browser(tmp, {
                     "PLAYWRIGHT_BROWSERS_PATH": str(cache),
                     "STUB_PNPM_EXEC_EXIT": "1",
@@ -407,11 +408,17 @@ class TestPreparationIsOutsideEveryLock(unittest.TestCase):
                 self.assertNotIn("workspace_prepare.prepare(", lane)
 
     def test_the_facade_prepares_after_it_lets_the_lock_go(self):
-        source = inspect.getsource(dispatch_facade._cmd_dispatch)
-        self.assertLess(
-            source.index("with _run_lock(run):"),
-            source.index("_workspace_prepare("),
-        )
+        lanes = [dispatch_facade._cmd_dispatch]
+        if hasattr(dispatch_facade, "_dispatch_admitted"):
+            lanes.append(dispatch_facade._dispatch_admitted)
+        for lane in lanes:
+            tree = ast.parse(inspect.getsource(lane))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.With):
+                    self.assertFalse(any(isinstance(child, ast.Call) and
+                                         isinstance(child.func, ast.Name) and child.func.id == "_workspace_prepare"
+                                         for child in ast.walk(node)))
+        self.assertIn("_workspace_prepare(", inspect.getsource(dispatch_facade._cmd_dispatch))
         self.assertNotIn(
             "_workspace_prepare(",
             inspect.getsource(dispatch_facade._dispatched_under_run_lock),
@@ -451,7 +458,7 @@ class TestTheInstallCeilingIsReal(unittest.TestCase):
             (tmp / "pnpm-lock.yaml").write_text("lockfileVersion: '9.0'\n", encoding="utf-8")
             stub_pnpm(tmp / "bin")
             prepared = workspace_prepare.prepare(
-                tmp, env={"PATH": str(tmp / "bin")}, run=never_returns
+                tmp, env={"PATH": str(tmp / "bin"), "PLAYWRIGHT_BROWSERS_PATH": str(tmp / "cache")}, run=never_returns
             )
 
         self.assertEqual(600, dict(seen)["install"])
@@ -459,4 +466,4 @@ class TestTheInstallCeilingIsReal(unittest.TestCase):
         # the item just as completely as an install that hangs
         self.assertTrue(all(timeout for _, timeout in seen), seen)
         self.assertEqual("failed: timeout", prepared["frontend"])
-        self.assertEqual("unknown", prepared["playwright_browser"])
+        self.assertEqual("missing", prepared["playwright_browser"])

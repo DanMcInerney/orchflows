@@ -22,6 +22,11 @@ GROK_MODEL_CENSUS = ("grok-4.6",)
 GROK_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 
+def host_entry_line(host: str) -> str:
+    """A host entry selects its host before any ticket is minted."""
+    return f"Pass --host {host} on every tickets.py do, judge or dispatch call from this entry.\n"
+
+
 def load_host_adapters(adapter_dir: Path = HOST_ADAPTERS_DIR) -> dict[str, dict]:
     hosts = {}
     for name in HOST_IDS:

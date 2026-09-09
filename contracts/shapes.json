@@ -97,8 +97,9 @@
     {
       "name": "dispatch_join_content",
       "contract": "dispatch.md",
-      "fields": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id"],
-      "required": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id"]
+      "fields": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id", "status"],
+      "required": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id"],
+      "values": {"status": ["complete", "blocked", "stalled", "limited", "failed", "suspended"]}
     },
     {
       "name": "dispatch_retire_request",
