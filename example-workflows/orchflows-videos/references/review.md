@@ -39,11 +39,21 @@ capabilities or call a technical pass a completed audiovisual review.
 
 ## Outside probe interface
 
-Resolve the interpreter through `orchflows env workflow orchflows-videos`, then from
-the produced project's root run the foundation probe in the unchanged project
-bundle:
+From the produced project's root, resolve the public orchflows-videos owner
+through `orchflows list --kind workflow` and the interpreter through
+`orchflows env workflow orchflows-videos`. Set `<resolved-public-owner>` to the
+absolute directory containing that resolved public SKILL.md; verify its normalized
+package digest matches the invocation's pinned workflow digest before preparing
+the command. A missing or changed owner requires resolution, not a fallback copy.
 
-    <resolved-interpreter> .orchflows/workflows/orchflows-videos/scripts/probe.py --project . --video output/final.mp4 --seconds <approved-seconds>
+Use that owner's probe, keeping `--project` pointed at the produced Git repository:
+
+    <resolved-interpreter> <resolved-public-owner>/scripts/probe.py --project . --video output/final.mp4 --seconds <approved-seconds>
+
+For a home install the owner is ~/.orchflows/workflows/orchflows-videos; for a
+project install it is <project>/.orchflows/workflows/orchflows-videos. Expand and
+quote actual absolute paths as argv values. Copying the renderer scaffold alone
+does not install a project workflow package.
 
 Pass `--audio optional` only for approved silence; defaults are required audio,
 30fps, -16 LUFS +/-2 and -1 dBTP. Explicit approved changes use `--fps`, `--lufs`,

@@ -107,10 +107,11 @@ waveform statistics, captions and text cannot prove heard quality.
 
 ## Outside output probe
 
-From the disposable project root, with the unchanged accepted package in its
-project bundle, use the workflow environment interpreter:
+Prepare the resolved interpreter, pinned public owner and separate artifact
+project as specified by [review's probe interface](review.md#outside-probe-interface).
+From the produced project root:
 
-    <orchflows env workflow orchflows-videos> .orchflows/workflows/orchflows-videos/scripts/probe.py --project . --video output/final.mp4 --seconds 30
+    <resolved-interpreter> <resolved-public-owner>/scripts/probe.py --project . --video output/final.mp4 --seconds 30
 
 This denotes the interpreter returned by `orchflows env workflow orchflows-videos`,
 not a literal shell executable. On the qualified host it is the verified Python

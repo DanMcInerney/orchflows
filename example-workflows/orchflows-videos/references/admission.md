@@ -48,7 +48,13 @@ Direction produces a NEW committed Markdown plan and independent review; its
 that accepted identity, actual findings, research, constraints, timing assumptions
 and gaps. Missing review or exhausted repair retains partial artifacts, never acceptance.
 
-## Disposable invocation
+## Disposable invocation: 2026-09-08 authoring example
+
+This dated fixture records this package's authoring admission plan. Its path,
+project-bundle deployment and 10s silent brief are examples, not inputs required
+of later invocations. Routine production uses the actual brief and
+[resolved-owner probe interface](review.md#outside-probe-interface) for either
+home or project installation.
 
 After independent source review and the joined required gate, use a fresh Git
 project at C:/Users/danhm/Documents/Codex/2026-09-08/orchflows-videos-admission.
