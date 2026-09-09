@@ -7,7 +7,7 @@ places this evidence law in the ticket lifecycle.
    challenges the fixed artifact and evidence under factual Context. The sealed
    assignment adds no proof checklist.
 2. Executor records belong to [result.md](../contracts/result.md), outside the
-   semantic seal. Evidence must fit its artifact; each standard's `evidence` cell
+   semantic seal. Evidence must fit its artifact; each standard's guidance
    owns the domain-specific forms.
 3. Verification and critique are read-only. A checker that changes the
    target has become a repair executor and cannot judge that changed identity.

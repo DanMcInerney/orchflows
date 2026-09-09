@@ -96,7 +96,7 @@ class ReviewCarriageTest(unittest.TestCase):
 
     def test_independent_game_and_video_stage_commands_forward_effective_rounds(self):
         f = self.fixture
-        for name in ('3d-browser-game', 'tiktok-video'):
+        for name in ('3d-browser-game', 'orchflows-videos'):
             body = (ROOT / 'example-workflows' / name / 'SKILL.md').read_text(encoding='utf-8')
             stages = [c for c in _commands(body) if '--review-new-work' in c]
             self.assertEqual(3 if name == '3d-browser-game' else 2, len(stages))

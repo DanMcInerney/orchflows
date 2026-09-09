@@ -150,7 +150,13 @@ class TestTheTrunkDispatchesAndLandsADocumentItem(unittest.TestCase):
             str(self.tree.resolve()), recorded_workspace(self.ticket_path())
         )
         seal = self.sealed()
-        self.command("dispatch-outcome", "run", "T", "--note", "delivered")
+        envelope = self.tree.parent / "outcome.json"
+        envelope.write_text(json.dumps({
+            "protocol": "orchflows.dispatch.v1", "run": "run", "id": "T",
+            "assignment_seal": seal, "dispatch_id": "D1", "outcome_record_id": "outcome",
+            "by": "worker", "evidence": "delivered",
+        }, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        self.command("dispatch-outcome", "run", "T", "--file", str(envelope))
 
         landed = self.command(
             "land", "run", "T", "--assignment-seal", seal, "--dispatch-id", "D1",

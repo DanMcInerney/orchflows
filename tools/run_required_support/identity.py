@@ -27,8 +27,9 @@ def git(repo: Path, *args: str):
             cwd=str(repo),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            timeout=30,
         )
-    except OSError as error:  # git itself is absent from this host
+    except (OSError, subprocess.TimeoutExpired) as error:
         raise NotAGitCheckout("git is not runnable here: {0}".format(error))
 
 
@@ -101,7 +102,7 @@ def working_digest(repo: Path, skip: str = None):
 
 
 def cache_key(material) -> str:
-    """One sha256 over every input that could change a verdict."""
+    """One sha256 over the caller's explicitly selected inputs."""
 
     hasher = hashlib.sha256()
     for item in material:

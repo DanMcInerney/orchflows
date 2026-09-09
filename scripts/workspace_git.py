@@ -9,13 +9,14 @@ from pathlib import Path
 # The owning modules, never the ``tickets`` facade: a helper that imports a
 # facade is what a facade exists to spare its callers.
 try:
-    from . import state_root, tickets_format, tickets_store, tickets_transitions, workspace_record
+    from . import state_root, tickets_format, tickets_store, tickets_transitions, workspace_record, workspace_process
 except ImportError:
     import state_root
     import tickets_format
     import tickets_store
     import tickets_transitions
     import workspace_record
+    import workspace_process
 
 
 # One verdict per exit code, spelled where the refusals that carry them are
@@ -78,9 +79,17 @@ class Refused(Exception):
 def _git(cwd, *args: str):
     """Run git in the caller-selected tree under grade."""
 
-    completed = subprocess.run(
-        ["git", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd
-    )
+    try:
+        completed = workspace_process.run(
+            ["git", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd,
+            timeout=workspace_process.GIT_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise Refused(
+            f"git {' '.join(args)} timed out in {cwd}; inspect status and merge state before retry",
+            timeout=error.timeout, cwd=str(cwd), command=list(error.cmd),
+            cleanup_error=getattr(error, 'cleanup_error', None),
+        ) from error
     return (
         completed.returncode,
         completed.stdout.decode("utf-8", "replace"),

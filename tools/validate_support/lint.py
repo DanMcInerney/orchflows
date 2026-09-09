@@ -160,6 +160,7 @@ SECTION_EXPECTATIONS = {
     ("rules/verification.md", 8): "artifact and dependencies it covers",
     ("rules/roles.md", 3): "Concrete model and effort bindings",
     ("rules/roles.md", 4): "Resolve profile at each dispatch",
+    ("rules/roles.md", 6): "A role-bearing applied skill runs only in an established child",
     ("rules/topology.md", 3): "Goal, Context, and optional Details",
     ("rules/topology.md", 5): "mechanically observable shape",
     ("rules/topology.md", 6): "belongs to a ticket, not a run",

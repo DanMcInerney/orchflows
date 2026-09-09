@@ -210,6 +210,8 @@ def _sealed_parent(run_dir, parent: str):
             "child is sealed through its parent's own generation, so seal the "
             "parent first"
         )}
+    if data["assignment_seal"] != assignment_digest(parent, text):
+        return None, {"error": f"parent {parent} assignment seal does not match its current bytes"}
     return data, None
 
 

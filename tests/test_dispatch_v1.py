@@ -180,6 +180,7 @@ class DispatchV1Test(unittest.TestCase):
 
         return retired_commands.run([
             "dispatch-outcome", "run", "T", "--note", note,
+            "--assignment-seal", self.opened_seal, "--dispatch-id", "D1", "--by", "worker",
         ])
 
     def join(self, *, status="complete", seal=None, by="root-join"):
@@ -777,8 +778,8 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("dispatch-join-required", refusal["code"])
         self.assertEqual(before, self.ticket_text())
 
-    def test_a_second_attempt_keeps_its_status_with_the_join(self):
-        """A retry is not a lifecycle that never began."""
+    def test_all_retired_outcomeless_attempts_return_status_ownership(self):
+        """Explicit retirement returns cancellation authority across retries."""
 
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
@@ -790,10 +791,9 @@ class DispatchV1Test(unittest.TestCase):
         ))
         before = self.ticket_text()
 
-        refusal = retired_commands.run(["set-status", "run", "T", "suspended"])
-
-        self.assertEqual("dispatch-join-required", refusal["code"])
-        self.assertEqual(before, self.ticket_text())
+        moved = retired_commands.run(["set-status", "run", "T", "suspended"])
+        self.assertNotIn("error", moved)
+        self.assertEqual("suspended", _parse_frontmatter(self.ticket_text())["status"])
 
     def test_protocol_owned_record_ids_cannot_be_squatted(self):
         opened = self.open()

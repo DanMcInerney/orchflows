@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sys
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -75,13 +76,19 @@ def inside(path, root):
 
 
 SECRET_KEY = re.compile(r"(?i)(?:password|passwd|secret|token|api.?key|authorization|cookie|credential|private.?key)")
-SECRET_TEXT = re.compile(r'''(?ix)(["']?(?:password|passwd|secret|[\w-]*token|api[_-]?key|authorization|cookie)["']?\s*[:=]\s*)(?:"[^"\n]*"|'[^'\n]*'|[^\s,;&]+)''')
+SECRET_TEXT = re.compile(r'''(?ix)(?<![\w-])(["']?(?:[\w-]*(?:password|passwd|secret|token|api[_-]?key|authorization|cookie))["']?\s*[:=]\s*)(?:"[^"\n]*"|'[^'\n]*'|[^\s,;&]+)''')
 
 
-def redact(value):
+USAGE_FIELDS = {"input_tokens", "output_tokens", "total_tokens", "cached_input_tokens",
+                "reasoning_output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"}
+
+
+def redact(value, usage=False):
     if isinstance(value, dict):
-        return {str(k): "[REDACTED]" if SECRET_KEY.search(str(k)) or k == "encrypted_content"
-                or value.get("type") == "redacted_thinking" and k == "data" else redact(v)
+        usage = usage or value.get("type") == "token_usage_record"
+        return {str(k): v if usage and k in USAGE_FIELDS and type(v) is int and v >= 0
+                else "[REDACTED]" if SECRET_KEY.search(str(k)) or k == "encrypted_content"
+                or value.get("type") == "redacted_thinking" and k == "data" else redact(v, usage=usage and k in {"payload", "usage"} or k == "usage" and isinstance(v, dict) and bool(v) and all(key in USAGE_FIELDS and type(number) is int and number >= 0 for key, number in v.items()))
                 for k, v in value.items()}
     if isinstance(value, list):
         return [redact(v) for v in value]
@@ -150,8 +157,16 @@ def selection(raw):
 
 def safe_sink(sources=()):
     root = state_root.improvement_root().resolve()
-    if state_root.find_repo_root(root) is not None:
-        raise EvidenceError("improvement sink is inside a Git repository")
+    repository = state_root.find_repo_root(root)
+    if repository is not None:
+        home = state_root.orchflows_home().resolve()
+        if repository.resolve() != home or root != home / "state" / "improvement":
+            raise EvidenceError("improvement sink is inside a Git repository")
+        relative = root.relative_to(home).as_posix() + "/"
+        ignored = subprocess.run(["git", "-C", str(home), "check-ignore", "--quiet", "--", relative], timeout=10)
+        tracked = subprocess.run(["git", "-C", str(home), "ls-files", "--", relative], capture_output=True, timeout=10)
+        if ignored.returncode != 0 or tracked.returncode != 0 or tracked.stdout:
+            raise EvidenceError("home improvement sink must be ignored and contain no tracked files")
     for source in sources:
         # A sink tree is an input, but never let output sit within its log subtree.
         path = Path(source["path"])

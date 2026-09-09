@@ -21,11 +21,11 @@
    ([composition.md](composition.md) §11); everything else that survives
    §1 — method, checklists, host mechanics, worked detail, domain data —
    sits behind one link in the owning package's `references/` or the
-   stamped standard's cell, placed at the call site where it is first needed
+   stamped standard's guidance, placed at the call site where it is first needed
    (§7). Test per passage: would an executor that never followed the
    link still meet every Require, Never and Return? Yes → reference.
-   The cells [contracts/standard.md](../contracts/standard.md)
-   mandates are the standing exception.
+   Required domain guidance stays in the manifest under
+   [contracts/standard.md](../contracts/standard.md), regardless of layout.
 7. A link states at its call site when to follow it. Copy or cite is
    [visibility.md](visibility.md) §3's call.
 8. Models route by descriptions, so a description states when to
@@ -42,7 +42,7 @@
     drift.
 11. Budgets bound what is loaded whether or not it is needed, and only
     that: a router block, an agent file, a `SKILL.md` body, a standard's
-    cells. What a link makes available on demand
+    manifest. What a link makes available on demand
     is unbudgeted — it answers to §1 sentence by sentence and to any
     contract mandating its content. Ceilings order by load frequency,
     because a file loaded by every child on every turn costs its length
@@ -59,7 +59,7 @@
     eight-demand cap is not a body ceiling and is not owned there.
     `STANDARD_BUDGET` is one number for a root and a narrowing alike,
     counted over the whole manifest with its frontmatter, because the
-    section table rather than a smaller ceiling is what keeps a
+    tightening-only rule rather than a smaller ceiling is what keeps a
     narrowing from growing into a second owner of a domain.
     Counted in words with link targets
     stripped by tools/validate.py. A ticket carries no such ceiling: it

@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime
 from pathlib import Path
@@ -151,6 +152,9 @@ class RunRequiredCase(unittest.TestCase):
         holder = tempfile.TemporaryDirectory()
         self.addCleanup(holder.cleanup)
         root = Path(holder.name)
+        state = mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": str(root / "state")})
+        state.start()
+        self.addCleanup(state.stop)
         self.repo = root / "checkout"
         self.repo.mkdir()
         git(self.repo, "init", "--quiet")

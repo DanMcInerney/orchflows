@@ -29,6 +29,15 @@ Initial outcome may be 100%, 0% or anything else. If the independent audit valid
 
 ## Native command and collection
 
+Before spending the dependent trial allocation, observe a small representative
+input through the selected native mechanism, including any required listening
+or ordinary interaction. Retain the input and observed output/context identities
+and limits. Missing capability is an admission gap, not a substitute tool-presence
+claim. Preserve observed instruction, skill and tool surfaces at first and resumed
+turns; changes or unknowns qualify comparison claims without erasing valid scores.
+The observation does not count as a target trial unless the preregistered policy
+and full trial evidence already make it one.
+
 Root reports that native `codex exec` is available with `--json`, `--ephemeral`, `--output-schema`, `--sandbox`, `--ignore-user-config`, `-C` and stdin prompt support. Confirm exact help/version before use; record any unsupported option as an execution gap, not a reason to add unsafe flags. The package collector implements the subprocess argv (no interpolated shell command):
 
 ```text

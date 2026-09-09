@@ -11,6 +11,7 @@ class TestInstallReceipt(unittest.TestCase):
             root = Path(tmp)
             project = root / "project"
             project.mkdir()
+            (project / ".orchflows" / "state" / "tickets").mkdir(parents=True)
             source = root / "source.md"
             source.write_text("new library\n", encoding="utf-8")
             script_source = root / "tool.py"
@@ -45,6 +46,12 @@ class TestInstallReceipt(unittest.TestCase):
                 ],
             )
 
+            # A replacement is receipt-owned; an operator's differing helper
+            # at this destination must instead refuse publication.
+            plan.receipt_path.write_text(json.dumps({"files": [{
+                "path": str(script_dest), "kind": "script",
+                "sha256": digest(script_dest),
+            }]}), encoding="utf-8")
             receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             self.assertEqual(4, receipt["version"])
@@ -104,6 +111,7 @@ class TestInstallReceipt(unittest.TestCase):
             self.assertEqual("before\n", mine.read_text(encoding="utf-8"))
 
     def _role_agent_plan(self, project: Path, **kwargs) -> "install.Plan":
+        (project / ".orchflows" / "state" / "tickets").mkdir(parents=True, exist_ok=True)
         defaults = dict(
             lib_home=project / ".orchflows" / "lib",
             scope_home=project / ".orchflows",
@@ -231,6 +239,7 @@ class TestInstallReceipt(unittest.TestCase):
             old_agent.write_text('name = "orch-worker"\n', encoding="utf-8")
             receipt = project / ".orchflows" / "receipt.json"
             receipt.parent.mkdir(parents=True)
+            (receipt.parent / "state" / "tickets").mkdir(parents=True)
             receipt.write_text(
                 json.dumps(
                     {

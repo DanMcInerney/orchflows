@@ -73,7 +73,7 @@ from .planning_support import (
     _script_source,
     _validator_support_copies,
 )
-from .hosts import host_item_path, load_host_adapters, preflight_instruction_target
+from .hosts import host_item_path, load_host_adapters, preflight_instruction_target, host_entry_line
 
 def detect_hosts(home: Path | None = None) -> tuple[bool, bool, bool]:
     """Return Claude, Codex and Grok enablement from runnable CLI presence on
@@ -138,9 +138,10 @@ def build_plan(
                 lib_copies.append((path, lib_home / rel))
     for path in sorted(HOST_ADAPTERS_DIR.glob("*.json")):
         lib_copies.append((path, lib_home / path.relative_to(REPO_ROOT)))
-    notices = REPO_ROOT / "THIRD_PARTY_NOTICES.md"
-    if notices.is_file():
-        lib_copies.append((notices, lib_home / notices.name))
+    for name in ("THIRD_PARTY_NOTICES.md", "ARCHITECTURE.md"):
+        document = REPO_ROOT / name
+        if document.is_file():
+            lib_copies.append((document, lib_home / document.name))
     for path in _reader_payload_files():
         if path.is_file():
             lib_copies.append((path, lib_home / path.relative_to(REPO_ROOT)))
@@ -194,7 +195,7 @@ def build_plan(
                     name, role, profiles[f"orch-{role}"], lib_skill_md
                 )
                 if role in PROFILE_ROLES
-                else body.strip() + "\n"
+                else host_entry_line("codex") + body.strip() + "\n"
             )
             codex_prompts.append(
                 (
@@ -212,7 +213,7 @@ def build_plan(
                             name, role, profiles[f"orch-{role}"], lib_skill_md
                         )
                         if role in PROFILE_ROLES
-                        else f"Read {lib_skill_md} and follow it exactly.\n"
+                        else host_entry_line("codex") + f"Read {lib_skill_md} and follow it exactly.\n"
                     ),
                 )
             )
@@ -263,13 +264,13 @@ def build_plan(
             codex_prompts.append(
                 (
                     item_path("codex", "prompt", codex_user_home, name=name),
-                    f"# {description}\n\n{body.strip()}\n",
+                    f"# {description}\n\n{host_entry_line('codex')}{body.strip()}\n",
                 )
             )
             codex_skills.append(
                 (
                     item_path("codex", "skill", codex_user_home, name=name),
-                    pointer,
+                    frontmatter + "\n" + host_entry_line("codex") + pointer[len(frontmatter) + 1:],
                 )
             )
         if grok_enabled:

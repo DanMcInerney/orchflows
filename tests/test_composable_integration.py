@@ -218,7 +218,11 @@ class ComposableIntegrationTest(unittest.TestCase):
                     sink, judged["id"], judged_attempt, f"git:{judged_tip}",
                     findings=findings,
                 )
-                self.assertTrue((project / findings).is_file())
+                custody = json.loads((sink / "workspaces" / RUN / judged["id"] / "custody" / "manifest.json").read_text())
+                entry = next(item for item in custody["files"] if item["source"] == str((judged_workspace / findings).resolve()))
+                preserved = Path(entry["destination"]).read_bytes()
+                self.assertEqual(entry["sha256"], hashlib.sha256(preserved).hexdigest())
+                self.assertFalse((project / findings).exists())
                 self.assertFalse(judged_workspace.exists())
 
                 self._call("frame-close", RUN, helper["id"], "--status", "complete")
@@ -412,6 +416,8 @@ class ComposableIntegrationTest(unittest.TestCase):
         )
         self._call(
             "dispatch-outcome", RUN, ticket_id,
+            "--assignment-seal", attempt["assignment_seal"],
+            "--dispatch-id", attempt["dispatch_id"], "--by", ticket_id,
             "--note", "; ".join(lines[1:]),
         )
         landed = self._call(

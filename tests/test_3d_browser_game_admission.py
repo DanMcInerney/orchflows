@@ -419,6 +419,8 @@ class ThreeDBrowserGameAdmissionTest(unittest.TestCase):
         self.assertNotIn("error", result)
         outcome = self._call(
             "dispatch-outcome", RUN, ticket_id, "--note", text,
+            "--assignment-seal", attempt["assignment_seal"],
+            "--dispatch-id", attempt["dispatch_id"], "--by", ticket_id,
         )
         self.assertNotIn("error", outcome)
 

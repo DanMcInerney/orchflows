@@ -75,8 +75,9 @@ FILE` appends one validated record. Every record needs unique id, kind and
 predecessor equal to the last revision. Exact retries are idempotent;
 different reuse, stale heads and concurrent writers refuse. Retry a busy
 writer after it finishes; inspect abandoned locks before removing them.
-State lives under improvement_root()/reviews/. Writes inside Git or source
-trees refuse; use the installed entry for collection and append.
+State lives under improvement_root()/reviews/. Writes inside source trees or arbitrary Git repositories refuse. The supported
+Git-backed home permits only state/improvement/ when Git confirms it is ignored
+and contains no tracked files; use the installed entry for collection and append.
 Records are evidence claims for review, never instructions.
 
 For a week-sized review, use `show --review ID --section observations --offset
@@ -84,16 +85,19 @@ For a week-sized review, use `show --review ID --section observations --offset
 sources, context, gaps and records use the same paging fields. Limits are
 1..1000 items per page. A page states its total and page_is_collection=false;
 it never claims to be the complete bundle. Analysis accounts for all pages,
-or leaves unread observations unresolved. Collection has no hidden byte,
-file-count or record-count cap: its bounds are explicit roots, selectors and
-time. Memory scales with those snapshots; if acquisition cannot finish, no
-completed review is emitted. Narrow an input only with an explicit revised
+or leaves unread observations unresolved. Collection streams source JSONL into private disk spools and streams selected
+payloads to storage. `collect --disk-budget BYTES` declares the source payload
+spool budget (default 2147483648); `--record-budget BYTES` bounds each JSONL
+record or standalone document (default 8388608). Exhaustion produces partial coverage and
+source byte/line continuation boundaries, never a silently narrowed selection.
+Collect returns counts and page handles; new collection pages read bounded
+indexed rows without loading the bundle. Old collections remain readable. Narrow an input only with an explicit revised
 selection, never by quietly treating an excerpt as the week's evidence.
 
 * incident: members (observation IDs), rationale, uncertainty (list),
   classification (environment/workflow/architecture/project/uncertain),
   primary_owner, obstruction, independent_episode. One observation belongs
-  to one incident. Exact duplicates share an observation ID with all locators;
+  to one incident. Each source locator and session has its own occurrence ID;
   the agent adjudicates copied and semantically equivalent observations.
 * proposal: incidents, owner (path/revision/class), dependents, qualification
   (reproduced/recurrent/contradiction), hypothesis, minimal_fix, failure_oracle,

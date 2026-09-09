@@ -163,6 +163,13 @@
     },
     "tiktok-video": {
       "nodes": [
+        {"id": "scope", "label": "Check legacy brief scope"},
+        {"id": "migrate", "label": "Forward or report scope gap"}
+      ],
+      "edges": [{"source": "scope", "target": "migrate", "kind": "sequence"}]
+    },
+    "orchflows-videos": {
+      "nodes": [
         {"id": "research", "label": "Inspect brief-specific evidence"},
         {"id": "direction", "label": "Fix and review original direction"},
         {"id": "production", "label": "Render and review the video"}
