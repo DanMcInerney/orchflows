@@ -337,14 +337,31 @@ class BlenderBoundaryTests(unittest.TestCase):
         self.assertIn("digest", result["error"])
 
     def test_complete_outputs_require_hash_bound_external_validators(self) -> None:
-        out = self.root / "promoted"
-        with mock.patch.object(runner, "_run_process", side_effect=self._fake_validator_process):
-            result = runner.run_job(self.job, out, self.blender)
-        self.assertEqual(runner.EXIT_OK, result["exit_code"])
-        self.assertTrue(result["promoted"])
-        manifest = json.loads((out / "asset-manifest.json").read_text(encoding="utf-8"))
-        self.assertEqual("complete", manifest["status"])
-        self.assertEqual([], manifest["gaps"])
+        finalize = runner._finalize_manifest
+
+        def finalize_via_alias(stage, *args):
+            (stage / "alias-anchor").mkdir()
+            return finalize(stage / "alias-anchor" / "..", *args)
+
+        # A real lexical alias exercises resolve() normalization on every OS,
+        # including hosts without symlink privileges or Windows short names.
+        for name, finalizer in (("canonical", finalize), ("alias", finalize_via_alias)):
+            with self.subTest(path=name):
+                out = self.root / ("promoted-" + name)
+                with mock.patch.object(runner, "_run_process", side_effect=self._fake_validator_process), mock.patch.object(runner, "_finalize_manifest", side_effect=finalizer):
+                    result = runner.run_job(self.job, out, self.blender)
+                self.assertEqual(runner.EXIT_OK, result["exit_code"])
+                self.assertTrue(result["promoted"])
+                manifest_path = out / "asset-manifest.json"
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                self.assertEqual("complete", manifest["status"])
+                self.assertEqual([], manifest["gaps"])
+                for key, path_key, hash_key in (("khronos", "report_path", "report_sha256"), ("gltf_loader", "evidence_path", "evidence_sha256")):
+                    validation = manifest["validation"][key]
+                    self.assertEqual(validation[hash_key], digest(out / validation[path_key]))
+                output = next(item for item in result["worker"]["outputs"] if item["path"] == "asset-manifest.json")
+                self.assertEqual(digest(manifest_path), output["sha256"])
+                self.assertEqual(manifest_path.stat().st_size, output["bytes"])
 
     def test_missing_validator_evidence_keeps_complete_worker_unverified(self) -> None:
         out = self.root / "unvalidated"

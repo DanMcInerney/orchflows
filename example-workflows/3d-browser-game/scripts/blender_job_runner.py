@@ -797,7 +797,7 @@ def _finalize_manifest(stage: Path, worker_result: dict[str, Any], glb_digest: s
     canonical_loader = dict(validation["gltf_loader"])
     for value, path_key in ((canonical_khronos, "report_path"), (canonical_loader, "evidence_path")):
         target = contained_path(stage, value[path_key], field=f"validation/{path_key}")
-        value[path_key] = target.relative_to(path.parent).as_posix()
+        value[path_key] = target.relative_to(path.parent.resolve()).as_posix()
     manifest["validation"] = {"khronos": canonical_khronos, "gltf_loader": canonical_loader}
     manifest["status"] = "complete"
     manifest["gaps"] = []
