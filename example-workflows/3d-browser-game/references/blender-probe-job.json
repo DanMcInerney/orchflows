@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "blender-job",
+  "id": "blender-probe-orb-20260906",
+  "artifact_commit": "git:514520217b3d6a13095b36003f2b13455092e73e",
+  "created_at": "2026-09-06T00:00:00Z",
+  "producer": {
+    "name": "3d-browser-game.blender-probe",
+    "version": "1.0.0",
+    "command": "blender_job_runner.py"
+  },
+  "inputs": [
+    {"name": "probe-generator", "sha256": "sha256:01a0ef8988ac1842bfaabe6a474a8cc1672c56cadc42cbe044c90d2b8184424e"}
+  ],
+  "environment": {
+    "host": "capability-probe",
+    "os": "observed-at-run",
+    "tools": []
+  },
+  "status": "draft",
+  "gaps": ["khronos-validator-and-production-gltfloader-probe-at-run"],
+  "invalidates": ["blender-identity-change", "generator-change", "job-change"],
+  "mode": "generate",
+  "authoring": {
+    "kind": "generated",
+    "module": "probe_generator.py",
+    "sha256": "sha256:01a0ef8988ac1842bfaabe6a474a8cc1672c56cadc42cbe044c90d2b8184424e",
+    "entrypoint": "build"
+  },
+  "seed": 42,
+  "scene": {
+    "units": "METRIC",
+    "unit_scale": 1.0,
+    "frame_rate": 24.0,
+    "up_axis": "+Y",
+    "gameplay_forward": "+Z",
+    "origin": "orb-center"
+  },
+  "allowlists": {
+    "input_extensions": [".py"],
+    "output_extensions": [".blend", ".glb", ".json", ".png"],
+    "required_normals": true,
+    "required_uvs": false,
+    "required_textures": false,
+    "required_armature": false
+  },
+  "budgets": {
+    "mesh_vertices": 25000,
+    "mesh_polygons": 50000,
+    "materials": 8,
+    "texture_bytes": 0,
+    "animations": 4,
+    "skeleton_bones": 0
+  },
+  "cameras": [
+    {"camera": "ProbeGameplayCamera", "output": "preview/gameplay.png", "frame": 1, "label": "gameplay-camera"},
+    {"camera": "ProbeGameplayCamera", "output": "preview/turntable.png", "frame": 24, "label": "turntable-frame"}
+  ],
+  "render": {
+    "engine": "BLENDER_EEVEE",
+    "resolution": [320, 240],
+    "percentage": 100,
+    "format": "PNG"
+  },
+  "export": {
+    "export_yup": true,
+    "animations": true
+  },
+  "validation": {
+    "target_workspace": "C:/Users/danhm/.orchflows/worktrees/20260906-3d-browser-game/B1.27/example-workflows/3d-browser-game",
+    "loader_probe": {"three_root": "node_modules/three", "browser_executable": "C:/Program Files/Google/Chrome/Application/chrome.exe"}
+  },
+  "outputs": [
+    {"path": "source.blend", "kind": "source", "required": true},
+    {"path": "inspection.json", "kind": "inspection", "required": true},
+    {"path": "preview/gameplay.png", "kind": "preview", "required": true},
+    {"path": "preview/turntable.png", "kind": "preview", "required": true},
+    {"path": "asset.glb", "kind": "runtime", "required": true},
+    {"path": "asset-manifest.json", "kind": "manifest", "required": true}
+  ],
+  "timeout_seconds": 180,
+  "colliders": [
+    {
+      "name": "ProbeCollider",
+      "shape": "box",
+      "dimensions": [2.8, 2.8, 2.8],
+      "position": [0.0, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "bounds": [-1.4, -1.4, -1.4, 1.4, 1.4, 1.4]
+    }
+  ],
+  "attachments": [{"name": "ProbeSocket", "parent": "ProbeOrb"}],
+  "material_roles": {"Probe_Orb": "primary", "Probe_Frame": "accent", "Probe_Ground": "ground"},
+  "animation_clips": [{"name": "OrbTurntable", "start": 1, "end": 48}],
+  "required_extensions": []
+}

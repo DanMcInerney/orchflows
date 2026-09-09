@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/traceability/v1.json",
+  "title": "3D browser-game prompt traceability",
+  "description": "Immutable rows connecting each prompt promise to ordinary-input evidence and both gates.",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "rows"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"}, "kind": {"const": "traceability"}, "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"},
+    "created_at": {"type": "string", "format": "date-time"}, "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"}, "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"}, "environment": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"},
+    "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"}, "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"}, "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"}, "rows": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/row"}},
+    "brief": {"$ref": "#/$defs/authority"}, "source_brief": {"$ref": "#/$defs/authority"}, "authority": {"$ref": "#/$defs/authority"}, "brief_identity": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "brief_sha256": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"}, "amendments": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/authority"}}, "authority_amendments": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/authority"}}, "promise_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}}, "lineage": {"$ref": "https://orchflows.local/3d-browser-game/lineage/v1.json"}
+  },
+  "$defs": {
+    "authority": {"type": "object", "additionalProperties": false, "required": ["identity", "sha256"], "properties": {"identity": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "sha256": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"}, "entry_sha256": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"}}},
+    "row": {"type": "object", "additionalProperties": false, "required": ["prompt_promise", "amendment_identity", "requirement", "playable_evidence_ids", "normal_input_path", "core_gate_verdict", "final_gate_verdict", "owner", "invalidation_trigger"], "properties": {
+      "prompt_promise": {"type": "object", "additionalProperties": false, "required": ["identity", "text"], "properties": {"identity": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "text": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}}},
+      "amendment_identity": {"oneOf": [{"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, {"type": "null"}]},
+      "requirement": {"type": "object", "additionalProperties": false, "required": ["identity", "kind", "text"], "properties": {"identity": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "kind": {"enum": ["rule", "state", "content", "visual", "performance"]}, "text": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}}},
+      "playable_evidence_ids": {"type": "array", "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}}, "normal_input_path": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"},
+      "core_gate_verdict": {"oneOf": [{"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, {"type": "null"}]}, "final_gate_verdict": {"oneOf": [{"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, {"type": "null"}]},
+      "owner": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "invalidation_trigger": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}
+    }}
+  }
+}

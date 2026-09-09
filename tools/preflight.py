@@ -13,7 +13,9 @@ cell. The OS axis stays CI's: what can be caught statically is caught by
 the suite's own invariants (a chdir inside a self-deleting temp tree, a
 cleanup that swallows), and the rest needs the platform.
 
-Stdlib only, no network, Python 3.9+, POSIX and Windows.
+The driver is stdlib only, no network, Python 3.9+, POSIX and Windows.
+Provision test dependencies first using tools/check-prerequisites.md;
+this replay reuses them, including the locked 3D workflow Node package.
 
 Usage:
     python tools/preflight.py [-j N] [--python PATH ...] [MODULE ...]

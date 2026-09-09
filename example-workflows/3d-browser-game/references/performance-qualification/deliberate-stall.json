@@ -1,0 +1,579 @@
+{
+  "fixture": "deliberate-stall",
+  "cell": {
+    "id": "fixture-deliberate-stall",
+    "scenario_id": "deliberate-stall",
+    "artifact_commit": "git:fixture",
+    "mode": "animation",
+    "window": {
+      "start_ms": 0,
+      "end_ms": 1000
+    },
+    "game_canvas": {
+      "layer_ids": [
+        "canvas-layer"
+      ]
+    }
+  },
+  "trace": {
+    "format": "fixture",
+    "metadata": {
+      "clock_reconciled": true,
+      "window_start_ms": -100,
+      "window_end_ms": 1100
+    },
+    "completion": {
+      "dataLossOccurred": false,
+      "stream": "fixture-stream",
+      "transferMode": "ReturnAsStream"
+    },
+    "traceEvents": [
+      {
+        "type": "frame",
+        "id": "f0",
+        "timestamp_ms": 0,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f1",
+        "timestamp_ms": 16.666666666666668,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f2",
+        "timestamp_ms": 33.333333333333336,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f3",
+        "timestamp_ms": 50,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f4",
+        "timestamp_ms": 66.66666666666667,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f5",
+        "timestamp_ms": 83.33333333333334,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f6",
+        "timestamp_ms": 100,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f7",
+        "timestamp_ms": 116.66666666666667,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f8",
+        "timestamp_ms": 133.33333333333334,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f9",
+        "timestamp_ms": 150,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f10",
+        "timestamp_ms": 166.66666666666669,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f11",
+        "timestamp_ms": 183.33333333333334,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f12",
+        "timestamp_ms": 200,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f13",
+        "timestamp_ms": 216.66666666666669,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f14",
+        "timestamp_ms": 233.33333333333334,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f15",
+        "timestamp_ms": 250.00000000000003,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f16",
+        "timestamp_ms": 266.6666666666667,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f17",
+        "timestamp_ms": 283.33333333333337,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f18",
+        "timestamp_ms": 300,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f19",
+        "timestamp_ms": 316.6666666666667,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f20",
+        "timestamp_ms": 333.33333333333337,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f21",
+        "timestamp_ms": 350,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f22",
+        "timestamp_ms": 366.6666666666667,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f23",
+        "timestamp_ms": 383.33333333333337,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f24",
+        "timestamp_ms": 400,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f25",
+        "timestamp_ms": 416.6666666666667,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f26",
+        "timestamp_ms": 433.33333333333337,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f27",
+        "timestamp_ms": 450.00000000000006,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f28",
+        "timestamp_ms": 466.6666666666667,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f29",
+        "timestamp_ms": 483.33333333333337,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f30",
+        "timestamp_ms": 603.3333333333334,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f31",
+        "timestamp_ms": 617.0114942528736,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f32",
+        "timestamp_ms": 630.6896551724138,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f33",
+        "timestamp_ms": 644.3678160919541,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f34",
+        "timestamp_ms": 658.0459770114943,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f35",
+        "timestamp_ms": 671.7241379310345,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f36",
+        "timestamp_ms": 685.4022988505748,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f37",
+        "timestamp_ms": 699.080459770115,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f38",
+        "timestamp_ms": 712.7586206896552,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f39",
+        "timestamp_ms": 726.4367816091955,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f40",
+        "timestamp_ms": 740.1149425287357,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f41",
+        "timestamp_ms": 753.7931034482759,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f42",
+        "timestamp_ms": 767.471264367816,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f43",
+        "timestamp_ms": 781.1494252873563,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f44",
+        "timestamp_ms": 794.8275862068965,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f45",
+        "timestamp_ms": 808.5057471264367,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f46",
+        "timestamp_ms": 822.183908045977,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f47",
+        "timestamp_ms": 835.8620689655172,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f48",
+        "timestamp_ms": 849.5402298850574,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f49",
+        "timestamp_ms": 863.2183908045977,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f50",
+        "timestamp_ms": 876.8965517241379,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f51",
+        "timestamp_ms": 890.5747126436781,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f52",
+        "timestamp_ms": 904.2528735632184,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f53",
+        "timestamp_ms": 917.9310344827586,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f54",
+        "timestamp_ms": 931.6091954022988,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f55",
+        "timestamp_ms": 945.2873563218391,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f56",
+        "timestamp_ms": 958.9655172413793,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f57",
+        "timestamp_ms": 972.6436781609195,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f58",
+        "timestamp_ms": 986.3218390804598,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      },
+      {
+        "type": "frame",
+        "id": "f59",
+        "timestamp_ms": 1000,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "draw": true
+      }
+    ]
+  },
+  "callbacks": [
+    0,
+    16.666666666666668,
+    33.333333333333336,
+    50,
+    66.66666666666667,
+    83.33333333333334,
+    100,
+    116.66666666666667,
+    133.33333333333334,
+    150,
+    166.66666666666669,
+    183.33333333333334,
+    200,
+    216.66666666666669,
+    233.33333333333334,
+    250.00000000000003,
+    266.6666666666667,
+    283.33333333333337,
+    300,
+    316.6666666666667,
+    333.33333333333337,
+    350,
+    366.6666666666667,
+    383.33333333333337,
+    400,
+    416.6666666666667,
+    433.33333333333337,
+    450.00000000000006,
+    466.6666666666667,
+    483.33333333333337,
+    500.00000000000006,
+    516.6666666666667,
+    533.3333333333334,
+    550,
+    566.6666666666667,
+    583.3333333333334,
+    600,
+    616.6666666666667,
+    633.3333333333334,
+    650,
+    666.6666666666667,
+    683.3333333333334,
+    700,
+    716.6666666666667,
+    733.3333333333334,
+    750,
+    766.6666666666667,
+    783.3333333333334,
+    800,
+    816.6666666666667,
+    833.3333333333334,
+    850.0000000000001,
+    866.6666666666667,
+    883.3333333333334,
+    900.0000000000001,
+    916.6666666666667,
+    933.3333333333334,
+    950.0000000000001,
+    966.6666666666667,
+    983.3333333333334
+  ],
+  "expected": {
+    "status": "unverified",
+    "failure_code": "unexplained-stall"
+  }
+}

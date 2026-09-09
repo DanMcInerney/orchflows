@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/asset-manifest.schema.json",
+  "title": "Validated Blender asset manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "kind", "id", "artifact_commit", "created_at",
+    "producer", "inputs", "environment", "status", "gaps", "invalidates",
+    "source_kind", "source_blend", "source_blend_sha256", "runtime_glb",
+    "exported_glb_sha256", "inspection", "previews", "units", "unit_scale",
+    "up_axis", "gameplay_forward", "origin", "colliders", "attachments",
+    "material_roles", "animation_clips", "required_extensions"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "kind": {"const": "asset-manifest"},
+    "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"},
+    "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"},
+    "environment": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"},
+    "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"},
+    "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"},
+    "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"},
+    "source_kind": {"enum": ["generated", "edited"]},
+    "source_blend": {"$ref": "#/$defs/relativePath"},
+    "source_blend_sha256": {"$ref": "#/$defs/digest"},
+    "runtime_glb": {"$ref": "#/$defs/relativePath"},
+    "exported_glb_sha256": {"$ref": "#/$defs/digest"},
+    "inspection": {"$ref": "#/$defs/relativePath"},
+    "previews": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/relativePath"}},
+    "units": {"type": "string", "minLength": 1},
+    "unit_scale": {"type": "number", "exclusiveMinimum": 0},
+    "up_axis": {"const": "+Y"},
+    "gameplay_forward": {"type": "string", "minLength": 1},
+    "origin": {"type": "string", "minLength": 1},
+    "colliders": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "attachments": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "material_roles": {"type": "object", "additionalProperties": {"oneOf": [{"type": "string", "minLength": 1}, {"$ref": "#/$defs/materialRole"}]}},
+    "animation_clips": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "required_extensions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "semantic_contract": {"$ref": "#/$defs/semanticContract"},
+    "validation": {"$ref": "#/$defs/validation"},
+    "mechanics_changed": {"type": "array", "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}}
+  },
+  "$defs": {
+    "digest": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"},
+    "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "metadata": {
+      "type": "object", "additionalProperties": false, "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1}, "type": {"type": "string"}, "object": {"type": "string"}, "shape": {"type": "string"},
+        "dimensions": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+        "position": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+        "rotation": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+        "scale": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+        "bounds": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"type": "number"}},
+        "start": {"type": "number"}, "end": {"type": "number"}, "duration_seconds": {"type": "number", "minimum": 0},
+        "tolerance": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.0001},
+        "coordinate_space": {"enum": ["blender-world", "runtime-world"]}, "parent": {"type": "string"},
+        "role": {"type": "string"}, "objects": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "decoder": {"type": "string"}, "optional": {"type": "boolean"}
+      }
+    },
+    "materialRole": {
+      "type": "object", "additionalProperties": false, "required": ["role"],
+      "properties": {"role": {"type": "string", "minLength": 1}, "objects": {"type": "array", "items": {"type": "string", "minLength": 1}}, "optional": {"type": "boolean"}}
+    },
+    "semanticContract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["coordinate_conversion", "tolerance", "source_coordinate_space", "runtime_coordinate_space", "runtime_budget_fields"],
+      "properties": {
+        "coordinate_conversion": {"type": "object", "additionalProperties": false, "required": ["matrix", "mapping", "source_up", "runtime_up"], "properties": {"matrix": {"const": "Rx(-pi/2)"}, "mapping": {"const": "(x,y,z)->(x,z,-y)"}, "source_up": {"const": "+Z"}, "runtime_up": {"const": "+Y"}}},
+        "tolerance": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.0001},
+        "source_coordinate_space": {"const": "blender-world"}, "runtime_coordinate_space": {"const": "three-world"},
+        "runtime_budget_fields": {"type": "array", "items": {"enum": ["runtime_bytes", "draw_calls", "load_time_ms"]}}
+      }
+    },
+    "validation": {
+      "type": "object", "additionalProperties": false, "required": ["khronos", "gltf_loader"],
+      "properties": {"khronos": {"$ref": "#/$defs/khronos"}, "gltf_loader": {"$ref": "#/$defs/gltfLoader"}}
+    },
+    "khronos": {
+      "type": "object", "additionalProperties": false, "required": ["status", "errors", "export_sha256", "report_path", "report_sha256"],
+      "properties": {"status": {"const": "pass"}, "errors": {"const": 0}, "export_sha256": {"$ref": "#/$defs/digest"}, "validator": {"type": "string", "minLength": 1}, "report_path": {"$ref": "#/$defs/relativePath"}, "report_sha256": {"$ref": "#/$defs/digest"}}
+    },
+    "gltfLoader": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "artifact_commit", "evidence_id", "glb_hash", "checks", "semantic_checks", "coordinate_conversion", "semantic_tolerance", "job_sha256", "expectations_hash", "evidence_path", "evidence_sha256"],
+      "properties": {
+        "status": {"const": "pass"}, "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"}, "evidence_id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "glb_hash": {"$ref": "#/$defs/digest"}, "evidence_path": {"$ref": "#/$defs/relativePath"}, "evidence_sha256": {"$ref": "#/$defs/digest"}, "job_sha256": {"$ref": "#/$defs/digest"}, "expectations_hash": {"$ref": "#/$defs/digest"},
+        "semantic_tolerance": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.0001}, "coordinate_conversion": {"type": "object", "additionalProperties": false, "required": ["matrix", "mapping", "source_up", "runtime_up"], "properties": {"matrix": {"const": "Rx(-pi/2)"}, "mapping": {"const": "(x,y,z)->(x,z,-y)"}, "source_up": {"const": "+Z"}, "runtime_up": {"const": "+Y"}}},
+        "checks": {"type": "object", "additionalProperties": false, "required": ["scale", "material", "animation", "collider"], "properties": {"scale": {"const": "pass"}, "material": {"const": "pass"}, "animation": {"const": "pass"}, "collider": {"const": "pass"}}},
+        "semantic_checks": {"type": "object", "additionalProperties": false, "required": ["scale", "bounds", "orientation", "material", "attachments", "animation", "extensions", "collider", "cost"], "properties": {"scale": {"$ref": "#/$defs/semanticCheck"}, "bounds": {"$ref": "#/$defs/semanticCheck"}, "orientation": {"$ref": "#/$defs/semanticCheck"}, "material": {"$ref": "#/$defs/semanticCheck"}, "attachments": {"$ref": "#/$defs/semanticCheck"}, "animation": {"$ref": "#/$defs/semanticCheck"}, "extensions": {"$ref": "#/$defs/semanticCheck"}, "collider": {"$ref": "#/$defs/semanticCheck"}, "cost": {"$ref": "#/$defs/semanticCheck"}}}
+      }
+    },
+    "semanticCheck": {"type": "object", "additionalProperties": false, "required": ["status", "basis"], "properties": {"status": {"enum": ["pass", "not_applicable"]}, "basis": {"type": "string", "minLength": 1}, "observed": {"type": "object"}}}
+  }
+}

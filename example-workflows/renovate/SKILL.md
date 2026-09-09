@@ -14,7 +14,7 @@ carries.
 
 **Audit**, read-only, its typed artifact line the workspace tip:
 
-    tickets.py judge <run> --standard <standard> --parent <frame>
+    tickets.py judge <run> --review-independent "pre-delivery audit and triage" --standard <standard> --parent <frame>
       --artifacts git:<workspace-tip-sha> --goal-file <audit-goal>
       --isolation required --bound <audit_bound>
 
@@ -22,7 +22,7 @@ Its goal: an independent blocker report over `workspace` under
 `priorities` — the standard's check standard applied, and every evidence-backed
 blocker reported.
 
-**Triage**, one further `judge --standard <standard>` handed the audit's
+**Triage**, one further `judge --standard <standard> --review-independent "audit triage"` handed the audit's
 `findings: <path>` line verbatim: every finding carries one disposition, and
 every ready-for-agent finding carries a compacted brief a fresh context can
 execute from. Triage spends only the cheap checks it licenses; a finding
@@ -38,6 +38,11 @@ brief, so the verification runs once over the whole delivery:
 Its goal quotes the triage findings and asks for every ready-for-agent brief
 delivered into `workspace` with its own final verification, and every
 ready-for-human brief returned to the maintainer unanswered.
+
+Invoke `review-delivery` in this existing frame over the joined delivery,
+original priorities, pinned standard, workspace, `workspace-adapter` git,
+caller `context-file`, `isolation` required, bound and outside check. Audit and
+triage are inputs, not delivery critique rounds.
 
 Never: deliver a brief triage did not disposition ready-for-agent; answer a
 ready-for-human brief on the maintainer's behalf; or investigate a finding

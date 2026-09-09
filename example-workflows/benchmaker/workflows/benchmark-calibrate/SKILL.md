@@ -13,7 +13,7 @@ with partial artifacts and gaps.
 
     tickets.py frame-open <run> --goal-file <calibration-goal> --workflow benchmark-calibrate
 
-Use [handoff layouts](../../references/calibration.md). Goals carry fixed inputs, records and budget.
+Use [handoff layouts](../../references/calibration.md).
 
 ## Development
 
@@ -27,7 +27,7 @@ One maker records a complete native round in fresh repositories: transcripts, ou
 
 Diagnose landed attempts and qualification findings independently for uncertainty, discrimination, configuration and validity; never re-execute.
 
-    tickets.py judge <run> --parent <frame> --standard benchmark-quality --standard <standard> --artifacts git:<draft-sha> git:<attempt-sha> --goal-file <diagnosis> --isolation required
+    tickets.py judge <run> --review-independent "named benchmark calibration diagnosis" --parent <frame> --standard benchmark-quality --standard <standard> --artifacts git:<draft-sha> git:<attempt-sha> --goal-file <diagnosis> --isolation required
 
 Apply INVALID, then UNVERIFIED, then OUT_OF_BAND/CALIBRATED precedence. Preserve
 numeric band observation. Missing evidence stops trials, then Finalize. For evidenced

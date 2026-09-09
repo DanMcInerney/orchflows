@@ -101,16 +101,16 @@ FRAME_LAW = (
     "Close with `tickets.py frame-close <run> <frame> --done <command>` run "
     "outside the children; a close over two or more `do` children needs a "
     "judging child or an `unjudged: <reason>` line.",
-    "Judge once, at the end: a unit lands on its own `done`, and after "
-    "the last wave one judging child reads the joined tip with every "
-    "unit's artifact together; its blocking findings get one bounded "
-    "repair, then the close gate.",
+    "End ordinary delivery through review-delivery under this delivery's "
+    "one inherited review owner and selected rounds. A unit lands on its "
+    "own done; substantive critique reads joined artifacts, repairs form "
+    "one wave, then scoped verification. Strictness never adds rounds.",
 )
 
 FRAME_OPEN_USAGE = (
     "frame-open <run> --goal-file F [--details-file D] [--context-file C] [--parent ID] "
     "[--done <canonical-json>] [--bound B] [--workflow NAME] "
-    f"[{SHAPE_USAGE}]"
+    f"[{SHAPE_USAGE}] [--review-rounds N|until_pass] [--review-new-work REASON]"
 )
 FRAME_CLOSE_USAGE = (
     "frame-close <run> <id> [--status S] [--done <canonical-json>]"
@@ -152,6 +152,15 @@ def _cmd_frame_open(rest):
     bound = _extract_flag(args, "--bound") or NEW_DEFAULT_BOUND
     workflow = _extract_flag(args, "--workflow")
     shape = _extract_flag(args, "--shape")
+    review_fields = {}
+    for flag, field in (("--review-rounds", "review_rounds"),
+                        ("--review-new-work", "review_new_work")):
+        supplied = flag in args
+        value = _extract_flag(args, flag)
+        if supplied and not str(value or "").strip():
+            return {"error": f"{flag} requires a nonempty value"}
+        if supplied:
+            review_fields[field] = value
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"frame-open does not accept {stray}. usage: {FRAME_OPEN_USAGE}"}
@@ -199,7 +208,7 @@ def _cmd_frame_open(rest):
     with _run_lock(run):
         frame_id, failure = _mint(
             run, run_dir, parent,
-            _frame_fields(run, parent, done, bound, workflow_fields),
+            {**_frame_fields(run, parent, done, bound, workflow_fields), **review_fields},
             sections,
         )
     if failure is not None:

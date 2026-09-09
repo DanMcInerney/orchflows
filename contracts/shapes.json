@@ -155,6 +155,8 @@
         "profile", "parent", "depends_on", "isolation", "workspace_adapter", "bound",
         "frame", "done", "makes",
         "workflow", "workflow_digest", "workflow_entry",
+        "review_owner", "review_rounds", "review_phase", "review_of",
+        "review_round", "review_new_work", "review_independent",
         "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "dispatch_v1"
       ],

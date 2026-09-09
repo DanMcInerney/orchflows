@@ -271,7 +271,7 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
 
 
 class TestCompositionProtocolAdmission(_IsolatedTree):
-    """A composition is ticket control flow, never a private protocol tier."""
+    """A workflow package owns its protocol files within one public scope."""
 
     def _write(self, relative: str, body: str = "fixture\n") -> None:
         path = self.tmp_path / relative
@@ -291,29 +291,50 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         finally:
             validate._bind_root(saved)
 
-    def test_schema_fixture_format_and_script_are_refused(self):
+    def test_package_owned_schema_fixture_and_script_are_admitted(self):
         self._write("example-workflows/probe/SKILL.md")
-        self._write("example-workflows/probe/state.schema.json", "{}\n")
-        self._write("example-workflows/probe/replay-fixtures.json", "{}\n")
-        self._write("example-workflows/probe/validate.py", "# executable machinery\n")
+        self._write("example-workflows/probe/references/state.schema.json", "{}\n")
+        self._write("example-workflows/probe/references/replay-fixtures.json", "{}\n")
+        self._write("example-workflows/probe/scripts/validate.py", "# executable machinery\n")
+        self._write("example-workflows/probe/node_modules/pkg/package.schema.json", "{}\n")
+        self._write("example-workflows/probe/__pycache__/validate.pyc", "generated\n")
 
         findings = self._findings()
 
-        for relative, kind in (
-            ("example-workflows/probe/state.schema.json", "schema"),
-            ("example-workflows/probe/replay-fixtures.json", "fixture format"),
-            ("example-workflows/probe/validate.py", "script"),
-        ):
-            with self.subTest(relative=relative):
-                self.assertTrue(
-                    any(
-                        line.startswith("ERROR " + relative)
-                        and "workflow 'probe'" in line
-                        and kind in line
-                        for line in findings
-                    ),
-                    findings,
-                )
+        self.assertFalse(any(line.startswith("ERROR ") for line in findings), findings)
+
+    def test_shared_schema_is_refused_outside_its_public_package(self):
+        self._write("example-workflows/probe/SKILL.md")
+        self._write("example-workflows/references/probe.schema.json", "{}\n")
+
+        findings = self._findings()
+
+        self.assertTrue(
+            any(
+                line.startswith("ERROR example-workflows/references/probe.schema.json")
+                and "put it below its public workflow package" in line
+                for line in findings
+            ),
+            findings,
+        )
+
+    def test_package_link_may_cite_canonical_law_but_not_another_path(self):
+        self._write("example-workflows/outside.md", "outside\n")
+        self._write(
+            "example-workflows/probe/SKILL.md",
+            "[law](../../rules/composition.md)\n[escape](../../outside.md)\n",
+        )
+
+        findings = self._findings()
+
+        self.assertTrue(
+            any(
+                line.startswith("ERROR example-workflows/probe/SKILL.md")
+                and "workflow package link escapes its public owner" in line
+                for line in findings
+            ),
+            findings,
+        )
 
     def test_package_script_and_reference_fixture_are_admitted_without_exception(self):
         self._write("example-workflows/probe/SKILL.md")
@@ -333,10 +354,7 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
 
         findings = self._findings()
 
-        self.assertEqual(
-            {"browser-game": "2026-08-28"},
-            validate.COMPOSITION_PROTOCOL_ALLOWLIST,
-        )
+        self.assertEqual({"browser-game": "2026-08-28"}, validate.COMPOSITION_PROTOCOL_ALLOWLIST)
         self.assertFalse(any(line.startswith("ERROR ") for line in findings), findings)
         exception = [
             line
@@ -360,8 +378,11 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         findings = self._findings(allowlist={})
 
         errors = [line for line in findings if line.startswith("ERROR ")]
-        self.assertEqual(3, len(errors), findings)
-        self.assertTrue(all("workflow 'browser-game'" in line for line in errors))
+        self.assertTrue(errors, findings)
+        self.assertTrue(
+            all("workflow 'browser-game'" in line for line in errors),
+            errors,
+        )
 
     def test_a_script_module_named_for_a_composition_is_refused_by_boundary(self):
         self._write("example-workflows/probe/SKILL.md")

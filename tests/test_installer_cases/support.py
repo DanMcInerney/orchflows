@@ -25,8 +25,10 @@ import install
 from installer import foundation
 from scripts import state_root
 from tools import validate
+from tests.test_installer_cases.node_tooling import offline_node_preparation
 
 _ENV_GUARD = patch.dict(os.environ)
+_NODE_GUARD = offline_node_preparation()
 
 
 def setUpModule():
@@ -35,6 +37,7 @@ def setUpModule():
     user-scope writes outside that fake."""
 
     _ENV_GUARD.start()
+    _NODE_GUARD.start()
     os.environ.pop("CLAUDE_CONFIG_DIR", None)
     os.environ.pop("CODEX_HOME", None)
     os.environ.pop("GROK_HOME", None)
@@ -44,6 +47,7 @@ _SHARED: dict = {}
 
 
 def tearDownModule():
+    _NODE_GUARD.stop()
     _ENV_GUARD.stop()
     # Each root is dropped with the value cached out of it. Dropping the root
     # alone would leave the cache answering a later caller with a path this

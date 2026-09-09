@@ -9,6 +9,7 @@ from ._support import (
     LINK_RE,
     WORKFLOW_FILE,
     split_document,
+    validate,
     workflow_directories,
 )
 
@@ -18,7 +19,7 @@ class TestCompositionLinks(unittest.TestCase):
 
     def test_every_composition_link_resolves(self):
         checked = 0
-        for path in sorted(COMPOSITIONS.rglob("*.md")):
+        for path in validate.owned_markdown_files(COMPOSITIONS):
             for target in LINK_RE.findall(path.read_text(encoding="utf-8")):
                 if target.startswith(("http://", "https://", "#", "mailto:")):
                     continue
@@ -40,7 +41,7 @@ class TestWorkflowSkills(unittest.TestCase):
                   (COMPOSITIONS, COMPOSITIONS.parent / "skills" / "workflows")
                   for path in home.glob("*/SKILL.md")}
         calls = set(re.findall(r"`([a-z][a-z0-9-]*)`", body))
-        return ("--standard " in body or "frame-open <run> --parent" in body
+        return ("--standard " in body or bool(re.search(r"(?m)^\s*tickets\.py\s+frame-open\s+<run>\s+[^\n]*--parent\s+<frame>(?:\s|$)", body))
                 or bool(calls & (public - {name})))
 
     def test_every_workflow_directory_holds_exactly_one_body(self):

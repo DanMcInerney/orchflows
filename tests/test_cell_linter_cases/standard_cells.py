@@ -464,9 +464,11 @@ CROSS_TIER_WARNING_CEILING = 29
 # the clone's report equals the real tree's line for line -- so anything
 # in them that validate.py grades fails there, loudly, instead of quietly
 # going ungraded.
+# Integration tests create generated scratch directories beside the tree;
+# they are not validation inputs and can disappear while this copy walks it.
 CLONE_SKIPS = shutil.ignore_patterns(
     ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache",
-    "benchmarks", "fixtures",
+    "benchmarks", "fixtures", "orchflows-integration-*",
 )
 
 

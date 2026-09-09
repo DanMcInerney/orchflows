@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/blender-job.schema.json",
+  "title": "Hash-bound Blender asset job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "kind", "id", "artifact_commit", "created_at",
+    "producer", "inputs", "environment", "status", "gaps", "invalidates",
+    "mode", "seed", "scene", "allowlists", "budgets", "cameras", "render",
+    "export", "outputs", "validation", "timeout_seconds", "colliders",
+    "attachments", "material_roles", "animation_clips", "required_extensions"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "kind": {"type": "string", "const": "blender-job"},
+    "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"},
+    "inputs": {
+      "$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"
+    },
+    "environment": {
+      "$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"
+    },
+    "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"},
+    "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"},
+    "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"},
+    "mode": {"enum": ["generate", "edit", "render", "export"]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "sha256"],
+      "properties": {
+        "kind": {"enum": ["generated", "edited"]},
+        "path": {"$ref": "#/$defs/relativePath"},
+        "sha256": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "authoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "module", "sha256", "entrypoint"],
+      "properties": {
+        "kind": {"enum": ["generated", "edited"]},
+        "module": {"$ref": "#/$defs/relativePath"},
+        "sha256": {"$ref": "#/$defs/digest"},
+        "entrypoint": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"}
+      }
+    },
+    "seed": {"type": "integer"},
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "units": {"type": "string", "minLength": 1},
+        "unit_scale": {"type": "number", "exclusiveMinimum": 0},
+        "up_axis": {"const": "+Y"},
+        "gameplay_forward": {"type": "string", "minLength": 1},
+        "origin": {"type": "string", "minLength": 1},
+        "frame_rate": {"type": "number", "exclusiveMinimum": 0}
+      },
+      "required": ["units", "unit_scale", "up_axis", "gameplay_forward", "origin"]
+    },
+    "allowlists": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input_extensions": {"type": "array", "items": {"type": "string"}},
+        "output_extensions": {"type": "array", "items": {"type": "string"}},
+        "required_objects": {"type": "array", "items": {"type": "string"}},
+        "required_materials": {"type": "array", "items": {"type": "string"}},
+        "required_actions": {"type": "array", "items": {"type": "string"}},
+        "required_normals": {"type": "boolean"},
+        "required_uvs": {"type": "boolean"},
+        "required_uv_layers": {"type": "integer", "minimum": 0},
+        "required_textures": {"type": "boolean"},
+        "required_armature": {"type": "boolean"}
+      },
+      "required": ["input_extensions", "output_extensions"]
+    },
+    "budgets": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "mesh_vertices": {"type": "integer", "minimum": 0},
+        "mesh_polygons": {"type": "integer", "minimum": 0},
+        "materials": {"type": "integer", "minimum": 0},
+        "texture_bytes": {"type": "integer", "minimum": 0},
+        "animations": {"type": "integer", "minimum": 0},
+        "skeleton_bones": {"type": "integer", "minimum": 0},
+        "runtime_bytes": {"type": "number", "minimum": 0},
+        "draw_calls": {"type": "number", "minimum": 0},
+        "load_time_ms": {"type": "number", "minimum": 0}
+      },
+      "required": ["mesh_vertices", "mesh_polygons", "materials", "texture_bytes", "animations", "skeleton_bones"]
+    },
+    "cameras": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["camera", "output", "label"],
+        "properties": {
+          "camera": {"type": "string", "minLength": 1},
+          "output": {"$ref": "#/$defs/relativePath"},
+          "frame": {"type": "integer"},
+          "label": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "resolution", "percentage", "format"],
+      "properties": {
+        "engine": {"type": "string", "minLength": 1},
+        "resolution": {"type": "array", "prefixItems": [{"type": "integer", "minimum": 1}, {"type": "integer", "minimum": 1}], "minItems": 2, "maxItems": 2},
+        "percentage": {"type": "integer", "minimum": 1, "maximum": 100},
+        "format": {"type": "string", "enum": ["PNG", "JPEG", "OPEN_EXR"]}
+      }
+    },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["export_yup", "animations"],
+      "properties": {
+        "export_yup": {"type": "boolean"},
+        "animations": {"type": "boolean"}
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "kind", "required"],
+        "properties": {
+          "path": {"$ref": "#/$defs/relativePath"},
+          "kind": {"type": "string", "minLength": 1},
+          "required": {"type": "boolean"}
+        }
+      }
+    },
+    "validation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["target_workspace", "loader_probe"],
+      "properties": {
+        "target_workspace": {"type": "string", "minLength": 1},
+        "loader_probe": {
+          "type": "object", "additionalProperties": false,
+          "required": ["three_root", "browser_executable"],
+          "properties": {
+            "three_root": {"$ref": "#/$defs/relativePath"},
+            "browser_executable": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
+    "colliders": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "attachments": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "material_roles": {"type": "object", "additionalProperties": {"oneOf": [{"type": "string", "minLength": 1}, {"$ref": "#/$defs/materialRole"}]}},
+    "animation_clips": {"type": "array", "items": {"$ref": "#/$defs/metadata"}},
+    "required_extensions": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "digest": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"},
+    "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "metadata": {"type": "object", "additionalProperties": false, "required": ["name"], "properties": {"name": {"type": "string", "minLength": 1}, "type": {"type": "string"}, "object": {"type": "string"}, "shape": {"type": "string"}, "dimensions": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}, "position": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}, "rotation": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}, "scale": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}, "bounds": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"type": "number"}}, "start": {"type": "number"}, "end": {"type": "number"}, "duration_seconds": {"type": "number", "minimum": 0}, "tolerance": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.0001}, "coordinate_space": {"enum": ["blender-world", "runtime-world"]}, "parent": {"type": "string"}, "role": {"type": "string"}, "objects": {"type": "array", "items": {"type": "string"}}, "decoder": {"type": "string"}, "optional": {"type": "boolean"}}},
+    "materialRole": {"type": "object", "additionalProperties": false, "required": ["role"], "properties": {"role": {"type": "string", "minLength": 1}, "objects": {"type": "array", "items": {"type": "string", "minLength": 1}}, "optional": {"type": "boolean"}}}
+  }
+}

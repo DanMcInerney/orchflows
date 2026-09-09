@@ -1,0 +1,54 @@
+{
+  "fixture": "static-idle",
+  "cell": {
+    "id": "fixture-static-idle",
+    "scenario_id": "static-idle",
+    "artifact_commit": "git:fixture",
+    "mode": "static",
+    "window": {
+      "start_ms": 0,
+      "end_ms": 1000
+    },
+    "game_canvas": {
+      "layer_ids": [
+        "canvas-layer"
+      ]
+    }
+  },
+  "trace": {
+    "format": "fixture",
+    "metadata": {
+      "clock_reconciled": true,
+      "window_start_ms": -100,
+      "window_end_ms": 1100
+    },
+    "completion": {
+      "dataLossOccurred": false,
+      "stream": "fixture-stream",
+      "transferMode": "ReturnAsStream"
+    },
+    "traceEvents": [
+      {
+        "type": "frame",
+        "id": "static-0",
+        "timestamp_ms": 0,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "idle": true
+      },
+      {
+        "type": "frame",
+        "id": "static-1",
+        "timestamp_ms": 500,
+        "canvas": true,
+        "attribution": "game-canvas",
+        "idle": true
+      }
+    ]
+  },
+  "callbacks": [],
+  "expected": {
+    "status": "qualified"
+  }
+}
+

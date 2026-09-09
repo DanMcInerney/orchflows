@@ -26,7 +26,7 @@ together under the frame; the shape line lists them as one wave."
 **Score them blind.** One judge over every candidate's typed artifact line,
 in label order, with the rubric stamped:
 
-    tickets.py judge <run> --standard <standard> --parent <frame> --standard <rubric>
+    tickets.py judge <run> --review-independent "named candidate comparison" --standard <standard> --parent <frame> --standard <rubric>
       --goal-file <judge-goal> --artifacts <line> [--artifacts <line>]...
 
 Its goal: rank every line against the rubric standard's criteria, name the

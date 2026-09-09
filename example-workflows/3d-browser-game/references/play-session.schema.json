@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/play-session.schema.json",
+  "title": "3d-browser-game play session",
+  "type": "object",
+  "required": ["schema_version", "kind", "id", "artifact_commit", "created_at", "producer", "inputs", "environment", "status", "gaps", "invalidates", "classification", "source", "headed", "url", "operator", "independent_context_id", "started_at", "ended_at", "transcript", "transcript_hash"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0.0"},
+    "kind": {"const": "play-session"},
+    "id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/producer"},
+    "inputs": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/inputs"},
+    "environment": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/environment"},
+    "status": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/status"},
+    "gaps": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/gaps"},
+    "invalidates": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/invalidates"},
+    "classification": {"type": "string", "enum": ["actual_play", "scripted_input", "simulated"]},
+    "input_mode": {"type": "string", "enum": ["actual_play", "scripted_input", "simulated"]},
+    "source": {"enum": ["live-browser", "qualification-fixture"]},
+    "fixture_only": {"const": true},
+    "headed": {"const": true},
+    "url": {"type": "string", "format": "uri"},
+    "operator": {"type": ["string", "null"]},
+    "independent_context_id": {"type": ["string", "null"]},
+    "started_at": {"type": "string", "minLength": 1},
+    "ended_at": {"type": "string", "minLength": 1},
+    "transcript_hash": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "transcript_path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000]+$"},
+    "transcript_sha256": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "captures": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/capture"}},
+    "adaptation": {"$ref": "#/$defs/adaptation"},
+    "transcript": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["command", "reply"],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "object",
+            "oneOf": [
+              {"required": ["type"], "properties": {"type": {"const": "observe"}}, "additionalProperties": false},
+              {"required": ["type", "key", "action"], "properties": {"type": {"const": "key"}, "key": {"type": "string"}, "action": {"enum": ["down", "up"]}}, "additionalProperties": false},
+              {"required": ["type", "x", "y", "action"], "properties": {"type": {"const": "pointer"}, "x": {"type": "number"}, "y": {"type": "number"}, "action": {"enum": ["move", "down", "up"]}, "button": {"enum": ["left", "middle", "right"]}}, "additionalProperties": false},
+              {"required": ["type", "ms"], "properties": {"type": {"const": "wait"}, "ms": {"type": "number", "minimum": 0, "maximum": 60000}}, "additionalProperties": false},
+              {"required": ["type"], "properties": {"type": {"const": "capture"}, "label": {"type": "string"}}, "additionalProperties": false},
+              {"required": ["type"], "properties": {"type": {"const": "stop"}}, "additionalProperties": false}
+            ]
+          },
+          "reply": {"type": "object", "required": ["sequence", "status"], "properties": {"sequence": {"type": "integer", "minimum": 1}, "status": {"type": "string"}}, "additionalProperties": true}
+        }
+      }
+    },
+    "console_errors": {"type": "array"},
+    "network_errors": {"type": "array"},
+    "server_errors": {"type": "array"}
+  },
+  "allOf": [{"if": {"properties": {"classification": {"const": "actual_play"}}, "required": ["classification"]}, "then": {"required": ["adaptation"]}}],
+  "$defs": {
+    "capture": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000]+$"}, "sha256": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"}, "sequence": {"type": "integer", "minimum": 1}, "label": {"type": ["string", "null"]}}},
+    "adaptation": {"type": "object", "additionalProperties": false, "required": ["observation_sequence", "action_sequence", "subsequent_observation_sequence", "rationale"], "properties": {"observation_sequence": {"type": "integer", "minimum": 1}, "action_sequence": {"type": "integer", "minimum": 1}, "subsequent_observation_sequence": {"type": "integer", "minimum": 1}, "rationale": {"type": "string", "minLength": 1}}}
+  },
+  "additionalProperties": false
+}

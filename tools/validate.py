@@ -260,9 +260,7 @@ def _documented_path_sources(root: Path):
     for tree in DOC_PATH_CHECKED_TREES:
         node = root / tree
         if node.is_dir():
-            for source in sorted(node.rglob("*.md")):
-                if source.is_file():
-                    yield source
+            yield from owned_markdown_files(node)
     for name in DOC_PATH_CHECKED_FILES:
         source = root / name
         if source.is_file():

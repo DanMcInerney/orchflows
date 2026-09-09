@@ -59,6 +59,10 @@ parts below the public entry:
 | `references/` | fixtures and material the package prose or scripts read |
 | `scripts/<file>` | concrete machine boundaries and optional probes |
 
+Only the ordinary item at the ring's top-level `workflows/<public-name>` is
+public. Name resolution, frame ownership, and existing-frame reuse follow
+[composition](../rules/composition.md).
+
 Later admission and dispatch doors resolve the public name again,
 recheck project trust, contain the entry below that owner, and compare the
 package digest before resolving private standards or skills. A change to a
@@ -267,12 +271,15 @@ the composition, which no member could see from its own seat.
 
 ## Idioms
 
+For the ordinary ending's inputs and migration, use
+[review policy](review-policy.md).
+
 The control-flow sentences whose wording recurs across workflows. Quote one
 verbatim; a paraphrase is a second wording of one fact, and which steps earn
 one is [composition](../rules/composition.md) §13's.
 
-- **bounded-repair** — Where the judge blocks, one repair `do` is handed the
-  `findings:` line verbatim, then one re-judge; two rounds is the bound.
+- **bounded-repair** — Invoke `review-delivery` under the delivery's existing
+  owner and selected rounds, carrying fixed criteria and the findings verbatim.
 - **fan-out** — One `do` per named item, launched together under the frame;
   the shape line lists them as one wave.
 - **freeze** — Fix the identity before any candidate exists and forbid every

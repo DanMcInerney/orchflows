@@ -92,6 +92,11 @@ class WarningCeilingTest(unittest.TestCase):
     def test_a_count_above_the_ceiling_fails(self):
         tree_report = validate_the_real_tree().stdout
         held = warning_lines(tree_report, NEAR)
+        self.assertEqual(
+            {"orchflows-integration-probe"},
+            CLONE_SKIPS(ROOT, ["orchflows-integration-probe", "standards"]),
+            "generated integration scratch must be skipped while graded directories remain",
+        )
         clone = self._clone_beside_the_tree()
         planted = clone / "standards" / "orch-research" / "STANDARD.md"
         text = planted.read_text(encoding="utf-8")

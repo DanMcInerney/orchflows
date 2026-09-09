@@ -1,6 +1,40 @@
 {
   "schema": "orchflows.workflow-summary.v1",
   "workflows": {
+    "review-delivery": {
+      "nodes": [
+        {"id": "critique", "label": "Review joined fixed artifacts"},
+        {"id": "repair", "label": "Repair accepted findings in one wave"},
+        {"id": "verify", "label": "Verify listed repairs"},
+        {"id": "return", "label": "Return the truthful review ending"}
+      ],
+      "edges": [
+        {"source": "critique", "target": "repair", "kind": "branch"},
+        {"source": "critique", "target": "return", "kind": "branch"},
+        {"source": "repair", "target": "verify", "kind": "sequence"},
+        {"source": "verify", "target": "critique", "kind": "loop"},
+        {"source": "verify", "target": "return", "kind": "branch"}
+      ]
+    },
+    "3d-browser-game": {
+      "nodes": [
+        {"id": "record", "label": "Establish the program record"},
+        {"id": "discovery", "label": "Resolve empirical questions"},
+        {"id": "playable-increment", "label": "Build the playable core"},
+        {"id": "gameplay-gate", "label": "Judge the fixed core"},
+        {"id": "blender-asset", "label": "Produce the asset batch"},
+        {"id": "final-acceptance", "label": "Judge final acceptance"},
+        {"id": "outside-probe", "label": "Probe the joined revision"}
+      ],
+      "edges": [
+        {"source": "record", "target": "discovery", "kind": "sequence"},
+        {"source": "discovery", "target": "playable-increment", "kind": "sequence"},
+        {"source": "playable-increment", "target": "gameplay-gate", "kind": "sequence"},
+        {"source": "gameplay-gate", "target": "blender-asset", "kind": "sequence"},
+        {"source": "blender-asset", "target": "final-acceptance", "kind": "sequence"},
+        {"source": "final-acceptance", "target": "outside-probe", "kind": "sequence"}
+      ]
+    },
     "orch-build-workflow": {
       "nodes": [
         {"id": "contract", "label": "Resolve scope and authoring inputs"},

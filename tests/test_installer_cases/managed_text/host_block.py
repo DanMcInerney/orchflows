@@ -125,6 +125,7 @@ _HOST_BLOCK_DEMANDS = {
     "automatic routing can be suspended and named items stay explicit": (
         "`orch-off`",
         "named items still run only when named",
+        "except ordinary `review-delivery`",
     ),
     "route by need through the four canonical lanes": (
         "smallest-first",

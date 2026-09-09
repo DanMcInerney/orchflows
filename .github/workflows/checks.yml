@@ -113,6 +113,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The 3D lineage fixture binds HEAD to its real parent.
+          fetch-depth: 2
 
       - uses: actions/setup-python@v5
         with:
@@ -130,6 +133,14 @@ jobs:
 
       - name: install exact reader backend
         run: uv pip install --system --require-hashes -r requirements-runtime.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+
+      # Python play-evidence tests import this package, even without a browser.
+      - name: install locked 3D workflow dependencies
+        run: npm ci --prefix example-workflows/3d-browser-game --ignore-scripts --no-audit --no-fund
 
       # Without this the runner cold-starts on a static prior every run, and
       # the prior can only be right for one leg at a time: macOS's longest

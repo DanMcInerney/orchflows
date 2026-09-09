@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/3d-browser-game/lineage/v1.json",
+  "title": "3D browser-game provenance and successor lineage",
+  "description": "Closed, hash-bound fields consumed with run, traceability, and gate records.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["relation", "predecessor", "predecessor_sha256", "complaints", "changed_mechanics"],
+  "properties": {
+    "relation": {"enum": ["root", "successor", "repair", "reproof", "integration"]},
+    "predecessor": {"oneOf": [{"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, {"type": "null"}]},
+    "predecessor_sha256": {"oneOf": [{"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/sha256"}, {"type": "null"}]},
+    "complaints": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/complaint"}},
+    "changed_mechanics": {"type": "array", "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}},
+    "affected_core_reproof": {"$ref": "#/$defs/reproof"}
+  },
+  "$defs": {
+    "closure": {"type": "object", "additionalProperties": false, "required": ["reason", "evidence"], "properties": {"reason": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}, "evidence": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}}}},
+    "complaint": {"type": "object", "additionalProperties": false, "required": ["id", "seam", "kind", "status", "cause", "evidence"], "properties": {"id": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "seam": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}, "kind": {"enum": ["defect", "unverified", "preference"]}, "status": {"enum": ["open", "accepted", "fixed", "rejected", "superseded"]}, "cause": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}, "evidence": {"type": "array", "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}}, "closure": {"$ref": "#/$defs/closure"}, "resolution": {"$ref": "#/$defs/closure"}, "supersedes": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}}},
+    "reproof": {"type": "object", "additionalProperties": false, "required": ["verdict", "artifact_commit", "changed_mechanics"], "properties": {"verdict": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/identity"}, "artifact_commit": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/commit"}, "changed_mechanics": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "https://orchflows.local/3d-browser-game/common/v1.json#/$defs/nonEmptyString"}}}}
+  }
+}

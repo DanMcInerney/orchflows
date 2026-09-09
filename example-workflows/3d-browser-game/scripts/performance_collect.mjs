@@ -1,0 +1,1354 @@
+/**
+ * Collect one performance cell. Fixture mode is intentionally explicit and
+ * retains the same raw trace/completion path as live mode, making a fixture a
+ * qualification probe rather than a claimed measurement.
+ */
+import { spawn } from "node:child_process";
+import { resolve, dirname } from "node:path";
+import { pathToFileURL } from "node:url";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import {
+  EXIT, capabilityError, inputError, makeHeader, nowIso, parseArgs,
+  readJson, resultFromError, sha256, timeoutError, writeJsonAtomic, evidenceError,
+  isCommitIdentity,
+} from "./_common.mjs";
+import { collectCDPTrace, qualifyPerformance } from "./trace_frames.mjs";
+
+function validateCell(cell) {
+  if (!cell || typeof cell !== "object" || Array.isArray(cell)) throw inputError("cell must be an object", "/cell");
+  for (const key of ["id", "artifact_commit", "scenario_id"]) if (typeof cell[key] !== "string" || !cell[key]) throw inputError(`cell.${key} is required`, `/cell/${key}`);
+  if (!isCommitIdentity(cell.artifact_commit)) throw inputError("cell.artifact_commit must identify a full git revision", "/cell/artifact_commit");
+  const window = cell.window || {};
+  const duration = cell.duration_seconds ?? (cell.duration_ms !== undefined ? Number(cell.duration_ms) / 1000 : ((window.end_ms - window.start_ms) / 1000));
+  if (!Number.isFinite(duration) || duration <= 0 || duration > 3600) throw inputError("cell duration_seconds must be finite and between 0 and 3600", "/cell/duration_seconds");
+  if (cell.duration_ms !== undefined && (!Number.isFinite(cell.duration_ms) || cell.duration_ms <= 0)) throw inputError("cell.duration_ms must be positive and finite", "/cell/duration_ms");
+  for (const [key, value] of [["control_duration_ms", cell.control_duration_ms], ["warmup_duration_ms", cell.warmup_duration_ms]]) {
+    if (value !== undefined && (!Number.isFinite(value) || value < 0 || value > 600000)) throw inputError(`cell.${key} must be between 0 and 600000`, `/cell/${key}`);
+  }
+  if (cell.readback?.max_pending !== undefined
+      && (!Number.isInteger(cell.readback.max_pending) || cell.readback.max_pending < 1 || cell.readback.max_pending > MAX_PENDING_READBACKS)) {
+    throw inputError(`cell.readback.max_pending must be an integer between 1 and ${MAX_PENDING_READBACKS}`, "/cell/readback/max_pending");
+  }
+  measurementMode(cell);
+  samplingDeclaration(cell);
+  validateSetupCommands(cell);
+  return cell;
+}
+
+// A bare counter is deliberately a separate path: it must not install the
+// observer bootstrap, open CDP, acquire WebGL, or inspect the drawing buffer.
+// Observer-only keeps the bootstrap but disables both trace and readback so
+// the crossover can distinguish page instrumentation from native tracing.
+const DIAGNOSTIC_MODES = new Set(["combined", "observer-only", "trace-only", "readback-only", "bare-counter"]);
+
+function measurementMode(cell) {
+  const mode = cell.diagnostic_mode || "combined";
+  if (!DIAGNOSTIC_MODES.has(mode)) throw inputError("cell.diagnostic_mode must be combined, observer-only, trace-only, readback-only, or bare-counter", "/cell/diagnostic_mode");
+  return mode;
+}
+
+const SAMPLE_COORDINATE_SPACES = new Set(["drawing-buffer", "viewport"]);
+const MAX_SAMPLE_PIXELS = 65536;
+const MAX_PENDING_READBACKS = 8;
+
+/**
+ * Resolve the caller's frozen readback declaration. Coordinates are integer
+ * pixels in the selected space; viewport coordinates use CSS pixels with a
+ * top-left origin and are converted to the WebGL drawing buffer at runtime.
+ */
+function samplingDeclaration(cell) {
+  const configured = cell.sampling || cell.sample_coverage || cell.game_canvas?.sampling || null;
+  if (!configured) return null;
+  const region = configured.region || configured.coverage || configured;
+  if (!region || typeof region !== "object" || Array.isArray(region)) throw inputError("cell sampling region must be an object", "/cell/sampling/region");
+  const coordinateSpace = configured.coordinate_space || configured.coordinateSpace || "drawing-buffer";
+  if (!SAMPLE_COORDINATE_SPACES.has(coordinateSpace)) throw inputError("cell sampling coordinate_space must be drawing-buffer or viewport", "/cell/sampling/coordinate_space");
+  for (const key of ["x", "y", "width", "height"]) {
+    if (!Number.isInteger(region[key]) || region[key] < 0) throw inputError(`cell sampling region.${key} must be a non-negative integer`, `/cell/sampling/region/${key}`);
+  }
+  if (region.width <= 0 || region.height <= 0) throw inputError("cell sampling region width and height must be positive", "/cell/sampling/region");
+  if (region.width * region.height > MAX_SAMPLE_PIXELS) throw inputError(`cell sampling region may contain at most ${MAX_SAMPLE_PIXELS} pixels`, "/cell/sampling/region");
+  return {
+    explicit: true,
+    coordinate_space: coordinateSpace,
+    region: {x: region.x, y: region.y, width: region.width, height: region.height},
+  };
+}
+
+function samplingForCell(cell) {
+  return samplingDeclaration(cell) || {
+    explicit: false,
+    coordinate_space: "drawing-buffer",
+    region: {x: 0, y: 0, width: 1, height: 1},
+  };
+}
+
+function validateSetupCommands(cell) {
+  const commands = cell.setup_commands || cell.start_setup || [];
+  if (!Array.isArray(commands)) throw inputError("cell.setup_commands must be an array", "/cell/setup_commands");
+  for (const [index, command] of commands.entries()) {
+    if (!command || typeof command !== "object" || Array.isArray(command) || !["key", "pointer", "wait"].includes(command.type)) {
+      throw inputError("setup commands must use key, pointer, or wait from the ordinary input vocabulary", `/cell/setup_commands/${index}`);
+    }
+    if (command.type === "key" && (typeof command.key !== "string" || !command.key || !["down", "up"].includes(command.action))) throw inputError("setup key requires key and down/up action", `/cell/setup_commands/${index}`);
+    if (command.type === "pointer" && (!Number.isFinite(command.x) || !Number.isFinite(command.y) || !["move", "down", "up"].includes(command.action))) throw inputError("setup pointer requires finite x/y and move/down/up action", `/cell/setup_commands/${index}`);
+    if (command.type === "wait" && (!Number.isFinite(command.ms) || command.ms < 0 || command.ms > 60000)) throw inputError("setup wait ms must be between 0 and 60000", `/cell/setup_commands/${index}`);
+  }
+  return commands;
+}
+
+function serverChild(server, baseDir = process.cwd()) {
+  if (!server || !Array.isArray(server.command) || !server.command.length) throw inputError("live cell server.command is required as argv", "/cell/server/command");
+  if (!server.cwd) throw inputError("live cell server.cwd is required", "/cell/server/cwd");
+  return spawn(server.command[0], server.command.slice(1), { cwd: resolve(baseDir, server.cwd), env: { ...process.env, ...(server.env || {}) }, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+}
+
+function stopChild(child) {
+  return new Promise(done => {
+    if (!child || child.exitCode !== null) return done();
+    let settled = false;
+    const finish = () => { if (!settled) { settled = true; done(); } };
+    child.once("exit", finish);
+    if (process.platform === "win32") spawn("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true }).once("exit", finish);
+    else { try { process.kill(-child.pid, "SIGTERM"); } catch { child.kill("SIGTERM"); } }
+    setTimeout(() => { if (!settled) { try { child.kill("SIGKILL"); } catch {} finish(); } }, 5000).unref();
+  });
+}
+
+async function fixtureTrace(cell, baseDir) {
+  let trace = cell.trace;
+  if (!trace && cell.trace_file) trace = (await readJson(resolve(baseDir, cell.trace_file))).value;
+  if (!trace) throw inputError("fixture cell requires trace or trace_file", "/cell/trace");
+  let callbacks = cell.callbacks || [];
+  if (cell.callbacks_file) callbacks = (await readJson(resolve(baseDir, cell.callbacks_file))).value;
+  return { trace, callbacks };
+}
+
+async function clockMarker(page, client) {
+  const metrics = await client.send("Performance.getMetrics");
+  const timestamp = metrics?.metrics?.find(item => item.name === "Timestamp")?.value;
+  const pageNow = await page.evaluate(() => performance.now());
+  if (typeof timestamp !== "number" || !Number.isFinite(timestamp) || !Number.isFinite(pageNow)) {
+    throw capabilityError("browser did not expose a reconciled monotonic/page clock", "/cell/browser/clock");
+  }
+  const monotonicMs = timestamp * 1000;
+  return { monotonicMs, pageNow, offsetMs: monotonicMs - pageNow };
+}
+
+function eventTimeMs(event) {
+  const value = event?.timestamp_ms ?? event?.time_ms ?? event?.start_ms ?? event?.ts ?? event?.timestamp;
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return value > 1e8 ? value / 1000 : value;
+}
+
+async function installCanvasSampler(page, selector, sampling, readbackOptions = {}) {
+  return page.evaluate(({canvasSelector, samplingDeclaration, maxPending, readback_enabled}) => {
+    const observer = window.__orchPresentationObserver;
+    const canvas = document.querySelector(canvasSelector);
+    if (!observer) return {installed: false, error: "render-callback observer was not installed"};
+    if (!canvas) return {installed: false, error: "canvas selector did not resolve"};
+    // PBO readback and zero-timeout fences are WebGL2 APIs. Falling back to a
+    // synchronous WebGL1 readPixels call would reintroduce the measured stall,
+    // so unsupported capability remains explicitly unverified.
+    const gl = canvas.getContext("webgl2");
+    const attributes = gl?.getContextAttributes?.() || null;
+    if (!gl) return {installed: false, error: "bounded asynchronous sampling requires a WebGL2 drawing buffer"};
+    const drawingBuffer = {width: canvas.width, height: canvas.height};
+    const viewport = {width: canvas.clientWidth, height: canvas.clientHeight};
+    const dpr = window.devicePixelRatio;
+    if (!Number.isFinite(dpr) || dpr <= 0) return {installed: false, error: "browser devicePixelRatio is not finite"};
+    const region = samplingDeclaration.region;
+    let resolved;
+    if (samplingDeclaration.coordinate_space === "viewport") {
+      const scaleX = viewport.width > 0 ? drawingBuffer.width / viewport.width : dpr;
+      const scaleY = viewport.height > 0 ? drawingBuffer.height / viewport.height : dpr;
+      const width = Math.max(1, Math.floor(region.width * scaleX));
+      const height = Math.max(1, Math.floor(region.height * scaleY));
+      const x = Math.floor(region.x * scaleX);
+      const top = Math.floor(region.y * scaleY);
+      resolved = {x, y: drawingBuffer.height - top - height, width, height};
+    } else {
+      resolved = {...region};
+    }
+    if (!Number.isInteger(resolved.x) || !Number.isInteger(resolved.y) || !Number.isInteger(resolved.width) || !Number.isInteger(resolved.height)
+        || resolved.x < 0 || resolved.y < 0 || resolved.width <= 0 || resolved.height <= 0
+        || resolved.x + resolved.width > drawingBuffer.width || resolved.y + resolved.height > drawingBuffer.height) {
+      return {installed: false, error: "frozen sampling coverage is outside the drawing buffer", drawing_buffer: drawingBuffer, viewport, dpr, requested: samplingDeclaration};
+    }
+    const coverage = {
+      explicit: samplingDeclaration.explicit === true,
+      coordinate_space: samplingDeclaration.coordinate_space,
+      requested_region: {...region},
+      resolved_region: resolved,
+      drawing_buffer: drawingBuffer,
+      viewport,
+      dpr,
+      sample_pixels: resolved.width * resolved.height,
+      bytes_per_sample: resolved.width * resolved.height * 4,
+      origin: samplingDeclaration.coordinate_space === "viewport" ? "viewport-top-left-to-webgl-bottom-left" : "webgl-bottom-left",
+    };
+    const target = {
+      selector: canvasSelector,
+      coverage,
+      gl,
+      max_pending: Number.isInteger(maxPending) ? maxPending : 4,
+      readback_enabled: readback_enabled !== false,
+      preserve_drawing_buffer: attributes?.preserveDrawingBuffer === true,
+    };
+    const configured = observer.configure(target);
+    if (!configured.installed) return configured;
+    observer.phase = "control";
+    return {
+      installed: true,
+      selector: canvasSelector,
+      clock: "performance.now",
+      method: configured.method,
+      read_only: true,
+      presentation: "render-callback-post-callback",
+      preserve_drawing_buffer: target.preserve_drawing_buffer,
+      sampling: coverage,
+      readback: configured.readback,
+      readback_enabled: configured.readback_enabled !== false,
+    };
+  }, {canvasSelector: selector, samplingDeclaration: sampling, maxPending: readbackOptions.max_pending, readback_enabled: readbackOptions.readback_enabled});
+}
+
+function phaseStats(callbacks, phase, startMs, endMs) {
+  const rows = callbacks.filter(item => item.phase === phase && item.timestamp_ms >= startMs && item.timestamp_ms < endMs);
+  const intervals = rows.slice(1).map((item, index) => item.timestamp_ms - rows[index].timestamp_ms);
+  return {
+    status: endMs > startMs ? "observed" : "unverified",
+    start_ms: startMs,
+    end_ms: endMs,
+    observed_ms: Math.max(0, endMs - startMs),
+    callbacks: rows.length,
+    callback_rate_hz: rows.length / Math.max(0.001, (endMs - startMs) / 1000),
+    max_callback_interval_ms: intervals.length ? Math.max(...intervals) : null,
+  };
+}
+
+function sampleDurationStats(samples) {
+  const durations = samples.map(item => item?.duration_ms).filter(value => typeof value === "number" && Number.isFinite(value) && value >= 0).sort((a, b) => a - b);
+  if (!durations.length) return {count: 0, total_ms: 0, max_ms: null, p99_ms: null};
+  return {
+    count: durations.length,
+    total_ms: durations.reduce((sum, value) => sum + value, 0),
+    max_ms: durations[durations.length - 1],
+    p99_ms: durations[Math.min(durations.length - 1, Math.ceil(durations.length * 0.99) - 1)],
+  };
+}
+
+function fixtureMeasurement(cell) {
+  const scenarioId = cell.scenario_id;
+  const window = cell.window || {};
+  const observedMs = Math.max(0, Number(window.end_ms) - Number(window.start_ms));
+  const phase = (status, requestedMs = 0) => ({status, requested_ms: requestedMs, observed_ms: requestedMs, callbacks: 0, callback_rate_hz: 0, max_callback_interval_ms: null});
+  return {
+    scenario_id: scenarioId,
+    diagnostic_mode: cell.diagnostic_mode || "combined",
+    observation_mode: cell.diagnostic_mode || "combined",
+    observer: "qualification-fixture",
+    presentation: "fixture-native-frame-model",
+    preserve_drawing_buffer: false,
+    sampling: {explicit: false, coordinate_space: "drawing-buffer", requested_region: {x: 0, y: 0, width: 1, height: 1}, resolved_region: null, drawing_buffer: null, viewport: null, dpr: null, sample_pixels: 1, bytes_per_sample: 4, origin: "webgl-bottom-left"},
+    lifecycle: {status: "fixture", scenario_id: scenarioId, seed: cell.seed ?? null, configured_url: null, reset: null, phase_transitions: []},
+    warmup: phase("fixture", Number(cell.warmup_duration_ms || 0)),
+    control: phase("fixture", Number(cell.control_duration_ms || 0)),
+    instrumented: {status: "fixture", requested_ms: observedMs, start_ms: window.start_ms, end_ms: window.end_ms, observed_ms: observedMs, callbacks: 0, callback_rate_hz: 0, max_callback_interval_ms: null, samples: 0, readback_errors: 0, sample_duration_ms: {count: 0, total_ms: 0, max_ms: null, p99_ms: null}},
+    perturbation: {status: "fixture", basis: "control-vs-instrumented", control_callbacks: 0, instrumented_callbacks: 0, control_callback_rate_hz: 0, instrumented_callback_rate_hz: 0, callback_rate_delta_hz: 0, callback_interval_delta_ms: null, samples: 0, readback_errors: 0, sample_duration_ms: {count: 0, total_ms: 0, max_ms: null, p99_ms: null}},
+  };
+}
+
+async function canvasBackend(page, selector) {
+  return page.evaluate(canvasSelector => {
+      const canvas = document.querySelector(canvasSelector);
+      if (!canvas) return {kind: "unknown", renderer: null};
+      for (const kind of ["webgl2", "webgl"]) {
+        const gl = canvas.getContext(kind);
+        if (gl) {
+          let vendor = null;
+          let renderer = null;
+          let unmaskedVendor = null;
+          let unmaskedRenderer = null;
+          let debugInfo = null;
+          try { vendor = gl.getParameter(gl.VENDOR); } catch { /* an unavailable vendor remains explicitly unknown */ }
+          try { renderer = gl.getParameter(gl.RENDERER); } catch { /* masked renderer is still an observed backend */ }
+          try { debugInfo = gl.getExtension("WEBGL_debug_renderer_info"); } catch { /* privacy masking may deny the extension */ }
+          if (debugInfo) {
+            try { unmaskedVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL); } catch {}
+            try { unmaskedRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL); } catch {}
+          }
+          const rendererText = [vendor, renderer, unmaskedVendor, unmaskedRenderer].filter(Boolean).join(" ");
+          const software = /swiftshader|software|llvmpipe|softpipe|mesa software/i.test(rendererText);
+          return {kind, vendor, renderer, unmasked_vendor: unmaskedVendor, unmasked_renderer: unmaskedRenderer, renderer_mode: software ? "software" : (unmaskedRenderer || renderer ? "hardware-or-masked" : "unknown"), debug_renderer_info: Boolean(debugInfo)};
+        }
+    }
+    return {kind: canvas.getContext("2d") ? "canvas2d" : "unknown", renderer: null};
+  }, selector);
+}
+
+async function runSetup(page, canvas, commands) {
+  const actions = [];
+  await canvas.focus().catch(() => canvas.click({position: {x: 1, y: 1}}));
+  for (const command of commands) {
+    if (command.type === "key") {
+      if (command.action === "down") await page.keyboard.down(command.key);
+      else await page.keyboard.up(command.key);
+    } else if (command.type === "pointer") {
+      await page.mouse.move(command.x, command.y);
+      if (command.action === "down") await page.mouse.down({button: command.button || "left"});
+      else if (command.action === "up") await page.mouse.up({button: command.button || "left"});
+    } else if (command.type === "wait") {
+      await new Promise(resolvePromise => setTimeout(resolvePromise, command.ms));
+    }
+    actions.push({...command, observed: true});
+  }
+  const state = await page.evaluate(() => ({url: location.href, title: document.title, ready_state: document.readyState, viewport: {width: innerWidth, height: innerHeight}, dpr: devicePixelRatio}));
+  return {commands: actions, observed_state: state, observed: true};
+}
+
+async function installForegroundMonitor(page) {
+  return page.evaluate(() => {
+    const snapshot = () => ({
+      performance_now_ms: performance.now(),
+      date_now_ms: Date.now(),
+      visibility_state: document.visibilityState,
+      hidden: document.hidden === true,
+      document_has_focus: document.hasFocus(),
+      has_focus: document.hasFocus(),
+      window_has_focus: document.hasFocus(),
+    });
+    const events = [];
+    const record = type => events.push({type, ...snapshot()});
+    for (const type of ["visibilitychange", "focus", "blur", "pagehide"]) {
+      const target = type === "visibilitychange" ? document : window;
+      target.addEventListener(type, () => record(type), {passive: true});
+    }
+    const monitor = {
+      method: "document.visibilityState+document.hidden+document.hasFocus+window-focus-blur-pagehide",
+      available: true,
+      events,
+      boundaries: {},
+      mark(label) {
+        this.boundaries[label] = snapshot();
+        return this.boundaries[label];
+      },
+      read() {
+        return {required: true, method: this.method, available: this.available, boundaries: this.boundaries, events: this.events.slice()};
+      },
+    };
+    Object.defineProperty(window, "__orchForegroundMonitor", {value: monitor, configurable: false});
+    monitor.mark("installed");
+    return monitor.read();
+  });
+}
+
+async function markForeground(page, label) {
+  return page.evaluate(name => window.__orchForegroundMonitor?.mark(name) || null, label);
+}
+
+async function readForeground(page) {
+  return page.evaluate(() => window.__orchForegroundMonitor?.read() || {
+    method: "unavailable",
+    available: false,
+    boundaries: {},
+    events: [],
+  });
+}
+
+async function installBareCounter(page) {
+  return page.evaluate(() => {
+    const timestamps = [];
+    let active = true;
+    const tick = timestamp => {
+      if (!active) return;
+      timestamps.push(timestamp);
+      window.requestAnimationFrame(tick);
+    };
+    window.requestAnimationFrame(tick);
+    const counter = {
+      method: "independent-requestAnimationFrame-timestamp-counter",
+      timestamps,
+      stop() {
+        active = false;
+        return {method: this.method, timestamps: this.timestamps.slice()};
+      },
+    };
+    Object.defineProperty(window, "__orchBareCounter", {value: counter, configurable: false});
+    return {method: counter.method, installed: true};
+  });
+}
+
+function barePhase(callbacks, startMs, endMs, requestedMs) {
+  const values = callbacks.filter(value => value >= startMs && value < endMs);
+  const intervals = values.slice(1).map((value, index) => value - values[index]);
+  return {
+    status: endMs > startMs ? "observed" : "unverified",
+    requested_ms: requestedMs,
+    start_ms: startMs,
+    end_ms: endMs,
+    observed_ms: Math.max(0, endMs - startMs),
+    callbacks: values.length,
+    callback_rate_hz: values.length / Math.max(0.001, (endMs - startMs) / 1000),
+    max_callback_interval_ms: intervals.length ? Math.max(...intervals) : null,
+  };
+}
+
+async function liveBareTrace(cell, {page, browser, type, canvas, wait}) {
+  const durationMs = cell.duration_ms || Math.round((cell.duration_seconds || 60) * 1000);
+  const warmupDurationMs = Number.isFinite(cell.warmup_duration_ms)
+    ? cell.warmup_duration_ms
+    : Math.max(1000, Math.round(Number(cell.warmup_seconds || 5) * 1000));
+  if (warmupDurationMs < 0) throw inputError("cell.warmup_duration_ms must not be negative", "/cell/warmup_duration_ms");
+  const setupCommands = validateSetupCommands(cell);
+  const selector = cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas";
+  const foregroundInstall = await installForegroundMonitor(page);
+  await page.bringToFront();
+  await canvas.focus().catch(() => canvas.click({position: {x: 1, y: 1}}));
+  const initialSetup = await runSetup(page, canvas, setupCommands);
+  const counterInstall = await installBareCounter(page);
+  const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+  const lifecycle = {
+    status: "observed",
+    scenario_id: cell.scenario_id,
+    seed: cell.seed ?? null,
+    configured_url: cell.server.url,
+    viewport: cell.viewport || {width: 1280, height: 720},
+    dpr: cell.dpr || 1,
+    start: {method: "page.goto", url: page.url(), observed: true, ready: true, setup: initialSetup},
+    reset: null,
+    phase_transitions: [],
+    foreground: {required: true, installation: foregroundInstall, method: foregroundInstall.method, available: foregroundInstall.available === true},
+  };
+  const contextIdentity = cell.context_id || cell.context_name || cell.browser?.context_id || cell.browser?.context_name || null;
+  await markForeground(page, "warmup-start");
+  const warmupStart = await page.evaluate(() => performance.now());
+  await wait(warmupDurationMs);
+  await markForeground(page, "measurement-start");
+  const startClock = await page.evaluate(() => ({performance_now_ms: performance.now(), date_now_ms: Date.now()}));
+  const start = startClock.performance_now_ms;
+  const wallStart = Date.now();
+  lifecycle.phase_transitions.push({phase: "bare-counter", method: counterInstall.method, start_observed: Number.isFinite(start), configured_duration_ms: durationMs});
+  await wait(durationMs);
+  const endClock = await page.evaluate(() => ({performance_now_ms: performance.now(), date_now_ms: Date.now()}));
+  const end = endClock.performance_now_ms;
+  await markForeground(page, "measurement-end");
+  const stopped = await page.evaluate(() => window.__orchBareCounter?.stop() || {method: "unavailable", timestamps: []});
+  const foreground = await readForeground(page);
+  lifecycle.foreground = {...foreground, required: true, installation: foregroundInstall};
+  const callbacks = Array.isArray(stopped.timestamps) ? stopped.timestamps.filter(Number.isFinite) : [];
+  const window = {start_ms: start, end_ms: start + durationMs};
+  const control = barePhase(callbacks, start, window.end_ms, durationMs);
+  const warmup = barePhase(callbacks, warmupStart, start, warmupDurationMs);
+  const instrumented = {...control, status: "unverified", samples: 0, readback_errors: 0, sample_duration_ms: sampleDurationStats([])};
+  const measurement = {
+    scenario_id: cell.scenario_id,
+    diagnostic_mode: "bare-counter",
+    observation_mode: "bare-counter",
+    observer: stopped.method,
+    presentation: "bare-counter-no-canvas-observation",
+    preserve_drawing_buffer: null,
+    lifecycle,
+    warmup,
+    control,
+    clock: {method: "performance.timeOrigin+performance.now", time_origin_ms: timeOrigin, start: startClock, end: endClock},
+    instrumented,
+    bare_counter: {method: stopped.method, time_origin_ms: timeOrigin, timestamps: callbacks, timestamp_clock: "performance.now"},
+    foreground,
+    perturbation: {
+      status: "unverified",
+      basis: "bare-counter-no-observer-comparison",
+      control_callbacks: control.callbacks,
+      instrumented_callbacks: 0,
+      control_callback_rate_hz: control.callback_rate_hz,
+      instrumented_callback_rate_hz: 0,
+      callback_rate_delta_hz: -control.callback_rate_hz,
+      callback_interval_delta_ms: null,
+      samples: 0,
+      readback_errors: 0,
+      sample_duration_ms: sampleDurationStats([]),
+    },
+  };
+  const wallEnd = Date.now();
+  const trace = {
+    format: "bare-counter",
+    traceEvents: [],
+    completion: {disabled: true, reason: "bare-counter-prohibits-cdp-tracing"},
+    callbacks,
+    measurement,
+    canvas_instrumentation: {method: "none", observation_mode: "bare-counter", diagnostic_mode: "bare-counter", trace_capture_enabled: false, readback_enabled: false, foreground_guard_required: true},
+    metadata: {
+      clock_reconciled: false,
+      clock_method: "performance.timeOrigin+performance.now",
+      time_origin_ms: timeOrigin,
+      clock: {method: "performance.timeOrigin+performance.now", time_origin_ms: timeOrigin, start: startClock, end: endClock},
+      wall_start_ms: wallStart,
+      wall_end_ms: wallEnd,
+      window_start_ms: window.start_ms,
+      window_end_ms: window.end_ms,
+      padding_before_ms: 0,
+      padding_after_ms: 0,
+      warmup_start_ms: warmup.start_ms,
+      warmup_end_ms: warmup.end_ms,
+      foreground_guard_required: true,
+      diagnostic_mode: "bare-counter",
+      context_identity: contextIdentity,
+    },
+  };
+  return {
+    trace,
+    callbacks,
+    window,
+    environment: {browser: type, browser_version: browser.version?.() || null, driver: cell.browser?.package || "playwright-core", renderer: "unobserved", backend: "unobserved", tools: []},
+    measurement,
+    diagnostics: {diagnostic_mode: "bare-counter", trace_capture_enabled: false, readback_enabled: false, clock_method: trace.metadata.clock_method, foreground: lifecycle.foreground, context_identity: contextIdentity},
+  };
+}
+
+async function liveTrace(cell, {baseDir = process.cwd()} = {}) {
+  let playwright;
+  const browserPackage = cell.browser?.package || "playwright-core";
+  const packageSpecifier = /^(?:[A-Za-z]:[\\/]|[\\/])/.test(browserPackage) && !browserPackage.startsWith("file:")
+    ? pathToFileURL(resolve(browserPackage)).href : browserPackage;
+  try { playwright = await import(packageSpecifier); }
+  catch (error) { throw capabilityError(`Playwright is unavailable: ${error.message}`, "/cell/browser/package"); }
+  const server = serverChild(cell.server, baseDir);
+  const errors = [];
+  server.stderr?.on("data", chunk => errors.push(chunk.toString("utf8").slice(-4000)));
+  let browser;
+  try {
+    const type = cell.browser?.type || "chromium";
+    if (!playwright[type]?.launch) throw capabilityError(`browser ${type} is unavailable`, "/cell/browser/type");
+    browser = await playwright[type].launch({ headless: false, executablePath: cell.browser?.executable_path, timeout: cell.browser?.launch_timeout_ms || 30000 });
+    const context = await browser.newContext({ viewport: cell.viewport || { width: 1280, height: 720 }, deviceScaleFactor: cell.dpr || 1 });
+    const page = await context.newPage();
+    const diagnosticMode = measurementMode(cell);
+    if (diagnosticMode !== "bare-counter") await page.addInitScript(() => {
+      // This wrapper is installed before application code. It samples only
+      // after an application's rAF callback returns, while the default WebGL
+      // drawing buffer is still available to the browser's presentation
+      // step. It has no game-object access and does not schedule or force a
+      // redraw. The control phase executes the same wrapper with readback off.
+      const digest = value => {
+        let hash = 2166136261;
+        for (let index = 0; index < value.length; index += 1) {
+          hash ^= typeof value === "string" ? value.charCodeAt(index) : value[index];
+          hash = Math.imul(hash, 16777619);
+        }
+        return `fnv1a:${(hash >>> 0).toString(16).padStart(8, "0")}`;
+      };
+      const READBACK_METHOD = "webgl2.pixel-pack-buffer+fence-sync";
+      const trackedContexts = new WeakMap();
+      const PACK_STATE = ["PACK_ALIGNMENT", "PACK_ROW_LENGTH", "PACK_SKIP_ROWS", "PACK_SKIP_PIXELS"];
+
+      // WebGL getParameter/getError can synchronously flush the graphics
+      // process. Discover the small state boundary once when a context is
+      // created, then shadow only the mutations that this observer touches.
+      // This keeps the measured callback path free of state queries while
+      // retaining the renderer's bindings and framebuffer-local read buffers.
+      function stateFailure(state, message) {
+        state.valid = false;
+        state.error = message;
+      }
+
+      function readInitialState(gl) {
+        const read = name => {
+          const value = gl.getParameter(gl[name]);
+          if (value === undefined) throw new Error(`WebGL state query ${name} returned undefined`);
+          return value;
+        };
+        const readFramebuffer = read("READ_FRAMEBUFFER_BINDING");
+        const state = {
+          valid: true,
+          error: null,
+          context_lost: false,
+          context_restored: false,
+          active: false,
+          gl,
+          canvas: null,
+          wrappers: new Map(),
+          originals: new Map(),
+          framebuffers: new Set(),
+          read_buffers: new Map(),
+          pixel_pack_buffer: read("PIXEL_PACK_BUFFER_BINDING"),
+          read_framebuffer: readFramebuffer,
+          draw_framebuffer: read("DRAW_FRAMEBUFFER_BINDING"),
+          PACK_ALIGNMENT: read("PACK_ALIGNMENT"),
+          PACK_ROW_LENGTH: read("PACK_ROW_LENGTH"),
+          PACK_SKIP_ROWS: read("PACK_SKIP_ROWS"),
+          PACK_SKIP_PIXELS: read("PACK_SKIP_PIXELS"),
+        };
+        state.read_buffers.set(readFramebuffer, read("READ_BUFFER"));
+        if (state.read_framebuffer) state.framebuffers.add(state.read_framebuffer);
+        if (state.draw_framebuffer) state.framebuffers.add(state.draw_framebuffer);
+        return state;
+      }
+
+      function knownReadBuffer(state, framebuffer) {
+        if (state.read_buffers.has(framebuffer)) return;
+        if (framebuffer === null || state.framebuffers.has(framebuffer)) {
+          // WebGL2 initializes a user framebuffer's READ_BUFFER to
+          // COLOR_ATTACHMENT0. Context-created framebuffers are tracked from
+          // their creation, so an old, unobserved framebuffer fails closed.
+          state.read_buffers.set(framebuffer, framebuffer === null ? state.gl.BACK : state.gl.COLOR_ATTACHMENT0);
+          return;
+        }
+        throw new Error("framebuffer READ_BUFFER state was not observed");
+      }
+
+      function updateBinding(state, target, framebuffer) {
+        const gl = state.gl;
+        if (target === gl.READ_FRAMEBUFFER) {
+          state.read_framebuffer = framebuffer;
+          knownReadBuffer(state, framebuffer);
+        } else if (target === gl.DRAW_FRAMEBUFFER) {
+          state.draw_framebuffer = framebuffer;
+        } else if (target === gl.FRAMEBUFFER) {
+          state.read_framebuffer = framebuffer;
+          state.draw_framebuffer = framebuffer;
+          knownReadBuffer(state, framebuffer);
+        }
+      }
+
+      function installStateWrappers(state) {
+        if (state.active) return;
+        const gl = state.gl;
+        const wrap = (name, update) => {
+          const original = gl[name];
+          if (typeof original !== "function") throw new Error(`WebGL ${name} is unavailable`);
+          const wrapper = function (...args) {
+            const result = original.apply(this, args);
+            if (this !== gl) {
+              stateFailure(state, `WebGL ${name} was called with an unexpected receiver`);
+              return result;
+            }
+            try { update(args, result); }
+            catch (error) { stateFailure(state, String(error.message || error)); }
+            return result;
+          };
+          Object.defineProperty(gl, name, {configurable: true, writable: true, value: wrapper});
+          state.originals.set(name, original);
+          state.wrappers.set(name, wrapper);
+        };
+        wrap("bindBuffer", args => {
+          if (args[0] === gl.PIXEL_PACK_BUFFER) state.pixel_pack_buffer = args[1] === undefined ? null : args[1];
+        });
+        wrap("bindFramebuffer", args => {
+          const framebuffer = args[1] === undefined ? null : args[1];
+          updateBinding(state, args[0], framebuffer);
+        });
+        wrap("pixelStorei", args => {
+          for (const name of PACK_STATE) if (args[0] === gl[name]) state[name] = args[1];
+        });
+        wrap("readBuffer", args => {
+          knownReadBuffer(state, state.read_framebuffer);
+          state.read_buffers.set(state.read_framebuffer, args[0]);
+        });
+        wrap("createFramebuffer", (_args, framebuffer) => {
+          if (framebuffer) {
+            state.framebuffers.add(framebuffer);
+            state.read_buffers.set(framebuffer, gl.COLOR_ATTACHMENT0);
+          }
+        });
+        wrap("deleteFramebuffer", args => {
+          const framebuffer = args[0];
+          state.framebuffers.delete(framebuffer);
+          state.read_buffers.delete(framebuffer);
+          if (state.read_framebuffer === framebuffer) state.read_framebuffer = null;
+          if (state.draw_framebuffer === framebuffer) state.draw_framebuffer = null;
+          knownReadBuffer(state, null);
+        });
+        wrap("deleteBuffer", args => {
+          if (state.pixel_pack_buffer === args[0]) state.pixel_pack_buffer = null;
+        });
+        state.active = true;
+      }
+
+      function trackContext(gl, canvas = null) {
+        if (!gl || typeof gl.getParameter !== "function") return null;
+        let state = trackedContexts.get(gl);
+        if (state) {
+          if (canvas && !state.canvas) state.canvas = canvas;
+          return state;
+        }
+        try { state = readInitialState(gl); }
+        catch (error) {
+          state = {valid: false, error: String(error.message || error), context_lost: false, context_restored: false, active: false, gl, canvas, wrappers: new Map(), originals: new Map()};
+          trackedContexts.set(gl, state);
+          return state;
+        }
+        state.canvas = canvas;
+        trackedContexts.set(gl, state);
+        try { installStateWrappers(state); }
+        catch (error) { stateFailure(state, String(error.message || error)); }
+        if (canvas?.addEventListener) {
+          canvas.addEventListener("webglcontextlost", () => {
+            state.context_lost = true;
+            stateFailure(state, "WebGL context was lost; state shadow is invalid");
+          }, {passive: true});
+          canvas.addEventListener("webglcontextrestored", () => {
+            state.context_restored = true;
+            stateFailure(state, "WebGL context was restored; observer requires reconfiguration");
+          }, {passive: true});
+        }
+        return state;
+      }
+
+      function hookCanvasContext(canvasPrototype) {
+        if (!canvasPrototype?.getContext) return;
+        const original = canvasPrototype.getContext;
+        try {
+          Object.defineProperty(canvasPrototype, "getContext", {
+            configurable: true,
+            writable: true,
+            value: function (type, ...args) {
+              const context = original.call(this, type, ...args);
+              if (context && /^(?:experimental-)?webgl2?$/.test(String(type || "").toLowerCase())) trackContext(context, this);
+              return context;
+            },
+          });
+        } catch { /* configure() reports an explicit capability failure below */ }
+      }
+      hookCanvasContext(globalThis.HTMLCanvasElement?.prototype);
+      hookCanvasContext(globalThis.OffscreenCanvas?.prototype);
+
+      function contextState(gl) {
+        const state = trackedContexts.get(gl) || trackContext(gl);
+        if (!state?.valid) throw new Error(state?.error || "WebGL state shadow is unavailable");
+        for (const [name, wrapper] of state.wrappers) {
+          if (gl[name] !== wrapper) {
+            stateFailure(state, `WebGL ${name} wrapper ownership changed`);
+            throw new Error(state.error);
+          }
+        }
+        if (!state.active) installStateWrappers(state);
+        return state;
+      }
+
+      function restoreWrappers(state) {
+        let error = null;
+        for (const [name, wrapper] of state.wrappers) {
+          if (state.gl[name] !== wrapper) {
+            error = `WebGL ${name} wrapper ownership changed during cleanup`;
+            continue;
+          }
+          try { Object.defineProperty(state.gl, name, {configurable: true, writable: true, value: state.originals.get(name)}); }
+          catch (caught) { error = String(caught.message || caught); }
+        }
+        state.active = false;
+        state.wrappers.clear();
+        state.originals.clear();
+        if (error) stateFailure(state, error);
+        return error;
+      }
+
+      function captureState(gl) {
+        const state = contextState(gl);
+        const readBuffers = new Map();
+        for (const framebuffer of [state.read_framebuffer, null]) {
+          knownReadBuffer(state, framebuffer);
+          readBuffers.set(framebuffer, state.read_buffers.get(framebuffer));
+        }
+        return {
+          pixel_pack_buffer: state.pixel_pack_buffer,
+          read_framebuffer: state.read_framebuffer,
+          draw_framebuffer: state.draw_framebuffer,
+          PACK_ALIGNMENT: state.PACK_ALIGNMENT,
+          PACK_ROW_LENGTH: state.PACK_ROW_LENGTH,
+          PACK_SKIP_ROWS: state.PACK_SKIP_ROWS,
+          PACK_SKIP_PIXELS: state.PACK_SKIP_PIXELS,
+          read_buffers: readBuffers,
+        };
+      }
+
+      function restoreState(gl, state, saved) {
+        const errors = [];
+        const call = (name, ...args) => {
+          const original = state.originals.get(name);
+          if (typeof original !== "function") { errors.push(`WebGL ${name} original is unavailable`); return; }
+          try { original.apply(gl, args); }
+          catch (error) { errors.push(`${name}: ${String(error.message || error)}`); }
+        };
+        call("bindBuffer", gl.PIXEL_PACK_BUFFER, saved.pixel_pack_buffer);
+        call("bindFramebuffer", gl.READ_FRAMEBUFFER, saved.read_framebuffer);
+        call("bindFramebuffer", gl.DRAW_FRAMEBUFFER, saved.draw_framebuffer);
+        for (const [framebuffer, readBuffer] of saved.read_buffers) {
+          call("bindFramebuffer", gl.READ_FRAMEBUFFER, framebuffer);
+          call("readBuffer", readBuffer);
+        }
+        call("bindFramebuffer", gl.READ_FRAMEBUFFER, saved.read_framebuffer);
+        call("bindFramebuffer", gl.DRAW_FRAMEBUFFER, saved.draw_framebuffer);
+        for (const name of PACK_STATE) call("pixelStorei", gl[name], saved[name]);
+        if (errors.length) {
+          stateFailure(state, `WebGL state restoration failed: ${errors.join("; ")}`);
+          throw new Error(state.error);
+        }
+        state.pixel_pack_buffer = saved.pixel_pack_buffer;
+        state.read_framebuffer = saved.read_framebuffer;
+        state.draw_framebuffer = saved.draw_framebuffer;
+        for (const name of PACK_STATE) state[name] = saved[name];
+        for (const [framebuffer, readBuffer] of saved.read_buffers) state.read_buffers.set(framebuffer, readBuffer);
+      }
+
+      const observer = {
+        phase: "disabled", callbacks: [], samples: [], targets: [], gl: null,
+        max_pending: 4, pending: [], available: [], configured: false, poll_timer: null, readback_enabled: true,
+        readback: {
+          method: READBACK_METHOD, asynchronous: true,
+          api: ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
+          max_pending: 4, allocated_buffers: 0, queued: 0, completed: 0,
+          lost: 0, errors: 0, context_losses: 0, poll_count: 0,
+          pending_at_cleanup: 0, cleanup_observed: false,
+          queue_duration_ms: 0, wait_duration_ms: 0, copy_duration_ms: 0, poll_duration_ms: 0,
+        },
+        // Save and restore mutable readback state around every WebGL call. The
+        // state values are shadowed by the context wrappers above; no getter is
+        // called from this hot path. The observer samples the existing default
+        // framebuffer and must not alter renderer or framebuffer-local state.
+        withState(gl, operation, timings = null) {
+          const captureStarted = performance.now();
+          const state = captureState(gl);
+          if (timings) timings.state_capture = performance.now() - captureStarted;
+          try { return operation(); }
+          finally {
+            const restoreStarted = performance.now();
+            restoreState(gl, contextState(gl), state);
+            if (timings) timings.state_restore = performance.now() - restoreStarted;
+          }
+        },
+        configure(target) {
+          const gl = target.gl;
+          const maxPending = target.max_pending;
+          if (!gl || typeof gl.createBuffer !== "function" || typeof gl.fenceSync !== "function"
+              || typeof gl.clientWaitSync !== "function" || typeof gl.getBufferSubData !== "function") {
+            return {installed: false, error: "bounded asynchronous sampling requires WebGL2 PBO and fenceSync support"};
+          }
+          this.gl = gl;
+          this.max_pending = maxPending;
+          this.readback_enabled = target.readback_enabled !== false;
+          this.targets = [target];
+          this.pending = [];
+          this.available = [];
+          this.readback = {
+            method: READBACK_METHOD, asynchronous: true,
+            api: ["PIXEL_PACK_BUFFER", "readPixels-offset", "fenceSync", "clientWaitSync-timeout-0", "getBufferSubData"],
+            max_pending: maxPending, allocated_buffers: 0, queued: 0, completed: 0,
+            lost: 0, errors: 0, context_losses: 0, poll_count: 0,
+            pending_at_cleanup: 0, cleanup_observed: false,
+            queue_duration_ms: 0, wait_duration_ms: 0, copy_duration_ms: 0, poll_duration_ms: 0,
+          };
+          if (!this.readback_enabled) {
+            this.configured = true;
+            return {installed: true, method: "diagnostic-readback-disabled", readback: null, readback_enabled: false};
+          }
+          try {
+            this.withState(gl, () => {
+              for (let index = 0; index < maxPending; index += 1) {
+                const buffer = gl.createBuffer();
+                if (!buffer) throw new Error("WebGL2 could not allocate a pixel-pack buffer");
+                gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer);
+                gl.bufferData(gl.PIXEL_PACK_BUFFER, target.coverage.bytes_per_sample, gl.STREAM_READ);
+                this.available.push(buffer);
+              }
+            });
+          } catch (error) {
+            for (const buffer of this.available) { try { gl.deleteBuffer(buffer); } catch {} }
+            this.available = [];
+            return {installed: false, error: String(error.message || error)};
+          }
+          this.readback.allocated_buffers = this.available.length;
+          this.configured = true;
+          return {installed: true, method: READBACK_METHOD, readback: {...this.readback}};
+        },
+        recordFailure(item, error, status = "error") {
+          const completedAt = performance.now();
+          this.readback.errors += 1;
+          if (status === "lost") this.readback.lost += 1;
+          this.samples.push({
+            timestamp_ms: item.origin_timestamp_ms,
+            origin_timestamp_ms: item.origin_timestamp_ms,
+            callback_index: item.callback_index,
+            hash: null,
+            source: "render-callback-post-callback",
+            method: READBACK_METHOD,
+            preserve_drawing_buffer: item.preserve_drawing_buffer,
+            coverage: item.coverage,
+            completion_status: status,
+            completion_timestamp_ms: completedAt,
+            queue_duration_ms: item.queue_duration_ms || 0,
+            wait_duration_ms: item.wait_duration_ms || 0,
+            copy_duration_ms: 0,
+            queue_stages_ms: item.queue_stages_ms || {bind: 0, read_pixels: 0, fence: 0, flush: 0, other: 0},
+            copy_stages_ms: item.copy_stages_ms || {bind: 0, get_buffer_sub_data: 0, state_capture: 0, state_restore: 0, other: 0},
+            completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
+            duration_ms: item.queue_duration_ms || 0,
+            error: String(error),
+          });
+        },
+        release(item) {
+          try { if (item.sync) this.gl.deleteSync(item.sync); } catch {}
+          if (item.buffer) this.available.push(item.buffer);
+        },
+        poll() {
+          const gl = this.gl;
+          if (!this.configured || !gl || !this.pending.length) return;
+          try {
+            if (gl.isContextLost?.()) {
+              this.readback.context_losses += 1;
+              for (const item of this.pending) {
+                this.recordFailure(item, "WebGL context was lost before readback completion", "lost");
+                this.release(item);
+              }
+              this.pending = [];
+              return;
+            }
+          } catch {}
+          this.readback.poll_count += 1;
+          const pollStarted = performance.now();
+          const remaining = [];
+          for (const item of this.pending) {
+            let waitStatus;
+            const waitStarted = performance.now();
+            try { waitStatus = gl.clientWaitSync(item.sync, 0, 0); }
+            catch (error) {
+              try { if (gl.isContextLost?.()) this.readback.context_losses += 1; } catch {}
+              item.wait_duration_ms = (item.wait_duration_ms || 0) + performance.now() - waitStarted;
+              this.recordFailure(item, error, "error");
+              this.release(item);
+              continue;
+            }
+            const waitDuration = performance.now() - waitStarted;
+            item.wait_duration_ms = (item.wait_duration_ms || 0) + waitDuration;
+            this.readback.wait_duration_ms += waitDuration;
+            if (waitStatus === gl.TIMEOUT_EXPIRED) { remaining.push(item); continue; }
+            if (waitStatus !== gl.ALREADY_SIGNALED && waitStatus !== gl.CONDITION_SATISFIED) {
+              this.recordFailure(item, `clientWaitSync returned ${waitStatus}`, "error");
+              this.release(item);
+              continue;
+            }
+            const copyStarted = performance.now();
+            try {
+              const pixels = new Uint8Array(item.coverage.bytes_per_sample);
+              this.withState(gl, () => {
+                let stageStarted = performance.now();
+                gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+                item.copy_stages_ms.bind = performance.now() - stageStarted;
+                stageStarted = performance.now();
+                gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
+                item.copy_stages_ms.get_buffer_sub_data = performance.now() - stageStarted;
+              }, item.copy_stages_ms);
+              const copyDuration = performance.now() - copyStarted;
+              const measuredCopyStages = Object.entries(item.copy_stages_ms).filter(([name]) => name !== "other").reduce((sum, [, value]) => sum + value, 0);
+              item.copy_stages_ms.other = Math.max(0, copyDuration - measuredCopyStages);
+              this.readback.copy_duration_ms += copyDuration;
+              this.readback.completed += 1;
+              const completedAt = performance.now();
+              this.samples.push({
+                timestamp_ms: item.origin_timestamp_ms,
+                origin_timestamp_ms: item.origin_timestamp_ms,
+                callback_index: item.callback_index,
+                hash: digest(pixels),
+                source: "render-callback-post-callback",
+                method: READBACK_METHOD,
+                preserve_drawing_buffer: item.preserve_drawing_buffer,
+                coverage: item.coverage,
+                completion_status: "complete",
+                completion_timestamp_ms: completedAt,
+                queue_duration_ms: item.queue_duration_ms,
+                wait_duration_ms: item.wait_duration_ms,
+                copy_duration_ms: copyDuration,
+                queue_stages_ms: item.queue_stages_ms,
+                copy_stages_ms: item.copy_stages_ms,
+                completion_latency_ms: Math.max(0, completedAt - item.origin_timestamp_ms),
+                duration_ms: item.queue_duration_ms + copyDuration,
+              });
+            } catch (error) {
+              try { if (gl.isContextLost?.()) this.readback.context_losses += 1; } catch {}
+              this.recordFailure(item, error, "error");
+            }
+            this.release(item);
+          }
+          this.pending = remaining;
+          this.readback.poll_duration_ms = (this.readback.poll_duration_ms || 0) + performance.now() - pollStarted;
+        },
+        schedulePoll() {
+          if (this.poll_timer !== null) return;
+          this.poll_timer = setTimeout(() => {
+            this.poll_timer = null;
+            this.poll();
+          }, 0);
+        },
+        sample(target, callbackIndex, callbackTimestamp) {
+          if (!this.readback_enabled) return;
+          const originTimestamp = Number.isFinite(callbackTimestamp) ? callbackTimestamp : performance.now();
+          // Fence polling and CPU copy run as a task after the render-callback
+          // task returns. A signaled fence may still make getBufferSubData
+          // wait for the transfer; keeping that wait out of FireAnimationFrame
+          // is the observed causal repair for the renderer stall.
+          this.schedulePoll();
+          const started = performance.now();
+          const item = {
+            origin_timestamp_ms: originTimestamp,
+            callback_index: callbackIndex,
+            coverage: target.coverage,
+            preserve_drawing_buffer: target.preserve_drawing_buffer,
+            queue_duration_ms: 0,
+            wait_duration_ms: 0,
+            queue_stages_ms: {bind: 0, read_pixels: 0, fence: 0, flush: 0, state_capture: 0, state_restore: 0, other: 0},
+            copy_stages_ms: {bind: 0, get_buffer_sub_data: 0, state_capture: 0, state_restore: 0, other: 0},
+          };
+          if (this.pending.length >= this.max_pending || !this.available.length) {
+            item.queue_duration_ms = performance.now() - started;
+            this.recordFailure(item, "bounded pending readback queue is full", "lost");
+            return;
+          }
+          const gl = this.gl;
+          item.buffer = this.available.pop();
+          try {
+            const operationStarted = performance.now();
+            this.withState(gl, () => {
+              const {x, y, width, height} = target.coverage.resolved_region;
+              let stageStarted = performance.now();
+              gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+              gl.readBuffer(gl.BACK);
+              gl.bindBuffer(gl.PIXEL_PACK_BUFFER, item.buffer);
+              // The observer owns a tightly sized PBO. Normalize pack layout
+              // for this read, then withState restores the app's exact values.
+              gl.pixelStorei(gl.PACK_ALIGNMENT, 4);
+              gl.pixelStorei(gl.PACK_ROW_LENGTH, 0);
+              gl.pixelStorei(gl.PACK_SKIP_ROWS, 0);
+              gl.pixelStorei(gl.PACK_SKIP_PIXELS, 0);
+              item.queue_stages_ms.bind = performance.now() - stageStarted;
+              stageStarted = performance.now();
+              gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+              item.queue_stages_ms.read_pixels = performance.now() - stageStarted;
+              stageStarted = performance.now();
+              item.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+              if (!item.sync) throw new Error("WebGL2 could not create a readback fence");
+              item.queue_stages_ms.fence = performance.now() - stageStarted;
+              stageStarted = performance.now();
+              gl.flush();
+              item.queue_stages_ms.flush = performance.now() - stageStarted;
+            }, item.queue_stages_ms);
+            item.queue_duration_ms = performance.now() - started;
+            const measuredStages = Object.entries(item.queue_stages_ms).filter(([name]) => name !== "other").reduce((sum, [, value]) => sum + value, 0);
+            item.queue_stages_ms.other = Math.max(0, item.queue_duration_ms - measuredStages);
+            this.readback.queue_duration_ms += item.queue_duration_ms;
+            this.readback.queued += 1;
+            this.pending.push(item);
+          } catch (error) {
+            try { if (gl.isContextLost?.()) this.readback.context_losses += 1; } catch {}
+            item.queue_duration_ms = performance.now() - started;
+            this.readback.queue_duration_ms += item.queue_duration_ms;
+            this.recordFailure(item, error, "error");
+            this.release(item);
+          }
+        },
+        flush() {
+          if (this.poll_timer !== null) {
+            clearTimeout(this.poll_timer);
+            this.poll_timer = null;
+          }
+          this.poll();
+          const pendingAtCleanup = this.pending.length;
+          this.readback.pending_at_cleanup = pendingAtCleanup;
+          for (const item of this.pending) {
+            this.recordFailure(item, "readback was still pending at observed cleanup", "lost");
+            this.release(item);
+          }
+          this.pending = [];
+          for (const buffer of this.available) { try { this.gl?.deleteBuffer(buffer); } catch {} }
+          this.available = [];
+          const state = trackedContexts.get(this.gl);
+          const cleanupError = state ? restoreWrappers(state) : null;
+          this.state_diagnostic = state ? {
+            method: "initial-getParameter+mutation-shadow",
+            valid: state.valid && !cleanupError,
+            context_lost: state.context_lost,
+            context_restored: state.context_restored,
+            wrappers_active: state.active,
+            cleanup_error: cleanupError,
+          } : {method: "initial-getParameter+mutation-shadow", valid: false, error: "WebGL context was not tracked"};
+          if (cleanupError) this.readback.errors += 1;
+          this.readback.cleanup_observed = true;
+          return this.readback_enabled ? {...this.readback} : null;
+        },
+      };
+      const times = [];
+      Object.defineProperty(window, "__orchRafTimes", { value: times, configurable: false });
+      Object.defineProperty(window, "__orchPresentationObserver", { value: observer, configurable: false });
+      const original = window.requestAnimationFrame.bind(window);
+      window.requestAnimationFrame = callback => original(time => {
+        const callbackIndex = observer.callbacks.length;
+        const started = performance.now();
+        times.push(time);
+        observer.callbacks.push({timestamp_ms: time, started_ms: started, phase: observer.phase});
+        try { callback(time); } finally {
+          const row = observer.callbacks[callbackIndex];
+          row.ended_ms = performance.now();
+          if (observer.phase === "instrumented") for (const target of observer.targets) observer.sample(target, callbackIndex, time);
+        }
+      });
+    });
+    await page.goto(cell.server.url, { waitUntil: "domcontentloaded", timeout: cell.server.startup_timeout_ms || 30000 });
+    const canvas = page.locator(cell.canvas_selector || "canvas").first();
+    if (await page.locator(cell.canvas_selector || "canvas").count() < 1) throw capabilityError("game canvas did not resolve", "/cell/canvas_selector");
+    const wait = duration => new Promise(resolvePromise => setTimeout(resolvePromise, duration));
+    if (diagnosticMode === "bare-counter") return await liveBareTrace(cell, {page, browser, type, canvas, wait});
+    const foregroundInstall = await installForegroundMonitor(page);
+    await page.bringToFront();
+    await canvas.focus().catch(() => canvas.click({ position: { x: 1, y: 1 } }));
+    const client = await context.newCDPSession(page);
+    await client.send("Performance.enable");
+    const durationMs = cell.duration_ms || Math.round((cell.duration_seconds || 60) * 1000);
+    const paddingMs = Number.isFinite(cell.padding_ms) ? cell.padding_ms : 100;
+    if (paddingMs < 0 || paddingMs > 10000) throw inputError("cell.padding_ms must be between 0 and 10000", "/cell/padding_ms");
+    const controlDurationMs = Number.isFinite(cell.control_duration_ms) ? cell.control_duration_ms : durationMs;
+    const warmupDurationMs = Number.isFinite(cell.warmup_duration_ms) ? cell.warmup_duration_ms : Math.max(1000, Math.round(Number(cell.warmup_seconds || 5) * 1000));
+    if (controlDurationMs < 250) throw inputError("cell.control_duration_ms must be at least 250", "/cell/control_duration_ms");
+    if (controlDurationMs !== durationMs) throw inputError("control_duration_ms must equal the instrumented duration for a comparable pair", "/cell/control_duration_ms");
+    if (warmupDurationMs < 0) throw inputError("cell.warmup_duration_ms must not be negative", "/cell/warmup_duration_ms");
+    const selector = cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas";
+    const sampling = samplingForCell(cell);
+    const readbackEnabled = !["trace-only", "observer-only"].includes(diagnosticMode);
+    const sampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending, readback_enabled: readbackEnabled});
+    if (!sampler.installed) throw capabilityError(sampler.error || "frozen sampling coverage could not be installed", "/cell/sampling");
+    const setupCommands = validateSetupCommands(cell);
+    const initialSetup = await runSetup(page, canvas, setupCommands);
+    const lifecycle = {
+      status: "observed",
+      scenario_id: cell.scenario_id,
+      seed: cell.seed ?? null,
+      configured_url: cell.server.url,
+      viewport: cell.viewport || {width: 1280, height: 720},
+      dpr: cell.dpr || 1,
+      start: {method: "page.goto", url: page.url(), observed: true, ready: true, setup: initialSetup},
+      reset: null,
+      phase_transitions: [],
+      foreground: {required: true, installation: foregroundInstall, method: foregroundInstall.method, available: foregroundInstall.available === true},
+    };
+    await page.evaluate(() => { window.__orchPresentationObserver.phase = "warmup"; });
+    await wait(warmupDurationMs);
+    const controlClock = await clockMarker(page, client);
+    const controlStartPage = await page.evaluate(() => performance.now());
+    await markForeground(page, "control-start");
+    await page.evaluate(() => { window.__orchPresentationObserver.phase = "control"; });
+    lifecycle.phase_transitions.push({phase: "control", method: "observed-render-callbacks", start_observed: true, configured_duration_ms: controlDurationMs});
+    await wait(controlDurationMs);
+    const controlEndPage = await page.evaluate(() => performance.now());
+    await markForeground(page, "control-end");
+    const controlObserver = await page.evaluate(() => ({callbacks: window.__orchPresentationObserver.callbacks.slice()}));
+    const controlCallbacksObserved = controlObserver.callbacks.map(item => ({...item, timestamp_ms: item.timestamp_ms + controlClock.offsetMs}));
+    const controlForeground = await readForeground(page);
+
+    // Reload the same configured URL before the instrumented phase. This is an
+    // observed app reset, so both phases begin from the page's normal startup
+    // lifecycle with the same scenario, seed, viewport, and DPR.
+    const resetStartedAt = Date.now();
+    const resetFromUrl = page.url();
+    await page.reload({waitUntil: "domcontentloaded", timeout: cell.server.startup_timeout_ms || 30000});
+    const resetCanvas = page.locator(selector).first();
+    if (await page.locator(selector).count() < 1) throw capabilityError("game canvas did not resolve after the measured reset", "/cell/sampling/reset");
+    const resetForegroundInstall = await installForegroundMonitor(page);
+    await page.bringToFront();
+    await resetCanvas.focus().catch(() => resetCanvas.click({ position: { x: 1, y: 1 } }));
+    const instrumentedClient = await context.newCDPSession(page);
+    await instrumentedClient.send("Performance.enable");
+    const resetReady = await page.evaluate(() => ({url: location.href, title: document.title, viewport: {width: innerWidth, height: innerHeight}, dpr: devicePixelRatio}));
+    const resetSetup = await runSetup(page, resetCanvas, setupCommands);
+    lifecycle.reset = {method: "page.reload", observed: true, from_url: resetFromUrl, to_url: page.url(), ready: true, elapsed_ms: Date.now() - resetStartedAt, ready_observation: resetReady, setup: resetSetup};
+    lifecycle.reset.foreground = {required: true, installation: resetForegroundInstall, method: resetForegroundInstall.method, available: resetForegroundInstall.available === true};
+    lifecycle.phase_transitions.push({phase: "instrumented", method: "observed-render-callbacks-after-reset", start_observed: true, configured_duration_ms: durationMs});
+    const instrumentedSampler = await installCanvasSampler(page, selector, sampling, {max_pending: cell.readback?.max_pending, readback_enabled: readbackEnabled});
+    if (!instrumentedSampler.installed) throw capabilityError(instrumentedSampler.error || "frozen sampling coverage could not be installed after reset", "/cell/sampling/reset");
+    const warmupStartPage = await page.evaluate(() => performance.now());
+    await page.evaluate(() => { window.__orchPresentationObserver.phase = "warmup"; });
+    await wait(warmupDurationMs);
+    const warmupEndPage = await page.evaluate(() => performance.now());
+    const captureClock = await clockMarker(page, instrumentedClient);
+    const window = { start_ms: captureClock.monotonicMs + paddingMs, end_ms: captureClock.monotonicMs + paddingMs + durationMs };
+    await markForeground(page, "instrumented-start");
+    await page.evaluate(() => { window.__orchPresentationObserver.phase = "instrumented"; });
+    const backend = await canvasBackend(page, cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas");
+    const wallStart = Date.now();
+    const traceCaptureEnabled = !["readback-only", "observer-only"].includes(diagnosticMode);
+  const trace = traceCaptureEnabled
+      ? await collectCDPTrace(instrumentedClient, { durationMs: durationMs + (2 * paddingMs), categories: cell.trace_categories, traceBufferSizeInKb: cell.trace_buffer_size_kb || 512 * 1024, recordMode: cell.trace_record_mode || "recordContinuously", timeoutMs: cell.trace_timeout_ms || Math.max(120000, durationMs + (2 * paddingMs) + 60000) })
+      : await (async () => {
+        const started = Date.now();
+        await wait(durationMs + (2 * paddingMs));
+        return {
+          format: "diagnostic-no-trace", traceEvents: [], completion: {disabled: true, reason: `${diagnosticMode} diagnostic`},
+          raw_bytes: 0, transfer_mode: "disabled", categories: [], capture_duration_ms: Date.now() - started,
+        };
+      })();
+    const observer = await page.evaluate(() => {
+       const value = window.__orchPresentationObserver;
+       const readback = value.flush();
+       const stateProbe = window.__orchStateProbe ? JSON.parse(JSON.stringify(window.__orchStateProbe)) : null;
+       return {callbacks: value.callbacks.slice(), samples: value.samples.slice(), readback, state_diagnostic: value.state_diagnostic, state_probe: stateProbe};
+    });
+    await markForeground(page, "instrumented-end");
+    const foreground = await readForeground(page);
+    lifecycle.foreground = {
+      ...foreground,
+      required: true,
+      control: controlForeground,
+      instrumented: foreground,
+      events: [...(controlForeground.events || []), ...(foreground.events || [])],
+      installation: resetForegroundInstall,
+    };
+    const callbacksObserved = observer.callbacks.map(item => ({...item, timestamp_ms: item.timestamp_ms + captureClock.offsetMs}));
+    const canvasSamples = observer.samples.map(item => ({
+      ...item,
+      timestamp_ms: item.timestamp_ms + captureClock.offsetMs,
+      origin_timestamp_ms: Number.isFinite(item.origin_timestamp_ms) ? item.origin_timestamp_ms + captureClock.offsetMs : item.origin_timestamp_ms,
+      completion_timestamp_ms: Number.isFinite(item.completion_timestamp_ms) ? item.completion_timestamp_ms + captureClock.offsetMs : item.completion_timestamp_ms,
+    }));
+    const callbacks = callbacksObserved.filter(item => item.timestamp_ms >= window.start_ms && item.timestamp_ms < window.end_ms).map(item => item.timestamp_ms);
+    const control = phaseStats(controlCallbacksObserved, "control", controlStartPage + controlClock.offsetMs, controlEndPage + controlClock.offsetMs);
+    const warmup = phaseStats(callbacksObserved, "warmup", warmupStartPage + captureClock.offsetMs, warmupEndPage + captureClock.offsetMs);
+    const instrumented = phaseStats(callbacksObserved, "instrumented", window.start_ms, window.end_ms);
+    instrumented.requested_ms = durationMs;
+    const instrumentedSamples = canvasSamples.filter(item => item.timestamp_ms >= window.start_ms && item.timestamp_ms < window.end_ms);
+    instrumented.samples = instrumentedSamples.length;
+    instrumented.readback_errors = instrumentedSamples.filter(item => item.error).length;
+    instrumented.sample_duration_ms = sampleDurationStats(instrumentedSamples);
+    if (observer.readback) instrumented.readback = observer.readback;
+    const measurement = {
+      scenario_id: cell.scenario_id,
+      diagnostic_mode: diagnosticMode,
+      observation_mode: diagnosticMode,
+      observer: sampler.presentation,
+      presentation: sampler.presentation,
+      preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer,
+      sampling: instrumentedSampler.sampling,
+      lifecycle,
+      foreground: lifecycle.foreground,
+      warmup: {...warmup, requested_ms: warmupDurationMs},
+      control: {...control, requested_ms: controlDurationMs},
+      instrumented,
+      perturbation: {
+        status: control.status === "observed" && instrumented.status === "observed" ? "observed" : "unverified",
+        basis: "control-vs-instrumented",
+        control_callbacks: control.callbacks,
+        instrumented_callbacks: instrumented.callbacks,
+        control_callback_rate_hz: control.callback_rate_hz,
+        instrumented_callback_rate_hz: instrumented.callback_rate_hz,
+        callback_rate_delta_hz: instrumented.callback_rate_hz - control.callback_rate_hz,
+        callback_interval_delta_ms: instrumented.max_callback_interval_ms === null || control.max_callback_interval_ms === null ? null : instrumented.max_callback_interval_ms - control.max_callback_interval_ms,
+        samples: instrumented.samples,
+        readback_errors: instrumented.readback_errors,
+        sample_duration_ms: instrumented.sample_duration_ms,
+        ...(observer.readback ? {readback: observer.readback} : {}),
+      },
+    };
+    const wallEnd = Date.now();
+    const traceTimes = trace.traceEvents.map(eventTimeMs).filter(value => value !== null);
+    const parsed = {
+      ...trace,
+      canvas_samples: canvasSamples,
+      canvas_instrumentation: {method: instrumentedSampler.method || sampler.method || "unknown", selector, clock: "performance.now+cdp-offset", read_only: instrumentedSampler.read_only === true, presentation: instrumentedSampler.presentation, measurement_perturbation: measurement.perturbation, preserve_drawing_buffer: instrumentedSampler.preserve_drawing_buffer, sampling: instrumentedSampler.sampling, sample_coverage: instrumentedSampler.sampling, readback: observer.readback, readback_enabled: instrumentedSampler.readback_enabled === true, diagnostic_mode: diagnosticMode, observation_mode: diagnosticMode, trace_capture_enabled: traceCaptureEnabled, foreground_guard_required: true, foreground: lifecycle.foreground, state_shadow: observer.state_diagnostic, signal: "render-callback-post-callback; async WebGL2 readback; native-frame-association-required-for-presentation", errors: canvasSamples.filter(item => item.error).map(item => item.error)},
+      measurement,
+      metadata: {
+        clock_reconciled: true,
+        clock_method: "cdp-performance-timestamp-minus-page-performance-now",
+        wall_start_ms: wallStart,
+        wall_end_ms: wallEnd,
+        capture_start_ms: captureClock.monotonicMs,
+        capture_end_ms: traceTimes.length ? traceTimes.reduce((maximum, value) => Math.max(maximum, value), -Infinity) : null,
+        window_start_ms: window.start_ms,
+        window_end_ms: window.end_ms,
+        padding_before_ms: paddingMs,
+        padding_after_ms: paddingMs,
+        warmup_start_ms: warmup.start_ms,
+        warmup_end_ms: warmup.end_ms,
+        control_start_ms: control.start_ms,
+        control_end_ms: control.end_ms,
+        diagnostic_mode: diagnosticMode,
+        observation_mode: diagnosticMode,
+        foreground_guard_required: true,
+        foreground: lifecycle.foreground,
+        context_identity: cell.context_id || cell.context_name || cell.browser?.context_id || cell.browser?.context_name || null,
+      },
+    };
+    return {
+      trace: parsed,
+      rawStream: trace.rawStream,
+      callbacks,
+      window,
+      environment: {
+        host: "local",
+        os: process.platform,
+        browser: type,
+        browser_version: browser.version?.() || null,
+        driver: cell.browser?.package || "playwright-core",
+        renderer: backend.unmasked_renderer || backend.renderer || "unknown",
+        backend: backend.kind || "unknown",
+        tools: [],
+      },
+      measurement,
+      diagnostics: { server_errors: errors, wall_start_ms: wallStart, wall_end_ms: wallEnd, clock_method: parsed.metadata.clock_method, renderer_backend: backend, diagnostic_mode: diagnosticMode, trace_capture_enabled: traceCaptureEnabled, readback_enabled: instrumentedSampler.readback_enabled === true, canvas_sampler: parsed.canvas_instrumentation, readback: observer.readback, state_shadow: observer.state_diagnostic, state_probe: observer.state_probe, measurement, context_identity: cell.context_id || cell.context_name || cell.browser?.context_id || cell.browser?.context_name || null },
+    };
+  } finally {
+    await browser?.close().catch(() => {});
+    await stopChild(server);
+  }
+}
+
+export async function collectCell(cell, { baseDir = process.cwd(), outDir } = {}) {
+  validateCell(cell);
+  const live = !(cell.trace || cell.trace_file);
+  const source = live ? await liveTrace(cell, {baseDir}) : await fixtureTrace(cell, baseDir);
+  const measurement = source.measurement || fixtureMeasurement(cell);
+  const measuredCell = source.window ? {
+    ...cell,
+    window: source.window,
+    game_canvas: { ...(cell.game_canvas || {}), canvas_selector: cell.canvas_selector || cell.game_canvas?.canvas_selector || "canvas" },
+    ...(measurement.sampling ? {sampling: measurement.sampling} : {}),
+  } : cell;
+  let traceForResult = source.trace;
+  if (source.rawStream && outDir) traceForResult = {...source.trace, raw_stream_path: "trace.raw.json"};
+  if (outDir && source.rawStream) {
+    await mkdir(resolve(outDir), { recursive: true });
+    const rawPath = resolve(outDir, "trace.raw.json");
+    await writeFile(rawPath, source.rawStream, {flag: "wx"});
+    const observed = await readFile(rawPath);
+    if (observed.length !== source.rawStream.length || sha256(observed) !== source.trace.raw_stream_hash) {
+      throw evidenceError("raw ReturnAsStream bytes changed while writing evidence", "/trace/raw_stream_path");
+    }
+  }
+  const qualification = qualifyPerformance({ cell: measuredCell, trace: traceForResult, callbacks: source.callbacks });
+  const result = {
+    ...makeHeader({ kind: "performance-cell", id: cell.id, artifactCommit: cell.artifact_commit, producer: "performance_collect.mjs", inputs: { cell: sha256(JSON.stringify(cell)), trace: traceForResult.raw_stream_hash || sha256(JSON.stringify(traceForResult)) }, environment: source.environment || cell.environment || {}, status: qualification.status === "qualified" ? "complete" : "unverified", gaps: [...new Set((qualification.failures || []).map(item => item.code))] }),
+    cell: { ...measuredCell, trace: undefined, callbacks: undefined },
+    source: live ? "live-browser" : "qualification-fixture",
+    measurement,
+    diagnostics: source.diagnostics,
+    trace: traceForResult,
+    callbacks: source.callbacks,
+    qualification,
+    observed_at: nowIso(),
+  };
+  if (outDir) {
+    await mkdir(resolve(outDir), { recursive: true });
+    await writeJsonAtomic(resolve(outDir, "cell-result.json"), result);
+    await writeJsonAtomic(resolve(outDir, "trace.json"), traceForResult);
+  }
+  return result;
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  if (!args.cell || !args.out) throw inputError("--cell and --out are required");
+  const { value: cell } = await readJson(resolve(args.cell));
+  const result = await collectCell(cell, { baseDir: dirname(resolve(args.cell)), outDir: resolve(args.out) });
+  process.stdout.write(`${JSON.stringify({ status: result.status, kind: result.kind, id: result.id, source: result.source, qualification: result.qualification })}\n`);
+  if (result.qualification.status !== "qualified") process.exitCode = EXIT.EVIDENCE;
+}
+
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\", "/"))) {
+  main().catch(error => { const result = resultFromError(error); process.stderr.write(`${result.result.error.message}\n`); process.stdout.write(`${JSON.stringify(result.result)}\n`); process.exitCode = result.exitCode; });
+}
+
+export { validateCell, fixtureTrace, liveTrace };

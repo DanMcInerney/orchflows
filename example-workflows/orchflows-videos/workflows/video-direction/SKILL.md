@@ -27,20 +27,12 @@ the choices for this subject and audience.
       --context-file <direction-context> --workspace <workspace>
       --workspace-adapter git --isolation required --bound <per-call-bound>
 
-**Review.** Use `orch-judge` on the landed direction commit with the same ordered
-standards and exact digests as making, the same brief and evidence, and the
-original quality goal. Keep this helper inside its public owner's package
-scope so the private standard resolves. A changed pin requires new making and
-judgment; it cannot silently replace the reviewed guidance.
-
-    tickets.py judge <run> --parent <frame> --standard orchflows-marketing-videos --artifacts git:<revision>
-      --goal-file <review-goal> --context-file <direction-context> --workspace <workspace>
-      --workspace-adapter git --isolation required --bound <per-call-bound>
-
-"Where the judge blocks, one repair `do` is handed the
-`findings:` line verbatim, then one re-judge; two rounds is the bound."
-Repairs repeat the making call; repair and re-judge preserve its
-ordered standard digests, brief and evidence and address the fixed findings.
+**Review.** Invoke `review-delivery` in this existing direction frame
+with the landed direction commit, brief, evidence, original quality goal, identical
+orch-code, short-videos and orchflows-marketing-videos pins, `workspace` git workspace,
+`workspace-adapter` git, `isolation` required, `context-file` direction-context, per-call
+bound and outside verifier. The direction stage owns its selected rounds.
+Repairs preserve the brief, pins and evidence and address the fixed findings.
 An exhausted review or unavailable required evidence returns the latest direction commit
 as partial, independent findings and gaps; no accepted identity is inferred.
 

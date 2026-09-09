@@ -81,9 +81,10 @@
     `skills/<method>/SKILL.md`, and `standards/<standard>/STANDARD.md`, with
     ordinary resources and scripts beside them. These nested items resolve
     by name for calls owned by that public workflow, before the outer rings,
-    and never enter global inventory or generated host adapters. A call to a
-    top-level public workflow starts that workflow's scope; a call to a
-    private helper keeps its enclosing public scope. There is no export
+    and never enter global inventory or generated host adapters. A public
+    workflow opening its own frame starts its scope; a reusable step driving
+    an existing frame retains that frame's scope and journal. A private
+    helper keeps its enclosing public scope. There is no export
     manifest: an ordinary top-level ring item is public and a nested one is
     private.
 16. One workflow-package identity covers the public body and every contained

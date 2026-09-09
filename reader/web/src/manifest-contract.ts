@@ -135,4 +135,3 @@ export async function expectReducedMotion(page: Page, identity: ViewIdentity) {
   }).map((element) => element.tagName.toLowerCase()));
   expect(moving, `${identity.identity}: reduced motion leaves active durations`).toEqual([]);
 }
-

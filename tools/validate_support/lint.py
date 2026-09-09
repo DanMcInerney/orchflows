@@ -16,6 +16,7 @@ CONTRACTS_DIR = __dep_packages.CONTRACTS_DIR
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
 rel = __dep_packages.rel
+owned_markdown_files = __dep_common.owned_markdown_files
 
 from . import structure as __dep_structure
 _doclint = __dep_structure._doclint
@@ -38,7 +39,7 @@ def validate_loop_lint(body: str, pkg: dict, diag: Diagnostics) -> None:
 def validate_cross_package_links(packages, diag: Diagnostics) -> None:
     by_root = {pkg["path"].resolve(): pkg for pkg in packages}
     for pkg in packages:
-        for source_file in sorted(pkg["path"].rglob("*.md")):
+        for source_file in owned_markdown_files(pkg["path"]):
             text = _read_source(source_file)
             for match in MD_LINK_RE.finditer(text):
                 resolved = _doclint().resolve_link(source_file, match.group(1))
@@ -85,7 +86,7 @@ def _linked_markdown_files():
         if not name.name.startswith("REVIEW-"):
             yield name
     for root in LINKED_MD_ROOTS:
-        yield from sorted((ROOT / root).rglob("*.md"))
+        yield from owned_markdown_files(ROOT / root)
 
 
 def _anchor_target(source, target: str):
