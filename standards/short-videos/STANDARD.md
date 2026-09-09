@@ -26,6 +26,15 @@ must not copy a reference's signature expression or imply asset permission.
 Dated observations identify inspected positions and limits; unsupported creative
 choices are design hypotheses. Direction acceptance proves no rendered quality.
 
+Illustrated storyboards show the intended composition, not only a text outline.
+Panels cover important visual states and joins with enough views to explain the
+film; no fixed panel count applies. Each identifies timing, visible action,
+narration or explicit silence, focal point and transition purpose. Essential
+text, badges and relationships remain legible at the target display size;
+inspect dense panels at that scale, not only enlarged on an authoring canvas.
+Static direction evidence establishes layout and planned continuity, never
+motion, measured speech timing or heard quality.
+
 ## Realization
 
 Hierarchy, concise type, contrast against the moving background and placement-

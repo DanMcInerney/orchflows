@@ -15,6 +15,10 @@ Use `node render.cjs 1 output/final.mp4` for the silent technical tracer or
 `npm run studio` provides local playback; output/final.mp4.png is a sampled still,
 not a contact sheet or evidence of motion. Extend index.tsx into the approved
 film; the sample two-node graphic is deliberately only a render boundary.
+Preserve the accepted storyboard's editable layout components when introducing
+the scaffold: integrate its renderer setup without overwriting reviewed source.
+Animate those same typography, card and connector components; compare changed
+layouts with the fixed panels at target display size before full rendering.
 
 The renderer supports 1–120 seconds at 30 fps, rounding fractional durations to
 the nearest frame. Animation derives from useCurrentFrame; a shared camera
