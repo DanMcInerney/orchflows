@@ -4,23 +4,25 @@ description: Render an independently accepted video direction into a fixed proje
 disable-model-invocation: true
 ---
 
-Require: an independently accepted script/storyboard Git commit identity and its
-findings identity; brief with duration, audience, intent, message and brand; pinned
-renderer decision; assets, rights and provider constraints; git workspace;
-authoring-owner pointer; per-call bound. Inputs are semantic documents, not a
-particular creative workflow's file layout.
+Require: independently accepted direction Git commit containing script,
+illustrated panels/contact sheet and editable source; findings identity; brief
+(duration, audience, intent, message, brand); pinned renderer; assets/rights/providers;
+Git workspace; authoring-owner pointer; per-call bound. Accept semantic documents,
+not a prescribed file layout.
 
     tickets.py frame-open <run> --goal-file <production-goal> --workflow video-production
       --context-file <production-context>
 
-Carry the accepted direction commit, findings, brief, renderer decision, constraints and
-authoring-owner into governed Context. Read [review](../../references/review.md)
-when preparing the production and review goals and the outside probe command.
-Resolve its delivery settings before making; unresolved rights remain gaps and
-permit only the authorized evaluation scope.
+Carry Require inputs into governed Context. Read [review](../../references/review.md)
+for production/review goals and the outside probe. Resolve delivery settings;
+unresolved rights permit only authorized evaluation and remain gaps.
 
 Keep this helper in the orchflows-videos owner scope. Making, review and repairs
 share direction's ordered orch-code, short-videos, orchflows-marketing-videos pins.
+
+Reuse direction's layout components in animation, preserving typography,
+cards and relationships. Check significant design changes against accepted direction
+within existing review allowance and requested user approval.
 
 Make through `orch-do`, applying the rendering method inside the isolated call:
 

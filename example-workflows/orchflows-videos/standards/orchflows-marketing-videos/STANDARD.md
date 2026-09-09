@@ -19,8 +19,16 @@ bound. Composition preserves the identity and meaning of its constituent work;
 parallel branches and their join remain distinguishable. Select only concepts
 needed for this brief instead of requiring a product taxonomy in every short.
 
-Default to clean black/dark modern compositions, restrained teal for creating
-and violet for review, minimal readable text and concise narration when used.
+A neutral favorite-coding-agent anchor connects the viewer's existing tool to
+Orchflows without implying one required vendor. For flowcharts, default to a
+vertical spine with teal /orch-do and violet /orch-judge cards; role and effort
+badges remain readable beside durable ticket context. Fanout and join connectors
+make branch ownership and recombination intelligible. Product claims about
+routing, profiles and effort trace to current canonical routing/profile sources;
+a selected model or cost example is not a universal capability or savings claim.
+
+Default to clean black/dark modern compositions, minimal readable text and
+concise narration when used.
 Brief-specific art direction may override these preferences while retaining a
 consistent semantic grammar. Camera movement reveals a relevant relationship;
 retain recognizable anchors and readable settled scales. A zoom-out is optional,

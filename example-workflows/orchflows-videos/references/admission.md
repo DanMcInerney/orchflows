@@ -43,8 +43,9 @@ starting packet, not a globally popular-short ranking or an accepted future revi
 
 Pin the renderer before direction. Both creative helpers select explicit Git
 semantics and isolated making/review with the identical expanded video chain.
-Direction produces a NEW committed Markdown plan and independent review; its
-[verifier](creative.md) binds that commit's bytes and review. Production receives
+Direction produces a NEW committed plan, illustrated panels/contact sheet and
+editable layout source with independent visual review; its [handoff](creative.md)
+separates semantic acceptance from document/review integrity. Production receives
 that accepted identity, actual findings, research, constraints, timing assumptions
 and gaps. Missing review or exhausted repair retains partial artifacts, never acceptance.
 
