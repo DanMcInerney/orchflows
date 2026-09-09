@@ -31,9 +31,9 @@ the choices for this subject and audience.
 
 **Review.** Invoke `review-delivery` in this existing direction frame
 with the landed document, brief, evidence, original quality goal, identical
-orch-content and video-script-quality pins, document-tree workspace and
-outside verifier. The existing package scope keeps private standards
-resolvable. The direction stage owns its selected rounds.
+orch-content and video-script-quality pins, `workspace` document-directory,
+`workspace-adapter` document-tree, `context-file` direction-context, per-call
+bound and outside verifier. The direction stage owns its selected rounds.
 Repairs preserve the brief, pins and evidence and address the fixed findings.
 An exhausted review or unavailable required evidence returns the latest document
 as partial, independent findings and gaps; no accepted identity is inferred.

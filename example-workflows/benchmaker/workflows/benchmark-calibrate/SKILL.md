@@ -13,7 +13,7 @@ with partial artifacts and gaps.
 
     tickets.py frame-open <run> --goal-file <calibration-goal> --workflow benchmark-calibrate
 
-Use [handoff layouts](../../references/calibration.md). Goals carry fixed inputs, records and budget.
+Use [handoff layouts](../../references/calibration.md).
 
 ## Development
 

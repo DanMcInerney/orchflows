@@ -7,9 +7,9 @@ failed launches. Historical tickets without this policy remain historical.
 from __future__ import annotations
 
 if __package__:
-    from .tickets_format import TERMINAL_STATES, _parse_frontmatter, _read_utf8, declared_parent, is_frame
+    from .tickets_format import TERMINAL_STATES, _parse_frontmatter, _read_utf8, declared_parent, is_frame, round_of
 else:
-    from tickets_format import TERMINAL_STATES, _parse_frontmatter, _read_utf8, declared_parent, is_frame
+    from tickets_format import TERMINAL_STATES, _parse_frontmatter, _read_utf8, declared_parent, is_frame, round_of
 
 FIELDS = ("review_owner", "review_rounds", "review_phase", "review_of",
           "review_round", "review_new_work", "review_independent")
@@ -40,6 +40,19 @@ def ordinal(row):
     return int(value) if value.isascii() and value.isdigit() else 0
 
 
+def completion_repair_ancestor(ticket_id, rows):
+    """Recognize the existing generated-round grammar through declared ancestry."""
+    seen = set()
+    while ticket_id and ticket_id not in seen:
+        seen.add(ticket_id)
+        row = rows.get(ticket_id, {})
+        repair = round_of(ticket_id)
+        if repair and repair[0] in rows and row.get("executor") == "orch-do":
+            return ticket_id
+        ticket_id = declared_parent(row)
+    return None
+
+
 def prepare(ticket_id, fields, rows):
     """Return sealed fields or refusal while the caller holds the run lock."""
     fields = dict(fields)
@@ -55,6 +68,8 @@ def prepare(ticket_id, fields, rows):
         return None, refusal("review settings and reasons must be single-line values")
     if rounds is not None and not valid_rounds(rounds):
         return None, refusal("--review-rounds requires a positive integer or until_pass")
+    if completion_repair_ancestor(declared_parent(fields), rows) and (new or (judge and not reference)):
+        return None, refusal("completion repair descendants cannot reset ownership or open delivery critique")
     if new and (not is_frame(fields) or parent.get("review_phase") in {"repair", "verify"}):
         return None, refusal("new review work requires a frame outside a repair/verification subtree")
     if owner and rounds is not None and not new:
@@ -112,6 +127,10 @@ def validate(ticket_id, data, rows):
     parent = rows.get(declared_parent(data), {})
     inherited = str(parent.get("review_owner") or "")
     phase = data.get("review_phase")
+    if completion_repair_ancestor(declared_parent(data), rows) and (
+        data.get("review_new_work") or phase in {"critique", "independent"}
+    ):
+        return refusal("completion repair descendants cannot reset ownership or open delivery critique")
     if not owner:
         if not inherited and data.get("executor") == "orch-judge" and phase == "independent":
             return None if data.get("review_independent") else refusal("independent judging needs a reason")

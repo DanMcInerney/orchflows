@@ -9,7 +9,11 @@ Require: subject, audience, intent, duration in 1–120 seconds, brand and asset
 authoring-owner pointer and per-call bound. Carry the brief in Goal and all
 constraints and the owner pointer in governed downstream Context.
 
-    tickets.py frame-open <run> --goal-file <video-goal> --workflow tiktok-video
+Resolve `rounds` by the `docs/review-policy.md` precedence.
+Forward it only to this delivery root and genuinely independent stage owners;
+ordinary nested frames inherit.
+
+    tickets.py frame-open <run> --goal-file <video-goal> --workflow tiktok-video --review-rounds <rounds>
       --context-file <video-context>
 
 Read [admission](references/admission.md) for required input preparation,
@@ -28,9 +32,8 @@ refresh only decision-sensitive gaps.
     tickets.py do <run> --parent <frame> --standard orch-research
       --goal-file <renderer-question> --context-file <renderer-context> --bound <per-call-bound>
 
-The market packet returns cited dated observations and available viewing evidence;
-the renderer packet returns the current comparison and constraints/pins.
-Compare packets, preserving provenance and gaps.
+Compare market observations and renderer constraints/pins, preserving provenance
+and gaps.
 
     tickets.py judge <run> --parent <frame> --standard orch-research
       --review-independent "research coverage before production"
@@ -46,13 +49,13 @@ A repair remains a single research lane. Pin one main renderer and dependency
 identity before original artifact production, carrying the accepted packet
 identities, coverage findings, license branch and decision into both helpers.
 
-**Direction.** Invoke `video-direction` with the complete brief, actual research
+**Direction.** Invoke `video-direction` with the complete brief, research
 identity and gaps, renderer constraints/pins, rights/provider limits, target
 document directory, voice contract, numeric document budget, citation policy,
 per-call bound and outside document verifier.
 
     tickets.py frame-open <run> --parent <frame> --goal-file <direction-goal> --workflow video-direction
-      --review-new-work "independent direction acceptance"
+      --review-new-work "independent direction acceptance" --review-rounds <rounds>
       --context-file <direction-context>
 
 Drive each invoked body in its opened frame, without opening its entry twice.
@@ -61,7 +64,7 @@ Only its independently accepted document and actual findings feed
 constraints, git workspace, owner pointer and per-call bound.
 
     tickets.py frame-open <run> --parent <frame> --goal-file <production-goal> --workflow video-production
-      --review-new-work "independent production acceptance"
+      --review-new-work "independent production acceptance" --review-rounds <rounds>
       --context-file <production-context>
 
 Preserve partial returns and unresolved listening/license findings; a technical

@@ -42,8 +42,8 @@ skipped past.
 
 **Review.** Invoke `review-delivery` in this existing frame over the
 joined tip, with `goal`, evidence, `judge-standard` and `narrowings`, `workspace`,
-`bound` and outside `probe`. Select rounds once when opening the delivery parent;
-a nested build inherits its owner. Keep every pinned criterion fixed.
+`bound`, outside `probe`, original `context-file`, `workspace-adapter` git,
+and `isolation` required. The delivery parent's policy governs nested builds.
 An unresolved review returns its disposition and best artifact; it never
 opens an automatic successor review.
 

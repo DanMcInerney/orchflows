@@ -78,20 +78,22 @@ class GradeSnapshotTest(unittest.TestCase):
         self.assertEqual("single", grade_snapshot("R", with_done)["shape"])
         self.assertEqual(1, grade_snapshot("R", with_done)["width"])
 
-    def test_the_review_ledger_module_is_gone(self):
-        """`review_v1`'s own construction and schema retired whole.
-
-        The checker-stage apparatus that survived the `review_kind`
-        deletion is censused and resolved: no live command ever built a
-        `GatePlan`-then-`CritiqueAdjudication` chain, so `tickets_review.py`
-        and `tickets_review_schema.py` -- the ledger's sole writer and
-        schema -- are deleted rather than kept reachable as an import.
-        """
-
+    def test_the_legacy_review_protocol_is_rejected(self):
+        """A reused module name must not restore the retired ledger protocol."""
         import importlib
-        for name in ("tickets_review", "tickets_review_schema"):
-            with self.assertRaises(ModuleNotFoundError):
-                importlib.import_module(f"scripts.{name}")
+        from scripts import tickets_format, tickets_review
+        self.assertTrue(callable(tickets_review.prepare))
+        with self.assertRaises(ModuleNotFoundError):
+            importlib.import_module("scripts.tickets_review_schema")
+        legacy = ticket("B1", "orch-do").replace(
+            "executor: orch-do", 'executor: orch-do\nreview_v1: {"GatePlan":{},"CritiqueAdjudication":{}}')
+        defect = "unknown ticket frontmatter field 'review_v1'"
+        self.assertIn(defect, tickets_format.ticket_defects(legacy))
+        # Contrary schema reading: admitting the legacy field defeats this
+        # retirement guard, without modifying the source under test.
+        with mock.patch.object(tickets_format, "ALLOWED_TICKET_KEYS",
+                               tickets_format.ALLOWED_TICKET_KEYS | {"review_v1"}):
+            self.assertNotIn(defect, tickets_format.ticket_defects(legacy))
 
     def test_no_reader_reconstructs_a_verdict_out_of_a_report(self):
         """The fixed-result probe is gone, not repointed.

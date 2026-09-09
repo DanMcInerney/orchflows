@@ -40,7 +40,8 @@ delivered into `workspace` with its own final verification, and every
 ready-for-human brief returned to the maintainer unanswered.
 
 Invoke `review-delivery` in this existing frame over the joined delivery,
-original priorities, pinned standard, workspace and outside check. Audit and
+original priorities, pinned standard, workspace, `workspace-adapter` git,
+caller `context-file`, `isolation` required, bound and outside check. Audit and
 triage are inputs, not delivery critique rounds.
 
 Never: deliver a brief triage did not disposition ready-for-agent; answer a

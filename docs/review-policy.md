@@ -1,9 +1,10 @@
 # Delivery review policy
 
 `review-delivery` owns ordinary delivery's review/repair/verification ending.
-It drives calls in the caller's existing frame, retaining that frame's
-package authority and journal. It creates no wrapper frame; caller-private
-standards therefore resolve through the same verified owner as making.
+Its scope follows [composition](../rules/composition.md); callers supply
+`context-file`, explicit `workspace-adapter`, and required `isolation` and
+`repair-skill` along with the artifacts. A workspace path alone does not retain
+a standard's adapter: a document directory inside Git still needs document-tree.
 The parent chooses `--review-rounds 1`, positive finite N, or `until_pass`
 when opening its frame. Precedence is explicit user choice, named workflow
 setting, default one. A more discriminating standard changes strictness only.
@@ -16,14 +17,17 @@ early. Further critique is allowed only by the selected repetition setting.
 For an unframed making ticket, create the review journal beneath that ticket
 with `frame-open --parent <maker-ticket> --shape "judge > do > judge"` and a
 goal file. It inherits the maker's owner and allowance; it is not a new
-delivery. Existing workflow frames need no additional journal.
+delivery.
 
 `frame-open --review-rounds <setting>` seals `review_owner` and
 `review_rounds`; root frames and making calls default to one. Descendant
 frames and callables inherit that owner even across public workflow calls.
 Nested `--review-rounds` refuses. An explicit new deliverable or independent
 stage uses `frame-open --review-new-work <reason>` and may select its own
-rounds; repair/verification subtrees cannot do this. Opening another run for
+rounds; repair/verification subtrees cannot do this. The existing generated
+`<ticket>.repair.<number>` ancestry also forbids owner resets and delivery
+critique on descendants, including admission after resume. These completion
+repairs need no invented critique reference; ordinary pre-review making continues. Opening another run for
 the same delivery is not a legitimate reset.
 
 An ordinary governed `judge` consumes `review_round`; its `review_phase` is
@@ -64,10 +68,10 @@ and call carriers; do not copy gallery bodies wholesale. For
 
 1. Replace repeated broad judge/repair/re-judge endings with a call to
    `review-delivery`, supplying the same criteria, evidence, artifacts,
-   workspace and existing frame. Keep the frame's package scope so private
-   standards retain exactly the making call's resolution and pins.
-2. Select rounds once at the delivery parent. Give genuinely independent game
-   stage acceptance a stage frame with `--review-new-work <stage reason>`.
+   workspace, context-file, explicit workspace-adapter, relevant isolation and
+   repair-skill, and existing frame.
+2. Forward the effective rounds to genuine independent stage owners through
+   `--review-new-work <stage reason> --review-rounds <rounds>`.
    A local retry or production repair is not another stage.
 3. Remove fallback instructions that open another repair batch after exhausted
    review. Preserve production probes, media/listening requirements and

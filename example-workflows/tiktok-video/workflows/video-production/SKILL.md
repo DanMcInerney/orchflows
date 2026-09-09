@@ -28,8 +28,9 @@ The goal requires the rendered project, playable review assets and evidence for
 the accepted direction. Land the candidate through the emitted ticket's ordinary
 landing door. Invoke `review-delivery` in this existing production frame
 over the fixed git output, identical orch-code and video-quality pins,
-accepted direction, evidence, workspace, bound and outside probe. The production
-stage owns its selected rounds. Repairs retain the rendering method and pins;
+accepted direction, evidence, workspace, bound, outside probe, `context-file`
+production-context, `workspace-adapter` git, `isolation` required and
+`repair-skill` render-video. The production stage owns its selected rounds;
 scoped verification reads listed repairs at their fixed joined identity. Unavailable listening is an unresolved
 criterion, not a repairable render defect: preserve an audition and independent
 transcript/signal/timing evidence, request a listening-capable reviewer or human

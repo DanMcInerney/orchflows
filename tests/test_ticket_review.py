@@ -158,6 +158,41 @@ class ReviewPolicyTest(CallableSinkTest):
                          (decision["status"], decision["action"], decision["reading"]["exit"]))
         self.assertEqual([], list(self.run_dir().glob(repair + ".repair.*.md")))
 
+    def test_generated_done_repair_ancestry_survives_nested_and_resumed_admission(self):
+        owner = self.owner("--review-rounds", "2")
+        predicate = json.dumps({"form": "command", "value":
+                                f'"{sys.executable}" -c "raise SystemExit(7)"'})
+        maker = self.callable("do", "--parent", owner, "--standard", CODE_STANDARD,
+                              "--done", predicate)["do"]["id"]
+        decision, failure = tickets_done.resolve(
+            self.RUN, maker, self.run_dir(), self.run_dir() / (maker + ".md"),
+            _parse_frontmatter(self.ticket_text(maker)), self.candidate, None, maker)
+        self.assertIsNone(failure)
+        self.assertEqual(("arm", 7), (decision["action"], decision["reading"]["exit"]))
+        repair = decision["repair"]
+        self.assertNotIn("review_of", _parse_frontmatter(self.ticket_text(repair)))
+        nested = self.owner("--parent", repair)
+        # Pre-review completion making and the original owner's critique remain usable.
+        self.callable("do", "--parent", nested, "--standard", CODE_STANDARD)
+        self.judge(owner)
+        for parent in (repair, nested):
+            self.assertEqual("review-policy", self.frame(
+                "--parent", parent, "--review-new-work", "retry failed completion",
+                "--review-rounds", "2", error=True)["code"])
+            self.assertEqual("review-policy", self.judge(parent, error=True)["code"])
+            self.assertEqual("review-policy", self.judge(
+                parent, "--review-independent", "retry", error=True)["code"])
+        # Replay the pre-fix admission reading, then challenge it at the shared
+        # resume grader with the real guard restored.
+        with mock.patch.object(tickets_review, "completion_repair_ancestor", return_value=None):
+            admitted = self.owner("--parent", nested, "--review-new-work", "retry",
+                                  "--review-rounds", "2")
+            critique = self.judge(nested, "--review-independent", "retry")["judge"]["id"]
+        siblings = {p.stem: p.read_text(encoding="utf-8") for p in self.run_dir().glob("*.md")}
+        for ticket_id in (admitted, critique):
+            grade = graded_admission(ticket_id, self.ticket_text(ticket_id), siblings, self.RUN)
+            self.assertIn("review-policy", {row["code"] for row in grade["findings"]})
+
     def test_dispatch_replay_keeps_the_reserved_review_round(self):
         owner = self.owner()
         critique = self.judge(owner)["judge"]["id"]

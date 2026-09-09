@@ -10,7 +10,8 @@ maker-independent play contexts, parent frame journal, and package digest.
 
 Freeze every input, then invoke `review-delivery` in this existing core
 stage frame over the I2 identity, frozen goal and evidence, threejs-browser-game,
-browser-game-interface and browser-game-playtest pins, workspace and outside
+browser-game-interface and browser-game-playtest pins, workspace, `workspace-adapter` git, caller `context-file`,
+`isolation` required, bound and outside
 probe. The stage owns its selected rounds.
 
 The verdict checks production boot, focus and ordinary controls, fundamental
