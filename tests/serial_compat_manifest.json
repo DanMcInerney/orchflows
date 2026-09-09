@@ -871,6 +871,8 @@
    "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
    "test_registry_census.CallableRegistryTests.test_the_outline_and_slice_executors_collapse_to_one_remedy",
    "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
+   "test_review_delivery_carriage.ReviewCarriageTest.test_independent_game_and_video_stage_commands_forward_effective_rounds",
+   "test_review_delivery_carriage.ReviewCarriageTest.test_recipe_preserves_context_adapter_method_and_private_pins",
    "test_ring_adapters.BodyTests.test_a_generated_body_carries_no_preprocessing_construct",
    "test_ring_adapters.BodyTests.test_a_workflow_adapter_points_at_its_body_and_is_manual_only",
    "test_ring_adapters.BodyTests.test_an_orchflows_only_field_never_reaches_a_host",
@@ -1350,6 +1352,7 @@
    "test_ticket_review.ReviewPolicyTest.test_explicit_stages_and_independent_research",
    "test_ticket_review.ReviewPolicyTest.test_failed_repair_predicate_closes_blocked_without_auto_successor",
    "test_ticket_review.ReviewPolicyTest.test_finite_and_until_pass_count_critiques_and_keep_criteria",
+   "test_ticket_review.ReviewPolicyTest.test_generated_done_repair_ancestry_survives_nested_and_resumed_admission",
    "test_ticket_review.ReviewPolicyTest.test_invalid_rounds_cross_owner_reference_and_changed_criteria",
    "test_ticket_review.ReviewPolicyTest.test_parallel_repairs_then_scoped_verification_and_no_second_wave",
    "test_ticket_review.ReviewPolicyTest.test_policy_negative_oracle_can_fail",
@@ -1404,7 +1407,7 @@
    "test_tickets_grade.GradeSnapshotTest.test_a_root_with_executor_result_members_is_refused",
    "test_tickets_grade.GradeSnapshotTest.test_no_reader_reconstructs_a_verdict_out_of_a_report",
    "test_tickets_grade.GradeSnapshotTest.test_one_member_decomposition_is_refused",
-   "test_tickets_grade.GradeSnapshotTest.test_the_review_ledger_module_is_gone",
+   "test_tickets_grade.GradeSnapshotTest.test_the_legacy_review_protocol_is_rejected",
    "test_tiktok_video_package.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner",
    "test_tiktok_video_package.VideoPackageTests.test_contained_links_and_escape_control",
    "test_tiktok_video_package.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output",
@@ -4240,6 +4243,15 @@
    ]
   },
   {
+   "module": "tests.test_review_delivery_carriage",
+   "owner": "ReviewCarriageTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
    "module": "tests.test_ring_adapters",
    "owner": "PortabilityTests.test_the_acquisition_pair_copies_out_under_two_distinct_names",
    "restoration": "selected-module-boundary",
@@ -4917,6 +4929,14 @@
   },
   {
    "module": "tests.test_ticket_review",
+   "owner": "ReviewPolicyTest.test_generated_done_repair_ancestry_survives_nested_and_resumed_admission",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_review",
    "owner": "ReviewPolicyTest.test_policy_negative_oracle_can_fail",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -5132,6 +5152,14 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_grade",
+   "owner": "GradeSnapshotTest.test_the_legacy_review_protocol_is_rejected",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

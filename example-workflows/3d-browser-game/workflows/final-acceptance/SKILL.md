@@ -12,7 +12,8 @@ cells, QA result, and parent frame journal.
 Freeze the evidence index and invoke `review-delivery` in this existing final
 stage frame over the joined candidate, frozen goal and evidence, identical
 threejs-browser-game, browser-game-3d-asset, browser-game-interface and
-browser-game-playtest pins, workspace and outside probe.
+browser-game-playtest pins, workspace, `workspace-adapter` git, caller `context-file`,
+`isolation` required, bound and outside probe.
 
 The final gate requires a browser-served production build without developer
 tools, documented controls, every prompt-derived mechanic and state, approved

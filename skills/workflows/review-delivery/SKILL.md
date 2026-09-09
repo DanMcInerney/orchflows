@@ -5,24 +5,23 @@ disable-model-invocation: true
 ---
 
 Require: fixed joined `artifacts`; `goal` and its evidence; `standards`, the
-pinned criteria for every critique and verification; `workspace`; `bound`;
-and the delivery's existing `frame`, opened with `tickets.py frame-open`;
-`probe`, its outside completion check. Optional `rounds` is a positive integer
-or `until_pass`: explicit user choice overrides a named workflow setting,
-then default one. Strictness changes standards, never rounds. The parent
-seals rounds at creation; this helper inherits them. Read
-[review policy](../../../docs/review-policy.md) for command carriers and migration.
+pinned criteria for every critique and verification; `workspace` and explicit
+`workspace-adapter`; `bound`; the delivery's existing `frame`; and `probe`,
+its outside completion check. Carry caller `context-file` on every call when
+supplied, including its governed owner pointer and constraints. Preserve caller
+`isolation` and making method `repair-skill` when required. Inherit the frame's
+rounds under [review policy](../../../docs/review-policy.md).
 
-Drive this recipe in that frame, preserving its package scope and journal;
-do not open another public workflow frame. Standards resolve where this
-existing frame's calls resolve. The caller owns the one close after the
-recipe returns; this step creates no additional journal or review owner.
+Drive the calls below in that frame under
+[composition](../../../rules/composition.md). The caller closes it after
+this recipe returns.
 
 One round starts with substantive critique of the joined fixed artifacts:
 
     tickets.py judge <run> --parent <frame> --standard <standard>
       [--standard <narrowing> ...] --artifacts <typed-identity>
-      --goal-file <critique-goal> --workspace <workspace> --bound <bound>
+      --goal-file <critique-goal> --workspace <workspace> --workspace-adapter <workspace-adapter> --bound <bound>
+      [--context-file <context-file>] [--isolation <isolation>]
 
 Pass ends the loop early. Otherwise hand accepted blocking findings and their
 unchanged criteria to one repair wave, one or parallel making calls as the
@@ -30,7 +29,8 @@ findings require. Each repair goal contains the exact `findings:` line:
 
     tickets.py do <run> --parent <frame> --review-of <critique-ticket>
       --standard <standard> [--standard <narrowing> ...]
-      --goal-file <repair-goal> --workspace <workspace> --bound <bound>
+      --goal-file <repair-goal> [--skill <repair-skill>] --workspace <workspace> --workspace-adapter <workspace-adapter> --bound <bound>
+      [--context-file <context-file>] [--isolation <isolation>]
 
 After every repair lands, verify the listed repairs and their affected seams
 against the new joined identity. The verification goal names the original
@@ -40,13 +40,13 @@ critique. Run deterministic checks directly where sufficient; otherwise:
     tickets.py judge <run> --parent <frame> --review-of <critique-ticket>
       --standard <standard> [--standard <narrowing> ...]
       --artifacts <repaired-identity> --goal-file <verification-goal>
-      --workspace <workspace> --bound <bound>
+      --workspace <workspace> --workspace-adapter <workspace-adapter> --bound <bound>
+      [--context-file <context-file>] [--isolation <isolation>]
 
 With allowance remaining, the parent may start the next substantive round.
 Finite rounds count critiques, not workers or verification. `until_pass`
 has no preset count; stop for a real external blocker or inability to make
-progress, naming evidence and needed input. No score or reset substitutes
-for that judgment. Keep criteria fixed throughout.
+progress, naming evidence and needed input. Keep criteria fixed throughout.
 
 Never: let a helper or repair worker own another loop; silently add critique
 after the selected allowance; repair nonblocking recommendations in this

@@ -1,0 +1,105 @@
+{
+  "dispatch_id": "B1.5:d1",
+  "assignment_seal": "sha256:45173c09c2a26bd6d25c6bcd5bc1d1d823c73518b735f5ae95b75e3e1bc4c7cd",
+  "assigned_name": "B1.5",
+  "baseline": "24973feba76791ba658eecb6fdc99ef661664e0b",
+  "standards": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+  },
+  "files": [
+    {
+      "path": ".orch-notes/policy-repair/admission-readings.json",
+      "sha256": "858c13e1d75b9e1ea00d8d57c7f2393a0c5f2eae88d4ebf0e5b21db9303fee66"
+    },
+    {
+      "path": ".orch-notes/policy-repair/affected.log",
+      "sha256": "15d315cd47d09db27f0316a34fbe6b00ee05231c1f0811537037c11c1e2c68bd"
+    },
+    {
+      "path": ".orch-notes/policy-repair/authoring-final.log",
+      "sha256": "ca6fbf3dc5258a6c9cd9241af7f7ec194c2d05b172a8b0b6ec3f53f5b3aa95ca"
+    },
+    {
+      "path": ".orch-notes/policy-repair/authoring.log",
+      "sha256": "ef1625aa79ca8b8de898b7865bd17044fcfc665358cd14ec2af62c261c7a1f82"
+    },
+    {
+      "path": ".orch-notes/policy-repair/baseline-validate.log",
+      "sha256": "1b25bcf851af178d4ec49ab378eef7efac38914e0f935dac3721c11750e9be57"
+    },
+    {
+      "path": ".orch-notes/policy-repair/carriage.log",
+      "sha256": "03b9ac4a617324d65d907b726c5fc31f4b915a6ba017a76b8be7b99fa442e034"
+    },
+    {
+      "path": ".orch-notes/policy-repair/check.py",
+      "sha256": "3140ca5b920497f978b161ef36a27830d22898722996a7de83c40db6d1aadf65"
+    },
+    {
+      "path": ".orch-notes/policy-repair/commands.jsonl",
+      "sha256": "14e3d50a8e982e060555387ea7b8405661ab87bbcd8f863cea34e89cfb94cc51"
+    },
+    {
+      "path": ".orch-notes/policy-repair/compatibility.log",
+      "sha256": "7d3f903ef3def38a8975f92d5b67e9afb173f5ce329e2aa6c6aa9dd018e00263"
+    },
+    {
+      "path": ".orch-notes/policy-repair/host-final.log",
+      "sha256": "c6a020de3b204783befaf469b08b3dc1dad4bae536e4718ca8be69526cf51727"
+    },
+    {
+      "path": ".orch-notes/policy-repair/manifest-final.log",
+      "sha256": "143ea4d4ad31b829d7c802468f5abc65a3afaaf39f73b6650929e1c2ad6cb751"
+    },
+    {
+      "path": ".orch-notes/policy-repair/manifest.log",
+      "sha256": "df56f274576947772cef7057c55d39feadeaad80470e5c3c9f50e665fad0549d"
+    },
+    {
+      "path": ".orch-notes/policy-repair/observe.py",
+      "sha256": "922f1d0e1e09a47c1f7e6b5a4b1e2e8a01bc35726ec3c0ef9077d001823628f8"
+    },
+    {
+      "path": ".orch-notes/policy-repair/policy.log",
+      "sha256": "9bc74d0df62741092ed06aabf4f2f59e097824b46893f04cde99e205f6ab6882"
+    },
+    {
+      "path": ".orch-notes/policy-repair/readings-corrected.log",
+      "sha256": "d26a56d24d8374707fcce033ba3904da8d4a0af20f4b291cb8bbfd6b5c7d991c"
+    },
+    {
+      "path": ".orch-notes/policy-repair/readings.log",
+      "sha256": "a191a0f24aa7e4a0ecd2a436519fbba090ad16ce3ad839d5caa462fe8bc9922d"
+    },
+    {
+      "path": ".orch-notes/policy-repair/readings.py",
+      "sha256": "7a2ffec418041b32f9975c3466fce79b77d10edd18d149ba544698ea1433fbf4"
+    },
+    {
+      "path": ".orch-notes/policy-repair/recipe-observations.json",
+      "sha256": "c74b22e2fb2292ff10082034add889a7da9e462e73065330335af5ec5f38f739"
+    },
+    {
+      "path": ".orch-notes/policy-repair/recipe-observations.log",
+      "sha256": "16d11f71ffe16283d7f73d1fcfef77f8b3b36482cd667654d27be357a834686c"
+    },
+    {
+      "path": ".orch-notes/policy-repair/report.md",
+      "sha256": "eabdcc82f0405b59b3b382b9a47c871716d3f393d9d7dac4743e295a19de53ac"
+    },
+    {
+      "path": ".orch-notes/policy-repair/scoped-final.log",
+      "sha256": "79e988862a649b5136cfc66cda5afdf91f4fd2780f12496fda372c1775c56bda"
+    },
+    {
+      "path": ".orch-notes/policy-repair/validate-final.log",
+      "sha256": "f88f2c43fa3248ed6dadb66b3cb9160740d4e2ee2300b5f2a042c76041a850af"
+    }
+  ],
+  "archive": {
+    "path": ".orch-notes/policy-repair/owned-evidence.zip",
+    "sha256": "66f428daf7f8590b03ac7b79d210fb6a907bdfc4a87859cdb6a1ff04716c170e",
+    "members": "files paths are archive member names; hashes cover original raw bytes"
+  }
+}

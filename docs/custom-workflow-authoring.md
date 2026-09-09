@@ -260,10 +260,8 @@ the composition, which no member could see from its own seat.
 
 ## Idioms
 
-The shared delivery review recipe drives calls in its caller's existing frame,
-retaining that frame's package scope, pins and journal; it opens no redundant
-public wrapper. The caller owns the one close. This is a reusable step, not
-a public package-scope transition. See [review policy](review-policy.md).
+For the ordinary ending's inputs and migration, use
+[review policy](review-policy.md).
 
 The control-flow sentences whose wording recurs across workflows. Quote one
 verbatim; a paraphrase is a second wording of one fact, and which steps earn

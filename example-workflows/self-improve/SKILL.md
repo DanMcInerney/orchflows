@@ -36,7 +36,8 @@ owner/dependents in an isolated workspace:
 The repair goal names the selected proposal's frozen oracles. Launch and
 land, then invoke `review-delivery` in this existing frame over the
 landed identity, frozen oracles, improvement-repair pins, evidence, workspace
-and outside probe. The selected parent policy bounds substantive review.
+and outside probe, `workspace-adapter` git, caller `context-file`,
+`isolation` required and bound. The selected parent policy bounds substantive review.
 Record implemented only with accepted commit, unchanged passing replays and
 judgment. Record activation under [improvement law](../../rules/improvement.md)
 §2. Exhaustion or

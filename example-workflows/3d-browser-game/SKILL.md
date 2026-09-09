@@ -9,10 +9,11 @@ amendments. The brief and amendments are product authority.
 
 Open one frame and retain its returned frame identity:
 
-    tickets.py frame-open <run> --goal-file <program-goal> --workflow 3d-browser-game
+Resolve `rounds` by the [review policy](../../docs/review-policy.md) precedence.
+Forward it only to this delivery root and genuinely independent stage owners;
+ordinary nested frames inherit.
 
-Use the frame journal as the handoff ledger. At each wave, copy its typed
-`artifact:` or `findings:` entry without summarizing.
+    tickets.py frame-open <run> --goal-file <program-goal> --workflow 3d-browser-game --review-rounds <rounds>
 
 **Research and design.** Open the `discovery` helper under the frame. It audits
 promises, runs independent research lanes, records capability gaps and
@@ -37,7 +38,7 @@ identity, complaint ledger and unresolved evidence; a repair or missing
 capability never silently opens another review owner. Explicit redesign is
 new work with named invalidations, not an automatic review reset.
 
-    tickets.py frame-open <run> --goal-file <core-gate-goal> --parent <frame> --workflow gameplay-gate --review-new-work "independent core acceptance"
+    tickets.py frame-open <run> --goal-file <core-gate-goal> --parent <frame> --workflow gameplay-gate --review-new-work "independent core acceptance" --review-rounds <rounds>
     tickets.py frame-close <run> <core-gate-frame> --done <core-gate-check>
 
 **Production and final acceptance.** Only an accepted core identity freezes
@@ -48,9 +49,9 @@ affected core verdict. Integrate assets and open `final-acceptance` for play,
 captures, performance cells, and independent judgment. Repair cycles preserve
 complaint IDs, causes, contrary evidence, and resume state.
 
-    tickets.py frame-open <run> --goal-file <asset-goal> --parent <frame> --workflow blender-asset --review-new-work "independent asset batch acceptance"
+    tickets.py frame-open <run> --goal-file <asset-goal> --parent <frame> --workflow blender-asset --review-new-work "independent asset batch acceptance" --review-rounds <rounds>
     tickets.py frame-close <run> <asset-frame> --done <asset-check>
-    tickets.py frame-open <run> --goal-file <final-goal> --parent <frame> --workflow final-acceptance --review-new-work "independent final acceptance"
+    tickets.py frame-open <run> --goal-file <final-goal> --parent <frame> --workflow final-acceptance --review-new-work "independent final acceptance" --review-rounds <rounds>
     tickets.py frame-close <run> <final-frame> --done <final-check>
 
 Close from outside every child only after all children return:

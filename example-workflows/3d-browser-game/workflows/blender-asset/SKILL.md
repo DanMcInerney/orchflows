@@ -22,8 +22,9 @@ and a pinned production `GLTFLoader` scale/material/animation/collider probe.
 
 Invoke `review-delivery` in this existing asset-stage frame with the fixed
 batch, original job and evidence, browser-game-3d-asset and blender-game-asset
-pins, workspace and outside asset probe. This independent batch owns its
-selected rounds; repair verification never resets them.
+pins, workspace, `workspace-adapter` git, caller `context-file`,
+`isolation` required, bound and outside asset probe. This independent batch owns its
+selected rounds and carries `repair-skill` blender-bpy; repair verification never resets them.
 
 Failure promotes nothing and records the exact diagnosis. A gameplay-altering
 scale, collider, animation, timing, camera, or readability change invalidates

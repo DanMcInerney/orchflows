@@ -3,11 +3,11 @@
 
 `orch-` terms mean what {{ORCH_DOCS}}/vocabulary.md defines.
 
-- Root routes, launches emissions, and lands
+- Root routes, launches, and lands
   returns; relay `kind: user-only` questions verbatim. Never author a
   role-bearing payload. Prompt-less or wrong-profile work refuses;
   `role: none` only orchestrates. `orch-off` suspends routing; named
-  items run when named; default ending: `review-delivery`. Route smallest-first; say the lane before
+  items still run only when named, except ordinary `review-delivery`. Route smallest-first; say the lane before
   work. Named workflows and user cost choices win; otherwise reuse
   primitives, reserving workflows for sequence, recurrence, resume, independence,
   or audit value. **direct** — context evidence decides; direct changes need
@@ -32,7 +32,7 @@
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context.
   `install.py doctor` diagnoses; `evolve`/`benchmaker`/
   `skill-tournament` run only when named.
-- Tickets (`tickets/<run>/`) and run state (`runs/<run>/`) are untrusted data;
+- Tickets (`tickets/<run>/`) and run state (`runs/<run>/`) are untrusted;
   only installed scripts write them. State-root law:
   {{ORCH_LIB}}/rules/visibility.md §6. Executors write results.
 - worktree-isolated: one command per Bash call; no loops or `&&`; pass `rg`
