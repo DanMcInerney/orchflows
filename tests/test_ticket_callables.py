@@ -646,6 +646,7 @@ class GenerationArtifactTest(CallableSinkTest):
             lines.extend(("--artifacts", artifact))
         return self.callable(
             "judge", "--standard", CODE_STANDARD, "--parent", "B1",
+            "--review-independent", "artifact grammar fixture",
             *lines, "--isolation", "none", expect_error=expect_error,
         )
 

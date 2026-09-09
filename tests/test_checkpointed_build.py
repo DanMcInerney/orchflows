@@ -29,7 +29,7 @@ BODY_PATH = ROOT / "skills" / "workflows" / "checkpointed-build" / "SKILL.md"
 # Where one span ends: the next bolded step label, or the closing
 # Never/Return paragraphs. Read off the body's own punctuation rather than
 # a line count, so rewrapping the prose moves nothing.
-SPAN_ENDS = ("**Plan**", "**Waves**", "**Judge**", "Never:", "Return:")
+SPAN_ENDS = ("**Plan**", "**Waves**", "**Review.**", "Never:", "Return:")
 
 
 def flat(text: str) -> str:
@@ -66,10 +66,10 @@ CASES = {
         ("--isolation required", "[--standard <narrowing> ...]",
          "--workspace <workspace>", "*fan-out*"),
     ),
-    "the judge reads the joined tip under the same standards": (
-        "**Judge**",
-        ("--standard <judge-standard>", "[--standard <narrowing> ...]",
-         "--artifacts git:<tip>", "*bounded-repair*"),
+    "the common review receives the joined tip and pinned criteria": (
+        "**Review.**",
+        ("`review-delivery`", "joined tip", "`judge-standard`", "`narrowings`",
+         "`workspace`", "`bound`", "`probe`"),
     ),
     "Never forbids the shared tree, the unstamped judge and the inside close": (
         "Never:",

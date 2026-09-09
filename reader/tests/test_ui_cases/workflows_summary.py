@@ -23,6 +23,7 @@ EXPECTED_WORKFLOWS = {
     "orch-do",
     "orch-judge",
     "renovate",
+    "review-delivery",
     "self-improve",
     "skill-tournament",
     "super-research",

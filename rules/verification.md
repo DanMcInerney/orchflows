@@ -13,8 +13,13 @@ places this evidence law in the ticket lifecycle.
    target has become a repair executor and cannot judge that changed identity.
 4. `orch-judge` owns blocker enumeration and root-cause synthesis. Its
    exclusions and ranking are the shared review model, not a standard variation.
-5. Accepted blockers enter one distinct repair pass. That change invalidates
-   prior critique verdicts, and no second critique follows.
+5. Ordinary delivery uses `review-delivery`: one parent owns default one,
+   positive finite N, or explicitly selected `until_pass` substantive rounds.
+   Each round has at most one repair wave, then verification of listed repairs.
+   Changed artifacts invalidate prior verdicts; scoped verification is not a
+   fresh overall verdict. Further critique requires remaining declared rounds.
+   Strictness is the pinned standard, separate from repetition. Nested helpers
+   and repair workers inherit the policy; explicit new work may own a new one.
 6. A proof method must be able to contradict the claim it supports. For a test
    authored during implementation, the executor records the relevant failing
    observation before the passing one. The integrated candidate still answers
@@ -24,9 +29,10 @@ places this evidence law in the ticket lifecycle.
    never a disposition an executor recorded for itself.
 7. Independence is the caller's own join: `land` reads Goal and Context
    against the fixed artifact and evidence, the disposition it records is
-   never the executor's own claim, and a driver wanting a second,
-   adversarial review dispatches it as an ordinary `judge` ticket answered
-   by a `do` ticket under the same parent.
+   never the executor's own claim. Independent judging remains available;
+   another delivery critique follows the same owner's declared policy,
+   never an implicit reset. External blockers and inability to progress end
+   `until_pass` with evidence rather than an invented progress score.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the

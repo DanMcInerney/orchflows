@@ -26,17 +26,11 @@ Make through `orch-do`, applying the rendering method inside the isolated call:
 
 The goal requires the rendered project, playable review assets and evidence for
 the accepted direction. Land the candidate through the emitted ticket's ordinary
-landing door. Judge the fixed git output through `orch-judge` with the identical
-ordered standard digests and package identity; a pin mismatch requires fresh
-admission, never comparison against silently changed guidance.
-
-    tickets.py judge <run> --parent <frame> --standard orch-code --standard video-quality
-      --goal-file <review-goal> --context-file <production-context> --artifacts <git-artifact> --isolation required --bound <bound>
-
-Where the judge blocks, one repair `do` is handed the
-`findings:` line verbatim, then one re-judge; two rounds is the bound.
-Repairs use the same making call and pins on the latest fixed candidate; each
-re-judge reads that repair's fixed identity. Unavailable listening is an unresolved
+landing door. Invoke `review-delivery` in this existing production frame
+over the fixed git output, identical orch-code and video-quality pins,
+accepted direction, evidence, workspace, bound and outside probe. The production
+stage owns its selected rounds. Repairs retain the rendering method and pins;
+scoped verification reads listed repairs at their fixed joined identity. Unavailable listening is an unresolved
 criterion, not a repairable render defect: preserve an audition and independent
 transcript/signal/timing evidence, request a listening-capable reviewer or human
 verdict through the existing user-only question route, and return partial evidence

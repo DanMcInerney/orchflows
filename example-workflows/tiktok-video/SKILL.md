@@ -30,10 +30,10 @@ refresh only decision-sensitive gaps.
 
 The market packet returns cited dated observations and available viewing evidence;
 the renderer packet returns the current comparison and constraints/pins.
-Compare actual packets after both exist, preserving provenance and gaps without
-requiring format conversion.
+Compare packets, preserving provenance and gaps.
 
     tickets.py judge <run> --parent <frame> --standard orch-research
+      --review-independent "research coverage before production"
       --artifacts evidence:<market-id> --artifacts evidence:<renderer-id>
       --goal-file <coverage-goal> --context-file <research-context> --bound <per-call-bound>
 
@@ -41,8 +41,7 @@ Use the makers' exact research standard digest for independent coverage review.
 It checks the original question, both lanes and their relevance/gap assessment.
 Only blocker-free coverage of the required decisions permits an accepted
 handoff; missing required evidence preserves partial packets and findings.
-"Where the judge blocks, one repair `do` is handed the
-`findings:` line verbatim, then one re-judge; two rounds is the bound."
+Missing coverage names required acquisition; new research stays independent.
 A repair remains a single research lane. Pin one main renderer and dependency
 identity before original artifact production, carrying the accepted packet
 identities, coverage findings, license branch and decision into both helpers.
@@ -53,6 +52,7 @@ document directory, voice contract, numeric document budget, citation policy,
 per-call bound and outside document verifier.
 
     tickets.py frame-open <run> --parent <frame> --goal-file <direction-goal> --workflow video-direction
+      --review-new-work "independent direction acceptance"
       --context-file <direction-context>
 
 Drive each invoked body in its opened frame, without opening its entry twice.
@@ -61,6 +61,7 @@ Only its independently accepted document and actual findings feed
 constraints, git workspace, owner pointer and per-call bound.
 
     tickets.py frame-open <run> --parent <frame> --goal-file <production-goal> --workflow video-production
+      --review-new-work "independent production acceptance"
       --context-file <production-context>
 
 Preserve partial returns and unresolved listening/license findings; a technical

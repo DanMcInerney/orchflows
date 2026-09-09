@@ -49,7 +49,7 @@ class WorkflowCatalogTests(unittest.TestCase):
             [
                 "3d-browser-game", "benchmaker", "browser-game", "drift-canary", "evolve", "orch-build-workflow", "renovate",
                 "self-improve", "skill-tournament", "super-research", "tiktok-video",
-                "bakeoff", "checkpointed-build", "orch-do", "orch-judge",
+                "bakeoff", "checkpointed-build", "orch-do", "orch-judge", "review-delivery",
             ],
             [workflow["id"] for workflow in projected],
         )

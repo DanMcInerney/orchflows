@@ -1344,6 +1344,16 @@
    "test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model",
    "test_ticket_protocol.TicketProtocolTest.test_result_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_semantic_change_moves_assignment",
+   "test_ticket_review.ReviewPolicyTest.test_cli_refuses_invalid_policy_without_issuing_a_ticket",
+   "test_ticket_review.ReviewPolicyTest.test_default_exhaustion_nested_wrapper_and_resume_admission",
+   "test_ticket_review.ReviewPolicyTest.test_dispatch_replay_keeps_the_reserved_review_round",
+   "test_ticket_review.ReviewPolicyTest.test_explicit_stages_and_independent_research",
+   "test_ticket_review.ReviewPolicyTest.test_failed_repair_predicate_closes_blocked_without_auto_successor",
+   "test_ticket_review.ReviewPolicyTest.test_finite_and_until_pass_count_critiques_and_keep_criteria",
+   "test_ticket_review.ReviewPolicyTest.test_invalid_rounds_cross_owner_reference_and_changed_criteria",
+   "test_ticket_review.ReviewPolicyTest.test_parallel_repairs_then_scoped_verification_and_no_second_wave",
+   "test_ticket_review.ReviewPolicyTest.test_policy_negative_oracle_can_fail",
+   "test_ticket_review.ReviewPolicyTest.test_repair_subtree_cannot_reset_or_review",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_complete_dependency_leaves_its_downstream_waiting_on_nothing",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_assignment_is_issued_and_reaches_generation_stamping",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_ordinary_member_is_issued_like_any_other",
@@ -4903,6 +4913,14 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_review",
+   "owner": "ReviewPolicyTest.test_policy_negative_oracle_can_fail",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

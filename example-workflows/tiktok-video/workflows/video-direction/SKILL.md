@@ -29,19 +29,11 @@ the choices for this subject and audience.
       --context-file <direction-context> --workspace <document-directory>
       --workspace-adapter document-tree --bound <per-call-bound>
 
-**Review.** Use `orch-judge` on the landed document with the same ordered
-standards and exact digests as making, the same brief and evidence, and the
-original quality goal. Keep this helper inside its public owner's package
-scope so the private standard resolves. A changed pin requires new making and
-judgment; it cannot silently replace the reviewed guidance.
-
-    tickets.py judge <run> --parent <frame> --standard orch-content
-      --standard video-script-quality --artifacts doc:<revision>
-      --goal-file <review-goal> --context-file <direction-context>
-      --workspace-adapter document-tree --bound <per-call-bound>
-
-"Where the judge blocks, one repair `do` is handed the
-`findings:` line verbatim, then one re-judge; two rounds is the bound."
+**Review.** Invoke `review-delivery` in this existing direction frame
+with the landed document, brief, evidence, original quality goal, identical
+orch-content and video-script-quality pins, document-tree workspace and
+outside verifier. The existing package scope keeps private standards
+resolvable. The direction stage owns its selected rounds.
 Repairs preserve the brief, pins and evidence and address the fixed findings.
 An exhausted review or unavailable required evidence returns the latest document
 as partial, independent findings and gaps; no accepted identity is inferred.
