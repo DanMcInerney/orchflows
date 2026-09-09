@@ -10,6 +10,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import urlopen
 
 
@@ -140,27 +141,43 @@ class OutsideProductionTests(unittest.TestCase):
         self.assertIn("overlaps tracked source", source_result.stderr)
         self.assertTrue(self.root.joinpath("package.json").is_file())
 
+    def directory_alias(self, target, alias):
+        # Junctions need no Windows symlink privilege; POSIX uses a symlink.
+        result = subprocess.run([NODE, "--input-type=module", "-e",
+            "import {symlinkSync} from 'node:fs'; symlinkSync(process.argv[1],process.argv[2],process.platform === 'win32' ? 'junction' : 'dir');",
+            str(target), str(alias)], capture_output=True, text=True, encoding="utf-8", timeout=10)
+        self.assertEqual(0, result.returncode, result.stderr)
+        return alias
+
     def test_static_server_reports_actual_bind_and_only_serves_output(self):
         script = self.write_script("build.mjs", "import {mkdir,writeFile} from 'node:fs/promises'; await mkdir('dist',{recursive:true}); await writeFile('dist/index.html','hello outside');")
         built = self.build(self.config(script))
         self.assertEqual(0, built.returncode, built.stderr)
         build_result = json.loads(built.stdout)
         config_path = self.write_config(self.config(script))
-        command = [NODE, str(SCRIPTS / "outside_server.mjs"), "--config", config_path, "--workspace", self.root, "--artifact-commit", "git:" + self.commit(), "--output-sha256", build_result["output"]["sha256"]]
+        workspace = self.directory_alias(self.root, Path(self.temp.name) / "workspace-alias")
+        command = [NODE, str(SCRIPTS / "outside_server.mjs"), "--config", config_path, "--workspace", workspace, "--artifact-commit", "git:" + self.commit(), "--output-sha256", build_result["output"]["sha256"]]
         process = subprocess.Popen(command, cwd=PACKAGE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")
         first_line = queue.Queue()
         threading.Thread(target=lambda: first_line.put(process.stdout.readline()), daemon=True).start()
-        line = first_line.get(timeout=10)
-        ready = json.loads(line)
-        self.assertEqual("ready", ready["status"])
-        self.assertEqual(build_result["output"]["sha256"], ready["output"]["sha256"])
-        with urlopen(ready["address"]["url"], timeout=5) as response:
-            self.assertEqual(200, response.status)
-            self.assertEqual(b"hello outside", response.read())
-        with self.assertRaises(Exception):
-            urlopen(ready["address"]["url"].rstrip("/") + "/../package.json", timeout=5)
-        process.terminate()
-        process.communicate(timeout=10)
+        try:
+            line = first_line.get(timeout=10)
+            ready = json.loads(line)
+            self.assertEqual("ready", ready["status"], ready)
+            self.assertEqual("dist", ready["output"]["path"])
+            self.assertEqual(build_result["output"]["sha256"], ready["output"]["sha256"])
+            with urlopen(ready["address"]["url"], timeout=5) as response:
+                self.assertEqual(200, response.status)
+                self.assertEqual(b"hello outside", response.read())
+            self.directory_alias(self.root, self.root / "dist" / "escape")
+            for path in ("/../package.json", "/%2e%2e%2fpackage.json", "/escape/package.json"):
+                with self.subTest(path=path):
+                    with self.assertRaises(HTTPError) as rejected:
+                        urlopen(ready["address"]["url"].rstrip("/") + path, timeout=5)
+                    self.assertIn(rejected.exception.code, (400, 404, 500))
+        finally:
+            process.terminate()
+            process.communicate(timeout=10)
         self.assertIsNotNone(process.returncode)
 
     def test_static_server_rejects_stale_output_hash_before_bind(self):
@@ -168,11 +185,26 @@ class OutsideProductionTests(unittest.TestCase):
         built = self.build(self.config(script))
         self.assertEqual(0, built.returncode, built.stderr)
         config_path = self.write_config(self.config(script))
-        command = [NODE, str(SCRIPTS / "outside_server.mjs"), "--config", config_path, "--workspace", self.root, "--artifact-commit", "git:" + self.commit(), "--output-sha256", "sha256:" + "0" * 64]
+        workspace = self.directory_alias(self.root, Path(self.temp.name) / "workspace-alias")
+        command = [NODE, str(SCRIPTS / "outside_server.mjs"), "--config", config_path, "--workspace", workspace, "--artifact-commit", "git:" + self.commit(), "--output-sha256", "sha256:" + "0" * 64]
         result = subprocess.run(command, cwd=PACKAGE, capture_output=True, text=True, encoding="utf-8", timeout=30)
         self.assertNotEqual(0, result.returncode)
         self.assertIn("server output hash differs", result.stderr)
         self.assertNotIn('"status":"ready"', result.stdout)
+        outside = Path(self.temp.name) / "outside"
+        outside.mkdir()
+        (outside / "index.html").write_text("must not serve", encoding="utf-8")
+        self.directory_alias(outside, self.root / "escaped-output")
+        for output in ("../outside", "escaped-output"):
+            with self.subTest(output=output):
+                config = self.config(script)
+                config["server"]["output_dir"] = output
+                self.write_config(config)
+                rejected = subprocess.run(command, cwd=PACKAGE, capture_output=True, text=True, encoding="utf-8", timeout=30)
+                self.assertEqual(2, rejected.returncode, rejected.stderr)
+                self.assertEqual("/server/output_dir", json.loads(rejected.stdout)["error"]["pointer"])
+                self.assertIn("path escapes root", rejected.stderr)
+
 
     def test_run_timeout_kills_and_observes_a_package_child(self):
         expression = "import {run} from './example-workflows/3d-browser-game/scripts/outside_probe.mjs'; try { await run([process.execPath,'-e','setTimeout(()=>{},10000)'],process.cwd(),100); process.exit(9); } catch (error) { console.log(JSON.stringify({code:error.code,pointer:error.pointer})); }"
