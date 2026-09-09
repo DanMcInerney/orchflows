@@ -95,9 +95,22 @@ def _cmd_list(rest):
             items.append(loaded.get('summary') or loaded)
     return {'tickets': items}
 def _cmd_show(rest):
-    if len(rest) != 2:
-        return {'error': 'usage: show <run> <id>'}
-    run, ticket_id = rest
+    args = list(rest)
+    section = _extract_flag(args, '--section')
+    offset_text = _extract_flag(args, '--offset')
+    limit_text = _extract_flag(args, '--limit')
+    pins = '--pins' in args
+    if pins:
+        args.remove('--pins')
+    if len(args) != 2 or (pins and section) or ((offset_text or limit_text) and not section):
+        return {'error': 'usage: show <run> <id> [--section <Goal|Context|Details|Report> [--offset <n>] [--limit <1..16384>] | --pins]'}
+    try:
+        offset, limit = int(offset_text or '0'), int(limit_text or '4096')
+        if offset < 0 or not 1 <= limit <= 16384:
+            raise ValueError()
+    except ValueError:
+        return {'error': 'offset must be nonnegative and limit must be 1..16384'}
+    run, ticket_id = args
     for kind, value in (('run id', run), ('ticket id', ticket_id)):
         invalid = _segment_error(kind, value)
         if invalid is not None:
@@ -109,6 +122,19 @@ def _cmd_show(rest):
     text, failure = _read_utf8(path, f'ticket {run}/{ticket_id}')
     if failure is not None:
         return failure
+    if section:
+        if __package__:
+            from .tickets_issue_render import section_page
+        else:
+            from tickets_issue_render import section_page
+        page = section_page(text, section, offset, limit)
+        return page if 'error' in page else {'ticket_section': {'run': run, 'id': ticket_id, **page}}
+    if pins:
+        if __package__:
+            from .tickets_pins import inspect_ticket_pins
+        else:
+            from tickets_pins import inspect_ticket_pins
+        return inspect_ticket_pins(run, ticket_id, _parse_frontmatter(text))
     loaded = _load_ticket(path)
     if 'error' in loaded:
         return {'error': loaded['error']}

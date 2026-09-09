@@ -203,7 +203,13 @@ def _project_file_ticket(
 
 
 def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = False):
-    """Write one ticket into the run, graded, under the run lock."""
+    """Write under the run lock; nested callers already hold it."""
+    if not _lock_held:
+        try:
+            with _run_lock(run):
+                return _issue_ticket(run, ticket_id, text, _lock_held=True)
+        except OSError as error:
+            return {"error": f"unwritable ticket: {error}"}
 
     defects = ticket_defects(text)
     if defects:

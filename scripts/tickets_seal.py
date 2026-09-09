@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 
 if __package__:
-    from .tickets_admission import refresh_admissions
+    from .tickets_admission import refresh_admissions, validated_document
     from .tickets_format import _parse_frontmatter, canonical_json
     from .tickets_generations import (
         GENERATION_RE, GenerationError, _cut_members, draft_snapshot,
@@ -27,7 +27,7 @@ if __package__:
     )
     from .tickets_generations import correction_decision
 else:  # pragma: no cover - direct/installed flat script path
-    from tickets_admission import refresh_admissions
+    from tickets_admission import refresh_admissions, validated_document
     from tickets_format import _parse_frontmatter, canonical_json
     _generations = __import__("tickets_generations")
     GENERATION_RE = _generations.GENERATION_RE
@@ -99,7 +99,7 @@ def _validated_documents(run: str) -> list:
             value = json.loads(path.read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeDecodeError, ValueError, json.JSONDecodeError):
             continue
-        if isinstance(value, dict) and isinstance(value.get("draft"), dict):
+        if validated_document(value):
             documents.append(value)
     return documents
 
@@ -208,6 +208,11 @@ def _cmd_seal(rest) -> dict:
             if not validated_path.is_file():
                 return {"error": "seal refused: no validation receipt for requested cut generation"}
             document = json.loads(validated_path.read_text(encoding="utf-8-sig"))
+            if not validated_document(document):
+                return {"error": "seal refused: malformed validation record", "findings": [{
+                    "code": "validation-receipt-mismatch", "field": "cut_generation",
+                    "detail": "validation record must bind one complete draft",
+                }]}
             draft, receipt = document["draft"], document["receipt"]
             if draft.get("cut_generation") != cut_generation:
                 return {"error": "seal refused: validation receipt names another cut generation"}

@@ -51,7 +51,7 @@ SUBCOMMAND_USAGE = {
     "frame-close": FRAME_CLOSE_USAGE,
     "grade": GRADE_USAGE,
     "list": "list [--run R]",
-    "show": "show <run> <id>",
+    "show": "show <run> <id> [--section <Goal|Context|Details|Report> [--offset <n>] [--limit <1..16384>] | --pins]",
     "dispatch": DISPATCH_USAGE,
     "land": LAND_USAGE,
     "dispatch-open": DISPATCH_OPEN_USAGE,
@@ -108,7 +108,7 @@ VALUE_FLAGS = frozenset({
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
     "--outcome-record-id", "--status",
     "--goal-file", "--details-file", "--context-file", "--parent", "--done", "--artifacts",
-    "--host", "--outcome-file",
+    "--host", "--outcome-file", "--note-file", "--offset", "--limit",
     "--review-rounds", "--review-of", "--review-new-work", "--review-independent",
 })
 

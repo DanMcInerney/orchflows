@@ -15,7 +15,8 @@ connect this law to each authorized dispatch event and predecessor record.
    already in context. Neither executes a role-bearing skill body nor
    authors or changes a deliverable. Every such skill runs in a child
    under the profile [roles.md](roles.md) §4 resolves; inline execution is
-   forbidden. Those mechanics are one command each way and the root
+   forbidden. A contained workflow driver may occupy a spawned context;
+   physical placement grants no role-bearing authority. Those mechanics are one command each way and the root
    improvises neither: a dispatching command — `tickets.py do` and `judge`
    for a callable, `dispatch` for a hand-written ticket — emits the concrete
    `launch` to invoke verbatim, never a retyped model, agent, or effort; and
@@ -78,7 +79,11 @@ connect this law to each authorized dispatch event and predecessor record.
     recorded in the run's notes at launch; either recorded nowhere is
     child under-delivered at the join. How a caller watches a lane on a
     given host is
-    [profiles.md](../hosts/profiles.md)'s.
+    [profiles.md](../hosts/profiles.md)'s. Run checks with explicit timeouts and
+    observe completion in the turn they start. If one host call cannot span
+    a check, retain its managed process handle and continuously await it in that
+    turn; watched supervision is not unattended background work. Terminate
+    superseded processes and their children; timeout is never success.
 12. The caller owns Goal, Context, and optional Details. Before seal,
     a decomposer may mechanically correct dependency edges, exact executor
     bindings, lifecycle receipts, and generation references

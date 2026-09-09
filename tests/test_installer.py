@@ -290,14 +290,14 @@ class TestFrontendDistribution(unittest.TestCase):
             real_replace = Path.replace
 
             def fail_swaps(path, target):
-                if path.name.startswith((".ui-stage-", ".ui-backup-")):
+                if path.name in ("ui", "ui-old") and path.parent.name.startswith(".install-transaction-"):
                     raise OSError("forced replacement failure")
                 return real_replace(path, target)
 
             with patch.object(Path, "replace", fail_swaps):
-                with self.assertRaisesRegex(OSError, "forced replacement failure"):
+                with self.assertRaisesRegex(RuntimeError, "recovery map retained"):
                     install.apply_plan(plan, accepted_source=install.resolve_source_commit())
-            backups = list(plan.frontend_home.parent.glob(".ui-backup-*"))
+            backups = list(plan.scope_home.glob(".install-transaction-*/ui-old"))
             self.assertEqual(1, len(backups))
             self.assertEqual("prior", (backups[0] / "index.html").read_text(encoding="utf-8"))
 

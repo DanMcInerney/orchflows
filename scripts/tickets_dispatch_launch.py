@@ -288,10 +288,16 @@ def launch_prompt(record: dict, assignment: dict) -> str:
         f"{sys.executable}, never a bare `python`.",
         *_manifest_lines(assignment),
         *_other_standard_lines(assignment),
+        "Pins hash normalized directory trees, not raw STANDARD.md bytes. "
+        "Inspect this ticket's pins with: " + _command(sys.executable, script, "show", run, ticket_id, "--pins"),
+        "Read bounded ticket sections with: " + _command(sys.executable, script, "show", run, ticket_id, "--section", "SECTION", "--offset", "0", "--limit", "4096") + "; SECTION is Goal, Context, Details or Report; follow next_offset until null.",
         "Run every check to completion in the turn it starts, with an explicit "
-        "timeout longer than the check; never background a gate or a test run, "
-        "kill anything you background once it is superseded, and never report "
-        "a check you did not watch finish.",
+        "timeout longer than the check. If a host call cannot span the check, "
+        "retain its tool-managed process handle and continuously await it in "
+        "this same turn until observed completion; this is watched supervision, "
+        "not unattended background work. Terminate superseded processes and "
+        "their children. Never leave a gate or test unattended, reinterpret "
+        "timeout as success, or report a check you did not watch finish.",
         *_friction_lines(),
         f"Your assigned name is `{assignment['assigned_name']}`; use exactly it "
         "wherever a command takes --by.",
@@ -315,7 +321,12 @@ def launch_prompt(record: dict, assignment: dict) -> str:
         "names no status because what this ticket became is checked at the join "
         "and never claimed here:",
         _command(sys.executable, script, "dispatch-outcome", run, ticket_id,
+                 "--assignment-seal", assignment["assignment_seal"],
+                 "--dispatch-id", assignment["dispatch_id"],
+                 "--by", assignment["assigned_name"],
                  "--note-file", "PATH"),
+        "Closing-note lines must not begin with '## ' or '### Written by '; "
+        "other third-level or deeper headings are allowed.",
         "A coordinator relaying a whole canonical envelope for you passes it "
         "through `--file` instead; a wrong or non-canonical envelope is "
         "refused with the exact fields and encoding it needs named.",

@@ -582,6 +582,8 @@ def _closed_under_run_lock(run, frame_id, path, attempt, census, reason,
             return refusal
     filed = _cmd_dispatch_outcome([
         run, frame_id, "--note", _closing_note(census, reason, status, shape),
+        "--assignment-seal", attempt["assignment_seal"],
+        "--dispatch-id", attempt["dispatch_id"], "--by", attempt["owner"],
     ], _lock_held=True)
     if "error" in filed:
         return filed

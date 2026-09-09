@@ -50,6 +50,33 @@ def dispatch_join_identity_defects(outcome_record_id: str, dispatch_id: str, joi
     return None
 
 
+def dispatch_join_preflight(run, ticket_id, data, identity, disposition):
+    """Inspect the exact join under the caller's run lock, without writing.
+
+    A done predicate has no new grade yet. For that case an existing join's
+    grade supplies the replay identity; an unseen join uses a valid placeholder.
+    Neither selection accepts the record: the ordinary join guards do that.
+    """
+    if disposition is None:
+        if __package__:
+            from .tickets_dispatch_schema import stored_state
+        else:
+            from tickets_dispatch_schema import stored_state
+        state, _failure = stored_state(data)
+        disposition = "complete"
+        for attempt in (state or {}).get("attempts", []):
+            if attempt.get("dispatch_id") == identity["dispatch_id"]:
+                for record in attempt.get("records", []):
+                    if record.get("record_id") == JOIN_RECORD_PREFIX + OUTCOME_RECORD_ID:
+                        disposition = record.get("success", {}).get("join", {}).get("status", disposition)
+    return _cmd_dispatch_join([
+        run, ticket_id, "--assignment-seal", identity["assignment_seal"],
+        "--dispatch-id", identity["dispatch_id"],
+        "--outcome-record-id", identity["outcome_record_id"],
+        "--by", identity["by"], "--status", disposition,
+    ], _lock_held=True, _preflight=True)
+
+
 def _closes_the_run(run: str, ticket_id: str) -> bool:
     """Whether this ticket's terminal join is the run's own terminal moment."""
 
@@ -60,7 +87,7 @@ def _closes_the_run(run: str, ticket_id: str) -> bool:
     return str(goal.get("id") or "") == ticket_id
 
 
-def _cmd_dispatch_join(rest, *, _lock_held=False):
+def _cmd_dispatch_join(rest, *, _lock_held=False, _preflight=False):
     """Commit or replay one outcome-fenced join and its lifecycle transition."""
 
     args = list(rest)
@@ -95,9 +122,10 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         "joined_by": joined_by,
         "operation": "join",
         "outcome_record_id": outcome_record_id,
+        "status": disposition,
     }
 
-    def join(text, _data, attempt, _state):
+    def validate(_data, attempt):
         outcome_record = next(
             (
                 item for item in attempt.get("records", [])
@@ -112,7 +140,7 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         if not isinstance(outcome_success, dict) or not isinstance(
             outcome_success.get("outcome"), dict
         ):
-            return text, None, _classification(
+            return _classification(
                 "outcome-record-mismatch",
                 f"record_id '{outcome_record_id}' is not the committed executor outcome. "
                 "A child that will never commit one is retired with "
@@ -121,7 +149,7 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
             )
         outcome = outcome_success["outcome"]
         if outcome.get("dispatch_id") != dispatch_id:
-            return text, None, _classification(
+            return _classification(
                 "outcome-record-mismatch", "committed outcome belongs to another dispatch"
             )
         # The outcome's existence closes the attempt; it does not say what
@@ -132,7 +160,11 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         if status in TERMINAL_STATES:
             held = binding_refusal(run, TERMINAL_REMEDY)
             if held is not None:
-                return text, None, {"error": held}
+                return {"error": held}
+        return None
+
+    def join(text, _data, attempt, _state):
+        status = disposition
         joined_at = datetime.now(timezone.utc).strftime(UTC_STAMP)
         response = {"join": {
             "protocol": PROTOCOL,
@@ -154,7 +186,8 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
     def transaction():
         result = _commit_record(
             run, ticket_id, dispatch_id, join_record_id, content,
-            mutate=join, expected_seal=assignment_seal, record_kind="join",
+            mutate=join, validate=validate, _preflight=_preflight,
+            expected_seal=assignment_seal, record_kind="join",
             # The join is the driver's act, not the worker's, and the
             # worker's own lease says nothing about when its caller reads the
             # outcome and joins it. `join` above still refuses
@@ -164,7 +197,7 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
             require_live_lease=False,
             _lock_held=True,
         )
-        if "error" in result:
+        if "error" in result or _preflight:
             return result
         status = result["join"]["status"]
         if status not in TERMINAL_STATES or not _closes_the_run(run, ticket_id):

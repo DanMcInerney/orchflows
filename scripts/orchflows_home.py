@@ -56,6 +56,7 @@ SINK_MANAGED_SUBPATHS = (
     state_root.WORKSPACES_SUBPATH,
     state_root.MUTANTS_SUBPATH,
     state_root.DRAFTS_SUBPATH,
+    state_root.improvement_root().name,
 )
 MANAGED_IGNORES = (
     "lib/",

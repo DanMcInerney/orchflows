@@ -6,7 +6,10 @@
    workflows may be either. A workflow declares
    `disable-model-invocation: true` in its own frontmatter: its prose runs
    as orchestrator reasoning rather than inside a sealed child prompt, so it
-   is invoked by name and never on a host's reading of a description.
+   is invoked by name and never on a host's reading of a description. Named
+   invocation may come from a permitted workflow call; it does not make every
+   public example user-entry-only. Explicit named-only campaign restrictions
+   and the user's scope still bind.
 2. Every resolved backticked skill name in a body is a call edge. Name
    each call once, at its prose call site, with the exact backticked
    name; mention a skill without calling it in plain text, never

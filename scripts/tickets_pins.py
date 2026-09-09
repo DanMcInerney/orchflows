@@ -327,6 +327,36 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
     return findings
 
 
+def inspect_ticket_pins(run: str, ticket_id: str, data: dict) -> dict:
+    """Inspect pins through the run's resolver and verified public owner scope."""
+    if __package__:
+        from .tickets_project import recorded_project
+    else:
+        from tickets_project import recorded_project
+    project = recorded_project(run) or {}
+    overrides = {"start": Path(project["root"])} if project.get("root") else {}
+    findings = pinned_findings(
+        data, lambda code, field, detail: {"code": code, "field": field, "detail": detail},
+        **overrides,
+    )
+    if findings:
+        return {"error": "ticket pins do not resolve at their stamped identity", "findings": findings}
+    try:
+        chain = resolved_standards(
+            [name for name, _ in standards_of(data.get(STANDARDS_FIELD))],
+            owner=dequote(data.get("workflow")) or None, **overrides,
+        ) if data.get(STANDARDS_FIELD) else []
+    except (PinError, standards_support.StandardError) as error:
+        return {"error": error.detail, "code": error.code}
+    return {"ticket_pins": {
+        "run": run, "id": ticket_id, "assignment_seal": data.get("assignment_seal"),
+        "owner": data.get("workflow"), "workflow_digest": data.get("workflow_digest"),
+        "algorithm": "orchflows.item-tree.v1: framed relative paths and LF-normalized file bytes; not a raw STANDARD.md hash",
+        "standards": [{"name": link["name"], "path": str(link["path"]), "digest": link["digest"]}
+                      for link in chain],
+    }}
+
+
 __all__ = (
     "DIGEST_PREFIX", "PINNED_KINDS", "STANDARDS_FIELD", "STANDARD_SEPARATOR",
     "PinError", "SKIPPED_DIRS", "TREE_VERSION",

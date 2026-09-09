@@ -330,6 +330,7 @@ class _LandEventTestCase(_EventSinkTestCase):
         )["dispatch_v1"])["attempts"][0]["assignment_seal"]
         self.run_command(
             "dispatch-outcome", self.RUN, "T", "--note", "delivered and verified",
+            "--assignment-seal", self.seal, "--dispatch-id", "D1", "--by", "worker",
         )
 
     def land(self, *extra):

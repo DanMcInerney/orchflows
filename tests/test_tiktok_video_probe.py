@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 from tests._repo_root import ROOT
 
-SCRIPT = ROOT / 'example-workflows/tiktok-video/scripts/probe.py'
+SCRIPT = ROOT / 'example-workflows/orchflows-videos/scripts/probe.py'
 SPEC = importlib.util.spec_from_file_location('tiktok_probe', SCRIPT)
 probe = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(probe)

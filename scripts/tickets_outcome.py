@@ -14,36 +14,33 @@ if __package__:
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
-    from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_format import (
-        REPORT_SECTION, TicketFormatError, _extract_flag, _parse_frontmatter,
+        REPORT_SECTION, TicketFormatError, _extract_flag,
         _read_utf8, _section_body, _write_section, canonical_json,
         parse_canonical_json,
     )
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
-    from .tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
+    from .tickets_store import _segment_error
     from .tickets_shapes import DISPATCH_OUTCOME_REQUIRED
-    from .tickets_transitions import CLAIMED, SUSPENDED
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
-    from tickets_dispatch_schema import state as _dispatch_state
     from tickets_format import (
-        REPORT_SECTION, TicketFormatError, _extract_flag, _parse_frontmatter,
+        REPORT_SECTION, TicketFormatError, _extract_flag,
         _read_utf8, _section_body, _write_section, canonical_json,
         parse_canonical_json,
     )
     from tickets_result import RESULT_ATTRIBUTION_PREFIX
-    from tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
+    from tickets_store import _segment_error
     from tickets_shapes import DISPATCH_OUTCOME_REQUIRED
-    from tickets_transitions import CLAIMED, SUSPENDED
 
 
 DISPATCH_OUTCOME_USAGE = (
     "dispatch-outcome <run> <id> "
-    "(--note <text> | --note-file <path> | --file <canonical-outcome-path|->)"
+    "(--assignment-seal <seal> --dispatch-id <id> --by <assigned-name> "
+    "(--note <text> | --note-file <path>) | --file <canonical-outcome-path|->)"
 )
 # The canonical encoding `--file` admits, named as the call that produces it.
 # It lives in the refusals rather than the launch prompt: only the rare
@@ -53,40 +50,6 @@ CANONICAL_DUMP = (
     'json.dump(envelope, handle, ensure_ascii=True, sort_keys=True, '
     'separators=(",", ":"))'
 )
-
-
-def _outcome_attempt(run: str, ticket_id: str):
-    """Read the attempt that owns the reserved outcome identity."""
-
-    root = _tickets_root()
-    if root is None:
-        return None, {"error": NO_SINK_ERROR}
-    path = root / run / f"{ticket_id}.md"
-    text, failure = _read_utf8(path)
-    if failure is not None:
-        return None, failure
-    data = _parse_frontmatter(text)
-    state, failure = _dispatch_state(data)
-    if failure is not None:
-        return None, failure
-    if state is None:
-        status = str(data.get("status") or "")
-        if status in {CLAIMED, SUSPENDED}:
-            return None, {
-                "error": "pre-v1 live claim has no dispatch record; its existing owner must complete or abandon it",
-                "code": "legacy-live-claim", "protocol": PROTOCOL,
-            }
-        return None, {
-            "error": "ticket has no dispatch-v1 attempt",
-            "code": "dispatch-mismatch", "protocol": PROTOCOL,
-        }
-    live = [item for item in state["attempts"] if item.get("state") == "live"]
-    if live:
-        return (path, text, data, state, live[-1]), None
-    for attempt in reversed(state["attempts"]):
-        if any(item.get("record_id") == OUTCOME_RECORD_ID for item in attempt.get("records", [])):
-            return (path, text, data, state, attempt), None
-    return (path, text, data, state, state["attempts"][-1]), None
 
 
 def _outcome_file(path):
@@ -123,31 +86,6 @@ def _outcome_file(path):
             "code": "outcome-invalid", "protocol": PROTOCOL,
         }
     return content, None
-
-
-def _outcome_attempt_match(content: dict, run: str, ticket_id: str, attempt: dict):
-    """Ensure a relayed carrier names the inferred protocol attempt exactly."""
-
-    if not isinstance(content, dict):
-        return {"error": "outcome envelope must be an object", "code": "outcome-invalid", "protocol": PROTOCOL}
-    expected = {
-        "protocol": PROTOCOL, "run": run, "id": ticket_id,
-        "assignment_seal": attempt.get("assignment_seal"),
-        "dispatch_id": attempt.get("dispatch_id"),
-        "outcome_record_id": OUTCOME_RECORD_ID, "by": attempt.get("owner"),
-    }
-    mismatched = sorted(
-        key for key, value in expected.items() if content.get(key) != value
-    )
-    if mismatched:
-        return {
-            "error": "outcome envelope differs from its inferred attempt on "
-            + ", ".join(mismatched) + "; it must carry exactly "
-            + ", ".join(f"{key}={expected[key]}" for key in sorted(expected))
-            + ", and evidence as one string",
-            "code": "outcome-invalid", "protocol": PROTOCOL,
-        }
-    return None
 
 
 def _outcome_content(args: list):
@@ -237,6 +175,11 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
         return {"error": f"usage: {DISPATCH_OUTCOME_USAGE}"}
     run, ticket_id = args[:2]
     remaining = args[2:]
+    identity = {
+        "assignment_seal": _extract_flag(remaining, "--assignment-seal"),
+        "dispatch_id": _extract_flag(remaining, "--dispatch-id"),
+        "by": _extract_flag(remaining, "--by"),
+    }
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
         invalid = _segment_error(kind, value)
         if invalid is not None:
@@ -245,30 +188,23 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
     if failure is not None:
         return failure
 
-    inferred, failure = _outcome_attempt(run, ticket_id)
-    if failure is not None:
-        return failure
-    _path, _text, _data, _state, attempt = inferred
     if isinstance(carrier, dict) and "_note" in carrier:
+        if not all(identity.values()):
+            return _classification("outcome-invalid", "note close requires launch-bound --assignment-seal, --dispatch-id and --by; " + DISPATCH_OUTCOME_USAGE)
         content = {
             "protocol": PROTOCOL,
             "run": run,
             "id": ticket_id,
-            "assignment_seal": attempt["assignment_seal"],
-            "dispatch_id": attempt["dispatch_id"],
+            "assignment_seal": identity["assignment_seal"],
+            "dispatch_id": identity["dispatch_id"],
             "outcome_record_id": OUTCOME_RECORD_ID,
-            "by": attempt["owner"],
+            "by": identity["by"],
             "evidence": carrier["_note"],
         }
     else:
+        if any(value is not None for value in identity.values()):
+            return _classification("outcome-invalid", "--file carries its own identity; do not combine it with note identity flags")
         content = carrier
-    failure = _outcome_attempt_match(content, run, ticket_id, attempt)
-    if failure is not None:
-        return failure
-    if content.get("protocol") != PROTOCOL or content.get("run") != run or content.get("id") != ticket_id:
-        return _classification("outcome-invalid", "outcome envelope origin or protocol differs")
-    if not isinstance(content, dict):
-        return _classification("outcome-invalid", "outcome envelope must be an object")
     failure = _outcome_failure(run, ticket_id, content)
     if failure is not None:
         return failure
@@ -289,15 +225,18 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
             return text, None, _classification("outcome-invalid", str(error))
         return updated, {"outcome": content}, None
 
-    return _commit_record(
+    answer = _commit_record(
         run, ticket_id, content["dispatch_id"], OUTCOME_RECORD_ID, content,
         mutate=commit_outcome, expected_seal=content["assignment_seal"],
         expected_owner=content["by"], record_kind="outcome",
         _lock_held=_lock_held,
     )
+    if answer.get("code") == "assignment-mismatch":
+        return {**answer, "code": "outcome-invalid"}
+    return answer
 
 __all__ = (
     "CANONICAL_DUMP", "DISPATCH_OUTCOME_USAGE", "_cmd_dispatch_outcome",
-    "_outcome_attempt", "_outcome_attempt_match", "_outcome_content",
+    "_outcome_content",
     "_outcome_failure",
 )

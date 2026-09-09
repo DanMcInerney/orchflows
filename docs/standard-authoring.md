@@ -24,7 +24,10 @@ fixed outline or claim that headings prove semantic coverage.
    standard.
 6. **Describe review.** Name meaningful defect classes and the observations or
    checks that expose them. The prose guides agent judgment; the validator only
-   checks document structure.
+   checks document structure. Compare direction and delivered output with the
+   original outcome and subject facts, including relationships and interaction
+   behavior when relevant. Name required observational capabilities and their
+   limits; a tool inventory or intermediate approval is not that evidence.
 7. **Compress and verify.** Remove repetition, keep the manifest within the word
    ceiling, and resolve it through the same command the verbs use:
 

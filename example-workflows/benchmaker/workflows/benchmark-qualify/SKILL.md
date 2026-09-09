@@ -20,7 +20,10 @@ boundary intervenes.
 
 **Controls**: a builder-disjoint qualifier checks instrument quality under the
 pinned standards, independently of reference correctness. Record each criterion,
-case coverage, observed controls and command exits.
+case coverage, observed controls and command exits. Compare the construct
+and cases with the original outcome/subject facts and the representative
+capability evidence; missing required observation stays UNVERIFIED before
+dependent attempts.
 
     tickets.py judge <run> --review-independent "independent benchmark qualification lane" --parent <frame> --standard <standard>
       --standard benchmark-quality --artifacts git:<draft-sha>

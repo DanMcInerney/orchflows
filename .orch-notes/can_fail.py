@@ -12,3 +12,4 @@ with patch.object(tickets_mint, '_context', side_effect=lambda parent, artifacts
     result = unittest.TextTestRunner(stream=io.StringIO()).run(unittest.TestSuite([CallableContextTest('test_context_survives_builder_frame_planner_maker_and_judge')]))
 assert len(result.failures) == 1 and len(result.errors) == 0, (result.failures, result.errors)
 print(json.dumps({'standard_pin': pin['digest'], 'source_installed_match': True, 'context_carrier_removed_in_memory': {'failures':len(result.failures), 'errors':len(result.errors)}, 'failure': result.failures[0][1]}))
+
