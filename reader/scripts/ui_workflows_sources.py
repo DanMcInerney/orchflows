@@ -66,6 +66,8 @@ def _workflow_skill_paths(root: Path, workflow_id: str) -> set[str]:
             if path is None:
                 raise WorkflowSourceError("workflow source inventory is inconsistent")
             installed.add(path)
+        elif node["kind"] == "standard":
+            installed.add(f"lib/standards/{node['label']}/STANDARD.md")
         elif node["kind"] == "script":
             installed.add(node["label"])
     return installed
@@ -144,6 +146,7 @@ def project_source(
     return 200, {
         "schema": SOURCE_SCHEMA,
         "id": source_id,
+        "label": Path(installed_path).parent.name if installed_path.endswith(".md") else installed_path,
         "text": delivered,
         "sha256": hashlib.sha256(delivered.encode("utf-8")).hexdigest(),
         "language": _language(installed_path),

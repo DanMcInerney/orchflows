@@ -1,0 +1,83 @@
+[
+  {
+    "original": "F01",
+    "disposition": "Addressed in covered rendering; live projection limitation recorded",
+    "evidence_summary": "Compiled ticket manifest, recovery tab URL preservation, canonical standard-only schema unit. Current plural standards yield empty scalar standard and Unavailable, without schema rejection.",
+    "evidence": [
+      "compiled/",
+      "recovery/observations.json"
+    ]
+  },
+  {
+    "original": "F02",
+    "disposition": "Addressed for canonical API/ETag feeds",
+    "evidence_summary": "Run G2 and session aa11 pointer/Enter/Space match; close restores focus; every stress list and graph node activated three ways at both widths. Synthetic no-ETag limit below.",
+    "evidence": [
+      "interactions/observations.json",
+      "dynamic-graph/observations.json"
+    ]
+  },
+  {
+    "original": "F03",
+    "disposition": "Addressed",
+    "evidence_summary": "Current evolve has semantic overview; lexical references are separately labelled; orch-code is a standard, source links are contained; workflow/source Python cases pass.",
+    "evidence": [
+      "compiled/",
+      "phases/observations.json"
+    ]
+  },
+  {
+    "original": "F04",
+    "disposition": "Addressed",
+    "evidence_summary": "Overview comes first; dedicated probe waits for loaded phases, then checks all 18 selections across evolve and composition fixture at both widths are visible within viewport.",
+    "evidence": [
+      "phase-visibility.log",
+      "phases/observations.json"
+    ]
+  },
+  {
+    "original": "F05",
+    "disposition": "Addressed in covered states",
+    "evidence_summary": "Forced-color phase statuses retain textual pending/active/done/failed labels.",
+    "evidence": [
+      "interactions/observations.json",
+      "manifest-audit.log"
+    ]
+  },
+  {
+    "original": "F06",
+    "disposition": "Addressed for canonical API/ETag feeds",
+    "evidence_summary": "Readable list first, search and empty search, explicit full graph, 24 agents plus root, depth-four parent links and minimap all-node bounds checked at both widths.",
+    "evidence": [
+      "interactions/observations.json",
+      "refresh-probe/observations.json"
+    ]
+  },
+  {
+    "original": "F07",
+    "disposition": "Addressed in covered UI with existing objective semantics retained",
+    "evidence_summary": "Runs and Sessions remain distinct; objective/title and source basename labels lead, technical IDs are secondary. Run heading still uses first ticket Goal semantics; no objective API redesign claimed.",
+    "evidence": [
+      "compiled/",
+      "live/"
+    ]
+  },
+  {
+    "original": "F08",
+    "disposition": "Addressed for API recovery paths",
+    "evidence_summary": "Nine routes at two widths: contextual pending, HTTP 503, keyboard Retry and focus; eight polling routes keep stale content and recover; ticket Report URL remains selected.",
+    "evidence": [
+      "recovery/observations.json",
+      "recovery-replay.log"
+    ]
+  },
+  {
+    "original": "F09",
+    "disposition": "Addressed in sampled operational values",
+    "evidence_summary": "Operational labels measure 14px with token spacing, forced-color/status text survives, shared dark palette/cyan links and summary hierarchy hold in sampled captures.",
+    "evidence": [
+      "interactions/observations.json",
+      "compiled/"
+    ]
+  }
+]

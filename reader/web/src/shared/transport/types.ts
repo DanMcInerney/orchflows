@@ -3,11 +3,15 @@ export interface Diagnostic {
   message: string;
 }
 
-export type FeatureState<Model> =
+export type FeatureState<Model> = (
   | { status: "loading"; model: null; error: null }
   | { status: "ready"; model: Model; error: null }
   | { status: "stale"; model: Model; error: Diagnostic }
-  | { status: "error"; model: null; error: Diagnostic };
+  | { status: "error"; model: null; error: Diagnostic }) & {
+    refresh?: () => Promise<void>;
+    refreshing?: boolean;
+    autoRefresh?: boolean;
+  };
 
 export interface RequestSpec {
   url: string;

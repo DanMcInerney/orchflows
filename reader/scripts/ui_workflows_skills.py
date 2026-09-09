@@ -1,4 +1,4 @@
-"""Derive exact T1 workflow-skill calls from canonical inline code spans."""
+"""Derive lexical skill/script references from canonical inline code spans."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from reader.scripts import ui_workflows_identity as identity
 # here already imports ``scripts.*`` unconditionally, so ``scripts`` is
 # always importable by the time this module loads.
 DETAIL_SCHEMA = "orchflows.workflow-detail.v1"
-NODE_KIND_ORDER = {"workflow": 0, "work": 1, "skill": 2, "script": 3}
+NODE_KIND_ORDER = {"workflow": 0, "work": 1, "skill": 2, "script": 3, "standard": 4}
 INLINE_CODE_RE = re.compile(r"(?<!`)`([^`]+)`(?!`)", re.DOTALL)
 SKILL_TOKEN_RE = re.compile(
     r"(?<![A-Za-z0-9._-])(orch-[A-Za-z0-9][A-Za-z0-9._-]*)(?![A-Za-z0-9._-])"
@@ -28,7 +28,7 @@ SCRIPT_TOKEN_RE = re.compile(
 )
 DIAGNOSTIC_MESSAGES = {
     "duplicate-node": "Canonical source declares this node more than once.",
-    "unresolved-reference": "The canonical call does not resolve to an installed source.",
+    "unresolved-reference": "The source reference does not resolve to an installed source.",
 }
 
 
@@ -77,19 +77,13 @@ def _read_skill(root: Path, path: Path) -> tuple[dict, str]:
 
 
 def skill_index(root: Path) -> tuple[dict[str, str], set[str]]:
-    """Return canonical skill and standard names mapped to installed lib paths.
-
-    Standards belong here because a callable call stamps exactly one of them, and
-    the standard is what carries that call's standard. Leaving them out reported
-    every workflow's own standard as an unresolved reference.
-    """
+    """Return canonical skill names mapped to installed library paths."""
 
     root = Path(root)
     resolved = {}
     duplicates = set()
     paths = sorted(
-        list((root / "skills").glob("*/*/SKILL.md"))
-        + list((root / "standards").glob("*/SKILL.md")),
+        list((root / "skills").glob("*/*/SKILL.md")),
         key=lambda path: path.relative_to(root).as_posix(),
     )
     for path in paths:
@@ -136,7 +130,9 @@ def _calls(root: Path, body: str) -> tuple[set[str], dict[str, bool]]:
     scripts = {}
     for match in INLINE_CODE_RE.finditer(body):
         span = match.group(1)
-        skills.update(SKILL_TOKEN_RE.findall(span))
+        # Standard operands are evidence requirements, never invoked skills.
+        reference_span = re.sub(r"--standard(?:=|\s+)[\"']?[A-Za-z0-9._/-]+[\"']?", "", span)
+        skills.update(SKILL_TOKEN_RE.findall(reference_span))
         for token in SCRIPT_TOKEN_RE.findall(span):
             installed_path, resolved = _script_path(root, token)
             scripts[installed_path] = scripts.get(installed_path, False) or resolved
@@ -190,6 +186,25 @@ def project_workflow_skill(root: Path = ROOT, workflow_id: str = "") -> dict:
 
     installed_skills, duplicate_skills = skill_index(root)
     skill_calls, script_calls = _calls(root, body)
+    # Installed standard names and explicit operands form a separate reference kind.
+    standard_names = {
+        path.parent.name for path in (root / "standards").glob("*/STANDARD.md")
+        if _contained_file(root, path)
+    }
+    standard_refs = set(re.findall(r"--standard(?:=|\s+)[\"']?([A-Za-z0-9][A-Za-z0-9._-]*)", body))
+    standard_refs.update(skill_calls & standard_names)
+    skill_calls -= standard_names
+    for name in sorted(standard_refs):
+        node_id = "standard:" + name
+        node = {"id": node_id, "kind": "standard", "label": name}
+        if name in standard_names:
+            node["source_id"] = identity.source_id(f"lib/standards/{name}/STANDARD.md")
+        else:
+            diagnose("unresolved-reference", node_id)
+        nodes[node_id] = node
+        edge = _edge("standard-reference", workflow_node, node_id, "references standard")
+        edges[edge["id"]] = edge
+
     for name in sorted(skill_calls):
         node_id = identity.skill_node_id(name)
         node = {"id": node_id, "kind": "skill", "label": name}
@@ -201,7 +216,7 @@ def project_workflow_skill(root: Path = ROOT, workflow_id: str = "") -> dict:
         if name in duplicate_skills:
             diagnose("duplicate-node", node_id)
         nodes[node_id] = node
-        edge = _edge("skill-call", workflow_node, node_id, "calls skill")
+        edge = _edge("skill-call", workflow_node, node_id, "references skill")
         edges[edge["id"]] = edge
 
     for installed_path in sorted(script_calls):
@@ -212,7 +227,7 @@ def project_workflow_skill(root: Path = ROOT, workflow_id: str = "") -> dict:
         else:
             diagnose("unresolved-reference", node_id)
         nodes[node_id] = node
-        edge = _edge("script-call", workflow_node, node_id, "calls script")
+        edge = _edge("script-call", workflow_node, node_id, "references script")
         edges[edge["id"]] = edge
 
     ordered_nodes = sorted(

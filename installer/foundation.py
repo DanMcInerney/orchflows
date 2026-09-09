@@ -97,7 +97,7 @@ AUTO_REMOVE_KINDS = frozenset(
         "frontend-asset",
     )
 ) | GROK_AUTO_REMOVE_KINDS
-CODEX_MAX_THREADS = 20
+CODEX_MAX_THREADS = 15
 CODEX_MAX_DEPTH = 1
 GROK_MAX_CONCURRENT = 20
 # Grok's own cap, not a house choice: a subagent that calls

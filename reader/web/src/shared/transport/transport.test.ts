@@ -44,6 +44,36 @@ function environment(fetcher: TransportEnvironment["fetcher"]): TransportEnviron
 }
 
 describe("polling transport", () => {
+  it("ignores a rejected JSON body from a superseded route", async () => {
+    let rejectBody!: (reason: Error) => void;
+    const body = new Promise<unknown>((_resolve, reject) => { rejectBody = reject; });
+    const oldResponse = response(200, { value: 1 });
+    oldResponse.json = () => body;
+    const transport = createPollingTransport<Route, Payload, Model>({
+      environment: environment(vi.fn().mockResolvedValueOnce(oldResponse).mockResolvedValueOnce(response(200, { value: 2 }))),
+      onState: () => {},
+    });
+    const oldPoll = transport.start({ id: "old" }, data);
+    await Promise.resolve();
+    await transport.start({ id: "new" }, data);
+    rejectBody(new Error("old body failed"));
+    await oldPoll;
+    expect(transport.getState()).toEqual({ status: "ready", model: { id: "projected", value: 2 }, error: null });
+    transport.stop();
+  });
+  it("clears a failed refresh when the reader confirms the retained model is unchanged", async () => {
+    const env = environment(vi.fn()
+      .mockResolvedValueOnce(response(200, { value: 1 }, '"one"'))
+      .mockResolvedValueOnce(response(503))
+      .mockResolvedValueOnce(response(304)));
+    const transport = createPollingTransport<Route, Payload, Model>({ environment: env, onState: () => {} });
+    await transport.start({ id: "a" }, data);
+    await transport.refresh();
+    expect(transport.getState().status).toBe("stale");
+    await transport.refresh();
+    expect(transport.getState()).toEqual({ status: "ready", model: { id: "projected", value: 1 }, error: null });
+    transport.stop();
+  });
   it("moves through loading, error, ready, stale, and recovered ready while preserving ETags", async () => {
     const fetcher = vi.fn()
       .mockResolvedValueOnce(response(404))

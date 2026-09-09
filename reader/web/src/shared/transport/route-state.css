@@ -1,0 +1,15 @@
+.route-state { max-width: 100%; }
+.route-state__crumbs { display: flex; flex-wrap: wrap; gap: var(--space-2); color: var(--text-muted); overflow-wrap: anywhere; }
+.route-state a { color: var(--accent); }
+.route-state header { margin-block: var(--space-6); }
+.route-state h1 { margin: var(--space-2) 0; font-size: var(--type-page-title); color: var(--text-strong); overflow-wrap: anywhere; }
+.route-state header > p:last-child { color: var(--text-muted); }
+.route-state__body { padding: var(--space-6); border: 1px solid var(--border-strong); border-radius: var(--radius-panel); background: var(--surface-1); }
+.route-state__back { display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-4); }
+.route-state__back svg, .refresh-status svg { width: 16px; height: 16px; }
+.refresh-status { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-4); padding: var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-control); background: var(--surface-2); }
+.refresh-status > div { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
+.refresh-status h2 { margin: 0; color: var(--text-strong); font-size: var(--type-title-sm); }
+.refresh-status p { margin: var(--space-1) 0 0; color: var(--text-muted); }
+.refresh-status button { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--row-compact); padding: var(--space-2) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-control); color: var(--accent); background: var(--surface-1); cursor: pointer; }
+.refresh-status button:disabled { color: var(--text-muted); cursor: wait; }
