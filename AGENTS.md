@@ -14,6 +14,8 @@ flags.
 
 ## Required checks
 
+[Prerequisites](tools/check-prerequisites.md).
+
 Through this host's verified interpreter (`uv run --no-project python`;
 bare `python` is a Windows Store stub; Python 3.9 or newer,
 `install.py`'s floor):
