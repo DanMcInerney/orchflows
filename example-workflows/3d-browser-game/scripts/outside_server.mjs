@@ -25,7 +25,8 @@ function routePath(root, pathname) {
 async function staticServer(config, { workspace, artifactCommit, outputHash } = {}) {
   const checked = validateConfig(config);
   if (!workspace || typeof workspace !== "string") throw inputError("joined workspace is required", "/workspace");
-  const root = resolve(workspace);
+  // Compare physical paths on both sides (workspace aliases are valid roots).
+  const root = await realpath(resolve(workspace));
   const outputPath = ensureContained(root, resolve(root, checked.server.output_dir), "/server/output_dir");
   const resolvedOutput = await realpath(outputPath);
   ensureContained(root, resolvedOutput, "/server/output_dir");
