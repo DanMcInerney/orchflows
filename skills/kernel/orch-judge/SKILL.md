@@ -7,6 +7,9 @@ role: none
 Require: one immutable review ledger naming the fixed artifacts, Goal,
 assignment evidence, the standard digests, and a resolved child profile.
 
+For `review_phase: verify`, check referenced repairs and affected seams;
+report unresolved correctness failures without broad critique or an overall verdict.
+
 Read every applicable standard the launch prompt names whole. The kind on each
 typed artifact line names the `## Lens` entry you check against where the
 standard carries one; its criteria and proof bind the review, and you may

@@ -34,13 +34,9 @@ owner/dependents in an isolated workspace:
     tickets.py do <run> --standard improvement-repair --parent <frame> --workspace <workspace> --goal-file <repair-goal>
 
 The repair goal names the selected proposal's frozen oracles. Launch and
-land, then judge the landed identity independently:
-
-    tickets.py judge <run> --standard improvement-repair --parent <frame> --goal-file <judge-goal> --artifacts git:<landed-commit>
-
-Launch and land the judge. Apply [bounded-repair](../../docs/custom-workflow-authoring.md#idioms):
-Where the judge blocks, one repair `do` is handed
-the `findings:` line verbatim, then one re-judge; two rounds is the bound.
+land, then invoke `review-delivery` in this existing frame over the
+landed identity, frozen oracles, improvement-repair pins, evidence, workspace
+and outside probe. The selected parent policy bounds substantive review.
 Record implemented only with accepted commit, unchanged passing replays and
 judgment. Record activation under [improvement law](../../rules/improvement.md)
 §2. Exhaustion or

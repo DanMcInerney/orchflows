@@ -20,9 +20,10 @@ inventory. A successful handoff contains the `.blend` source, rendered
 previews, GLB export, asset manifest, hashes, zero-error Khronos validation,
 and a pinned production `GLTFLoader` scale/material/animation/collider probe.
 
-Have a separate judge assess the returned batch before integration:
-
-    tickets.py judge <run> --standard browser-game-3d-asset --standard blender-game-asset --parent <frame> --artifacts <asset-artifact> --goal-file <asset-judge-goal> --isolation required
+Invoke `review-delivery` in this existing asset-stage frame with the fixed
+batch, original job and evidence, browser-game-3d-asset and blender-game-asset
+pins, workspace and outside asset probe. This independent batch owns its
+selected rounds; repair verification never resets them.
 
 Failure promotes nothing and records the exact diagnosis. A gameplay-altering
 scale, collider, animation, timing, camera, or readability change invalidates

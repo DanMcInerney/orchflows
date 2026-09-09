@@ -1,6 +1,21 @@
 {
   "schema": "orchflows.workflow-summary.v1",
   "workflows": {
+    "review-delivery": {
+      "nodes": [
+        {"id": "critique", "label": "Review joined fixed artifacts"},
+        {"id": "repair", "label": "Repair accepted findings in one wave"},
+        {"id": "verify", "label": "Verify listed repairs"},
+        {"id": "return", "label": "Return the truthful review ending"}
+      ],
+      "edges": [
+        {"source": "critique", "target": "repair", "kind": "branch"},
+        {"source": "critique", "target": "return", "kind": "branch"},
+        {"source": "repair", "target": "verify", "kind": "sequence"},
+        {"source": "verify", "target": "critique", "kind": "loop"},
+        {"source": "verify", "target": "return", "kind": "branch"}
+      ]
+    },
     "3d-browser-game": {
       "nodes": [
         {"id": "record", "label": "Establish the program record"},

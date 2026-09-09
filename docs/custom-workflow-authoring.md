@@ -62,10 +62,9 @@ Only the ordinary item at the ring's top-level `workflows/<public-name>` is
 public. `orchflows list`, global name lookup, and generated host adapters do
 not expose the nested items. A call owned by the public workflow resolves a
 name in its private folders first and then continues through the caller's
-ordinary project, home, imports, and library rings. Calling another public
-top-level workflow starts that workflow's package scope. Calling a private
-helper keeps the enclosing public scope. This convention composes workflows
-without a path namespace or another workflow notation.
+ordinary project, home, imports, and library rings. Frame creation and
+existing-frame reuse follow [composition](../rules/composition.md);
+neither needs a path namespace or another workflow notation.
 
 Every named frame records the public owner, a digest of the whole package,
 and the contained workflow entry it read. Its callable children inherit those
@@ -261,12 +260,17 @@ the composition, which no member could see from its own seat.
 
 ## Idioms
 
+The shared delivery review recipe drives calls in its caller's existing frame,
+retaining that frame's package scope, pins and journal; it opens no redundant
+public wrapper. The caller owns the one close. This is a reusable step, not
+a public package-scope transition. See [review policy](review-policy.md).
+
 The control-flow sentences whose wording recurs across workflows. Quote one
 verbatim; a paraphrase is a second wording of one fact, and which steps earn
 one is [composition](../rules/composition.md) §13's.
 
-- **bounded-repair** — Where the judge blocks, one repair `do` is handed the
-  `findings:` line verbatim, then one re-judge; two rounds is the bound.
+- **bounded-repair** — Invoke `review-delivery` under the delivery's existing
+  owner and selected rounds, carrying fixed criteria and the findings verbatim.
 - **fan-out** — One `do` per named item, launched together under the frame;
   the shape line lists them as one wave.
 - **freeze** — Fix the identity before any candidate exists and forbid every

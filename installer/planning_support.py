@@ -28,6 +28,7 @@ SHARED_READER_MODULES = (
     "tickets_markdown.py",
     "tickets_readiness.py",
     "tickets_registry.py",
+    "tickets_review.py",
     "tickets_shapes.py",
 )
 
