@@ -227,7 +227,7 @@ class DependencyTests(unittest.TestCase):
                 result = workspace_prepare.prepare(root, env={"PATH": "", "PLAYWRIGHT_BROWSERS_PATH": str(root / "absent")}, run=run, packages=["nested"])
             self.assertEqual("installed", result["frontend"])
             self.assertEqual({"nested": "installed"}, result["packages"])
-            self.assertEqual([root, root / "nested"], [cwd for _, cwd in calls])
+            self.assertEqual([root, (root / "nested").resolve()], [cwd for _, cwd in calls])
             self.assertTrue(all(argv == ["npm", "ci"] for argv, _ in calls))
 
     def test_browser_readiness_rejects_empty_cache_directory_and_failed_binary(self):

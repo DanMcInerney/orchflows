@@ -176,6 +176,6 @@ class ReliabilityDispatchTest(unittest.TestCase):
             self.assertIn("error", tickets_pins.inspect_ticket_pins("run", "T", data))
             rings_trust.grant(bundle)
             inspected = tickets_pins.inspect_ticket_pins("run", "T", data)
-            self.assertEqual(str(standard / "STANDARD.md"), inspected["ticket_pins"]["standards"][0]["path"])
+            self.assertEqual(str((standard / "STANDARD.md").resolve()), inspected["ticket_pins"]["standards"][0]["path"])
             (package / "SKILL.md").write_text("changed package", encoding="utf-8")
             self.assertIn("error", tickets_pins.inspect_ticket_pins("run", "T", data))

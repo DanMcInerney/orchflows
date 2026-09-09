@@ -61,6 +61,7 @@ class DurableDoneTest(unittest.TestCase):
         self.assertFalse(reading["done"])
         self.assertEqual(7, reading["exit"])
         self.assertNotIn("FIRST_FAILURE", reading["stdout"])
+        expected_project = str(self.tree.resolve())
         remove_repo_tree(self.tree)
         stored = self.receipt(reading["evidence"])
         out = Path(stored["stdout_path"]).read_bytes()
@@ -72,7 +73,7 @@ class DurableDoneTest(unittest.TestCase):
         self.assertEqual(stored["artifact_before"], stored["artifact_after"])
         self.assertFalse(stored["changed_tree"])
         self.assertLessEqual(stored["started_at"], stored["ended_at"])
-        self.assertEqual(str(self.tree), stored["project"])
+        self.assertEqual(expected_project, stored["project"])
         self.assertIn(reading["evidence"]["path"], tickets_done.verification_line(reading))
 
     def test_zero_exit_and_unicode_are_success_only_for_unchanged_source(self):
