@@ -222,7 +222,14 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
 
   await page.goto(`${origin}/workflows`);
   const workflowCatalog = page.getByRole("list", { name: "Workflow definitions" });
-  await expect(workflowCatalog.locator(":scope > li")).toHaveCount(13);
+  const workflowIds = [
+    "3d-browser-game", "bakeoff", "benchmaker", "browser-game", "checkpointed-build",
+    "drift-canary", "evolve", "orch-build-workflow", "orch-do", "orch-judge",
+    "orchflows-videos", "renovate", "review-delivery", "self-improve",
+    "skill-tournament", "super-research", "tiktok-video",
+  ];
+  await expect(workflowCatalog.locator(":scope > li")).toHaveCount(workflowIds.length);
+  await expect.poll(async () => (await workflowCatalog.getByRole("link").allTextContents()).sort()).toEqual(workflowIds);
   await expect(workflowCatalog.locator("a[href^='/runs/']")).toHaveCount(0);
   await page.getByRole("link", { name: "evolve", exact: true }).click();
   await expect(page).toHaveURL(/\/workflows\/evolve$/);

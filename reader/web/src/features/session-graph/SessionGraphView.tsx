@@ -4,6 +4,7 @@ import {
   Controls,
   ReactFlow,
   ReactFlowProvider,
+  useNodesState,
   type Edge,
   type Node
 } from "@xyflow/react";
@@ -144,6 +145,24 @@ export function SessionGraphView({ route, state }: SessionGraphViewProps) {
   const topology = useMemo(() => session ? sessionTopology(session) : null, [session]);
   const initial = topology?.nodes.find((node) => node.kind === "agent" && node.state === "running")?.id ?? SESSION_NODE_ID;
   const [selection, setSelection] = useState(initial);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<SessionAgentNodeData>>([]);
+  useEffect(() => {
+    if (!topology) {
+      setNodes([]);
+      return;
+    }
+    const selected = selectedNode(topology, selection).id;
+    setNodes((current) => {
+      const measurements = new Map(current.map((node) => [node.id, node.measured]));
+      // Controlled updates must retain measured dimensions or React Flow hides nodes
+      // until ResizeObserver runs again, interrupting keyboard focus and selection.
+      return graphNodes(topology).map((node) => ({
+        ...node,
+        measured: measurements.get(node.id),
+        selected: node.id === selected
+      }));
+    });
+  }, [topology, selection, setNodes]);
   const [showGraph, setShowGraph] = useState(false);
   const [query, setQuery] = useState("");
   const inspector = useRef<HTMLElement>(null);
@@ -163,7 +182,6 @@ export function SessionGraphView({ route, state }: SessionGraphViewProps) {
   if (!session || !topology) return <EmptySession requested={route.session} />;
 
   const inspected = selectedNode(topology, selection);
-  const nodes = graphNodes(topology).map((node) => ({ ...node, selected: node.id === inspected.id }));
   const edges = graphEdges(topology);
   const inferredCount = topology.edges.filter((edge) => edge.inferred).length;
 
@@ -225,6 +243,7 @@ export function SessionGraphView({ route, state }: SessionGraphViewProps) {
               <ReactFlow
                 aria-label="Session agent topology"
                 nodes={nodes}
+                onNodesChange={onNodesChange}
                 edges={edges}
                 nodeTypes={nodeTypes}
                 onNodeClick={(_, node) => select(node.id)}
