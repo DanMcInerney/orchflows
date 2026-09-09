@@ -1,10 +1,11 @@
 # Custom workflow authoring
 
-This file owns scope, procedure, adapters, and admission for custom Orchflows
-items: extensions intended to resolve through an Orchflows ring or invoke the
-Orchflows runtime. It does not govern an ordinary host-native skill merely
-because Orchflows was used to author or review it. Route the work by the
-ordinary smallest-first shapes in [the host block](../templates/host-block.md),
+This file owns scope, procedure, adapters, and admission for Orchflows items.
+Its custom-item rules apply only to user- and project-scope Orchflows
+extensions; canonical items remain under library law. It does not govern an
+ordinary host-native skill merely because Orchflows was used to author or
+review it. Route the work by the ordinary smallest-first shapes in
+[the host block](../templates/host-block.md),
 and carry this exact file path in the sealed ticket's `## Context` as the
 standards-owner and authoring-standard pointer. Decomposition preserves that
 pointer in every member whose work is governed by it. Supply the section body
@@ -14,8 +15,10 @@ before sealing. Omission keeps the existing Context behavior.
 
 ## Rings
 
-A custom Orchflows skill, standard, or workflow lives in one of four rings, and
-`scripts/rings.py` reads them in one fixed order — nearest first:
+Orchflows resolves skills, standards, and workflows through four rings, and
+`scripts/rings.py` reads them in one fixed order — nearest first. User- and
+project-scope items are custom; imports are pinned external bundles and lib
+items are canonical.
 
 | ring | where | what it holds |
 | --- | --- | --- |
@@ -75,9 +78,9 @@ grant package scope.
 
 ## Scope and landing
 
-After an artifact has been classified as a custom Orchflows item, author it in
-a git-backed workspace under the code standard. Scope chooses its landing zone;
-it is not an installation scope.
+After an artifact has been classified as an Orchflows library or custom item,
+author it in a git-backed workspace under the code standard. Scope chooses its
+landing zone; it is not an installation scope.
 
 | scope | source landing | always-on rule landing | admission |
 | --- | --- | --- | --- |
