@@ -11,6 +11,7 @@ from installer.doctor import _planned_files
 from installer.packages import split_frontmatter
 from scripts import rings
 from tests.test_installer_cases.support import mock_host_clis
+from tests.test_installer_cases.node_tooling import offline_node_preparation
 from tests.test_rings import _item, _world
 
 
@@ -115,7 +116,8 @@ class SelfImproveEntryTests(unittest.TestCase):
         import sys
 
         self.plan.runtime_action = None
-        install.apply_plan(self.plan, accepted_source=install.resolve_source_commit())
+        with offline_node_preparation():
+            install.apply_plan(self.plan, accepted_source=install.resolve_source_commit())
         source = self.home / 'session.jsonl'
         source.write_text(json.dumps({
             'timestamp': '2026-09-07T10:00:00Z', 'type': 'session_meta',
