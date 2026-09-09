@@ -15,6 +15,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.tickets_done_evidence import artifact_identity
+
 
 # This test resolves its repository-owned fixture and package paths from the
 # checkout root; the climb belongs to this test owner, not a wildcard exemption.
@@ -73,18 +75,20 @@ class GateFixture:
 
     def __init__(self, root):
         self.root = root
-        self.core_commit = self.git_parent()
-        self.final_commit = self.git_head()
+        # Live evidence mutates throughout promotion; give it its own Git history.
+        self.git("init", "-q")
+        self.core_commit = self.make_commit("core")
+        self.final_commit = self.make_commit("final")
         self.brief_hash = digest(canonical({"promises": ["promise-loop", "promise-terminal"]}))
 
-    def git_head(self):
-        result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, timeout=30)
-        self.assert_command(result, "git rev-parse HEAD")
-        return result.stdout.strip()
+    def make_commit(self, phase):
+        self.git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                 "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", phase)
+        return self.git("rev-parse", "HEAD")
 
-    def git_parent(self):
-        result = subprocess.run(["git", "rev-parse", "HEAD^"], cwd=ROOT, capture_output=True, text=True, timeout=30)
-        self.assert_command(result, "git rev-parse HEAD^")
+    def git(self, *arguments):
+        result = subprocess.run(["git", *arguments], cwd=self.root, capture_output=True, text=True, timeout=30)
+        self.assert_command(result, "git " + " ".join(arguments))
         return result.stdout.strip()
 
     def assert_command(self, result, label):
@@ -431,10 +435,12 @@ class GateFixture:
 
 class BrowserGameGateIntegrationTests(unittest.TestCase):
     def run_cli(self, *arguments):
+        self.assertEqual(self.source_before, artifact_identity(ROOT), "live fixture mutated the source checkout")
         return subprocess.run([NODE, str(SCRIPTS / "validate_evidence.mjs"), *map(str, arguments)], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=120)
 
     def test_promoted_core_and_final_gate_rehash_full_lineage_and_reject_tampering(self):
-        with tempfile.TemporaryDirectory(dir=ROOT, prefix="orchflows-integration-") as directory:
+        self.source_before = artifact_identity(ROOT)
+        with tempfile.TemporaryDirectory(prefix="orchflows-integration-") as directory:
             fixture = GateFixture(Path(directory))
             core_path, final_path = fixture.build()
             core_promote = self.run_cli("--index", core_path, "--promote")
@@ -451,7 +457,7 @@ class BrowserGameGateIntegrationTests(unittest.TestCase):
             self.assertEqual(2, len(accepted["performance_coverage"]))
             self.assertTrue(all(len(item["runs"]) == 3 for item in accepted["performance_coverage"]))
 
-            with tempfile.TemporaryDirectory(dir=ROOT, prefix="orchflows-descriptive-") as descriptive_root:
+            with tempfile.TemporaryDirectory(prefix="orchflows-descriptive-") as descriptive_root:
                 descriptive_directory = Path(descriptive_root) / "fixture"
                 shutil.copytree(directory, descriptive_directory)
                 descriptive_index = descriptive_directory / "final-index.json"
