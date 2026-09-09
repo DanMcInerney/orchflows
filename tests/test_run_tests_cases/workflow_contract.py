@@ -134,6 +134,16 @@ class TestWorkflowContract(unittest.TestCase):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
         self.assertEqual(1, workflow.count("run: python tools/run_tests.py"))
         self.assertNotIn("run: python -m unittest discover", workflow)
+        # The play evidence tests import the package's locked Node dependencies.
+        # Inspect only Python legs: frontend provisioning cannot satisfy them.
+        steps = workflow.split("\n  checks:\n", 1)[1].split("\n    steps:\n", 1)[1]
+        self.assertIn("fetch-depth: 2", steps.split("uses: actions/setup-python@v5", 1)[0])
+        setup = steps.index("uses: actions/setup-node@v4")
+        install = steps.index("run: npm ci --prefix example-workflows/3d-browser-game --ignore-scripts --no-audit --no-fund")
+        suite = steps.index("run: python tools/run_tests.py")
+        self.assertLess(setup, install)
+        self.assertLess(install, suite)
+        self.assertIn("node-version: '24.15.0'", steps[setup:install])
 
     def test_ci_uploads_each_python_legs_timing_even_after_failure(self):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
