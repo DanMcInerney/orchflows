@@ -81,6 +81,43 @@ class VideoPackageTests(unittest.TestCase):
         for name, digest in expected.items():
             self.assertEqual(digest, hashlib.sha256(
                 (PACKAGE / 'references/scaffold' / name).read_bytes()).hexdigest())
+        templates = []
+        for reference in ('review.md', 'renderer.md'):
+            body = (PACKAGE / 'references' / reference).read_text(encoding='utf-8')
+            templates.append(next(line.strip().split() for line in body.splitlines()
+                                  if line.startswith('    <resolved-interpreter>')))
+        project = self.options['project']
+        project.mkdir()
+        home_owner = self.options['home'] / 'workflows/orchflows-videos'
+        shutil.copytree(PACKAGE, home_owner)
+        for ring in ('home', 'project'):
+            with self.subTest(ring=ring):
+                owner = home_owner if ring == 'home' else self.copy()
+                resolved = rings.resolve('workflow', 'orchflows-videos', trust=False,
+                                         **self.options)
+                self.assertEqual(ring, resolved['ring'])
+                self.assertEqual(owner.resolve(), Path(resolved['dir']).resolve())
+                self.assertEqual(tickets_pins.tree_digest('workflow', PACKAGE),
+                                 tickets_pins.tree_digest('workflow', owner))
+                for template in templates:
+                    command = [arg.replace('<resolved-interpreter>', sys.executable)
+                               .replace('<resolved-public-owner>', resolved['dir'])
+                               .replace('<approved-seconds>', '10') for arg in template]
+                    self.assertEqual(str(owner / 'scripts/probe.py'),
+                                     str(Path(command[1])))
+                    self.assertEqual('.', command[command.index('--project') + 1])
+                    help_result = subprocess.run(command[:2] + ['--help'], cwd=project,
+                                                 capture_output=True, timeout=30)
+                    self.assertEqual(0, help_result.returncode, help_result.stderr)
+                    absent = subprocess.run(command, cwd=project, capture_output=True,
+                                            text=True, timeout=30)
+                    self.assertEqual(1, absent.returncode, absent.stderr)
+                    self.assertIn('video absent or empty', absent.stderr)
+                if ring == 'home':
+                    wrong = [sys.executable, str(project / '.orchflows/workflows/'
+                             'orchflows-videos/scripts/probe.py'), '--help']
+                    self.assertEqual(2, subprocess.run(wrong, cwd=project,
+                                     capture_output=True, timeout=30).returncode)
 
     def test_literal_sequence_resolves_in_correct_public_scope(self):
         text = (PACKAGE / 'SKILL.md').read_text(encoding='utf-8')
@@ -157,7 +194,26 @@ class VideoPackageTests(unittest.TestCase):
                                         trust=False, **options)
         self.assertEqual(3, len(chain))
         legacy = ROOT / 'example-workflows/tiktok-video'
-        self.assertEqual(['SKILL.md'], [p.name for p in legacy.iterdir()])
+        def meaningful_files(directory):
+            return sorted(p.relative_to(directory).as_posix() for p in directory.rglob('*')
+                          if p.is_file() and p.suffix not in {'.pyc', '.pyo'})
+        self.assertEqual(['SKILL.md'], meaningful_files(legacy))
+        residue = self.root / 'legacy-residue'
+        shutil.copytree(legacy, residue)
+        cache = residue / 'scripts/__pycache__'
+        cache.mkdir(parents=True, exist_ok=True)
+        (cache / 'probe.cpython-313.pyc').write_bytes(b'generated cache')
+        (residue / 'empty/helper').mkdir(parents=True)
+        self.assertEqual(['SKILL.md'], meaningful_files(residue))
+        for extra in ('scripts/probe.py', 'workflows/helper/SKILL.md',
+                      'standards/extra/STANDARD.md', 'scripts/__pycache__/source.py'):
+            with self.subTest(extra=extra):
+                path = residue / extra
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('real extra content', encoding='utf-8')
+                self.assertEqual(sorted(['SKILL.md', extra]), meaningful_files(residue))
+                path.unlink()
+        self.assertEqual(['SKILL.md'], meaningful_files(residue))
         self.assertFalse(self.grade(legacy).has_errors)
         commands = list(workflows._commands((legacy / 'SKILL.md').read_text()))
         self.assertEqual(['tiktok-video', 'orchflows-videos'],
