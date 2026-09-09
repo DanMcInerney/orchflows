@@ -8,8 +8,7 @@ JavaScript dependencies from the repository root:
 npm ci --prefix example-workflows/3d-browser-game --ignore-scripts --no-audit --no-fund
 ```
 
-A shallow checkout also needs at least two commits (`HEAD` and `HEAD^`) for
-the lineage fixture; CI uses `fetch-depth: 2`.
+The lineage fixture creates its own temporary Git history.
 Repeat the dependency install after its lockfile changes. The Python
 play-evidence tests import this package; they do not require a browser download. Preflight reuses these local
 dependencies and does not provision them itself.
