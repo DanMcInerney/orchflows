@@ -132,7 +132,7 @@ sealed child prompt has. This is a glue-only driver, not deliverable authority;
 
 The standard-library floor belongs to the library, not to what you author
 on it: [ARCHITECTURE.md](../ARCHITECTURE.md)'s scripts tier states it,
-and a ring item is outside it. There are three classes of dependency, each
+and a non-library ring item is outside it. There are three classes of dependency, each
 with one home and one file, and they never share an environment.
 
 An item's **own Python tooling** — what its own scripts import — goes in one
