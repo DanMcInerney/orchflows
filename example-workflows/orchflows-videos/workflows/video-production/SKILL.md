@@ -4,8 +4,8 @@ description: Render an independently accepted video direction into a fixed proje
 disable-model-invocation: true
 ---
 
-Require: an independently accepted script/storyboard document identity and its
-findings identity; brief with duration, audience, message and brand; pinned
+Require: an independently accepted script/storyboard Git commit identity and its
+findings identity; brief with duration, audience, intent, message and brand; pinned
 renderer decision; assets, rights and provider constraints; git workspace;
 authoring-owner pointer; per-call bound. Inputs are semantic documents, not a
 particular creative workflow's file layout.
@@ -13,29 +13,30 @@ particular creative workflow's file layout.
     tickets.py frame-open <run> --goal-file <production-goal> --workflow video-production
       --context-file <production-context>
 
-Carry the accepted document, findings, brief, renderer decision, constraints and
+Carry the accepted direction commit, findings, brief, renderer decision, constraints and
 authoring-owner into governed Context. Read [review](../../references/review.md)
 when preparing the production and review goals and the outside probe command.
 Resolve its delivery settings before making; unresolved rights remain gaps and
 permit only the authorized evaluation scope.
 
+Keep this helper in the orchflows-videos owner scope. Making, review and repairs
+share direction's ordered orch-code, short-videos, orchflows-marketing-videos pins.
+
 Make through `orch-do`, applying the rendering method inside the isolated call:
 
-    tickets.py do <run> --parent <frame> --standard orch-code --standard video-quality --skill render-video
-      --goal-file <render-goal> --context-file <production-context> --workspace <workspace> --isolation required --bound <bound>
+    tickets.py do <run> --parent <frame> --standard orchflows-marketing-videos --skill render-video
+      --goal-file <render-goal> --context-file <production-context> --workspace <workspace> --workspace-adapter git --isolation required --bound <bound>
 
-The goal requires the rendered project, playable review assets and evidence for
-the accepted direction. Land the candidate through the emitted ticket's ordinary
-landing door. Judge the fixed git output through `orch-judge` with the identical
-ordered standard digests and package identity; a pin mismatch requires fresh
-admission, never comparison against silently changed guidance.
+Land the candidate, then judge its fixed git output through `orch-judge` with
+the identical ordered standard digests and package identity; a pin mismatch
+requires fresh admission.
 
-    tickets.py judge <run> --parent <frame> --standard orch-code --standard video-quality
-      --goal-file <review-goal> --context-file <production-context> --artifacts <git-artifact> --isolation required --bound <bound>
+    tickets.py judge <run> --parent <frame> --standard orchflows-marketing-videos
+      --goal-file <review-goal> --context-file <production-context> --artifacts <git-artifact> --workspace <workspace> --workspace-adapter git --isolation required --bound <bound>
 
 Where the judge blocks, one repair `do` is handed the
 `findings:` line verbatim, then one re-judge; two rounds is the bound.
-Repairs use the same making call and pins on the latest fixed candidate; each
+Repairs use the making call and pins on the latest fixed candidate; each
 re-judge reads that repair's fixed identity. Unavailable listening is an unresolved
 criterion, not a repairable render defect: preserve an audition and independent
 transcript/signal/timing evidence, request a listening-capable reviewer or human

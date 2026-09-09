@@ -1,20 +1,19 @@
 # Production review boundary
 
-The public tiktok-video workflow calls private video-production. This helper earns
+The public orchflows-videos workflow calls private video-production. This helper earns
 its own journal because rendering has an isolated git output, costly repairs and
 independent audiovisual acceptance. It accepts any independently accepted semantic
-script/storyboard document plus findings identity; it does not import a sibling's
+script/storyboard Git commit plus findings identity; it does not import a sibling's
 file layout. orch-do/land own isolated making and integration, orch-judge owns
-independence, render-video owns the method, and video-quality tightens orch-code.
+independence, render-video owns the method, and short-videos tightens orch-code.
 No research, creative or rendering wrapper is introduced here.
 
 ## Preparing calls
 
-Retain the public package scope when opening video-production. Literal private
-names are video-production, render-video and video-quality; orch-code resolves
-from library scope. Both making and judging resolve the ordered standards
-orch-code then video-quality at identical digests. Record the expanded pins from
-issued tickets, package digest, run/frame/ticket identities, accepted document and
+Retain the public package scope when opening video-production. Stamp orchflows-marketing-videos, resolving orch-code -> short-videos ->
+orchflows-marketing-videos in that scope. Making, judging and repairs use that same ordered chain at
+identical digests, including the orchflows-marketing-videos narrowing. Record expanded pins from
+issued tickets, package digest, run/frame/ticket identities, accepted direction commit and
 findings identities and authoring-owner in Context. An independent judge reads the
 same immutable render and source, not a maker's mutable preview. Repair goals
 preserve accepted direction and target only evidenced findings.
@@ -29,7 +28,7 @@ not a renamed method or presumed fallback.
 
 The review goal requests complete exported motion playback, sampled frames at
 semantic beats/transitions, script versus caption comparison and final-mix hearing
-where supported, under the full video-quality standard. Ask for timestamped
+where supported, under the full selected standard chain. Ask for timestamped
 observations and defects, distinguishing technical, visual and audible evidence.
 When hearing is unavailable, independent text, signal and timing inspection still
 proceeds. Supply the exact mix and short audition with script to a listening-capable
@@ -40,11 +39,21 @@ capabilities or call a technical pass a completed audiovisual review.
 
 ## Outside probe interface
 
-Resolve the interpreter through `orchflows env workflow tiktok-video`, then from
-the produced project's root run the foundation probe in the unchanged project
-bundle:
+From the produced project's root, resolve the public orchflows-videos owner
+through `orchflows list --kind workflow` and the interpreter through
+`orchflows env workflow orchflows-videos`. Set `<resolved-public-owner>` to the
+absolute directory containing that resolved public SKILL.md; verify its normalized
+package digest matches the invocation's pinned workflow digest before preparing
+the command. A missing or changed owner requires resolution, not a fallback copy.
 
-    <resolved-interpreter> .orchflows/workflows/tiktok-video/scripts/probe.py --project . --video output/final.mp4 --seconds <approved-seconds>
+Use that owner's probe, keeping `--project` pointed at the produced Git repository:
+
+    <resolved-interpreter> <resolved-public-owner>/scripts/probe.py --project . --video output/final.mp4 --seconds <approved-seconds>
+
+For a home install the owner is ~/.orchflows/workflows/orchflows-videos; for a
+project install it is <project>/.orchflows/workflows/orchflows-videos. Expand and
+quote actual absolute paths as argv values. Copying the renderer scaffold alone
+does not install a project workflow package.
 
 Pass `--audio optional` only for approved silence; defaults are required audio,
 30fps, -16 LUFS +/-2 and -1 dBTP. Explicit approved changes use `--fps`, `--lufs`,
@@ -62,12 +71,9 @@ blocked judge; bounded repair exhaustion retains findings and partial output.
 
 ## Static authoring evidence versus runtime admission
 
-At this lower-contract wave the public composer is deliberately absent. A disposable
-owner fixture can contain the unchanged foundation and these private files with a
-minimal public invocation solely to exercise the existing package checker. Record
-that fixture's static resolution and unresolved-method negative control as such;
-synthetic owner prose does not prove the actual public workflow executed. The
-composer and joined gate own finished-package checking and later named invocation.
+Static package resolution and mutated controls do not prove the actual public
+workflow executed. The joined gate and outer caller own full source checking and
+later named invocation.
 
 Runtime acceptance must name fixed package and git output, generated adapter paths
 when used, shared maker/judge pins, actual dispatch and landing identities,

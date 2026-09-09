@@ -1,7 +1,7 @@
 # Qualified rendering boundary
 
 The private render-video method serves the production maker. It contains no
-dispatch or review loop. The public tiktok-video workflow and private production
+dispatch or review loop. The public orchflows-videos workflow and private production
 workflow own calls; their stamped standards own quality. The probe uses Python's standard library and the project's locked Node CLI. No package runtime npm install,
 global FFmpeg, paid provider, or graph-layout library is required.
 
@@ -107,12 +107,13 @@ waveform statistics, captions and text cannot prove heard quality.
 
 ## Outside output probe
 
-From the disposable project root, with the unchanged accepted package in its
-project bundle, use the workflow environment interpreter:
+Prepare the resolved interpreter, pinned public owner and separate artifact
+project as specified by [review's probe interface](review.md#outside-probe-interface).
+From the produced project root:
 
-    <orchflows env workflow tiktok-video> .orchflows/workflows/tiktok-video/scripts/probe.py --project . --video output/final.mp4 --seconds 30
+    <resolved-interpreter> <resolved-public-owner>/scripts/probe.py --project . --video output/final.mp4 --seconds 30
 
-This denotes the interpreter returned by `orchflows env workflow tiktok-video`,
+This denotes the interpreter returned by `orchflows env workflow orchflows-videos`,
 not a literal shell executable. On the qualified host it is the verified Python
 interpreter. Probe defaults are 30fps, required audio, -16 LUFS +/-2 and -1 dBTP.
 For an approved silent artifact add `--audio optional`; any present audio still

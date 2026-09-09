@@ -26,6 +26,7 @@ EXPECTED_WORKFLOWS = {
     "skill-tournament",
     "super-research",
     "tiktok-video",
+    "orchflows-videos",
 }
 
 
