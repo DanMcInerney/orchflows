@@ -9,7 +9,7 @@ amendments. The brief and amendments are product authority.
 
 Open one frame and retain its returned frame identity:
 
-Resolve `rounds` by the [review policy](../../docs/review-policy.md) precedence.
+Resolve `rounds` by the `docs/review-policy.md` precedence.
 Forward it only to this delivery root and genuinely independent stage owners;
 ordinary nested frames inherit.
 
