@@ -1,7 +1,10 @@
 # Custom workflow authoring
 
-This file owns custom-item scope, procedure, adapters, and admission. Route the work by
-the ordinary smallest-first shapes in [the host block](../templates/host-block.md),
+This file owns scope, procedure, adapters, and admission for custom Orchflows
+items: extensions intended to resolve through an Orchflows ring or invoke the
+Orchflows runtime. It does not govern an ordinary host-native skill merely
+because Orchflows was used to author or review it. Route the work by the
+ordinary smallest-first shapes in [the host block](../templates/host-block.md),
 and carry this exact file path in the sealed ticket's `## Context` as the
 standards-owner and authoring-standard pointer. Decomposition preserves that
 pointer in every member whose work is governed by it. Supply the section body
@@ -11,7 +14,7 @@ before sealing. Omission keeps the existing Context behavior.
 
 ## Rings
 
-A custom skill, standard, or workflow lives in one of four rings, and
+A custom Orchflows skill, standard, or workflow lives in one of four rings, and
 `scripts/rings.py` reads them in one fixed order — nearest first:
 
 | ring | where | what it holds |
@@ -72,8 +75,9 @@ grant package scope.
 
 ## Scope and landing
 
-Author in a git-backed workspace under the code standard. Scope chooses the
-landing zone; it is not an installation scope.
+After an artifact has been classified as a custom Orchflows item, author it in
+a git-backed workspace under the code standard. Scope chooses its landing zone;
+it is not an installation scope.
 
 | scope | source landing | always-on rule landing | admission |
 | --- | --- | --- | --- |
@@ -87,7 +91,11 @@ then install the accepted source and adapters explicitly. The shared
 `install.py` remains a user-scope install for this canonical library; it does
 not turn a ring item into an installation scope.
 
-Custom items are outside library law and bind only at their declared scope.
+Using Orchflows to coordinate construction does not make the resulting artifact
+a custom Orchflows item. Host-native skills, project files, and other ordinary
+deliverables retain the ownership and installation rules of their target host.
+
+Custom Orchflows items are outside library law and bind only at their declared scope.
 The generic project defaults above apply only when the project's standards owner
 names no more specific owner path. Never land at canonical scope what the request placed at custom
 scope, or at a broader custom scope than requested.
