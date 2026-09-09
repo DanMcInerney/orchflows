@@ -419,7 +419,8 @@ def validate_composition_admission(
         diag.error(
             rel(path),
             f"workflow '{composition}' carries forbidden {kind}; "
-            "a workflow contains only its SKILL.md body and reference prose",
+            "use package scripts/ for concrete boundaries and references/ for fixtures; "
+            "workflow protocol schemas and generic script machinery remain forbidden",
         )
     for composition in sorted(excepted):
         date = allowlist[composition]

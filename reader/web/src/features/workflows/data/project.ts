@@ -65,6 +65,8 @@ export function projectCatalog(payload: WorkflowCatalogPayload): WorkflowCatalog
 export function projectDetail(payload: WorkflowDetailPayload): WorkflowDetailModel {
   const shared = {
     id: payload.id,
+    summary: payload.summary,
+    description: payload.description,
     nodes: payload.nodes.map(node),
     edges: payload.edges.map(edge),
     relations: payload.relations.map(edge),

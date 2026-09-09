@@ -1,0 +1,137 @@
+{
+  "assigned_name": "B1.11",
+  "dispatch_id": "B1.11:d1",
+  "assignment_seal": "sha256:d0c581f780ce1739c7361e5d27e5f677e3f51fee96fdc758516b7781a13d0613",
+  "reviewed_artifact": "git:5553f66abc12f761fecc10c83c1af63599a8280c",
+  "maker_artifact": "git:a53090747835afb6be38496e32b78fcb1ace041b",
+  "prior_finding": "research/tiktok-video-cut/windows-fixture-review.json#R3",
+  "standard_evidence": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "pin_rederived": true,
+    "application": "Whole pinned orch-code and git lens; orch-judge contract, verification section9, token-economy shape principles, custom-workflow-authoring owner. Independent launch-resolved orch_planner reviewer; no delegation.",
+    "owner": "C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md"
+  },
+  "findings": [],
+  "cause_threads": [],
+  "remaining_concrete_blockers": [],
+  "resolved_prior_findings": [
+    {
+      "id": "R3",
+      "resolved": true,
+      "cause": "Temporary package fixture under ROOT/.orch-notes could disappear after repository-copy enumeration.",
+      "repair": "Unique TemporaryDirectory(dir=ROOT.parent) makes fixture a same-drive sibling; scratch mkdir removed; cleanup unchanged.",
+      "can_fail_reading": "Actual old setUp/copy/cleanup: outside_root=false and repository_copy_can_descend=true under actual FrictionLocationSyncTest.COPY_SKIPS.",
+      "passing_reading": "Actual fixed setUp/copy/cleanup: outside_root=true, sibling_of_root=true, repository_copy_can_descend=false; same drive and cleanup true.",
+      "evidence": [
+        {
+          "label": "before",
+          "fixture": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.11\\.orch-notes\\tmpak7nyw0s",
+          "outside_root": false,
+          "same_drive": true,
+          "sibling_of_root": false,
+          "copied_package_exists": true,
+          "repository_copy_can_descend": true,
+          "cleanup_removed_fixture": true
+        },
+        {
+          "label": "after",
+          "fixture": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\tmp8hlx7otp",
+          "outside_root": true,
+          "same_drive": true,
+          "sibling_of_root": true,
+          "copied_package_exists": true,
+          "repository_copy_can_descend": false,
+          "cleanup_removed_fixture": true
+        }
+      ]
+    }
+  ],
+  "package": {
+    "path": "example-workflows/tiktok-video",
+    "digest": "sha256:d13322cae66f674b0b9bd19d92fc9fbd40ff2139cc3c9ebb95d28884edc1eb42",
+    "unchanged_from": "git:05290a079127759f6ae1307dbcda4e6d3e800a6c",
+    "proof": "git diff --exit-code old reviewed tip HEAD -- example-workflows/tiktok-video exit0; runtime tree_digest equals required pin."
+  },
+  "diff_review": "Only tests/test_tiktok_video_package.py differs across the repair merge: two insertions/four deletions in setUp. All non-setUp AST is identical, including grade, negative assertions and verifier calls. No product, package, validator, diagnostic or ceiling semantics changed. Comment accurately describes placement; surrounding idiom retained.",
+  "checks": {
+    "placement_control": {
+      "wrapper_exit": 0,
+      "child_exit": 0,
+      "timeout_seconds": 120,
+      "git_commands": [
+        {
+          "argv": [
+            "git",
+            "rev-parse",
+            "HEAD"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "git",
+            "diff",
+            "--name-only",
+            "HEAD^1",
+            "HEAD"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "git",
+            "diff",
+            "--exit-code",
+            "05290a079127759f6ae1307dbcda4e6d3e800a6c",
+            "HEAD",
+            "--",
+            "example-workflows/tiktok-video"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "git",
+            "show",
+            "HEAD^1:tests/test_tiktok_video_package.py"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    "focused": {
+      "command": "tools/run_tests.py tests.test_tiktok_video_package tests.test_tiktok_video_probe tests.test_validate -j 3 --no-cache --timing-file .orch-notes/B1.11-focused-timing.json",
+      "wrapper_exit": 0,
+      "runner_exit": 0,
+      "timeout_seconds": 600,
+      "modules": "package5/probe6/validate57; 68 tests, zero failures/errors/skips; all module exits0"
+    },
+    "diff_check_exit": 0
+  },
+  "evidence_files": [
+    {
+      "path": ".orch-notes/B1.11-controls.py",
+      "sha256": "44c8a6262de55f3f2c6cdc62bdfe2e63b981e0c08aa01b896fcedbf53f37c951",
+      "identity": "raw file bytes"
+    },
+    {
+      "path": ".orch-notes/B1.11-controls.json",
+      "sha256": "2fc4f55b11a3eddb512a4aff10471a50dc0ce7c4c1daf962cc1e4814964f225c",
+      "identity": "raw file bytes"
+    },
+    {
+      "path": ".orch-notes/B1.11-focused-timing.json",
+      "sha256": "52c6312728a0ab8bd0766fedd337bdfce389a5c30040ddea58c407f69f50f66b",
+      "identity": "raw file bytes"
+    }
+  ],
+  "command_accounting": {
+    "exit_0": "Every observed command: initial Get-Content skill/ticket/standard; acceptance and independent-placement tickets result; git status/show/diff and rg discovery; owner/prior-review/package/probe/pins/runner/copy-owner/maker-report reads; two friction records; scratch New-Item and Set-Content; controls and its four git subprocesses; focused runner and all three module children; git diff --check. Precise check bounds/exits above.",
+    "output_recovery": "Batched reference output and maker-ticket tail truncated; each logged, then complete owner and maker Report recovered with bounded reads. No test output truncated or check abandoned.",
+    "later_commands": "Findings generation, staged checks, commit, final status and dispatch closure exits recorded in ticket outcome."
+  },
+  "gaps": [
+    "Root owns final joined full no-cache required gate and completed hosted CI. Focused green is not a matrix verdict."
+  ],
+  "scope_accounting": "Prescribed narrow review followed with no deviations. Reused exact R2 real cross-drive before/after evidence from prior review, plus independently checked same-drive placement; no duplicate drive mappings. Wrote only this durable JSON and unique scratch. No source edit, package re-authoring, installation, full gate, rendering or audiovisual claim. Existing package admission/authoring evidence remains bounded to its prior identities. Terminal disposition belongs to join."
+}

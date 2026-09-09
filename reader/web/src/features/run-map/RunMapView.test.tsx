@@ -150,11 +150,11 @@ describe("RunMapView", () => {
 
   it("preserves disclosure context when opening and closing a persistent inspector", () => {
     render(<RunMapView state={ready(model())} route={route("full-expanded")} />);
-    fireEvent.change(screen.getByPlaceholderText("Search ticket or executor"), { target: { value: "G4" } });
+    fireEvent.change(screen.getByPlaceholderText("Search task or ticket"), { target: { value: "G4" } });
     fireEvent.click(screen.getByRole("button", { name: "G4" }));
     expect(screen.getByRole("heading", { name: "G4" })).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Close inspector" }));
-    expect(screen.getByPlaceholderText("Search ticket or executor").getAttribute("value")).toBe("G4");
+    expect(screen.getByPlaceholderText("Search task or ticket").getAttribute("value")).toBe("G4");
     expect(screen.getByRole("heading", { name: "Every canonical dependency" })).not.toBeNull();
   });
 

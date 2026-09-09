@@ -19,6 +19,9 @@ from tests.test_workspace_cases.cli_cases import (  # noqa: F401
     NoFormatCallsTest,
     TestHelpAndVantage,
 )
+from tests.test_workspace_cases.detached_integration_cases import (  # noqa: F401
+    TestDetachedIntegrationContinuity,
+)
 from tests.test_workspace_cases.document_cases import (  # noqa: F401
     TestTheDocumentLaneObservesTheTreeItStandsIn,
     TestTheRefusalSurvivesForWhatCannotBeGiven,

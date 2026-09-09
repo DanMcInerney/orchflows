@@ -71,7 +71,7 @@ else:  # pragma: no cover - direct/installed flat script path
     )
 
 DO_USAGE = (
-    "do <run> --standard S [--standard S ...] --goal-file F [--details-file D] "
+    "do <run> --standard S [--standard S ...] --goal-file F [--details-file D] [--context-file C] "
     "[--parent ID] [--skill S] [--profile P] "
     "[--done <canonical-json>] [--makes " + "|".join(PLANNING_KINDS) + "] "
     "[--isolation required|none] [--bound B] "
@@ -79,7 +79,7 @@ DO_USAGE = (
 )
 JUDGE_USAGE = (
     "judge <run> --standard S [--standard S ...] --goal-file F --artifacts <typed-line> "
-    "[--artifacts ...] [--details-file D] [--parent ID] "
+    "[--artifacts ...] [--details-file D] [--context-file C] [--parent ID] "
     "[--skill S] [--profile P] "
     "[--isolation required|none] [--bound B] "
     "[--workspace <target>] [--workspace-adapter A] [--host H]"
@@ -181,11 +181,13 @@ def _artifact_lines(values, run_dir=None) -> tuple:
     return lines, None
 
 
-def _context(parent, artifacts) -> str:
+def _context(parent, artifacts, supplied=None) -> str:
     """The child's Context: whose call it is, and what it was handed."""
 
     lines = [PARENT_CLAUSE + parent] if parent else []
     lines.extend(ARTIFACT_CLAUSE + line for line in artifacts or ())
+    if supplied and supplied.strip() != "[]":
+        lines.append(supplied.strip())
     return "\n".join(lines) if lines else "[]"
 
 
@@ -234,7 +236,7 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
 def _minted(run: str, run_dir, *, executor, standards, goal, details, parent,
             done, isolation, bound, artifacts, makes=None, skill=None,
             profile=None, workspace_adapter=None, owner=None,
-            workflow_context=None):
+            workflow_context=None, context=None):
     """`(ticket_id, refusal)` -- one callable's fields, minted through `_mint`."""
 
     stamped, refusal = pin_fields(standards, skill, owner=owner)
@@ -251,7 +253,7 @@ def _minted(run: str, run_dir, *, executor, standards, goal, details, parent,
         "isolation": isolation, "bound": bound,
         "done": done, MAKES_FIELD: makes,
     }
-    sections = [("Goal", goal), ("Context", _context(parent, artifacts))]
+    sections = [("Goal", goal), ("Context", _context(parent, artifacts, context))]
     if details:
         sections.append(("Details", details))
     sections.append((REPORT_SECTION, ""))
@@ -300,6 +302,7 @@ def _cmd_callable(rest, *, judge: bool):
     standards = _extract_all(args, "--standard")
     goal_file = _extract_flag(args, "--goal-file")
     details_file = _extract_flag(args, "--details-file")
+    context_file = _extract_flag(args, "--context-file")
     parent = _extract_flag(args, "--parent")
     done = _extract_flag(args, "--done")
     makes = _extract_flag(args, "--makes")
@@ -346,6 +349,11 @@ def _cmd_callable(rest, *, judge: bool):
         return failure
     if not goal.strip():
         return {"error": f"goal file {goal_file} is empty; Goal is one observable end result"}
+    context = None
+    if context_file is not None:
+        context, failure = _read_utf8(context_file, "context file")
+        if failure is not None:
+            return failure
     details = None
     if details_file is not None:
         details, failure = _read_utf8(details_file, "details file")
@@ -406,7 +414,7 @@ def _cmd_callable(rest, *, judge: bool):
             parent=parent, done=done, isolation=isolation, bound=bound,
             artifacts=lines, makes=makes, skill=skill,
             profile=profile, workspace_adapter=selected.key, owner=owner,
-            workflow_context=workflow_context,
+            workflow_context=workflow_context, context=context,
         )
     if failure is not None:
         return failure

@@ -26,11 +26,11 @@ describe("WorkflowSourceView", () => {
   it("renders only closed metadata and inert source text", () => {
     const { container } = render(<WorkflowSourceView route={route("source")} state={ready(sourceFixture)} />);
 
-    expect(screen.getByRole("navigation", { name: "Breadcrumb" }).textContent).toBe("Workflows/evolve/src_campaign");
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" }).textContent).toBe("Workflows/evolve/Source");
     expect(screen.getByRole("link", { name: "Workflows" }).getAttribute("href")).toBe("/workflows?fixture=source");
     expect(screen.getByRole("link", { name: "evolve" }).getAttribute("href")).toBe("/workflows/evolve?fixture=source");
     expect(screen.getByRole("link", { name: "Back to evolve" }).getAttribute("href")).toBe("/workflows/evolve?fixture=source");
-    expect(screen.getByRole("heading", { name: "src_campaign" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "evolve source" })).not.toBeNull();
     expect(screen.getByText("markdown")).not.toBeNull();
     expect(screen.getByText(sourceFixture.sha256)).not.toBeNull();
     expect(screen.getByText("Host details redacted")).not.toBeNull();

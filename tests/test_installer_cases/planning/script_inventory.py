@@ -141,10 +141,20 @@ class TestScriptNames(unittest.TestCase):
         shipping without a single check going red."""
 
         named = set()
+        missing = set()
+        workflows = install.REPO_ROOT / "example-workflows"
         for path in sorted((install.REPO_ROOT / "example-workflows").rglob("*.md")):
-            named.update(BARE_SCRIPT_RE.findall(path.read_text(encoding="utf-8")))
+            matches = BARE_SCRIPT_RE.findall(path.read_text(encoding="utf-8"))
+            named.update(matches)
+            owner = workflows / path.relative_to(workflows).parts[0]
+            for name in matches:
+                if name in install.SCRIPT_NAMES:
+                    continue
+                if (owner / "SKILL.md").is_file() and (owner / "scripts" / name).is_file():
+                    continue
+                missing.add(name)
         self.assertTrue(named, "no template stub names a bare script; the grep is wrong")
-        missing = sorted(name for name in named if name not in install.SCRIPT_NAMES)
+        missing = sorted(missing)
         self.assertEqual(
             [],
             missing,

@@ -1,0 +1,7 @@
+{
+  "standards": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+  },
+  "package": "sha256:d13322cae66f674b0b9bd19d92fc9fbd40ff2139cc3c9ebb95d28884edc1eb42"
+}

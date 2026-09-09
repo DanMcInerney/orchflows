@@ -1,3 +1,4 @@
+import { RouteState, RefreshStatus } from "../../../shared/transport/RouteState";
 import { AlertTriangle, ArrowLeft, Braces, GitBranch, Link2, Network, SearchX } from "lucide-react";
 import { useState } from "react";
 
@@ -6,6 +7,7 @@ import type { WorkflowDetailEdge, WorkflowDetailModel, WorkflowDetailNode } from
 import type { WorkflowDetailRoute } from "../route";
 import { listRoute, sourceRoute } from "../route";
 import "../styles.css";
+import { WorkflowOverview } from "./WorkflowOverview";
 import { WorkflowGraph, type WorkflowSelection } from "./WorkflowGraph";
 
 export interface WorkflowDetailViewProps {
@@ -17,7 +19,7 @@ function relationVerb(edge: WorkflowDetailEdge): string {
   if (edge.kind === "loop") return "loops to";
   if (edge.kind === "dependency") return "continues to";
   if (edge.kind === "executor") return "is executed by";
-  return "calls";
+  return "references";
 }
 
 function sourceHref(route: WorkflowDetailRoute, sourceId: string): string {
@@ -32,6 +34,7 @@ function SourceLink({ node, route }: { node: WorkflowDetailNode; route: Workflow
 function nodeKindLabel(node: WorkflowDetailNode): string {
   if (node.kind === "work") return "Definition-time ticket template";
   if (node.kind === "workflow") return "Workflow definition";
+  if (node.kind === "standard") return "Standard reference";
   if (node.kind === "skill") return "Skill definition";
   return "Script definition";
 }
@@ -71,7 +74,7 @@ function Inspector({ route, selection }: { route: WorkflowDetailRoute; selection
     >
       <header><p className="eyebrow"><Link2 aria-hidden="true" /> Selected relation</p><h2 id="workflow-inspector-title">{edge.label}</h2></header>
       <dl>
-        <div><dt>Kind</dt><dd>{edge.kind === "loop" ? "Loop relation" : edge.kind}</dd></div>
+        <div><dt>Kind</dt><dd>{edge.kind === "loop" ? "Loop relation" : edge.kind.replace("-call", " reference").replace("-", " ")}</dd></div>
         <div><dt>From</dt><dd><code>{edge.from}</code></dd></div>
         <div><dt>To</dt><dd><code>{edge.to}</code></dd></div>
       </dl>
@@ -85,10 +88,10 @@ function TopologyCompanion({ model, route }: { model: WorkflowDetailModel; route
   const work = model.nodes.filter((node) => node.kind === "work");
   const calls = model.edges.filter((edge) => edge.kind === "skill-call" || edge.kind === "script-call");
   return (
-    <section className="workflow-companion" role="region" aria-label="Complete ordered topology">
-      <header><p className="eyebrow">Nonvisual equivalent</p><h3>Complete ordered topology</h3></header>
+    <section className="workflow-companion" role="region" aria-label="Complete topology and references">
+      <header><p className="eyebrow">Nonvisual equivalent</p><h3>Complete topology and references</h3></header>
       <section className="workflow-companion__sequence" aria-labelledby="workflow-companion-sequence">
-        <h4 id="workflow-companion-sequence">{model.type === "composition" ? "Step sequence" : "Call sequence"}</h4>
+        <h4 id="workflow-companion-sequence">{model.type === "composition" ? "Step sequence" : "Source references"}</h4>
         {model.type === "composition" ? (
           <ol aria-label="Workflow steps">
             {work.map((template, index) => {
@@ -106,14 +109,14 @@ function TopologyCompanion({ model, route }: { model: WorkflowDetailModel; route
             })}
           </ol>
         ) : (
-          <ol aria-label="Workflow calls">
-            {calls.map((edge, index) => (
+          <ul aria-label="Workflow references">
+            {calls.map((edge) => (
               <li key={edge.id}>
-                <b>Call {index + 1}: {labels.get(edge.to) ?? edge.to}</b>
-                <span>{edge.kind === "skill-call" ? "Called skill" : "Called script"} from {labels.get(edge.from) ?? edge.from}.</span>
+                <b>{labels.get(edge.to) ?? edge.to}</b>
+                <span>{edge.kind === "skill-call" ? "Referenced skill" : "Referenced script"} from {labels.get(edge.from) ?? edge.from}.</span>
               </li>
             ))}
-          </ol>
+          </ul>
         )}
       </section>
       <div>
@@ -158,6 +161,7 @@ function EmptyDetail({ route }: { route: WorkflowDetailRoute }) {
 }
 
 export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
+  const [inspecting, setInspecting] = useState(false);
   const firstNode = state.model?.nodes[0];
   const firstOccurrence = firstNode?.kind === "workflow"
     ? `node:${firstNode.id}:definition`
@@ -171,8 +175,7 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
     id: firstNode?.id ?? "",
     occurrenceId: firstOccurrence,
   });
-  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
-  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!route.fixture && (state.status === "loading" || state.status === "error")) return <RouteState state={state} context={{ title: route.workflowId, identity: route.workflowId, description: "The selected workflow definition and its source references.", parents: [{ label: "Workflows", href: listRoute.build({ fixture: route.fixture }) }] }} />;
   const model = state.model;
   if (!model || model.nodes.length === 0) return <EmptyDetail route={route} />;
 
@@ -185,39 +188,41 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
   const selection: WorkflowSelection = selectedEdge
     ? { type: "edge", value: selectedEdge, occurrenceId: selectionKey.occurrenceId }
     : { type: "node", value: selectedNode, occurrenceId: selectionKey.occurrenceId };
-  const select = (next: WorkflowSelection) => setSelectionKey({
+  const select = (next: WorkflowSelection) => { setInspecting(true); setSelectionKey({
     type: next.type,
     id: next.value.id,
     occurrenceId: next.occurrenceId,
-  });
+  }); };
   const inspector = <Inspector route={route} selection={selection} />;
   const graph = (
     <article className="workflow-detail__graph-panel">
       <header>
         <div>
           <p className="eyebrow"><GitBranch aria-hidden="true" /> {model.type === "composition" ? "Composition flow" : "Callable workflow"}</p>
-          <h2>{model.type === "composition" ? "Skills called, step by step" : "Skills and scripts called"}</h2>
+          <h2>{model.type === "composition" ? "Skills called, step by step" : "Referenced skills and scripts"}</h2>
           <p>{model.type === "composition"
             ? "Each skill is paired with the reusable ticket template that defines its work. Runtime tickets are created later."
-            : "The workflow definition calls each skill or script below; relation order remains canonical."}</p>
+            : "Lexical references from source, without inferred invocation or order. Standard operands are shown separately as standard references."}</p>
         </div>
         <span>Observe only</span>
       </header>
       <WorkflowGraph model={model} selection={selection} onSelect={select} />
-      <TopologyCompanion model={model} route={route} />
+      <details className="workflow-disclosure"><summary>Text equivalent and all source links</summary><TopologyCompanion model={model} route={route} /></details>
     </article>
   );
 
   return (
     <main className="foundation-view workflows-view workflow-detail" data-view="workflow-detail" data-fixture={route.fixture || "live"}>
-      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
+      {state.status === "stale" && <RefreshStatus state={state} />}
       <nav className="workflow-breadcrumbs" aria-label="Breadcrumb">
         <a href={listRoute.build({ fixture: route.fixture })}>Workflows</a><span aria-hidden="true">/</span><span aria-current="page">{model.id}</span>
       </nav>
       <header className="workflow-detail__hero">
-        <div><p className="eyebrow"><Network aria-hidden="true" /> Exact definition · {model.tier}</p><h1>{model.id}</h1><p>{model.type === "composition" ? "A reusable composition shown as the ordered skills it calls." : "A callable workflow shown as its ordered skill and script calls."}</p></div>
+        <div><p className="eyebrow"><Network aria-hidden="true" /> Exact definition · {model.tier}</p><h1>{model.id}</h1><p>{model.type === "composition" ? "A reusable composition with definition-time steps." : "A semantic overview with source references available below."}</p></div>
         <dl aria-label="Topology summary"><div><dt>Nodes</dt><dd>{model.nodes.length}</dd></div><div><dt>Relations</dt><dd>{model.edges.length}</dd></div></dl>
       </header>
+
+      <WorkflowOverview model={model} route={route} />
 
       {model.diagnostics.length > 0 && (
         <section className="workflow-diagnostics" aria-labelledby="workflow-diagnostic-title">
@@ -229,10 +234,14 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
         </section>
       )}
 
-      <section className="workflow-detail__layout" aria-label="Workflow topology reader">
+      <details className="workflow-disclosure workflow-detail__full">
+        <summary>{model.type === "composition" ? "Full topology, ticket templates and sources" : "Source references and definition details"}</summary>
         {graph}
+      </details>
+      {inspecting && <div className="workflow-selection-drawer">
+        <button className="workflow-selection-close" type="button" onClick={() => setInspecting(false)}>Close selected details</button>
         {inspector}
-      </section>
+      </div>}
     </main>
   );
 }

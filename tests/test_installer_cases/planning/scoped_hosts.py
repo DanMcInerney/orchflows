@@ -95,16 +95,26 @@ class HostAdapterRenderingTest(unittest.TestCase):
             adapters = Path(tmp) / "adapters"
             render_hosts.render_all(install.HOSTS_DIR, adapters)
             rendered_profiles = install.load_role_profiles(adapters)
-        expected_worker_bindings = {
-            "codex": {"model": "gpt-5.6-luna", "model_reasoning_effort": "xhigh"},
+        expected_role_bindings = {
+            "codex": {
+                "planner": {"model": "gpt-6-astra", "model_reasoning_effort": "high"},
+                "worker": {"model": "gpt-6-astra", "model_reasoning_effort": "low"},
+            },
             "claude": {"model": "claude-opus-5", "effort": "high"},
             "grok": {"model": "grok-4.6", "effort": "high"},
         }
-        for host, binding in expected_worker_bindings.items():
+        for host, expected in expected_role_bindings.items():
             with self.subTest(host=host):
-                actual = rendered_profiles["orch-worker"][host]
-                for field, value in binding.items():
-                    self.assertEqual(value, actual[field])
+                if host == "codex":
+                    for role, binding in expected.items():
+                        with self.subTest(role=role):
+                            actual = rendered_profiles[f"orch-{role}"][host]
+                            for field, value in binding.items():
+                                self.assertEqual(value, actual[field])
+                else:
+                    actual = rendered_profiles["orch-worker"][host]
+                    for field, value in expected.items():
+                        self.assertEqual(value, actual[field])
 
     def test_host_profile_and_authoring_prose_point_to_the_data_owner(self):
         profiles = install.PROFILES_MD.read_text(encoding="utf-8")
@@ -114,7 +124,7 @@ class HostAdapterRenderingTest(unittest.TestCase):
 
         self.assertIn("host records beside this file", profiles)
         self.assertNotIn("| Profile |", profiles)
-        for binding in ("gpt-5.6-sol", "claude-fable-5-1", "grok-4.6"):
+        for binding in ("gpt-6-astra", "claude-fable-5-1", "grok-4.6"):
             self.assertNotIn(binding, profiles)
         self.assertIn("../hosts/", authoring)
         self.assertNotIn("A Claude adapter keeps", authoring)
@@ -328,7 +338,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             self.assertEqual("1", claude["env"]["EXISTING"])
             self.assertEqual("20", claude["env"]["CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"])
             codex = install.tomllib.loads(configs["codex-config"].content)
-            self.assertEqual(20, codex["agents"]["max_threads"])
+            self.assertEqual(15, codex["agents"]["max_threads"])
             self.assertEqual(1, codex["agents"]["max_depth"])
             self.assertTrue(codex["agents"]["custom"])
             self.assertEqual(1, codex["other"]["value"])
@@ -347,8 +357,8 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(parsed["name"], {"orch_planner", "orch_worker"})
                 self.assertIn("developer_instructions", parsed)
                 if parsed["name"] == "orch_worker":
-                    self.assertEqual("gpt-5.6-luna", parsed["model"])
-                    self.assertEqual("xhigh", parsed["model_reasoning_effort"])
+                    self.assertEqual("gpt-6-astra", parsed["model"])
+                    self.assertEqual("low", parsed["model_reasoning_effort"])
 
     def test_user_plan_writes_claude_adapters_and_codex_skill_stubs(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -368,7 +378,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             templates = install.discover_workflow_skills()
             template_names = {directory.name for directory, _, _ in templates}
             self.assertEqual(
-                len(install.discover_packages()) + len(templates),
+                len(install.discover_packages()) + len(templates) + 1,
                 len(plan.claude_adapters),
             )
             role_bearing = set()
@@ -391,7 +401,11 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertNotIn("role:", frontmatter)
                 self.assertNotIn("entry:", frontmatter)
                 self.assertNotIn("placeholders:", frontmatter)
-                if dest.parent.name in template_names:
+                if dest.parent.name == "orch-self-improve":
+                    self.assertNotIn("@", body)
+                    self.assertIn("--workflow self-improve", body)
+                    self.assertIn("disable-model-invocation: true", frontmatter)
+                elif dest.parent.name in template_names:
                     self.assertNotIn("@", body)
                     self.assertIn("is a workflow skill", body)
                     self.assertIn("invoke the skill", body)
@@ -411,7 +425,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             expected_stub_names = {
                 install.frontmatter_field(install.split_frontmatter(path.read_text(encoding="utf-8"))[0], "name")
                 for path in install.discover_packages()
-            } | template_names
+            } | template_names | {"orch-self-improve"}
             self.assertEqual(
                 expected_stub_names,
                 {dest.parent.name for dest, _ in plan.codex_skills},
@@ -423,7 +437,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(f"name: {dest.parent.name}", frontmatter)
                 self.assertIn("description:", frontmatter)
                 self.assertIn(str(expected_lib_path), body)
-                if dest.parent.name not in template_names:
+                if dest.parent.name not in template_names | {"orch-self-improve"}:
                     self.assertIn("follow it exactly.", body)
 
     def test_discover_workflow_skills_requires_a_named_workflow_body(self):
@@ -688,7 +702,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
         )
         parsed = install.tomllib.loads(rendered)
 
-        self.assertEqual(20, parsed["agents"]["max_threads"])
+        self.assertEqual(15, parsed["agents"]["max_threads"])
         self.assertEqual(1, parsed["agents"]["max_depth"])
         self.assertEqual(3, details["previous"]["agents.max_threads"])
         self.assertEqual(2, details["previous"]["agents.max_depth"])
@@ -730,7 +744,8 @@ class TestScopedHostConfiguration(unittest.TestCase):
             bodies = {dest.parent.name: content for dest, content in plan.grok_skills}
             self.assertEqual(
                 {path.parent.name for path in packages}
-                | {directory.name for directory, _, _ in install.discover_workflow_skills()},
+                | {directory.name for directory, _, _ in install.discover_workflow_skills()}
+                | {"orch-self-improve"},
                 set(bodies),
             )
             # Two spellings of one directory, because the installer writes

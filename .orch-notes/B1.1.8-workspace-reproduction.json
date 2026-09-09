@@ -1,0 +1,310 @@
+{
+  "dispatch_id": "B1.1.8:d1",
+  "assignment_seal": "sha256:bd156c93acced54c7cbd6b6f51df33b1ba2664a21f87112f05d5e9acee33f9bc",
+  "by": "B1.1.8",
+  "artifact": "git:c891ef0179831e29976942babe412e5cc9fcd365",
+  "kind": "real workspace CLI in disposable fixture state, no dispatch or native attempt",
+  "first_target": {
+    "root": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main",
+    "branch": "main",
+    "first_seen": "2026-09-07T22:17:36Z"
+  },
+  "evidence_establish_exit": 0,
+  "evidence_commit": "ab833022691e7476025592da1fe7197fba6d7d0b",
+  "integrate_exit": 0,
+  "integrate": {
+    "integrate": {
+      "run": "testrun",
+      "id": "T2",
+      "workspace_path": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\worktrees\\testrun\\T2",
+      "workspace_branch": "wt/testrun/T2",
+      "outcome": "absent",
+      "main_root": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main",
+      "into": "main",
+      "detail": "no branch 'wt/testrun/T2' in C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main, the checkout on 'main' that run 'testrun' recorded as its integration target: T2's candidate at C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\worktrees\\testrun\\T2 was cut from another repository. Establish it from the checkout this run integrates into, then land testrun/T2 again"
+    }
+  },
+  "commands": [
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "init",
+        "--quiet"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "config",
+        "user.name",
+        "t"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "config",
+        "user.email",
+        "t@example.invalid"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "add",
+        ".gitignore",
+        "README.md"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "commit",
+        "--quiet",
+        "-m",
+        "init"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "C:\\Users\\danhm\\.orchflows\\worktrees\\20260907-benchmaker-rebuild\\B1.1.8\\scripts\\workspace.py",
+        "establish",
+        "testrun",
+        "T1",
+        "--repo",
+        "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main"
+      ],
+      "cwd": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260907-benchmaker-rebuild\\B1.1.8",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "{\"establish\": {\"run\": \"testrun\", \"id\": \"T1\", \"ticket\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\state-sink\\\\tickets\\\\testrun\\\\T1.md\", \"workspace_branch\": \"wt/testrun/T1\", \"workspace_baseline\": \"9b1553003ee10cbd1b06fc1a0d6129edfe168f1f clean\", \"workspace_path\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\worktrees\\\\testrun\\\\T1\", \"workspace_root\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\worktrees\\\\testrun\\\\T1\", \"main_root\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\main\", \"integration\": {\"root\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\main\", \"branch\": \"main\", \"first_seen\": \"2026-09-07T22:17:36Z\"}, \"isolated\": true, \"shared_with\": [], \"dirty\": [], \"replayed\": false}}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "init",
+        "--quiet"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\evidence",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "config",
+        "user.name",
+        "review-fixture"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\evidence",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "config",
+        "user.email",
+        "review@example.invalid"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\evidence",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "add",
+        "-A"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\evidence",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "commit",
+        "--quiet",
+        "-m",
+        "evidence baseline"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\evidence",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\evidence",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "49b85952a07105824ff2f7adc68d15b738995506\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+        "C:\\Users\\danhm\\.orchflows\\worktrees\\20260907-benchmaker-rebuild\\B1.1.8\\scripts\\workspace.py",
+        "establish",
+        "testrun",
+        "T2",
+        "--repo",
+        "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\evidence"
+      ],
+      "cwd": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260907-benchmaker-rebuild\\B1.1.8",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "{\"establish\": {\"run\": \"testrun\", \"id\": \"T2\", \"ticket\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\state-sink\\\\tickets\\\\testrun\\\\T2.md\", \"workspace_branch\": \"wt/testrun/T2\", \"workspace_baseline\": \"49b85952a07105824ff2f7adc68d15b738995506 clean\", \"workspace_path\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\worktrees\\\\testrun\\\\T2\", \"workspace_root\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\worktrees\\\\testrun\\\\T2\", \"main_root\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\evidence\", \"integration\": {\"root\": \"C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\benchmaker-review-workspace-yoqyk2fz\\\\main\", \"branch\": \"main\", \"first_seen\": \"2026-09-07T22:17:36Z\"}, \"isolated\": true, \"shared_with\": [], \"dirty\": [], \"replayed\": false}}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "add",
+        "-A"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\worktrees\\testrun\\T2",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "commit",
+        "--quiet",
+        "-m",
+        "external evidence"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\worktrees\\testrun\\T2",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\worktrees\\testrun\\T2",
+      "timeout": 30,
+      "exit_code": 0,
+      "stdout": "ab833022691e7476025592da1fe7197fba6d7d0b\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "--verify",
+        "--quiet",
+        "refs/heads/wt/testrun/T2^{commit}"
+      ],
+      "cwd": "C:\\Users\\danhm\\AppData\\Local\\Temp\\benchmaker-review-workspace-yoqyk2fz\\main",
+      "timeout": 30,
+      "exit_code": 1,
+      "stdout": null,
+      "stderr": null
+    }
+  ]
+}

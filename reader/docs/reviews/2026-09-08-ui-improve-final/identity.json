@@ -1,0 +1,12 @@
+{
+  "reviewer": "B1.5",
+  "dispatch_id": "B1.5:d1",
+  "assignment_seal": "sha256:4793c1df282fecc5fa8697823f9cf34aeacb40cad5f68d2f86cf5f3498601a07",
+  "reviewed_commit": "09921d2bc7aa8c03aa384da4a3322c878954cc46",
+  "method": "orch-judge",
+  "profile": "orch_planner",
+  "standards": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "orch-design": "sha256:01c20cc2cdfed763aac3f0ac1d036b5c2ee002173f0270c2a47b4c7a921511fe"
+  }
+}

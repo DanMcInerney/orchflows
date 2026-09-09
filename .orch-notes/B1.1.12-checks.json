@@ -1,0 +1,35 @@
+{
+  "dispatch_id": "B1.1.12:d1",
+  "assignment_seal": "sha256:6d815b8b8c67cb22476cba50c76ef48fd77fcbd0375226b2d25f10b7398d156e",
+  "assigned_name": "B1.1.12",
+  "reviewed_artifact": "git:c63cddd2d0dc3de58ba47af63cd607639770540b",
+  "observed_checks": {
+    "validator": {
+      "exit_code": 0,
+      "timeout_seconds": 180,
+      "warnings": true
+    },
+    "public_integration": {
+      "exit_code": 0,
+      "timeout_seconds": 60,
+      "tests": 5,
+      "failures": 0,
+      "errors": 0
+    },
+    "bounded_ordinary_sequence": {
+      "exit_code": 1,
+      "timeout_seconds": 300,
+      "tests": 3,
+      "passed": 2,
+      "errors": 1,
+      "elapsed_test_seconds": 288.295,
+      "publication_child_timeout_seconds": 240,
+      "publication_result": "not independently completed; TimeoutExpired",
+      "passed_methods": [
+        "SecondRepairTests.test_required_child_survives_every_unavailable_or_optional_ancestor",
+        "SecondRepairTests.test_finalization_call_is_after_all_terminal_branches"
+      ]
+    }
+  },
+  "completion": "Every started check returned. No matching Python publication or wrapper process remained in targeted Win32_Process inventory (exit 0). No check was intentionally backgrounded or superseded."
+}

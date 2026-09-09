@@ -1,0 +1,97 @@
+2026-09-08T12:55:07.6964466Z
+2026-09-08T12:55:07.6964695Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-09-08T12:55:07.6965135Z
+2026-09-08T12:55:07.6965556Z HEAD is now at 4e41a9d Merge 05290a079127759f6ae1307dbcda4e6d3e800a6c into ce78596e27a37ba6c6b6aaf11b5b40dd4a2e4bb0
+2026-09-08T12:55:07.7096659Z ##[endgroup]
+2026-09-08T12:55:07.7474554Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-09-08T12:55:07.7989933Z 4e41a9dbf432253490fc1643381f13e560a55fe4
+2026-09-08T12:55:07.8650781Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-08T12:55:07.8652890Z ##[group]Run actions/setup-python@v5
+2026-09-08T12:57:38.3756713Z ok   tests.test_serial_compat_manifest_regression     1 tests    0.16s
+2026-09-08T12:57:38.4463978Z ok   tests.test_windows_semantics                  13 tests    0.13s  (skipped=10)
+2026-09-08T12:57:38.4480544Z
+2026-09-08T12:57:38.4480853Z ======================================================================
+2026-09-08T12:57:38.4481706Z FAILED MODULE: tests.test_tiktok_video_package (exit 1)
+2026-09-08T12:57:38.4482238Z ======================================================================
+2026-09-08T12:57:38.4482624Z .E.E.
+2026-09-08T12:57:38.4482953Z ======================================================================
+2026-09-08T12:57:38.4483973Z ERROR: test_contained_links_and_escape_control (tests.test_tiktok_video_package.VideoPackageTests.test_contained_links_and_escape_control)
+2026-09-08T12:57:38.4485390Z ----------------------------------------------------------------------
+2026-09-08T12:57:38.4485963Z Traceback (most recent call last):
+2026-09-08T12:57:38.4492425Z   File "D:\a\orchflows\orchflows\tests\test_tiktok_video_package.py", line 119, in test_contained_links_and_escape_control
+2026-09-08T12:57:38.4493102Z     self.assertTrue(self.grade(copied).has_errors)
+2026-09-08T12:57:38.4494976Z                     ~~~~~~~~~~^^^^^^^^
+2026-09-08T12:57:38.4495852Z   File "D:\a\orchflows\orchflows\tests\test_tiktok_video_package.py", line 47, in grade
+2026-09-08T12:57:38.4496628Z     workflows.validate_workflow_packages(
+2026-09-08T12:57:38.4497037Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2026-09-08T12:57:38.4497445Z         ROOT, [(package, package / 'SKILL.md')], diag,
+2026-09-08T12:57:38.4497907Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-08T12:57:38.4498338Z         standard_roots=[ROOT / 'standards'],
+2026-09-08T12:57:38.4498712Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-08T12:57:38.4499407Z         overrides=options or self.options)
+2026-09-08T12:57:38.4499804Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-08T12:57:38.4500646Z   File "D:\a\orchflows\orchflows\tools\validate_support\workflows.py", line 265, in validate_workflow_packages
+2026-09-08T12:57:38.4501469Z     structure.validate_templates(
+2026-09-08T12:57:38.4501873Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2026-09-08T12:57:38.4502352Z         diag, roots=[package / rings.RING_DIRS["workflow"]],
+2026-09-08T12:57:38.4502951Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-08T12:57:38.4503359Z     )
+2026-09-08T12:57:38.4503617Z     ^
+2026-09-08T12:57:38.4504298Z   File "D:\a\orchflows\orchflows\tools\validate_support\structure.py", line 388, in validate_templates
+2026-09-08T12:57:38.4504986Z     label = rel(manifest)
+2026-09-08T12:57:38.4505601Z   File "D:\a\orchflows\orchflows\tools\validate_support\packages.py", line 55, in rel
+2026-09-08T12:57:38.4506361Z     return str(path.relative_to(ROOT)).replace("\\", "/")
+2026-09-08T12:57:38.4506874Z                ~~~~~~~~~~~~~~~~^^^^^^
+2026-09-08T12:57:38.4507649Z   File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\pathlib\_local.py", line 385, in relative_to
+2026-09-08T12:57:38.4508565Z     raise ValueError(f"{str(self)!r} is not in the subpath of {str(other)!r}")
+2026-09-08T12:57:38.4509836Z ValueError: 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmp4rd85xh8\\project\\.orchflows\\workflows\\tiktok-video\\workflows\\video-direction\\SKILL.md' is not in the subpath of 'D:\\'
+2026-09-08T12:57:38.4510652Z
+2026-09-08T12:57:38.4510781Z ======================================================================
+2026-09-08T12:57:38.4511533Z ERROR: test_literal_sequence_resolves_in_correct_public_scope (tests.test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope)
+2026-09-08T12:57:38.4512289Z ----------------------------------------------------------------------
+2026-09-08T12:57:38.4512646Z Traceback (most recent call last):
+2026-09-08T12:57:38.4513302Z   File "D:\a\orchflows\orchflows\tests\test_tiktok_video_package.py", line 106, in test_literal_sequence_resolves_in_correct_public_scope
+2026-09-08T12:57:38.4514156Z     self.assertTrue(self.grade(copied).has_errors)
+2026-09-08T12:57:38.4514469Z                     ~~~~~~~~~~^^^^^^^^
+2026-09-08T12:57:38.4514971Z   File "D:\a\orchflows\orchflows\tests\test_tiktok_video_package.py", line 47, in grade
+2026-09-08T12:57:38.4515402Z     workflows.validate_workflow_packages(
+2026-09-08T12:57:38.4515742Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2026-09-08T12:57:38.4516131Z         ROOT, [(package, package / 'SKILL.md')], diag,
+2026-09-08T12:57:38.4516431Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-08T12:57:38.4516717Z         standard_roots=[ROOT / 'standards'],
+2026-09-08T12:57:38.4516984Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-08T12:57:38.4517255Z         overrides=options or self.options)
+2026-09-08T12:57:38.4517523Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-08T12:57:38.4518045Z   File "D:\a\orchflows\orchflows\tools\validate_support\workflows.py", line 265, in validate_workflow_packages
+2026-09-08T12:57:38.4518550Z     structure.validate_templates(
+2026-09-08T12:57:38.4518798Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2026-09-08T12:57:38.4519292Z         diag, roots=[package / rings.RING_DIRS["workflow"]],
+2026-09-08T12:57:38.4519634Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-08T12:57:38.4519890Z     )
+2026-09-08T12:57:38.4520072Z     ^
+2026-09-08T12:57:38.4520472Z   File "D:\a\orchflows\orchflows\tools\validate_support\structure.py", line 388, in validate_templates
+2026-09-08T12:57:38.4520972Z     label = rel(manifest)
+2026-09-08T12:57:38.4521350Z   File "D:\a\orchflows\orchflows\tools\validate_support\packages.py", line 55, in rel
+2026-09-08T12:57:38.4521802Z     return str(path.relative_to(ROOT)).replace("\\", "/")
+2026-09-08T12:57:38.4522105Z                ~~~~~~~~~~~~~~~~^^^^^^
+2026-09-08T12:57:38.4523399Z   File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\pathlib\_local.py", line 385, in relative_to
+2026-09-08T12:57:38.4524011Z     raise ValueError(f"{str(self)!r} is not in the subpath of {str(other)!r}")
+2026-09-08T12:57:38.4525057Z ValueError: 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmp56jnhv84\\project\\.orchflows\\workflows\\tiktok-video\\workflows\\video-production\\SKILL.md' is not in the subpath of 'D:\\'
+2026-09-08T12:57:38.4526068Z
+2026-09-08T12:57:38.4526270Z ----------------------------------------------------------------------
+2026-09-08T12:57:38.4526817Z Ran 5 tests in 0.796s
+2026-09-08T12:57:38.4527049Z
+2026-09-08T12:57:38.4527190Z FAILED (errors=2)
+2026-09-08T12:57:38.4818705Z
+2026-09-08T12:57:38.4819490Z ----------------------------------------------------------------------
+2026-09-08T12:57:38.4820077Z 54 modules, 1287 tests: 0 failures, 2 errors, 12 skipped
+2026-09-08T12:57:38.4820464Z wall 143.60s across 4 workers (summed module time 573.99s)
+2026-09-08T12:57:38.4820826Z slowest modules:
+2026-09-08T12:57:38.4821047Z    127.44s  tests.test_validate
+2026-09-08T12:57:38.4821298Z     89.87s  tests.test_validator
+2026-09-08T12:57:38.4821563Z     58.37s  tests.test_benchmaker_repair
+2026-09-08T12:57:38.4821845Z     51.12s  tests.test_benchmaker_round2
+2026-09-08T12:57:38.4822131Z     50.41s  tests.test_installer_shared
+2026-09-08T12:57:38.4822428Z FAILED: tests.test_tiktok_video_package
+2026-09-08T12:57:38.5966932Z ##[error]Process completed with exit code 1.
+2026-09-08T12:57:38.6182795Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

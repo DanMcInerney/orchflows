@@ -1,0 +1,257 @@
+{
+  "assigned_name": "B1.1.1.8",
+  "dispatch_id": "B1.1.1.8:d1",
+  "assignment_seal": "sha256:29bc22f912b4ddd9f32b8359a75462806a2304a3141d9c60b7f4e0c4a5ee1e9e",
+  "reviewed_artifact": "git:b310a3a5d9be82c952fda8573c42fc5bfd908c32",
+  "original_baseline": "git:ce78596e27a37ba6c6b6aaf11b5b40dd4a2e4bb0",
+  "repair_artifact": "git:edb2fb78ce59c563da24f0c34b3c8aa98557c0b9",
+  "package": {
+    "path": "example-workflows/tiktok-video",
+    "digest": "sha256:23a53260a91aeebdca0cc1e05fb971879eba4a83faf5f55dc45053f245dbd13a"
+  },
+  "standard_evidence": {
+    "pins": {
+      "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+      "orch-workflow-authoring": "sha256:6ab4a4dee535a7f0ddcde8682049dac84499245f13aeaba1bb82b7b80a1258a0"
+    },
+    "read_whole": [
+      "C:/Users/danhm/.orchflows/lib/standards/orch-code/STANDARD.md",
+      "C:/Users/danhm/.orchflows/lib/standards/orch-workflow-authoring/STANDARD.md"
+    ],
+    "owner": "C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md",
+    "applied": "Whole pinned guidance and git lens; whole authoring owner, composition, token economy, visibility, standard contract, documentation and verification; relevant vocabulary. Reviewed lower method/standards/helper contracts before public composition, original PLAN and parent Goal, prepared research, prior findings and repair diff."
+  },
+  "findings": [],
+  "cause_threads": [],
+  "resolved_findings": [
+    {
+      "id": "R1",
+      "prior_review": "research/tiktok-video-cut/joined-review.json",
+      "cause": "Default outside probe previously accepted 44100Hz although default production requires48000Hz.",
+      "observed_remedy": "The only executable repair replaces the two-rate allowlist with rate==48000; no standard or gate was weakened.",
+      "contradictory_test": "Existing test_missing_corrupt_and_actual_decode_boundary fails at44100 with old probe extracted from964c7767 (exit1), passes fixed probe (exit0). Candidate source was never mutated.",
+      "actual_fixtures": "New clean scaffold render and both AAC muxes reproduced the prior judge exact MP4 hashes. FFprobe confirms44100 and48000; fixed default probe exits1 and0 respectively."
+    }
+  ],
+  "contract_observations": [
+    "One public tiktok-video composes existing public super-research then private video-direction then video-production. Independent direction and costly isolated production have actual consumers and useful partial returns. No decorative wrapper or new orchestration engine appears.",
+    "Every new brief retains named research first, with dated actual available playback, sampling limits, contradictions and refresh of decision-sensitive gaps. Prepared market/tooling/voice packets dated2026-09-08 were read as evidence. Research-to-choice links distinguish observation from original interpretation; no ranking, causal performance or heard-audio claim is inferred.",
+    "Direction carries semantic brief, research identity, rights, renderer pins, document target, voice, budget, citations and verifier into Goal/Context. Explicit document-tree survives Git containment. Production consumes accepted doc plus real findings rather than a planned path; the two-file verifier checks immutable document/review bytes only after independent semantic judgment.",
+    "Public super-research starts its own scope; no tiktok-private standard is passed across that boundary. Direction and production keep public-owner package scope; maker/judge ordered standard digests are shared. Stale package and removed helper negative controls exist and pass in full gate.",
+    "Original1s permits one readable idea with explicit voice/CTA omission.120s requires distinct explanatory beats, proof and pauses; no fixed script stretch, shot quota or compulsory variants. The scaffold is explicitly a technical tracer to extend from approved direction.",
+    "Rendering method stays separate from quality and orchestration. Exact lock, browser executable, local font/license, model and stock-voice provenance are carried. Clean npm ci and actual relocated render are observed; HyperFrames remains an unqualified alternative and production licensing/entity size remains unresolved.",
+    "Independent audiovisual standard requires full exported playback, visible-caption comparison and actual hearing. Text/signal/timing cannot establish hearing. Bounded repair preserves accepted direction, fixed partial artifacts and findings; unavailable listening routes an audition to a listening-capable reviewer/user without consuming repair rounds to invent a verdict.",
+    "Canonical changed paths are the planned package, cut/review evidence, catalog integrations and affected tests/manifest. Repair changes only probe and existing regression. No source fixes were authored by this judge. Warning-only duplicate guidance and canonical idioms do not establish correctness blockers."
+  ],
+  "gates": {
+    "command": [
+      "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+      "tools/run_required.py",
+      "--no-cache"
+    ],
+    "exit": 0,
+    "timeout_seconds": 1800,
+    "elapsed_seconds": 167.86081930001092,
+    "fixed_revision": "b310a3a5d9be82c952fda8573c42fc5bfd908c32",
+    "readings": [
+      {
+        "name": "validate",
+        "exit": 0
+      },
+      {
+        "name": "module tests",
+        "exit": 0,
+        "modules": 108,
+        "tests": 2251,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 14
+      },
+      {
+        "name": "serial compatibility",
+        "exit": 0,
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      {
+        "name": "install dry-run",
+        "exit": 0
+      },
+      {
+        "name": "git diff --check",
+        "exit": 0
+      }
+    ],
+    "log_sha256": "1220614bbc05aa2fcd22c1d1b961de1fd0855cbc752914cf154d2e6380279b3c"
+  },
+  "independent_probe_evidence": {
+    "project": "C:\\Users\\danhm\\.orchflows\\worktrees\\20260908-video-creator\\B1.1.1.8\\.orch-notes\\probe-project",
+    "command_exits": [
+      {
+        "name": "locked clean npm ci",
+        "exit": 0,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 10.62705460000143
+      },
+      {
+        "name": "real 1s Remotion render",
+        "exit": 0,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 41.61037029999716
+      },
+      {
+        "name": "absent output",
+        "exit": 1,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 0.14041449999785982
+      },
+      {
+        "name": "corrupt output",
+        "exit": 1,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 20.59958940000797
+      },
+      {
+        "name": "silent required",
+        "exit": 1,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 1.1152832000079798
+      },
+      {
+        "name": "silent approved optional",
+        "exit": 0,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 1.7450305999955162
+      },
+      {
+        "name": "encode AAC 44100",
+        "exit": 0,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 0.8530036000011023
+      },
+      {
+        "name": "actual metadata 44100",
+        "exit": 0,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 0.769385699997656
+      },
+      {
+        "name": "default probe 44100",
+        "exit": 1,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 0.8125736999936635
+      },
+      {
+        "name": "encode AAC 48000",
+        "exit": 0,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 0.7071314000058919
+      },
+      {
+        "name": "actual metadata 48000",
+        "exit": 0,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 0.6624397999985376
+      },
+      {
+        "name": "default probe 48000",
+        "exit": 0,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 2.29088369999954
+      },
+      {
+        "name": "wrong duration control",
+        "exit": 1,
+        "timeout_seconds": 1000,
+        "elapsed_seconds": 0.7956601999903796
+      }
+    ],
+    "exact_arguments": "Filed in ticket Report evidence-03; each uses this fixed package probe and the copied project below this workspace.",
+    "rate_and_probe_readings": [
+      {
+        "name": "actual metadata 44100",
+        "exit": 0,
+        "stdout": "{\r\n    \"programs\": [\r\n\r\n    ],\r\n    \"stream_groups\": [\r\n\r\n    ],\r\n    \"streams\": [\r\n        {\r\n            \"codec_name\": \"aac\",\r\n            \"sample_rate\": \"44100\",\r\n            \"duration\": \"1.000000\"\r\n        }\r\n    ]\r\n}\r\n",
+        "stderr": ""
+      },
+      {
+        "name": "default probe 44100",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "{\"error\": \"delivery audio sample rate must be 48000\"}\r\n"
+      },
+      {
+        "name": "actual metadata 48000",
+        "exit": 0,
+        "stdout": "{\r\n    \"programs\": [\r\n\r\n    ],\r\n    \"stream_groups\": [\r\n\r\n    ],\r\n    \"streams\": [\r\n        {\r\n            \"codec_name\": \"aac\",\r\n            \"sample_rate\": \"48000\",\r\n            \"duration\": \"1.000000\"\r\n        }\r\n    ]\r\n}\r\n",
+        "stderr": ""
+      },
+      {
+        "name": "default probe 48000",
+        "exit": 0,
+        "stdout": "{\"video\": \"C:\\\\Users\\\\danhm\\\\.orchflows\\\\worktrees\\\\20260908-video-creator\\\\B1.1.1.8\\\\.orch-notes\\\\probe-project\\\\output\\\\audio48000.mp4\", \"decoded\": true, \"frames\": \"30\", \"audio\": {\"integrated_lufs\": -16.05, \"true_peak_dbtp\": -11.67}, \"gaps\": [\"visual craft\", \"visible captions\", \"heard audio\"]}\r\n",
+        "stderr": ""
+      }
+    ],
+    "hashes": {
+      "output/audio44100.mp4": "c9d8ca2c6538182faa85de4efc3681981adc314cde4e2b5b7ed9e91c03945455",
+      "output/audio48000.mp4": "f93f859f072ef36c0c705294056f3d91d6eb45aacb098a522ee67af6c80f9f50",
+      "output/corrupt.mp4": "23c05d5af5082ccd3fa52eb38dc5156376de04cc5235b1e6979606b21548a0dd",
+      "output/silent.mp4": "ff87e631cb1873f6ace08cbff0afbfc5818d8ee60e4cd48734e7ebffeafd8e93",
+      "output/silent.mp4.png": "19a89e6e404b8c4580d095fb9c1dfb91fb8502b2df79f310d29e4d0b80d75d55"
+    },
+    "limits": "Technical original sine fixtures and1s two-node render only. No final creative, motion or heard-audio acceptance."
+  },
+  "foundation_assessment": {
+    "artifact": "git:596fa1f2cef638e8fa8dc20da4c373cce3164bd3",
+    "record": "20260908-video-creator/B1.1.1.2 Report and references/renderer.md",
+    "reported_readings": "npm ci0;1s Remotion render0/probe0(30frames); absent1/corrupt1; wrong-size1/wrong-duration1; silent required1/optional0; local voice0/WAV decode0;120s repeated-still encode0/probe0(3600frames,-16.05LUFS,-10.11dBTP). Earlier TSX/color/decode failures retained.",
+    "independent_coverage": "This re-judge reconstructed the current relocated scaffold and independently observed1s render, absent/corrupt/silent/duration/audio-rate boundaries. Prior review exact1s hashes reproduced. Current full tests exercise1s/120s metadata padding-versus-drift controls.",
+    "limits": "Foundation120s fixture is repeated-still FFmpeg output, not a3600-frame Remotion production or endpoint craft evidence. Voice/120s fixture not rerun here; prepared research evidence remains attributed to its observers. Retired earlier worktree scratch is not assumed available."
+  },
+  "generated_adapter_evidence": {
+    "method": "install.build_plan() inspected read-only; full install.py --dry-run gate exit0. No adapters installed.",
+    "paths": {
+      "by_name": [
+        "C:\\Users\\danhm\\.orchflows\\lib\\by-name\\tiktok-video\\SKILL.md"
+      ],
+      "claude_adapters": [
+        "C:\\Users\\danhm\\.claude\\skills\\tiktok-video\\SKILL.md"
+      ],
+      "codex_prompts": [
+        "C:\\Users\\danhm\\.codex\\prompts\\tiktok-video.md"
+      ],
+      "codex_skills": [
+        "C:\\Users\\danhm\\.codex\\skills\\tiktok-video\\SKILL.md"
+      ],
+      "grok_skills": [
+        "C:\\Users\\danhm\\.grok\\skills\\tiktok-video\\SKILL.md"
+      ]
+    },
+    "observation": "By-name, Claude, Codex redirect and Grok generated plans point to canonical installed tiktok-video owner; Codex prompt renders its source body. No child-role binding. Private helper/method/standard names stay out of global discovery, checked by full suite.",
+    "gap": "Actual project sync/adapters, shadow resolution and named body execution belong to later root admission."
+  },
+  "admission_prerequisites": [
+    {
+      "name": "Public research dependency provision",
+      "source_blocking": false,
+      "runtime_required": true,
+      "evidence": "Against an empty project and actual installed library, super-research resolves from lib, html-dossier resolves from lib, research-acquire has zero hits. The existing source project provides research-acquire. An unchanged scratch project-ring copy resolves in super-research scope; ordinary trust=True correctly returns bundle-untrusted.",
+      "dependency_digest": "sha256:428e1dac153c82f9f943e2a3d77c4f08318c17482b0c24f767e610fa25ca5bdb",
+      "copy_digest": "sha256:428e1dac153c82f9f943e2a3d77c4f08318c17482b0c24f767e610fa25ca5bdb",
+      "smallest_action": "Before the actual named research call, root supplies existing .orchflows/skills/research-acquire unchanged into the disposable project .orchflows/skills/research-acquire, records source revision/digest and any shadow, then uses ordinary project trust, sync/check and environment resolution. Do not pass a tiktok-private name or pretend global installation. Html-dossier needs no copy on this host.",
+      "scope_reason": "This is an existing public super-research environment prerequisite in the root-owned live-admission setup. No false tiktok source completion criterion or private-scope defect was established; no source repair is recommended in this bounded re-judge. General external-dependency distribution guidance is successor scope if desired."
+    }
+  ],
+  "gaps": [
+    "Actual named tiktok-video invocation in disposable20260908-orchflows-video-demo remains unobserved and root-owned. No runtime admission claim.",
+    "Actual research/direction review and external document-verifier calls, production launches/landings, dynamic branches and bounded audiovisual repair are unexercised by this static gate.",
+    "No polished30s explainer, full motion playback review, visible-caption acceptance, final-mix hearing or human listening verdict. Technical metadata/signal cannot supply them.",
+    "Polished1s/120s creative quality and full120s Remotion workload remain unexercised.",
+    "Remotion production eligibility/entity size, longer narration and musical fit remain unresolved. HyperFrames and other platforms/browsers are unqualified.",
+    "Repository local gate passed with skips; hosted CI/preflight not observed by this judge. Root still owns outside static close and later installation/admission."
+  ],
+  "scope_accounting": "Followed PLAN and assigned re-judge without deviation. Only durable review JSON and reserved scratch evidence added. No source repair, dependency changes, global install/trust grant, final video, publication, paid action or delegation. All dispatched processes completed; no background process remains. Complete gate/fixture logs and command accounting filed into ticket Report, compact results retained here."
+}

@@ -1,0 +1,58 @@
+{
+  "dispatch_id": "B1.4:d1",
+  "assignment_seal": "sha256:a965580fed21ebf7bdf2efe56bcfa168bd191dbae86a0a18c196cb12735b815a",
+  "assigned_name": "B1.4",
+  "reviewed_artifact": "git:06668fb1275033821f277f4c58c0ae3d2b18cf29",
+  "baseline": "git:9736e28e76672db43c95eed18f0d1df2a9baf6b6",
+  "repair": "git:5f52f08d3cd3c9d67c10ae26315b54226a3887a5",
+  "standard_evidence": {
+    "pin": "orch-code@sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "source_installed_match": true,
+    "applied": "Whole pinned orch-code and git Lens; source and installed custom-workflow-authoring owner; source narrowing and cited composition, standard, visibility, verification, token-economy, documentation law. Resolved launch orch_planner matches assigned review role."
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "blocking": false,
+      "class": "shape",
+      "title": "Repair incidentally corrupts punctuation encoding",
+      "cause": "UTF-8 prose bytes were round-tripped through a different encoding during repair.",
+      "evidence": [
+        "Baseline-to-fixed diff shows three em dashes in skills/workflows/checkpointed-build/SKILL.md replaced with mojibake, in description, dependency sentence, and Never sentence.",
+        "tests/test_ticket_frames.py test_dropping_the_flag_from_a_copy_fails_the_check docstring changes section-sign bytes to mojibake."
+      ],
+      "smallest_remedy": "Restore the four original punctuation sequences without semantic edits in successor scope.",
+      "disposition": "Nonblocking under verification section 9: no false completion criterion or functional correctness consequence established. Parent reports a separate successor already restoring the three workflow dashes; that successor was not reviewed here."
+    }
+  ],
+  "prior_blockers": [
+    {
+      "id": "F1",
+      "remaining_blockers": [],
+      "evidence": "Optional --context-file is parsed by do, judge, and frame-open, read before minting, and appended after generated parent/artifact clauses before the unchanged assignment sealing machinery. Builder passes it to checkpointed-build; lower workflow supplies it to frame, plan, maker and judge calls and explicitly includes repairs. Two callable Context tests pass, including unreadable input refusal before ticket creation. Minted frame/planner/maker/judge Context retains owner; parent/artifact clauses remain; assignment_digest matches seal and changes on owner mutation. Existing no-context callable grammar, admission, and prompt tests pass. Independent can-fail probe removes supplied Context only in memory and yields exactly one owner-preservation assertion failure, zero errors."
+    },
+    {
+      "id": "F2",
+      "remaining_blockers": [],
+      "evidence": "Frame census now derives coverage from actual directories. Static composition census checks each present directory and accepts resolved public workflow call edges consistent with composition section 2; unresolved and self-only edges fail its can-fail check. Reader manifest and canonical catalog now include orch-build-workflow. FrameLawOwnerTest, static tree invariants, all 15 selected reader catalog/summary tests, builder distribution/standard/probe tests, and all five installed script inventory checks pass. Existing manifest refusal cases still reject coverage errors, malformed shapes and invalid cycles. No check is removed to reach green."
+    }
+  ],
+  "assessment": [
+    "First-use reusable components may earn independent journals through coherent contracts and observable results. Procedure inventories primitives/workflows/methods/standards, decomposes top down and verifies missing lower contracts bottom up, without a depth quota.",
+    "Builder composes checkpointed-build by its ordinary public name with every required semantic input. It adds authoring inventory and actual disposable-project admission responsibility without copying plan/wave/judge/repair orchestration.",
+    "Global orch-workflow-authoring narrowing remains reachable in public callee scope; it adds recurring quality guidance and does not weaken orch-code. Runtime gaps remain explicit rather than passing on static evidence alone.",
+    "Reviewed artifact, method, and seal remain fixed. No implementation, sealed semantics, installed library, or top-level shipped report was edited here. Only reserved review notes were created."
+  ],
+  "observed_checks": [
+    "Focused unittest batch: exit 1, 64 collected, 63 actual tests passed and one loader error caused by selecting tests.test_installer.TestScriptNames, which is not re-exported. Full output .orch-notes/focused.log; subprocess timeout 240 seconds; observed complete in 17.473 seconds.",
+    "Corrected tests.test_installer_cases.planning.script_inventory: exit 0, five tests passed in 38.034 seconds; timeout 240 seconds; .orch-notes/installer.log. Includes real disposable installed-layout catalog check. No machine install was performed by reviewer.",
+    "Independent .orch-notes/can_fail.py: final exit 0, timeout 60 seconds. Source and installed pin equal sealed pin; in-memory carrier removal yields one failure and zero errors at owner Context preservation. Initial attempt exited 1 due reviewer using repository root for legacy canonical_root argument, corrected to standards directory and logged.",
+    "git diff --check baseline fixed candidate: exit 0.",
+    "Every Get-Content, git show/diff/status, note creation/edit, completed polling call, and successful search command exited 0. One rg search exited 1 due three nonexistent guessed paths; path discovery corrected it. All three installed friction logging commands exited 0. Acceptance result command exited 0. Check wrapper process exit codes are recorded above; polling that returned only a live session had no exit code yet."
+  ],
+  "gaps": [
+    "Full required gate, live named builder and produced-workflow exercise, and accepted-source installation belong to root. Reviewer did not run full suite, dispatch children, simulate live workflow execution, or install source globally.",
+    "Parent reports all five required checks passed at fixed 06668fb1 and is running checks at subsequent byte-only/installation successor identities. These are parent observations, not independently watched checks here.",
+    "Focused tests prove the exercised deterministic seams only; unexecuted prose branches and long-term authoring reliability remain unmeasured."
+  ]
+}

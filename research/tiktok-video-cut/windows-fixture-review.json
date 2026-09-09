@@ -1,0 +1,112 @@
+{
+  "assigned_name": "B1.9",
+  "dispatch_id": "B1.9:d1",
+  "assignment_seal": "sha256:d0248ed1b363d3318780b1014c9dbd3a29711fa2ca0373bc79592d584751bc2a",
+  "reviewed_artifact": "git:10565acdfa35f4a768a4dc803c9d9b5c5c66744d",
+  "maker_artifact": "git:ac22b24b3e77e8c41ed3a5b82178836d12566b2c",
+  "review_profile": "Launch-resolved orch_planner; independent orch-judge under orch-code; no delegation.",
+  "standard_evidence": {
+    "orch-code": "sha256:8049030d7cef517e5d6dbc09a1ece092c43841521cd76665022132bded12ddf6",
+    "pin_rederived": true,
+    "application": "Whole pinned orch-code, including git lens; read whole orch-judge, verification law, token-economy shape principles and custom-workflow-authoring owner. Focused test repair as Goal prescribes; stale Context asking for full gate yields to explicit focused Goal and launch. Authoring package remains the independently reviewed B1.7 identity.",
+    "owner": "C:/Users/danhm/.orchflows/lib/docs/custom-workflow-authoring.md"
+  },
+  "package": {
+    "path": "example-workflows/tiktok-video",
+    "digest": "sha256:d13322cae66f674b0b9bd19d92fc9fbd40ff2139cc3c9ebb95d28884edc1eb42",
+    "unchanged_from": "git:05290a079127759f6ae1307dbcda4e6d3e800a6c",
+    "proof": "git diff --exit-code previous reviewed tip current fixed tip -- example-workflows/tiktok-video exits0; runtime tree_digest independently equals required pin."
+  },
+  "findings": [
+    {
+      "id": "R3",
+      "blocking": true,
+      "priority": "P2",
+      "class": "correctness",
+      "path": "tests/test_tiktok_video_package.py",
+      "line": 39,
+      "title": "Repository-local temporary fixtures race concurrent repository copies",
+      "cause": "setUp places short-lived package copies below ROOT/.orch-notes. FrictionLocationSyncTest._wrong_result_tree copies ROOT with COPY_SKIPS that does not omit .orch-notes; a package-test cleanup can remove an enumerated fixture before copytree descends.",
+      "evidence": "Completed run34229881550/job102073065875 checks merge d57806e containing fixed head10565acdfa35f4a768a4dc803c9d9b5c5c66744d: package5 passes, tests.test_validate errors in shutil.copytree with WinError3 on .orch-notes/tmpo7gdnpkb; shard54 modules/1287 tests/1 error exits1. Independent deterministic control using actual VideoPackageTests fixture and COPY_SKIPS reproduces same WinError3 after enumeration and before descent; harness0 means expected failure observed, not acceptance.",
+      "criterion": "Goal requires fixtures away from concurrently scanned source paths; orch-code git correctness/test economy requires parallel-safe checks. rules/verification.md section9 correctness at fixed identity makes this blocking.",
+      "smallest_remedy": "Keep one unique TemporaryDirectory on ROOT.parent instead of ROOT/.orch-notes, remove now-unneeded scratch.mkdir, and retain existing cleanup, all negative assertions and grade validator invocation. This places fixture beside rather than inside the copied checkout and retains its drive. No product-code, diagnostic, package or ceiling change.",
+      "successor_scope": [
+        "tests/test_tiktok_video_package.py"
+      ],
+      "validation": "Real cross-drive old/repaired package control, all package/probe tests, deterministic proof fixtures lie outside copied ROOT with cleanup, then root-owned full required checks and completed hosted matrix on repaired joined identity."
+    }
+  ],
+  "cause_threads": [
+    {
+      "cause": "Fixture location intersects concurrently copied repository tree",
+      "findings": [
+        "R3"
+      ]
+    }
+  ],
+  "resolved_prior_findings": [
+    {
+      "id": "R2",
+      "resolved": true,
+      "scope": "Exact earlier C:/D: Path.relative_to diagnostic crash, not overall fixture correctness.",
+      "proof": "Unmodified prior test module from git:ac22b24b^ and unmodified fixed module run in separate processes, C: checkout with real D: TEMP/TMP/TMPDIR. Before5 tests/0 failures/2 ValueErrors exit1; after5 tests/0 failures/0 errors exit0. New hosted package module5 also passes. No validator change or mock substitutes the diagnostic seam."
+    }
+  ],
+  "acceptance_observations": [
+    "Maker diff is only four added and one removed line in setUp. Every other AST node, including grade and all negative tests, is equal to the old test module.",
+    "Actual fixture roots are D: before and C: after under the same D: temporary environment; all ten test roots were removed by existing cleanup. Alternate D: base and additional copy/scanner fixtures also removed.",
+    "Package and probe modules run concurrently with two workers and D: TEMP; all11 tests pass, runner exit0. No full suite or repeated gate dispatched by this focused review.",
+    "Actual live fixture is excluded by vocabulary, markdown-link and documented-path enumerators (500,513,91 source files respectively). This establishes those scan exclusions only; actual COPY_SKIPS and reproduced race refute a broader isolation claim.",
+    "Scope, idiom and public validator contract otherwise hold; no remaining package-authoring defect inferred from this test-only review."
+  ],
+  "hosted_evidence": {
+    "run": "34229881550",
+    "job": "102073065875",
+    "observed_process_exit": 1,
+    "log": "C:\\Users\\danhm\\AppData\\Local\\Temp\\video-fixture-fixed-ci-windows.log",
+    "log_sha256": "7e4035bfe9a51f7917ba0884d0df5fbf1940af2fd1752cf02f1b4bc6bbd2998b",
+    "acquisition": "Coordinator supplied completed log; judge read it and checked printed source/merge identity. No hosted command dispatched by judge."
+  },
+  "evidence_files": [
+    {
+      "path": ".orch-notes/B1.9-controls.py",
+      "sha256": "cb18106f16d1e7708caf0af0138eaa11250e824b5aad16b56d6dca9edcefae34",
+      "identity": "UTF-8 file bytes with CRLF normalized to LF; BOM retained if present"
+    },
+    {
+      "path": ".orch-notes/B1.9-controls.json",
+      "sha256": "d6d3bcbb0e13a2f66b5681b95d855f5411d91b3b824b20744be75f694374e0a2",
+      "identity": "UTF-8 file bytes with CRLF normalized to LF; BOM retained if present"
+    },
+    {
+      "path": ".orch-notes/B1.9-scoped-timing.json",
+      "sha256": "5dcdefb9feee3ad6e8c9c7a9e79dd801ac15496917f283c15c83dbe905c98439",
+      "identity": "UTF-8 file bytes with CRLF normalized to LF; BOM retained if present"
+    },
+    {
+      "path": ".orch-notes/B1.9-copy-race.py",
+      "sha256": "f896c0651ba2431ed05627c6e904d7aa1b85a91b95cc357e11af6fa795f8a55a",
+      "identity": "UTF-8 file bytes with CRLF normalized to LF; BOM retained if present"
+    },
+    {
+      "path": ".orch-notes/B1.9-copy-race.json",
+      "sha256": "51b583d4a6f27b511294bf9243500537cc9ddc9864a5dce1f26ed53e0c4e0401",
+      "identity": "UTF-8 file bytes with CRLF normalized to LF; BOM retained if present"
+    }
+  ],
+  "command_accounting": {
+    "exit_0": "All Get-Content, Get-PSDrive, git status/rev-parse/show/diff/stat, successful rg discovery, New-Item, scratch Set-Content commands; acceptance and independent-controls tickets.py result; all three friction.py records. Cross-drive wrapper/harness0, after-child0, package/probe runner0, git subprocesses0. Copy-race wrapper/harness0. Commands and raw subprocess readings are in B1.9-controls.json; harnesses preserve exact methods and explicit 180s child/300s wrapper,60s race bounds.",
+    "exit_1": [
+      "rg -n 'package_digest|digest_package|def .*digest' scripts/rings* scripts/*package*: Windows wildcard path syntax error; logged, corrected with --glob.",
+      "rg -n 'rglob|ROOT /|ROOT.glob|scan|orch-notes' tools/validate_support tests/test_doclint.py tools/validate_facts.py scripts/repo* --glob '*.py': absent guessed file and wildcard syntax; logged and recovered through exact-path discovery.",
+      "Expected before-control child exit1: five tests/two cross-drive ValueErrors; current child0. Completed hosted shard exit1 is read evidence, not locally dispatched."
+    ],
+    "non_failure_read_limits": "One broad batched output truncated and a past-EOF token-economy slice returned empty exit0; logged, narrowed reads recovered relevant source and whole normative text. No check was truncated or unobserved.",
+    "later_records": "Findings-generation, staged checks, commit and dispatch close observed exits are in ticket outcome, avoiding a self-referential commit hash in this file."
+  },
+  "gaps": [
+    "R3 blocks acceptance; independent package/probe green does not prove parallel full-suite green.",
+    "Fresh full required checks, current hosted matrix and corrected named package admission remain root-owned. No installation, runtime switch, rendering, audiovisual review, social publication or merge performed."
+  ],
+  "scope_accounting": "Only durable review/evidence files written. Source, pinned semantics, package bytes, diagnostic behavior, ceilings and historical B1.7 findings unchanged. No delegation or background process remains. Terminal disposition belongs to join."
+}

@@ -103,6 +103,41 @@
    "test_architecture_owners.StatedCeilingTest.test_padding_a_copy_past_the_ceiling_fails_the_check",
    "test_architecture_owners.StatedCeilingTest.test_the_map_is_inside_the_ceiling_it_states",
    "test_architecture_owners.StatedCeilingTest.test_the_map_states_a_ceiling",
+   "test_benchmaker_calibration.CalibrationTests.test_duplicate_missing_cases_controls_only_and_wrong_configuration",
+   "test_benchmaker_calibration.CalibrationTests.test_equal_case_estimator_does_not_pool_trials_or_select_best",
+   "test_benchmaker_calibration.CalibrationTests.test_established_task_timeout_is_genuine_failure_startup_is_excluded",
+   "test_benchmaker_calibration.CalibrationTests.test_external_probe_rejects_forged_summary_and_audit_identity",
+   "test_benchmaker_calibration.CalibrationTests.test_independent_grader_discriminates_wrong_and_missing_source",
+   "test_benchmaker_calibration.CalibrationTests.test_infrastructure_never_counts_as_target_failure",
+   "test_benchmaker_calibration.CalibrationTests.test_legacy_manifest_never_enters_empirical_admission",
+   "test_benchmaker_calibration.CalibrationTests.test_observed_configuration_contract_can_be_calibrated",
+   "test_benchmaker_calibration.CalibrationTests.test_optional_configuration_metadata_does_not_block_declared_rigor",
+   "test_benchmaker_calibration.CalibrationTests.test_prepare_cannot_manufacture_receipt_or_completed_benchmark",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_accepts_equivalent_paths_and_rejects_outside_product",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_detects_unlisted_frozen_file",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_rejects_absent_journal_and_uncommitted_manifest",
+   "test_benchmaker_calibration.CalibrationTests.test_probe_rejects_missing_and_corrupt_output",
+   "test_benchmaker_calibration.CalibrationTests.test_tracer_replays_native_source_and_preserves_configuration_gap",
+   "test_benchmaker_integration.PublicIntegrationTests.test_generated_project_adapters_expose_only_benchmaker",
+   "test_benchmaker_integration.PublicIntegrationTests.test_package_resource_containment_and_literal_standard_calls",
+   "test_benchmaker_integration.PublicIntegrationTests.test_private_names_resolve_only_inside_public_package",
+   "test_benchmaker_integration.PublicIntegrationTests.test_public_handoff_has_required_inputs_and_ordered_private_calls",
+   "test_benchmaker_integration.PublicIntegrationTests.test_tournament_forwards_configuration_and_gates_frozen_eligibility",
+   "test_benchmaker_landing.RecordLandingTests.test_same_repository_attempt_lands_and_exports_after_candidate_retirement",
+   "test_benchmaker_repair.RepairTests.test_favorable_final_cannot_repair_unmet_development",
+   "test_benchmaker_repair.RepairTests.test_final_out_of_band_does_not_replace_calibrated_development",
+   "test_benchmaker_repair.RepairTests.test_frozen_nonmanifest_mutation_before_self_report_is_rejected",
+   "test_benchmaker_repair.RepairTests.test_grader_setup_exclusion_keeps_native_receipt_and_is_admitted",
+   "test_benchmaker_repair.RepairTests.test_nested_configuration_gaps_and_optional_metadata",
+   "test_benchmaker_repair.RepairTests.test_only_attributed_infrastructure_replacements_can_extend_launches",
+   "test_benchmaker_repair.RepairTests.test_package_byte_mutation_and_runtime_label_spoof_are_rejected",
+   "test_benchmaker_repair.RepairTests.test_parent_grader_rejects_no_api_and_forged_pass_and_accepts_real_answers",
+   "test_benchmaker_repair.RepairTests.test_typed_qualification_keeps_all_three_states_through_probe",
+   "test_benchmaker_round2.PublicationSequenceTests.test_published_rounds_survive_landed_partial_and_final_indexes",
+   "test_benchmaker_round2.SecondRepairTests.test_fd_spoof_and_reflection_are_unsupported_while_real_calls_complete",
+   "test_benchmaker_round2.SecondRepairTests.test_finalization_call_is_after_all_terminal_branches",
+   "test_benchmaker_round2.SecondRepairTests.test_required_child_survives_every_unavailable_or_optional_ancestor",
+   "test_benchmaker_round2.SecondRepairTests.test_substitute_checks_and_wrong_case_inputs_are_rejected_semantically",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_choice_authorizing_dispositions_require_settled_q12",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_covered_candidate_or_evidence_change_invalidates_disposition",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_each_disposition_is_bound_to_one_branch_shape",
@@ -153,6 +188,11 @@
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_repository_validator_runs_the_browser_game_audit",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_test_or_help_identity_disagreement_is_rejected",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_unlisted_implementation_marker_is_rejected",
+   "test_build_workflow.BuildWorkflowTests.test_authoring_narrowing_expands_in_public_callee_scope",
+   "test_build_workflow.BuildWorkflowTests.test_default_distribution_has_one_manual_roleless_builder",
+   "test_build_workflow.BuildWorkflowTests.test_receipt_probe_rejects_missing_and_corrupt_output",
+   "test_callable_context.CallableContextTest.test_context_survives_builder_frame_planner_maker_and_judge",
+   "test_callable_context.CallableContextTest.test_unreadable_context_refuses_before_ticket_creation",
    "test_catalog_completeness.CatalogCompletenessTests.test_a_standard_takes_the_flat_pointer_and_no_host_surface",
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_name_reaches_every_host_catalog",
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
@@ -978,6 +1018,30 @@
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_script_executor_resolving_in_the_tree_is_admitted",
    "test_script_executors.ScriptExecutorAdmissionTest.test_the_refusal_does_not_depend_on_the_ticket_carrying_a_standard",
    "test_script_executors.ScriptExecutorAdmissionTest.test_the_refusal_names_the_path_that_did_not_resolve",
+   "test_self_improve.SelfImprove.test_claude_subagent_tree_and_copied_evidence_links",
+   "test_self_improve.SelfImprove.test_codex_tracer_descendants_time_project_success_and_original_hash",
+   "test_self_improve.SelfImprove.test_concurrent_records_have_one_winner_and_no_lost_predecessor",
+   "test_self_improve.SelfImprove.test_cross_review_recurrence_carries_immutable_original_proposal",
+   "test_self_improve.SelfImprove.test_current_codex_items_and_metadata_keep_unknown_shapes_partial",
+   "test_self_improve.SelfImprove.test_cycles_orphans_duplicates_missing_metadata_cannot_expand_scope",
+   "test_self_improve.SelfImprove.test_drifted_nested_tool_shape_retains_raw_evidence_and_refuses_nonobject_record",
+   "test_self_improve.SelfImprove.test_exact_duplicates_keep_each_locator_and_covered_never_filters",
+   "test_self_improve.SelfImprove.test_invalid_selection_and_repository_sink_refuse",
+   "test_self_improve.SelfImprove.test_nested_and_string_credentials_are_redacted_before_persistence",
+   "test_self_improve.SelfImprove.test_nested_legacy_content_and_opaque_reasoning_are_gaps",
+   "test_self_improve.SelfImprove.test_pages_name_complete_collection_and_never_hide_remaining_evidence",
+   "test_self_improve.SelfImprove.test_repair_lifecycle_rejects_stale_idempotency_replay_and_reopens",
+   "test_self_improve.SelfImprove.test_repair_without_proposal_reports_incomplete_and_review_closes",
+   "test_self_improve.SelfImprove.test_sink_run_friction_ticket_association_does_not_import_whole_run",
+   "test_self_improve.SelfImprove.test_source_failure_matrix_never_reports_clean_empty",
+   "test_self_improve.SelfImprove.test_unknown_malformed_truncated_missing_and_empty_are_distinct",
+   "test_self_improve_entry.SelfImproveEntryTests.test_custom_reserved_workflow_names_still_refuse",
+   "test_self_improve_entry.SelfImproveEntryTests.test_installed_collection_resolves_public_trace_facade",
+   "test_self_improve_entry.SelfImproveEntryTests.test_plan_preserves_surfaces_arguments_and_one_canonical_identity",
+   "test_self_improve_entry.SelfImproveEntryTests.test_receipt_reinstall_stale_cleanup_and_uninstall_own_entries",
+   "test_self_improve_shapes.DiagnosticShapes.test_correlation_keys_retain_invalid_identities_with_named_gaps",
+   "test_self_improve_shapes.DiagnosticShapes.test_malformed_json_fields_remain_partial_retained_observations",
+   "test_self_improve_shapes.DiagnosticShapes.test_nested_host_content_preserves_known_text_tools_and_declares_gaps",
    "test_serial_compat.TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
    "test_serial_compat.TestBoundaryRestoration.test_an_unclassified_boundary_change_fails_the_lane",
    "test_serial_compat.TestBoundaryRestoration.test_selected_module_boundaries_restore_classified_process_state",
@@ -1331,6 +1395,17 @@
    "test_tickets_grade.GradeSnapshotTest.test_no_reader_reconstructs_a_verdict_out_of_a_report",
    "test_tickets_grade.GradeSnapshotTest.test_one_member_decomposition_is_refused",
    "test_tickets_grade.GradeSnapshotTest.test_the_review_ledger_module_is_gone",
+   "test_tiktok_video_package.VideoPackageTests.test_canonical_discovery_exposes_only_public_owner",
+   "test_tiktok_video_package.VideoPackageTests.test_contained_links_and_escape_control",
+   "test_tiktok_video_package.VideoPackageTests.test_document_verifier_rejects_absent_and_stale_output",
+   "test_tiktok_video_package.VideoPackageTests.test_literal_sequence_resolves_in_correct_public_scope",
+   "test_tiktok_video_package.VideoPackageTests.test_stale_package_cannot_authorize_existing_frame",
+   "test_tiktok_video_probe.VideoProbeTests.test_audio_settings_and_silent_clipped_or_off_target_signal_fail",
+   "test_tiktok_video_probe.VideoProbeTests.test_endpoints_allow_aac_padding_but_reject_drift",
+   "test_tiktok_video_probe.VideoProbeTests.test_malformed_tool_output_and_timeout_return_nonzero",
+   "test_tiktok_video_probe.VideoProbeTests.test_missing_corrupt_and_actual_decode_boundary",
+   "test_tiktok_video_probe.VideoProbeTests.test_stream_contract_rejects_wrong_size_fps_codec_and_color",
+   "test_tiktok_video_probe.VideoProbeTests.test_toolchain_must_match_local_qualified_lock",
    "test_trace.TestClaudeAdapter.test_clean_fixture_shape_and_fields",
    "test_trace.TestClaudeAdapter.test_cli_exits_zero_on_malformed_input",
    "test_trace.TestClaudeAdapter.test_malformed_fixture_yields_partial_trace",
@@ -1387,6 +1462,7 @@
    "test_validator.TestCompositionProtocolAdmission.test_browser_game_is_the_one_dated_visible_exception",
    "test_validator.TestCompositionProtocolAdmission.test_package_link_may_cite_canonical_law_but_not_another_path",
    "test_validator.TestCompositionProtocolAdmission.test_package_owned_schema_fixture_and_script_are_admitted",
+   "test_validator.TestCompositionProtocolAdmission.test_package_script_and_reference_fixture_are_admitted_without_exception",
    "test_validator.TestCompositionProtocolAdmission.test_removing_the_browser_game_entry_exposes_its_protocol_artifacts",
    "test_validator.TestCompositionProtocolAdmission.test_shared_schema_is_refused_outside_its_public_package",
    "test_validator.TestDomainBlindnessAdmission.test_a_canonical_standard_name_in_scripts_is_refused",
@@ -1722,6 +1798,7 @@
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_declares_its_name_and_manual_invocation",
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_directory_holds_exactly_one_body",
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_opens_a_frame_calls_or_nests_and_closes",
+   "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_public_call_must_resolve_and_cannot_call_itself",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_slicing_sections_put_proven_seams_on_the_first_frontier",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_no_cut_states_a_superseded_overlap_rule",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_reserves_the_tracer_for_the_unproven_seam",
@@ -2154,6 +2231,9 @@
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_module_docstring_names_what_the_deviation_is_read_against",
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_resolvers_are_imported_never_copied",
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_script_is_stdlib_only_and_network_free",
+   "tests.test_workspace_cases.detached_integration_cases.TestDetachedIntegrationContinuity.test_missing_recorded_checkout_never_redirects_to_another_detached_tree",
+   "tests.test_workspace_cases.detached_integration_cases.TestDetachedIntegrationContinuity.test_rewind_divergence_and_named_branch_changes_refuse_without_merging",
+   "tests.test_workspace_cases.detached_integration_cases.TestDetachedIntegrationContinuity.test_two_sequential_merges_and_replay_keep_the_exact_detached_checkout",
    "tests.test_workspace_cases.document_cases.TestTheDocumentLaneObservesTheTreeItStandsIn.test_it_records_the_callers_tree_and_claims_no_git_fact",
    "tests.test_workspace_cases.document_cases.TestTheDocumentLaneObservesTheTreeItStandsIn.test_start_observes_the_same_tree_establish_does",
    "tests.test_workspace_cases.document_cases.TestTheRefusalSurvivesForWhatCannotBeGiven.test_an_explicit_required_override_is_still_refused_unstamped",
@@ -2382,6 +2462,30 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_benchmaker_calibration",
+   "owner": "<module>",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_benchmaker_round2",
+   "owner": "PublicationSequenceTests.test_published_rounds_survive_landed_partial_and_final_indexes",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_build_workflow",
+   "owner": "BuildWorkflowTests.test_default_distribution_has_one_manual_roleless_builder",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
@@ -4337,6 +4441,40 @@
    ]
   },
   {
+   "module": "tests.test_self_improve",
+   "owner": "SelfImprove.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_self_improve",
+   "owner": "SelfImprove.test_concurrent_records_have_one_winner_and_no_lost_predecessor",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_self_improve_entry",
+   "owner": "SelfImproveEntryTests.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_self_improve_entry",
+   "owner": "SelfImproveEntryTests.test_installed_collection_resolves_public_trace_facade",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
    "module": "tests.test_serial_compat",
    "owner": "TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
    "restoration": "sharded-module-guard",
@@ -4976,6 +5114,54 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "<module>",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "VideoPackageTests.grade",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "VideoPackageTests.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_package",
+   "owner": "VideoPackageTests.test_stale_package_cannot_authorize_existing_frame",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_probe",
+   "owner": "VideoProbeTests.test_malformed_tool_output_and_timeout_return_nonzero",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tiktok_video_probe",
+   "owner": "VideoProbeTests.test_missing_corrupt_and_actual_decode_boundary",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

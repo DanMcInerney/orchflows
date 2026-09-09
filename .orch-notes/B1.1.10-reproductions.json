@@ -1,0 +1,115 @@
+{
+  "dispatch_id": "B1.1.10:d1",
+  "assignment_seal": "sha256:1171e521432d2ce5c780f57c773f9bf8f74b8dd8cf711367b59f78cbe7f75012",
+  "assigned_name": "B1.1.10",
+  "reviewed_artifact": "git:ecd05f4117d4455afabca0638cfd9322b008e9f6",
+  "kind": "independent synthetic semantic counterexamples, no native subject attempts",
+  "results": [
+    {
+      "name": "new_call_protocol_spoof_without_api",
+      "observed": {
+        "original_spoof": "FAIL",
+        "new_spoof": {
+          "oracle_outcome": "PASS",
+          "failure_class": null,
+          "source_sha256": "26363b4d866633534fc2ceb2794ece0ddb52ef66124287827f58405289ca5d1b",
+          "checks_sha256": "78cda684626782adf5df2e6ab4bc3b447dcd5964732ac00cf370c288ed075f22",
+          "grader_sha256": "a6c066a13d5c0554314efcd9ea5ea84ca0c4e944837325f9918168f451d860ab",
+          "checks_locator": "C:\\Users\\danhm\\AppData\\Local\\Temp\\tmp7ykew36q\\checks.json",
+          "calls": [
+            {
+              "stdout": "{\"returned\": true, \"value\": 7, \"exception\": null, \"args_after\": [3]}",
+              "stderr": "",
+              "exit_code": 0,
+              "timed_out": false,
+              "launch_error": null,
+              "elapsed_seconds": 0.15742950000276323
+            }
+          ],
+          "failed_checks": [],
+          "elapsed_seconds": 0.15742950000276323,
+          "exit_code": 0,
+          "timed_out": false,
+          "stdout": "{\"returned\": true, \"value\": 7, \"exception\": null, \"args_after\": [3]}",
+          "stderr": ""
+        },
+        "legitimate": "PASS"
+      },
+      "expected": "Reject no solve API and premature worker exit even with a correctly shaped per-call response"
+    },
+    {
+      "name": "required_nested_field_hidden_by_unavailable_parent",
+      "observed": {
+        "optional_default": {
+          "decision": "CALIBRATED",
+          "required_gaps": [],
+          "optional_gaps": [
+            "resolved_configuration.scaffold: parent object unavailable"
+          ]
+        },
+        "optional_parent_required_child": {
+          "decision": "CALIBRATED",
+          "required_gaps": [],
+          "optional_gaps": [
+            "resolved_configuration.scaffold: parent object unavailable"
+          ]
+        },
+        "observed_configuration": "CALIBRATED"
+      },
+      "expected": "Missing required scaffold.instructions must be UNVERIFIED even when its parent is optional or unavailable"
+    },
+    {
+      "name": "published_round_summary_must_be_rewritten_for_final",
+      "observed": {
+        "legitimate_final_score_separation": {
+          "workflow_admission": true,
+          "calibrated_benchmark_eligible": true,
+          "decision": "CALIBRATED",
+          "established_native_attempts": 2,
+          "declared_rounds": 2,
+          "criterion_gaps": [],
+          "development_decision": "CALIBRATED",
+          "final_observations": [
+            {
+              "estimate": 0.0,
+              "band_observation": "OUT_OF_BAND",
+              "drift": -1.0
+            }
+          ]
+        },
+        "retained_original_summary_refusal": "summary differs from recomputed evidence",
+        "required_rewrite_export_refusal": "external export differs: summary.json",
+        "future_fields": [
+          "frozen_revision",
+          "final_record",
+          "revision_ledger"
+        ]
+      },
+      "expected": "Validate an immutable round at its own observation identity; later aggregate metadata belongs in the result index"
+    },
+    {
+      "name": "final_attempt_grader_not_bound_to_frozen_checks",
+      "observed": {
+        "actual_frozen_checks_outcome": "FAIL",
+        "alternative_uncommitted_checks_outcome": "PASS",
+        "probe": {
+          "workflow_admission": true,
+          "calibrated_benchmark_eligible": true,
+          "decision": "CALIBRATED",
+          "established_native_attempts": 2,
+          "declared_rounds": 2,
+          "criterion_gaps": [],
+          "development_decision": "CALIBRATED",
+          "final_observations": [
+            {
+              "estimate": 1.0,
+              "band_observation": "IN_BAND",
+              "drift": 0.0
+            }
+          ]
+        }
+      },
+      "expected": "Reject a final attempt evaluated against substitute checks outside the fixed benchmark identity"
+    }
+  ]
+}

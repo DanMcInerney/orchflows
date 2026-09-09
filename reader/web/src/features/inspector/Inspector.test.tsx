@@ -2,6 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { executionTicketRoute } from "../../shared/routes/executionRoutes";
+import { schema } from "./data/schema";
+import { project } from "./data/project";
 import TicketInspector from "./Inspector";
 import type { InspectorModel, TicketDetail } from "./model";
 import { route as inspectorRoute } from "./route";
@@ -19,7 +21,7 @@ function model(overrides: Partial<TicketDetail> = {}): InspectorModel {
     readiness: { state: "complete", dependencies: [], explanation: "G1 is complete", cause: "none", causal_chain: [] },
     sections: { goal: "Prove the inspector without exposing private activity." },
     report: "The safe recorded report.",
-    pack: "orch-design-pack",
+    standard: "orch-design",
     history: [],
     raw: "",
     ...overrides
@@ -43,6 +45,19 @@ afterEach(() => {
 });
 
 describe("TicketInspector", () => {
+  it("accepts the canonical standard-only projection and exposes its Goal and details", async () => {
+    const ticket = { ...model().ticket, standard: "orch-code" } as Record<string, unknown>;
+    delete ticket.pack;
+    const payload = { schema: "orchflows.inspector.v1", run: null, ticket };
+    const accepted = schema(payload);
+    render(<TicketInspector state={ready(project(accepted))} route={route("")} />);
+    expect(screen.getByRole("heading", { name: "Goal" })).not.toBeNull();
+    await userEvent.click(screen.getByRole("tab", { name: "Details" }));
+    expect(screen.getByText("Standard")).not.toBeNull();
+    expect(screen.getAllByText("orch-code").length).toBeGreaterThan(0);
+    expect(() => schema({ ...payload, ticket: { ...ticket, standard: undefined, pack: "orch-code" } })).toThrow();
+  });
+
   it("delegates canonical ticket matching and construction to the shared execution route", () => {
     const match = vi.spyOn(executionTicketRoute, "match");
     const build = vi.spyOn(executionTicketRoute, "build");
