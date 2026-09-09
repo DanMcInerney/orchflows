@@ -31,3 +31,12 @@ discovery, whole-experience handoff, fallback navigation, and duplicate route
 switches are absent. Ticket prose is rendered only from the selected closed
 section set and remains inert. Transcript content, paths, prompts, tools,
 commands, files, and conversations remain outside the browser contract.
+
+The focused compiled session-graph regression covers canonical and nested large
+sessions at both manifest breakpoints: visible keyboard selection, matching ETag
+polls, metadata refresh, the simple list, and WCAG AA checks. Set
+`ORCHFLOWS_PYTHON` to the verified interpreter, then run from the repository root:
+
+```text
+pnpm --dir reader exec playwright test web/src/features/session-graph/session-graph.spec.ts --workers=1 --reporter=line --output <evidence-directory>
+```
