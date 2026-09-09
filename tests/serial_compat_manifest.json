@@ -3351,6 +3351,14 @@
    ]
   },
   {
+   "module": "tests.test_installer_cases.node_tooling",
+   "owner": "offline_node_preparation",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
    "module": "tests.test_installer_cases.planning.host_detection",
    "owner": "DryRunOracleTest._dry_run",
    "restoration": "sharded-module-guard",
