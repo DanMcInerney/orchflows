@@ -19,7 +19,7 @@ Open the public package's frame; its goal carries those inputs:
       [--review-new-work <independent-stage-reason> --review-rounds <effective-rounds>]
 
 Use the optional ownership carrier only for a caller-declared independent
-stage under [review policy](../../docs/review-policy.md); helpers inherit.
+stage; helpers inherit.
 
 The package owns private `research-acquire`. Its scripts use the interpreter
 from `orchflows env workflow recent-search`.
