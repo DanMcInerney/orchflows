@@ -8,7 +8,7 @@ suite to pass.
 ## Measured facts (2026-09-01, live)
 
 - `GET .../api/rest_v1/metrics/pageviews/per-article/en.wikipedia/`
-  `all-access/all-agents/Python_(programming_language)/daily/2026082100/`
+  `"all-access/all-agents/Python_(programming_language)/daily/2026082100/"`
   `2026083100` answers keyless 200 with `{"items": [...]}`, one row per day
   inside the inclusive range: eleven days requested, eleven rows back. Each
   row carries its own `project`, `article`, `granularity`, `access`,
@@ -45,7 +45,7 @@ suite to pass.
   `min_interval_ms=1000, burst=1`) are read as covering this; nothing in
   `fetch_native_page` retries.
 - **`de.wikipedia:Berlin` grammar**, measured live: `GET .../de.wikipedia/`
-  `all-access/all-agents/Berlin/daily/2026082900/2026083100` answered 200
+  `"all-access/all-agents/Berlin/daily/2026082900/2026083100"` answered 200
   with `project: "de.wikipedia"` on every row — the `<project>:<article>`
   prefix reaches a non-default project cleanly.
 
@@ -53,7 +53,7 @@ suite to pass.
 
 - **The window is the path, not a parameter.** `start`/`end` are two of the
   route's seven declared `path_params`
-  (`_support/route_contracts.py:WIKIMEDIA_PAGEVIEWS_ROUTE`), so there is no
+  (`super_research._support.route_contracts.WIKIMEDIA_PAGEVIEWS_ROUTE`), so there is no
   valid URL to build without both. A hydration naming no `window_start` is
   refused in `fetch_native_page` before any call — `outcome="refused"`,
   `loss=("unselected_target",)` — mirroring `open_page`'s pre-call refusal
@@ -63,7 +63,7 @@ suite to pass.
   unwindowed call gracefully by omitting optional query parameters — their
   grammar has an unwindowed shape at all) whose grammar has none.
 - **`smoke.probe_step` only ever sets `window_start`, never `window_end`**
-  (`_support/smoke_plan.probe_window_start`), confirmed by reading it before
+  (`super_research._support.smoke_plan.probe_window_start`), confirmed by reading it before
   writing this adapter. That is why the sentinel path
   (`FAR_FUTURE_END` on a `window_start`-only call) is load-bearing: without
   it, every liveness smoke of this adapter would refuse on its own
@@ -75,7 +75,7 @@ suite to pass.
   article` both read the origin's own answer rather than the parsed
   request, so an origin-side title normalization (capitalization, etc.)
   would still be reflected correctly. No full host literal is spelled in
-  the adapter source — `tests/test_transport_cases/route_ownership.py`
+  the adapter source — [tests/test_transport_cases/route_ownership.py](../../tests/test_transport_cases/route_ownership.py)
   bans the exact `route.origin` string (`https://wikimedia.org`) outside
   the declared route-owning modules, so the docstring above avoids writing
   the measured URLs with their scheme+host prefix.
@@ -104,12 +104,12 @@ the refuse-before-call design the task brief specifies verbatim (and which
 `protocol.md`'s roster row already commits to in prose: "a step here with no
 window is refused rather than defaulted"):
 
-1. `tests/test_adapters_cases/unrecognized_and_roster.py::RosterIsCompleteTest`
+1. [tests.test_adapters_cases.unrecognized_and_roster.RosterIsCompleteTest](../../tests/test_adapters_cases/unrecognized_and_roster.py)
    `.test_every_listed_adapter_resolves_to_a_descriptor_and_to_a_call` — asserts
    `len(opener.opened) == 1` for a windowless `AdapterRequest` built straight
    from each adapter's `SmokeProbe`, ignoring the probe's own `window_days`.
-2. `tests/test_pipeline_cases/failure.py::AdapterBranchTest` — the same shape.
-3. `tests/test_window_reach_roster.py::DeclarationMatchesBehaviorAcrossTheRosterTest`
+2. [tests.test_pipeline_cases.failure.AdapterBranchTest](../../tests/test_pipeline_cases/failure.py) — the same shape.
+3. [tests.test_window_reach_roster.DeclarationMatchesBehaviorAcrossTheRosterTest](../../tests/test_window_reach_roster.py)
    `.test_every_declared_can_sends_a_different_request_when_windowed` — for
    every probe whose declared operation is `WINDOW_REACH[...] == True`, forces
    `window_days=0` (i.e. no `window_start`) for the "unwindowed" half of its
@@ -119,7 +119,7 @@ None of these three files is in this task's "files you own" list, so they
 were left unedited. A minimal fix for all three would be the same shape:
 special-case (or generalize) the assertion so an adapter's windowless call
 is allowed to be a typed, no-call refusal rather than requiring exactly one
-transport call — likely a `_support/window_reach.py`-keyed exemption list,
+transport call — likely a [_support/window_reach.py](../../scripts/super_research/_support/window_reach.py)-keyed exemption list,
 or reading each probe's own `window_days` instead of forcing zero. Reopens
 whoever reconciles the windowed-adapter batch (`gdelt`, `stack_exchange`,
 `wikimedia_pageviews`, `scholarly` all share `WINDOW_REACH[...] == True`, and
@@ -129,7 +129,7 @@ whoever reconciles the windowed-adapter batch (`gdelt`, `stack_exchange`,
 
 - **`top-viewed-articles` and other pageviews endpoints not shipped.** Only
   `per-article` is wired. The Wikimedia REST API also serves per-project
-  and top-N endpoints under the same `metrics/pageviews` family; none of
+  and top-N endpoints under the same `"metrics/pageviews"` family; none of
   those is measured or declared. Reopens if a caller needs "what was
   trending" rather than "how much attention did this one article get."
 - **`access`/`agent` are not caller-selectable.** Every call sends the

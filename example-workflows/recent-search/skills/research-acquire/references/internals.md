@@ -5,7 +5,7 @@ two laws a reader has to be told, and what the package refuses.
 
 ## Layout
 
-`scripts/super_research/`, on the Python 3.9 floor, importing nothing beyond the
+[scripts/super_research/](../scripts/super_research), on the Python 3.9 floor, importing nothing beyond the
 standard library and what a `requirements.txt` beside the item declares (none
 today), no I/O at import time. The module set is not the one the frozen spec's affected surfaces
 list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
@@ -15,8 +15,8 @@ list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
 | module | owns |
 | --- | --- |
 | `schema.py` | closed enums, the immutable manifest and artifact values, `parse_manifest` |
-| [`_support/route_catalog_k0.py`](../scripts/super_research/_support/route_catalog_k0.py), [`route_catalog_k1_k4.py`](../scripts/super_research/_support/route_catalog_k1_k4.py) | endpoint declarations by class |
-| [`_support/route_contracts.py`](../scripts/super_research/_support/route_contracts.py) | route identifiers, shapes, and `K1` credentials |
+| [_support/route_catalog_k0.py](../scripts/super_research/_support/route_catalog_k0.py), [`route_catalog_k1_k4.py`](../scripts/super_research/_support/route_catalog_k1_k4.py) | endpoint declarations by class |
+| [_support/route_contracts.py](../scripts/super_research/_support/route_contracts.py) | route identifiers, shapes, and `K1` credentials |
 | [`routes.py`](../scripts/super_research/routes.py) | ordered public facade |
 | `transport.py` | the outbound request — the opener, method admission, the byte cap, refusal parsing, the guest-token store, the captive-portal detector, `route_admissions` |
 | `router.py` | one step's route decision, from per-route booleans alone |
@@ -31,14 +31,14 @@ list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
 | `probes.py` | the twenty-five liveness probe declarations |
 | `smoke.py` | one probe's read, and the standing it leaves an adapter at |
 | `cli.py` | three operations, and everything an operator reads |
-| `adapters/__init__.py` | `AdapterDescriptor`, `NativeRecord`, `NativePage`, `fetch_one_page` |
-| `adapters/<id>.py` | one route's parser, one `DESCRIPTOR`, one `fetch_native_page` |
+| [adapters/__init__.py](../scripts/super_research/adapters/__init__.py) | `AdapterDescriptor`, `NativeRecord`, `NativePage`, `fetch_one_page` |
+| [adapter modules](../scripts/super_research/adapters) named `<id>.py` | one route's parser, one `DESCRIPTOR`, one `fetch_native_page` |
 
 `runner.py` re-exports every name moved to `ledger`, `ordering` and `pacing`,
 `cli.py` every name moved to `probes` and `smoke`, and `transport.py` every public
 name from the ordered `routes` facade, preserving established imports without a
 second route inventory. Tests are
-`tests/`, with `tests/helpers.py` and `tests/fixtures/**`; the whole suite runs
+[tests/](../tests), with [tests/helpers.py](../tests/helpers.py) and [tests/fixtures/](../tests/fixtures) recursively; the whole suite runs
 with no network reachable.
 
 ## Two laws, each bought with a defect
@@ -92,7 +92,7 @@ exposed it.
 The classes and their three rules are [protocol.md](protocol.md)'s. This is the
 machinery behind them.
 
-[`_support/route_contracts.py`](../scripts/super_research/_support/route_contracts.py)
+[_support/route_contracts.py](../scripts/super_research/_support/route_contracts.py)
 owns `K1` credentials; catalogs reference them; [`routes.py`](../scripts/super_research/routes.py)
 holds the ordered route facade. `transport.py` attaches one only at send time;
 none enters manifests or artifacts or survives in answer addresses.

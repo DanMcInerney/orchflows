@@ -2,7 +2,7 @@
 
 Working notes from implementing the `tiktok_public` adapter (K2,
 `tiktok_video_page` + `tiktok_profile_page`). Unlike the other in-flight
-adapters' drafts in this directory, `references/protocol.md`'s loss-vocabulary
+adapters' drafts in this directory, [references/protocol.md](../protocol.md)'s loss-vocabulary
 tables were edited directly as part of this delivery (see "Loss vocabulary"
 below) rather than left as an open item, because the task's own definition of
 done required no `loss_vocabulary` failure mentioning this module.
@@ -10,7 +10,7 @@ done required no `loss_vocabulary` failure mentioning this module.
 ## The package-UA measurement (load-bearing)
 
 **The package's own honest `User-Agent`
-(`super-research/0.1 (keyless read-only acquisition)`) is served the full
+(`"super-research/0.1 (keyless read-only acquisition)"`) is served the full
 payload — on a first-touch request.** Measured 2026-09-01, plain GET, no
 cookie, no script run:
 
@@ -64,10 +64,10 @@ Both `%40`-encoded and literal `@` forms of the handle segment answered 200
 with the full payload in the pre-throttle measurement:
 `https://www.tiktok.com/%40nba/video/7606907506589207838` and
 `https://www.tiktok.com/@nba/video/7606907506589207838` both worked.
-`_support/transport_request.path_segments` calls
+`super_research._support.transport_request.path_segments` calls
 `urllib.parse.quote(value, safe="")` on every path segment, which encodes
 `@` to `%40` unconditionally — exactly the form proved live. The two
-pre-wired route entries in `_support/route_catalog_k1_k4.py`
+pre-wired route entries in [_support/route_catalog_k1_k4.py](../../scripts/super_research/_support/route_catalog_k1_k4.py)
 (`tiktok_video_page`: `path_params=("handle", "resource", "video_id")`;
 `tiktok_profile_page`: `path_params=("handle",)`) needed no edit. The
 adapter builds `handle` as `"@" + <bare handle>` so the composed address is
@@ -99,7 +99,7 @@ for a profile, matching both measurements.
   `itemStruct`'s own shape," because TikTok's own web client evidently reads
   them the same way a video page's `itemStruct` reads (same field names
   throughout the surface); `ProfileNonemptyItemListTest` in
-  `tests/test_tiktok_public.py` proves the parsing branch against a
+  [tests/test_tiktok_public.py](../../tests/test_tiktok_public.py) proves the parsing branch against a
   constructed payload, not a captured one.
 - Both pages carry a `statusCode`/`statusMsg` pair one level above
   `itemInfo`/`userInfo` (`0` and `""` on every read here). Not read by this
@@ -153,7 +153,7 @@ for a profile, matching both measurements.
   it whether or not itemList is empty... if it is ever non-empty... drop the
   warning for that page").
 - **`video:` and `profile:` both refuse before touching the carrier.**
-  `video_target` requires the full `handle/id` pair (partition on the first
+  `video_target` requires the full `"handle/id"` pair (partition on the first
   `/`, both halves nonempty) and refuses everything else — a bare handle, a
   bare id, an empty argument — as `unselected_target`, unseeded-carrier-proof
   in `VideoOperationRefusesWithoutThePairTest`. `profile:` with an empty (or
@@ -161,12 +161,12 @@ for a profile, matching both measurements.
   both return a typed `NativePage` with `outcome="refused"`, mirroring
   `public_page`'s `_refused` rather than raising, so a malformed target in a
   manifest reads as a step result and not a crash.
-- **Loss-vocabulary tables in `references/protocol.md` were edited as part
+- **Loss-vocabulary tables in [references/protocol.md](../protocol.md) were edited as part
   of this delivery**, not left open: `tiktok_public` was added to the
   `auth_required`, `schema_drift`, `field_omitted`, `malformed_json`,
   `http_status` and `unselected_target` rows'
   `"named by"` cells, matched exactly against what
-  `tests/test_dependency_boundary_cases/loss_vocabulary.py` scans the source
+  [tests/test_dependency_boundary_cases/loss_vocabulary.py](../../tests/test_dependency_boundary_cases/loss_vocabulary.py) scans the source
   for (verified green for every `tiktok_public`-attributable cell — the
   suite's remaining loss-vocabulary failures are all attributable to
   `gdelt`, landing concurrently in this same tree, and are not this
@@ -187,10 +187,10 @@ No change was needed to either file:
   (`native_item_id`, `body`, `author`, `canonical_locator`, `published_at`,
   three `engagement:` fields) before this delivery began, and it is
   satisfiable by the pre-throttle live 200 and by the offline fixture alike.
-- `_support/window_reach.WINDOW_REACH["tiktok_public"] = {"": False}` was
+- `super_research._support.window_reach.WINDOW_REACH["tiktok_public"] = {"": False}` was
   already declared before this delivery began. Confirmed correct: neither
   operation's route takes any query parameter beyond its path segments
-  (`_support/route_catalog_k1_k4.py`'s two entries have no window-shaped
+  ([_support/route_catalog_k1_k4.py](../../scripts/super_research/_support/route_catalog_k1_k4.py)'s two entries have no window-shaped
   param, and this module sends nothing beyond `handle`/`resource`/
   `video_id`), so there is nothing for a window to act on either way.
 

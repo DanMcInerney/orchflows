@@ -36,8 +36,8 @@ for the suite to pass.
   the response is otherwise a normal 200. Probed against `jack`'s original
   tweet (`https://x.com/jack/status/20`), chosen because it can never be
   deleted or made private the way a newer id could.
-- `publish.twitter.com/oembed?url=...` answers this host with a bare
-  `301 Moved Permanently` onto `publish.x.com/oembed?url=...` (`Location`
+- `https://publish.twitter.com/oembed?url=...` answers this host with a bare
+  `301 Moved Permanently` onto `https://publish.x.com/oembed?url=...` (`Location`
   header, empty body) — no 402, no login wall. A separately reported survey
   from a datacenter IP range claimed `publish.twitter.com` answers 402
   there; that did not reproduce from this host at any point in this
@@ -46,10 +46,10 @@ for the suite to pass.
   none answers an engagement count of any kind (likes, views, plays,
   comments) under any name. Both are standing absences of the surface
   itself, not something one particular read happened to omit.
-- Response `Content-Type` measured: `application/json` on YouTube and X,
-  `application/json; charset=utf-8` on SoundCloud — all read as JSON
+- Response `Content-Type` measured: `"application/json"` on YouTube and X,
+  `"application/json; charset=utf-8"` on SoundCloud — all read as JSON
   regardless of the exact parameter, matching the `PROBE_PAYLOADS` entry
-  already wired in `tests/test_cli_cases/_support.py` for the X route.
+  already wired in [tests/test_cli_cases/_support.py](../../tests/test_cli_cases/_support.py) for the X route.
 - `format=json` was sent on every YouTube and SoundCloud call made while
   building this module and both answered JSON either way when re-probed
   without it during evidence-gathering; it is kept as a declared,

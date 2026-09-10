@@ -14,9 +14,9 @@ traces to that one host at that one moment.
 
 What this item cites of it:
 
-- **`linkedin.com/in/<slug>` answered 200 with a complete `ld+json` Person
+- **`https://linkedin.com/in/<slug>` answered 200 with a complete `ld+json` Person
   block** — `name`, `jobTitle[]`, `addressLocality`, `description`,
-  `worksFor[]`, `alumniOf[]`. **`linkedin.com/company/<slug>` answered 200 with
+  `worksFor[]`, `alumniOf[]`. **`https://linkedin.com/company/<slug>` answered 200 with
   a marker name and no field set**, so a company parser would be inferred rather
   than measured.
 - **Brave and Bing both answered 200 and both resisted extraction** — Brave with
@@ -77,13 +77,13 @@ date recorded the roster reading competitively and hydrating almost nothing.
 Every row was a real HTTP response. Three of them reverse a claim above.
 
 - **DuckDuckGo answers 202 to a browser identity as well as to this one**, on
-  `html.duckduckgo.com/html/` and `lite.duckduckgo.com/lite/` alike: the
+  `https://html.duckduckgo.com/html/` and `https://lite.duckduckgo.com/lite/` alike: the
   challenge is not about the identity, so a second identity would buy nothing
-  and none is tried. **Bing's RSS forms answer 200** — `www.bing.com/search?q=&format=rss`
+  and none is tried. **Bing's RSS forms answer 200** — `https://www.bing.com/search?q=&format=rss`
   with ten clean title/link/description/pubDate items and `first=` paging, and
-  `www.bing.com/news/search?q=&format=rss` with items whose links are wrapped
-  in `news/apiclick.aspx?…&url=` — and so does **Google News RSS**,
-  `news.google.com/rss/search?q=<q>+when:30d&hl=en-US&gl=US&ceid=US:en`, 131 KB
+  `https://www.bing.com/news/search?q=&format=rss` with items whose links are wrapped
+  in `"news/apiclick.aspx?…&url="` — and so does **Google News RSS**,
+  `https://news.google.com/rss/search?q=<q>+when:30d&hl=en-US&gl=US&ceid=US:en`, 131 KB
   of press items whose links redirect to the publisher when read. Three index
   routes ship as parallel planned routes; Brave answered 429, Mojeek a
   challenge.
@@ -94,15 +94,15 @@ Every row was a real HTTP response. Three of them reverse a claim above.
   every `.json` form still answers 403 to every identity. `community-more-posts/
   <sort>/?name=<sub>&t=month` carried 24 `<shreddit-post>` elements stating
   `score`, `comment-count`, `post-title`, `author`, `created-timestamp` and
-  `permalink`; `search?q=&type=posts&sort=&t=` and `r/<sub>/search?…` carried
+  `permalink`; `search?q=&type=posts&sort=&t=` and `"r/<sub>/search?…"` carried
   seven posts per page with a `faceplate-number` pair and a continuation
-  token; `comments/r/<sub>/t3_<id>?sort=top` carried 25 `<shreddit-comment>`
+  token; `"comments/r/<sub>/t3_<id>?sort=top"` carried 25 `<shreddit-comment>`
   elements with `score`, `depth`, `author`, `created`, `permalink`, the body
   under `id="<thingid>-post-rtjson-content"`, `total-comments="93"`, and a
   `more-comments` continuation. This is the platform's own client surface and
   it is `K2`, and it is what makes Reddit search and Reddit comments reachable
-  at all. **Arctic Shift** answered 200 to `posts/search?subreddit=&after=&limit=&sort=`,
-  `comments/search?link_id=` and `comments/tree?link_id=` with scored bodies,
+  at all. **Arctic Shift** answered 200 to `https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=&after=&limit=&sort=`,
+  `https://arctic-shift.photon-reddit.com/api/comments/search?link_id=` and `https://arctic-shift.photon-reddit.com/api/comments/tree?link_id=` with scored bodies,
   and 422 `"Timeout. Maybe slow down a bit"` twice to a full-text `title=` on
   one subreddit — measured and left undeclared, because the shreddit partials
   answer the same questions from the platform itself and a route no adapter
@@ -114,34 +114,34 @@ Every row was a real HTTP response. Three of them reverse a claim above.
   context field, no extra header), carrying `videoDetails.viewCount` as an exact
   digit string, `lengthSeconds`, `channelId`, `author`, and
   `captions.playerCaptionsTracklistRenderer.captionTracks[]` with a signed
-  `baseUrl` on `www.youtube.com/api/timedtext`; that address, rebuilt through
+  `baseUrl` on `https://www.youtube.com/api/timedtext`; that address, rebuilt through
   the transport's own sorted `urlencode`, answered 200 with 109 KB of `srv3`
   XML, and `fmt=json3` and `tlang=` answered too. `IOS 20.10.4` also answered
   `OK`; `WEB` still answers `UNPLAYABLE`. This reverses the 2026-08-10 row
   above for the `ANDROID` client, and the caption capability the roster
   deferred is shipped on it. `ANDROID` carries no `microformat`, so
   `publishDate` is absent from that read.
-- **Hacker News**: `hn.algolia.com/api/v1/items/<id>` answered 200 with a
+- **Hacker News**: `https://hn.algolia.com/api/v1/items/<id>` answered 200 with a
   story and its whole comment tree, 259 nodes in one 135 KB call, comment
   `points` null throughout; `search_by_date?…&numericFilters=created_at_i>…`
   answered 200.
-- **Prediction markets**: `gamma-api.polymarket.com/public-search?q=`,
+- **Prediction markets**: `https://gamma-api.polymarket.com/public-search?q=`,
   `/events` and `/markets` (200; volumes and prices are decimals and JSON
   strings; `commentCount` an integer), `api.elections.kalshi.com/trade-api/v2/
   markets` and `/events` (200; dollar and fixed-point fields as strings; no
-  search endpoint), `api.manifold.markets/v0/search-markets?term=` (200;
+  search endpoint), `https://api.manifold.markets/v0/search-markets?term=` (200;
   `uniqueBettorCount` an integer).
-- **Stocktwits** `api.stocktwits.com/api/2/streams/symbol/<SYM>.json` answered
+- **Stocktwits** `https://api.stocktwits.com/api/2/streams/symbol/<SYM>.json` answered
   200 with 30 messages, `likes.total`, `created_at`,
   `entities.sentiment.basic` (`Bullish`/`Bearish`) and a `cursor.max` for the
-  next page; `search/symbols.json?q=` answered 200. Keyless.
-- **FxTwitter** `api.fxtwitter.com/2/search?q=&feed=latest`, `/2/profile/
+  next page; `https://api.stocktwits.com/api/2/search/symbols.json?q=` answered 200. Keyless.
+- **FxTwitter** `https://api.fxtwitter.com/2/search?q=&feed=latest`, `/2/profile/
   <handle>/statuses`, `/2/profile/<handle>` and `/2/conversation/<id>` answered
   200 with the platform's own counts — a third-party operator reading X on
   this package's behalf, `K3`, and the one keyless path to an X search.
-  `syndication.twitter.com/srv/timeline-profile` answered 429 from this host
+  `https://syndication.twitter.com/srv/timeline-profile` answered 429 from this host
   that day; the guest GraphQL `UserByScreenName` answered 401.
-- **Bluesky** `public.api.bsky.app/xrpc/app.bsky.feed.searchPosts` answered 403
+- **Bluesky** `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts` answered 403
   from the CDN in front of it ("Request forbidden by administrative rules") to
   every identity, while `getProfile` and `getAuthorFeed` answered 200 — the
   feed at a hundred rows with a cursor. A per-host administrative block on the
@@ -217,7 +217,7 @@ planning on them.
 
 **The new-source validation.** Each endpoint the expansion declares was read
 live before it was declared. Keyless 200 with the origin honoring its date
-bound: Stack Exchange `search/advanced` (`fromdate`/`todate`, the 300/day
+bound: Stack Exchange `https://api.stackexchange.com/2.3/search/advanced` (`fromdate`/`todate`, the 300/day
 anonymous quota reported in the body), Wikimedia per-article pageviews (the
 range is two path segments; one cold 429, then 200), OpenAlex, Crossref
 (month-precision dates on some items) and arXiv (`submittedDate` range in
@@ -238,19 +238,19 @@ roughly ten reads in fifteen minutes the origin began serving a degraded
 never-touched ones, with no wall marker. The identity the first read was
 refused nothing on was throttled by velocity shortly after, which is a fact
 about pacing rather than about the `User-Agent` string; the per-adapter
-measurement records behind this sweep are in `route-notes/`, one file per
+measurement records behind this sweep are in [route-notes/](route-notes), one file per
 adapter added. Stack Exchange compressed its answer only when asked
 (`Accept-Encoding` sent: gzip; not sent: identity), which is why
 `transport.decoded_body` honors a stated encoding rather than assuming one.
 
 **The transport-identity question, held open.** The 2026-09-01 survey
-(`research/super-research-technique-survey-2026-09-01.md`, §6.3 and §8.2)
+(research/super-research-technique-survey-2026-09-01.md, §6.3 and §8.2)
 argues the cold X/Instagram surfaces are fingerprint-gated at the TLS layer,
 and that a browser-matched ClientHello — chosen once, never rotated on a
 block — might be a lawful persistent identity where stdlib's is flagged on
 the first packet. This delivery held the pure-stdlib line: the identity
-stays `super-research/0.1` over urllib's own handshake and the gated origins
+stays `"super-research/0.1"` over urllib's own handshake and the gated origins
 stay typed losses. The line itself was lifted on 2026-09-02 — a ring item
-declares its own dependencies (`docs/custom-workflow-authoring.md`,
+declares its own dependencies ([docs/custom-workflow-authoring.md](../../../../../docs/custom-workflow-authoring.md),
 Dependencies) — so a browser-matched transport is now an ordinary
 dependency decision for this item, still the user's call, not a sweep's.

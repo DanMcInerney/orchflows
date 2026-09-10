@@ -54,7 +54,7 @@ item" below; several other in-flight adapters have the identical gap).
   GDELT's own no-match answer is a bare `{}` (measured twice, described
   above), reading a missing `articles` key as drift would mislabel the
   origin's ordinary "nothing matched" answer as a broken parser on every
-  query nothing matches. `_articles_page` in `adapters/gdelt.py` instead
+  query nothing matches. `_articles_page` in [adapters/gdelt.py](../../scripts/super_research/adapters/gdelt.py) instead
   reserves `schema_drift` for three shapes, none observed live: a
   top-level body that is not a JSON object at all, an `articles` key
   present and not a list, and a nonempty `articles` list none of whose
@@ -85,7 +85,7 @@ item" below; several other in-flight adapters have the identical gap).
   parameter whose value is `""`), so the origin sees a plain
   `mode=artlist&format=json&maxrecords=75` request and, per the measured
   fact above, answers `{}`. Covered by
-  `tests/test_gdelt.py::FixedShapeAndQueryTest`.
+  [tests.test_gdelt.FixedShapeAndQueryTest](../../tests/test_gdelt.py).
 - **No `field_omitted`.** The task brief's field list (`title`,
   `canonical_locator`, `published_at`, `attribute:domain`,
   `attribute:language`, `attribute:sourcecountry`) does not mention this
@@ -111,21 +111,21 @@ No change was needed to either file:
   delivery ships (`title`, `canonical_locator`, `published_at`,
   `attribute:domain`) before this delivery began — the measurement above
   confirms it is satisfiable by a live 200.
-- `_support/window_reach.WINDOW_REACH["gdelt"] = {"": True}` already
+- `super_research._support.window_reach.WINDOW_REACH["gdelt"] = {"": True}` already
   declared before this delivery began, and the measured fact above (a
   bounded read returning only in-window `seendate`s) confirms it.
-  `tests/test_window_reach_roster.py` and `tests/test_gdelt.py::WindowTest`
+  [tests/test_window_reach_roster.py](../../tests/test_window_reach_roster.py) and [tests.test_gdelt.WindowTest](../../tests/test_gdelt.py)
   both prove it off the wire.
 
 ## Known open item (not this module's to fix)
 
-`tests/test_dependency_boundary_cases/loss_vocabulary.py`'s
+[tests/test_dependency_boundary_cases/loss_vocabulary.py](../../tests/test_dependency_boundary_cases/loss_vocabulary.py)'s
 `LossVocabularyIsReadOffTheSourceTest` checks `protocol.md`'s
 `"named by"` cells against what the package's source actually spells, and
 this delivery adds `gdelt` as a speller of `schema_drift`, `malformed_json`,
 `http_status`, `native_identity_unknown`, `engagement_unavailable` and
 `target_not_hydrated` — six cells `protocol.md` does not yet list it under.
-Fixing this means editing `references/protocol.md`'s loss-vocabulary
+Fixing this means editing [references/protocol.md](../protocol.md)'s loss-vocabulary
 tables, which is outside this delivery's file ownership (several other
 adapters landing in this same tree concurrently — `oembed`,
 `wikimedia_pageviews`, `stack_exchange` were all observed in the same red
