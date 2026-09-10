@@ -14,10 +14,12 @@ mechanics, Three.js, Blender, and play evidence. For each call supply
 source policy and rigor bar, an explicit recent period or `all-time` where the
 brief needs established technical facts, frozen horizon, per-step cap, isolated
 evidence store, call bound, output probe, caller context and this parent frame.
-Each invocation opens its own package scope:
+Declare each cluster as an independent research stage with the parent's
+effective review rounds; each invocation opens its own package scope:
 
     tickets.py frame-open <run> --workflow recent-search --parent <frame>
       --goal-file <cluster-question-goal> [--context-file <context-file>]
+      --review-new-work "Independent <cluster> research stage" --review-rounds <effective-rounds>
 
 Drive that workflow with the supplied semantics; its private acquisition method
 is resolved there, never from this game's package. Keep its evidence packets

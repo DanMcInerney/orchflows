@@ -847,6 +847,7 @@
    "test_project_binding.TestTheSeamIsGone.test_no_command_still_reaches_the_deleted_claim_plumbing",
    "test_project_binding.TestTheSeamIsGone.test_the_project_module_owns_the_binding_law",
    "test_recent_search_package.RecentSearchPackageTests.test_gallery_resolves_with_contained_acquisition_and_no_project_skill",
+   "test_recent_search_review_admission.RecentSearchReviewAdmissionTests.test_four_evidence_endings_and_nested_dossier_preserve_game_allowance",
    "test_regen.TestAbsentOwners.test_a_tree_without_the_owners_is_skipped_and_says_so",
    "test_regen.TestCommandSurface.test_the_check_reports_one_machine_readable_line",
    "test_regen.TestCommandSurface.test_writing_refuses_to_be_pointed_at_another_tree",
@@ -4335,6 +4336,14 @@
    "module": "tests.test_project_binding",
    "owner": "ProjectBindingFixture.env",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_recent_search_review_admission",
+   "owner": "RecentSearchReviewAdmissionTests.test_four_evidence_endings_and_nested_dossier_preserve_game_allowance",
+   "restoration": "unclassified",
    "seams": [
     "environment"
    ]
