@@ -1,0 +1,48 @@
+{
+ "effective_workers": 1,
+ "interpreter": {
+  "executable": "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+  "version": "3.13.9"
+ },
+ "limitations": [
+  "CPU and disk utilization are not sampled."
+ ],
+ "modules": [
+  {
+   "duration_seconds": 93.451168,
+   "errors": 0,
+   "expected_failures": 0,
+   "failures": 0,
+   "finished_seconds": 93.462249,
+   "module": "tests.test_validate",
+   "ok": true,
+   "skipped": 0,
+   "started_seconds": 0.011081,
+   "tests": 58,
+   "unexpected": 0
+  }
+ ],
+ "occupancy": {
+  "capacity_ratio": 0.999729,
+  "peak_active_workers": 1
+ },
+ "ok": true,
+ "outcomes": {
+  "errors": 0,
+  "expected_failures": 0,
+  "failures": 0,
+  "skipped": 0,
+  "tests": 58,
+  "unexpected": 0
+ },
+ "platform": {
+  "description": "win32",
+  "system": "nt"
+ },
+ "recorded_at_utc": "2026-09-10T18:46:13Z",
+ "requested_workers": 24,
+ "revision": "0c6ffef9f2efb2592ed75339e69e78a7af2800a5",
+ "schema": "orchflows.test-timing.v1",
+ "summed_module_time_seconds": 93.451168,
+ "wall_time_seconds": 93.4765
+}

@@ -261,7 +261,7 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual("spawn_agent", result["launch"]["verb"])
         self.assertEqual("orch_worker", result["launch"]["agent"])
         self.assertEqual("gpt-6-astra", result["launch"]["model"])
-        self.assertEqual("low", result["launch"]["effort"])
+        self.assertEqual("xhigh", result["launch"]["effort"])
         self.assertEqual({"agent_type": "orch_worker", "fork_turns": "none"}, result["launch"]["fields"])
 
     def test_a_sealed_profile_override_resolves_the_planner_binding(self):

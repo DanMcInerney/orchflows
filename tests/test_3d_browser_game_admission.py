@@ -47,6 +47,86 @@ RUN = "3d-admission"
 
 
 class ThreeDBrowserGameAdmissionTest(unittest.TestCase):
+    def test_discovery_calls_public_recent_search_with_its_own_private_scope(self):
+        """Actual admission doors; no fixture claims an agent researched a game."""
+        with tempfile.TemporaryDirectory(prefix="recent-search-admission-") as raw:
+            temporary = Path(raw).resolve()
+            project = git_checkout(temporary / "consumer")
+            sink = temporary / "home" / "state"
+            environment = {
+                state_root.ENV_VAR: str(sink),
+                state_root.WORKTREES_ENV_VAR: str(temporary / "worktrees"),
+                tickets_dispatch_launch.HOST_ENV_VAR: "codex",
+            }
+            with mock.patch.dict(os.environ, environment), self._inside(project):
+                ring, _ = self._copy_package(project)
+                code, output = self._orchflows(["check", str(ring)])
+                self.assertEqual(code, 0, output)
+                code, output = self._orchflows(["trust", str(ring)])
+                self.assertEqual(code, 0, output)
+                goal = project / "research-goal.md"
+                goal.write_text(
+                    "Find public Three.js guidance. output=evidence; period=all-time; "
+                    "source-policy=public documentation; rigor-bar=primary evidence; "
+                    "as_of=2026-09-10T23:00:00Z; cap=5.\n\n"
+                    "### Sub-questions\n\n1. Which public documentation supports the design?\n",
+                    encoding="utf-8",
+                )
+                game = self._call("frame-open", RUN, "--workflow", PUBLIC,
+                                  "--goal-file", str(goal))["frame_open"]
+                discovery = self._call("frame-open", RUN, "--workflow", "discovery",
+                                       "--parent", game["id"], "--goal-file", str(goal))["frame_open"]
+                # This is the public call printed in discovery/SKILL.md.
+                research = self._call("frame-open", RUN, "--workflow", "recent-search",
+                                      "--parent", discovery["id"], "--goal-file", str(goal))["frame_open"]
+                data = self._ticket(sink, research["id"])
+                package = ring / "workflows/recent-search"
+                digest = tickets_pins.tree_digest("workflow", package)
+                self.assertEqual(data["workflow"], "recent-search")
+                self.assertEqual(data["workflow_entry"], "SKILL.md")
+                self.assertEqual(data["workflow_digest"], digest)
+                # Sibling private access is refused; only the public frame grants scope.
+                with self.assertRaises(rings.RingError):
+                    rings.resolve("skill", "research-acquire", owner=PUBLIC,
+                                  project=project, home=temporary / "missing", lib=ROOT)
+                (temporary / "evidence").mkdir()
+                acquisition = self._call(
+                    "do", RUN, "--parent", research["id"], "--goal-file", str(goal),
+                    "--standard", "orch-research", "--skill", "research-acquire",
+                    "--workspace-adapter", "evidence-store", "--workspace", str(temporary / "evidence"),
+                    "--bound", "10m", "--profile", "orch-worker", "--host", "codex",
+                )["do"]
+                child = self._ticket(sink, acquisition["id"])
+                self.assertEqual(child["workflow"], "recent-search")
+                self.assertEqual(child["workflow_digest"], digest)
+                self.assertEqual(child["skill"], "research-acquire")
+                self.assertEqual(child["workspace_adapter"], "evidence-store")
+                self.assertIn("orch-research", dict(tickets_pins.standards_of(child["standards"])))
+                self.assertTrue(Path(workspace_record.attempt_workspace(child)).is_dir())
+                coverage = self._call(
+                    "judge", RUN, "--parent", research["id"], "--goal-file", str(goal),
+                    "--standard", "orch-research", "--review-independent", "research coverage before synthesis",
+                    "--artifacts", "evidence:admission-fixture", "--workspace-adapter", "evidence-store",
+                    "--workspace", str(temporary / "evidence"), "--bound", "10m",
+                    "--profile", "orch-planner", "--host", "codex",
+                )["judge"]
+                review = self._ticket(sink, coverage["id"])
+                self.assertEqual(review["workflow_digest"], digest)
+                self.assertEqual(review["workspace_adapter"], "evidence-store")
+                (temporary / "document").mkdir()
+                dossier = self._call(
+                    "do", RUN, "--parent", research["id"], "--goal-file", str(goal),
+                    "--standard", "orch-content", "--standard", "html-dossier",
+                    "--workspace-adapter", "document-tree", "--workspace", str(temporary / "document"),
+                    "--bound", "10m", "--profile", "orch-worker", "--host", "codex",
+                )["do"]
+                document = self._ticket(sink, dossier["id"])
+                self.assertEqual(document["workflow_digest"], digest)
+                self.assertEqual(document["workspace_adapter"], "document-tree")
+                self.assertEqual(set(dict(tickets_pins.standards_of(document["standards"]))),
+                                 {"orch-content", "html-dossier"})
+                # Admission fixture ends here: no dispatched agent or review is fabricated.
+
     def test_external_package_admission_and_resumable_lifecycle(self):
         with tempfile.TemporaryDirectory(prefix="3d-browser-game-admission-") as raw:
             temporary = Path(raw).resolve()
@@ -329,12 +409,11 @@ class ThreeDBrowserGameAdmissionTest(unittest.TestCase):
             ROOT / "example-workflows" / PUBLIC if source is None else source,
             package,
         )
-        # discovery's research-acquire edge is intentionally inherited from
-        # the surrounding project ring. This is the real project scoped skill
-        # shipped by this checkout, copied as package-adjacent fixture input.
+        # The public research package establishes its own private method scope.
         shutil.copytree(
-            ROOT / ".orchflows" / "skills" / "research-acquire",
-            ring / "skills" / "research-acquire",
+            ROOT / "example-workflows" / "recent-search",
+            ring / "workflows" / "recent-search",
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
         )
         return ring, package
 

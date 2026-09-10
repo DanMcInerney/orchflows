@@ -1,6 +1,7 @@
 {
  "discovery": {
   "identities": [
+   "test_3d_browser_game_admission.ThreeDBrowserGameAdmissionTest.test_discovery_calls_public_recent_search_with_its_own_private_scope",
    "test_3d_browser_game_admission.ThreeDBrowserGameAdmissionTest.test_external_package_admission_and_resumable_lifecycle",
    "test_3d_browser_game_blender.BlenderBoundaryTests.test_animation_clip_range_and_playability_are_enforced",
    "test_3d_browser_game_blender.BlenderBoundaryTests.test_attachment_transform_and_parent_are_enforced",
@@ -845,6 +846,8 @@
    "test_project_binding.TestTheSeamIsGone.test_both_remaining_commands_refuse_through_that_one_law",
    "test_project_binding.TestTheSeamIsGone.test_no_command_still_reaches_the_deleted_claim_plumbing",
    "test_project_binding.TestTheSeamIsGone.test_the_project_module_owns_the_binding_law",
+   "test_recent_search_package.RecentSearchPackageTests.test_gallery_resolves_with_contained_acquisition_and_no_project_skill",
+   "test_recent_search_review_admission.RecentSearchReviewAdmissionTests.test_four_evidence_endings_and_nested_dossier_preserve_game_allowance",
    "test_regen.TestAbsentOwners.test_a_tree_without_the_owners_is_skipped_and_says_so",
    "test_regen.TestCommandSurface.test_the_check_reports_one_machine_readable_line",
    "test_regen.TestCommandSurface.test_writing_refuses_to_be_pointed_at_another_tree",
@@ -946,11 +949,8 @@
    "test_ring_adapters.BodyTests.test_a_workflow_adapter_points_at_its_body_and_is_manual_only",
    "test_ring_adapters.BodyTests.test_an_orchflows_only_field_never_reaches_a_host",
    "test_ring_adapters.BodyTests.test_the_manual_invocation_flag_survives_into_a_claude_adapter",
-   "test_ring_adapters.CommittedProofTests.test_the_committed_agents_shim_is_what_the_machinery_renders",
-   "test_ring_adapters.CommittedProofTests.test_the_committed_claude_shim_is_what_the_machinery_renders",
-   "test_ring_adapters.CommittedProofTests.test_the_committed_shim_holds_no_machine_specific_path",
-   "test_ring_adapters.CommittedProofTests.test_the_committed_shim_keeps_its_manual_invocation_flag",
-   "test_ring_adapters.PortabilityTests.test_the_acquisition_pair_copies_out_under_two_distinct_names",
+   "test_ring_adapters.RecentSearchAdapterTests.test_only_the_public_workflow_gets_a_host_adapter",
+   "test_ring_adapters.RecentSearchAdapterTests.test_retired_project_adapters_are_absent",
    "test_ring_adapters.ScopeTests.test_a_hand_written_neighbour_is_never_removed",
    "test_ring_adapters.ScopeTests.test_a_home_ring_skill_and_workflow_of_one_name_render_to_two_destinations",
    "test_ring_adapters.ScopeTests.test_a_reserved_ring_item_gets_no_adapter",
@@ -978,7 +978,7 @@
    "test_rings.RingOrderTests.test_missing_home_roots_do_not_break_resolution",
    "test_rings.RingOrderTests.test_the_home_ring_is_never_read_as_a_project_ring",
    "test_rings.RingOrderTests.test_the_search_order_is_project_home_imports_then_lib",
-   "test_rings.SuperResearchGoalTests.test_the_skill_stays_resolvable_as_a_project_ring_skill",
+   "test_rings.SuperResearchGoalTests.test_acquisition_is_private_to_the_public_workflow",
    "test_rings.SuperResearchGoalTests.test_the_workflow_name_no_longer_names_a_skill_as_well",
    "test_rings.SuperResearchGoalTests.test_the_workflow_resolves_from_the_lib_ring_by_bare_name",
    "test_rings.TrustTests.test_a_project_ring_refuses_until_the_user_grants_trust",
@@ -1250,6 +1250,7 @@
    "test_super_research_runner.SuperResearchRunnerTests.test_propagates_unsuccessful_exit_status",
    "test_super_research_runner.SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
    "test_super_research_suite.SuperResearchSuiteTest.test_the_skill_suite_exits_zero",
+   "test_sync_dependency_isolation.SyncDependencyIsolationTests.test_sync_fixtures_do_not_prepare_source_dependencies",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
@@ -2492,6 +2493,14 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_3d_browser_game_admission",
+   "owner": "ThreeDBrowserGameAdmissionTest.test_discovery_calls_public_recent_search_with_its_own_private_scope",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -4246,6 +4255,15 @@
   },
   {
    "module": "tests.test_orchflows_cli",
+   "owner": "SyncTests.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
    "owner": "_git",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -4273,7 +4291,8 @@
    "owner": "_world",
    "restoration": "selected-module-boundary",
    "seams": [
-    "environment"
+    "environment",
+    "monkeypatch"
    ]
   },
   {
@@ -4313,7 +4332,8 @@
    "owner": "_world",
    "restoration": "selected-module-boundary",
    "seams": [
-    "environment"
+    "environment",
+    "monkeypatch"
    ]
   },
   {
@@ -4328,6 +4348,14 @@
    "module": "tests.test_project_binding",
    "owner": "ProjectBindingFixture.env",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_recent_search_review_admission",
+   "owner": "RecentSearchReviewAdmissionTests.test_four_evidence_endings_and_nested_dossier_preserve_game_allowance",
+   "restoration": "selected-module-boundary",
    "seams": [
     "environment"
    ]
@@ -4640,7 +4668,7 @@
   },
   {
    "module": "tests.test_ring_adapters",
-   "owner": "PortabilityTests.test_the_acquisition_pair_copies_out_under_two_distinct_names",
+   "owner": "RecentSearchAdapterTests.test_only_the_public_workflow_gets_a_host_adapter",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -5185,6 +5213,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_sync_dependency_isolation",
+   "owner": "SyncDependencyIsolationTests.test_sync_fixtures_do_not_prepare_source_dependencies",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

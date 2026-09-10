@@ -474,36 +474,26 @@ class SuperResearchGoalTests(unittest.TestCase):
 
     def test_the_workflow_resolves_from_the_lib_ring_by_bare_name(self):
         """Clause 1, the actual build: at arrival this raised RingError
-        (R.03's Context); `example-workflows/super-research/` is what
+        (R.03's Context); `example-workflows/recent-search/` is what
         makes it resolve."""
 
         with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
             home = Path(empty_home)
-            record = rings.resolve("workflow", "super-research", start=ROOT, home=home)
+            record = rings.resolve("workflow", "recent-search", start=ROOT, home=home)
             names = {
                 item["name"]
                 for item in rings.inventory(("workflow",), start=ROOT, home=home)
             }
 
         self.assertEqual("lib", record["ring"])
-        self.assertIn("super-research", names)
+        self.assertIn("recent-search", names)
 
-    def test_the_skill_stays_resolvable_as_a_project_ring_skill(self):
-        """Clause 4, under U7d's rename: the acquisition skill is
-        `research-acquire`, and it still resolves from this repository's own
-        project ring. Read without mutating the tree under test, per the
-        standard's Evidence section, rather than left to have happened to
-        keep working."""
-
+    def test_acquisition_is_private_to_the_public_workflow(self):
         with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
-            record = rings.resolve(
-                "skill", "research-acquire", trust=False, start=ROOT, home=Path(empty_home),
-            )
-
-        self.assertEqual("project", record["ring"])
-        self.assertEqual(
-            str(ROOT / ".orchflows" / "skills" / "research-acquire"), record["dir"],
-        )
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve("skill", "research-acquire", trust=False,
+                              start=ROOT, home=Path(empty_home))
+        self.assertEqual("unresolved", raised.exception.code)
 
     def test_the_workflow_name_no_longer_names_a_skill_as_well(self):
         """U7d Goal's last clause -- no two items share a name. Before the
@@ -514,7 +504,7 @@ class SuperResearchGoalTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
             with self.assertRaises(rings.RingError) as raised:
                 rings.resolve(
-                    "skill", "super-research", trust=False, start=ROOT,
+                    "skill", "recent-search", trust=False, start=ROOT,
                     home=Path(empty_home),
                 )
 

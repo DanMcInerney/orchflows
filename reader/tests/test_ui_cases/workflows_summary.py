@@ -26,7 +26,7 @@ EXPECTED_WORKFLOWS = {
     "review-delivery",
     "self-improve",
     "skill-tournament",
-    "super-research",
+    "recent-search",
     "tiktok-video",
     "orchflows-videos",
 }
