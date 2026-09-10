@@ -19,6 +19,7 @@ import scripts.state_root as state_root  # noqa: E402
 import scripts.tickets as tickets_mod  # noqa: E402
 import tools.validate as validate  # noqa: E402
 from tests.tree_removal import remove_repo_tree  # noqa: E402
+from tests.validator_copy import source_copy_skips  # noqa: E402
 
 VALIDATE = ROOT / "tools" / "validate.py"
 STANDARDS = ROOT / "standards"
@@ -366,18 +367,7 @@ class FrictionLocationSyncTest(unittest.TestCase):
 
     # --- the two wrong-result readings (rules/verification.md §8) ------
 
-    # Version control, runtime state, caches -- and `tests/fixtures`, the
-    # corpus validate.py does not grade. `benchmarks` used to be skipped
-    # beside it on the same reasoning, and that reasoning was wrong: it is
-    # one of `LINKED_MD_ROOTS`, so a copy without it made
-    # `validate_markdown_links` skip link resolution over the whole copy --
-    # silently, until the check learned to say so. The copy carries it now,
-    # and `test_the_copy_grades_what_the_tree_grades` is what says on every
-    # run that the copy is still the tree's stand-in.
-    COPY_SKIPS = shutil.ignore_patterns(
-        ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache",
-        "fixtures", "orchflows-integration-*",
-    )
+    COPY_SKIPS = staticmethod(source_copy_skips)
     _copy = None
     _revisions = None
     _clean = None
@@ -450,6 +440,17 @@ class FrictionLocationSyncTest(unittest.TestCase):
         seeded reading above it is taken against something else."""
 
         self._assert_clean_first()
+        copy = self._wrong_result_tree()
+        self.assertFalse((copy / "tests" / "fixtures").exists())
+        fixtures = []
+        workflows = ROOT / "example-workflows"
+        for directory, children, files in os.walk(workflows):
+            children[:] = [name for name in children if name != "node_modules"]
+            if "fixtures" in Path(directory).relative_to(workflows).parts:
+                fixtures.extend(Path(directory) / name for name in files)
+        self.assertTrue(fixtures)
+        for source in fixtures:
+            self.assertEqual(source.read_bytes(), (copy / source.relative_to(ROOT)).read_bytes())
         tree = validate_the_real_tree()
         self.assertEqual(0, tree.returncode, tree.stdout)
         self.assertEqual(

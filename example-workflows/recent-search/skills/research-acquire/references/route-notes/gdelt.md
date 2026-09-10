@@ -106,7 +106,7 @@ item" below; several other in-flight adapters have the identical gap).
 
 No change was needed to either file:
 
-- `probes.py`'s `SmokeProbe(adapter_id="gdelt", ...)` already declared
+- [super_research.probes](../../scripts/super_research/probes.py)'s `SmokeProbe(adapter_id="gdelt", ...)` already declared
   `target="climate"`, `window_days=3`, and the exact field set this
   delivery ships (`title`, `canonical_locator`, `published_at`,
   `attribute:domain`) before this delivery began — the measurement above

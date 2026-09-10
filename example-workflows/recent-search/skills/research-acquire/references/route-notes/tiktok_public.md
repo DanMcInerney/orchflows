@@ -114,7 +114,7 @@ for a profile, matching both measurements.
   side.** No login or verification wall was ever observed live — not on the
   original measurement, and not on the throttled/degraded pages described
   above (checked explicitly; see the measurement section). The six markers
-  in `CHALLENGE_MARKERS` (`tiktok_public.py`) are TikTok's publicly
+  in `CHALLENGE_MARKERS` ([super_research.adapters.tiktok_public](../../scripts/super_research/adapters/tiktok_public.py)) are TikTok's publicly
   documented anti-bot interstitial container ids/classes, chosen because
   none of them appears anywhere in either a healthy *or* a throttled
   ordinary page — including the embedded `webapp.i18n-translation`
@@ -181,7 +181,7 @@ for a profile, matching both measurements.
 
 No change was needed to either file:
 
-- `probes.py`'s `SmokeProbe(adapter_id="tiktok_public", kind="hydration",
+- [super_research.probes](../../scripts/super_research/probes.py)'s `SmokeProbe(adapter_id="tiktok_public", kind="hydration",
   target="video:nba/7606907506589207838", ...)` was already pre-wired with
   exactly the field set this delivery ships
   (`native_item_id`, `body`, `author`, `canonical_locator`, `published_at`,

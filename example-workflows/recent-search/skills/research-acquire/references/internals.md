@@ -5,40 +5,42 @@ two laws a reader has to be told, and what the package refuses.
 
 ## Layout
 
-[scripts/super_research/](../scripts/super_research), on the Python 3.9 floor, importing nothing beyond the
+[super_research package](../scripts/super_research/__init__.py), on the Python 3.9 floor, importing nothing beyond the
 standard library and what a `requirements.txt` beside the item declares (none
 today), no I/O at import time. The module set is not the one the frozen spec's affected surfaces
-list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
-`probes.py` and `smoke.py` out of `cli.py`, and `routes.py` out of
-`transport.py`, after the spec froze.
+list: [super_research.ledger](../scripts/super_research/ledger.py), [super_research.ordering](../scripts/super_research/ordering.py) and [super_research.pacing](../scripts/super_research/pacing.py) were split out of [super_research.runner](../scripts/super_research/runner.py),
+[super_research.probes](../scripts/super_research/probes.py) and [super_research.smoke](../scripts/super_research/smoke.py) out of [super_research.cli](../scripts/super_research/cli.py), and [super_research.routes](../scripts/super_research/routes.py) out of
+[super_research.transport](../scripts/super_research/transport.py), after the spec froze.
 
 | module | owns |
 | --- | --- |
-| `schema.py` | closed enums, the immutable manifest and artifact values, `parse_manifest` |
+| [super_research.schema](../scripts/super_research/schema.py) | closed enums, the immutable manifest and artifact values, `parse_manifest` |
 | [_support/route_catalog_k0.py](../scripts/super_research/_support/route_catalog_k0.py), [`route_catalog_k1_k4.py`](../scripts/super_research/_support/route_catalog_k1_k4.py) | endpoint declarations by class |
 | [_support/route_contracts.py](../scripts/super_research/_support/route_contracts.py) | route identifiers, shapes, and `K1` credentials |
-| [`routes.py`](../scripts/super_research/routes.py) | ordered public facade |
-| `transport.py` | the outbound request — the opener, method admission, the byte cap, refusal parsing, the guest-token store, the captive-portal detector, `route_admissions` |
-| `router.py` | one step's route decision, from per-route booleans alone |
-| `runner.py` | literal adapter dispatch, and one manifest run to one artifact plus its ledger |
-| `pacing.py` | per-route budgets and the rate governor |
-| `ledger.py` | the work ledger and the schedule a mode admits |
-| `ordering.py` | the five named views |
-| `cache.py` | one run's TTL memory of reads it already made |
-| `normalize.py` | native pages to immutable records; grouping and provenance edges |
-| `project.py` | a pure bounded subset of one artifact |
-| `window.py` | the closed timeframe-phrase grammar: a question's own words to a step's two instants, anchored on `as_of` and never on a wall clock |
-| `probes.py` | the twenty-five liveness probe declarations |
-| `smoke.py` | one probe's read, and the standing it leaves an adapter at |
-| `cli.py` | three operations, and everything an operator reads |
+| [super_research.routes](../scripts/super_research/routes.py) | ordered public facade |
+| [super_research.transport](../scripts/super_research/transport.py) | the outbound request — the opener, method admission, the byte cap, refusal parsing, the guest-token store, the captive-portal detector, `route_admissions` |
+| [super_research.router](../scripts/super_research/router.py) | one step's route decision, from per-route booleans alone |
+| [super_research.runner](../scripts/super_research/runner.py) | literal adapter dispatch, and one manifest run to one artifact plus its ledger |
+| [super_research.pacing](../scripts/super_research/pacing.py) | per-route budgets and the rate governor |
+| [super_research.ledger](../scripts/super_research/ledger.py) | the work ledger and the schedule a mode admits |
+| [super_research.ordering](../scripts/super_research/ordering.py) | the five named views |
+| [super_research.cache](../scripts/super_research/cache.py) | one run's TTL memory of reads it already made |
+| [super_research.normalize](../scripts/super_research/normalize.py) | native pages to immutable records; grouping and provenance edges |
+| [super_research.project](../scripts/super_research/project.py) | a pure bounded subset of one artifact |
+| [super_research.window](../scripts/super_research/window.py) | the closed timeframe-phrase grammar: a question's own words to a step's two instants, anchored on `as_of` and never on a wall clock |
+| [super_research.probes](../scripts/super_research/probes.py) | the twenty-five liveness probe declarations |
+| [super_research.smoke](../scripts/super_research/smoke.py) | one probe's read, and the standing it leaves an adapter at |
+| [super_research.cli](../scripts/super_research/cli.py) | three operations, and everything an operator reads |
 | [adapters/__init__.py](../scripts/super_research/adapters/__init__.py) | `AdapterDescriptor`, `NativeRecord`, `NativePage`, `fetch_one_page` |
-| [adapter modules](../scripts/super_research/adapters) named `<id>.py` | one route's parser, one `DESCRIPTOR`, one `fetch_native_page` |
+| [adapter modules](../scripts/super_research/adapters/__init__.py) named `<id>.py` | one route's parser, one `DESCRIPTOR`, one `fetch_native_page` |
 
-`runner.py` re-exports every name moved to `ledger`, `ordering` and `pacing`,
-`cli.py` every name moved to `probes` and `smoke`, and `transport.py` every public
+[super_research.runner](../scripts/super_research/runner.py) re-exports every name moved to `ledger`, `ordering` and `pacing`,
+[super_research.cli](../scripts/super_research/cli.py) every name moved to `probes` and `smoke`, and [super_research.transport](../scripts/super_research/transport.py) every public
 name from the ordered `routes` facade, preserving established imports without a
 second route inventory. Tests are
-[tests/](../tests), with [tests/helpers.py](../tests/helpers.py) and [tests/fixtures/](../tests/fixtures) recursively; the whole suite runs
+in tests/, including the [transport suite](../tests/test_transport.py),
+[tests/helpers.py](../tests/helpers.py) and the fixtures/ tree, such as
+[the source-derived Nitter fixture](../tests/fixtures/recent_routes/nitter_source_derived.html); the whole suite runs
 with no network reachable.
 
 ## Two laws, each bought with a defect
@@ -93,8 +95,8 @@ The classes and their three rules are [protocol.md](protocol.md)'s. This is the
 machinery behind them.
 
 [_support/route_contracts.py](../scripts/super_research/_support/route_contracts.py)
-owns `K1` credentials; catalogs reference them; [`routes.py`](../scripts/super_research/routes.py)
-holds the ordered route facade. `transport.py` attaches one only at send time;
+owns `K1` credentials; catalogs reference them; [super_research.routes](../scripts/super_research/routes.py)
+holds the ordered route facade. [super_research.transport](../scripts/super_research/transport.py) attaches one only at send time;
 none enters manifests or artifacts or survives in answer addresses.
 
 The `K3` label has to be on the row rather than on the page:
