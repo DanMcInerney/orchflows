@@ -1,0 +1,19 @@
+{
+  "assigned_name": "B1.4",
+  "dispatch_id": "B1.4:d1",
+  "assignment_seal": "sha256:4e6322a841b9994f0e29b3c9abefdd35595c2ebf0279f81f147d6cc389cca8a8",
+  "command": [
+    "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+    "tools/run_tests.py",
+    "--scope",
+    "tests/test_validate_cases/validator_ownership.py",
+    "--no-cache",
+    "--timing-file",
+    ".orch-notes/B1.4-module-timing.json"
+  ],
+  "timeout_seconds": 900,
+  "timed_out": false,
+  "exit_code": 0,
+  "wall_seconds": 95.85526579999714,
+  "stdout": "scope: 1 paths, selection from git 66d30d915117b27f9f678d04b66cb2f0bd32b223\r\nrunning 1 modules across 1 workers\r\nok   tests.test_validate                           58 tests   93.45s\r\n\r\n----------------------------------------------------------------------\r\n1 modules, 58 tests: 0 failures, 0 errors, 0 skipped\r\nwall 93.48s across 1 workers (summed module time 93.45s)\r\nslowest modules:\r\n    93.45s  tests.test_validate\r\nOK\r\n"
+}
