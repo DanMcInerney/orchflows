@@ -1,13 +1,15 @@
 # `scholarly` — build notes
 
-Draft evidence for the `scholarly` adapter (`adapters/scholarly.py` +
-`adapters/_support/scholarly_records.py`). Not yet folded into
-`references/evidence.md` or `references/protocol.md`'s roster prose beyond
+Draft evidence for the `scholarly` adapter ([adapters/scholarly.py](../../scripts/super_research/adapters/scholarly.py) +
+[adapters/_support/scholarly_records.py](../../scripts/super_research/adapters/_support/scholarly_records.py)). Not yet folded into
+[references/evidence.md](../evidence.md) or [references/protocol.md](../protocol.md)'s roster prose beyond
 the one roster-table row and the loss-vocabulary cells already present.
 
 ## Measured facts, 2026-09-01, all three keyless and 200
 
-### OpenAlex — `openalex_works` (`api.openalex.org/works`)
+### OpenAlex — `openalex_works` (api.openalex.org/works)
+
+Endpoint: [https://api.openalex.org/works](https://api.openalex.org/works).
 
 `GET ?search=<q>&per-page=25`, plus `&filter=from_publication_date:` `YYYY-MM-DD` `,to_publication_date:YYYY-MM-DD` when a window edge is present.
 Answers `{"meta": {"count", ...}, "results": [...]}`; a query nothing
@@ -29,7 +31,9 @@ No `mailto=` sent. OpenAlex's docs offer a faster "polite pool" lane in
 exchange for one; this package attaches no identity a route constant does
 not spell, and a caller's email is not one.
 
-### Crossref — `crossref_works` (`api.crossref.org/works`)
+### Crossref — `crossref_works` (api.crossref.org/works)
+
+Endpoint: [https://api.crossref.org/works](https://api.crossref.org/works).
 
 `GET ?query=<q>&rows=20`, plus `&filter=from-pub-date:YYYY-MM-DD` `,until-pub-date:YYYY-MM-DD` when a window edge is present.
 Answers `{"message": {"items": [...], "total-results", ...}}`, empty the
@@ -52,7 +56,9 @@ always present on the measured page), `container-title` (array),
 
 No `mailto=` sent, same reasoning as OpenAlex.
 
-### arXiv — `arxiv_query` (`export.arxiv.org/api/query`)
+### arXiv — `arxiv_query` (export.arxiv.org/api/query)
+
+Endpoint: [https://export.arxiv.org/api/query](https://export.arxiv.org/api/query).
 
 `GET ?search_query=all:"<q>"[+AND+submittedDate:[YYYYMMDDHHMM+TO+YYYYMMDDHHMM]]&start=0&max_results=10`.
 Answers Atom XML, `Content-Type: application/atom+xml; charset=utf-8`. A
@@ -85,7 +91,7 @@ unaffected.
 OpenAlex and Crossref only — arXiv is XML and a document not rooted in
 `<feed>` is `schema_drift`, mirroring `rss_atom`), `HTTP_STATUS`
 (`"http_status"`), `FIELD_OMITTED` (`"field_omitted"`, spelled from
-`_support/scholarly_records.py`), `DATE_PRECISION_ONLY`
+[_support/scholarly_records.py](../../scripts/super_research/adapters/_support/scholarly_records.py)), `DATE_PRECISION_ONLY`
 (`"date_precision_only"`, standing on OpenAlex's descriptor — see below —
 and per-record on Crossref).
 

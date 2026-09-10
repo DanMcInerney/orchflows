@@ -32,9 +32,9 @@ required for the suite to pass.
   the answer still arrived `Content-Encoding: gzip` — `transport.decoded_body`
   already handles this generically (built for this route specifically,
   per its own docstring) and needed no adapter-side change.
-- Response `Content-Type` measured: `application/json; charset=utf-8`,
+- Response `Content-Type` measured: `"application/json; charset=utf-8"`,
   matching the `PROBE_PAYLOADS` entry that was already wired in
-  `tests/test_cli_cases/_support.py`.
+  [tests/test_cli_cases/_support.py](../../tests/test_cli_cases/_support.py).
 
 ## Decisions
 
@@ -43,8 +43,7 @@ required for the suite to pass.
   (confirmed live: `&#39;` for an apostrophe). Reading that back out is
   reading the route's own stated encoding, the same move `rss_atom` makes
   on its feed text, not an invented transform.
-- **Sort choice: `creation` over relevance.** Stack Exchange's `search/`
-  `advanced` supports a `relevance` sort, deliberately not taken. Relevance
+- **Sort choice: `creation` over relevance.** Stack Exchange's `https://api.stackexchange.com/2.3/search/advanced` supports a `relevance` sort, deliberately not taken. Relevance
   is not a metric this roster can snapshot and later re-derive the same way
   twice, and — more concretely — a windowed read on `creation` order spends
   the origin's own recency ordering *inside* the caller's window, where

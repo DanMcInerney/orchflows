@@ -87,7 +87,7 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
   supports one), so the budget is spent server-side where it can be.
 - Capability is per **operation**, not per adapter — Bluesky sends
   `since`/`until` on search and none on its author feed, and `x_guest` and
-  `github_rest` split the same way — so `_support/window_reach.WINDOW_REACH`
+  `github_rest` split the same way — so `super_research._support.window_reach.WINDOW_REACH`
   declares it keyed by adapter id and then by operation, total over the live
   roster. A windowed step whose operation is declared unable to bound time at
   the origin carries `window_not_honored` in its `StepResult.loss`,
@@ -249,7 +249,7 @@ never a record. Read back off `runner.surface_descriptors`.
 | `prediction_markets` | `K0` | `polymarket_gamma`, `kalshi_markets`, `manifold_markets` | the odds on a question with a date: Polymarket search, events and markets, Kalshi's open markets and events, Manifold search. Prices and volumes are decimals and ride as the exact strings each API wrote |
 | `stocktwits` | `K0` | `stocktwits_symbol_stream`, `stocktwits_symbol_search` | one ticker's message stream with `likes.total` and the poster's own `Bullish`/`Bearish` label, and symbol lookup. The roster's one finance-native surface |
 | `gdelt` | `K4` | `gdelt_doc` | GDELT DOC 2.0's global news index: article hits with `url`, `title`, `seendate` and `domain`, bounded at the origin by `startdatetime`/`enddatetime`. Measured 2026-09-01 answering keyless over plain HTTP while port 443 timed out from this host — the transport admits https only, so here the smoke reports `unreachable` and concludes nothing; declared on the documentation, the way the Bluesky search surface is |
-| `stack_exchange` | `K0` | `stackexchange_search_advanced` | `search/advanced` over a named site: questions with `score`, `answer_count` and `view_count`, bounded at the origin by `fromdate`/`todate` unix seconds, under a 300/day anonymous quota the answer itself reports |
+| `stack_exchange` | `K0` | `stackexchange_search_advanced` | `https://api.stackexchange.com/2.3/search/advanced` over a named site: questions with `score`, `answer_count` and `view_count`, bounded at the origin by `fromdate`/`todate` unix seconds, under a 300/day anonymous quota the answer itself reports |
 | `wikimedia_pageviews` | `K0` | `wikimedia_pageviews_per_article` | one article's daily view counts over a date range spelled as two path segments — attention over time, the keyless substitute for a trends surface. The one route whose origin serves nothing but a windowed read: a step here with no window is refused rather than defaulted |
 | `scholarly` | `K0` | `openalex_works`, `crossref_works`, `arxiv_query` | scholarly works over three origins a caller names one of: OpenAlex with `cited_by_count`, Crossref DOI-anchored with `is-referenced-by-count`, arXiv preprints as Atom. Each bounds publication time at the origin in its own grammar; the documented `mailto` etiquette is deliberately not sent, because this package attaches no identity a route constant does not spell |
 | `tiktok_public` | `K2` | `tiktok_video_page`, `tiktok_profile_page` | the web client's own rehydration JSON out of a public page's `__UNIVERSAL_DATA_FOR_REHYDRATION__` script tag, no script run: a video with `createTime`, its `statsV2` counts, author and hashtags, and a profile with its own counts. A profile page embeds no recent-video list — that is a signed client-side call this package does not perform — and comments need the signed mobile API, refused by policy |
@@ -267,8 +267,8 @@ answers `UNPLAYABLE`, and `evidence.md` §"The route sweep of 2026-08-17"
 records it, so the deferral now waits on the adapter work rather than on the
 attestation; `x_search` (the current `SearchTimeline` query id is unrecovered
 behind an ESM import map) with `K4` as the interim route, and FxTwitter as a
-`K3` operator that does serve a search; Arctic Shift's `comments/search` and `comments/tree`, measured answering 200
-on 2026-08-17, until an adapter reads them; `posts/search` now ships with a
+`K3` operator that does serve a search; Arctic Shift's `https://arctic-shift.photon-reddit.com/api/comments/search` and `https://arctic-shift.photon-reddit.com/api/comments/tree`, measured answering 200
+on 2026-08-17, until an adapter reads them; `https://arctic-shift.photon-reddit.com/api/posts/search` now ships with a
 required subreddit or author scope and origin date bounds — Reddit search and comments themselves
 are no longer waiting on that, because `reddit_shreddit` reaches both;
 Reddit's `more-comments` continuation, because it asks for a POST and this

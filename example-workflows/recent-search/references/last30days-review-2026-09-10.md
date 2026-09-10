@@ -2,7 +2,7 @@
 
 The review fixes [last30days-skill v3.24.0](https://github.com/mvanhorn/last30days-skill/tree/ca9d415e66073b17702f385d6886934097aec0e7),
 commit `ca9d415e66073b17702f385d6886934097aec0e7` (2026-09-09).
-The relevant implementation lives in `skills/last30days/scripts/lib/`.
+The relevant implementation lives in [skills/last30days/scripts/lib/](https://github.com/mvanhorn/last30days-skill/tree/ca9d415e66073b17702f385d6886934097aec0e7/skills/last30days/scripts/lib).
 This is a source review, not a claim that every upstream backend was run.
 No upstream implementation was copied. This package retains its stricter
 keyless, explicitly planned, bounded-read contract.
@@ -48,7 +48,7 @@ kept; abbreviated numbers remain source strings, and missing counts stay unknown
 Markup was derived from public Nitter's
 [tweet renderer](https://github.com/zedeus/nitter/blob/376f14908e27e095049bbbeb648e742501144010/src/views/tweet.nim)
 and [timeline renderer](https://github.com/zedeus/nitter/blob/376f14908e27e095049bbbeb648e742501144010/src/views/timeline.nim).
-The positive fixture `skills/research-acquire/tests/fixtures/recent_routes/nitter_source_derived.html`
+The positive fixture [skills/research-acquire/tests/fixtures/recent_routes/nitter_source_derived.html](../skills/research-acquire/tests/fixtures/recent_routes/nitter_source_derived.html)
 is synthetic source-derived markup, **not a successful live capture**.
 The source's `tweet-date` anchor carries the full UTC date, and `tweet-stat`
 icons identify count kinds. Live parser compatibility and pagination remain
@@ -76,7 +76,7 @@ Arctic recent/older digests:
 Reddit RSS digest:
 `e5b29f07e04b6b3538c60d51fa2ac4c70097bf24736ee3e594f18785e4049c7a`.
 Startpage digest:
-`51c2f94838aff7305ef499059f318fd3fb222c12f4578edcc89a7b41`.
+`51c2f94838aff7305ef499059f318fd3af995fd3fb222c12f4578edcc89a7b41`.
 
 Arctic Shift's [public API documentation](https://github.com/ArthurHeitmann/arctic_shift/blob/master/api/README.md)
 supports scoped posts/search with before/after. Archive freshness, ingestion

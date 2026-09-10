@@ -5,7 +5,7 @@ exposes, and the one bounded read each adapter's smoke makes.
 
 ## CLI surface
 
-`python3 -m super_research.cli`, with this item's `scripts/` on `PYTHONPATH`.
+`python3 -m super_research.cli`, with this item's [scripts directory](../scripts) on `PYTHONPATH`.
 Three operations, one argument, twenty-eight reachable invocations. The parser is built
 from the `OPERATIONS` table, so the enumeration a reader checks is the one the
 parser was made from.
@@ -91,7 +91,7 @@ safe direction.
 
 The CLI runs no manifest, by design; a caller runs one in process, from a
 file it wrote, and never from a value it holds in memory — the file is the
-guard. Write the manifest, then run exactly this, with `scripts/` on
+guard. Write the manifest, then run exactly this, with [scripts directory](../scripts) on
 `PYTHONPATH`, in a lane-private directory (two lanes sharing `step_a.json`
 was the 2026-08-17 bakeoff's most expensive accident):
 
@@ -175,7 +175,7 @@ name the two places a route's own vocabulary lands.
 | `youtube_innertube` | `youtube_innertube` | hydration `dQw4w9WgXcQ` | video: title, published_at, engagement:viewCount |
 | `instagram_public` | `instagram_web_profile` | hydration `instagram` | profile: title, author, body, engagement:edge_followed_by.count; **and** post: native_item_id, published_at, engagement:edge_liked_by.count, engagement:edge_media_to_comment.count |
 | `hacker_news` | `hn_algolia_search` | discovery `python` | story: title, author, published_at, engagement:points, engagement:num_comments |
-| `github_rest` | `github_rest` | hydration `python/cpython` | repository: title, body, author, published_at, engagement:stargazers_count, engagement:forks_count, engagement:open_issues_count |
+| `github_rest` | `github_rest` | hydration `"python/cpython"` | repository: title, body, author, published_at, engagement:stargazers_count, engagement:forks_count, engagement:open_issues_count |
 | `rss_atom` | `youtube_channel_feed` | discovery `UC_x5XG1OV2P6uZZ5FSM9Ttw` | feed_entry: native_item_id, title, author, canonical_locator, published_at |
 | `reddit_shreddit` | `reddit_shreddit_listing` | discovery `listing:programming` | post: native_item_id, title, author, community, canonical_locator, published_at, engagement:score, engagement:comment-count |
 | `open_page` | `web_page_open` | hydration `https://www.iana.org/help/example-domains` | web_page: title, body, exact_content_hash, observed_at, attribute:content_type, attribute:requested_url, attribute:final_url, attribute:link |
