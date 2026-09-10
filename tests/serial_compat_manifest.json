@@ -4343,7 +4343,7 @@
   {
    "module": "tests.test_recent_search_review_admission",
    "owner": "RecentSearchReviewAdmissionTests.test_four_evidence_endings_and_nested_dossier_preserve_game_allowance",
-   "restoration": "unclassified",
+   "restoration": "selected-module-boundary",
    "seams": [
     "environment"
    ]
