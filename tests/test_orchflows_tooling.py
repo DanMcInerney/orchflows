@@ -36,13 +36,21 @@ def _world():
 
     with tempfile.TemporaryDirectory(prefix="orchflows-tooling-") as tmp:
         root = Path(tmp).resolve()
+        host_environment = {
+            record["home"]["environment"]: str(root / "host-homes" / host)
+            for host, record in orchflows.orchflows_adapters.host_records().items()
+        }
         home = root / "home"
         project = root / "project"
         for kind_dir in rings.RING_DIRS.values():
             (home / kind_dir).mkdir(parents=True, exist_ok=True)
             (project / rings.BUNDLE_DIR / kind_dir).mkdir(parents=True, exist_ok=True)
-        # CLI sync must not settle the source library's shared dependencies.
-        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}), \
+        # Keep real host rendering without syncing the checkout's dependencies.
+        shutil.copytree(ROOT / "installer" / "host_adapters",
+                        root / "lib" / "installer" / "host_adapters")
+        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state"),
+                                     **host_environment}), \
+                patch.object(rings, "lib_root", return_value=root / "lib"), \
                 patch.object(rings, "inventory", partial(rings.inventory, lib=root / "lib")):
             yield {"root": root, "home": home, "project": project}
 
@@ -709,6 +717,17 @@ class CheckTests(unittest.TestCase):
 class SyncReportTests(unittest.TestCase):
     def test_sync_reports_each_missing_tool_with_its_line_and_prunes_the_orphan(self):
         with _world() as world:
+            node_item = _item(
+                world["home"] / "skills", "skill", "capture",
+                {"package.json": '{"private":true}\n',
+                 "package-lock.json": '{"lockfileVersion":3}\n'},
+            )
+            installs = []
+
+            def install(item_dir, command):
+                self.assertEqual(node_item, item_dir)
+                installs.append(tuple(command))
+
             _item(
                 world["home"] / "workflows", "workflow", "render",
                 {"tools.txt": f"{ABSENT}\n"},
@@ -720,6 +739,7 @@ class SyncReportTests(unittest.TestCase):
 
             out = io.StringIO()
             with patch.object(rings.Path, "cwd", return_value=nowhere), \
+                    patch.object(orchflows_node, "install", side_effect=install), \
                     contextlib.redirect_stdout(out):
                 orchflows._report_dependencies()
 
@@ -731,6 +751,12 @@ class SyncReportTests(unittest.TestCase):
             )
             self.assertIn(f"env skill 'gone': pruned {orphan}", printed)
             self.assertFalse(orphan.exists())
+            self.assertEqual([("npm", "ci")], installs)
+            self.assertIn("node skill 'capture': install", printed)
+            self.assertEqual(
+                orchflows_node.digest(node_item / "package-lock.json"),
+                orchflows_node.read_stamp(node_item)["lock_sha256"],
+            )
 
 
 if __name__ == "__main__":

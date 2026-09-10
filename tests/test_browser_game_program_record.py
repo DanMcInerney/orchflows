@@ -10,7 +10,7 @@ import unittest
 
 
 from tests._repo_root import ROOT
-SCHEMA_PATH = ROOT / "example-workflows" / "references" / "browser-game-program-record.schema.json"
+SCHEMA_PATH = ROOT / "example-workflows" / "3d-browser-game" / "references" / "browser-game-program-record.schema.json"
 
 
 REQUIRED_RECORDS = {

@@ -16,7 +16,7 @@ from scripts import state_root
 from tests._repo_root import ROOT
 
 
-SCRIPTS = ROOT / "example-workflows" / "self-improve" / "scripts"
+SCRIPTS = ROOT / "example-workflows" / "orch-self-improve" / "scripts"
 COMMAND = SCRIPTS / "self_improve.py"
 STAMP = "2026-09-07T10:00:00Z"
 

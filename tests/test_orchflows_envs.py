@@ -7,6 +7,7 @@ from functools import partial
 import io
 import json
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -14,6 +15,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import orchflows, orchflows_envs, rings, rings_trust, state_root
+from tests._repo_root import ROOT
 
 
 @contextlib.contextmanager
@@ -22,13 +24,21 @@ def _world():
 
     with tempfile.TemporaryDirectory(prefix="orchflows-envs-") as tmp:
         root = Path(tmp).resolve()
+        host_environment = {
+            record["home"]["environment"]: str(root / "host-homes" / host)
+            for host, record in orchflows.orchflows_adapters.host_records().items()
+        }
         home = root / "home"
         project = root / "project"
         for kind_dir in rings.RING_DIRS.values():
             (home / kind_dir).mkdir(parents=True, exist_ok=True)
             (project / rings.BUNDLE_DIR / kind_dir).mkdir(parents=True, exist_ok=True)
-        # CLI sync must not settle the source library's shared dependencies.
-        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}), \
+        # Keep real host rendering without syncing the checkout's dependencies.
+        shutil.copytree(ROOT / "installer" / "host_adapters",
+                        root / "lib" / "installer" / "host_adapters")
+        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state"),
+                                     **host_environment}), \
+                patch.object(rings, "lib_root", return_value=root / "lib"), \
                 patch.object(rings, "inventory", partial(rings.inventory, lib=root / "lib")):
             yield {"root": root, "home": home, "project": project}
 

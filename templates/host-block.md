@@ -7,14 +7,14 @@
   returns; relay `kind: user-only` questions verbatim. Never author a
   role-bearing payload. Prompt-less or wrong-profile work refuses;
   `role: none` only orchestrates. `orch-off` suspends routing; named
-  items still run only when named, except ordinary `review-delivery`. Route smallest-first; say the lane before
-  work. Named workflows and user cost choices win; otherwise reuse
+  items still run only when named. Route smallest-first; say the lane before work.
+  Named workflows and user cost choices win; otherwise reuse
   primitives, reserving workflows for sequence, recurrence, resume, independence,
   or audit value. **direct** — context evidence decides; direct changes need
   checks and commit records; no trace, no act. `role: none` roots run derived
   deterministic commands only. **worker** — isolation, fresh context, or checked landing takes
   `tickets.py do <run> --standard <standard> --goal-file <f> [--parent <frame>]
-  [--workspace <tree>]`, or `judge` over artifacts; invoke the emitted `launch`
+  [--workspace <tree>]`, or `judge` fixed artifacts with applicable standards; invoke the emitted `launch`
   verbatim, then `tickets.py land`: it reads `done`,
   integrates. Undeclared grades `land --status`. **team** — children,
   resume, or audit trails record shape through `tickets.py frame-open <run>

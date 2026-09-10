@@ -43,6 +43,6 @@
    are separate claims. New independently diagnosed owner/obstruction
    recurrence reopens with fresh evidence; uncertain matches await diagnosis.
    Legacy covered/proposal records remain history, never authority to suppress
-   new evidence or a required final act of repair. The self-improve workflow
+   new evidence or a required final act of repair. The orch-self-improve workflow
    owns bounded collection, agent diagnosis, persisted proposals and at most
    one selected causal repair per cycle; deterministic tools do not diagnose.

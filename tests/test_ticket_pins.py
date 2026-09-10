@@ -475,7 +475,7 @@ class StampedCallableTest(CallableSinkTest):
             [
                 "id", "run", "status", "admission", "executor", "standards",
                 "workspace_adapter", "isolation", "bound",
-                "review_owner", "review_rounds", "root_generation", "cut_generation", "assignment_seal",
+                "root_generation", "cut_generation", "assignment_seal",
                 "dispatch_v1", "workspace_branch", "workspace_baseline",
             ],
             list(_parse_frontmatter(self.ticket_text(plain["do"]["id"]))),

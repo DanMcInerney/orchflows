@@ -21,17 +21,32 @@ class BuildWorkflowTests(unittest.TestCase):
     def test_default_distribution_has_one_manual_roleless_builder(self):
         workflows = install.discover_workflow_skills()
         self.assertEqual(1, sum(path.name == BUILDER for path, _, _ in workflows))
+        source, _ = install.split_frontmatter(
+            (PACKAGE / "SKILL.md").read_text(encoding="utf-8"))
+        self.assertEqual("true", install.frontmatter_field(
+            source, "disable-model-invocation"))
         with tempfile.TemporaryDirectory() as raw:
-            with patch.object(install.Path, "home", return_value=Path(raw)), \
+            # Keep a noncanonical spelling on every host, including POSIX.
+            (Path(raw) / "home").mkdir()
+            home = Path(raw) / "home" / ".."
+            with patch.object(install.Path, "home", return_value=home), \
                     patch.object(install.shutil, "which", return_value="mock-host"):
                 plan = install.build_plan()
-        for surfaces in (plan.claude_adapters, plan.codex_skills, plan.grok_skills):
+                manifest = (plan.lib_home / "example-workflows" / BUILDER / "SKILL.md").resolve()
+        for host, surfaces in (("claude", plan.claude_adapters),
+                               ("codex", plan.codex_skills), ("grok", plan.grok_skills)):
             matches = [body for path, body in surfaces if path.parent.name == BUILDER]
             self.assertEqual(1, len(matches))
-            frontmatter, _ = install.split_frontmatter(matches[0])
-            if surfaces is not plan.grok_skills:
+            frontmatter, body = install.split_frontmatter(matches[0])
+            legal_keys = set(install.load_host_adapters()[host]["frontmatter"]["legal_keys"])
+            fields = {line.partition(":")[0] for line in frontmatter.splitlines() if ":" in line}
+            self.assertLessEqual(fields, legal_keys)
+            if "disable-model-invocation" in legal_keys:
                 self.assertEqual("true", install.frontmatter_field(
                     frontmatter, "disable-model-invocation"))
+            if host == "codex":
+                self.assertIn("invoked by name only", body)
+            self.assertIn(str(manifest), body)
             for field in ("role", "agent", "context"):
                 self.assertIsNone(install.frontmatter_field(frontmatter, field))
             self.assertFalse(any(path.parent.name == QUALITY for path, _ in surfaces))

@@ -20,11 +20,17 @@ inventory. A successful handoff contains the `.blend` source, rendered
 previews, GLB export, asset manifest, hashes, zero-error Khronos validation,
 and a pinned production `GLTFLoader` scale/material/animation/collider probe.
 
-Invoke `review-delivery` in this existing asset-stage frame with the fixed
-batch, original job and evidence, browser-game-3d-asset and blender-game-asset
-pins, workspace, `workspace-adapter` git, caller `context-file`,
-`isolation` required, bound and outside asset probe. This independent batch owns its
-selected rounds and carries `repair-skill` blender-bpy; repair verification never resets them.
+Judge the fixed batch independently against its original job and evidence:
+
+    tickets.py judge <run> --parent <frame> --standard browser-game-3d-asset
+      --standard blender-game-asset --artifacts git:<asset-commit>
+      --goal-file <asset-review-goal> --context-file <context-file>
+      --workspace <workspace> --workspace-adapter git --isolation required --bound <bound>
+
+Repairs use the same pins and the applied blender-bpy method, carrying the
+findings, caller Context and outside asset probe. Verify the changed batch's
+affected evidence; unresolved defects remain eligible for repair within scope
+and bound.
 
 Failure promotes nothing and records the exact diagnosis. A gameplay-altering
 scale, collider, animation, timing, camera, or readability change invalidates

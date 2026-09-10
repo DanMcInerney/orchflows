@@ -649,8 +649,7 @@ class GenerationArtifactTest(CallableSinkTest):
             lines.extend(("--artifacts", artifact))
         return self.callable(
             "judge", "--standard", CODE_STANDARD, "--parent", "B1",
-            "--review-independent", "artifact grammar fixture",
-            *lines, "--isolation", "none", expect_error=expect_error,
+                *lines, "--isolation", "none", expect_error=expect_error,
         )
 
     def test_a_live_root_generation_is_accepted_and_carried_into_context(self):

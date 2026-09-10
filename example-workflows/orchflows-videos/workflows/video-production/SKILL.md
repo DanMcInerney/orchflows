@@ -22,7 +22,7 @@ share direction's ordered orch-code, short-videos, orchflows-marketing-videos pi
 
 Reuse direction's layout components in animation, preserving typography,
 cards and relationships. Check significant design changes against accepted direction
-within existing review allowance and requested user approval.
+through independent review and any requested user approval.
 
 Make through `orch-do`, applying the rendering method inside the isolated call:
 
@@ -31,16 +31,21 @@ Make through `orch-do`, applying the rendering method inside the isolated call:
 
 The goal requires the rendered project, playable review assets and evidence for
 the accepted direction. Land the candidate through the emitted ticket's ordinary
-landing door. Invoke `review-delivery` in this existing production frame
-over the fixed git output, identical orch-code, short-videos and orchflows-marketing-videos pins,
-accepted direction, evidence, workspace, bound, outside probe, `context-file`
-production-context, `workspace-adapter` git, `isolation` required and
-`repair-skill` render-video. The production stage owns its selected rounds;
-scoped verification reads listed repairs at their fixed joined identity. Unavailable listening is an unresolved
-criterion, not a repairable render defect: preserve an audition and independent
-transcript/signal/timing evidence, request a listening-capable reviewer or human
-verdict through the existing user-only question route, and return partial evidence
-when that input is unavailable. Do not spend repair rounds fabricating hearing.
+landing door. Judge the fixed git output against the accepted direction:
+
+    tickets.py judge <run> --parent <frame> --standard orchflows-marketing-videos
+      --artifacts git:<production-commit> --goal-file <production-review-goal>
+      --context-file <production-context> --workspace <workspace>
+      --workspace-adapter git --isolation required --bound <bound>
+
+Carry evidence and identical orch-code, short-videos and
+orchflows-marketing-videos pins. Repairs use `orch-do` with the render-video
+method, original Context and fixed findings; verify the changed evidence at
+the joined identity. Continue known-defect repair within scope and bound.
+Unavailable listening remains an unresolved criterion: preserve an audition
+and independent transcript/signal/timing evidence, request a listening-capable
+reviewer or human verdict through the existing user-only question route, and
+return partial evidence when that input is unavailable.
 
 Close on a command run outside every child; never on a
 child's own claim.

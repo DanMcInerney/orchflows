@@ -50,27 +50,17 @@ class AuthoringAdmissionTests(unittest.TestCase):
 
     def test_checkpointed_judge_carries_workspace(self):
         body = (ROOT / 'skills/workflows/checkpointed-build/SKILL.md').read_text(encoding='utf-8')
-        review = (ROOT / 'skills/workflows/review-delivery/SKILL.md').read_text(encoding='utf-8')
+        def assert_carriage(caller):
+            calls = [command for command in workflows._commands(caller)
+                     if workflows._command_verb(command) == 'judge']
+            self.assertEqual(1, len(calls))
+            self.assertIn('--workspace <workspace>', calls[0])
+            self.assertIn('--standard <judge-standard>', calls[0])
+            self.assertIn('--artifacts git:<tip>', calls[0])
 
-        def assert_carriage(caller, delegated):
-            handoff = caller.split('**Review.**', 1)[1].split('\n\n', 1)[0]
-            self.assertIn('`review-delivery`', handoff)
-            self.assertIn('`workspace`', handoff)
-            calls = [command for command in workflows._commands(delegated)
-                     if workflows._command_verb(command) in {'judge', 'do'}]
-            self.assertEqual(['judge', 'do', 'judge'],
-                             [workflows._command_verb(command) for command in calls])
-            for command in calls:
-                self.assertIn('--workspace <workspace>', command)
-
-        assert_carriage(body, review)
+        assert_carriage(body)
         with self.assertRaises(AssertionError):
-            assert_carriage(body.replace('`workspace`', '`lost-workspace`'), review)
-        for index in range(3):
-            pieces = review.split('--workspace <workspace>')
-            pieces[index] += pieces.pop(index + 1)
-            with self.subTest(missing_workspace_call=index), self.assertRaises(AssertionError):
-                assert_carriage(body, '--workspace <workspace>'.join(pieces))
+            assert_carriage(body.replace('--workspace <workspace>', ''))
 
 
 if __name__ == '__main__':

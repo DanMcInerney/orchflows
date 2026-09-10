@@ -64,7 +64,7 @@ const workflows: WorkflowCatalogItem[] = [
     summary: flow(["Inspect workspace", "Choose improvement", "Deliver change"]),
   },
   {
-    id: "self-improve",
+    id: "orch-self-improve",
     type: "composition",
     tier: "T3",
     entry: "named",
@@ -105,14 +105,6 @@ const workflows: WorkflowCatalogItem[] = [
     entry: "callable",
     description: "Use inside a gate or for any accepted defect set.",
     summary: flow(["Group causes", "Repair causes", "Re-run checks"]),
-  },
-  {
-    id: "orch-self-improve",
-    type: "workflow-skill",
-    tier: "T1",
-    entry: "callable",
-    description: "Use as the mining stub, or alone when proposals suffice.",
-    summary: flow(["Read friction", "Find pattern", "Propose change"]),
   },
   {
     id: "orch-spec",

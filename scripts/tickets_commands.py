@@ -109,7 +109,6 @@ VALUE_FLAGS = frozenset({
     "--outcome-record-id", "--status",
     "--goal-file", "--details-file", "--context-file", "--parent", "--done", "--artifacts",
     "--host", "--outcome-file", "--note-file", "--offset", "--limit",
-    "--review-rounds", "--review-of", "--review-new-work", "--review-independent",
 })
 
 

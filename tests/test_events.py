@@ -142,13 +142,13 @@ class FrameOpenEventTest(_FrameEventTestCase):
     """`workflow` and `goal_head`, the two fields open adds to the head."""
 
     def test_frame_open_names_its_workflow_and_goal_head(self):
-        frame = self.frame("--workflow", "self-improve")
+        frame = self.frame("--workflow", "orch-self-improve")
 
         events = self.events()
         self.assertEqual(1, len(events))
         entry = events[0]
         self.assertEqual("frame-open", entry["event"])
-        self.assertEqual("self-improve", entry["workflow"])
+        self.assertEqual("orch-self-improve", entry["workflow"])
         self.assertEqual("Deliver the migration wave.", entry["goal_head"])
         self.assertProvenance(entry, run=self.RUN, ticket=frame["id"])
 
@@ -171,9 +171,9 @@ class FrameOpenEventTest(_FrameEventTestCase):
         )
 
     def test_a_workflow_frames_shape_names_the_body_that_is_its_plan(self):
-        self.frame("--workflow", "self-improve")
+        self.frame("--workflow", "orch-self-improve")
 
-        self.assertEqual("workflow:self-improve", self.events()[0]["shape"])
+        self.assertEqual("workflow:orch-self-improve", self.events()[0]["shape"])
 
     def test_a_long_goal_first_line_is_truncated_to_200_chars(self):
         self.goal_file.write_text("x" * 260 + "\nsecond line\n", encoding="utf-8")

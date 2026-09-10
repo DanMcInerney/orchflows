@@ -40,10 +40,9 @@ path, rather than shadowing a library verb or silently never running. Any
 other collision resolves to the nearest ring and prints one shadow notice
 naming both paths.
 
-The installer generates `/orch-self-improve` as a host entry pointing to
-`self-improve`. The manifest, ring lookup, package identity and frame's
-`--workflow self-improve` retain that single name. This host spelling creates
-no ring item and grants no custom `orch-` prefix exception.
+The library's canonical orch-self-improve package uses that name in its
+manifest, ring lookup, generated host entries and frame. Custom items still
+cannot take the reserved prefix.
 
 ## Workflow packages
 
@@ -271,15 +270,10 @@ the composition, which no member could see from its own seat.
 
 ## Idioms
 
-For the ordinary ending's inputs and migration, use
-[review policy](review-policy.md).
-
 The control-flow sentences whose wording recurs across workflows. Quote one
 verbatim; a paraphrase is a second wording of one fact, and which steps earn
 one is [composition](../rules/composition.md) §13's.
 
-- **bounded-repair** — Invoke `review-delivery` under the delivery's existing
-  owner and selected rounds, carrying fixed criteria and the findings verbatim.
 - **fan-out** — One `do` per named item, launched together under the frame;
   the shape line lists them as one wave.
 - **freeze** — Fix the identity before any candidate exists and forbid every

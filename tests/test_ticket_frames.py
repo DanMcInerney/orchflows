@@ -271,16 +271,16 @@ class FrameShapeLineTest(FrameSinkTest):
                 self.assertEqual(line, frame["shape"])
 
     def test_a_saved_workflows_name_stands_in_for_the_line(self):
-        frame = self.frame("--workflow", "self-improve")
+        frame = self.frame("--workflow", "orch-self-improve")
 
-        self.assertEqual("workflow:self-improve", frame["shape"])
+        self.assertEqual("workflow:orch-self-improve", frame["shape"])
         self.assertIn(
-            "shape: workflow:self-improve",
+            "shape: workflow:orch-self-improve",
             _sections(self.ticket_text("B1"))["Report"],
         )
 
     def test_an_explicit_line_outranks_the_workflow_it_was_written_beside(self):
-        frame = self.frame("--shape", SHAPE, "--workflow", "self-improve")
+        frame = self.frame("--shape", SHAPE, "--workflow", "orch-self-improve")
 
         self.assertEqual(SHAPE, frame["shape"])
 
@@ -635,7 +635,7 @@ class FrameLawTest(FrameSinkTest):
 
         opened = self.frame()
 
-        self.assertEqual(4, len(opened["law"]))
+        self.assertEqual(3, len(opened["law"]))
 
     def test_a_called_frame_is_handed_the_law_too(self):
         """A workflow invoked under another is a driver of its own: the

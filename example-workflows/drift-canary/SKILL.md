@@ -27,7 +27,7 @@ call closes.
 
 **Read the delta**:
 
-    tickets.py judge <run> --review-independent "independent drift comparison" --standard orch-content --parent <frame>
+    tickets.py judge <run> --standard orch-content --parent <frame>
       --artifacts <rerun-artifact-line> --goal-file <diff-goal>
 
 One verdict per canary item against its golden result. A divergence is a

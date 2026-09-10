@@ -105,7 +105,7 @@ class ThreeDBrowserGameAdmissionTest(unittest.TestCase):
                 self.assertTrue(Path(workspace_record.attempt_workspace(child)).is_dir())
                 coverage = self._call(
                     "judge", RUN, "--parent", research["id"], "--goal-file", str(goal),
-                    "--standard", "orch-research", "--review-independent", "research coverage before synthesis",
+                    "--standard", "orch-research",
                     "--artifacts", "evidence:admission-fixture", "--workspace-adapter", "evidence-store",
                     "--workspace", str(temporary / "evidence"), "--bound", "10m",
                     "--profile", "orch-planner", "--host", "codex",

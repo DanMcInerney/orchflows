@@ -25,7 +25,7 @@ and cases with the original outcome/subject facts and the representative
 capability evidence; missing required observation stays UNVERIFIED before
 dependent attempts.
 
-    tickets.py judge <run> --review-independent "independent benchmark qualification lane" --parent <frame> --standard <standard>
+    tickets.py judge <run> --parent <frame> --standard <standard>
       --standard benchmark-quality --artifacts git:<draft-sha>
       --goal-file <controls-goal> --isolation required --bound <controls-bound>
 
@@ -34,7 +34,7 @@ from visible prompts and licensed inputs before comparing keys and graders.
 Carry the predeclared sample and flagged cases; tiny admissions cover all cases.
 Return the prompt-first work, comparisons and fatal-flaw classifications.
 
-    tickets.py judge <run> --review-independent "independent benchmark qualification lane" --parent <frame> --standard <standard>
+    tickets.py judge <run> --parent <frame> --standard <standard>
       --standard benchmark-quality --artifacts git:<draft-sha>
       --goal-file <reference-goal> --isolation required --bound <reference-bound>
 
@@ -43,7 +43,7 @@ probes only the permitted candidate access scope. Inspect access mechanisms and
 record dated SUCCEEDED/FAILED/BLOCKED observations, protected-read evidence and
 unrepaired holes. Isolation of a review worktree alone proves no read exclusion.
 
-    tickets.py judge <run> --review-independent "independent benchmark qualification lane" --parent <frame> --standard <standard>
+    tickets.py judge <run> --parent <frame> --standard <standard>
       --standard benchmark-quality --artifacts git:<draft-sha>
       --goal-file <attack-goal> --isolation required --bound <attack-bound>
 

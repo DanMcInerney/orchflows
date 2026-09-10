@@ -9,11 +9,9 @@ amendments. The brief and amendments are product authority.
 
 Open one frame and retain its returned frame identity:
 
-Resolve `rounds` by the `docs/review-policy.md` precedence.
-Forward it only to this delivery root and genuinely independent stage owners;
-ordinary nested frames inherit.
 
-    tickets.py frame-open <run> --goal-file <program-goal> --workflow 3d-browser-game --review-rounds <rounds>
+
+    tickets.py frame-open <run> --goal-file <program-goal> --workflow 3d-browser-game
 
 **Research and design.** Open the `discovery` helper under the frame. It audits
 promises, runs independent research lanes, records capability gaps and
@@ -32,13 +30,11 @@ each carries its fixed revision before the next increment.
     tickets.py frame-close <run> <increment-frame> --done <increment-check>
 
 Open `gameplay-gate` over the fixed I2 revision. It separates QA, adaptive
-play, and maker-independent judgment. This independent core stage
-uses review-delivery with its selected rounds. Exhaustion returns the best
-identity, complaint ledger and unresolved evidence; a repair or missing
-capability never silently opens another review owner. Explicit redesign is
-new work with named invalidations, not an automatic review reset.
+play, and maker-independent judgment. Repairs preserve the complaint ledger
+and fixed criteria; a bound or unavailable capability returns the best
+identity and unresolved evidence. Redesign names its invalidated descendants.
 
-    tickets.py frame-open <run> --goal-file <core-gate-goal> --parent <frame> --workflow gameplay-gate --review-new-work "independent core acceptance" --review-rounds <rounds>
+    tickets.py frame-open <run> --goal-file <core-gate-goal> --parent <frame> --workflow gameplay-gate
     tickets.py frame-close <run> <core-gate-frame> --done <core-gate-check>
 
 **Production and final acceptance.** Only an accepted core identity freezes
@@ -49,9 +45,9 @@ affected core verdict. Integrate assets and open `final-acceptance` for play,
 captures, performance cells, and independent judgment. Repair cycles preserve
 complaint IDs, causes, contrary evidence, and resume state.
 
-    tickets.py frame-open <run> --goal-file <asset-goal> --parent <frame> --workflow blender-asset --review-new-work "independent asset batch acceptance" --review-rounds <rounds>
+    tickets.py frame-open <run> --goal-file <asset-goal> --parent <frame> --workflow blender-asset
     tickets.py frame-close <run> <asset-frame> --done <asset-check>
-    tickets.py frame-open <run> --goal-file <final-goal> --parent <frame> --workflow final-acceptance --review-new-work "independent final acceptance" --review-rounds <rounds>
+    tickets.py frame-open <run> --goal-file <final-goal> --parent <frame> --workflow final-acceptance
     tickets.py frame-close <run> <final-frame> --done <final-check>
 
 Close from outside every child only after all children return:

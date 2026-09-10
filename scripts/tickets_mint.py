@@ -75,16 +75,14 @@ DO_USAGE = (
     "[--parent ID] [--skill S] [--profile P] "
     "[--done <canonical-json>] [--makes " + "|".join(PLANNING_KINDS) + "] "
     "[--isolation required|none] [--bound B] "
-    "[--workspace <target>] [--workspace-adapter A] [--host H] "
-    "[--review-rounds N|until_pass] [--review-of ID]"
+    "[--workspace <target>] [--workspace-adapter A] [--host H]"
 )
 JUDGE_USAGE = (
     "judge <run> --standard S [--standard S ...] --goal-file F --artifacts <typed-line> "
     "[--artifacts ...] [--details-file D] [--context-file C] [--parent ID] "
     "[--skill S] [--profile P] "
     "[--isolation required|none] [--bound B] "
-    "[--workspace <target>] [--workspace-adapter A] [--host H] "
-    "[--review-of ID] [--review-independent REASON]"
+    "[--workspace <target>] [--workspace-adapter A] [--host H]"
 )
 DO_EXECUTOR = "orch-do"
 JUDGE_EXECUTOR = "orch-judge"
@@ -219,16 +217,6 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
     """`(ticket_id, refusal)` -- one runtime child's id, seal, and write."""
 
     ticket_id = next_mint_id(parent, _issued_ids(run_dir))
-    if __package__:
-        from . import tickets_review
-    else:
-        import tickets_review
-    rows, refusal = tickets_review.snapshot(run_dir)
-    if refusal:
-        return None, refusal
-    fields, refusal = tickets_review.prepare(ticket_id, fields, rows)
-    if refusal:
-        return None, refusal
     inherit = None
     if parent:
         inherit, refusal = _sealed_parent(run_dir, parent)
@@ -250,7 +238,7 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
 def _minted(run: str, run_dir, *, executor, standards, goal, details, parent,
             done, isolation, bound, artifacts, makes=None, skill=None,
             profile=None, workspace_adapter=None, owner=None,
-            workflow_context=None, context=None, review_fields=None):
+            workflow_context=None, context=None):
     """`(ticket_id, refusal)` -- one callable's fields, minted through `_mint`."""
 
     stamped, refusal = pin_fields(standards, skill, owner=owner)
@@ -264,7 +252,6 @@ def _minted(run: str, run_dir, *, executor, standards, goal, details, parent,
         "profile": profile,
         WORKSPACE_ADAPTER_FIELD: workspace_adapter,
         **dict(workflow_context or {}),
-        **dict(review_fields or {}),
         "isolation": isolation, "bound": bound,
         "done": done, MAKES_FIELD: makes,
     }
@@ -331,16 +318,6 @@ def _cmd_callable(rest, *, judge: bool):
     artifacts = _extract_all(args, "--artifacts")
     skill = _extract_flag(args, "--skill")
     profile = _extract_flag(args, "--profile")
-    review_fields = {}
-    for flag, field in (("--review-rounds", "review_rounds"),
-                        ("--review-of", "review_of"),
-                        ("--review-independent", "review_independent")):
-        supplied = flag in args
-        value = _extract_flag(args, flag)
-        if supplied and not str(value or "").strip():
-            return {"error": f"{flag} requires a nonempty value"}
-        if supplied:
-            review_fields[field] = value
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"{'judge' if judge else 'do'} does not accept {stray}. usage: {usage}"}
@@ -439,7 +416,7 @@ def _cmd_callable(rest, *, judge: bool):
             parent=parent, done=done, isolation=isolation, bound=bound,
             artifacts=lines, makes=makes, skill=skill,
             profile=profile, workspace_adapter=selected.key, owner=owner,
-            workflow_context=workflow_context, context=context, review_fields=review_fields,
+            workflow_context=workflow_context, context=context,
         )
     if failure is not None:
         return failure

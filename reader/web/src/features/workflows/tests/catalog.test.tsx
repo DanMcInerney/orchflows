@@ -20,9 +20,9 @@ describe("WorkflowCatalogView", () => {
 
     const catalog = screen.getByRole("list", { name: "Workflow definitions" });
     const rows = catalog.querySelectorAll(":scope > li");
-    expect(rows).toHaveLength(13);
+    expect(rows).toHaveLength(12);
     expect(screen.getAllByText("T3 composition")).toHaveLength(7);
-    expect(screen.getAllByText("T1 workflow skill")).toHaveLength(6);
+    expect(screen.getAllByText("T1 workflow skill")).toHaveLength(5);
 
     const fix = screen.getByRole("link", { name: "fix" });
     expect(fix.getAttribute("href")).toBe("/workflows/fix?fixture=catalog");
@@ -36,7 +36,7 @@ describe("WorkflowCatalogView", () => {
     render(<WorkflowCatalogView route={{ fixture: "catalog" }} state={ready(catalogFixture)} />);
 
     const summaries = screen.getAllByRole("figure");
-    expect(summaries).toHaveLength(13);
+    expect(summaries).toHaveLength(12);
     for (const summary of summaries) {
       expect(within(summary).queryByRole("button")).toBeNull();
       expect(within(summary).queryByRole("link")).toBeNull();

@@ -206,7 +206,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
     # composers render it. A workflow declares no role deliberately -- its
     # prose is driven by the orchestrator in place, so it never forks and
     # can never produce the prompt-less arrival the clause governs.
-    GLUE = "example-workflows/self-improve/SKILL.md"
+    GLUE = "example-workflows/orch-self-improve/SKILL.md"
 
     def test_no_skill_contract_body_carries_a_copy(self):
         """A body copy re-opens the doclint saturation the relocation closed."""

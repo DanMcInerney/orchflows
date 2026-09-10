@@ -1,5 +1,5 @@
 ---
-name: browser-game
+name: brief-intake
 description: Turn an incomplete browser-game brief into evidence-bound checkpoints and standard-stamped successor delivery.
 disable-model-invocation: true
 ---
@@ -19,21 +19,20 @@ disable-model-invocation: true
 <!-- BGW-TRACE[help:instance-validation|PJ-05,PJ-06,PJ-09,PJ-10,PJ-22,PJ-24,PJ-25,PJ-28] -->
 <!-- BGW-TRACE[implementation:closed-surface|PJ-20] -->
 
-Require: `brief`, one incomplete product request, and `workspace`, its
-git-backed repository; no other inputs. Never default missing fields:
-empirical gaps become declared experiments, `kind: user-only` gaps verbatim
-questions for root. Neither blocks the other.
+Require: incomplete product `brief`, git-backed `workspace`, and caller-opened
+`intake-frame` under 3d-browser-game.
+Three.js and Blender are fixed. Empirical gaps become declared experiments;
+`kind: user-only` gaps become verbatim questions for root. Neither blocks the other.
 
-    tickets.py frame-open <run> --goal-file <program-goal> --workflow browser-game
-
+Run calls in `intake-frame`; discovery alone closes it.
 
 <!-- BGW-TRACE[implementation:program-record|PJ-03,PJ-07] -->
 <!-- BGW-TRACE[implementation:question-authority|PJ-06,PJ-09,PJ-10] -->
 <!-- BGW-TRACE[implementation:decision-safety|PJ-22] -->
 **Record**, `do --standard orch-content --isolation required`:
 versioned program record in `workspace` for `brief`, conforming to the
-[program-record schema](../references/browser-game-program-record.schema.json)
-and [intake-authority policy](../references/browser-game-intake-policy.json).
+[program-record schema](../../references/browser-game-program-record.schema.json)
+and [intake-authority policy](../../references/browser-game-intake-policy.json).
 Record each Q-01–Q-12 field's disposition, authority kind, owner, rationale,
 evidence and revision independently; omitted material fields carry stable
 open-question/decision identities; settled decisions retain revision and
@@ -66,10 +65,10 @@ without lowering acceptance. Return exactly one disposition — `advance`, `revi
 `user-decision-required` or `stop` — bound to its governing requirement, the
 fixed record revision and evidence identity. Its findings validate
 against the
-[checkpoint contract](../references/browser-game-checkpoint.schema.json).
+[checkpoint contract](../../references/browser-game-checkpoint.schema.json).
 Only a lawful disposition permits
 `do --standard orch-content` to materialize the
-[standard-separated successor plan](../references/browser-game-program-record.schema.json#/$defs/successorPlanRevision),
+[standard-separated successor plan](../../references/browser-game-program-record.schema.json#/$defs/successorPlanRevision),
 each ordered entry preserving its artifact identity, artifact kind, matching
 standard, run/root identities, dependencies and `planned`/`opened`
 status.
@@ -82,6 +81,6 @@ successor with unresolved kind, standard, predecessor identity, dependency or ro
 identity; or file
 anything the instance validator rejects.
 
-Return: `tickets.py frame-close <run> <frame> --done <check>` on the terminal
-checkpoint, with record/evidence identities, disposition, open-question/successor
+Return: the terminal checkpoint for the caller's `intake-frame`, with
+record/evidence identities, disposition, open-question/successor
 identities and invalidation boundary, observable without historical input.

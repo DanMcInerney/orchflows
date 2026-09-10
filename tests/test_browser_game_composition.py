@@ -12,10 +12,11 @@ from installer.packages import (
     workflow_adapter_body,
 )
 from scripts import tickets
+from tests.browser_game_intake_probe import observe_intake_boundary
 
 
 from tests._repo_root import ROOT
-COMPOSITION = ROOT / "example-workflows" / "browser-game"
+COMPOSITION = ROOT / "example-workflows" / "3d-browser-game" / "workflows" / "brief-intake"
 LEGACY_INPUTS = (
     "29DF4D680E47A8162AE94BBD7C9BCD1FA9A2DFC3E7EE4D26025933B2C5D79653",
     "3C5EB92FB148C4177FA8CE4CE88B4EE9576D457F6C47F1B9762407843ACC8F48",
@@ -39,7 +40,7 @@ class BrowserGameCompositionTests(unittest.TestCase):
     def test_named_invocation_closes_inputs_outputs_questions_and_dispositions(self):
         _, text, frontmatter = self._workflow()
 
-        self.assertEqual("browser-game", frontmatter["name"])
+        self.assertEqual("brief-intake", frontmatter["name"])
         self.assertEqual("true", frontmatter["disable-model-invocation"])
         normalized = " ".join(text.split())
         for term in (
@@ -61,17 +62,20 @@ class BrowserGameCompositionTests(unittest.TestCase):
             path.name: (path, frontmatter, body)
             for path, frontmatter, body in discover_workflow_skills(ROOT)
         }
-        self.assertIn("browser-game", discovered)
+        self.assertIn("3d-browser-game", discovered)
+        self.assertNotIn("browser-game", discovered)
+        self.assertNotIn("brief-intake", discovered)
+        self.assertEqual({"3d-browser-game"}, {name for name in discovered if name in
+                                              {"3d-browser-game", "browser-game", "browser-fps"}})
 
         _, text, _ = self._workflow()
         for call in (
-            "tickets.py frame-open",
             "do --standard orch-content",
             "do --standard orch-research",
             "judge --standard orch-content",
-            "tickets.py frame-close",
         ):
             self.assertIn(call, text)
+        observe_intake_boundary(COMPOSITION.parent.parent)
         # The template era is gone: no stub files, no instantiation route.
         self.assertEqual(
             ["SKILL.md"], sorted(path.name for path in COMPOSITION.glob("*.md"))
@@ -81,10 +85,10 @@ class BrowserGameCompositionTests(unittest.TestCase):
     def test_installer_adapter_points_at_the_body_and_forces_manual_only(self):
         path, text, _ = self._workflow()
         frontmatter, _ = split_frontmatter(text)
-        adapter = workflow_adapter_body("browser-game", path.parent, frontmatter)
+        adapter = workflow_adapter_body("3d-browser-game", ROOT / "example-workflows/3d-browser-game", frontmatter)
         rendered = manual_only_frontmatter(frontmatter) + adapter
 
-        self.assertIn(str(path.parent / "SKILL.md"), adapter)
+        self.assertIn(str(ROOT / "example-workflows/3d-browser-game/SKILL.md"), adapter)
         self.assertNotIn("--set ", adapter)
         self.assertNotIn("instantiate", adapter)
         self.assertEqual(1, rendered.count(MANUAL_ONLY))
@@ -97,7 +101,7 @@ class BrowserGameCompositionTests(unittest.TestCase):
     def test_checkpoint_consumes_the_kind_separated_successor_plan_contract(self):
         _, checkpoint, _ = self._workflow()
         self.assertIn(
-            "../references/browser-game-program-record.schema.json"
+            "../../references/browser-game-program-record.schema.json"
             "#/$defs/successorPlanRevision",
             checkpoint,
         )

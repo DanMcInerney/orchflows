@@ -342,47 +342,20 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self._write("example-workflows/probe/references/session-fixtures.json", "{}\n")
         self.assertEqual([], self._findings(allowlist={}))
 
-    def test_browser_game_is_the_one_dated_visible_exception(self):
-        self._write("example-workflows/browser-game/SKILL.md")
-        self._write(
-            "example-workflows/references/browser-game-checkpoint.schema.json", "{}\n"
-        )
-        self._write(
-            "example-workflows/references/browser-game-instance-fixtures.json", "{}\n"
-        )
-        self._write("scripts/browser_game_validate.py", "# legacy validator\n")
+    def test_game_intake_package_needs_no_protocol_exception(self):
+        self._write("example-workflows/3d-browser-game/SKILL.md")
+        self._write("example-workflows/3d-browser-game/workflows/brief-intake/SKILL.md")
+        self._write("example-workflows/3d-browser-game/references/browser-game-checkpoint.schema.json", "{}\n")
+        self._write("example-workflows/3d-browser-game/references/browser-game-instance-fixtures.json", "{}\n")
+        self.assertEqual({}, validate.COMPOSITION_PROTOCOL_ALLOWLIST)
+        self.assertEqual([], self._findings())
 
-        findings = self._findings()
-
-        self.assertEqual({"browser-game": "2026-08-28"}, validate.COMPOSITION_PROTOCOL_ALLOWLIST)
-        self.assertFalse(any(line.startswith("ERROR ") for line in findings), findings)
-        exception = [
-            line
-            for line in findings
-            if line.startswith("WARN ") and "browser-game" in line
-        ]
-        self.assertEqual(1, len(exception), findings)
-        self.assertIn("2026-08-28", exception[0])
-        self.assertIn("script", exception[0])
-
-    def test_removing_the_browser_game_entry_exposes_its_protocol_artifacts(self):
-        self._write("example-workflows/browser-game/SKILL.md")
-        self._write(
-            "example-workflows/references/browser-game-checkpoint.schema.json", "{}\n"
-        )
-        self._write(
-            "example-workflows/references/browser-game-instance-fixtures.json", "{}\n"
-        )
-        self._write("scripts/browser_game_validate.py", "# legacy validator\n")
-
-        findings = self._findings(allowlist={})
-
-        errors = [line for line in findings if line.startswith("ERROR ")]
-        self.assertTrue(errors, findings)
-        self.assertTrue(
-            all("workflow 'browser-game'" in line for line in errors),
-            errors,
-        )
+    def test_shared_game_protocol_files_have_no_retired_exception(self):
+        self._write("example-workflows/3d-browser-game/SKILL.md")
+        self._write("example-workflows/references/browser-game-checkpoint.schema.json", "{}\n")
+        errors = [line for line in self._findings() if line.startswith("ERROR ")]
+        self.assertEqual(1, len(errors), errors)
+        self.assertIn("shared workflow reference", errors[0])
 
     def test_a_script_module_named_for_a_composition_is_refused_by_boundary(self):
         self._write("example-workflows/probe/SKILL.md")

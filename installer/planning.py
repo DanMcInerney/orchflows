@@ -65,7 +65,6 @@ from .packages import (
     split_frontmatter,
     workflow_adapter_body,
 )
-from .workflow_entries import append_self_improve_entries
 from .runtime import private_runtime_action
 from .planning_support import (
     _frontend_plan,
@@ -264,13 +263,16 @@ def build_plan(
             codex_prompts.append(
                 (
                     item_path("codex", "prompt", codex_user_home, name=name),
-                    f"# {description}\n\n{host_entry_line('codex')}{body.strip()}\n",
+                    f"# {description}\n\n{host_entry_line('codex')}"
+                    + pointer[len(frontmatter) + 1:]
+                    + "\nUser request: $ARGUMENTS\n",
                 )
             )
             codex_skills.append(
                 (
                     item_path("codex", "skill", codex_user_home, name=name),
-                    frontmatter + "\n" + host_entry_line("codex") + pointer[len(frontmatter) + 1:],
+                    host_legal_frontmatter(frontmatter, "codex")
+                    + "\n" + host_entry_line("codex") + pointer[len(frontmatter) + 1:],
                 )
             )
         if grok_enabled:
@@ -285,14 +287,6 @@ def build_plan(
                 )
             )
 
-        if name == "self-improve":
-            append_self_improve_entries(
-                lib_workflow_dir,
-                claude_adapters if claude_enabled else None,
-                codex_prompts if codex_enabled else None,
-                codex_skills if codex_enabled else None,
-                grok_skills if grok_enabled else None,
-            )
 
     # A standard is stamped on a ticket and never invoked, so it gets the
     # one surface a stamped item needs and no host surface at all: the

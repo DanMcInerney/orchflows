@@ -105,8 +105,8 @@ dates, locators and losses.
 The public package owns both evidence and dossier modes. The existing kernel
 owns frames, dispatch, pins, artifact identities, isolation and landing;
 `orch-research` owns evidence quality; private `research-acquire` owns bounded
-reads; `orch-content`/`html-dossier` own report judgment; `review-delivery`
-owns repair/review rounds. No new orchestration engine or review loop was added.
+reads; `orch-content`/`html-dossier` own report quality. `orch-judge` judges fixed
+packets and dossiers against those standards; `orch-do` repairs named findings.
 The narrowly scoped migration retires the project acquisition skill, keeps
 Python API names, and lets another package call public recent-search with
 research semantics. Independent authoring review and the full repository gate

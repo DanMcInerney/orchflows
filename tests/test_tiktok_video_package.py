@@ -157,20 +157,10 @@ class VideoPackageTests(unittest.TestCase):
         for helper in ('video-direction', 'video-production'):
             body = (PACKAGE / f'workflows/{helper}/SKILL.md').read_text(encoding='utf-8')
             calls = [c for c in workflows._commands(body) if '--standard' in c]
-            self.assertEqual(1, len(calls))
-            self.assertIn('`review-delivery`', body)
-            for carrier in ('orch-code', 'short-videos', 'orchflows-marketing-videos',
-                            '`workspace-adapter` git', '`isolation` required'):
+            self.assertEqual(['do', 'judge'],
+                             [workflows._command_verb(command) for command in calls])
+            for carrier in ('orch-code', 'short-videos', 'orchflows-marketing-videos'):
                 self.assertIn(carrier, body)
-            recipe = (ROOT / 'skills/workflows/review-delivery/SKILL.md').read_text(encoding='utf-8')
-            delegated = [c for c in workflows._commands(recipe)
-                         if workflows._command_verb(c) in {'do', 'judge'}]
-            self.assertEqual(['judge', 'do', 'judge'],
-                             [workflows._command_verb(c) for c in delegated])
-            for command in delegated:
-                self.assertIn('--workspace <workspace>', command)
-                self.assertIn('--workspace-adapter <workspace-adapter>', command)
-                self.assertIn('--isolation <isolation>', command)
             for command in calls:
                 self.assertIn('--workspace-adapter git', command)
                 self.assertIn('--isolation required', command)

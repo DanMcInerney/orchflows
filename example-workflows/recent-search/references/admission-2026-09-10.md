@@ -48,6 +48,11 @@ gate, and successful live xcancel content remains unverified.
 
 ## Accepted-finding repairs
 
+The RS-1 observations below predate the ordinary-review simplification. The
+same test identity now checks parent/package scope, workspace adapters, standard
+pins, repeated judgments and nested closure without a generic round allowance.
+Historical round-carrier observations are not evidence for the current API.
+
 Observed in B1.3 against provisional code identity
 94b59e7843a5ae528ecff22a1e9fdae32a26fc20, followed by removal of a library-doc
 link that the copied-package check rejected. The findings retain their original

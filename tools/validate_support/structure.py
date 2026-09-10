@@ -23,10 +23,7 @@ ENVELOPE_CARRIER_RE = re.compile(
 )
 ENVELOPE_FIELD_LEAD_RE = re.compile(r"^\s*status\s*[,;—-]", re.IGNORECASE)
 
-# U8's sole legacy exception is data, not a relaxed classifier.  The date
-# names the review that admitted the already-shipped browser-game machinery;
-# every other composition, including every future one, takes the closed rule.
-COMPOSITION_PROTOCOL_ALLOWLIST = {"browser-game": "2026-08-28"}
+COMPOSITION_PROTOCOL_ALLOWLIST = {}
 COMPOSITION_SCRIPT_SUFFIXES = frozenset({
     ".bat", ".cmd", ".js", ".mjs", ".cjs", ".ps1", ".py", ".sh", ".ts",
 })
@@ -364,8 +361,7 @@ def validate_composition_admission(
     The package digest's generated-directory exclusions are honored while
     every remaining path and Markdown link stays below that public owner, or
     cites canonical library law.  Shared protocol artifacts and workflow-
-    named root scripts remain outside package scope; the dated browser-game
-    entry is the one historical shared-reference exception.
+    named root scripts remain outside package scope.
     """
 
     compositions = ROOT / "example-workflows"

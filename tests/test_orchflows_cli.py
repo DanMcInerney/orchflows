@@ -41,10 +41,21 @@ def _git(*args, cwd):
 
 
 @contextlib.contextmanager
-def _home():
+def _home(*, source_library=True):
     with tempfile.TemporaryDirectory(prefix="orchflows-cli-") as tmp:
         home = Path(tmp).resolve()
-        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}):
+        host_environment = {
+            record["home"]["environment"]: str(home / "host-homes" / host)
+            for host, record in orchflows.orchflows_adapters.host_records().items()
+        }
+        library = contextlib.nullcontext()
+        if not source_library:
+            # Sync must not reinstall dependencies under parallel source readers.
+            shutil.copytree(ROOT / "installer" / "host_adapters",
+                            home / "lib" / "installer" / "host_adapters")
+            library = patch.object(rings, "lib_root", return_value=home / "lib")
+        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state"),
+                                     **host_environment}), library:
             yield home
 
 
@@ -76,7 +87,10 @@ class SyncTests(unittest.TestCase):
         self.addCleanup(guard.stop)
 
     def test_sync_makes_a_fresh_home_ring_whole(self):
-        with _home() as home:
+        with _home(source_library=False) as home:
+            for host, record in orchflows.orchflows_adapters.host_records().items():
+                self.assertEqual(home / "host-homes" / host,
+                                 orchflows.orchflows_adapters._host_home(record))
             code, output = _run("sync")
 
             self.assertEqual(0, code, output)
@@ -86,7 +100,7 @@ class SyncTests(unittest.TestCase):
             self.assertTrue((home / ".gitignore").is_file())
 
     def test_the_gitignore_covers_the_regenerable_half_and_keeps_the_history(self):
-        with _home() as home:
+        with _home(source_library=False) as home:
             _run("sync")
 
             body = (home / ".gitignore").read_text(encoding="utf-8")
@@ -97,7 +111,7 @@ class SyncTests(unittest.TestCase):
             self.assertIn("trust.json", body)
 
     def test_sync_keeps_a_ring_owners_own_ignores(self):
-        with _home() as home:
+        with _home(source_library=False) as home:
             (home / ".gitignore").write_text("*.swp\n", encoding="utf-8")
             _run("sync")
             _run("sync")
@@ -107,7 +121,7 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(1, body.count(orchflows_home.GITIGNORE_START))
 
     def test_sync_never_touches_committed_ring_content(self):
-        with _home() as home:
+        with _home(source_library=False) as home:
             item = home / "skills" / "mine" / "SKILL.md"
             item.parent.mkdir(parents=True)
             item.write_text("mine\n", encoding="utf-8")
@@ -117,7 +131,7 @@ class SyncTests(unittest.TestCase):
             self.assertEqual("mine\n", item.read_text(encoding="utf-8"))
 
     def test_lib_version_records_the_installed_identity_or_nulls(self):
-        with _home() as home:
+        with _home(source_library=False) as home:
             (home / "receipt.json").write_text(
                 json.dumps({"version": 4, "source_commit": "a" * 40}), encoding="utf-8",
             )
@@ -129,7 +143,7 @@ class SyncTests(unittest.TestCase):
             )
 
     def test_lib_version_guesses_nothing_when_no_receipt_is_readable(self):
-        with _home() as home:
+        with _home(source_library=False) as home:
             _run("sync")
 
             self.assertEqual(

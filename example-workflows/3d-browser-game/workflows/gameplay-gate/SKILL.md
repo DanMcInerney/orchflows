@@ -8,11 +8,16 @@ Require: fixed I2 `artifact:` identity, frozen traceability and [core rubric](..
 complete core capture/performance matrix, QA result, at least two
 maker-independent play contexts, parent frame journal, and package digest.
 
-Freeze every input, then invoke `review-delivery` in this existing core
-stage frame over the I2 identity, frozen goal and evidence, threejs-browser-game,
-browser-game-interface and browser-game-playtest pins, workspace, `workspace-adapter` git, caller `context-file`,
-`isolation` required, bound and outside
-probe. The stage owns its selected rounds.
+Freeze every input and judge the I2 identity independently:
+
+    tickets.py judge <run> --parent <frame> --standard threejs-browser-game
+      --standard browser-game-interface --standard browser-game-playtest
+      --artifacts git:<i2-commit> --goal-file <gate-goal> --context-file <context-file>
+      --workspace <workspace> --workspace-adapter git --isolation required --bound <bound>
+
+Carry the frozen goal, evidence and outside probe. Repair accepted blockers
+through `orch-do` under the same pins and Context, then verify the affected
+QA and play at the resulting fixed revision.
 
 The verdict checks production boot, focus and ordinary controls, fundamental
 loop, central mechanics and reachable states, readable timing and feedback,
@@ -22,11 +27,11 @@ assets pass the art bar when they support fair play and legibility; final
 polish belongs to the whole-game gate. Every dimension scores 0–4 and every
 complaint has an ID, seam, cause, evidence, kind, and expected improvement.
 
-Repairs name accepted complaints, causal seams and regression checks. Scoped
-verification repeats affected QA and adaptive play while retaining unaffected
-smoke coverage. Exhaustion or unavailable capability returns the best fixed
-revision, complaint ledger and exact resume state; no automatic successor
-resets review. Explicit redesign names invalidated descendants as new work.
+Repairs name accepted complaints, causal seams and regression checks. Retain
+unaffected smoke coverage. Continue required repair while scope, evidence and
+bound permit it; an unavailable capability or bound returns the best fixed
+revision, complaint ledger and exact resume state. Redesign names invalidated
+descendants.
 
 Never lower a critical floor, let a maker judge its own work, treat preference
 as a blocking defect, discard contrary evidence, or accept art as a gameplay
