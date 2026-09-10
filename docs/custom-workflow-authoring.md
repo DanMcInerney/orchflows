@@ -1,7 +1,11 @@
 # Custom workflow authoring
 
-This file owns custom-item scope, procedure, adapters, and admission. Route the work by
-the ordinary smallest-first shapes in [the host block](../templates/host-block.md),
+This file owns scope, procedure, adapters, and admission for Orchflows items.
+Its custom-item rules apply only to user- and project-scope Orchflows
+extensions; canonical items remain under library law. It does not govern an
+ordinary host-native skill merely because Orchflows was used to author or
+review it. Route the work by the ordinary smallest-first shapes in
+[the host block](../templates/host-block.md),
 and carry this exact file path in the sealed ticket's `## Context` as the
 standards-owner and authoring-standard pointer. Decomposition preserves that
 pointer in every member whose work is governed by it. Supply the section body
@@ -11,8 +15,10 @@ before sealing. Omission keeps the existing Context behavior.
 
 ## Rings
 
-A custom skill, standard, or workflow lives in one of four rings, and
-`scripts/rings.py` reads them in one fixed order — nearest first:
+Orchflows resolves skills, standards, and workflows through four rings, and
+`scripts/rings.py` reads them in one fixed order — nearest first. User- and
+project-scope items are custom; imports are pinned external bundles and lib
+items are canonical.
 
 | ring | where | what it holds |
 | --- | --- | --- |
@@ -71,7 +77,8 @@ grant package scope.
 
 ## Scope and landing
 
-Author in a git-backed workspace under the code standard. Scope chooses the
+After an artifact has been classified as an Orchflows library or custom item,
+author it in a git-backed workspace under the code standard. Scope chooses its
 landing zone; it is not an installation scope.
 
 | scope | source landing | always-on rule landing | admission |
@@ -86,7 +93,11 @@ then install the accepted source and adapters explicitly. The shared
 `install.py` remains a user-scope install for this canonical library; it does
 not turn a ring item into an installation scope.
 
-Custom items are outside library law and bind only at their declared scope.
+Using Orchflows to coordinate construction does not make the resulting artifact
+a custom Orchflows item. Host-native skills, project files, and other ordinary
+deliverables retain the ownership and installation rules of their target host.
+
+Custom Orchflows items are outside library law and bind only at their declared scope.
 The generic project defaults above apply only when the project's standards owner
 names no more specific owner path. Never land at canonical scope what the request placed at custom
 scope, or at a broader custom scope than requested.
@@ -120,7 +131,7 @@ sealed child prompt has. This is a glue-only driver, not deliverable authority;
 
 The standard-library floor belongs to the library, not to what you author
 on it: [ARCHITECTURE.md](../ARCHITECTURE.md)'s scripts tier states it,
-and a ring item is outside it. There are three classes of dependency, each
+and a non-library ring item is outside it. There are three classes of dependency, each
 with one home and one file, and they never share an environment.
 
 An item's **own Python tooling** — what its own scripts import — goes in one
