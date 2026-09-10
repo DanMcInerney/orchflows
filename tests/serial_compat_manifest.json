@@ -1250,6 +1250,7 @@
    "test_super_research_runner.SuperResearchRunnerTests.test_propagates_unsuccessful_exit_status",
    "test_super_research_runner.SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
    "test_super_research_suite.SuperResearchSuiteTest.test_the_skill_suite_exits_zero",
+   "test_sync_dependency_isolation.SyncDependencyIsolationTests.test_sync_fixtures_do_not_prepare_source_dependencies",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
@@ -4254,6 +4255,15 @@
   },
   {
    "module": "tests.test_orchflows_cli",
+   "owner": "SyncTests.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
    "owner": "_git",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -4281,7 +4291,8 @@
    "owner": "_world",
    "restoration": "selected-module-boundary",
    "seams": [
-    "environment"
+    "environment",
+    "monkeypatch"
    ]
   },
   {
@@ -4321,7 +4332,8 @@
    "owner": "_world",
    "restoration": "selected-module-boundary",
    "seams": [
-    "environment"
+    "environment",
+    "monkeypatch"
    ]
   },
   {
@@ -5201,6 +5213,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_sync_dependency_isolation",
+   "owner": "SyncDependencyIsolationTests.test_sync_fixtures_do_not_prepare_source_dependencies",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
