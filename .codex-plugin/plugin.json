@@ -1,18 +1,18 @@
 {
   "name": "orchflows-light",
   "version": "0.1.0",
-  "description": "Orchflows Light plugin",
+  "description": "Native delegation skills and plain Markdown quality standards.",
   "author": {
-    "name": "Local developer"
+    "name": "orchflows-light"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Orchflows Light",
-    "shortDescription": "Use Orchflows Light in Codex.",
-    "longDescription": "Orchflows Light adds a local Codex plugin scaffold.",
-    "developerName": "Local developer",
+    "shortDescription": "Delegate work and independent review with native agents.",
+    "longDescription": "Four composable skills and focused quality standards for Codex and Claude Code.",
+    "developerName": "orchflows-light",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Help me use Orchflows Light."
+    "defaultPrompt": "Use make-and-review for this task."
   }
 }

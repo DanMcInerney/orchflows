@@ -1,0 +1,9 @@
+{
+  "name": "orchflows-light",
+  "version": "0.1.0",
+  "description": "Native delegation skills and plain Markdown quality standards.",
+  "author": {
+    "name": "orchflows-light"
+  },
+  "skills": "./skills/"
+}
