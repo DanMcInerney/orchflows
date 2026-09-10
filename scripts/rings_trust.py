@@ -17,8 +17,13 @@ nothing else, so ordinary edits elsewhere never re-prompt.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+import marshal
 import os
+import re
+import sys
+import types
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -41,8 +46,36 @@ def _folded(path) -> str:
     return os.path.normcase(str(Path(path).expanduser().resolve()))
 
 
+def _derived_bytecode(path: Path) -> bool:
+    """Ignore only caches equivalent to compiling their adjacent source.
+
+    A cache directory is not a trust exemption: sourceless, forged, foreign
+    interpreter and malformed bytecode remain ordinary hashed inputs.
+    """
+    if path.parent.name != "__pycache__" or path.suffix != ".pyc":
+        return False
+    match = re.fullmatch(
+        rf"(.+)\.{re.escape(sys.implementation.cache_tag or '')}(?:\.opt-([12]))?\.pyc",
+        path.name,
+    )
+    if match is None:
+        return False
+    source = path.parent.parent / (match[1] + ".py")
+    try:
+        raw = path.read_bytes()
+        if raw[:4] != importlib.util.MAGIC_NUMBER:
+            return False
+        code = marshal.loads(raw[16:])
+        return isinstance(code, types.CodeType) and code == compile(
+            source.read_bytes(), code.co_filename, "exec", dont_inherit=True,
+            optimize=int(match[2] or 0),
+        )
+    except (OSError, ValueError, TypeError, EOFError, SyntaxError):
+        return False
+
+
 def bundle_digest(bundle) -> str:
-    """Hash every file the bundle's ring directories hold, path and bytes."""
+    """Hash ring content, excluding bytecode proven derived from its source."""
 
     root = Path(bundle).expanduser()
     digest = hashlib.sha256()
@@ -54,6 +87,8 @@ def bundle_digest(bundle) -> str:
             (item for item in base.rglob("*") if item.is_file()),
             key=lambda item: item.relative_to(root).as_posix(),
         ):
+            if _derived_bytecode(path):
+                continue
             digest.update(path.relative_to(root).as_posix().encode("utf-8"))
             digest.update(b"\0")
             try:

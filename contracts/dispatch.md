@@ -165,8 +165,10 @@ ticket's status and a retired but unresolved outcome remain join-owned.
 
 ## Inspection
 
-`tickets.py show <run> <id> --pins` resolves the ticket's pins through its run
-project and public workflow owner, including ordinary trust and package checks.
+`tickets.py show <run> <id> --pins` resolves the ticket's pins through its sealed
+`pin_origin` and public workflow owner, including ordinary trust and package
+checks. A legacy ticket without an origin uses its recorded run project.
+An origin never bypasses a changed assignment seal or supplies trust itself.
 Standard pins hash framed relative paths and normalized directory-tree bytes,
 so a raw `STANDARD.md` hash is a different identity. A private path grants no
 scope. `show --section <Goal|Context|Details|Report> --offset <n> --limit <n>`

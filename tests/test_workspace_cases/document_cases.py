@@ -119,6 +119,21 @@ class TestTheTrunkDispatchesAndLandsADocumentItem(unittest.TestCase):
         state = parse_canonical_json(data["dispatch_v1"])
         return state["attempts"][0]["assignment_seal"]
 
+    def test_missing_document_output_refuses_before_opening_an_attempt(self):
+        missing = self.tree / "new-report"
+        goal = self.tree / "goal.md"
+        goal.write_text("Write the report.\n", encoding="utf-8")
+        result = retired_commands.run([
+            "do", "run", "--standard", CONTENT_STANDARD,
+            "--workspace-adapter", "document-tree", "--goal-file", str(goal),
+            "--workspace", str(missing),
+        ])
+        self.assertEqual("workspace-target-invalid", result.get("code"), result)
+        path = self.sink / "tickets" / "run" / (result["id"] + ".md")
+        data = tickets._parse_frontmatter(path.read_text(encoding="utf-8"))
+        self.assertNotIn("dispatch_v1", data)
+        self.assertFalse(missing.exists())
+
     def test_a_content_standard_ticket_dispatches_and_lands_unisolated(self):
         self.command(
             "new", "run", "T", "--executor", "orch-do",

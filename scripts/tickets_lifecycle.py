@@ -132,9 +132,15 @@ def _cmd_show(rest):
     if pins:
         if __package__:
             from .tickets_pins import inspect_ticket_pins
+            from .tickets_generations import seal_findings
         else:
             from tickets_pins import inspect_ticket_pins
-        return inspect_ticket_pins(run, ticket_id, _parse_frontmatter(text))
+            from tickets_generations import seal_findings
+        data = _parse_frontmatter(text)
+        findings = seal_findings(ticket_id, text) if data.get('assignment_seal') else []
+        if findings:
+            return {'error': 'ticket assignment does not match its seal', 'findings': findings}
+        return inspect_ticket_pins(run, ticket_id, data)
     loaded = _load_ticket(path)
     if 'error' in loaded:
         return {'error': loaded['error']}
