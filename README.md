@@ -20,7 +20,7 @@ codex plugin marketplace add "/absolute/path/to/orchflows-light"
 codex plugin add orchflows-light@orchflows-light-local
 ```
 
-These commands update native Codex configuration. In CLI/IDE, select a skill with `/skills` or `$make-and-review`; use the skill picker in the app. See [host details](docs/native-hosts.md) for availability and updates.
+These commands update native Codex configuration. In CLI/IDE, select a skill with `/skills` or `$orchflows-light:make-and-review`; use the skill picker in the app. See [host details](docs/native-hosts.md) for availability and updates.
 
 **Claude Code:** load for this session without installing:
 
@@ -28,7 +28,7 @@ These commands update native Codex configuration. In CLI/IDE, select a skill wit
 claude --plugin-dir "/absolute/path/to/orchflows-light"
 ```
 
-Then try `/orchflows-light:make-and-review Fix the failing export under the Code standard.` Claude namespaces plugin skills; Codex uses its native skill selection. [Codex packaging](https://developers.openai.com/plugins/build/plugins), [Codex skills](https://developers.openai.com/codex/skills), [Claude plugins](https://code.claude.com/docs/en/plugins).
+Then try `/orchflows-light:make-and-review Fix the failing export under the Code standard.` Both plugins expose namespaced skill names; invocation syntax differs by host. [Codex packaging](https://developers.openai.com/plugins/build/plugins), [Codex skills](https://developers.openai.com/codex/skills), [Claude plugins](https://code.claude.com/docs/en/plugins).
 
 ## Standards
 
