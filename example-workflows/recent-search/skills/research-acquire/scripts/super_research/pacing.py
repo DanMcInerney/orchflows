@@ -11,9 +11,9 @@ and the governor is what keeps that safe: every read takes its origin's lock
 before it waits, sends, or charges, so no origin ever sees two of this
 package's reads in flight, and two origins never wait on each other. The lock
 is the host's, not the route's, because an origin's ceiling is per host —
-Reddit's shreddit partials and its RSS feed share one bucket. The pacing
-itself stays per route (per host, on the open route), which is where the
-measured numbers live. This is the one module that holds a lock; the pool that
+Reddit's shreddit partials and its RSS feed share one lock. Pacing uses the
+route's declared budget; RSS feed and search share its measured origin bucket,
+while the open route is metered per host. This module holds the locks; the pool that
 hands it concurrent reads is the runner's.
 
 Reliability bar: nothing here reaches the network or the filesystem. The
@@ -134,7 +134,7 @@ class RateGovernor:
         self._clock = clock
         self._sleep = sleep
         self._origin_us = tick_us(clock)
-        # Per budget key — the route, or the route and host on the open route:
+        # Per measured budget key, including shared RSS and open-route hosts:
         # the arrival time the declared interval implies, and the moment a
         # refusal's cooldown ends. They are separate because a burst allowance
         # may be spent against the first and never against the second — an
@@ -322,7 +322,7 @@ class RateGovernor:
 def paced_carrier(
     carrier: Optional[transport.Transport] = None,
     clock: Callable[[], float] = time.monotonic,
-    sleep: Callable[[float], None] = time.sleep,
+    sleep: Optional[Callable[[float], None]] = None,
 ) -> RateGovernor:
     """The carrier a run gets when it does not build one: paced, and remembering.
 
@@ -343,7 +343,7 @@ def paced_carrier(
         transport.Transport() if carrier is None else carrier,
         run_cache=cache.RunCache(clock=clock),
         clock=clock,
-        sleep=sleep,
+        sleep=time.sleep if sleep is None else sleep,
     )
 
 

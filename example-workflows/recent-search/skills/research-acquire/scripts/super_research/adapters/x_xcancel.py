@@ -58,7 +58,8 @@ class _Tweets(HTMLParser):
         self.rows = []
         self.row = None
         self.root_depth = 0
-        self.timeline = False
+        self.closed_timelines = 0
+        self.malformed = False
         self.more = False
         self.empty = False
         self.title = ""
@@ -67,16 +68,18 @@ class _Tweets(HTMLParser):
         attrs = dict(attrs)
         classes = set((attrs.get("class") or "").split())
         ancestors = set().union(*(entry[1] for entry in self.stack)) if self.stack else set()
-        if "timeline" in classes:
-            self.timeline = True
-        if "show-more" in classes:
+        quoted = bool({"quote", "quote-link", "quote-big"} & (classes | ancestors))
+        inside = "timeline" in ancestors and not quoted
+        if "show-more" in classes and inside:
             self.more = True
-        if "timeline-none" in classes:
+        if "timeline-none" in classes and inside and self.row is None:
             self.empty = True
-        if "timeline-item" in classes and self.row is None:
+        if "timeline-item" in classes and not quoted and not inside:
+            self.malformed = True
+        if "timeline-item" in classes and inside and self.row is None:
             self.row = {"path": "", "author": "", "body": "", "time": "", "stats": []}
             self.root_depth = len(self.stack)
-        if self.row is not None and not ({"quote", "quote-link", "quote-big"} & (classes | ancestors)):
+        if self.row is not None and not quoted:
             if tag == "a" and ("tweet-link" in classes or "tweet-date" in ancestors):
                 href = attrs.get("href") or ""
                 parsed = urlsplit(href)
@@ -96,6 +99,10 @@ class _Tweets(HTMLParser):
     def handle_endtag(self, tag):
         for index in range(len(self.stack) - 1, -1, -1):
             if self.stack[index][0] == tag:
+                removed = self.stack[index:]
+                if index != len(self.stack) - 1 and any("timeline" in entry[1] for entry in self.stack):
+                    self.malformed = True
+                self.closed_timelines += sum("timeline" in entry[1] for entry in removed)
                 del self.stack[index:]
                 if self.row is not None and len(self.stack) <= self.root_depth:
                     self.rows.append(self.row)
@@ -162,10 +169,14 @@ def _page(response, descriptor, selected=""):
     records = tuple(record for position, row in enumerate(parser.rows)
                     for record in (_record(row, position),) if record is not None
                     and (not selected or row["path"] == selected))
+    unread = (parser.malformed or parser.row is not None
+              or any("timeline" in classes for _, classes in parser.stack)
+              or any(not row["path"] for row in parser.rows))
     if records:
-        return answer(records, "ok", ("recall_window_partial",) if parser.more else (),
+        losses = (("schema_drift",) if unread else ()) + (("recall_window_partial",) if parser.more else ())
+        return answer(records, "partial" if unread else "ok", losses,
                       ("Pagination and search window filtering are unverified; one page only",))
-    if not selected and parser.timeline and parser.empty and not parser.rows:
+    if not selected and parser.closed_timelines and parser.empty and not parser.rows and not unread:
         return answer(outcome="empty")
     return answer(loss=("schema_drift",), warnings=("No readable requested status or recognized empty timeline",))
 

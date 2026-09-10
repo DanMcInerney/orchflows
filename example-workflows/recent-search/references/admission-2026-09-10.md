@@ -3,8 +3,8 @@
 Observed 2026-09-10 in the B1.1 candidate. The root owns independent review,
 installation and the mandatory uncached gate over the joined commit.
 
-The regression fixture
-`tests/test_3d_browser_game_admission.py::ThreeDBrowserGameAdmissionTest.test_discovery_calls_public_recent_search_with_its_own_private_scope`
+The regression fixture in module tests.test_3d_browser_game_admission,
+ThreeDBrowserGameAdmissionTest.test_discovery_calls_public_recent_search_with_its_own_private_scope,
 copies the whole research and 3D game packages into a disposable Git project,
 uses a separate state/worktree root, checks and trusts that copied ring, and
 drives the real ticket admission doors:
@@ -28,7 +28,7 @@ Final observed checks:
 
 | Check | Result |
 | --- | --- |
-| `tools/run_super_research_tests.py` | Exit 0; 1,486 tests, three existing optional host-mirror skips. The normal runner uses Python 3.9. |
+| `python tools/run_super_research_tests.py` | Exit 0; 1,486 tests, three existing optional host-mirror skips. The normal runner uses Python 3.9. |
 | Scoped package/ring/frame/admission/runner modules | Exit 0; 99 tests. |
 | Reader workflow catalog/summary, video package and serial manifest modules | Exit 0; 37 tests. |
 | `tools/run_serial_compat.py --write-manifest` | Exit 0; 2,440 identities, 12 unchanged sentinels, 455 mutation owners. Two new context-managed restorations manually ruled `selected-module-boundary`, subject to independent review. |

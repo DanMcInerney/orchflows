@@ -40,6 +40,40 @@ def acquire(adapter, query, body, *, status=200, kind="discovery", target=None, 
 
 
 class RecentRoutesTests(unittest.TestCase):
+    def test_xcancel_empty_requires_a_closed_timeline_with_no_unread_rows(self):
+        empty = '<div class="timeline-none">No items found</div>'
+        cases = (
+            ('<div class="timeline">' + empty + '</div>', "empty", ()),
+            ('<div class="timeline"></div><footer class="timeline-none">Footer</footer>', "failed", ("schema_drift",)),
+            ('<div class="timeline">' + empty + '<div class="timeline-item"><div class="tweet-content">Unfinished', "failed", ("schema_drift",)),
+            ('<div class="timeline">' + empty, "failed", ("schema_drift",)),
+            (TWEET.removeprefix('<div class="timeline">').removesuffix('</div>'), "failed", ("schema_drift",)),
+        )
+        for body, outcome, loss in cases:
+            with self.subTest(body=body):
+                artifact, _ = acquire("x_xcancel", "search:python", body)
+                self.assertEqual(artifact.outcome, outcome)
+                self.assertEqual(artifact.loss, loss)
+                self.assertFalse(artifact.records)
+
+    def test_xcancel_keeps_readable_rows_and_reports_unreadable_siblings(self):
+        for sibling in ('<div class="timeline-item"><div class="tweet-content">Missing identity</div></div>',
+                        '<div class="timeline-item"><a class="tweet-link" href="/alice/status/456"></a>'):
+            body = TWEET.removesuffix('</div>') + sibling
+            if sibling.endswith('</div>'):
+                body += '</div>'
+            with self.subTest(sibling=sibling):
+                artifact, _ = acquire("x_xcancel", "search:python", body)
+                self.assertEqual(artifact.outcome, "partial")
+                self.assertIn("schema_drift", artifact.loss)
+                self.assertEqual([record.native_item_id for record in artifact.records], ["123"])
+
+    def test_xcancel_selected_status_ignores_other_readable_statuses(self):
+        body = TWEET.removesuffix('</div>') + TWEET.replace('/123', '/456').removeprefix('<div class="timeline">')
+        artifact, _ = acquire("x_xcancel", "", body, kind="hydration", target="status:alice/123")
+        self.assertEqual([record.native_item_id for record in artifact.records], ["123"])
+        self.assertEqual(artifact.outcome, "ok")
+
     def test_xcancel_search_reads_only_the_post_and_exact_counts(self):
         artifact, carrier = acquire("x_xcancel", "search:python", TWEET, window=True)
         self.assertEqual(len(carrier.calls), 1)

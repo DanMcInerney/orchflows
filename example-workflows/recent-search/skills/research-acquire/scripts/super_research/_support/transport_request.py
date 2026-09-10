@@ -11,6 +11,8 @@ from ..routes import (
     JSON_CONTENT_TYPE,
     OPEN_ORIGIN,
     QUERY_PLACEMENT,
+    REDDIT_FEED_ROUTE,
+    REDDIT_SEARCH_FEED_ROUTE,
     PublicClientCredential,
     RouteConstant,
 )
@@ -46,8 +48,11 @@ def budget_key(
     route_constants: Mapping[str, RouteConstant],
     origin_key_fn=origin_key,
 ) -> str:
-    """The route, or the open route and host, that pays for this read."""
+    """The measured budget paying for this read, separate from cache identity."""
 
+    # Reddit's RSS listing and search share the same measured origin ceiling.
+    if request.route_id in (REDDIT_FEED_ROUTE, REDDIT_SEARCH_FEED_ROUTE):
+        return REDDIT_FEED_ROUTE + "@" + origin_key_fn(request)
     if is_open_route(route_constant(request.route_id, route_constants)):
         return request.route_id + "@" + origin_key_fn(request)
     return request.route_id
