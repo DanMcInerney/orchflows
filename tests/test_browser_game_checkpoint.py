@@ -6,9 +6,9 @@ import unittest
 
 from tests._repo_root import ROOT
 SCHEMA_PATH = (
-    ROOT / "example-workflows" / "references" / "browser-game-checkpoint.schema.json"
+    ROOT / "example-workflows" / "3d-browser-game" / "references" / "browser-game-checkpoint.schema.json"
 )
-WORKFLOW_PATH = ROOT / "example-workflows" / "browser-game" / "SKILL.md"
+WORKFLOW_PATH = ROOT / "example-workflows" / "3d-browser-game" / "workflows" / "brief-intake" / "SKILL.md"
 
 DISPOSITIONS = {
     "advance",
@@ -39,7 +39,7 @@ class BrowserGameCheckpointContractTests(unittest.TestCase):
     def test_the_workflow_owns_and_links_the_checkpoint_contract(self):
         checkpoint = WORKFLOW_PATH.read_text(encoding="utf-8")
 
-        self.assertIn("../references/browser-game-checkpoint.schema.json", checkpoint)
+        self.assertIn("../../references/browser-game-checkpoint.schema.json", checkpoint)
         self.assertEqual(
             {"PJ-05", "PJ-08", "PJ-24", "PJ-25"},
             set(self.schema["x-governing-identities"]),

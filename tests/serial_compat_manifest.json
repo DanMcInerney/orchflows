@@ -685,6 +685,7 @@
    "test_installer.TestUnreadableReceipt.test_install_refuses_rather_than_overwriting_a_corrupt_receipt",
    "test_installer.TestUnreadableReceipt.test_load_json_returns_none_only_for_an_absent_file",
    "test_installer.TestUnreadableReceipt.test_uninstall_refuses_a_corrupt_receipt_rather_than_finding_none",
+   "test_judge_carriage.ReviewCarriageTest.test_recipe_preserves_context_adapter_method_and_private_pins",
    "test_lens_key.LensKeyTest.test_a_judge_is_keyed_by_the_one_kind_on_its_context",
    "test_lens_key.LensKeyTest.test_a_judge_over_two_kinds_gets_no_key",
    "test_lens_key.LensKeyTest.test_a_making_do_citing_a_predecessor_keeps_its_adapter_kind",
@@ -940,8 +941,6 @@
    "test_reliability_workspace.ReliabilityWorkspaceTests.test_tracked_dirt_and_lock_refuse_without_false_retirement",
    "test_reliability_workspace.ReliabilityWorkspaceTests.test_two_runs_share_the_resolved_target_lock_with_bounded_wait",
    "test_reliability_workspace.ReliabilityWorkspaceTests.test_unknown_scratch_and_ignored_runtime_are_retained",
-   "test_review_delivery_carriage.ReviewCarriageTest.test_independent_game_and_video_stage_commands_forward_effective_rounds",
-   "test_review_delivery_carriage.ReviewCarriageTest.test_recipe_preserves_context_adapter_method_and_private_pins",
    "test_ring_adapters.BodyTests.test_a_generated_body_carries_no_preprocessing_construct",
    "test_ring_adapters.BodyTests.test_a_workflow_adapter_points_at_its_body_and_is_manual_only",
    "test_ring_adapters.BodyTests.test_an_orchflows_only_field_never_reaches_a_host",
@@ -1110,6 +1109,7 @@
    "test_self_improve_entry.SelfImproveEntryTests.test_installed_collection_resolves_public_trace_facade",
    "test_self_improve_entry.SelfImproveEntryTests.test_plan_preserves_surfaces_arguments_and_one_canonical_identity",
    "test_self_improve_entry.SelfImproveEntryTests.test_receipt_reinstall_stale_cleanup_and_uninstall_own_entries",
+   "test_self_improve_entry.SelfImproveEntryTests.test_upgrade_retires_managed_skills_without_deleting_custom_files",
    "test_self_improve_shapes.DiagnosticShapes.test_correlation_keys_retain_invalid_identities_with_named_gaps",
    "test_self_improve_shapes.DiagnosticShapes.test_malformed_json_fields_remain_partial_retained_observations",
    "test_self_improve_shapes.DiagnosticShapes.test_nested_host_content_preserves_known_text_tools_and_declares_gaps",
@@ -1434,17 +1434,10 @@
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_retired_outcome_still_requires_join_and_live_retry_refuses_cancellation",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_sections_page_long_report_without_repeating_history",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_ticket_pin_inspection_uses_tree_digest_and_refuses_private_path_scope",
-   "test_ticket_review.ReviewPolicyTest.test_cli_refuses_invalid_policy_without_issuing_a_ticket",
-   "test_ticket_review.ReviewPolicyTest.test_default_exhaustion_nested_wrapper_and_resume_admission",
-   "test_ticket_review.ReviewPolicyTest.test_dispatch_replay_keeps_the_reserved_review_round",
-   "test_ticket_review.ReviewPolicyTest.test_explicit_stages_and_independent_research",
-   "test_ticket_review.ReviewPolicyTest.test_failed_repair_predicate_closes_blocked_without_auto_successor",
-   "test_ticket_review.ReviewPolicyTest.test_finite_and_until_pass_count_critiques_and_keep_criteria",
-   "test_ticket_review.ReviewPolicyTest.test_generated_done_repair_ancestry_survives_nested_and_resumed_admission",
-   "test_ticket_review.ReviewPolicyTest.test_invalid_rounds_cross_owner_reference_and_changed_criteria",
-   "test_ticket_review.ReviewPolicyTest.test_parallel_repairs_then_scoped_verification_and_no_second_wave",
-   "test_ticket_review.ReviewPolicyTest.test_policy_negative_oracle_can_fail",
-   "test_ticket_review.ReviewPolicyTest.test_repair_subtree_cannot_reset_or_review",
+   "test_ticket_review.DirectReviewTest.test_historical_review_phase_does_not_force_failed_done_closed",
+   "test_ticket_review.DirectReviewTest.test_known_blocker_can_be_repaired_after_verification",
+   "test_ticket_review.DirectReviewTest.test_repeated_direct_judges_keep_pins_without_policy_fields",
+   "test_ticket_review.DirectReviewTest.test_retired_review_flags_refuse_without_issuing_work",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_complete_dependency_leaves_its_downstream_waiting_on_nothing",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_assignment_is_issued_and_reaches_generation_stamping",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_long_ordinary_member_is_issued_like_any_other",
@@ -1562,11 +1555,11 @@
    "test_validate.TestVocabularyTermsHaveConsumers.test_the_suite_is_not_a_consumer",
    "test_validator.TestCompositionProtocolAdmission.test_a_script_module_named_for_a_composition_is_refused_by_boundary",
    "test_validator.TestCompositionProtocolAdmission.test_authoring_standard_states_the_protocol_boundary_and_probe_limits",
-   "test_validator.TestCompositionProtocolAdmission.test_browser_game_is_the_one_dated_visible_exception",
+   "test_validator.TestCompositionProtocolAdmission.test_game_intake_package_needs_no_protocol_exception",
    "test_validator.TestCompositionProtocolAdmission.test_package_link_may_cite_canonical_law_but_not_another_path",
    "test_validator.TestCompositionProtocolAdmission.test_package_owned_schema_fixture_and_script_are_admitted",
    "test_validator.TestCompositionProtocolAdmission.test_package_script_and_reference_fixture_are_admitted_without_exception",
-   "test_validator.TestCompositionProtocolAdmission.test_removing_the_browser_game_entry_exposes_its_protocol_artifacts",
+   "test_validator.TestCompositionProtocolAdmission.test_shared_game_protocol_files_have_no_retired_exception",
    "test_validator.TestCompositionProtocolAdmission.test_shared_schema_is_refused_outside_its_public_package",
    "test_validator.TestDomainBlindnessAdmission.test_a_canonical_standard_name_in_scripts_is_refused",
    "test_validator.TestDomainBlindnessAdmission.test_a_standard_owned_skill_name_in_tools_is_refused",
@@ -2484,6 +2477,14 @@
    "seams": [
     "environment",
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.browser_game_intake_probe",
+   "owner": "observe_intake_boundary",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -4061,6 +4062,15 @@
    ]
   },
   {
+   "module": "tests.test_judge_carriage",
+   "owner": "ReviewCarriageTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
    "module": "tests.test_lifecycle_render",
    "owner": "LifecycleTableTest.test_a_forged_caller_row_for_an_unrouted_event_is_refused",
    "restoration": "selected-module-boundary",
@@ -4623,15 +4633,6 @@
   {
    "module": "tests.test_reliability_workspace",
    "owner": "ReliabilityWorkspaceTests.test_two_runs_share_the_resolved_target_lock_with_bounded_wait",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch",
-    "threads"
-   ]
-  },
-  {
-   "module": "tests.test_review_delivery_carriage",
-   "owner": "ReviewCarriageTest.setUp",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch",
@@ -5415,15 +5416,7 @@
   },
   {
    "module": "tests.test_ticket_review",
-   "owner": "ReviewPolicyTest.test_generated_done_repair_ancestry_survives_nested_and_resumed_admission",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_ticket_review",
-   "owner": "ReviewPolicyTest.test_policy_negative_oracle_can_fail",
+   "owner": "DirectReviewTest.test_historical_review_phase_does_not_force_failed_done_closed",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"

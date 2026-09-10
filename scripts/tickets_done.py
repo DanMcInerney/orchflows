@@ -137,14 +137,6 @@ def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
         "isolation": "none", "bound": source.get("bound"),
         "root_generation": source.get("root_generation"),
     }
-    if source.get("review_owner"):
-        fields.update(parent=depends_on, review_owner=source["review_owner"],
-                      review_rounds=source["review_rounds"])
-        if source.get("review_of"):
-            fields.update(review_phase="verify", review_of=source["review_of"])
-        else:
-            fields.update(review_phase="independent",
-                          review_independent="sealed done criterion verification")
     rendered = _render_ticket(fields, [
         ("Goal", goal),
         ("Context", "\n".join(f"- {line}" for line in context)),
@@ -305,9 +297,6 @@ def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict
         "depends_on": [],
         "isolation": "none", "bound": source.get("bound"),
         "root_generation": source.get("root_generation"),
-        **({"parent": ticket_id, "review_owner": source["review_owner"],
-            "review_rounds": source["review_rounds"]}
-           if source.get("review_owner") else {}),
     }, [
         ("Goal", f"Make `{ticket_id}`'s done predicate pass on the integrated "
                  f"tree: `{reading['command']}` exits {reading['exit']} there now."),
@@ -392,8 +381,6 @@ def resolve(run: str, ticket_id: str, run_dir, path, data: dict, tree,
     decision = {"form": reading["form"], "reading": reading, "evidence": evidence}
     if reading["done"]:
         return dict(decision, status=DELIVERED_STATE), None
-    if data.get("review_phase") in {"repair", "verify"}:
-        return dict(decision, status="blocked", action="close"), None
     action = advance_action(run_dir, ticket_id, REPAIR_MARKER, False)
     if action["action"] != "arm":
         return dict(decision, status=action["status"], action="close"), None

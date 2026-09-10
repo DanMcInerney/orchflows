@@ -39,7 +39,7 @@ class SelfImproveEntryTests(unittest.TestCase):
         return {
             path: (kind, text)
             for _, kind, path, _, text in _planned_files(plan)
-            if path.stem == "orch-self-improve" or path.parent.name == "orch-self-improve"
+            if kind in {"adapter", "prompt", "codex-skill", "grok-skill"} and (path.stem == "orch-self-improve" or path.parent.name == "orch-self-improve")
         }
 
     def test_plan_preserves_surfaces_arguments_and_one_canonical_identity(self):
@@ -51,13 +51,10 @@ class SelfImproveEntryTests(unittest.TestCase):
             self.home / "grok/skills/orch-self-improve/SKILL.md": "grok-skill",
         }
         self.assertEqual(expected, {path: kind for path, (kind, _) in entries.items()})
-        target = self.plan.lib_home / "example-workflows/self-improve/SKILL.md"
+        target = self.plan.lib_home / "example-workflows/orch-self-improve/SKILL.md"
         for path, (kind, text) in entries.items():
             self.assertIn(str(target), text)
-            self.assertIn("--workflow self-improve", text)
-            self.assertNotIn("--workflow orch-self-improve", text)
-            self.assertIn("arguments unchanged", text)
-            self.assertIn("explicit user request", text)
+            self.assertNotIn("--workflow self-improve", text)
             if kind == "prompt":
                 self.assertIn("$ARGUMENTS", text)
             else:
@@ -72,12 +69,15 @@ class SelfImproveEntryTests(unittest.TestCase):
         self.assertEqual(entries, self.entries(install.build_plan()))
         for surface in (self.plan.claude_adapters, self.plan.codex_prompts,
                         self.plan.codex_skills, self.plan.grok_skills):
-            self.assertTrue(any(p.stem == "self-improve" or p.parent.name == "self-improve" for p, _ in surface))
-        self.assertFalse(any(p.parent.name == "orch-self-improve" for p, _ in self.plan.by_name))
+            self.assertFalse(any(p.stem == "self-improve" or p.parent.name == "self-improve" for p, _ in surface))
+        self.assertTrue(any(p.parent.name == "orch-self-improve" for p, _ in self.plan.by_name))
         inventory = rings.inventory(("workflow",), home=self.home / "ring", lib=install.REPO_ROOT)
         names = [r["name"] for r in inventory]
-        self.assertEqual(1, names.count("self-improve"))
-        self.assertNotIn("orch-self-improve", names)
+        self.assertEqual(1, names.count("orch-self-improve"))
+        self.assertNotIn("self-improve", names)
+        resolved = rings.resolve("workflow", "orch-self-improve", home=self.home / "ring", lib=install.REPO_ROOT)
+        self.assertEqual("lib", resolved["ring"])
+        self.assertEqual("orch-self-improve", resolved["name"])
 
     def test_receipt_reinstall_stale_cleanup_and_uninstall_own_entries(self):
         # Apply only the generated seam, avoiding runtime/frontend installation.
@@ -110,6 +110,31 @@ class SelfImproveEntryTests(unittest.TestCase):
                                       project=world["project"], lib=world["lib"])
                     self.assertEqual("reserved-name", caught.exception.code)
 
+    def test_upgrade_retires_managed_skills_without_deleting_custom_files(self):
+        old = install.Plan(lib_home=self.plan.lib_home, scope_home=self.plan.scope_home,
+                           bin_dir=self.plan.bin_dir, receipt_path=self.plan.receipt_path)
+        fields = ("claude_adapters", "codex_prompts", "codex_skills", "grok_skills")
+        retired = ("review-delivery", "browser-game", "self-improve")
+        for field in fields:
+            entries = [(p, t) for p, t in getattr(self.plan, field) if p in self.entries(self.plan)]
+            setattr(old, field, [(Path(str(p).replace("orch-self-improve", name)), t)
+                                for p, t in entries for name in retired])
+        install.apply_plan(old, accepted_source=install.resolve_source_commit())
+        keep = self.home / "codex/skills/self-improve/custom.md"
+        keep.write_text("user-owned content", encoding="utf-8")
+        current = install.Plan(lib_home=old.lib_home, scope_home=old.scope_home,
+                               bin_dir=old.bin_dir, receipt_path=old.receipt_path)
+        for field in fields:
+            setattr(current, field, [(p, t) for p, t in getattr(self.plan, field)
+                                     if p in self.entries(self.plan)])
+        install.apply_plan(current, accepted_source=install.resolve_source_commit())
+        for field in fields:
+            self.assertTrue(all(not path.exists() for path, _ in getattr(old, field)))
+        self.assertFalse((self.home / "codex/skills/review-delivery").exists())
+        self.assertFalse((self.home / "codex/skills/browser-game").exists())
+        self.assertEqual("user-owned content", keep.read_text(encoding="utf-8"))
+        self.assertTrue(all(path.is_file() for path in self.entries(current)))
+
     def test_installed_collection_resolves_public_trace_facade(self):
         import json
         import subprocess
@@ -135,7 +160,7 @@ class SelfImproveEntryTests(unittest.TestCase):
             'sources': [{'kind': 'codex', 'path': str(source)}],
             'projects': [], 'sessions': [], 'runs': [], 'descendants': True,
             'repair_bound': 2}), encoding='utf-8')
-        command = self.plan.lib_home / 'example-workflows/self-improve/scripts/self_improve.py'
+        command = self.plan.lib_home / 'example-workflows/orch-self-improve/scripts/self_improve.py'
         environment = dict(os.environ, ORCHFLOWS_STATE_HOME=str(self.home / 'sink'))
         result = subprocess.run([sys.executable, str(command), 'collect', '--selection', str(selection)],
                                 env=environment, capture_output=True, text=True, timeout=30)

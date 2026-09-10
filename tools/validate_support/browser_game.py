@@ -19,9 +19,9 @@ re = _common.re
 SKIPPED = _common.SKIPPED
 ROOT = _common.ROOT
 
-TRACEABILITY_RELATIVE = Path("example-workflows/browser-game/traceability.json")
-INTAKE_POLICY_RELATIVE = Path("example-workflows/references/browser-game-intake-policy.json")
-INSTANCE_FIXTURES_RELATIVE = Path("example-workflows/references/browser-game-instance-fixtures.json")
+TRACEABILITY_RELATIVE = Path("example-workflows/3d-browser-game/workflows/brief-intake/traceability.json")
+INTAKE_POLICY_RELATIVE = Path("example-workflows/3d-browser-game/references/browser-game-intake-policy.json")
+INSTANCE_FIXTURES_RELATIVE = Path("example-workflows/3d-browser-game/references/browser-game-instance-fixtures.json")
 SPECIFICATION_IDENTITY = (
     "document:sha256:e147d8609f74d25cf913b313d360c6fc1692dff2ed0f989d8f1168adee9a52e8"
 )
@@ -35,12 +35,12 @@ MARKER_RE = re.compile(
 SURFACES = ("implementation", "test", "help")
 INVENTORY_GLOBS = {
     "implementation": (
-        "example-workflows/browser-game/*.md",
-        "example-workflows/browser-game/*.json",
+        "example-workflows/3d-browser-game/workflows/brief-intake/*.md",
+        "example-workflows/3d-browser-game/workflows/brief-intake/*.json",
         "scripts/browser_game_validate.py",
     ),
     "test": ("tests/test_browser_game*.py",),
-    "help": ("example-workflows/browser-game/*.md",),
+    "help": ("example-workflows/3d-browser-game/workflows/brief-intake/*.md",),
 }
 
 

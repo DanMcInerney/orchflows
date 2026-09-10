@@ -22,7 +22,7 @@ materials; polish cannot compensate for a missing mechanic.
 
 Run scoped QA separately from ordinary-input play and preserve both identities:
 
-    tickets.py judge <run> --review-independent "scoped increment QA before stage acceptance" --standard threejs-browser-game --parent <frame> --artifacts <candidate-artifact> --goal-file <qa-goal>
+    tickets.py judge <run> --standard threejs-browser-game --parent <frame> --artifacts <candidate-artifact> --goal-file <qa-goal>
     tickets.py do <run> --standard browser-game-playtest --parent <frame> --goal-file <play-goal>
 
 QA reports reproducible blockers and regression checks. Play records

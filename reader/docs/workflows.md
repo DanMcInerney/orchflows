@@ -8,12 +8,12 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 
 ### Library workflow skills
 
-- [browser-game](../../example-workflows/browser-game/SKILL.md) — `callable`; turn an incomplete browser-game brief into evidence-bound checkpoints and standard-stamped successor delivery.
+- [3d-browser-game](../../example-workflows/3d-browser-game/SKILL.md) — `callable`; turn an incomplete browser-game brief into evidence-bound checkpoints and standard-stamped successor delivery.
 - [benchmaker](../../example-workflows/benchmaker/SKILL.md) — `callable`; build and qualify a runnable benchmark.
 - [evolve](../../example-workflows/evolve/SKILL.md) — `callable`; run bounded candidate generations against a frozen evaluation; manual only.
 - [drift-canary](../../example-workflows/drift-canary/SKILL.md) — `callable`; detect drift after a model, effort, or host change.
 - [renovate](../../example-workflows/renovate/SKILL.md) — `callable`; improve a workspace without a user-supplied spec.
-- [self-improve](../../example-workflows/self-improve/SKILL.md) — `callable`; turn friction and run evidence into one qualified, landed proposal.
+- [orch-self-improve](../../example-workflows/orch-self-improve/SKILL.md) — `callable`; turn friction and run evidence into one qualified, landed proposal.
 - [skill-tournament](../../example-workflows/skill-tournament/SKILL.md) — `callable`; evolve one skill against its prequalified benchmark.
 
 ### T1 workflow skills

@@ -40,12 +40,17 @@ this one has landed, and that landing is the checkpoint: what the level was
 cut to make either exists in `workspace` or the wave is repeated, never
 skipped past.
 
-**Review.** Invoke `review-delivery` in this existing frame over the
-joined tip, with `goal`, evidence, `judge-standard` and `narrowings`, `workspace`,
-`bound`, outside `probe`, original `context-file`, `workspace-adapter` git,
-and `isolation` required. The delivery parent's policy governs nested builds.
-An unresolved review returns its disposition and best artifact; it never
-opens an automatic successor review.
+**Review**, one independent judge over the joined tip:
+
+    tickets.py judge <run> --standard <judge-standard> [--standard <narrowing> ...]
+      --parent <frame> --artifacts git:<tip> --goal-file <review-goal>
+      [--context-file <context-file>] --workspace <workspace>
+      --workspace-adapter git --isolation required --bound <bound>
+
+Carry goal, evidence and pins. Repair blockers through
+`tickets.py do` in isolated calls with the findings and original Context; judge
+the changed seams at the joined identity. Continue required repairs within
+scope and bound, preserving unresolved findings when either prevents completion.
 
 Never: leave `workspace` off any call of this frame — the run's integration
 target is fixed by its first establishment, so a call that defaults it sends

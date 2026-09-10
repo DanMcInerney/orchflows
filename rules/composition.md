@@ -66,7 +66,8 @@
     is the method inside the kernel contract the ticket's `executor` names,
     which still binds Require, Never and Return. Neither is a call edge:
     nothing invokes them.
-13. Recurrence. A step that holds at least one callable and recurs across
+13. Recurrence. Ordinary making, judging, and repair use the kernel contracts directly;
+    repeated calls alone do not earn a workflow. For other recurrence, a step that holds at least one callable and recurs across
     two or more workflows, or whose run deserves its own journal, is a
     reusable workflow invoked by name; a step with no callable of its own
     is a sentence in the calling prose; a recurring sentence's wording is

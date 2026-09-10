@@ -13,7 +13,9 @@ places this evidence law in the ticket lifecycle.
    target has become a repair executor and cannot judge that changed identity.
 4. `orch-judge` owns blocker enumeration and root-cause synthesis. Its
    exclusions and ranking are the shared review model, not a standard variation.
-5. Ordinary delivery follows [review policy](../docs/review-policy.md).
+5. Review fixed artifacts through `orch-judge` with applicable pinned standards.
+   Repair known blockers through `orch-do` and verify the affected seams;
+   a failed verification is evidence for further authorized repair.
    Changed artifacts invalidate prior verdicts; verify only the evidence's
    affected coverage before claiming an updated result.
 6. A proof method must be able to contradict the claim it supports. For a test
@@ -25,8 +27,7 @@ places this evidence law in the ticket lifecycle.
    never a disposition an executor recorded for itself.
 7. Independence is the caller's own join: `land` reads Goal and Context
    against the fixed artifact and evidence, the disposition it records is
-   never the executor's own claim. Independent judging remains available
-   under the declared policy.
+   never the executor's own claim. Independent judging remains available.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the

@@ -8,6 +8,16 @@ Require: `brief`, `workspace`, package identity, and the parent frame journal.
 The brief plus explicit amendments remains the authority; empirical choices
 carry evidence and user-only uncertainty stays an exact question.
 
+First open `brief-intake` in this package with the original brief and workspace;
+pass the returned identity as `intake-frame`, then close it after the helper returns:
+
+    tickets.py frame-open <run> --parent <frame> --workflow brief-intake --goal-file <intake-goal>
+    tickets.py frame-close <run> <intake-frame> --done <intake-check>
+
+Carry its versioned decisions, experiments and checkpoint disposition into
+research and design. Only dependent work waits on an unresolved user-only
+question; the 3D stack is the public workflow's explicit constraint.
+
 Read the journal, then launch one independent `do` for each question cluster:
 
     tickets.py do <run> --standard orch-research --skill research-acquire --parent <frame> --goal-file <mechanics-goal>

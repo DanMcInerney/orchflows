@@ -114,7 +114,7 @@ with mock.patch.object(tickets, 'section_page', return_value={'error':'control'}
     try: improve_sources.ticket_records(text)
     except ValueError: pass
     else: raise AssertionError('bad facade page accepted')
-'''.replace('PATHS', repr([str(repo / 'scripts'), str(repo / 'example-workflows' / 'self-improve' / 'scripts')]))
+'''.replace('PATHS', repr([str(repo / 'scripts'), str(repo / 'example-workflows' / 'orch-self-improve' / 'scripts')]))
         with tempfile.TemporaryDirectory() as raw:
             result = subprocess.run([sys.executable, '-I', '-c', code], cwd=raw,
                                     capture_output=True, text=True, timeout=20)

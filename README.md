@@ -67,7 +67,7 @@ memorize.
     > research the top three auth libraries, then integrate the winner
     # two root tickets, the second waiting on the first, automatically
 
-    > browser-game this incomplete cooperative puzzle-game brief
+    > 3d-browser-game this incomplete cooperative puzzle-game brief
     # a versioned program record, evidence-bound checkpoint, and
     # standard-stamped successor plan without invented product defaults
 

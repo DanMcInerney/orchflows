@@ -1,9 +1,8 @@
 # Operating the bounded review
 
-`self-improve` is the single package identity. `/self-improve` and generated
-`/orch-self-improve` drive this body; mine-only means review. Its two private
+orch-self-improve is the single package identity. `/orch-self-improve` drives this body; mine-only means review. Its two private
 standards and scripts introduce no workflow engine. Use the interpreter from
-`orchflows env workflow self-improve` and resolve script paths against the
+`orchflows env workflow orch-self-improve` and resolve script paths against the
 public package. Imports reuse public trace/state_root facades in source and
 installed layouts.
 

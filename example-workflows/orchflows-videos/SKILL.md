@@ -9,9 +9,7 @@ Require: Orchflows marketing subject, audience, intent, duration in 1–120 seco
 authoring-owner pointer and per-call bound. Carry the brief in Goal and all
 constraints and the owner pointer in governed downstream Context.
 
-Resolve `rounds` through `docs/review-policy.md`; forward to this root and independent stages.
-
-    tickets.py frame-open <run> --goal-file <video-goal> --workflow orchflows-videos --review-rounds <rounds>
+    tickets.py frame-open <run> --goal-file <video-goal> --workflow orchflows-videos
       --context-file <video-context>
 
 Read [admission](references/admission.md) for inputs, installation and verifiers;
@@ -36,7 +34,6 @@ Compare both actual packets, preserving dated observations, viewing evidence,
 renderer comparison/constraints/pins, provenance and gaps without format conversion.
 
     tickets.py judge <run> --parent <frame> --standard orch-research
-      --review-independent "research coverage before production"
       --artifacts evidence:<market-id> --artifacts evidence:<renderer-id>
       --goal-file <coverage-goal> --context-file <research-context> --bound <per-call-bound>
 
@@ -54,7 +51,6 @@ identity and gaps, renderer constraints/pins, rights/provider limits, Git worksp
 per-call bound and outside direction verifier.
 
     tickets.py frame-open <run> --parent <frame> --goal-file <direction-goal> --workflow video-direction
-      --review-new-work "independent direction acceptance" --review-rounds <rounds>
       --context-file <direction-context>
 
 Drive each opened body.
@@ -63,7 +59,6 @@ Only its independently accepted direction Git commit and actual findings feed
 constraints, git workspace, owner pointer and per-call bound.
 
     tickets.py frame-open <run> --parent <frame> --goal-file <production-goal> --workflow video-production
-      --review-new-work "independent production acceptance" --review-rounds <rounds>
       --context-file <production-context>
 
 Preserve partial returns and unresolved listening/license findings; a technical

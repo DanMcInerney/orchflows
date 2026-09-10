@@ -21,7 +21,6 @@ SUMMARY_SCHEMA = "orchflows.workflow-summary.v1"
 CANONICAL_WORKFLOW_IDS = frozenset({
     "bakeoff",
     "benchmaker",
-    "browser-game",
     "checkpointed-build",
     "drift-canary",
     "3d-browser-game",
@@ -30,8 +29,7 @@ CANONICAL_WORKFLOW_IDS = frozenset({
     "orch-do",
     "orch-judge",
     "renovate",
-    "review-delivery",
-    "self-improve",
+    "orch-self-improve",
     "skill-tournament",
     "super-research",
     "tiktok-video",

@@ -215,11 +215,6 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
                 findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
     findings.extend(binding_findings(ticket_id, data))
     snapshot_ids = {ticket_id, *dependencies}
-    if __package__:
-        from .tickets_review import admission_findings
-    else:
-        from tickets_review import admission_findings
-    findings.extend(admission_findings(ticket_id, data, siblings))
     sealed_record = None
     runs_root = context.get("runs_root")
     run = str(data.get("run") or context.get("run") or "")

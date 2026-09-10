@@ -10,10 +10,11 @@ from tests._repo_root import ROOT
 POLICY_PATH = (
     ROOT
     / "example-workflows"
+    / "3d-browser-game"
     / "references"
     / "browser-game-intake-policy.json"
 )
-COMPOSITION = ROOT / "example-workflows" / "browser-game"
+COMPOSITION = ROOT / "example-workflows" / "3d-browser-game" / "workflows" / "brief-intake"
 
 USER_ONLY_CATEGORIES = {
     "product_intent",

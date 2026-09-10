@@ -22,7 +22,6 @@ ROLE_TABLE = {
     # is no role for a host surface to bind.
     "bakeoff": None,
     "checkpointed-build": None,
-    "review-delivery": None,
 }
 
 

@@ -47,9 +47,9 @@ class WorkflowCatalogTests(unittest.TestCase):
 
         self.assertEqual(
             [
-                "3d-browser-game", "benchmaker", "browser-game", "drift-canary", "evolve", "orch-build-workflow", "orchflows-videos", "renovate",
-                "self-improve", "skill-tournament", "super-research", "tiktok-video",
-                "bakeoff", "checkpointed-build", "orch-do", "orch-judge", "review-delivery",
+                "3d-browser-game", "benchmaker", "drift-canary", "evolve", "orch-build-workflow", "orch-self-improve",
+                "orchflows-videos", "renovate", "skill-tournament", "super-research", "tiktok-video",
+                "bakeoff", "checkpointed-build", "orch-do", "orch-judge",
             ],
             [workflow["id"] for workflow in projected],
         )
@@ -60,11 +60,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         by_id = {workflow["id"]: workflow for workflow in projected}
         # Both homes carry the same kind now: a library workflow and a
         # callable are alike skills, differing only in what their prose calls.
-        self.assertEqual("workflow-skill", by_id["browser-game"]["type"])
-        self.assertEqual("callable", by_id["browser-game"]["entry"])
+        self.assertEqual("workflow-skill", by_id["3d-browser-game"]["type"])
+        self.assertEqual("callable", by_id["3d-browser-game"]["entry"])
         self.assertEqual(
-            "Turn an incomplete browser-game brief into evidence-bound checkpoints and standard-stamped successor delivery.",
-            by_id["browser-game"]["description"],
+            "Build a 3D Three.js browser game through research, playable core gates, Blender production, and evidence-bound acceptance.",
+            by_id["3d-browser-game"]["description"],
         )
         self.assertEqual("workflow-skill", by_id["orch-do"]["type"])
         self.assertEqual("callable", by_id["orch-do"]["entry"])

@@ -81,8 +81,9 @@ class GradeSnapshotTest(unittest.TestCase):
     def test_the_legacy_review_protocol_is_rejected(self):
         """A reused module name must not restore the retired ledger protocol."""
         import importlib
-        from scripts import tickets_format, tickets_review
-        self.assertTrue(callable(tickets_review.prepare))
+        from scripts import tickets_format
+        with self.assertRaises(ModuleNotFoundError):
+            importlib.import_module("scripts.tickets_review")
         with self.assertRaises(ModuleNotFoundError):
             importlib.import_module("scripts.tickets_review_schema")
         legacy = ticket("B1", "orch-do").replace(

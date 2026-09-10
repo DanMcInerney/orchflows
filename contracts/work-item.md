@@ -64,16 +64,11 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   tests, and fixtures; generated caches and installed dependencies are
   omitted. Private item pins resolve through this stamped owner, so a global
   item with the same name cannot replace one after issue.
-- optional `review_owner`, `review_rounds` — one delivery owner and its sealed
-  positive finite critique allowance or `until_pass`. Descendants inherit both.
-  `review_phase` distinguishes `critique`, `repair`, `verify`, and explicit
-  `independent` judging; `review_round` is the critique's issued ordinal;
-  `review_of` names the same-owner critique whose findings are repaired or
-  verified. `review_new_work` records a frame's explicit new scope, forbidden
-  under repair/verification; `review_independent` records an independent
-  judging reason. These are sealed metadata, not a mutable budget. Admission
-  rechecks them; absent policy on historical sealed roots remains historical.
-  [Review policy](../docs/review-policy.md) owns command carriers and endings.
+- historical `review_owner`, `review_rounds`, `review_phase`, `review_of`,
+  `review_round`, `review_new_work`, `review_independent` remain readable and
+  covered by their original semantic seal. New calls issue none of them;
+  they impose no review allowance or repair restriction.
+
 - optional `done` — the canonical JSON done predicate, `{"form", "value"}`:
   form `command`, a deterministic command whose exit 0 is the verdict, or
   form `check`, a criterion no oracle covers, judged by one minted

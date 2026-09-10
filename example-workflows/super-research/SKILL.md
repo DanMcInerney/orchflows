@@ -26,7 +26,7 @@ rather than a silence.
 
 **Coverage loop, at most two rounds.**
 
-    tickets.py judge <run> --review-independent "standalone research coverage" --standard orch-research --parent <frame>
+    tickets.py judge <run> --standard orch-research --parent <frame>
       --artifacts evidence:<id> [--artifacts ...] --goal-file <coverage-goal>
 
 The coverage goal asks one thing: which sub-questions no record answers,

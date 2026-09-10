@@ -97,8 +97,8 @@ class HostAdapterRenderingTest(unittest.TestCase):
             rendered_profiles = install.load_role_profiles(adapters)
         expected_role_bindings = {
             "codex": {
-                "planner": {"model": "gpt-6-astra", "model_reasoning_effort": "high"},
-                "worker": {"model": "gpt-6-astra", "model_reasoning_effort": "low"},
+                "planner": {"model": "gpt-6-astra", "model_reasoning_effort": "xhigh"},
+                "worker": {"model": "gpt-6-astra", "model_reasoning_effort": "xhigh"},
             },
             "claude": {"model": "claude-opus-5", "effort": "high"},
             "grok": {"model": "grok-4.6", "effort": "high"},
@@ -358,7 +358,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn("developer_instructions", parsed)
                 if parsed["name"] == "orch_worker":
                     self.assertEqual("gpt-6-astra", parsed["model"])
-                    self.assertEqual("low", parsed["model_reasoning_effort"])
+                    self.assertEqual("xhigh", parsed["model_reasoning_effort"])
 
     def test_user_plan_writes_claude_adapters_and_codex_skill_stubs(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -378,7 +378,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             templates = install.discover_workflow_skills()
             template_names = {directory.name for directory, _, _ in templates}
             self.assertEqual(
-                len(install.discover_packages()) + len(templates) + 1,
+                len(install.discover_packages()) + len(templates),
                 len(plan.claude_adapters),
             )
             role_bearing = set()
@@ -401,11 +401,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertNotIn("role:", frontmatter)
                 self.assertNotIn("entry:", frontmatter)
                 self.assertNotIn("placeholders:", frontmatter)
-                if dest.parent.name == "orch-self-improve":
-                    self.assertNotIn("@", body)
-                    self.assertIn("--workflow self-improve", body)
-                    self.assertIn("disable-model-invocation: true", frontmatter)
-                elif dest.parent.name in template_names:
+                if dest.parent.name in template_names:
                     self.assertNotIn("@", body)
                     self.assertIn("is a workflow skill", body)
                     self.assertIn("invoke the skill", body)
@@ -425,7 +421,11 @@ class TestScopedHostConfiguration(unittest.TestCase):
             expected_stub_names = {
                 install.frontmatter_field(install.split_frontmatter(path.read_text(encoding="utf-8"))[0], "name")
                 for path in install.discover_packages()
-            } | template_names | {"orch-self-improve"}
+            } | template_names
+            self.assertEqual(
+                expected_stub_names,
+                {dest.parent.name for dest, _ in plan.claude_adapters},
+            )
             self.assertEqual(
                 expected_stub_names,
                 {dest.parent.name for dest, _ in plan.codex_skills},
@@ -437,7 +437,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(f"name: {dest.parent.name}", frontmatter)
                 self.assertIn("description:", frontmatter)
                 self.assertIn(str(expected_lib_path), body)
-                if dest.parent.name not in template_names | {"orch-self-improve"}:
+                if dest.parent.name not in template_names:
                     self.assertIn("follow it exactly.", body)
 
     def test_discover_workflow_skills_requires_a_named_workflow_body(self):
@@ -745,7 +745,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             self.assertEqual(
                 {path.parent.name for path in packages}
                 | {directory.name for directory, _, _ in install.discover_workflow_skills()}
-                | {"orch-self-improve"},
+               ,
                 set(bodies),
             )
             # Two spellings of one directory, because the installer writes

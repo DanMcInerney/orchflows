@@ -9,11 +9,15 @@ production asset manifests, immutable traceability and [final rubric](../../refe
 complete capture matrix, every required play account, qualified performance
 cells, QA result, and parent frame journal.
 
-Freeze the evidence index and invoke `review-delivery` in this existing final
-stage frame over the joined candidate, frozen goal and evidence, identical
-threejs-browser-game, browser-game-3d-asset, browser-game-interface and
-browser-game-playtest pins, workspace, `workspace-adapter` git, caller `context-file`,
-`isolation` required, bound and outside probe.
+Freeze the evidence index and judge the joined candidate independently:
+
+    tickets.py judge <run> --parent <frame> --standard threejs-browser-game
+      --standard browser-game-3d-asset --standard browser-game-interface
+      --standard browser-game-playtest --artifacts git:<final-commit>
+      --goal-file <gate-goal> --context-file <context-file> --workspace <workspace>
+      --workspace-adapter git --isolation required --bound <bound>
+
+Carry the frozen goal, evidence, identical pins and outside probe.
 
 The final gate requires a browser-served production build without developer
 tools, documented controls, every prompt-derived mechanic and state, approved
@@ -24,11 +28,10 @@ captures, and every declared performance cell. It scores
 presentation, play, prompt fidelity, and performance only from indexed
 evidence. Static surfaces report counts without an FPS claim.
 
-The selected stage policy owns substantive rounds. One repair wave addresses
-accepted findings, then scoped verification repeats affected QA, play and
-captures. Exhaustion returns the best identity and unresolved findings; it
-never opens another automatic batch. Explicit redesign is new work with named
-invalidations. Missing capability remains unverified with an exact resume state.
+Repair accepted blockers through `orch-do` under the same pins and Context;
+verify affected QA, play and captures at the changed identity. Continue within
+the authorized scope and bound. Missing capability remains unverified with an
+exact resume state; redesign names invalidated evidence.
 
 Keep complaint IDs append-only; diagnose stagnation or oscillation with a
 changed strategy; preserve the best fixed revision, unresolved findings, and

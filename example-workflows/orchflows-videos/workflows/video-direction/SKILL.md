@@ -25,14 +25,19 @@ and join inspection.
       --context-file <direction-context> --workspace <workspace>
       --workspace-adapter git --isolation required --bound <per-call-bound>
 
-**Review.** Invoke `review-delivery` in this existing direction frame
-with the landed direction commit, brief, evidence, original quality goal, identical
-orch-code, short-videos and orchflows-marketing-videos pins, `workspace` git workspace,
-`workspace-adapter` git, `isolation` required, `context-file` direction-context, per-call
-bound and outside verifier. The direction stage owns its selected rounds.
-Repairs preserve the brief, pins and evidence and address the fixed findings.
-An exhausted review or unavailable required evidence returns the latest direction commit
-as partial, independent findings and gaps; no accepted identity is inferred.
+**Review.** Judge the fixed direction independently with the brief, evidence
+and original quality goal:
+
+    tickets.py judge <run> --parent <frame> --standard orchflows-marketing-videos
+      --artifacts git:<direction-commit> --goal-file <direction-review-goal>
+      --context-file <direction-context> --workspace <workspace>
+      --workspace-adapter git --isolation required --bound <per-call-bound>
+
+The ordered orch-code, short-videos and orchflows-marketing-videos pins remain
+identical. Repair accepted findings through `orch-do` with the original
+Context and verify changed evidence at the new fixed identity. Continue within
+scope and bound; unavailable required evidence returns partial direction,
+independent findings and gaps. Acceptance requires the outside verifier.
 
 **Present.** Show reviewed panels/contact sheet, direction, commit, findings and
 gaps before full rendering. Pause only for requested user approval, recording its

@@ -233,7 +233,7 @@ class RetiredWordingTest(unittest.TestCase):
 class IdiomsTest(unittest.TestCase):
     """`## Idioms` is the one wording of each recurring sentence."""
 
-    NAMES = ("bounded-repair", "fan-out", "freeze", "declare-gaps", "outside-close")
+    NAMES = ("fan-out", "freeze", "declare-gaps", "outside-close")
     WORD_CEILING = 30
 
     def entries(self):

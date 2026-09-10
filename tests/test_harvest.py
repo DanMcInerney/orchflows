@@ -547,11 +547,11 @@ class TestWriterReaderSeam(_HarvestTestCase):
         return answer["frame_open"]
 
     def test_real_writer_and_reader_agree_on_workflow_and_goal(self):
-        self._real_frame_open("R1", "self-improve")
+        self._real_frame_open("R1", "orch-self-improve")
         rc, stdout, _ = self._run(["--list-runs", "--since", "2020-01-01T00:00:00Z"])
         self.assertEqual(0, rc)
         fields = stdout.strip().splitlines()[0].split("\t")
-        self.assertEqual(["R1", "self-improve", "Deliver the thing."], fields[:3])
+        self.assertEqual(["R1", "orch-self-improve", "Deliver the thing."], fields[:3])
 
 
 class TestCliUsageErrors(_HarvestTestCase):

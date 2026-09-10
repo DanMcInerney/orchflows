@@ -14,7 +14,6 @@ MANIFEST = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 EXPECTED_WORKFLOWS = {
     "bakeoff",
     "benchmaker",
-    "browser-game",
     "checkpointed-build",
     "drift-canary",
     "3d-browser-game",
@@ -23,8 +22,7 @@ EXPECTED_WORKFLOWS = {
     "orch-do",
     "orch-judge",
     "renovate",
-    "review-delivery",
-    "self-improve",
+    "orch-self-improve",
     "skill-tournament",
     "super-research",
     "tiktok-video",
