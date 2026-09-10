@@ -57,6 +57,7 @@ class _Tweets(HTMLParser):
         self.stack = []
         self.rows = []
         self.row = None
+        self.row_malformed = False
         self.root_depth = 0
         self.closed_timelines = 0
         self.malformed = False
@@ -76,10 +77,16 @@ class _Tweets(HTMLParser):
             self.empty = True
         if "timeline-item" in classes and not quoted and not inside:
             self.malformed = True
-        if "timeline-item" in classes and inside and self.row is None:
-            self.row = {"path": "", "author": "", "body": "", "time": "", "stats": []}
-            self.root_depth = len(self.stack)
-        if self.row is not None and not quoted:
+        if "timeline-item" in classes and inside:
+            if self.row is None:
+                self.row = {"path": "", "author": "", "body": "", "time": "", "stats": []}
+                self.row_malformed = False
+                self.root_depth = len(self.stack)
+            else:
+                # Ambiguous nesting invalidates the whole outer row, not its siblings.
+                self.row_malformed = True
+                self.malformed = True
+        if self.row is not None and not self.row_malformed and not quoted:
             if tag == "a" and ("tweet-link" in classes or "tweet-date" in ancestors):
                 href = attrs.get("href") or ""
                 parsed = urlsplit(href)
@@ -105,14 +112,15 @@ class _Tweets(HTMLParser):
                 self.closed_timelines += sum("timeline" in entry[1] for entry in removed)
                 del self.stack[index:]
                 if self.row is not None and len(self.stack) <= self.root_depth:
-                    self.rows.append(self.row)
+                    if not self.row_malformed:
+                        self.rows.append(self.row)
                     self.row = None
                 return
 
     def handle_data(self, data):
         if any(tag == "title" for tag, _ in self.stack):
             self.title += data
-        if self.row is None:
+        if self.row is None or self.row_malformed:
             return
         classes = set().union(*(entry[1] for entry in self.stack))
         if classes & {"quote", "quote-link", "quote-big"} or any(tag in ("script", "style") for tag, _ in self.stack):

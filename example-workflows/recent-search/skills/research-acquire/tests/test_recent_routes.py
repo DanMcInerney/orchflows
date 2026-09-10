@@ -74,6 +74,61 @@ class RecentRoutesTests(unittest.TestCase):
         self.assertEqual([record.native_item_id for record in artifact.records], ["123"])
         self.assertEqual(artifact.outcome, "ok")
 
+    def test_xcancel_nested_rows_are_lost_without_contaminating_valid_siblings(self):
+        row = TWEET.removeprefix('<div class="timeline">').removesuffix('</div>')
+        child = row.replace('/123', '/789')
+        outer = '<div class="timeline-item"><a class="tweet-link" href="/alice/status/456"></a>'
+        malformed = (
+            outer + '<div class="tweet-content">Outer text. </div>' + child + '</div>',
+            outer + '<div class="tweet-content">Outer text. ' + child + '</div></div>',
+            outer + '<span class="tweet-stat"><span class="icon-comment"></span>42' + child + '</span></div>',
+        )
+        for placement, nested in zip(("sibling", "body", "count"), malformed):
+            for following in ('', row.replace('/123', '/987')):
+                with self.subTest(placement=placement, following=bool(following)):
+                    artifact, _ = acquire("x_xcancel", "search:python",
+                                          '<div class="timeline">' + row + nested + following + '</div>')
+                    self.assertEqual(artifact.outcome, "partial")
+                    self.assertEqual(artifact.loss, ("schema_drift",))
+                    self.assertEqual([record.native_item_id for record in artifact.records],
+                                     ["123", "987"] if following else ["123"])
+                    for record in artifact.records:
+                        self.assertEqual(record.body, "A public Python post.")
+                        self.assertEqual(record.author, "alice")
+                        self.assertEqual(record.published_at, "2026-09-09T12:00:00Z")
+                        self.assertEqual({s.metric_name: s.value for s in record.engagement}, {"icon-comment": 1234})
+
+    def test_xcancel_nested_rows_cannot_supply_a_selected_status(self):
+        row = TWEET.removeprefix('<div class="timeline">').removesuffix('</div>')
+        malformed = row.replace('/123', '/456').removesuffix('</div>') + row.replace('/123', '/789') + '</div>'
+        for target in ("status:alice/456", "status:alice/789"):
+            with self.subTest(target=target):
+                artifact, _ = acquire("x_xcancel", "", '<div class="timeline">' + row + malformed + '</div>',
+                                      kind="hydration", target=target)
+                self.assertFalse(artifact.records)
+                self.assertEqual(artifact.outcome, "failed")
+                self.assertEqual(artifact.loss, ("schema_drift",))
+
+    def test_xcancel_quote_cards_isolate_nested_rows_without_malformed_loss(self):
+        row = TWEET.removeprefix('<div class="timeline">').removesuffix('</div>')
+        child = (row.replace('/123', '/789').replace('alice', 'bob').replace('2026', '2001')
+                 .replace('A public', 'Quoted').replace('1,234', '99'))
+        for quote_class in ("quote", "quote-big", "quote-link"):
+            for direct in (False, True):
+                with self.subTest(quote_class=quote_class, direct=direct):
+                    quote = (child.replace('class="timeline-item"', 'class="timeline-item ' + quote_class + '"', 1)
+                             if direct else '<div class="' + quote_class + '">' + child + '</div>')
+                    body = TWEET.replace('<div class="quote"><div class="tweet-content">Another author\'s quotation</div></div>', quote)
+                    artifact, _ = acquire("x_xcancel", "search:python", body)
+                    self.assertEqual(artifact.outcome, "ok")
+                    self.assertEqual(artifact.loss, ())
+                    record, = artifact.records
+                    self.assertEqual(record.native_item_id, "123")
+                    self.assertEqual(record.body, "A public Python post.")
+                    self.assertEqual(record.author, "alice")
+                    self.assertEqual(record.published_at, "2026-09-09T12:00:00Z")
+                    self.assertEqual({s.metric_name: s.value for s in record.engagement}, {"icon-comment": 1234})
+
     def test_xcancel_search_reads_only_the_post_and_exact_counts(self):
         artifact, carrier = acquire("x_xcancel", "search:python", TWEET, window=True)
         self.assertEqual(len(carrier.calls), 1)
