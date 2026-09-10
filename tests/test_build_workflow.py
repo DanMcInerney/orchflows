@@ -26,9 +26,13 @@ class BuildWorkflowTests(unittest.TestCase):
         self.assertEqual("true", install.frontmatter_field(
             source, "disable-model-invocation"))
         with tempfile.TemporaryDirectory() as raw:
-            with patch.object(install.Path, "home", return_value=Path(raw)), \
+            # Keep a noncanonical spelling on every host, including POSIX.
+            (Path(raw) / "home").mkdir()
+            home = Path(raw) / "home" / ".."
+            with patch.object(install.Path, "home", return_value=home), \
                     patch.object(install.shutil, "which", return_value="mock-host"):
                 plan = install.build_plan()
+                manifest = (plan.lib_home / "example-workflows" / BUILDER / "SKILL.md").resolve()
         for host, surfaces in (("claude", plan.claude_adapters),
                                ("codex", plan.codex_skills), ("grok", plan.grok_skills)):
             matches = [body for path, body in surfaces if path.parent.name == BUILDER]
@@ -42,7 +46,7 @@ class BuildWorkflowTests(unittest.TestCase):
                     frontmatter, "disable-model-invocation"))
             if host == "codex":
                 self.assertIn("invoked by name only", body)
-            self.assertIn(str(plan.lib_home / "example-workflows" / BUILDER / "SKILL.md"), body)
+            self.assertIn(str(manifest), body)
             for field in ("role", "agent", "context"):
                 self.assertIsNone(install.frontmatter_field(frontmatter, field))
             self.assertFalse(any(path.parent.name == QUALITY for path, _ in surfaces))

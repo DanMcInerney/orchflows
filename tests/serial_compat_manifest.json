@@ -4267,7 +4267,8 @@
    "owner": "_home",
    "restoration": "selected-module-boundary",
    "seams": [
-    "environment"
+    "environment",
+    "monkeypatch"
    ]
   },
   {
@@ -4283,7 +4284,8 @@
    "owner": "_world",
    "restoration": "selected-module-boundary",
    "seams": [
-    "environment"
+    "environment",
+    "monkeypatch"
    ]
   },
   {
@@ -4323,7 +4325,8 @@
    "owner": "_world",
    "restoration": "selected-module-boundary",
    "seams": [
-    "environment"
+    "environment",
+    "monkeypatch"
    ]
   },
   {
