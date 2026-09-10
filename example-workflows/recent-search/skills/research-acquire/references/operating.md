@@ -5,7 +5,7 @@ exposes, and the one bounded read each adapter's smoke makes.
 
 ## CLI surface
 
-`python3 -m super_research.cli`, with this item's [scripts directory](../scripts) on `PYTHONPATH`.
+`python3 -m super_research.cli`, with this item's scripts/ directory containing the [CLI module](../scripts/super_research/cli.py) on `PYTHONPATH`.
 Three operations, one argument, twenty-eight reachable invocations. The parser is built
 from the `OPERATIONS` table, so the enumeration a reader checks is the one the
 parser was made from.
@@ -91,7 +91,7 @@ safe direction.
 
 The CLI runs no manifest, by design; a caller runs one in process, from a
 file it wrote, and never from a value it holds in memory — the file is the
-guard. Write the manifest, then run exactly this, with [scripts directory](../scripts) on
+guard. Write the manifest, then run exactly this, with scripts/ directory containing the [CLI module](../scripts/super_research/cli.py) on
 `PYTHONPATH`, in a lane-private directory (two lanes sharing `step_a.json`
 was the 2026-08-17 bakeoff's most expensive accident):
 
@@ -155,7 +155,7 @@ a mechanism: nothing below is a fallback, and every step still names its cap.
 
 ## Smoke inventory
 
-One probe per live adapter, in `probes.py`. Each is one ordinary manifest step,
+One probe per live adapter, in [super_research.probes](../scripts/super_research/probes.py). Each is one ordinary manifest step,
 not a private path into an adapter, and its assertion is that **one record of the
 named kind carries the whole list** — a row assembled out of several records would
 claim a completeness no single answer had. `engagement:` and `attribute:` prefixes

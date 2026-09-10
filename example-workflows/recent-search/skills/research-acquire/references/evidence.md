@@ -238,8 +238,11 @@ roughly ten reads in fifteen minutes the origin began serving a degraded
 never-touched ones, with no wall marker. The identity the first read was
 refused nothing on was throttled by velocity shortly after, which is a fact
 about pacing rather than about the `User-Agent` string; the per-adapter
-measurement records behind this sweep are in [route-notes/](route-notes), one file per
-adapter added. Stack Exchange compressed its answer only when asked
+measurement records behind this sweep cover [GDELT](route-notes/gdelt.md),
+[oEmbed](route-notes/oembed.md), [scholarly sources](route-notes/scholarly.md),
+[Stack Exchange](route-notes/stack_exchange.md),
+[TikTok](route-notes/tiktok_public.md) and
+[Wikimedia pageviews](route-notes/wikimedia_pageviews.md). Stack Exchange compressed its answer only when asked
 (`Accept-Encoding` sent: gzip; not sent: identity), which is why
 `transport.decoded_body` honors a stated encoding rather than assuming one.
 

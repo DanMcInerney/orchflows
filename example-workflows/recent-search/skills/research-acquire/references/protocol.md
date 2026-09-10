@@ -35,8 +35,8 @@ Manifest keys are exactly `schema_version`, `manifest_id`, `mode`, `as_of`,
   in flight, and pacing stays per route. `run_scheduled(..., lanes=1)` runs a
   fused manifest serially. The ledger's placement model is `ledger.schedule_of`'s
   and now names what runs.
-- `steps` is a nonempty sequence of steps with unique `step_id`s; a
-  `prior_step_id` must name a step in the same manifest.
+- `steps` requires at least one acquisition step. Repeated `step_id` values
+  are rejected; `prior_step_id` references stay within that acquisition manifest.
 
 Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
 `selected_hits`, `max_items`, `window_start`, `window_end`.
@@ -143,7 +143,7 @@ The retained families, with the fields this delivery actually carries on
 | outcome/loss | `outcome`, `loss` |
 | audit | the artifact's `steps` and, from `runner.run_scheduled`, its `WorkLedgerEvent` tuple |
 
-Closed enums, all in `schema.py`: `ACQUISITION_MODES`, `STEP_KINDS`, `OUTCOMES`
+Closed enums, all in [super_research.schema](../scripts/super_research/schema.py): `ACQUISITION_MODES`, `STEP_KINDS`, `OUTCOMES`
 (`ok`, `empty`, `partial`, `failed`, `refused`, ordered by severity for
 `reduce_outcomes`), `ACCESS_CLASSES`, `REPRESENTATION_KINDS` (`index`, `native`,
 `page`, `feed`, `transcript`), `TIME_CONFIDENCES`, `PROVENANCE_EDGE_KINDS`,
@@ -257,7 +257,7 @@ never a record. Read back off `runner.surface_descriptors`.
 | `fake` | `offline` | `fake_offline` | deterministic fixture pages. Never live evidence, and the one adapter with no smoke |
 
 `rss_atom` is a generic feed parser bound to one declared route. A second feed is
-a second route constant in `routes.py`, not a caller-supplied address; the
+a second route constant in [super_research.routes](../scripts/super_research/routes.py), not a caller-supplied address; the
 adapter never names a host.
 
 Deferred, each with a reopen condition rather than a silent drop:

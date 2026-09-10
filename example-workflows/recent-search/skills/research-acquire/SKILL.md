@@ -28,7 +28,7 @@ Preparation, in order:
    A combined/multi-file read never satisfies either EOF obligation.
 
 Use the interpreter returned by `orchflows env workflow recent-search`.
-Put this item's [scripts directory](scripts) on `PYTHONPATH`. Write one manifest under
+Put this item's scripts/ directory, containing the [CLI module](scripts/super_research/cli.py), on `PYTHONPATH`. Write one manifest under
 `.orch-notes/` in the workspace the launch prompt names, the reserved scratch
 the join never grades — `fused` so every adapter named runs concurrently (an
 origin still sees one read at a time), `staged` only where the caller must
