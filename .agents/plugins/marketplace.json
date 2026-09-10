@@ -1,0 +1,20 @@
+{
+  "name": "orchflows-light-local",
+  "interface": {
+    "displayName": "Orchflows Light"
+  },
+  "plugins": [
+    {
+      "name": "orchflows-light",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
