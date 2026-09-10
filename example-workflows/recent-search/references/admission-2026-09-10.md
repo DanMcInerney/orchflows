@@ -49,9 +49,8 @@ gate, and successful live xcancel content remains unverified.
 ## Accepted-finding repairs
 
 The RS-1 observations below predate the ordinary-review simplification. The
-current public calls use applicable standards and `orch-judge`; the same test
-identity now checks parent/package scope, workspace adapters, standard pins,
-repeated judgments and nested closure without a generic round allowance.
+same test identity now checks parent/package scope, workspace adapters, standard
+pins, repeated judgments and nested closure without a generic round allowance.
 Historical round-carrier observations are not evidence for the current API.
 
 Observed in B1.3 against provisional code identity
