@@ -131,6 +131,7 @@ def _frame_fields(run: str, parent, done, bound: str, workflow_fields=None) -> d
         "frame": FRAME_MARKER,
         "parent": parent or None,
         **dict(workflow_fields or {}),
+        "pin_origin": str(Path.cwd().resolve()) if workflow_fields else None,
         "isolation": "none", "bound": bound,
         "done": done,
     }

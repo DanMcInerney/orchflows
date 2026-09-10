@@ -286,6 +286,7 @@
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_an_execution_record_without_a_committed_launch_refuses",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_dispatch_refuses_a_workspace_other_than_the_recorded_candidate",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_dispatch_refuses_an_unrecorded_candidate_workspace",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_missing_workspace_refuses_before_consuming_a_dispatch_attempt",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_first_filed_record_is_the_acceptance",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_launch_is_committed_once_and_an_exact_retry_replays",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_packet_file_flag_is_an_ordinary_unknown_argument",
@@ -956,6 +957,8 @@
    "test_ring_adapters.ScopeTests.test_a_standard_gets_no_adapter",
    "test_ring_adapters.ScopeTests.test_project_adapters_point_repository_relative",
    "test_ring_adapters.ScopeTests.test_sync_removes_the_adapter_of_a_deleted_ring_item",
+   "test_ring_bytecode.RingBytecodeTests.test_cache_directory_source_and_sourceless_bytecode_remain_trust_inputs",
+   "test_ring_bytecode.RingBytecodeTests.test_only_bytecode_derived_from_unchanged_source_preserves_trust",
    "test_rings.InventoryTests.test_inventory_reports_a_reserved_ring_item_rather_than_hiding_it",
    "test_rings.InventoryTests.test_inventory_reports_ring_shadows_and_trust_for_every_kind",
    "test_rings.OwningPackageScopeTests.test_a_private_member_is_nearest_only_for_its_public_owner",
@@ -1426,9 +1429,12 @@
    "test_ticket_reliability_admission.AdmissionReliabilityTest.test_mint_refuses_changed_parent_before_issuing",
    "test_ticket_reliability_admission.AdmissionReliabilityTest.test_parent_generation_and_cycle_controls",
    "test_ticket_reliability_dispatch.FramePublicationTest.test_frame_close_files_its_own_explicit_identity",
+   "test_ticket_reliability_dispatch.FramePublicationTest.test_nested_workflow_frame_keeps_its_own_inspection_origin",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_join_disposition_conflicts_and_joined_status_cannot_be_overwritten",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_legacy_join_replays_only_its_stored_disposition_without_rewrite",
+   "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_nested_ticket_retains_its_own_pin_origin_under_a_root_run",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_old_envelope_replays_after_replacement_and_expiry_but_conflict_refuses",
+   "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_pin_inspection_refuses_a_rewritten_sealed_origin_without_mutation",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_private_pin_uses_trusted_public_package_and_refuses_changed_owner",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_replaced_writer_and_identity_free_note_cannot_close_successor",
    "test_ticket_reliability_dispatch.ReliabilityDispatchTest.test_retire_help_names_lifecycle_namespace",
@@ -2336,6 +2342,7 @@
    "tests.test_workspace_cases.document_cases.TestTheRefusalSurvivesForWhatCannotBeGiven.test_an_explicit_required_override_is_still_refused_unstamped",
    "tests.test_workspace_cases.document_cases.TestTheRefusalSurvivesForWhatCannotBeGiven.test_an_unconsulted_isolation_reproduces_the_field_refusal",
    "tests.test_workspace_cases.document_cases.TestTheTrunkDispatchesAndLandsADocumentItem.test_a_content_standard_ticket_dispatches_and_lands_unisolated",
+   "tests.test_workspace_cases.document_cases.TestTheTrunkDispatchesAndLandsADocumentItem.test_missing_document_output_refuses_before_opening_an_attempt",
    "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_a_first_establishment_still_records_what_it_observed",
    "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_an_empty_stamp_is_no_stamp",
    "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_re_establishment_preserves_the_stamp_and_reports_what_it_saw",
@@ -5414,6 +5421,14 @@
   {
    "module": "tests.test_ticket_reliability_dispatch",
    "owner": "ReliabilityDispatchTest.test_old_envelope_replays_after_replacement_and_expiry_but_conflict_refuses",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_reliability_dispatch",
+   "owner": "ReliabilityDispatchTest.test_pin_inspection_refuses_a_rewritten_sealed_origin_without_mutation",
    "restoration": "selected-module-boundary",
    "seams": [
     "threads"

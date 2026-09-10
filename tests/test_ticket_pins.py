@@ -474,7 +474,7 @@ class StampedCallableTest(CallableSinkTest):
         self.assertEqual(
             [
                 "id", "run", "status", "admission", "executor", "standards",
-                "workspace_adapter", "isolation", "bound",
+                "pin_origin", "workspace_adapter", "isolation", "bound",
                 "root_generation", "cut_generation", "assignment_seal",
                 "dispatch_v1", "workspace_branch", "workspace_baseline",
             ],

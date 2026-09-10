@@ -21,6 +21,25 @@ class FramePublicationTest(FrameSinkTest):
         answer = self.call("frame-close", self.RUN, opened["id"], "--status", "limited")
         self.assertEqual("limited", answer["frame_close"]["status"])
 
+    def test_nested_workflow_frame_keeps_its_own_inspection_origin(self):
+        from scripts import rings_trust, tickets_store
+        opened = self.frame()
+        writer = tickets_store._writer_identity()
+        nested = Path(self.temporary.name) / "nested"
+        bundle = nested / ".orchflows"
+        package = bundle / "workflows" / "nested-frame"
+        package.mkdir(parents=True)
+        (package / "SKILL.md").write_text("---\nname: nested-frame\nrole: none\n---\nWorkflow.\n", encoding="utf-8")
+        rings_trust.grant(bundle)
+        with mock.patch("pathlib.Path.cwd", return_value=nested), mock.patch("scripts.tickets_store._writer_identity", return_value=writer), mock.patch("scripts.tickets_project._writer_identity", return_value=writer):
+            child = self.frame("--parent", opened["id"], "--workflow", "nested-frame")
+        data = _parse_frontmatter(self.ticket_text(child["id"]))
+        self.assertEqual(str(nested.resolve()), data.get("pin_origin"))
+        inspected = self.call("show", self.RUN, child["id"], "--pins")
+        self.assertEqual("nested-frame", inspected["ticket_pins"]["owner"])
+        rings_trust.revoke(bundle)
+        self.call("show", self.RUN, child["id"], "--pins", expect_error=True)
+
 
 class ReliabilityDispatchTest(unittest.TestCase):
     setUp = fixtures.DispatchV1Test.setUp
@@ -158,6 +177,52 @@ class ReliabilityDispatchTest(unittest.TestCase):
 
     def test_retire_help_names_lifecycle_namespace(self):
         self.assertIn("--record-id <lifecycle:id>", commands.run(["dispatch-retire", "--help"])["help"]["usage"])
+
+    def test_pin_inspection_refuses_a_rewritten_sealed_origin_without_mutation(self):
+        self.start()
+        path = Path(self.temporary.name) / "tickets/run/T.md"
+        path.write_text(_set_frontmatter_field(self.ticket_text(), "pin_origin", self.temporary.name), encoding="utf-8")
+        before = path.read_bytes()
+        answer = commands.run(["show", "run", "T", "--pins"])
+        self.assertIn("assignment-seal-mismatch", {item["code"] for item in answer["findings"]})
+        self.assertEqual(before, path.read_bytes())
+
+    def test_nested_ticket_retains_its_own_pin_origin_under_a_root_run(self):
+        from scripts import rings_trust, tickets_pins
+        from scripts.tickets_generations import assignment_payload
+        project = Path(self.temporary.name) / "project"
+        nested = project / "nested"
+        bundle = nested / ".orchflows"
+        package = bundle / "workflows" / "nested-flow"
+        standard = package / "standards" / "nested-code"
+        standard.mkdir(parents=True)
+        (package / "SKILL.md").write_text("---\nname: nested-flow\nrole: none\n---\nWorkflow.\n", encoding="utf-8")
+        (standard / "STANDARD.md").write_text("---\nname: nested-code\nadapter: git\n---\nStandard.\n", encoding="utf-8")
+        rings_trust.grant(bundle)
+        with mock.patch("pathlib.Path.cwd", return_value=project):
+            root_pins, failure = tickets_pins.pin_fields(["orch-code"], None)
+            self.assertIsNone(failure)
+        with mock.patch("pathlib.Path.cwd", return_value=nested):
+            pins, failure = tickets_pins.pin_fields(["nested-code"], None, owner="nested-flow")
+            self.assertIsNone(failure)
+        self.assertEqual(str(nested.resolve()), pins.get("pin_origin"))
+        self.assertNotEqual(root_pins.get("pin_origin"), pins["pin_origin"])
+        data = dict(pins, workflow="nested-flow", workflow_entry="SKILL.md",
+                    workflow_digest=tickets_pins.tree_digest("workflow", package))
+        with mock.patch("scripts.tickets_project.recorded_project", return_value={"root": str(project)}), mock.patch("pathlib.Path.cwd", return_value=project):
+            inspected = tickets_pins.inspect_ticket_pins("run", "T", data)
+            self.assertEqual(str((standard / "STANDARD.md").resolve()), inspected["ticket_pins"]["standards"][0]["path"])
+            rings_trust.revoke(bundle)
+            self.assertIn("error", tickets_pins.inspect_ticket_pins("run", "T", data))
+            rings_trust.grant(bundle)
+            (package / "SKILL.md").write_text("changed package", encoding="utf-8")
+            rings_trust.grant(bundle)
+            self.assertIn("error", tickets_pins.inspect_ticket_pins("run", "T", data))
+        # The origin is sealed with the assignment, not mutable run metadata.
+        text = self.ticket_text()
+        original = _set_frontmatter_field(text, "pin_origin", str(nested))
+        changed = _set_frontmatter_field(text, "pin_origin", str(project))
+        self.assertNotEqual(assignment_payload("T", original), assignment_payload("T", changed))
 
     def test_private_pin_uses_trusted_public_package_and_refuses_changed_owner(self):
         from scripts import rings_trust, tickets_pins
