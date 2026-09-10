@@ -1,0 +1,178 @@
+{
+  "assigned_name": "B1.4",
+  "dispatch_id": "B1.4:d1",
+  "assignment_seal": "sha256:4e6322a841b9994f0e29b3c9abefdd35595c2ebf0279f81f147d6cc389cca8a8",
+  "cwd": "C:/Users/danhm/.orchflows/worktrees/20260910T-recent-search-continue/B1.4",
+  "interpreter": "C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe",
+  "commands": [
+    {
+      "command": "Get-Content -Raw C:\\Users\\danhm\\.orchflows\\lib\\skills\\kernel\\orch-do\\SKILL.md",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw C:\\Users\\danhm\\.orchflows\\state\\tickets\\20260910T-recent-search-continue\\B1.4.md",
+      "exit_code": 0
+    },
+    {
+      "command": "tickets.py result: acceptance (issued B1.4 authority)",
+      "exit_code": 0
+    },
+    {
+      "command": "tickets.py show 20260910T-recent-search-continue B1.4 --pins",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw C:\\Users\\danhm\\.orchflows\\lib\\standards\\orch-code\\STANDARD.md",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw C:\\Users\\danhm\\.orchflows\\lib\\standards\\orch-workflow-authoring\\STANDARD.md",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw C:\\Users\\danhm\\.orchflows\\lib\\docs\\custom-workflow-authoring.md",
+      "exit_code": 0
+    },
+    {
+      "command": "git status --short",
+      "exit_code": 0
+    },
+    {
+      "command": "git rev-parse HEAD",
+      "exit_code": 0
+    },
+    {
+      "command": "rg --files --glob AGENTS.md --glob '*validator*' --glob '*prerequisites*' --glob '*serial-compat*'",
+      "exit_code": 0
+    },
+    {
+      "command": "rg -n 'source_copy_skips|COPY_SKIPS|fixtures|os.walk' tests/validator_copy.py tests/test_validate_cases/validator_ownership.py",
+      "exit_code": 0
+    },
+    {
+      "command": "git show e399d084cc4939beb7f489967190b8e08116c618:.orch-notes/B1.3-findings.json",
+      "exit_code": 0
+    },
+    {
+      "command": "git show e399d084cc4939beb7f489967190b8e08116c618:.orch-notes/B1.3-copy-bytecode.py",
+      "exit_code": 0
+    },
+    {
+      "command": "git show e399d084cc4939beb7f489967190b8e08116c618:.orch-notes/B1.3-copy-bytecode.json",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw docs/custom-workflow-authoring.md",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw tests/validator_copy.py",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw tests/test_validate_cases/validator_ownership.py",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw AGENTS.md",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw tools/check-prerequisites.md",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw tools/serial-compat-policy.md",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-FileHash docs/custom-workflow-authoring.md, 'C:\\Users\\danhm\\.orchflows\\lib\\docs\\custom-workflow-authoring.md'",
+      "exit_code": 0
+    },
+    {
+      "command": "rg -n 'validator_ownership|test_validate|scope|timeout' tools/run_tests.py tools/affected_tests.py tests/test_validate.py tools/serial_compat_manifest.json",
+      "exit_code": 1
+    },
+    {
+      "command": "& 'C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe' 'C:\\Users\\danhm\\.orchflows\\bin\\friction.py' 'B1.4 inspection guessed tools/serial_compat_manifest.json, which does not exist; aggregate owner-file output was truncated.' 'Use rg --files to discover manifest path and compare local owner bytes to the fully read installed owner; no skipped evidence.' --ticket B1.4 --run 20260910T-recent-search-continue --skill orch-do",
+      "exit_code": 0
+    },
+    {
+      "command": "rg --files tools tests --glob '*serial*' --glob '*manifest*' --glob '*verification*'",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content tools/run_tests.py -Tail 110",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw tests/test_validate.py",
+      "exit_code": 0
+    },
+    {
+      "command": "Get-Content -Raw rules/token-economy.md",
+      "exit_code": 0
+    },
+    {
+      "command": "rg --files example-workflows --glob '*disk_backed_cache.py' --glob '*.json' --glob '*.pyc'",
+      "exit_code": 0
+    },
+    {
+      "command": "rg -n 'validator_ownership|FrictionLocationSyncTest' tests/serial_compat_manifest.json",
+      "exit_code": 0
+    },
+    {
+      "command": "rg -a -n -C 4 'FileNotFoundError|disk_backed_cache.cpython|Ran 2441|failures=|errors=' 'C:\\Users\\danhm\\.orchflows\\state\\verification\\f1da6e637f7a4593bf559949fcedd48a\\stdout.bin'",
+      "exit_code": 0
+    },
+    {
+      "command": "& 'C:\\Users\\danhm\\.orchflows\\runtime\\Scripts\\python.exe' tools/affected_tests.py --format json tests/test_validate_cases/validator_ownership.py",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff -- tests/test_validate_cases/validator_ownership.py",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "command": "git status --short",
+      "exit_code": 0
+    },
+    {
+      "command": "tickets.py result: owner-derived (issued B1.4 authority)",
+      "exit_code": 0
+    },
+    {
+      "command": "verified Python .orch-notes/B1.4-watch.py --seconds 60 --record .orch-notes/B1.4-before-command.json .orch-notes/B1.4-copy-probe.py --output .orch-notes/B1.4-before.json",
+      "exit_code": 1
+    },
+    {
+      "command": "tickets.py result: baseline-red (issued B1.4 authority)",
+      "exit_code": 0
+    },
+    {
+      "command": "verified Python .orch-notes/B1.4-watch.py --seconds 60 --record .orch-notes/B1.4-after-command.json .orch-notes/B1.4-copy-probe.py --output .orch-notes/B1.4-after.json",
+      "exit_code": 0
+    },
+    {
+      "command": "tickets.py result: comparator-green (issued B1.4 authority)",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --numstat -- tests/test_validate_cases/validator_ownership.py tests/validator_copy.py",
+      "exit_code": 0
+    }
+  ],
+  "tool_edits": [
+    "apply_patch added B1.4-copy-probe.py and B1.4-watch.py: success",
+    "apply_patch changed only fixture walk in validator_ownership.py: success"
+  ],
+  "notes": [
+    "Commands are grouped by inspection batch, not a strict chronological log.",
+    "Checks launched by B1.4-watch.py have exact subprocess commands, durations, output and exit codes in their named command receipts.",
+    "The active module command and later Git/report commands are recorded in the closing note. No unobserved completion is claimed."
+  ]
+}

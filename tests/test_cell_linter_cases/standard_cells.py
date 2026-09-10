@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import tools.validate as validate  # noqa: E402
+from tests.validator_copy import source_copy_skips as CLONE_SKIPS  # noqa: E402
 
 VALIDATE = ROOT / "tools" / "validate.py"
 CONTRACTS = ROOT / "contracts"
@@ -454,22 +455,6 @@ WARNING_CEILING = 0
 # example-workflows/ and compares skills against skills. V2 deliberately binds
 # names across tier owners; its exact count has no headroom and only falls.
 CROSS_TIER_WARNING_CEILING = 29
-
-# A clone is the whole tree minus version control, runtime state and
-# caches -- never an extract of the directories the check happens to read
-# today, which would stop grading whatever it left out. Two payload
-# directories are skipped as well, and only because the skip is itself
-# checked: benchmarks/ and tests/fixtures/ hold 1275 of the tree's 1492
-# files and eight tenths of the copy's cost, and the case below asserts
-# the clone's report equals the real tree's line for line -- so anything
-# in them that validate.py grades fails there, loudly, instead of quietly
-# going ungraded.
-# Integration tests create generated scratch directories beside the tree;
-# they are not validation inputs and can disappear while this copy walks it.
-CLONE_SKIPS = shutil.ignore_patterns(
-    ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache",
-    "benchmarks", "fixtures", "orchflows-integration-*",
-)
 
 
 def run_validate(root):

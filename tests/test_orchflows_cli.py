@@ -9,6 +9,7 @@ are shared from here.
 from __future__ import annotations
 
 import contextlib
+from functools import partial
 import io
 import json
 import os
@@ -76,6 +77,15 @@ def _run(*argv):
 
 
 class SyncTests(unittest.TestCase):
+    def setUp(self):
+        # Sync settles the library inventory too; keep this fixture's library
+        # separate from source dependencies read by parallel Node tests.
+        library = tempfile.TemporaryDirectory(prefix="orchflows-sync-lib-")
+        self.addCleanup(library.cleanup)
+        guard = patch.object(rings, "inventory", partial(rings.inventory, lib=Path(library.name)))
+        guard.start()
+        self.addCleanup(guard.stop)
+
     def test_sync_makes_a_fresh_home_ring_whole(self):
         with _home(source_library=False) as home:
             for host, record in orchflows.orchflows_adapters.host_records().items():

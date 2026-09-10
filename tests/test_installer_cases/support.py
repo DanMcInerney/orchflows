@@ -306,7 +306,7 @@ def isolated_grok_home(root: Path):
 # `scripts/search_plan.py`. A stub that spelled the path would be stale the
 # day the script moved, so the bare form is the contract and this is what
 # reads it.
-BARE_SCRIPT_RE = re.compile(r"\b([a-z_]+\.py)\b")
+BARE_SCRIPT_RE = re.compile(r"(?<![\w/\\.-])([a-z_]+\.py)\b")
 
 
 def normalised_doc(docstring: str | None) -> str:

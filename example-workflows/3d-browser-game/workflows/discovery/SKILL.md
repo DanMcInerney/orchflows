@@ -18,12 +18,20 @@ Carry its versioned decisions, experiments and checkpoint disposition into
 research and design. Only dependent work waits on an unresolved user-only
 question; the 3D stack is the public workflow's explicit constraint.
 
-Read the journal, then launch one independent `do` for each question cluster:
+Invoke public `recent-search` once for each independent question cluster:
+mechanics, Three.js, Blender, and play evidence. For each call supply
+`output=evidence`, the cluster's bounded question and named public sources,
+source policy and rigor bar, an explicit recent period or `all-time` where the
+brief needs established technical facts, frozen horizon, per-step cap, isolated
+evidence store, call bound, output probe, caller context and this parent frame.
+Each invocation opens its own package scope:
 
-    tickets.py do <run> --standard orch-research --skill research-acquire --parent <frame> --goal-file <mechanics-goal>
-    tickets.py do <run> --standard orch-research --skill research-acquire --parent <frame> --goal-file <threejs-goal>
-    tickets.py do <run> --standard orch-research --skill research-acquire --parent <frame> --goal-file <blender-goal>
-    tickets.py do <run> --standard orch-research --skill research-acquire --parent <frame> --goal-file <play-evidence-goal>
+    tickets.py frame-open <run> --workflow recent-search --parent <frame>
+      --goal-file <cluster-question-goal> [--context-file <context-file>]
+
+Drive that workflow with the supplied semantics; its private acquisition method
+is resolved there, never from this game's package. Keep its evidence packets
+and review findings for the synthesis.
 
 Each lane records its bounded question, dated sources, counterevidence,
 authorized spikes, confidence, disagreements, acquisition losses, and gaps

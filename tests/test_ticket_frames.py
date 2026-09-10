@@ -648,10 +648,10 @@ class FrameLawTest(FrameSinkTest):
         self.assertEqual(list(tickets_frame.FRAME_LAW), child["law"])
 
     def test_a_named_workflow_resolves_to_the_body_the_driver_reads(self):
-        opened = self.frame("--workflow", "super-research")
+        opened = self.frame("--workflow", "recent-search")
 
         self.assertEqual(
-            str(ROOT / "example-workflows" / "super-research" / "SKILL.md"),
+            str(ROOT / "example-workflows" / "recent-search" / "SKILL.md"),
             opened["workflow_path"],
         )
 

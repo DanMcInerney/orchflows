@@ -140,6 +140,16 @@ class TestScriptNames(unittest.TestCase):
         crossed from a canonical skills/ directory to scripts/ and stopped
         shipping without a single check going red."""
 
+        self.assertEqual(
+            ["tickets.py", "unshipped_command.py"],
+            BARE_SCRIPT_RE.findall(
+                "python tickets.py show; `python unshipped_command.py run`; "
+                "[lib/reviewed_source.py](https://example.org/lib/reviewed_source.py); "
+                "scripts/private.py; scripts\\private.py; super_research.cli"
+            ),
+            "bare command promises remain detectable beside qualified source references",
+        )
+        self.assertNotIn("unshipped_command.py", install.SCRIPT_NAMES)
         named = set()
         missing = set()
         workflows = install.REPO_ROOT / "example-workflows"
