@@ -152,7 +152,7 @@
         {"source": "campaign", "target": "promote", "kind": "sequence"}
       ]
     },
-    "super-research": {
+    "recent-search": {
       "nodes": [
         {"id": "acquire", "label": "Acquire public records"},
         {"id": "report", "label": "Cite, date, and declare gaps"}
