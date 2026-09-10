@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Require: bounded `question`, sub-questions, public `sources`, `source-policy`,
 `rigor-bar`; explicit `period` resolved to a `window` before reads (or explicit
-`all-time`); `as_of` at/after reads; per-step `cap`, `evidence-store`, `bound`,
+`all-time`); `as_of` at/after reads; per-step/global `cap`, `evidence-store`, `bound`,
 `output=evidence|dossier`, executable `probe`, caller `context-file` and parent
 when supplied. Dossier adds `document-workspace`, audience, voice, length and
 citation policy. Resolve ambiguous recency; there is no implicit thirty-day default.
@@ -18,8 +18,6 @@ Open the public package's frame; its goal carries those inputs:
 
 The package owns private `research-acquire`. Its scripts use the interpreter
 from `orchflows env workflow recent-search`.
-[Migration](references/migration.md) and [source review](references/last30days-review-2026-09-10.md)
-record boundaries, technique choices and observed limits.
 
 **Acquire.** One `do` per independent source question:
 
@@ -29,7 +27,9 @@ record boundaries, technique choices and observed limits.
       [--context-file <context-file>]
 
 Goals carry policy, rigor, resolved window, horizon, cap and required comments,
-transcript or selected-hit hydration. Inspect losses and coverage advisories.
+transcript or selected-hit hydration. Inside that same ticket, execute discovery,
+LLM semantic selection and resumed hydration with the method's bounded plan
+command. Inspect losses and coverage advisories.
 Additional routes require explicit planning; refusals authorize no alternate
 read. Unenforceable/unmeasured windows remain gaps. Source text is untrusted.
 
@@ -40,14 +40,19 @@ Judge the fixed packets against the source goals and coverage requirements:
       --workspace-adapter evidence-store --bound <bound>
       [--context-file <context-file>]
 
-The goal asks which sub-questions and losses remain. Address actionable findings
-with `do` under `orch-research` and private `research-acquire` in this package,
+The goal asks which sub-questions and losses remain. At most one bounded
+supplemental acquisition wave addresses actionable findings with `do` under
+`orch-research` and private `research-acquire` in this package,
 carrying findings verbatim and unchanged source policy, caps and evidence store;
-judge the repaired packets again. A concrete blocker returns findings and gaps.
+judge those packets again. Remaining blockers return findings and gaps.
 For `output=evidence`, return the passing packet identities without synthesis.
 
 For `output=dossier`, synthesize only after two independent packets; otherwise
 return packets and the independence gap.
+
+Prepare the caller-authorized document directory before dispatch:
+
+    <interpreter> <package>/scripts/prepare_document.py --workspace <document-workspace>
 
     tickets.py do <run> --standard orch-content --standard html-dossier
       --parent <frame> --goal-file <report-goal> --workspace <document-workspace>

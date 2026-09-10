@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Iterable, Tuple
+from urllib.parse import urlsplit
 
 from .. import schema
 
@@ -56,6 +57,7 @@ class DepthTarget:
 # defect this column exists to close. Every other row answers in one call and
 # stays hydration, where each hit's provenance is exact rather than inferred.
 DEPTH_TARGETS: Dict[str, Dict[str, DepthTarget]] = {
+    "open_page": {"": DepthTarget("locator", "hydration")},
     "reddit_shreddit": {"comments": DepthTarget("locator", "hydration")},
     "youtube_innertube": {
         "player": DepthTarget("native", "hydration"),
@@ -75,6 +77,33 @@ DEPTH_TARGETS: Dict[str, Dict[str, DepthTarget]] = {
     "x_xcancel": {"status": DepthTarget("locator", "hydration")},
     "reddit_archive": {"": DepthTarget("native", "hydration")},
 }
+
+
+def compatible_source(record: schema.AcquisitionRecord, adapter_id: str, operation: str) -> bool:
+    """Address compatibility only; relevance and route authorization are the caller's.
+
+    An archive post is not rewritten as a live post. Its carried Reddit
+    permalink can address the independently authorized comments route, and the
+    resulting edge retains both operators' records and counts.
+    """
+    if record.adapter_id == adapter_id:
+        return True
+    try:
+        address = urlsplit(record.normalized_locator)
+        port = address.port
+    except ValueError:
+        return False
+    if adapter_id == "reddit_shreddit" and operation == "comments":
+        parts = address.path.strip("/").split("/")
+        return (record.adapter_id in ("reddit_archive", "reddit_feed", "web_search")
+                and address.scheme == "https"
+                and address.hostname in ("reddit.com", "www.reddit.com", "old.reddit.com")
+                and not (address.username or address.password or port or address.query or address.fragment)
+                and len(parts) in (4, 5) and parts[0] == "r" and parts[2] == "comments"
+                and parts[1].replace("_", "").isalnum() and parts[3].isalnum())
+    return (adapter_id == "open_page" and operation == ""
+            and record.representation_kind == "index"
+            and address.scheme == "https" and bool(address.hostname))
 
 
 @dataclass(frozen=True)
@@ -170,7 +199,7 @@ def plan_depth(
     hits = []
     skipped = []
     for record in records:
-        if record.adapter_id != adapter_id:
+        if not compatible_source(record, adapter_id, operation):
             skipped.append(
                 SkippedRecord(record.record_id, "off adapter {0}".format(record.adapter_id))
             )
