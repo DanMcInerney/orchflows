@@ -445,9 +445,10 @@ class FrictionLocationSyncTest(unittest.TestCase):
         fixtures = []
         workflows = ROOT / "example-workflows"
         for directory, children, files in os.walk(workflows):
-            children[:] = [name for name in children if name != "node_modules"]
+            skipped = self.COPY_SKIPS(directory, children + files)
+            children[:] = [name for name in children if name not in skipped]
             if "fixtures" in Path(directory).relative_to(workflows).parts:
-                fixtures.extend(Path(directory) / name for name in files)
+                fixtures.extend(Path(directory) / name for name in files if name not in skipped)
         self.assertTrue(fixtures)
         for source in fixtures:
             self.assertEqual(source.read_bytes(), (copy / source.relative_to(ROOT)).read_bytes())

@@ -1,0 +1,81 @@
+{
+  "assigned_name": "B1.4",
+  "dispatch_id": "B1.4:d1",
+  "assignment_seal": "sha256:4e6322a841b9994f0e29b3c9abefdd35595c2ebf0279f81f147d6cc389cca8a8",
+  "fixture": "example-workflows/recent-search/skills/research-acquire/tests/fixtures/cache/disk_backed_cache.py",
+  "fixture_sha256": "72d005b53f18e476a580295a943e4c67b8a9c56d2d1beb791c99ab44f4eca158",
+  "comparator_sha256": "342f6e031f007ca9af6449dc205392108bfcdd8d4082ec7262d68e9e33bc80ff",
+  "method": "Actual source-copy callback and actual fidelity test on scratch trees carrying real package fixture bytes; validation readings substituted only to isolate the fixture comparison.",
+  "observations": [
+    {
+      "scenario": "authored",
+      "test": "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_copy_grades_what_the_tree_grades",
+      "tests_run": 1,
+      "failures": 0,
+      "errors": 0,
+      "details": [],
+      "authored_fixture_preserved_before_mutation": true,
+      "generated_source_present": false,
+      "generated_copy_absent": true,
+      "root_corpus_omitted": true
+    },
+    {
+      "scenario": "generated-directory",
+      "test": "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_copy_grades_what_the_tree_grades",
+      "tests_run": 1,
+      "failures": 0,
+      "errors": 0,
+      "details": [],
+      "authored_fixture_preserved_before_mutation": true,
+      "generated_source_present": true,
+      "generated_copy_absent": true,
+      "root_corpus_omitted": true
+    },
+    {
+      "scenario": "generated-file",
+      "test": "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_copy_grades_what_the_tree_grades",
+      "tests_run": 1,
+      "failures": 0,
+      "errors": 0,
+      "details": [],
+      "authored_fixture_preserved_before_mutation": true,
+      "generated_source_present": true,
+      "generated_copy_absent": true,
+      "root_corpus_omitted": true
+    },
+    {
+      "scenario": "altered",
+      "test": "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_copy_grades_what_the_tree_grades",
+      "tests_run": 1,
+      "failures": 1,
+      "errors": 0,
+      "details": [
+        "Traceback (most recent call last):\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260910T-recent-search-continue\\B1.4\\tests\\test_validate_cases\\validator_ownership.py\", line 454, in test_the_copy_grades_what_the_tree_grades\n    self.assertEqual(source.read_bytes(), (copy / source.relative_to(ROOT)).read_bytes())\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: b'\"\"\"[1908 chars])\\n\\n    def close(self):\\n        pass\\n' != b'\"\"\"[1908 chars])\\n\\n    def close(self):\\n        pass\\n\\n# altered control\\n'\n"
+      ],
+      "authored_fixture_preserved_before_mutation": true,
+      "generated_source_present": false,
+      "generated_copy_absent": true,
+      "root_corpus_omitted": true
+    },
+    {
+      "scenario": "deleted",
+      "test": "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_copy_grades_what_the_tree_grades",
+      "tests_run": 1,
+      "failures": 0,
+      "errors": 1,
+      "details": [
+        "Traceback (most recent call last):\n  File \"C:\\Users\\danhm\\.orchflows\\worktrees\\20260910T-recent-search-continue\\B1.4\\tests\\test_validate_cases\\validator_ownership.py\", line 454, in test_the_copy_grades_what_the_tree_grades\n    self.assertEqual(source.read_bytes(), (copy / source.relative_to(ROOT)).read_bytes())\n                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\danhm\\AppData\\Roaming\\uv\\python\\cpython-3.13.9-windows-x86_64-none\\Lib\\pathlib\\_abc.py\", line 625, in read_bytes\n    with self.open(mode='rb') as f:\n         ~~~~~~~~~^^^^^^^^^^^\n  File \"C:\\Users\\danhm\\AppData\\Roaming\\uv\\python\\cpython-3.13.9-windows-x86_64-none\\Lib\\pathlib\\_local.py\", line 537, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'C:\\\\Users\\\\danhm\\\\AppData\\\\Local\\\\Temp\\\\b14-copy-fidelity-w4kjbmmo\\\\deleted\\\\copy\\\\example-workflows\\\\recent-search\\\\skills\\\\research-acquire\\\\tests\\\\fixtures\\\\cache\\\\disk_backed_cache.py'\n"
+      ],
+      "authored_fixture_preserved_before_mutation": true,
+      "generated_source_present": false,
+      "generated_copy_absent": true,
+      "root_corpus_omitted": true
+    }
+  ],
+  "patched_roots_restored": true,
+  "scratch_removed": true,
+  "passed": true,
+  "gaps": [
+    "This probe does not execute validation or workflow prose; the affected module exercises real validation separately."
+  ]
+}
