@@ -97,8 +97,8 @@ class HostAdapterRenderingTest(unittest.TestCase):
             rendered_profiles = install.load_role_profiles(adapters)
         expected_role_bindings = {
             "codex": {
-                "planner": {"model": "gpt-6-astra", "model_reasoning_effort": "high"},
-                "worker": {"model": "gpt-6-astra", "model_reasoning_effort": "low"},
+                "planner": {"model": "gpt-6-astra", "model_reasoning_effort": "xhigh"},
+                "worker": {"model": "gpt-6-astra", "model_reasoning_effort": "xhigh"},
             },
             "claude": {"model": "claude-opus-5", "effort": "high"},
             "grok": {"model": "grok-4.6", "effort": "high"},
@@ -358,7 +358,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn("developer_instructions", parsed)
                 if parsed["name"] == "orch_worker":
                     self.assertEqual("gpt-6-astra", parsed["model"])
-                    self.assertEqual("low", parsed["model_reasoning_effort"])
+                    self.assertEqual("xhigh", parsed["model_reasoning_effort"])
 
     def test_user_plan_writes_claude_adapters_and_codex_skill_stubs(self):
         with tempfile.TemporaryDirectory() as tmp:
