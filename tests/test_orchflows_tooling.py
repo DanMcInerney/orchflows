@@ -9,6 +9,7 @@ drives the resolver rather than a directory walk of its own.
 from __future__ import annotations
 
 import contextlib
+from functools import partial
 import io
 import os
 import shutil
@@ -40,7 +41,9 @@ def _world():
         for kind_dir in rings.RING_DIRS.values():
             (home / kind_dir).mkdir(parents=True, exist_ok=True)
             (project / rings.BUNDLE_DIR / kind_dir).mkdir(parents=True, exist_ok=True)
-        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}):
+        # CLI sync must not settle the source library's shared dependencies.
+        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}), \
+                patch.object(rings, "inventory", partial(rings.inventory, lib=root / "lib")):
             yield {"root": root, "home": home, "project": project}
 
 
