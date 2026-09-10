@@ -29,15 +29,15 @@ def record_from(row):
     return schema.AcquisitionRecord(**row)
 
 
-def joined(manifest, receipts):
+def joined(manifest, receipts, selected_records=None):
     records = tuple(record_from(row) for receipt in receipts for row in receipt["artifact"]["records"])
     results = tuple(schema.StepResult(**dict(row, loss=tuple(row["loss"]), warnings=tuple(row["warnings"])))
                     for receipt in receipts for row in receipt["artifact"]["steps"])
-    typed = normalize.type_discovery_gaps(records)
+    typed = normalize.type_discovery_gaps(records, selected_records)
     return schema.AcquisitionArtifact(
         artifact_id=runner.artifact_id_for(manifest.manifest_id), manifest_id=manifest.manifest_id,
         mode="fused", as_of=manifest.as_of, records=typed, steps=results,
-        edges=normalize.link_discovery_hydration(typed), groups=normalize.group_records(typed),
+        edges=normalize.link_discovery_hydration(typed, selected_records), groups=normalize.group_records(typed),
         outcome=schema.reduce_outcomes(tuple(row.outcome for row in results)),
         loss=tuple(sorted({loss for row in results for loss in row.loss})))
 
@@ -55,7 +55,8 @@ def execute(plan, output, selection=None, *, opener=None, now=None, clock=time.m
         before_requests = len(store.state["requests"])
         bounded = BoundedRead(store, transport.urlopen_read if opener is None else opener,
                               transport.utc_now_iso if now is None else now, clock, sleep)
-        carrier = pacing.paced_carrier(transport.Transport(opener=bounded, now=now), clock, bounded.wait)
+        carrier = pacing.paced_carrier(transport.Transport(opener=bounded, now=now), clock, bounded.wait,
+                                      state=bounded.pacing_state(), checkpoint=bounded.save_pacing)
         receipts = {}
         reused = []
         uncertain = []
@@ -126,7 +127,11 @@ def execute(plan, output, selection=None, *, opener=None, now=None, clock=time.m
         elif not plan["depth"]:
             phase = "complete"
         ordered = tuple(manifest.steps) + tuple(depth)
-        artifact = joined(manifest, [receipts[step.step_id] for step in ordered if step.step_id in receipts])
+        selected_records = {step.step_id: choice["record_id"] for step, choice in
+                            zip(depth, selection["choices"] if selection is not None else ())
+                            if step.selected_hits}
+        artifact = joined(manifest, [receipts[step.step_id] for step in ordered if step.step_id in receipts],
+                          selected_records)
         packet = asdict(artifact)
         atomic_json(output / "packet.json", packet)
         horizon_gaps = [row.record_id for row in artifact.records if row.observed_at > plan["as_of"]]

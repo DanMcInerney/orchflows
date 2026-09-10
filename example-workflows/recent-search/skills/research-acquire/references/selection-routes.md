@@ -22,7 +22,7 @@ capability and missing engagement remain explicit losses.
 
 Separately authorized `reddit_shreddit` depth operation `comments` accepts
 carried Reddit submission permalinks from Shreddit, archive, feed or web-index
-discovery. It never rewrites those records as Shreddit. Archive counts remain
+discovery. Archive counts remain
 snapshots; each returned comment has its own score and parent. More-comments
 POST continuation is unavailable; retained comments are a sample. A daily
 thread needs semantic community/topic context to justify inspection.
@@ -56,8 +56,8 @@ selected operation's owner before planning:
 - HN, YouTube, Bluesky, GitHub, LinkedIn, Stocktwits, markets and remaining
   profiles: their [operating](operating.md#smoke-inventory) and
   [protocol](protocol.md#adapter-roster) entries. Supported depth includes HN
-  `item`/`tree`, YouTube `player`/`next`/`transcript`. Transcript needs at least
-  two items: evidence starts on page two; the validator enforces that floor.
+  `item`/`tree`, YouTube `player`/`next`/`transcript` (`max_items >= 2` covers
+  the track list and cue page).
 - [Stack Exchange](route-notes/stack_exchange.md),
   [scholarly](route-notes/scholarly.md),
   [Wikimedia pageviews](route-notes/wikimedia_pageviews.md),

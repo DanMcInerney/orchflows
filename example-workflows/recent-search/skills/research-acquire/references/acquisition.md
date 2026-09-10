@@ -1,6 +1,6 @@
 # Essential acquisition method
 
-The private method has one deterministic entry, [acquire.py](../scripts/acquire.py).
+The private method has one deterministic entry, [scripts/acquire.py](../scripts/acquire.py).
 It executes two fixed stages: declared discovery, then explicitly selected
 depth. It creates no tickets and makes no research judgments. Keep the issued
 ticket, model and standards through the candidate checkpoint.
@@ -61,7 +61,8 @@ timeout. These are ceilings, never completeness or performance claims.
 All permitted adapters must be explicit; being installed does not authorize a
 route. Existing refusal and open-page policy remain in force. Eligible source
 lanes run concurrently through one paced/cache governor; each origin stays
-serialized. Refused origins and conservative pacing intervals survive resume.
+serialized. Refused origins and reserved route/budget-key burst and refill state
+survive resume.
 There is no retry or fallback stage.
 
 ## Candidate checkpoint and semantic choices
