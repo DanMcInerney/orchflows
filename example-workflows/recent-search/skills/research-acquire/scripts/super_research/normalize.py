@@ -181,6 +181,7 @@ def group_records(
 
 def link_discovery_hydration(
     records: Sequence[schema.AcquisitionRecord],
+    selected_records: Optional[Dict[str, str]] = None,
 ) -> Tuple[schema.ProvenanceEdge, ...]:
     """wrong_merge_law rule 7: a hit and its hydrated target are linked, not merged.
 
@@ -188,6 +189,10 @@ def link_discovery_hydration(
     against a discovery record's normalized locator. Nothing is inferred by
     similarity, and a selection matching no hit yields no edge rather than a
     guess.
+
+    A caller with exact selections can bind hydration step IDs to discovery
+    record IDs. Those observations must match the carried locators; callers
+    without that map retain the original first-observation-at-locator behavior.
 
     A discovery record is any record no hydration produced — one carrying no
     ``discovery_locator`` — whatever surface it came from: an index hit, a
@@ -200,13 +205,20 @@ def link_discovery_hydration(
     """
 
     first_hit_at: Dict[str, str] = {}
+    discovery_by_id = {}
     for record in records:
         if not record.discovery_locator and record.normalized_locator:
             first_hit_at.setdefault(record.normalized_locator, record.record_id)
+            discovery_by_id[record.record_id] = record
 
     edges = []
     for record in records:
         source = first_hit_at.get(record.discovery_locator) if record.discovery_locator else None
+        if selected_records is not None and record.step_id in selected_records:
+            chosen = discovery_by_id.get(selected_records[record.step_id])
+            if chosen is None or chosen.normalized_locator != record.discovery_locator:
+                raise NormalizeError("selected discovery record does not match hydration: " + record.record_id)
+            source = chosen.record_id
         if source is None:
             continue
         edges.append(
@@ -221,6 +233,7 @@ def link_discovery_hydration(
 
 def type_discovery_gaps(
     records: Sequence[schema.AcquisitionRecord],
+    selected_records: Optional[Dict[str, str]] = None,
 ) -> Tuple[schema.AcquisitionRecord, ...]:
     """Say the absence ``link_discovery_hydration`` leaves behind.
 
@@ -247,7 +260,7 @@ def type_discovery_gaps(
 
     if all(record.discovery_locator for record in records):
         return tuple(records)
-    linked = {edge.to_record_id for edge in link_discovery_hydration(records)}
+    linked = {edge.to_record_id for edge in link_discovery_hydration(records, selected_records)}
     return tuple(
         replace(record, loss=record.loss + (DISCOVERY_NOT_RECORDED,))
         if record.discovery_locator and record.record_id not in linked

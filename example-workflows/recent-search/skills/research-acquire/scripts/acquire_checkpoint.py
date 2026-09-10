@@ -9,6 +9,7 @@ is released by the OS on process death. Thread locking protects parallel lanes.
 from contextlib import contextmanager
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import threading
@@ -97,13 +98,12 @@ class Store:
             raise CheckpointError("checkpoint missing for existing evidence; no replay authorized")
         self.state = read_json(self.path) if self.path.exists() else {
             "identity": identity, "steps": {}, "requests": [], "selection": None,
-            "spent_seconds": 0.0, "not_before": {}, "refused_origins": []}
+            "spent_seconds": 0.0, "pacing": None, "refused_origins": []}
         if not isinstance(self.state, dict) or self.state.get("identity") != identity:
             raise CheckpointError("plan/package identity changed; use a separate evidence directory")
-        required = {"identity", "steps", "requests", "selection", "spent_seconds", "not_before", "refused_origins"}
+        required = {"identity", "steps", "requests", "selection", "spent_seconds", "pacing", "refused_origins"}
         if (set(self.state) != required or not isinstance(self.state["steps"], dict)
                 or not isinstance(self.state["requests"], list)
-                or not isinstance(self.state["not_before"], dict)
                 or not isinstance(self.state["refused_origins"], list)
                 or not isinstance(self.state["spent_seconds"], (int, float))):
             raise CheckpointError("malformed checkpoint state")
@@ -176,14 +176,38 @@ class BoundedRead:
     The request cap counts outbound opener attempts, including guest activation;
     urllib redirect hops remain inside that transport operation. Reservations
     are durable before I/O, so a crash cannot silently reclaim spent allowance.
-    Refused origins and conservative pacing intervals survive process resume.
+    Refused origins and the governor's reserved budget state survive resume.
     """
     def __init__(self, store, opener, now, clock=time.monotonic, sleep=time.sleep):
         self.store, self.opener, self.now = store, opener, now
         self.clock, self.sleep, self.started = clock, sleep, clock()
         self.prior = store.state["spent_seconds"]
         self.local = threading.local()
-        self.budgets = pacing.route_budgets()
+
+    def pacing_state(self):
+        held = self.store.state["pacing"]
+        if held is None:
+            if self.store.state["requests"]:
+                raise CheckpointError("pacing state missing for reserved reads")
+            return None
+        if (not isinstance(held, dict) or set(held) != {"saved_at", "state"}
+                or type(held["saved_at"]) not in (int, float) or not math.isfinite(held["saved_at"])
+                or not isinstance(held["state"], dict)
+                or set(held["state"]) != {"arrival_us", "blocked_until_us"}):
+            raise CheckpointError("malformed pacing checkpoint")
+        elapsed = max(0, round((time.time() - held["saved_at"]) * pacing.US_PER_SECOND))
+        result = {}
+        for name, values in held["state"].items():
+            if (not isinstance(values, dict) or any(not isinstance(key, str) or type(value) is not int
+                                                    for key, value in values.items())):
+                raise CheckpointError("malformed pacing budget state")
+            result[name] = {key: value - elapsed for key, value in values.items()}
+        return result
+
+    def save_pacing(self, state):
+        with self.store.lock:
+            self.store.state["pacing"] = {"saved_at": time.time(), "state": state}
+            self.store.save()
 
     def decline_step(self, step_id):
         with self.store.lock:
@@ -208,11 +232,6 @@ class BoundedRead:
         with self.store.lock:
             if origin in self.store.state["refused_origins"]:
                 raise transport.TransportError("origin refused earlier in this plan; no further read")
-            ready = self.store.state["not_before"].get(origin, 0)
-        wait = max(0, ready - time.time())
-        self.check_time(wait)
-        if wait:
-            self.wait(wait)
         with self.store.lock:
             self.check_time()
             if len(self.store.state["requests"]) >= self.store.limits["max_requests"]:
@@ -233,10 +252,6 @@ class BoundedRead:
             entry.update(state="answered", status=answered[0], duration_seconds=self.clock() - began)
             if answered[0] in (401, 403, 429) or transport.rate_refused(answered[0], answered[1]):
                 self.store.state["refused_origins"].append(origin)
-            # Persist a conservative origin interval after every actual read;
-            # per-route burst semantics remain the governor's within this run.
-            interval = self.budgets[request.route_id].min_interval_ms / 1000
-            self.store.state["not_before"][origin] = time.time() + interval
             self.store.state["spent_seconds"] = self.prior + self.clock() - self.started
             self.store.save()
         return answered
