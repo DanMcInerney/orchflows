@@ -226,7 +226,7 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
     "3d-browser-game", "bakeoff", "benchmaker", "browser-game", "checkpointed-build",
     "drift-canary", "evolve", "orch-build-workflow", "orch-do", "orch-judge",
     "orchflows-videos", "renovate", "review-delivery", "self-improve",
-    "skill-tournament", "super-research", "tiktok-video",
+    "skill-tournament", "recent-search", "tiktok-video",
   ];
   await expect(workflowCatalog.locator(":scope > li")).toHaveCount(workflowIds.length);
   await expect.poll(async () => (await workflowCatalog.getByRole("link").allTextContents()).sort()).toEqual(workflowIds);

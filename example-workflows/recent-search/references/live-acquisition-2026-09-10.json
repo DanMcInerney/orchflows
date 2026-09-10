@@ -1,0 +1,116 @@
+{
+  "artifact_sha256": "69977cda39664f5eac8a2ca5a2628dd4d6841a1baa076d31d26bee6066dbed31",
+  "observed_at": "2026-09-10T15:54:14.968417+00:00",
+  "outcome": "partial",
+  "loss": [
+    "attestation_required",
+    "recall_window_partial",
+    "window_capability_unmeasured"
+  ],
+  "steps": [
+    {
+      "step_id": "arctic-search",
+      "adapter_id": "reddit_archive",
+      "route_id": "arctic_shift_posts_search",
+      "pages": 1,
+      "records_received": 46,
+      "records_kept": 5,
+      "outcome": "partial",
+      "loss": [
+        "recall_window_partial"
+      ],
+      "warnings": [
+        "Archive coverage/freshness is not platform completeness; search reads one page"
+      ],
+      "kind": "discovery",
+      "query": "search:subreddit=python"
+    },
+    {
+      "step_id": "reddit-search-rss",
+      "adapter_id": "reddit_feed",
+      "route_id": "reddit_search_feed",
+      "pages": 1,
+      "records_received": 25,
+      "records_kept": 0,
+      "outcome": "ok",
+      "loss": [
+        "window_capability_unmeasured"
+      ],
+      "warnings": [
+        "25 record(s) the origin dated outside the step's window were dropped before the cap counted them"
+      ],
+      "kind": "discovery",
+      "query": "search:python"
+    },
+    {
+      "step_id": "xcancel-search",
+      "adapter_id": "x_xcancel",
+      "route_id": "xcancel_search",
+      "pages": 1,
+      "records_received": 0,
+      "records_kept": 0,
+      "outcome": "refused",
+      "loss": [
+        "attestation_required",
+        "window_capability_unmeasured"
+      ],
+      "warnings": [
+        "xcancel browser challenge; no challenge execution or alternate route attempted"
+      ],
+      "kind": "discovery",
+      "query": "search:python"
+    }
+  ],
+  "records": [
+    {
+      "id": "t3_1wc287n",
+      "url": "https://www.reddit.com/r/Python/comments/1wc287n/conference_django_on_the_med_2026_pescara_italy",
+      "published_at": "2026-09-09T23:37:07Z",
+      "observed_at": "2026-09-10T15:54:14Z",
+      "adapter": "reddit_archive",
+      "loss": [
+        "third_party_archive"
+      ]
+    },
+    {
+      "id": "t3_1wbwx4y",
+      "url": "https://www.reddit.com/r/Python/comments/1wbwx4y/anthropic_model_uploaded_a_malicious_package_to",
+      "published_at": "2026-09-09T20:14:33Z",
+      "observed_at": "2026-09-10T15:54:14Z",
+      "adapter": "reddit_archive",
+      "loss": [
+        "third_party_archive"
+      ]
+    },
+    {
+      "id": "t3_1wbwp9s",
+      "url": "https://www.reddit.com/r/Python/comments/1wbwp9s/i_built_a_complete_python_ide_that_fits_in_one",
+      "published_at": "2026-09-09T20:06:49Z",
+      "observed_at": "2026-09-10T15:54:14Z",
+      "adapter": "reddit_archive",
+      "loss": [
+        "third_party_archive"
+      ]
+    },
+    {
+      "id": "t3_1wbwoy4",
+      "url": "https://www.reddit.com/r/Python/comments/1wbwoy4/i_built_an_opensource_data_quality_library_thats",
+      "published_at": "2026-09-09T20:06:30Z",
+      "observed_at": "2026-09-10T15:54:14Z",
+      "adapter": "reddit_archive",
+      "loss": [
+        "third_party_archive"
+      ]
+    },
+    {
+      "id": "t3_1wbvdn1",
+      "url": "https://www.reddit.com/r/Python/comments/1wbvdn1/hacking_tbf_and_late_dash",
+      "published_at": "2026-09-09T19:20:35Z",
+      "observed_at": "2026-09-10T15:54:14Z",
+      "adapter": "reddit_archive",
+      "loss": [
+        "third_party_archive"
+      ]
+    }
+  ]
+}

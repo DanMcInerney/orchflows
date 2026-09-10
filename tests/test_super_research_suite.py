@@ -1,4 +1,4 @@
-"""Wires the super-research skill's offline suite into the required set.
+"""Wires the recent-search package's offline suite into the required set.
 
 `tools/run_tests.py` discovers only `<repo>/tests`
 (`DEFAULT_TESTS_DIR`), and none of `AGENTS.md`'s five otherwise executes a
@@ -41,7 +41,7 @@ class SuperResearchSuiteTest(unittest.TestCase):
         ran = match.group(1) if match else "0"
         self.assertEqual(
             0, completed.returncode,
-            "super-research suite exited {0} ({1} tests reported):\n{2}".format(
+            "recent-search acquisition suite exited {0} ({1} tests reported):\n{2}".format(
                 completed.returncode, ran, completed.stdout[-4000:],
             ),
         )

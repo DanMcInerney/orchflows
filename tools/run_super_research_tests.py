@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the project-scope super-research offline unittest suite."""
+"""Run the package-owned recent-search offline unittest suite."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from pathlib import Path
 # would need this same walk to seed the import first, for no fact this
 # file otherwise needs from `scripts/`.
 ROOT = Path(__file__).resolve().parent.parent
-SKILL_ROOT = ROOT / ".orchflows" / "skills" / "research-acquire"
+SKILL_ROOT = ROOT / "example-workflows" / "recent-search" / "skills" / "research-acquire"
 TESTS_DIR = SKILL_ROOT / "tests"
 SCRIPTS_DIR = SKILL_ROOT / "scripts"
 
