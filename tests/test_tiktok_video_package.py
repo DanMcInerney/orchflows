@@ -139,7 +139,7 @@ class VideoPackageTests(unittest.TestCase):
         for path in [PACKAGE / 'SKILL.md', PACKAGE / 'references/admission.md',
                      PACKAGE / 'references/inventory.md']:
             body = path.read_text(encoding='utf-8')
-            self.assertFalse({'super-research', 'research-acquire', 'html-dossier'}
+            self.assertFalse({'recent-search', 'research-acquire', 'html-dossier'}
                              & set(re.findall(r'[a-z]+(?:-[a-z]+)+', body)), path)
         self.assertFalse(self.grade().has_errors)
         for kind, name in [('workflow', 'video-direction'),

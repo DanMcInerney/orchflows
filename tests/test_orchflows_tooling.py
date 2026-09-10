@@ -9,6 +9,7 @@ drives the resolver rather than a directory walk of its own.
 from __future__ import annotations
 
 import contextlib
+from functools import partial
 import io
 import os
 import shutil
@@ -49,7 +50,8 @@ def _world():
                         root / "lib" / "installer" / "host_adapters")
         with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state"),
                                      **host_environment}), \
-                patch.object(rings, "lib_root", return_value=root / "lib"):
+                patch.object(rings, "lib_root", return_value=root / "lib"), \
+                patch.object(rings, "inventory", partial(rings.inventory, lib=root / "lib")):
             yield {"root": root, "home": home, "project": project}
 
 

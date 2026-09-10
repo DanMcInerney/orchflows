@@ -93,9 +93,15 @@ class WarningCeilingTest(unittest.TestCase):
         tree_report = validate_the_real_tree().stdout
         held = warning_lines(tree_report, NEAR)
         self.assertEqual(
-            {"orchflows-integration-probe"},
-            CLONE_SKIPS(ROOT, ["orchflows-integration-probe", "standards"]),
+            {"orchflows-integration-probe", "node_modules"},
+            CLONE_SKIPS(ROOT, ["orchflows-integration-probe", "node_modules", "standards", "benchmarks"]),
             "generated integration scratch must be skipped while graded directories remain",
+        )
+        self.assertEqual({"fixtures"}, CLONE_SKIPS(ROOT / "tests", ["fixtures", "validator_copy.py"]))
+        self.assertEqual(
+            {"node_modules"},
+            CLONE_SKIPS(ROOT / "example-workflows" / "probe", ["node_modules", "fixtures", "package-lock.json"]),
+            "package fixtures and dependency declarations remain source inputs",
         )
         clone = self._clone_beside_the_tree()
         planted = clone / "standards" / "orch-research" / "STANDARD.md"
@@ -105,7 +111,9 @@ class WarningCeilingTest(unittest.TestCase):
             text.replace("## Lens\n", "## Lens\n" + self.REGRESSION, 1),
             encoding="utf-8",
         )
-        clone_report = run_validate(clone).stdout
+        clone_reading = run_validate(clone)
+        self.assertEqual(0, clone_reading.returncode, clone_reading.stdout + clone_reading.stderr)
+        clone_report = clone_reading.stdout
         raised = warning_lines(clone_report, NEAR)
         # The clone's report has to be the tree's report plus the plant, and
         # the containment is what says so: a finding the tree makes and the

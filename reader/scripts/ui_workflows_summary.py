@@ -31,7 +31,7 @@ CANONICAL_WORKFLOW_IDS = frozenset({
     "renovate",
     "orch-self-improve",
     "skill-tournament",
-    "super-research",
+    "recent-search",
     "tiktok-video",
     "orchflows-videos",
 })

@@ -224,96 +224,24 @@ class ScopeTests(unittest.TestCase):
             self.assertEqual(bodies[workflow_dest], workflow_dest.read_text(encoding="utf-8"))
 
 
-class CommittedProofTests(unittest.TestCase):
-    """This repository's own research-acquire shim is now generated."""
-
-    def _expected(self, host: str) -> str:
-        item = ROOT / ".orchflows" / "skills" / "research-acquire" / "SKILL.md"
-        records = orchflows_adapters.host_records(ROOT)
-        return orchflows_adapters.render(
-            "skill", "research-acquire", item, records[host],
-            orchflows_adapters.pointer_for(item, ROOT),
-        )
-
-    def test_the_committed_claude_shim_is_what_the_machinery_renders(self):
-        self.assertEqual(
-            self._expected("claude"), RESEARCH_ACQUIRE.read_text(encoding="utf-8"),
-        )
-
-    def test_the_committed_agents_shim_is_what_the_machinery_renders(self):
-        self.assertEqual(
-            self._expected("claude"), AGENTS_RESEARCH_ACQUIRE.read_text(encoding="utf-8"),
-        )
-
-    def test_the_committed_shim_keeps_its_manual_invocation_flag(self):
-        text = RESEARCH_ACQUIRE.read_text(encoding="utf-8")
-        self.assertIn("name: research-acquire", text)
-        self.assertIn("disable-model-invocation: true", text)
-        self.assertIn(orchflows_adapters.MARKER, text)
-
-    def test_the_committed_shim_holds_no_machine_specific_path(self):
-        for path in (RESEARCH_ACQUIRE, AGENTS_RESEARCH_ACQUIRE):
-            text = path.read_text(encoding="utf-8")
-            self.assertNotIn(str(ROOT), text)
-            self.assertIn("Read .orchflows/skills/research-acquire/SKILL.md", text)
-
-
-class PortabilityTests(unittest.TestCase):
-    """Goal clause 5's own wording: 'from a checkout that is not this one.'
-    A resolution or a rendering read against ROOT proves nothing about
-    portability -- this repository is always its own project ring. Copying
-    the two manifests into a scratch home ring and resolving/rendering them
-    from there is the only reading that can fail if the pair stopped being
-    portable."""
-
-    def test_the_acquisition_pair_copies_out_under_two_distinct_names(self):
-        """U7d renamed the skill, so the pair no longer shares one name.
-        The `-workflow` slug keeps their *paths* apart either way; what the
-        rename fixes is the name each adapter declares to its host, which
-        was `super-research` on both of them before it."""
-
+class RecentSearchAdapterTests(unittest.TestCase):
+    def test_only_the_public_workflow_gets_a_host_adapter(self):
         with _world() as world:
-            skill_copy = world["home"] / "skills" / "research-acquire" / "SKILL.md"
-            skill_copy.parent.mkdir(parents=True)
-            skill_copy.write_bytes(
-                (ROOT / ".orchflows" / "skills" / "research-acquire" / "SKILL.md").read_bytes()
-            )
-            workflow_copy = world["home"] / "workflows" / "super-research" / "SKILL.md"
-            workflow_copy.parent.mkdir(parents=True)
-            workflow_copy.write_bytes(
-                (ROOT / "example-workflows" / "super-research" / "SKILL.md").read_bytes()
-            )
-
-            skill_record = rings.resolve(
-                "skill", "research-acquire", trust=False, start=world["root"],
-            )
-            workflow_record = rings.resolve(
-                "workflow", "super-research", start=world["root"],
-            )
-            self.assertEqual("home", skill_record["ring"])
-            self.assertEqual("home", workflow_record["ring"])
-
+            import shutil
+            package = world["home"] / "workflows" / "recent-search"
+            shutil.copytree(ROOT / "example-workflows" / "recent-search", package,
+                            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
             with patch.object(orchflows_adapters, "detected", return_value=["claude"]):
                 entries = orchflows_adapters.plan("home", start=world["root"])
+            selected = {path.parent.name: body for path, body in entries
+                        if "recent-search" in path.parent.name or "research-acquire" in path.parent.name}
+            self.assertEqual({"recent-search-workflow"}, set(selected))
+            self.assertIn("name: recent-search", selected["recent-search-workflow"])
+            self.assertIn("disable-model-invocation: true", selected["recent-search-workflow"])
 
-            rendered = {
-                path.parent.name: text
-                for path, text in entries
-                if path.parent.name in ("research-acquire", "super-research-workflow")
-            }
-            self.assertEqual(
-                {"research-acquire", "super-research-workflow"}, set(rendered),
-            )
-            declared = sorted(
-                line for text in rendered.values()
-                for line in text.splitlines() if line.startswith("name: ")
-            )
-            self.assertEqual(["name: research-acquire", "name: super-research"], declared)
-            self.assertIn("is a workflow skill", rendered["super-research-workflow"])
-            self.assertNotIn("is a workflow skill", rendered["research-acquire"])
-            self.assertIn(
-                "disable-model-invocation: true", rendered["super-research-workflow"],
-            )
+    def test_retired_project_adapters_are_absent(self):
+        self.assertFalse(RESEARCH_ACQUIRE.exists())
+        self.assertFalse(AGENTS_RESEARCH_ACQUIRE.exists())
 
 
 if __name__ == "__main__":
