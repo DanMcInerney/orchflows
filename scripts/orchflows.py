@@ -24,7 +24,7 @@ CORE_NAME = "orchflows-light"
 MANIFESTS = ("plugin.json", ".claude-plugin/plugin.json", ".codex-plugin/plugin.json")
 CORE_ENTRIES = (
     "plugin.json", ".claude-plugin", ".codex-plugin", ".agents", "skills",
-    "standards", "docs", "scripts", "README.md", "LICENSE", "LICENSE.md",
+    "standards", "docs", "scripts", "README.md", "AGENTS.md", "CLAUDE.md", "LICENSE", "LICENSE.md",
 )
 EXCLUDED = {
     ".git", ".local", ".venv", "venv", "__pycache__", ".pytest_cache",
@@ -32,37 +32,13 @@ EXCLUDED = {
     "worktrees", ".worktrees", "logs", "outputs",
 }
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
-HOME_README = """# My orchflows library
+HOME_README = """# orchflows home
 
-Keep custom native workflow packages in `libraries/<name>/`, with a portable
-`plugin.json` and sibling `skills/<skill>/SKILL.md` files. Commit the libraries,
-`config.toml`, and selected reports with ordinary Git.
-Setup initializes Git when available but never commits or publishes anything.
-
-`.local/` contains this machine's Python runtime and managed core package. It is
-ignored, as are Python caches and an optional `artifacts/` directory. Save task
-outputs in the caller's workspace or an explicitly selected location. Each library
-declares its own optional dependencies; setup installs no third-party packages.
-Use native history for execution evidence; see the core's docs/native-history.md.
-
-After cloning this home, restore `.local/` using Python 3.11+ and a supplied core
-package: `python /path/to/orchflows-light/scripts/orchflows.py setup --home
-/path/to/this-home --source /path/to/orchflows-light`. Rerun setup from the desired
-core package to update. It backs up and replaces an unchanged managed core,
-updates its recorded identity, and preserves authored libraries and other home
-content. Local core edits are reported for reconciliation before replacement.
-
-Use `.local/runtime/Scripts/python.exe` on Windows or `.local/runtime/bin/python`
-elsewhere to call `.local/packages/orchflows-light/scripts/orchflows.py`. Pass
-`--home /path/to/this-home`, or set `ORCHFLOWS_HOME`, from any project. `doctor`
-checks the installation and `resolve NAME --skill SKILL` returns concrete paths.
-The portable native catalogs live in `.agents/plugins/marketplace.json` (Codex)
-and `.claude-plugin/marketplace.json` (Claude), named `orchflows-home`. Setup adds
-missing library entries and preserves existing entries. Register this home through
-each host's native marketplace controls. Setup sets both hosts' user concurrency settings
-to 15; use --concurrency N to choose another value or --skip-host-config to
-preserve host settings. See the installed core's docs/native-hosts.md for the
-different limits, configuration paths, and backups.
+Docs under `.local/packages/orchflows-light/docs/`: `architecture.md` (how orchflows
+fits together, where anything belongs), `home.md` (this tree, the CLI, updating,
+another computer), `hosts.md` (plugin registration, isolation), `history.md` (agent
+transcripts). Edit `libraries/<name>/`; `.local/` and `artifacts/` are machine-specific
+and ignored.
 """
 HOME_GITIGNORE = """# Machine-specific packages, runtime, caches and working files.
 /.local/

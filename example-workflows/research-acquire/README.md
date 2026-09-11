@@ -1,13 +1,12 @@
 # Research Acquire
 
-Optional public-source acquisition with bounded requests, receipts and resumable discovery/selection/depth. It runs inside an existing worker; it creates no agents or reviews. Any research workflow can consume its evidence packets.
+Optional scripts for research workers: bounded keyless acquisition with receipts and resume, and a direct YouTube transcript reader. Both run inside an existing worker; neither launches agents or reviews.
 
-Install this complete library with `scripts/orchflows.py setup --example research-acquire` from an orchflows-light checkout. Use `resolve research-acquire --skill research-acquire` through the installed core CLI to locate its [entrypoint](skills/research-acquire/SKILL.md). It needs Python 3.9+ and the standard library; the orchflows home runtime satisfies that requirement. Native search in social-search does not depend on this package.
+Install with `scripts/orchflows.py setup --example research-acquire` from a checkout. Locate with `resolve research-acquire --skill research-acquire` or `--resource skills/research-acquire/scripts/inspect_source.py`. Needs the Python 3.9+ standard library; yt-dlp is optional and never installed by setup.
 
-Use the caller's output location or a task-specific directory in the caller's workspace. Scripts resolve from the loaded skill directory, and generated evidence belongs outside the package.
+- Transcript: `inspect_source.py youtube-transcript --url <url> --output <file.json>` tries installed yt-dlp, then the public InnerTube adapter within the remaining time. Bounds, dates, dependency behavior and the reader's tests: [source inspection](skills/research-acquire/references/source-inspection.md).
+- Acquisition: [entrypoint](skills/research-acquire/SKILL.md); plan, semantic selection, resumed depth. Enforcement is per plan; the caller splits bounds across plans.
 
-For a known YouTube URL, use `scripts/inspect_source.py youtube-transcript --url <url> --output <file.json>` from the resolved skill directory. This direct reader needs no plan or selection file. It tries an already installed yt-dlp, then the existing public InnerTube adapter within the remaining time. See [source inspection](skills/research-acquire/references/source-inspection.md) for bounds, date handling, dependency behavior and comparison provenance.
+Offline checks from the skill directory with `PYTHONPATH` set to its absolute `scripts/`: `python -m unittest tests.test_skill_contract` validates links and the example plan; `scripts/acquire_fixture.py --output <scratch>` exercises parsing, selection, depth and resume. Neither tests live access or judgment.
 
-The backend and fixtures come from [the original recent-search library](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search), under the retained [MIT license](LICENSE). The direct source reader was added after extraction. Historical route measurements do not establish present access. Enforcement applies per plan; the caller allocates bounds across concurrent plans.
-
-For offline validation, set `PYTHONPATH` to the skill's absolute `scripts/` directory and run `python -m unittest tests.test_skill_contract` from that skill directory. Run `scripts/acquire_fixture.py --output <scratch>` there to exercise parsing, selection, depth and resume. These checks do not test live access or research judgment.
+Backend from [orchflows recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under its [MIT license](LICENSE); the reader was added after extraction. Historical route measurements do not establish present access.
