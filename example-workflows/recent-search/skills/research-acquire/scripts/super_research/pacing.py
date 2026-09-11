@@ -127,6 +127,8 @@ class RateGovernor:
         budgets: Optional[Dict[str, RouteBudget]] = None,
         clock: Callable[[], float] = time.monotonic,
         sleep: Callable[[float], None] = time.sleep,
+        state: Optional[dict] = None,
+        checkpoint: Optional[Callable[[dict], None]] = None,
     ) -> None:
         self._carrier = carrier
         self._cache = run_cache
@@ -139,8 +141,10 @@ class RateGovernor:
         # refusal's cooldown ends. They are separate because a burst allowance
         # may be spent against the first and never against the second — an
         # origin that asked for fewer requests is not owed fewer.
-        self._route_arrival_us: Dict[str, int] = {}
-        self._route_blocked_until_us: Dict[str, int] = {}
+        state = state or {"arrival_us": {}, "blocked_until_us": {}}
+        self._route_arrival_us: Dict[str, int] = dict(state["arrival_us"])
+        self._route_blocked_until_us: Dict[str, int] = dict(state["blocked_until_us"])
+        self._checkpoint = checkpoint
         self.log: List[OriginRead] = []
         self.serves: List[cache.CacheServe] = []
         # One lock per origin host, taken for the whole of a read — the wait,
@@ -201,9 +205,13 @@ class RateGovernor:
         key = transport.budget_key(request)
         waited_us = self._wait_until(self._ready_at(key, budget))
         began_us = self._elapsed_us()
+        if self._checkpoint is not None:
+            self._reserve(key, budget, began_us)
         response = self._carrier.fetch(request)
         stopped_us = self._elapsed_us()
-        self._charge(key, budget, began_us, stopped_us, response)
+        if self._checkpoint is None:
+            self._reserve(key, budget, began_us)
+        self._charge(key, budget, stopped_us, response)
         with self._tables_lock:
             self.log.append(
                 OriginRead(
@@ -275,15 +283,35 @@ class RateGovernor:
             ready_us = max(ready_us, arrival_us - (budget.burst - 1) * interval_us)
         return ready_us
 
+    def _save_state(self) -> None:
+        """Publish relative clock offsets under the table lock, before any I/O.
+
+        The optional sink owns durable storage and wall-time rebasing on resume;
+        the governor alone owns burst/refill arithmetic and budget-key scope.
+        """
+
+        if self._checkpoint is not None:
+            elapsed = self._elapsed_us()
+            self._checkpoint({
+                "arrival_us": {key: value - elapsed for key, value in self._route_arrival_us.items()},
+                "blocked_until_us": {key: value - elapsed for key, value in self._route_blocked_until_us.items()},
+            })
+
+    def _reserve(self, key: str, budget: RouteBudget, began_us: int) -> None:
+        # Durable callers reserve before I/O; legacy callers charge answers only.
+        with self._tables_lock:
+            arrival_us = self._route_arrival_us.get(key, began_us)
+            self._route_arrival_us[key] = max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
+            self._save_state()
+
     def _charge(
         self,
         key: str,
         budget: RouteBudget,
-        began_us: int,
         stopped_us: int,
         response: transport.TransportResponse,
     ) -> None:
-        """Spend one read against this budget, and open a cooldown if it was refused.
+        """Open a cooldown if the reserved read was refused.
 
         The cooldown is the longer of the two intervals on offer: the ceiling
         this package measured, and the one the origin stated in its own answer.
@@ -293,10 +321,6 @@ class RateGovernor:
         """
 
         with self._tables_lock:
-            arrival_us = self._route_arrival_us.get(key, began_us)
-            self._route_arrival_us[key] = (
-                max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
-            )
             if not transport.rate_refused(response.status, response.body):
                 return
             stated_us = int(
@@ -305,6 +329,7 @@ class RateGovernor:
             self._route_blocked_until_us[key] = stopped_us + max(
                 budget.cooldown_ms * US_PER_MS, stated_us
             )
+            self._save_state()
 
     def _elapsed_us(self) -> int:
         return tick_us(self._clock) - self._origin_us
@@ -323,6 +348,9 @@ def paced_carrier(
     carrier: Optional[transport.Transport] = None,
     clock: Callable[[], float] = time.monotonic,
     sleep: Optional[Callable[[float], None]] = None,
+    *,
+    state: Optional[dict] = None,
+    checkpoint: Optional[Callable[[dict], None]] = None,
 ) -> RateGovernor:
     """The carrier a run gets when it does not build one: paced, and remembering.
 
@@ -344,6 +372,8 @@ def paced_carrier(
         run_cache=cache.RunCache(clock=clock),
         clock=clock,
         sleep=time.sleep if sleep is None else sleep,
+        state=state,
+        checkpoint=checkpoint,
     )
 
 

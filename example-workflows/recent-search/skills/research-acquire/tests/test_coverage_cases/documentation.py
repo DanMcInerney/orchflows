@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+import contextlib
+import io
+
+import acquire
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[2]
@@ -37,14 +41,12 @@ class ProtocolDocTest(unittest.TestCase):
 
 class SkillDocTest(unittest.TestCase):
     def test_the_owner_names_the_call_a_caller_would_make(self):
-        """The seam a caller reaches is the one `SKILL.md` names, or neither is.
-
-        Read as a backticked name and not as a sentence: the fact this fails
-        against is that the owner sends a caller to a function this module no
-        longer has, which is the one way a rename ships half-done.
-        """
-
-        body = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
-
-        self.assertIn("`coverage.plan_depth(", body)
-        self.assertNotIn("plan_hydration", body)
+        """The routine CLI replaces manual helper calls; its documented flags work."""
+        body = (SKILL_ROOT / "references/acquisition.md").read_text(encoding="utf-8")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as stopped:
+            acquire.main(["--help"])
+        self.assertEqual(stopped.exception.code, 0)
+        for flag in ("--plan", "--output", "--selection"):
+            self.assertIn(flag, output.getvalue())
+            self.assertIn(flag, body)

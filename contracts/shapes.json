@@ -151,7 +151,7 @@
       "contract": "work-item.md",
       "fields": [
         "id", "run", "status", "admission", "executor", "standards",
-        "skill", "skill_digest",
+        "skill", "skill_digest", "pin_origin",
         "profile", "parent", "depends_on", "isolation", "workspace_adapter", "bound",
         "frame", "done", "makes",
         "workflow", "workflow_digest", "workflow_entry",

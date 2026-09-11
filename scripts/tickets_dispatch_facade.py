@@ -165,6 +165,12 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
     if failure is not None:
         return failure
 
+    if workspace and not Path(workspace).expanduser().is_dir():
+        return _classification(
+            "workspace-target-invalid",
+            f"workspace target is not a directory: {workspace}; create it before dispatch",
+        )
+
     opening = _cmd_dispatch_open([
         run, ticket_id, "--by", owner, "--dispatch-id", dispatch_id,
         "--lease-expires-at", lease,

@@ -89,6 +89,10 @@ safe direction.
 
 ## Running a manifest
 
+This is the manual, lower-level API. For routine discovery/selection/hydration,
+use the resumable [bounded plan entry](acquisition.md); it performs validation,
+artifact publication and coverage advisories without a caller-written driver.
+
 The CLI runs no manifest, by design; a caller runs one in process, from a
 file it wrote, and never from a value it holds in memory — the file is the
 guard. Write the manifest, then run exactly this, with scripts/ directory containing the [CLI module](../scripts/super_research/cli.py) on
@@ -127,11 +131,12 @@ Staged-manifest shapes the reference tools wired as code and this package
 authors as steps. Each is a pattern for the caller writing the manifest, not
 a mechanism: nothing below is a fallback, and every step still names its cap.
 
-- **Reddit, four stages.** Discover on `reddit_shreddit` (search or listing,
-  real scores); backfill anything older than the listing reaches by id on
-  `reddit_archive`; select the discussion-heavy hits; hydrate their comment
-  pages on `reddit_shreddit` `comments`. The feed route is the freshness
-  probe beside that, not a stage of it.
+- **Reddit.** Plan archive, Shreddit and/or feed discovery explicitly. Select
+  threads by semantic topic/community context, recording reasons; a literal
+  title/body threshold can miss useful daily discussions. `coverage.plan_depth`
+  accepts carried Reddit submission permalinks from these routes for separately
+  authorized Shreddit comments. Archive and live records remain linked and
+  distinct. A generic daily thread is not automatically relevant.
 - **X, three lanes.** One `x_fxtwitter` search on the topic words, one on
   `from:<handle>` for each named principal, one on the principal's handle as
   a plain term for the conversation *about* them — three discovery steps,

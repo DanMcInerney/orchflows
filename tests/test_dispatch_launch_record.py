@@ -127,6 +127,17 @@ class DispatchLaunchRecordTest(unittest.TestCase):
     def ticket_bytes(self):
         return self.ticket_path.read_bytes()
 
+    def test_missing_workspace_refuses_before_consuming_a_dispatch_attempt(self):
+        before = self.ticket_bytes()
+        missing = Path(self.temporary.name) / "new-report"
+        result = retired_commands.run([
+            "dispatch", "run", "T", "--by", "worker", "--dispatch-id", "D1",
+            "--lease-expires-at", self.lease, "--workspace", str(missing),
+        ])
+        self.assertEqual("workspace-target-invalid", result.get("code"), result)
+        self.assertEqual(before, self.ticket_bytes())
+        self.assertFalse(missing.exists())
+
     def test_the_launch_is_committed_once_and_an_exact_retry_replays(self):
         first = self.dispatch()
         self.assertNotIn("error", first, first)

@@ -223,6 +223,8 @@ def pin_fields(standards: Sequence[str], skill, **overrides):
         except PinError as error:
             return None, {"error": error.detail}
         fields["skill"] = applied[0]
+    if names or applied:
+        fields["pin_origin"] = str(Path(overrides.get("start") or Path.cwd()).resolve())
     return fields, None
 
 
@@ -324,17 +326,25 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
         detail = drift("skill", applied[0], pinned, **resolution)
         if detail is not None:
             findings.append(finding("skill-digest-mismatch", "skill_digest", detail))
+    origin = dequote(data.get("pin_origin"))
+    if "pin_origin" in data and (not origin or not Path(origin).is_absolute()):
+        findings.append(finding(
+            "pin-origin-invalid", "pin_origin", "pin_origin must be an absolute resolver directory",
+        ))
     return findings
 
 
 def inspect_ticket_pins(run: str, ticket_id: str, data: dict) -> dict:
-    """Inspect pins through the run's resolver and verified public owner scope."""
+    """Inspect the issued resolver origin and verified public owner scope."""
     if __package__:
         from .tickets_project import recorded_project
     else:
         from tickets_project import recorded_project
     project = recorded_project(run) or {}
-    overrides = {"start": Path(project["root"])} if project.get("root") else {}
+    origin = dequote(data.get("pin_origin")) or project.get("root")
+    overrides = {"start": Path(origin)} if origin else {}
+    if origin and (not Path(origin).is_absolute() or not Path(origin).is_dir()):
+        return {"error": "pin origin is not an available absolute directory", "code": "pin-origin-invalid"}
     findings = pinned_findings(
         data, lambda code, field, detail: {"code": code, "field": field, "detail": detail},
         **overrides,

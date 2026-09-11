@@ -101,6 +101,10 @@ remedy. Two grants, and the refusal names both — `orchflows trust --once
 standing, `orchflows trust <bundle>` remembers until the bundle's ring content
 changes. `orchflows untrust <bundle>` withdraws either.
 
+Generated Python caches preserve trust only when their bytecode matches
+compilation of adjacent source for the running interpreter. Other cache
+content, sourceless bytecode, and source edits remain trust inputs.
+
 The ledger is `~/.orchflows/trust.json`, outside every repository and
 gitignored: a grant is a judgement about one machine and never syncs. Nothing
 inside a project decides whether that project is trusted — a ring that shipped
