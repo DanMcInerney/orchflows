@@ -11,4 +11,4 @@ Use orchflows-light:orch-work once with the Research standard. Give the worker a
 
 Pass relevant [source readers](../../references/source-readers.md) from the library context. Before reads, establish that the method can honor hard caller limits.
 
-When the caller gathers, return the native worker handle and expected evidence location immediately. Otherwise await this worker and return its actual outcome, finalizing the outer run if owned. Neither path launches a reviewer.
+When the caller gathers, return the native worker handle and expected evidence location immediately. Otherwise await this worker and return its actual outcome. Neither path launches a reviewer.

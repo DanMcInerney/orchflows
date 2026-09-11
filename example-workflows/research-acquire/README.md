@@ -4,7 +4,7 @@ Optional public-source acquisition with bounded requests, receipts and resumable
 
 Install this complete library with `scripts/orchflows.py setup --example research-acquire` from an orchflows-light checkout. Use `resolve research-acquire --skill research-acquire` through the installed core CLI to locate its [entrypoint](skills/research-acquire/SKILL.md). It needs Python 3.9+ and the standard library; the orchflows home runtime satisfies that requirement. Native search in social-search does not depend on this package.
 
-Reuse the caller's run/output context. For standalone use, load the available `orchflows-light:orch-record-run` skill for one outer `research-acquire:research-acquire` run; missing history does not prevent acquisition. Scripts resolve from the loaded skill directory, and generated evidence belongs outside the package.
+Use the caller's output location or a task-specific directory in the caller's workspace. Scripts resolve from the loaded skill directory, and generated evidence belongs outside the package.
 
 For a known YouTube URL, use `scripts/inspect_source.py youtube-transcript --url <url> --output <file.json>` from the resolved skill directory. This direct reader needs no plan or selection file. It tries an already installed yt-dlp, then the existing public InnerTube adapter within the remaining time. See [source inspection](skills/research-acquire/references/source-inspection.md) for bounds, date handling, dependency behavior and comparison provenance.
 

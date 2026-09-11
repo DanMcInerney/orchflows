@@ -1,6 +1,6 @@
 # Your portable orchflows home
 
-`~/.orchflows` holds your authored libraries and workflow history. `ORCHFLOWS_HOME` changes the default; an explicit `--home` wins. A project's working directory does not change which home is used.
+`~/.orchflows` holds your authored libraries and local runtime. `ORCHFLOWS_HOME` changes the default; an explicit `--home` wins. A project's working directory does not change which home is used.
 
 ## Bootstrap and runtime
 
@@ -33,28 +33,26 @@ Relative links resolve within the loaded package. Resolve an external dependency
 
 Use the [native host guide](native-hosts.md) for registration and reload commands. Core development may still load the source checkout directly; user custom workflows belong in their home library unless a project-local destination was requested.
 
-## One run per outer workflow
+## Outputs and history
 
-`orch-record-run` starts a run at the outer workflow boundary. Nested workflows and source workers reuse its context. Run directories are unique so concurrent sessions do not share a writable global log.
+Use the caller's output location or a task-specific directory in its workspace.
+Keep generated evidence and reports outside installed packages, and pass concrete
+output paths to workers. Save a summary when it helps the user; workflows do not
+need run registration or finalization.
 
-```sh
-python /absolute/home/.local/packages/orchflows-light/scripts/orchflows.py run start --workflow social-search:social-search --project demo
-python /absolute/home/.local/packages/orchflows-light/scripts/orchflows.py run finish /absolute/home/logs/YYYY-MM/RUN --status complete --summary /absolute/path/to/actual-summary.md
-```
-
-Use the home runtime interpreter in place of `python` and pass `--home` for a non-default home. Save an actual outcome summary, including limitations, before finalization. `partial` and `blocked` are available when work cannot fully complete. A started run remains `running` if the host stops before finalization; that is unfinished metadata, not a background process. Final records are immutable except an identical repeated finish.
-
-Logs record workflow identity, available provenance, timestamps, status and the supplied summary. They do not automatically capture full native conversations, token usage or tool calls. Preserve real host receipts when available; never invent missing telemetry. Workflows must call the logging skill to participate. A requested project artifact can remain in that project while the home summary records its location.
+The native hosts retain their own history. `history find`, `history inspect` and
+`history read` retrieve that evidence for troubleshooting and `orch-self-improve`;
+see [native history](native-history.md). Existing home logs and reports from earlier
+versions remain ordinary files and are preserved by setup. The manual `run start`
+and `run finish` commands have been removed.
 
 ## Git and another computer
 
-For troubleshooting, `history inspect HOST ID` and `history read HOST ID` read
-native Claude/Codex history directly. See [native history](native-history.md)
-for agent trees, pagination, output expansion and evidence limits.
-
-Generated ignore rules keep `.local/`, Python caches and run bulk output out of Git. Portable configuration, libraries, catalogs, `run.json` and `summary.md` remain eligible for tracking. Review which summaries you want to share before committing. Setup never commits or pushes.
-
-Commit the seeded home `.gitattributes` too. Its `/logs/**/run.json -text` and `/logs/**/summary.md -text` rules preserve exact run bytes on Git add and checkout, including LF or CRLF summary line endings. This keeps the summary's recorded SHA-256 valid across computers with different `core.autocrlf` settings. Setup preserves an existing attributes file; setup and doctor use Git to report missing byte-preservation rules for representative run paths. Review any reported gaps before committing logs. Adding attributes cannot recover bytes already changed in an earlier commit or checkout.
+Generated ignore rules keep `.local/`, Python caches and an optional home
+`artifacts/` directory out of Git. Portable configuration, libraries and catalogs
+remain eligible for tracking. Review reports before committing them. Setup never
+commits or pushes and preserves existing ignore rules, Git attributes and saved
+logs.
 
 After cloning your home to another computer:
 

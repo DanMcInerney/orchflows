@@ -34,6 +34,6 @@ From an available orchflows-light package, run `scripts/orchflows.py setup --exa
 
 Install scripted readers with `setup --example research-acquire`; its README declares their optional dependencies. Workers receive resolved script paths, so reading a video needs no additional skill invocation or acquisition planner.
 
-Public identities are `social-search:<skill-name>`. From another project, load the installed native skill or locate it with `resolve social-search --skill <skill-name>`. Core dependencies and one shared home history run follow [library context](references/library-context.md). A missing home runtime does not prevent native research if the core skills are available.
+Public identities are `social-search:<skill-name>`. From another project, load the installed native skill or locate it with `resolve social-search --skill <skill-name>`. Core dependencies and output locations follow [library context](references/library-context.md). A missing home runtime does not prevent native research if the core skills are available.
 
 The [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) test composition, evidence and actual agent behavior. [Provenance](references/provenance.md) records the upstream origin. Trial specifications are not claims of successful execution.

@@ -35,16 +35,14 @@ HOME_README = """# My orchflows library
 
 Keep custom native workflow packages in `libraries/<name>/`, with a portable
 `plugin.json` and sibling `skills/<skill>/SKILL.md` files. Commit the libraries,
-`config.toml`, `.gitattributes`, and useful run summaries with ordinary Git.
+`config.toml`, and selected reports with ordinary Git.
 Setup initializes Git when available but never commits or publishes anything.
 
 `.local/` contains this machine's Python runtime and managed core package. It is
-ignored, as are raw logs and bulk run artifacts. Run metadata and `summary.md`
-remain trackable. The seeded `.gitattributes` keeps their exact bytes across Git
-checkouts, preserving summary hashes even when computers use different line
-endings. Setup preserves existing attributes; setup and doctor report missing
-byte-preservation rules when Git is available. Each library declares its own
-optional dependencies; setup installs no third-party Python packages.
+ignored, as are Python caches and an optional `artifacts/` directory. Save task
+outputs in the caller's workspace or an explicitly selected location. Each library
+declares its own optional dependencies; setup installs no third-party packages.
+Use native history for execution evidence; see the core's docs/native-history.md.
 
 After cloning this home, restore `.local/` using Python 3.11+ and a supplied core
 package: `python /path/to/orchflows-light/scripts/orchflows.py setup --home
@@ -70,14 +68,8 @@ HOME_GITIGNORE = """# Machine-specific packages, runtime, caches and working fil
 /.local/
 **/__pycache__/
 **/*.py[cod]
-# Keep compact run metadata and summaries; ignore raw and bulk outputs.
-/logs/*/*/*
-!/logs/*/*/run.json
-!/logs/*/*/summary.md
-"""
-HOME_GITATTRIBUTES = """# Preserve compact run bytes, including the summary's recorded SHA-256.
-/logs/**/run.json -text
-/logs/**/summary.md -text
+# Optional generated artifacts.
+/artifacts/
 """
 
 
@@ -318,8 +310,7 @@ def _gitignore_issues(home: Path) -> list[str]:
     git = shutil.which("git")
     if not git or not (home / ".git").exists():
         return []
-    paths = (".local/config.toml", "logs/2000-01/doctor-check/raw/output.json",
-             "logs/2000-01/doctor-check/artifacts/output.html")
+    paths = (".local/config.toml",)
     result = subprocess.run(
         [git, "-C", str(home), "check-ignore", "--no-index", "-z", "--stdin"],
         input="\0".join(paths) + "\0", text=True, capture_output=True, check=False,
@@ -331,30 +322,6 @@ def _gitignore_issues(home: Path) -> list[str]:
             for path in paths if path not in ignored]
 
 
-def _gitattributes_issues(home: Path) -> list[str]:
-    try:
-        attributes = _contained(home, home / ".gitattributes")
-        if not attributes.is_file():
-            return ["Missing home file: .gitattributes; rerun setup to seed run byte-preservation rules"]
-    except (OSError, ValueError) as exc:
-        return [str(exc)]
-    git = shutil.which("git")
-    if not git or not (home / ".git").exists():
-        return []
-    paths = ("logs/2000-01/doctor-check/run.json", "logs/2000-01/doctor-check/summary.md")
-    result = subprocess.run(
-        [git, "-C", str(home), "check-attr", "-z", "--stdin", "text"],
-        input="\0".join(paths) + "\0", text=True, capture_output=True, check=False,
-    )
-    if result.returncode:
-        return [f"Could not check the home's Git attributes: {result.stderr.strip()}"]
-    fields = result.stdout.split("\0")
-    values = dict(zip(fields[::3], fields[2::3]))
-    return [f"Git does not preserve exact bytes for {path}; add /logs/**/{Path(path).name} -text "
-            "after reviewing the preserved .gitattributes"
-            for path in paths if values.get(path) != "unset"]
-
-
 def setup(home: Path, source: Path, example: str | None = None, *,
           concurrency: int = 15, skip_host_config: bool = False) -> dict:
     # Load the sibling even when a caller uses runpy/importlib from another directory.
@@ -364,7 +331,7 @@ def setup(home: Path, source: Path, example: str | None = None, *,
 
     home, source = home.resolve(), source.resolve()
     # Validate input and existing configuration before any filesystem mutation.
-    for relative in ("config.toml", "README.md", ".gitignore", ".gitattributes", ".git", "libraries", "logs", ".local",
+    for relative in ("config.toml", "README.md", ".gitignore", ".git", "libraries", ".local",
                      ".local/config.toml", ".local/runtime", ".local/packages", f".local/packages/{CORE_NAME}",
                      ".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
         _contained(home, home / relative)
@@ -380,7 +347,7 @@ def setup(home: Path, source: Path, example: str | None = None, *,
                 raise ValueError(f"Example identity differs from its requested name: {example_source}")
     host_plans = [] if skip_host_config else host_config.prepare_host_configs(concurrency)
     home.mkdir(parents=True, exist_ok=True)
-    for relative in ("libraries", "logs", ".local/packages"):
+    for relative in ("libraries", ".local/packages"):
         (home / relative).mkdir(parents=True, exist_ok=True)
 
     issues = []
@@ -400,7 +367,6 @@ def setup(home: Path, source: Path, example: str | None = None, *,
         "config.toml": _create_text(home / "config.toml", _config_text(identity)),
         "README.md": _create_text(home / "README.md", HOME_README),
         ".gitignore": _create_text(home / ".gitignore", HOME_GITIGNORE),
-        ".gitattributes": _create_text(home / ".gitattributes", HOME_GITATTRIBUTES),
     }
     if files["config.toml"] == "preserved":
         issues.extend(_check_config_identity(config, identity))
@@ -451,7 +417,6 @@ def setup(home: Path, source: Path, example: str | None = None, *,
         else:
             git_status = "unavailable"
     issues.extend(_gitignore_issues(home))
-    issues.extend(_gitattributes_issues(home))
     host_configs, host_issues = host_config.apply_host_configs(host_plans)
     issues.extend(host_issues)
     return {"status": "partial" if issues else "ready", "home": str(home), "files": files,
@@ -557,7 +522,7 @@ def doctor(home: Path) -> dict:
     except (OSError, ValueError) as exc:
         checks["libraries"] = "unavailable"
         issues.append(str(exc))
-    for relative in ("README.md", ".gitignore", "logs"):
+    for relative in ("README.md", ".gitignore"):
         try:
             if not _contained(home, home / relative).exists():
                 issues.append(f"Missing home entry: {relative}")
@@ -569,7 +534,6 @@ def doctor(home: Path) -> dict:
     except (OSError, ValueError) as exc:
         issues.append(str(exc))
     issues.extend(_gitignore_issues(home))
-    issues.extend(_gitattributes_issues(home))
     runtime = checks.get("runtime")
     return {"status": "incomplete" if issues else "ready", "home": str(home), "checks": checks,
             "runtime_python": runtime.get("runtime_python") if isinstance(runtime, dict) else None,
@@ -600,18 +564,6 @@ def main(argv: list[str] | None = None) -> int:
     request = resolve_parser.add_mutually_exclusive_group()
     request.add_argument("--skill")
     request.add_argument("--resource")
-    run_parser = commands.add_parser("run", help="Record a workflow run")
-    _add_home(run_parser)
-    run_commands = run_parser.add_subparsers(dest="run_command", required=True)
-    start_parser = run_commands.add_parser("start")
-    _add_home(start_parser)
-    start_parser.add_argument("--workflow", required=True)
-    start_parser.add_argument("--project")
-    finish_parser = run_commands.add_parser("finish")
-    _add_home(finish_parser)
-    finish_parser.add_argument("run_dir", type=Path)
-    finish_parser.add_argument("--status", required=True, choices=["complete", "partial", "blocked"])
-    finish_parser.add_argument("--summary", required=True, type=Path)
     from native_logs import add_parser, run as read_native_history
     add_parser(commands)
     args = parser.parse_args(argv)
@@ -626,12 +578,6 @@ def main(argv: list[str] | None = None) -> int:
             result = resolve(home, args.library, args.skill, args.resource)
         elif args.command == "history":
             result = read_native_history(args)
-        else:
-            from run_log import finish_run, start_run
-            if args.run_command == "start":
-                result = start_run(home, args.workflow, args.project)
-            else:
-                result = finish_run(home, args.run_dir, args.status, args.summary)
     except (OSError, ValueError, subprocess.SubprocessError, ImportError) as exc:
         print(json.dumps({"status": "error", "error": str(exc)}), file=sys.stderr)
         return 2

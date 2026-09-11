@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import contextlib
-import hashlib
 import importlib.util
-import io
 import json
 import os
 from pathlib import Path
@@ -399,28 +396,32 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual(codex.read_bytes(), before)
         self.assertIn("needs registration for social-search", " ".join(report["issues"]))
 
-    def test_home_git_ignores_runtime_and_bulk_but_tracks_sources_and_summaries(self) -> None:
+    def test_home_git_ignores_runtime_and_artifacts_but_tracks_libraries(self) -> None:
         git = shutil.which("git")
         if not git:
             self.skipTest("Git unavailable")
         self.install(example=True)
-        run = self.home / "logs/2026-09/20260911T000000Z-test"
-        write(run / "run.json", "{}\n")
-        write(run / "summary.md", "Actual compact summary.\n")
-        write(run / "raw/source.json", "raw body")
-        write(run / "artifacts/large.html", "large artifact")
-        write(run / "other-output.bin", "arbitrary output")
+        write(self.home / "artifacts/report.html", "Generated output")
         result = subprocess.run([git, "-C", str(self.home), "status", "--porcelain", "--untracked-files=all"], text=True, capture_output=True, check=True)
         status = result.stdout
         self.assertIn("config.toml", status)
-        self.assertIn(".gitattributes", status)
         self.assertIn("libraries/social-search/README.md", status)
-        self.assertIn("run.json", status)
-        self.assertIn("summary.md", status)
-        for excluded in (".local/", "raw/source.json", "artifacts/large.html", "other-output.bin"):
-            self.assertNotIn(excluded, status)
+        self.assertNotIn(".local/", status)
+        self.assertNotIn("artifacts/report.html", status)
+        self.assertFalse((self.home / "logs").exists())
+        self.assertFalse((self.home / ".gitattributes").exists())
         commits = subprocess.run([git, "-C", str(self.home), "rev-parse", "--verify", "HEAD"], text=True, capture_output=True, check=False)
         self.assertNotEqual(commits.returncode, 0)
+
+    def test_setup_preserves_existing_logs_reports_and_git_attributes(self) -> None:
+        write(self.home / "logs/2026-09/old-run/run.json", '{"status":"complete"}\n')
+        write(self.home / "logs/2026-09/old-run/summary.md", "Saved report.\n")
+        write(self.home / "logs/2026-09/old-run/artifacts/evidence.json", '{"source":"retained"}\n')
+        write(self.home / ".gitattributes", "*.md text eol=crlf\n")
+        before = snapshot(self.home)
+        self.install()
+        self.assertEqual({name: (self.home / name).read_bytes() for name in before}, before)
+        self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
 
     def test_existing_gitignore_is_preserved_and_missing_rules_are_reported(self) -> None:
         if not shutil.which("git"):
@@ -432,121 +433,6 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual((self.home / ".gitignore").read_bytes(), before)
         self.assertIn("Git does not ignore .local/config.toml", " ".join(report["issues"]))
         self.assertEqual(orchflows.doctor(self.home)["status"], "incomplete")
-
-    def test_git_clones_preserve_run_bytes_and_hashes_with_both_autocrlf_settings(self) -> None:
-        git = shutil.which("git")
-        if not git:
-            self.skipTest("Git unavailable")
-        logger_spec = importlib.util.spec_from_file_location("run_log", SCRIPT.with_name("run_log.py"))
-        logger = importlib.util.module_from_spec(logger_spec)
-        logger_spec.loader.exec_module(logger)
-
-        def run_git(directory, *arguments):
-            return subprocess.run(
-                [git, "-C", str(directory), *arguments], capture_output=True,
-                text=True, check=True, timeout=30,
-            )
-
-        # Keep developer/global Git settings out of these disposable repositories.
-        with patch.dict(os.environ, {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}):
-            self.install()
-            run_git(self.home, "config", "core.autocrlf", "true")
-            expected = {}
-            for ending in (b"\n", b"\r\n"):
-                summary = self.root / "actual-summary.md"
-                summary.write_bytes(ending.join((b"Observed outcome.", b"One limitation remains.", b"")))
-                started = logger.start_run(self.home, "personal:check")
-                finished = logger.finish_run(self.home, Path(started["run_dir"]), "complete", summary)
-                for field in ("run_json", "summary_file"):
-                    path = Path(finished[field])
-                    expected[path.relative_to(self.home)] = path.read_bytes()
-            run_git(self.home, "add", ".")
-            run_git(self.home, "-c", "user.name=Orchflows test", "-c", "user.email=test@example.invalid",
-                    "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "Portable run fixtures")
-            for autocrlf in ("true", "false"):
-                with self.subTest(core_autocrlf=autocrlf):
-                    clone = self.root / f"clone-{autocrlf}"
-                    run_git(self.root, "clone", "--quiet", "--no-hardlinks", "-c", f"core.autocrlf={autocrlf}",
-                            str(self.home), str(clone))
-                    self.assertEqual(run_git(clone, "config", "--get", "core.autocrlf").stdout.strip(), autocrlf)
-                    self.assertTrue((clone / ".gitattributes").is_file())
-                    for relative, contents in expected.items():
-                        self.assertEqual((clone / relative).read_bytes(), contents, str(relative))
-                        if relative.name == "run.json":
-                            metadata = json.loads((clone / relative).read_bytes())
-                            copied_summary = clone / relative.parent / metadata["summary"]["path"]
-                            self.assertEqual(metadata["summary"]["sha256"],
-                                             hashlib.sha256(copied_summary.read_bytes()).hexdigest())
-                            repeated = logger.finish_run(clone, copied_summary.parent, "complete", copied_summary)
-                            self.assertEqual(repeated["finished_at"], metadata["finished_at"])
-
-    def test_existing_gitattributes_are_preserved_and_missing_rules_are_reported(self) -> None:
-        if not shutil.which("git"):
-            self.skipTest("Git unavailable")
-        self.home.mkdir()
-        attributes = self.home / ".gitattributes"
-        custom = b"# My user rules\r\n*.md text eol=crlf\r\n"
-        attributes.write_bytes(custom)
-        report = orchflows.setup(self.home, self.source)
-        self.assertEqual(report["status"], "partial")
-        self.assertEqual(report["files"][".gitattributes"], "preserved")
-        self.assertEqual(attributes.read_bytes(), custom)
-        for filename in ("run.json", "summary.md"):
-            self.assertIn(f"add /logs/**/{filename} -text", " ".join(report["issues"]))
-        report = orchflows.doctor(self.home)
-        self.assertEqual(report["status"], "incomplete")
-        self.assertIn("Git does not preserve exact bytes", " ".join(report["issues"]))
-        self.assertEqual(attributes.read_bytes(), custom)
-        # An equivalent user policy is accepted without replacing its bytes.
-        custom += b"/logs/** -text\r\n"
-        attributes.write_bytes(custom)
-        self.assertEqual(self.install()["files"][".gitattributes"], "preserved")
-        self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
-        self.assertEqual(attributes.read_bytes(), custom)
-
-    def test_setup_seeds_missing_attributes_in_an_existing_home(self) -> None:
-        self.install()
-        attributes = self.home / ".gitattributes"
-        attributes.unlink()
-        report = orchflows.doctor(self.home)
-        self.assertIn("Missing home file: .gitattributes", " ".join(report["issues"]))
-        self.assertFalse(attributes.exists())
-        self.assertEqual(self.install()["files"][".gitattributes"], "created")
-        self.assertEqual(attributes.read_bytes(), orchflows.HOME_GITATTRIBUTES.encode("utf-8"))
-
-    def test_escaping_gitattributes_are_rejected_before_setup_mutation(self) -> None:
-        attributes = self.home / ".gitattributes"
-        write(attributes, "User attributes.\n")
-        outside = self.root / "outside-attributes"
-        write(outside, "Outside content.\n")
-        before = snapshot(self.home)
-        original_resolve = Path.resolve
-
-        def resolve(path, *args, **kwargs):
-            return outside if path == attributes else original_resolve(path, *args, **kwargs)
-
-        # Simulate a redirect without creating a live symlink or junction.
-        with patch.object(Path, "resolve", resolve):
-            with self.assertRaisesRegex(ValueError, "escapes"):
-                orchflows.setup(self.home, self.source)
-            self.assertIn("escapes", " ".join(orchflows.doctor(self.home)["issues"]))
-        self.assertEqual(snapshot(self.home), before)
-        self.assertEqual(outside.read_text(), "Outside content.\n")
-
-    def test_run_dispatch_is_lazy_and_passes_the_shared_interface(self) -> None:
-        calls = []
-        fake = types.ModuleType("run_log")
-        fake.start_run = lambda *args: calls.append(("start", args)) or {"status": "running"}
-        fake.finish_run = lambda *args: calls.append(("finish", args)) or {"status": "complete"}
-        summary = self.root / "summary.md"
-        run_dir = self.home / "logs/run"
-        with patch.dict(sys.modules, {"run_log": fake}), contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(orchflows.main(["run", "start", "--home", str(self.home), "--workflow", "social-search:sample", "--project", "example"]), 0)
-            self.assertEqual(orchflows.main(["run", "finish", str(run_dir), "--home", str(self.home), "--status", "complete", "--summary", str(summary)]), 0)
-        self.assertEqual(calls, [("start", (self.home, "social-search:sample", "example")), ("finish", (self.home, run_dir, "complete", summary))])
-        # setup/doctor/resolve load normally with no run_log module in the bundle.
-        self.assertFalse((self.source / "scripts/run_log.py").exists())
-
 
 if __name__ == "__main__":
     unittest.main()

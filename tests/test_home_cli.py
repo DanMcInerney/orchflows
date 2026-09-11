@@ -57,6 +57,11 @@ class InstalledCliTests(unittest.TestCase):
             page = cli(python, script, "history", "read", "claude", "native-session", "--limit", "1")
             expanded = cli(python, script, "history", "read", "claude", "native-session", "--event", page["events"][0]["event_id"])
             self.assertEqual(json.loads(expanded["text"])["file_path"], "evidence-λ.txt")
+            self.assertEqual({skill.name for skill in (core / "skills").iterdir()},
+                             {"orch-work", "orch-review", "orch-self-improve", "orch-build-workflow"})
+            for removed in ("orch-parallel", "orch-compare", "orch-make-and-review", "orch-setup", "orch-record-run"):
+                unavailable = cli(python, script, "resolve", "orchflows-light", "--skill", removed, expected=2)
+                self.assertIn("error", unavailable)
             for skill in (ROOT / "skills").iterdir():
                 resolved_core = cli(python, script, "resolve", "orchflows-light", "--skill", skill.name)
                 self.assertEqual(Path(resolved_core["skill_path"]), core / "skills" / skill.name / "SKILL.md")
@@ -70,19 +75,6 @@ class InstalledCliTests(unittest.TestCase):
             resolved = cli(python, script, "resolve", "social-search", "--skill", "social-search")
             self.assertEqual(resolved["runtime_python"], python)
             self.assertEqual(Path(resolved["skill_path"]), home / "libraries/social-search/skills/social-search/SKILL.md")
-
-            started = cli(python, script, "run", "start", "--workflow", "social-search:social-search")
-            run = Path(started["run_dir"])
-            summary = project / "summary.md"
-            summary.write_text("Installed CLI integration check completed.\n", encoding="utf-8")
-            finished = cli(python, script, "run", "finish", run, "--status", "complete", "--summary", summary)
-            self.assertEqual(Path(finished["summary_file"]).read_bytes(), summary.read_bytes())
-            self.assertEqual(finished["provenance"]["core"]["version"], installed["core"]["version"])
-            self.assertEqual(finished["provenance"]["workflow"]["version"], resolved["version"])
-            self.assertEqual(cli(python, script, "run", "finish", run, "--status", "complete", "--summary", summary), finished)
-            summary.write_text("A conflicting outcome.\n", encoding="utf-8")
-            rejected = cli(python, script, "run", "finish", run, "--status", "complete", "--summary", summary, expected=2)
-            self.assertIn("already finalized", rejected["error"])
 
             for document in core.rglob("*.md"):
                 for target in re.findall(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)', document.read_text(encoding="utf-8")):

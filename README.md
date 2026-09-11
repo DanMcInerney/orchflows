@@ -1,6 +1,6 @@
 # orchflows-light
 
-Composable native workflow skills and plain Markdown quality standards for Codex and Claude Code. The host runs agents; orchflows supplies delegation and review guidance. Small skills compose into larger workflows using the same `SKILL.md` format.
+Composable native workflow skills and plain Markdown quality standards for Codex and Claude Code. The host runs agents; orchflows supplies delegation and review guidance. The four built-ins are `orch-work`, `orch-review`, `orch-self-improve` and `orch-build-workflow`. Custom workflows compose the primitives using the same `SKILL.md` format.
 
 The installed CLI also reads native agent history: `history find HOST` selects
 candidate sessions and agents by date and recorded project path; `history inspect HOST ID`
@@ -11,13 +11,8 @@ their available messages, calls and outputs. [Reader usage](docs/native-history.
 | --- | --- |
 | [orch-work](skills/orch-work/SKILL.md) | Ask a fresh child to make a result. |
 | [orch-review](skills/orch-review/SKILL.md) | Ask a fresh child who did not make it to review without fixing. |
-| [orch-make-and-review](skills/orch-make-and-review/SKILL.md) | Make, review, and allow one repair pass. |
-| [orch-compare](skills/orch-compare/SKILL.md) | Develop alternatives and compare their actual results. |
-| [orch-parallel](skills/orch-parallel/SKILL.md) | Make separable pieces concurrently, then join and review them. |
 | [orch-build-workflow](skills/orch-build-workflow/SKILL.md) | Author a workflow, try it, and refine it from observed behavior. |
 | [orch-self-improve](skills/orch-self-improve/SKILL.md) | Use native history to improve the environment, custom workflows or Orchflows itself. |
-| [orch-setup](skills/orch-setup/SKILL.md) | Initialize a portable user library and local Python runtime. |
-| [orch-record-run](skills/orch-record-run/SKILL.md) | Record one workflow run and its actual summary. |
 
 Built-in skills use the `orch-` prefix. Custom workflows keep their own names,
 such as `recent-search`. This is a naming convention; native plugin registration
@@ -53,11 +48,6 @@ Setup also sets concurrency to **15** in both hosts' user settings: Codex's cap 
 │       ├── plugin.json
 │       ├── README.md
 │       └── skills/                  helpers and workflows together
-├── logs/YYYY-MM/<run>/
-│   ├── run.json                     compact usage record
-│   ├── summary.md                   outcome and limitations
-│   ├── raw/                         optional, ignored
-│   └── artifacts/                   optional, ignored
 ├── .agents/plugins/marketplace.json Codex catalog
 ├── .claude-plugin/marketplace.json  Claude catalog
 └── .local/                          ignored, recreated per computer
@@ -66,7 +56,7 @@ Setup also sets concurrency to **15** in both hosts' user settings: Codex's cap 
     └── packages/orchflows-light/    managed core
 ```
 
-Commit editable libraries, portable configuration, catalogs and selected summaries to your own dotfiles repository. Recreate `.local/` after cloning on another computer. A venv contains machine-specific interpreter paths and is not portable. [Home setup, restoration and logging](docs/home-library.md) explains the commands and preservation rules.
+Commit editable libraries, portable configuration, catalogs and selected reports to your own dotfiles repository. Recreate `.local/` after cloning on another computer. A venv contains machine-specific interpreter paths and is not portable. [Home setup and restoration](docs/home-library.md) explains the commands and preservation rules.
 
 ## Load in your host
 

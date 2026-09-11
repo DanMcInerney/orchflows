@@ -11,4 +11,4 @@ Use orchflows-light:orch-review exactly once with the Research and Writing stand
 >
 > Return a concise cited assessment answering the question to the extent supported, or ranked evidence when requested. Keep conclusions traceable to original sources and saved support. State required gaps and whether the research is complete, partial or blocked. Work without child agents.
 
-Await this reviewer and return its assessment. Finalize the outer run if owned. Missing evidence remains a gap; this workflow launches no acquisition or further review.
+Await this reviewer and return its assessment. Missing evidence remains a gap; this workflow launches no acquisition or further review.

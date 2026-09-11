@@ -13,4 +13,4 @@ Gather actual outcomes from every selected source. Settle unfinished workers; re
 
 Invoke [rank-evidence](../rank-evidence/SKILL.md) once with the question, all returned evidence and gaps, and the desired report location. This launches the only reviewer, after collection. There are no source reviewers or review-to-acquisition loops.
 
-Return the assessment and finalize the outer run if owned. For N selected sources, the workflow uses N workers and one reviewer.
+Return the assessment. For N selected sources, the workflow uses N workers and one reviewer.
