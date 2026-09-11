@@ -1,6 +1,6 @@
 # orchflows-light
 
-Two delegation skills, two example workflows, and plain Markdown quality standards for Codex and Claude Code. The host runs agents; this library supplies reusable delegation and review guidance. Use ordinary conversation for work that does not benefit from delegation.
+Two delegation skills, three example workflows, and plain Markdown quality standards for Codex and Claude Code. The host runs agents; this library supplies reusable delegation and review guidance. Use ordinary conversation for work that does not benefit from delegation.
 
 | Skill | Action |
 | --- | --- |
@@ -8,6 +8,7 @@ Two delegation skills, two example workflows, and plain Markdown quality standar
 | [delegate-review](skills/delegate-review/SKILL.md) | Ask a fresh child who did not make it to review without fixing. |
 | [make-and-review](skills/make-and-review/SKILL.md) | Make, review, and allow one repair pass. |
 | [compare-approaches](skills/compare-approaches/SKILL.md) | Develop alternatives and compare their actual results. |
+| [build-workflow](skills/build-workflow/SKILL.md) | Author a workflow skill, try it on a bounded request, and refine it from observed behavior. |
 
 ## Load locally
 
@@ -46,6 +47,8 @@ A new root standard earns a file when it adds a recurring, independent quality l
 Write useful making and review criteria. The two headings are a reading convention, with no enforced schema. An `Extends` link is prose: read the parent too. If guidance conflicts, clarify the actual requirement; there is no precedence engine.
 
 ## Compose a workflow
+
+Use [build-workflow](skills/build-workflow/SKILL.md) with the recurring request you want to support and a bounded example to try. It composes make-and-review, then exercises the resulting skill in a disposable workspace and improves it from the observed result.
 
 Add a native `skills/<action>/SKILL.md` with a name, description and useful prose. For example, a new `prepare-proposal` skill in this package could contain:
 
