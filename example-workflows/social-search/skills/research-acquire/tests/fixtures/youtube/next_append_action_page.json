@@ -1,0 +1,112 @@
+{
+ "responseContext": {},
+ "onResponseReceivedEndpoints": [
+  {
+   "clickTrackingParams": "CAAQ",
+   "appendContinuationItemsAction": {
+    "targetId": "comments-section",
+    "continuationItems": [
+     {
+      "commentThreadRenderer": {
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentId": "UgxThirdPageFirst",
+         "commentKey": "EhpVZ3hUaGlyZFBhZ2VGaXJzdCAoKAE%3D",
+         "toolbarStateKey": "EhpVZ3hUaGlyZFBhZ2VGaXJzdCAsKAE%3D"
+        }
+       },
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN"
+      }
+     },
+     {
+      "commentThreadRenderer": {
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentId": "UgxThirdPageSecond",
+         "commentKey": "EhpVZ3hUaGlyZFBhZ2VTZWNvbmQgKCgB%3D",
+         "toolbarStateKey": "EhpVZ3hUaGlyZFBhZ2VTZWNvbmQgLCgB%3D"
+        }
+       },
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN"
+      }
+     },
+     {
+      "continuationItemRenderer": {
+       "continuationEndpoint": {
+        "continuationCommand": {"token": "COMMENTS_PAGE_FOUR"}
+       }
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "frameworkUpdates": {
+  "entityBatchUpdate": {
+   "mutations": [
+    {
+     "entityKey": "EhpVZ3hUaGlyZFBhZ2VGaXJzdCAoKAE%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "EhpVZ3hUaGlyZFBhZ2VGaXJzdCAoKAE%3D",
+       "properties": {
+        "commentId": "UgxThirdPageFirst",
+        "content": {
+         "content": "third page, still reading"
+        },
+        "publishedTime": "4 days ago",
+        "replyLevel": 0,
+        "toolbarStateKey": "EhpVZ3hUaGlyZFBhZ2VGaXJzdCAsKAE%3D"
+       },
+       "author": {
+        "channelId": "UCThirdPageFirstAuthor",
+        "displayName": "@page_three_watcher",
+        "isVerified": false,
+        "isCreator": false
+       },
+       "toolbar": {
+        "likeCountLiked": "12",
+        "likeCountNotliked": "11",
+        "likeCountA11y": "11 likes",
+        "replyCount": "2",
+        "replyCountA11y": "2 replies"
+       }
+      }
+     }
+    },
+    {
+     "entityKey": "EhpVZ3hUaGlyZFBhZ2VTZWNvbmQgKCgB%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "EhpVZ3hUaGlyZFBhZ2VTZWNvbmQgKCgB%3D",
+       "properties": {
+        "commentId": "UgxThirdPageSecond",
+        "content": {
+         "content": "and the page after this one is still offered"
+        },
+        "publishedTime": "5 days ago",
+        "replyLevel": 0,
+        "toolbarStateKey": "EhpVZ3hUaGlyZFBhZ2VTZWNvbmQgLCgB%3D"
+       },
+       "author": {
+        "channelId": "UCThirdPageSecondAuthor",
+        "displayName": "@page_three_lurker",
+        "isVerified": false,
+        "isCreator": false
+       },
+       "toolbar": {
+        "likeCountLiked": "1",
+        "likeCountNotliked": " ",
+        "likeCountA11y": "0 likes",
+        "replyCount": "",
+        "replyCountA11y": "0 replies"
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}

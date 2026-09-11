@@ -1,0 +1,58 @@
+{
+ "responseContext": {},
+ "estimatedResults": "1000000",
+ "onResponseReceivedCommands": [
+  {
+   "clickTrackingParams": "CAAQ",
+   "appendContinuationItemsAction": {
+    "targetId": "search-feed",
+    "continuationItems": [
+     {
+      "itemSectionRenderer": {
+       "contents": [
+        {
+         "videoRenderer": {
+          "videoId": "J-uXheGywLA",
+          "title": {"runs": [{"text": "Why this local model range is a major trap"}]},
+          "ownerText": {"runs": [{"text": "Second Page Channel"}]},
+          "viewCountText": {"simpleText": "12,345 views"},
+          "publishedTimeText": {"simpleText": "2 days ago"},
+          "navigationEndpoint": {
+           "commandMetadata": {
+            "webCommandMetadata": {"url": "/watch?v=J-uXheGywLA"}
+           }
+          }
+         }
+        },
+        {
+         "reelShelfRenderer": {"title": {"simpleText": "Shorts"}}
+        },
+        {
+         "videoRenderer": {
+          "videoId": "K8vQrTmXp2A",
+          "title": {"runs": [{"text": "Local models: the second page result"}]},
+          "ownerText": {"runs": [{"text": "Another Channel"}]},
+          "viewCountText": {"simpleText": "678 views"},
+          "publishedTimeText": {"simpleText": "5 hours ago"},
+          "navigationEndpoint": {
+           "commandMetadata": {
+            "webCommandMetadata": {"url": "/watch?v=K8vQrTmXp2A"}
+           }
+          }
+         }
+        }
+       ]
+      }
+     },
+     {
+      "continuationItemRenderer": {
+       "continuationEndpoint": {
+        "continuationCommand": {"token": "PAGE_THREE_TOKEN"}
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,11 @@
+{
+  "by": "kessel_run",
+  "descendants": 233,
+  "id": 44831234,
+  "kids": [44831402, 44831377, 44831301],
+  "score": 412,
+  "time": 1786293712,
+  "title": "Running a 70B locally on two consumer GPUs",
+  "type": "story",
+  "url": "https://harbourlight.example/70b-two-gpus"
+}

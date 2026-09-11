@@ -1,0 +1,21 @@
+{
+  "responseContext": {
+    "visitorData": "CgtSaWNrQXN0bGV5EgQIARgA"
+  },
+  "playabilityStatus": {
+    "status": "ERROR",
+    "reason": "Video unavailable",
+    "errorScreen": {
+      "playerErrorMessageRenderer": {
+        "reason": {
+          "simpleText": "Video unavailable"
+        },
+        "icon": {
+          "iconType": "ERROR_OUTLINE"
+        }
+      }
+    },
+    "contextParams": "Q0FBU0FnZ0E="
+  },
+  "trackingParams": "CAAQu2kiEwjB0YKZlMuWAxWcxRYJHTvjGiw="
+}

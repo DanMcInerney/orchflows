@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "Not Found",
+      "code": 34,
+      "kind": "NonFatal",
+      "name": "NotFoundError",
+      "source": "Client"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "responseContext": {
+    "visitorData": "CgtIYXJib3VybGlnaHQSBAgBGAA%3D"
+  },
+  "playabilityStatus": {
+    "status": "OK",
+    "playableInEmbed": true
+  },
+  "videoDetails": {
+    "videoId": "Zk5xD1nQ9pL",
+    "title": "A boring benchmark that changed my mind",
+    "lengthSeconds": "753",
+    "channelId": "UCw3Kt7Bn2QmXsY9pL4dRvHe",
+    "author": "Lund Signals",
+    "viewCount": "0",
+    "shortDescription": "Published five minutes ago and nobody has watched it yet.",
+    "isPrivate": false,
+    "isLiveContent": false
+  },
+  "microformat": {
+    "playerMicroformatRenderer": {
+      "publishDate": "2026-08-10T08:55:00-00:00",
+      "ownerChannelName": "Lund Signals",
+      "viewCount": "0",
+      "embed": {"iframeUrl": "https://www.youtube.com/embed/Zk5xD1nQ9pL"}
+    }
+  },
+  "captions": {
+    "playerCaptionsTracklistRenderer": {
+      "captionTracks": []
+    }
+  }
+}

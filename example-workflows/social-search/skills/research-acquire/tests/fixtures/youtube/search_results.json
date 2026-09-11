@@ -1,0 +1,109 @@
+{
+  "responseContext": {
+    "visitorData": "CgtIYXJib3VybGlnaHQSBAgBGAA%3D"
+  },
+  "estimatedResults": "184000",
+  "contents": {
+    "twoColumnSearchResultsRenderer": {
+      "primaryContents": {
+        "sectionListRenderer": {
+          "contents": [
+            {
+              "itemSectionRenderer": {
+                "contents": [
+                  {
+                    "videoRenderer": {
+                      "videoId": "dQw4w9WgXcQ",
+                      "title": {"runs": [{"text": "Running a 70B locally on two consumer GPUs"}]},
+                      "ownerText": {"runs": [{"text": "Harbourlight Optics"}]},
+                      "publishedTimeText": {"simpleText": "2 weeks ago"},
+                      "viewCountText": {"simpleText": "1,284,553 views"},
+                      "lengthText": {"simpleText": "18:42"},
+                      "navigationEndpoint": {
+                        "commandMetadata": {
+                          "webCommandMetadata": {"url": "/watch?v=dQw4w9WgXcQ"}
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "shelfRenderer": {
+                      "title": {"simpleText": "People also watched"}
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "7pQm3nXkT2a",
+                      "title": {"runs": [{"text": "Quantisation, measured rather than argued"}]},
+                      "ownerText": {"runs": [{"text": "Kestrel Systems"}]},
+                      "publishedTimeText": {"simpleText": "1 month ago"},
+                      "viewCountText": {"simpleText": "402,118 views"},
+                      "lengthText": {"simpleText": "24:07"},
+                      "navigationEndpoint": {
+                        "commandMetadata": {
+                          "webCommandMetadata": {"url": "/watch?v=7pQm3nXkT2a"}
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "Lp9sV4hB0zY",
+                      "title": {"runs": [{"text": "Eleven prompts, three builds, one afternoon"}]},
+                      "ownerText": {"runs": [{"text": "Northwind Analytics"}]},
+                      "publishedTimeText": {"simpleText": "4 days ago"},
+                      "viewCountText": {"simpleText": "58,940 views"},
+                      "lengthText": {"simpleText": "9:15"},
+                      "navigationEndpoint": {
+                        "commandMetadata": {
+                          "webCommandMetadata": {"url": "/watch?v=Lp9sV4hB0zY"}
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "Rt2gC8mJ6wE",
+                      "title": {"runs": [{"text": "Why your context window is not the bottleneck"}]},
+                      "ownerText": {"runs": [{"text": "Harbourlight Optics"}]},
+                      "publishedTimeText": {"simpleText": "6 months ago"},
+                      "viewCountText": {"simpleText": "2,105,776 views"},
+                      "lengthText": {"simpleText": "31:58"},
+                      "navigationEndpoint": {
+                        "commandMetadata": {
+                          "webCommandMetadata": {"url": "/watch?v=Rt2gC8mJ6wE"}
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "Zk5xD1nQ9pL",
+                      "title": {"runs": [{"text": "A boring benchmark that changed my mind"}]},
+                      "ownerText": {"runs": [{"text": "Lund Signals"}]},
+                      "publishedTimeText": {"simpleText": "3 weeks ago"},
+                      "viewCountText": {"simpleText": "731,204 views"},
+                      "lengthText": {"simpleText": "12:33"},
+                      "navigationEndpoint": {
+                        "commandMetadata": {
+                          "webCommandMetadata": {"url": "/watch?v=Zk5xD1nQ9pL"}
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "continuationItemRenderer": {
+                "continuationEndpoint": {
+                  "continuationCommand": {"token": "EpcDEgxsb2NhbCBtb2RlbHMaggNTQlNDQVE"}
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

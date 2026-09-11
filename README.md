@@ -1,6 +1,6 @@
 # orchflows-light
 
-Two delegation skills, composable workflows, and plain Markdown quality standards for Codex and Claude Code. The host runs agents; this library supplies reusable delegation and review guidance. Use ordinary conversation for work that does not benefit from delegation.
+Composable native workflow skills and plain Markdown quality standards for Codex and Claude Code. The host runs agents; orchflows supplies delegation and review guidance. Small skills compose into larger workflows using the same `SKILL.md` format.
 
 | Skill | Action |
 | --- | --- |
@@ -8,66 +8,90 @@ Two delegation skills, composable workflows, and plain Markdown quality standard
 | [delegate-review](skills/delegate-review/SKILL.md) | Ask a fresh child who did not make it to review without fixing. |
 | [make-and-review](skills/make-and-review/SKILL.md) | Make, review, and allow one repair pass. |
 | [compare-approaches](skills/compare-approaches/SKILL.md) | Develop alternatives and compare their actual results. |
-| [build-workflow](skills/build-workflow/SKILL.md) | Author a workflow skill, try it on a bounded request, and refine it from observed behavior. |
-| [parallel-build](skills/parallel-build/SKILL.md) | Make separable pieces concurrently, then join and review the combined result. |
+| [parallel-build](skills/parallel-build/SKILL.md) | Make separable pieces concurrently, then join and review them. |
+| [build-workflow](skills/build-workflow/SKILL.md) | Author a workflow, try it, and refine it from observed behavior. |
+| [setup-library](skills/setup-library/SKILL.md) | Initialize a portable user library and local Python runtime. |
+| [record-run](skills/record-run/SKILL.md) | Record one workflow run and its actual summary. |
 
-## Load locally
+## Set up your library
 
-Keep the complete package together. Substitute your checkout's absolute path below; these are native host commands, with no custom installer.
-
-**Codex:** register the included local marketplace and install the plugin, then start a new session:
-
-```sh
-codex plugin marketplace add "/absolute/path/to/orchflows-light"
-codex plugin add orchflows-light@orchflows-light-local
-```
-
-These commands update native Codex configuration. In CLI/IDE, select a skill with `/skills` or `$orchflows-light:make-and-review`; use the skill picker in the app. See [host details](docs/native-hosts.md) for availability and updates.
-
-**Claude Code:** register the included local marketplace and install for your user:
+From a complete copy of this package, use Python 3.11 or newer:
 
 ```sh
-claude plugin marketplace add "/absolute/path/to/orchflows-light"
-claude plugin install orchflows-light@orchflows-light-local --scope user
+python3 /absolute/path/to/orchflows-light/scripts/orchflows.py setup --example social-search
 ```
 
-Start a new session. For development, you can instead load the checkout for one session:
+On Windows, use your Python 3.11+ interpreter in place of `python3`. Setup creates `~/.orchflows`, its Python venv, a managed core copy, and an editable copy of the example. It initializes a Git repository when Git is available, without committing or publishing. Existing user files are preserved. Set `ORCHFLOWS_HOME` or pass `--home` to choose another home.
+
+```text
+~/.orchflows/
+├── config.toml                      portable core identity
+├── libraries/
+│   └── social-search/               editable native package
+│       ├── plugin.json
+│       ├── README.md
+│       └── skills/                  helpers and workflows together
+├── logs/YYYY-MM/<run>/
+│   ├── run.json                     compact usage record
+│   ├── summary.md                   outcome and limitations
+│   ├── raw/                         optional, ignored
+│   └── artifacts/                   optional, ignored
+├── .agents/plugins/marketplace.json Codex catalog
+├── .claude-plugin/marketplace.json  Claude catalog
+└── .local/                          ignored, recreated per computer
+    ├── config.toml
+    ├── runtime/                     Python venv
+    └── packages/orchflows-light/    managed core
+```
+
+Commit editable libraries, portable configuration, catalogs and selected summaries to your own dotfiles repository. Recreate `.local/` after cloning on another computer. A venv contains machine-specific interpreter paths and is not portable. [Home setup, restoration and logging](docs/home-library.md) explains the commands and preservation rules.
+
+## Load in your host
+
+Setup creates native catalogs; registering them is a separate native host step. For **Codex**:
 
 ```sh
-claude --plugin-dir "/absolute/path/to/orchflows-light"
+codex plugin marketplace add /absolute/path/to/.orchflows
+codex plugin add orchflows-light@orchflows-home
+codex plugin add social-search@orchflows-home
 ```
 
-Then try `/orchflows-light:make-and-review Fix the failing export under the Code standard.` Both plugins expose namespaced skill names; invocation syntax differs by host. [Codex packaging](https://developers.openai.com/plugins/build/plugins), [Codex skills](https://developers.openai.com/codex/skills), [Claude plugins](https://code.claude.com/docs/en/plugins).
+Start a new session. In CLI/IDE, select a skill with `/skills` or `$social-search:social-search`; use the app's skill picker. If an older orchflows plugin is installed from another marketplace, use one enabled core installation to avoid duplicate names.
 
-## Standards
+For **Claude Code**:
 
-Choose only the useful lenses: [Code](standards/code.md), [Research](standards/research.md), [Writing](standards/writing.md), [Visual design](standards/visual-design.md), and [Data analysis](standards/data-analysis.md). Pass the chosen files to both makers and reviewers. [API code](standards/code/api.md) is a specialized standard with an ordinary parent link; pass Code alongside it.
+```sh
+claude plugin marketplace add /absolute/path/to/.orchflows
+claude plugin install orchflows-light@orchflows-home --scope user
+claude plugin install social-search@orchflows-home --scope user
+```
 
-A new root standard earns a file when it adds a recurring, independent quality lens. A specialized standard adds recurring specificity within an existing lens. A tool or framework name alone earns neither. Keep one-off criteria in the prompt and tool mechanics in a skill or reference.
-
-Write useful making and review criteria. The two headings are a reading convention, with no enforced schema. An `Extends` link is prose: read the parent too. If guidance conflicts, clarify the actual requirement; there is no precedence engine.
+Start a new session and use `/social-search:social-search`. Both hosts cache installed packages. Edit your home library, then refresh/reinstall the native plugin and start a fresh session to load changes. [Native host details](docs/native-hosts.md) covers source paths, development installs and capability limits. [Codex plugins](https://developers.openai.com/plugins/build/plugins), [Claude plugins](https://code.claude.com/docs/en/plugins).
 
 ## Compose a workflow
 
-Use [build-workflow](skills/build-workflow/SKILL.md) with the recurring request you want to support and a bounded example to try. In this library's checkout, try `$orchflows-light:build-workflow Add a workflow that compares two designs and develops the selected design. Try it on a small example.` In Claude Code, use `/orchflows-light:build-workflow` with the same request. It composes make-and-review, then exercises the resulting skill in a disposable workspace. Edit the source checkout and refresh the installed plugin before trying changes in a new session.
+Ask `build-workflow` to create a reusable workflow and give it a bounded example to try. It defaults to your home library, such as `~/.orchflows/libraries/personal/skills/prepare-proposal/SKILL.md`. An explicit project or repository destination takes precedence.
 
-Add a native `skills/<action>/SKILL.md` with a name, description and useful prose. For example, a new `prepare-proposal` skill in this package could contain:
+A library is a complete native package. Put small capabilities and larger orchestrators together under `skills/`; place scripts, references and assets beside their owning skill. Load another skill in the current context by default. Delegate when the workflow calls for an independent worker or reviewer.
 
-```markdown
----
-name: prepare-proposal
-description: Compare proposed approaches and develop a reviewed proposal.
----
+Use relative links within a library, resolved from the loaded file. Across libraries, use package identity and the home resolver, then pass concrete resolved files to children. Do not assume a source checkout or a particular current directory. This is ordinary instruction composition, with a small path/setup helper; it adds no agent runtime or workflow language.
 
-Load [compare-approaches](../compare-approaches/SKILL.md) for the proposed
-alternatives. Load [make-and-review](../make-and-review/SKILL.md) to develop
-the selected approach. Use [delegate-work](../delegate-work/SKILL.md) to
-join the chosen contributions into one proposal, then
-[delegate-review](../delegate-review/SKILL.md) to review the combined work.
-Use delegate-work with [Writing](../../standards/writing.md) to write the
-final report from the reviewed proposal and its remaining limitations.
+The `social-search` example package demonstrates the pattern:
+
+```text
+social-search → select sites and divide the budget
+                    ├── search-reddit  → search-site → prepare-evidence
+                    ├── search-youtube → search-site → prepare-evidence
+                    └── other relevant site workers in parallel
+               → rank-research → one ranked, cited report
 ```
 
-Load composed skills in the current orchestrator by default. Explicitly delegate orchestration when useful and supported by the host. Children can use ordinary capability skills.
+The coordinator chooses relevant sites and respects native concurrency, using waves when needed. Source workflows run independently and return locally ranked evidence. One fresh judge deduplicates, reranks and synthesizes their actual outputs. One bounded evidence follow-up is available. Each source workflow and the judge also works on its own; `search-site` accepts arbitrary named sites. The optional acquisition scripts retain their deterministic request accounting and resume behavior; ordinary native tools do not gain those guarantees.
 
-A workflow folder can carry useful `scripts/`, `references/` and `assets/`; add them when the work needs them. Resolve their paths from the actual loaded skill file, including installed cache copies, and name required dependencies in that skill. Keep output in the task workspace. [Native host guidance](docs/native-hosts.md) covers package paths, worktrees, model settings and capability limits.
+The repo example and its initial home copy contain the same files. The home copy becomes yours to edit; later setup runs do not overwrite it. In a source checkout, browse `example-workflows/README.md`. After setup, use `resolve social-search --resource README.md` through the installed CLI to find the package guide and its trial instructions.
+
+## Standards
+
+Choose only useful quality lenses: [Code](standards/code.md), [Research](standards/research.md), [Writing](standards/writing.md), [Visual design](standards/visual-design.md), and [Data analysis](standards/data-analysis.md). Pass chosen files to makers and reviewers. [API code](standards/code/api.md) specializes Code; pass its parent too.
+
+A root standard earns a file when it adds a recurring, independent quality lens. A specialized standard adds recurring specificity within that lens. Keep one-off criteria in the prompt and tool mechanics in skills or references. Standards are ordinary prose, with no precedence engine. The example's evidence format belongs to its `prepare-evidence` skill; Research and Writing supply broader quality criteria.

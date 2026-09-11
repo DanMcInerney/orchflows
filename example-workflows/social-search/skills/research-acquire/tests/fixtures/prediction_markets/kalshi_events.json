@@ -1,0 +1,567 @@
+{
+  "cursor": "CgYI8OG8lQ8SE0tYTkVYVE5BVE9TRUNHRU4tOTk",
+  "events": [
+    {
+      "available_on_brokers": true,
+      "category": "World",
+      "collateral_return_type": "",
+      "event_ticker": "KXELONMARS-99",
+      "exchange_index": 0,
+      "last_updated_ts": "2026-05-10T00:33:53.337123Z",
+      "markets": [
+        {
+          "can_close_early": true,
+          "close_time": "2099-08-01T04:59:00Z",
+          "created_time": "2025-08-28T20:40:16.168768Z",
+          "early_close_condition": "This market will close and expire early if the event occurs.",
+          "event_ticker": "KXELONMARS-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-08-01T15:00:00Z",
+          "expiration_time": "2099-08-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.1200",
+          "latest_expiration_time": "2099-08-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.8900",
+          "no_bid_dollars": "0.8800",
+          "no_sub_title": "Mars",
+          "notional_value_dollars": "1.0000",
+          "open_interest_fp": "40094.25",
+          "open_time": "2025-08-28T20:45:00Z",
+          "previous_price_dollars": "0.1100",
+          "previous_yes_ask_dollars": "0.1200",
+          "previous_yes_bid_dollars": "0.1000",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Elon Musk visits Mars before the earlier of his death or Aug 1, 2099, then the market resolves to Yes.",
+          "rules_secondary": "",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "ticker": "KXELONMARS-99",
+          "title": "Will Elon Musk visit Mars before Aug 1, 2099?",
+          "updated_time": "2026-04-09T09:31:16.616867Z",
+          "volume_24h_fp": "20.86",
+          "volume_fp": "117134.08",
+          "yes_ask_dollars": "0.1200",
+          "yes_ask_size_fp": "328.88",
+          "yes_bid_dollars": "0.1100",
+          "yes_bid_size_fp": "40.00",
+          "yes_sub_title": "Mars"
+        }
+      ],
+      "mutually_exclusive": false,
+      "series_ticker": "KXELONMARS",
+      "settlement_sources": [
+        {
+          "name": "The Guardian",
+          "url": "https://www.theguardian.com"
+        },
+        {
+          "name": "local news outlets with verifiable mastheads in ",
+          "url": "https://kalshi.com/"
+        },
+        {
+          "name": "official social media accounts of  or their official representatives",
+          "url": "https://kalshi.com/"
+        },
+        {
+          "name": "official government sources of ",
+          "url": "https://kalshi.com/"
+        },
+        {
+          "name": "official representatives or offices of ",
+          "url": "https://kalshi.com/"
+        },
+        {
+          "name": "The New York Times",
+          "url": "https://www.nytimes.com"
+        },
+        {
+          "name": "the Associated Press",
+          "url": "https://www.ap.org"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com"
+        },
+        {
+          "name": "Politico",
+          "url": "https://www.politico.com"
+        },
+        {
+          "name": "Semafor",
+          "url": "https://www.semafor.com/"
+        },
+        {
+          "name": "The Information",
+          "url": "https://www.theinformation.com/"
+        },
+        {
+          "name": "The Washington Post",
+          "url": "https://www.wsj.com/"
+        },
+        {
+          "name": "The Wall Street Journal",
+          "url": "https://www.wsj.com"
+        },
+        {
+          "name": "CNN",
+          "url": "https://www.cnn.com"
+        },
+        {
+          "name": "Fox News",
+          "url": "https://www.foxnews.com/"
+        },
+        {
+          "name": "MSNBC",
+          "url": "https://www.msnbc.com"
+        },
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com"
+        }
+      ],
+      "strike_period": "",
+      "sub_title": "Before 2099",
+      "title": "Will Elon Musk visit Mars in his lifetime?"
+    },
+    {
+      "available_on_brokers": false,
+      "category": "Elections",
+      "collateral_return_type": "MECNET",
+      "event_ticker": "KXNEXTNATOSECGEN-99",
+      "exchange_index": 0,
+      "last_updated_ts": "2026-06-29T19:31:47.756302Z",
+      "markets": [
+        {
+          "can_close_early": true,
+          "close_time": "2099-01-08T15:00:00Z",
+          "created_time": "2026-06-29T19:31:47.73165Z",
+          "custom_strike": {
+            "Holder": "Klaus Iohannis"
+          },
+          "event_ticker": "KXNEXTNATOSECGEN-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.0600",
+          "latest_expiration_time": "2099-01-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.9400",
+          "no_bid_dollars": "0.8600",
+          "no_sub_title": "Klaus Iohannis",
+          "notional_value_dollars": "1.0000",
+          "occurrence_datetime": "2099-01-01T15:00:00Z",
+          "open_interest_fp": "75.00",
+          "open_time": "2026-06-29T19:47:00Z",
+          "previous_price_dollars": "0.0600",
+          "previous_yes_ask_dollars": "0.1300",
+          "previous_yes_bid_dollars": "0.0600",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Klaus Iohannis formally holds the position of Secretary General of NATO, and is the first such subject to do so after Issuance, then the market resolves to Yes.",
+          "rules_secondary": "For the purposes of this Contract, \"formally holds Secretary General of NATO\" means that an individual, company, or group has assumed Secretary General of NATO in an official capacity—whether by appointment, election, succession, confirmation, designation, or acting/interim assignment—and has performed or is recognized to perform the duties or responsibilities of that role for any length of time after Issuance.",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "strike_type": "custom",
+          "ticker": "KXNEXTNATOSECGEN-99-KIOH",
+          "title": "Will Klaus Iohannis be the next Secretary General of NATO?",
+          "updated_time": "2026-06-29T19:47:00.786694Z",
+          "volume_24h_fp": "0.00",
+          "volume_fp": "256.00",
+          "yes_ask_dollars": "0.1400",
+          "yes_ask_size_fp": "200.00",
+          "yes_bid_dollars": "0.0600",
+          "yes_bid_size_fp": "200.00",
+          "yes_sub_title": "Klaus Iohannis"
+        },
+        {
+          "can_close_early": true,
+          "close_time": "2099-01-08T15:00:00Z",
+          "created_time": "2026-06-29T19:31:47.73165Z",
+          "custom_strike": {
+            "Holder": "Kaja Kallas"
+          },
+          "event_ticker": "KXNEXTNATOSECGEN-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.1100",
+          "latest_expiration_time": "2099-01-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.9100",
+          "no_bid_dollars": "0.8400",
+          "no_sub_title": "Kaja Kallas",
+          "notional_value_dollars": "1.0000",
+          "occurrence_datetime": "2099-01-01T15:00:00Z",
+          "open_interest_fp": "603.83",
+          "open_time": "2026-06-29T19:47:00Z",
+          "previous_price_dollars": "0.1700",
+          "previous_yes_ask_dollars": "0.1600",
+          "previous_yes_bid_dollars": "0.1000",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Kaja Kallas formally holds the position of Secretary General of NATO, and is the first such subject to do so after Issuance, then the market resolves to Yes.",
+          "rules_secondary": "For the purposes of this Contract, \"formally holds Secretary General of NATO\" means that an individual, company, or group has assumed Secretary General of NATO in an official capacity—whether by appointment, election, succession, confirmation, designation, or acting/interim assignment—and has performed or is recognized to perform the duties or responsibilities of that role for any length of time after Issuance.",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "strike_type": "custom",
+          "ticker": "KXNEXTNATOSECGEN-99-KKAL",
+          "title": "Will Kaja Kallas be the next Secretary General of NATO?",
+          "updated_time": "2026-06-29T19:47:00.786694Z",
+          "volume_24h_fp": "178.00",
+          "volume_fp": "987.81",
+          "yes_ask_dollars": "0.1600",
+          "yes_ask_size_fp": "200.00",
+          "yes_bid_dollars": "0.0900",
+          "yes_bid_size_fp": "10.00",
+          "yes_sub_title": "Kaja Kallas"
+        },
+        {
+          "can_close_early": true,
+          "close_time": "2099-01-08T15:00:00Z",
+          "created_time": "2026-06-29T19:31:47.73165Z",
+          "custom_strike": {
+            "Holder": "Ben Wallace"
+          },
+          "event_ticker": "KXNEXTNATOSECGEN-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.0900",
+          "latest_expiration_time": "2099-01-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.9700",
+          "no_bid_dollars": "0.9000",
+          "no_sub_title": "Ben Wallace",
+          "notional_value_dollars": "1.0000",
+          "occurrence_datetime": "2099-01-01T15:00:00Z",
+          "open_interest_fp": "142.00",
+          "open_time": "2026-06-29T19:47:00Z",
+          "previous_price_dollars": "0.0900",
+          "previous_yes_ask_dollars": "0.0900",
+          "previous_yes_bid_dollars": "0.0300",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Ben Wallace formally holds the position of Secretary General of NATO, and is the first such subject to do so after Issuance, then the market resolves to Yes.",
+          "rules_secondary": "For the purposes of this Contract, \"formally holds Secretary General of NATO\" means that an individual, company, or group has assumed Secretary General of NATO in an official capacity—whether by appointment, election, succession, confirmation, designation, or acting/interim assignment—and has performed or is recognized to perform the duties or responsibilities of that role for any length of time after Issuance.",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "strike_type": "custom",
+          "ticker": "KXNEXTNATOSECGEN-99-BWAL",
+          "title": "Will Ben Wallace be the next Secretary General of NATO?",
+          "updated_time": "2026-06-29T19:47:00.786694Z",
+          "volume_24h_fp": "0.00",
+          "volume_fp": "896.00",
+          "yes_ask_dollars": "0.1000",
+          "yes_ask_size_fp": "200.00",
+          "yes_bid_dollars": "0.0300",
+          "yes_bid_size_fp": "8.00",
+          "yes_sub_title": "Ben Wallace"
+        },
+        {
+          "can_close_early": true,
+          "close_time": "2099-01-08T15:00:00Z",
+          "created_time": "2026-06-29T19:31:47.73165Z",
+          "custom_strike": {
+            "Holder": "Mette Frederiksen"
+          },
+          "event_ticker": "KXNEXTNATOSECGEN-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.1100",
+          "latest_expiration_time": "2099-01-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.9400",
+          "no_bid_dollars": "0.8900",
+          "no_sub_title": "Mette Frederiksen",
+          "notional_value_dollars": "1.0000",
+          "occurrence_datetime": "2099-01-01T15:00:00Z",
+          "open_interest_fp": "179.00",
+          "open_time": "2026-06-29T19:47:00Z",
+          "previous_price_dollars": "0.1100",
+          "previous_yes_ask_dollars": "0.1100",
+          "previous_yes_bid_dollars": "0.0600",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Mette Frederiksen formally holds the position of Secretary General of NATO, and is the first such subject to do so after Issuance, then the market resolves to Yes.",
+          "rules_secondary": "For the purposes of this Contract, \"formally holds Secretary General of NATO\" means that an individual, company, or group has assumed Secretary General of NATO in an official capacity—whether by appointment, election, succession, confirmation, designation, or acting/interim assignment—and has performed or is recognized to perform the duties or responsibilities of that role for any length of time after Issuance.",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "strike_type": "custom",
+          "ticker": "KXNEXTNATOSECGEN-99-MFRE",
+          "title": "Will Mette Frederiksen be the next Secretary General of NATO?",
+          "updated_time": "2026-06-29T19:47:00.786694Z",
+          "volume_24h_fp": "0.00",
+          "volume_fp": "518.54",
+          "yes_ask_dollars": "0.1100",
+          "yes_ask_size_fp": "200.00",
+          "yes_bid_dollars": "0.0600",
+          "yes_bid_size_fp": "6.00",
+          "yes_sub_title": "Mette Frederiksen"
+        },
+        {
+          "can_close_early": true,
+          "close_time": "2099-01-08T15:00:00Z",
+          "created_time": "2026-06-29T19:31:47.73165Z",
+          "custom_strike": {
+            "Holder": "Ursula von der Leyen"
+          },
+          "event_ticker": "KXNEXTNATOSECGEN-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.1000",
+          "latest_expiration_time": "2099-01-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.9500",
+          "no_bid_dollars": "0.8800",
+          "no_sub_title": "Ursula von der Leyen",
+          "notional_value_dollars": "1.0000",
+          "occurrence_datetime": "2099-01-01T15:00:00Z",
+          "open_interest_fp": "102.84",
+          "open_time": "2026-06-29T19:47:00Z",
+          "previous_price_dollars": "0.1000",
+          "previous_yes_ask_dollars": "0.1100",
+          "previous_yes_bid_dollars": "0.0500",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Ursula von der Leyen formally holds the position of Secretary General of NATO, and is the first such subject to do so after Issuance, then the market resolves to Yes.",
+          "rules_secondary": "For the purposes of this Contract, \"formally holds Secretary General of NATO\" means that an individual, company, or group has assumed Secretary General of NATO in an official capacity—whether by appointment, election, succession, confirmation, designation, or acting/interim assignment—and has performed or is recognized to perform the duties or responsibilities of that role for any length of time after Issuance.",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "strike_type": "custom",
+          "ticker": "KXNEXTNATOSECGEN-99-ULEY",
+          "title": "Will Ursula von der Leyen be the next Secretary General of NATO?",
+          "updated_time": "2026-06-29T19:47:00.786694Z",
+          "volume_24h_fp": "0.00",
+          "volume_fp": "532.84",
+          "yes_ask_dollars": "0.1200",
+          "yes_ask_size_fp": "200.00",
+          "yes_bid_dollars": "0.0500",
+          "yes_bid_size_fp": "1.00",
+          "yes_sub_title": "Ursula von der Leyen"
+        },
+        {
+          "can_close_early": true,
+          "close_time": "2099-01-08T15:00:00Z",
+          "created_time": "2026-06-29T19:31:47.73165Z",
+          "custom_strike": {
+            "Holder": "Petr Pavel"
+          },
+          "event_ticker": "KXNEXTNATOSECGEN-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.1300",
+          "latest_expiration_time": "2099-01-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.9500",
+          "no_bid_dollars": "0.8800",
+          "no_sub_title": "Petr Pavel",
+          "notional_value_dollars": "1.0000",
+          "occurrence_datetime": "2099-01-01T15:00:00Z",
+          "open_interest_fp": "88.25",
+          "open_time": "2026-06-29T19:47:00Z",
+          "previous_price_dollars": "0.1300",
+          "previous_yes_ask_dollars": "0.1200",
+          "previous_yes_bid_dollars": "0.0500",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Petr Pavel formally holds the position of Secretary General of NATO, and is the first such subject to do so after Issuance, then the market resolves to Yes.",
+          "rules_secondary": "For the purposes of this Contract, \"formally holds Secretary General of NATO\" means that an individual, company, or group has assumed Secretary General of NATO in an official capacity—whether by appointment, election, succession, confirmation, designation, or acting/interim assignment—and has performed or is recognized to perform the duties or responsibilities of that role for any length of time after Issuance.",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "strike_type": "custom",
+          "ticker": "KXNEXTNATOSECGEN-99-PPAV",
+          "title": "Will Petr Pavel be the next Secretary General of NATO?",
+          "updated_time": "2026-06-29T19:47:00.786694Z",
+          "volume_24h_fp": "0.00",
+          "volume_fp": "461.25",
+          "yes_ask_dollars": "0.1200",
+          "yes_ask_size_fp": "2.00",
+          "yes_bid_dollars": "0.0500",
+          "yes_bid_size_fp": "200.00",
+          "yes_sub_title": "Petr Pavel"
+        },
+        {
+          "can_close_early": true,
+          "close_time": "2099-01-08T15:00:00Z",
+          "created_time": "2026-06-29T19:31:47.73165Z",
+          "custom_strike": {
+            "Holder": "Alexander Stubb"
+          },
+          "event_ticker": "KXNEXTNATOSECGEN-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.2400",
+          "latest_expiration_time": "2099-01-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.8300",
+          "no_bid_dollars": "0.7500",
+          "no_sub_title": "Alexander Stubb",
+          "notional_value_dollars": "1.0000",
+          "occurrence_datetime": "2099-01-01T15:00:00Z",
+          "open_interest_fp": "482.91",
+          "open_time": "2026-06-29T19:47:00Z",
+          "previous_price_dollars": "0.2400",
+          "previous_yes_ask_dollars": "0.2400",
+          "previous_yes_bid_dollars": "0.1800",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Alexander Stubb formally holds the position of Secretary General of NATO, and is the first such subject to do so after Issuance, then the market resolves to Yes.",
+          "rules_secondary": "For the purposes of this Contract, \"formally holds Secretary General of NATO\" means that an individual, company, or group has assumed Secretary General of NATO in an official capacity—whether by appointment, election, succession, confirmation, designation, or acting/interim assignment—and has performed or is recognized to perform the duties or responsibilities of that role for any length of time after Issuance.",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "strike_type": "custom",
+          "ticker": "KXNEXTNATOSECGEN-99-ASTU",
+          "title": "Will Alexander Stubb be the next Secretary General of NATO?",
+          "updated_time": "2026-06-29T19:47:00.786694Z",
+          "volume_24h_fp": "0.00",
+          "volume_fp": "606.91",
+          "yes_ask_dollars": "0.2500",
+          "yes_ask_size_fp": "200.00",
+          "yes_bid_dollars": "0.1700",
+          "yes_bid_size_fp": "200.00",
+          "yes_sub_title": "Alexander Stubb"
+        },
+        {
+          "can_close_early": true,
+          "close_time": "2099-01-08T15:00:00Z",
+          "created_time": "2026-06-29T19:31:47.73165Z",
+          "custom_strike": {
+            "Holder": "Keir Starmer"
+          },
+          "event_ticker": "KXNEXTNATOSECGEN-99",
+          "exchange_index": 0,
+          "expected_expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_time": "2099-01-08T15:00:00Z",
+          "expiration_value": "",
+          "last_price_dollars": "0.0600",
+          "latest_expiration_time": "2099-01-08T15:00:00Z",
+          "liquidity_dollars": "0.0000",
+          "market_type": "binary",
+          "no_ask_dollars": "0.9400",
+          "no_bid_dollars": "0.8600",
+          "no_sub_title": "Keir Starmer",
+          "notional_value_dollars": "1.0000",
+          "occurrence_datetime": "2099-01-01T15:00:00Z",
+          "open_interest_fp": "166.80",
+          "open_time": "2026-06-29T19:47:00Z",
+          "previous_price_dollars": "0.0600",
+          "previous_yes_ask_dollars": "0.1200",
+          "previous_yes_bid_dollars": "0.0500",
+          "price_level_structure": "linear_cent",
+          "price_ranges": [
+            {
+              "end": "1.0000",
+              "start": "0.0000",
+              "step": "0.0100"
+            }
+          ],
+          "result": "",
+          "rules_primary": "If Keir Starmer formally holds the position of Secretary General of NATO, and is the first such subject to do so after Issuance, then the market resolves to Yes.",
+          "rules_secondary": "For the purposes of this Contract, \"formally holds Secretary General of NATO\" means that an individual, company, or group has assumed Secretary General of NATO in an official capacity—whether by appointment, election, succession, confirmation, designation, or acting/interim assignment—and has performed or is recognized to perform the duties or responsibilities of that role for any length of time after Issuance.",
+          "settlement_timer_seconds": 1800,
+          "status": "active",
+          "strike_type": "custom",
+          "ticker": "KXNEXTNATOSECGEN-99-KSTA",
+          "title": "Will Keir Starmer be the next Secretary General of NATO?",
+          "updated_time": "2026-06-29T19:47:00.786694Z",
+          "volume_24h_fp": "0.00",
+          "volume_fp": "262.80",
+          "yes_ask_dollars": "0.1400",
+          "yes_ask_size_fp": "200.00",
+          "yes_bid_dollars": "0.0600",
+          "yes_bid_size_fp": "200.00",
+          "yes_sub_title": "Keir Starmer"
+        }
+      ],
+      "mutually_exclusive": true,
+      "series_ticker": "KXNEXTNATOSECGEN",
+      "settlement_sources": [
+        {
+          "name": "North Atlantic Treaty Organization",
+          "url": "https://www.nato.int/"
+        }
+      ],
+      "strike_period": "",
+      "sub_title": "Before Jan 1, 2099",
+      "title": "Who will be the next Secretary General of NATO?"
+    }
+  ],
+  "milestones": []
+}

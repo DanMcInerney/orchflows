@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "id": "1abc234",
+      "title": "What is the best local model right now?",
+      "selftext": "I have 24GB of VRAM and I keep going back and forth between two builds. Full numbers below, including prompt-processing time on a cold cache.",
+      "created_utc": 1786281600,
+      "score": 120,
+      "num_comments": 88,
+      "upvote_ratio": 0.94,
+      "subreddit": "LocalLLaMA",
+      "author": "vram_hoarder",
+      "permalink": "/r/LocalLLaMA/comments/1abc234/what_is_the_best_local_model_right_now/",
+      "url": "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/what_is_the_best_local_model_right_now/",
+      "over_18": false,
+      "edited": false
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "platform": "x",
+  "native_identity_namespace": "x",
+  "representation_kind": "native",
+  "native_order": "x_conversation",
+  "records": [
+    {
+      "canonical_content_kind": "post",
+      "canonical_locator": "https://x.com/simonw/status/1799990000000000001",
+      "native_item_id": "1799990000000000001",
+      "body": "Ran the same eleven prompts through the new local build this morning. Numbers in the thread.",
+      "author": "simonw",
+      "published_at": "2026-08-09T14:03:11Z",
+      "engagement": [["favorite_count", 412], ["retweet_count", 57], ["reply_count", 23], ["quote_count", 4]],
+      "native_position": 0
+    },
+    {
+      "canonical_content_kind": "reply",
+      "canonical_locator": "https://x.com/simonw/status/1799990000000000002",
+      "native_item_id": "1799990000000000002",
+      "native_parent_id": "1799990000000000001",
+      "body": "Second run, same hardware: three percent slower, identical outputs.",
+      "author": "simonw",
+      "published_at": "2026-08-09T14:11:40Z",
+      "engagement": [["favorite_count", 31], ["reply_count", 2]],
+      "native_position": 1
+    }
+  ]
+}

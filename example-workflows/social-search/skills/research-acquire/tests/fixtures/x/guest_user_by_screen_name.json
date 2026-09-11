@@ -1,0 +1,20 @@
+{
+  "data": {
+    "user": {
+      "result": {
+        "__typename": "User",
+        "rest_id": "12497",
+        "legacy": {
+          "screen_name": "simonw",
+          "name": "Simon Willison",
+          "description": "Building open source tools for data journalism and local models.",
+          "location": "Half Moon Bay, California",
+          "followers_count": 61234,
+          "friends_count": 892,
+          "statuses_count": 41207,
+          "created_at": "Mon Nov 12 18:04:11 +0000 2007"
+        }
+      }
+    }
+  }
+}

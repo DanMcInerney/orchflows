@@ -1,0 +1,18 @@
+{
+  "events": [
+    {
+      "slug": "spacex-starship-flight-test-14",
+      "title": "SpaceX Starship Flight Test 14",
+      "markets": []
+    },
+    {
+      "slug": "tesla-and-spacex-merger",
+      "title": "Tesla and SpaceX merger",
+      "markets": []
+    }
+  ],
+  "pagination": {
+    "hasMore": false,
+    "totalResults": 2
+  }
+}

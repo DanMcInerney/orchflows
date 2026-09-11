@@ -1,0 +1,130 @@
+{
+  "posts": [
+    {
+      "uri": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpuobiwk2t",
+      "cid": "bafyreia5giteuhei7im66w7yn3pldm7h7npkmuy73fvakrpsjsz5oejdgu",
+      "author": {
+        "did": "did:plc:z72i7hdynmk6r22z27h6tvur",
+        "handle": "bsky.app",
+        "displayName": "Bluesky",
+        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreihwihm6kpd6zuwhhlro75p5qks5qtrcu55jp3gddbfjsieiv7wuka",
+        "associated": {
+          "chat": {
+            "allowIncoming": "none"
+          },
+          "activitySubscription": {
+            "allowSubscriptions": "followers"
+          }
+        },
+        "labels": [],
+        "createdAt": "2023-04-12T04:53:57.057Z",
+        "verification": {
+          "verifications": [],
+          "verifiedStatus": "none",
+          "trustedVerifierStatus": "valid"
+        }
+      },
+      "record": {
+        "$type": "app.bsky.feed.post",
+        "createdAt": "2026-08-10T18:23:59.962Z",
+        "embed": {
+          "$type": "app.bsky.embed.images",
+          "images": [
+            {
+              "alt": "A screenshot demonstrating how to hide reposts from an individual user: Go to their profile, tap the three-dot icon at top right, and select \"Hide reposts in feeds\" from the drop-down menu.",
+              "aspectRatio": {
+                "height": 1312,
+                "width": 2200
+              },
+              "image": {
+                "$type": "blob",
+                "ref": {
+                  "$link": "bafkreig2hq7svgwj4bppizprcv5t3dlg4zbu3a6pvbebftlavbocibuud4"
+                },
+                "mimeType": "image/jpeg",
+                "size": 1330685
+              }
+            }
+          ]
+        },
+        "langs": [
+          "en"
+        ],
+        "text": "v1.130 is live!\n\nWant to follow someone for their posts but not their reposts? Now you can — turn on \"Hide reposts in feeds\" for any account you follow."
+      },
+      "embed": {
+        "images": [
+          {
+            "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreig2hq7svgwj4bppizprcv5t3dlg4zbu3a6pvbebftlavbocibuud4",
+            "fullsize": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreig2hq7svgwj4bppizprcv5t3dlg4zbu3a6pvbebftlavbocibuud4",
+            "alt": "A screenshot demonstrating how to hide reposts from an individual user: Go to their profile, tap the three-dot icon at top right, and select \"Hide reposts in feeds\" from the drop-down menu.",
+            "aspectRatio": {
+              "height": 1312,
+              "width": 2200
+            }
+          }
+        ],
+        "$type": "app.bsky.embed.images#view"
+      },
+      "bookmarkCount": 600,
+      "replyCount": 494,
+      "repostCount": 2388,
+      "likeCount": 9487,
+      "quoteCount": 2368,
+      "indexedAt": "2026-08-10T18:24:05.869Z",
+      "labels": []
+    },
+    {
+      "uri": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpusnigc2t",
+      "cid": "bafyreifbsaff3akpaptzw2bbd67dfk3qgpva4al7boutazaeh4kiw6vghy",
+      "author": {
+        "did": "did:plc:z72i7hdynmk6r22z27h6tvur",
+        "handle": "bsky.app",
+        "displayName": "Bluesky",
+        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreihwihm6kpd6zuwhhlro75p5qks5qtrcu55jp3gddbfjsieiv7wuka",
+        "associated": {
+          "chat": {
+            "allowIncoming": "none"
+          },
+          "activitySubscription": {
+            "allowSubscriptions": "followers"
+          }
+        },
+        "labels": [],
+        "createdAt": "2023-04-12T04:53:57.057Z",
+        "verification": {
+          "verifications": [],
+          "verifiedStatus": "none",
+          "trustedVerifierStatus": "valid"
+        }
+      },
+      "record": {
+        "$type": "app.bsky.feed.post",
+        "createdAt": "2026-08-10T18:23:59.963Z",
+        "langs": [
+          "en"
+        ],
+        "reply": {
+          "parent": {
+            "cid": "bafyreia5giteuhei7im66w7yn3pldm7h7npkmuy73fvakrpsjsz5oejdgu",
+            "uri": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpuobiwk2t"
+          },
+          "root": {
+            "cid": "bafyreia5giteuhei7im66w7yn3pldm7h7npkmuy73fvakrpsjsz5oejdgu",
+            "uri": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpuobiwk2t"
+          }
+        },
+        "text": "We also added thread numbering: Posts in a thread are numbered automatically, so you don't have to do it yourself. You can turn this on in Settings → Beta Features."
+      },
+      "bookmarkCount": 99,
+      "replyCount": 89,
+      "repostCount": 328,
+      "likeCount": 2378,
+      "quoteCount": 129,
+      "indexedAt": "2026-08-10T18:24:05.893Z",
+      "labels": []
+    }
+  ],
+  "cursor": "25",
+  "hitsTotal": 2
+}

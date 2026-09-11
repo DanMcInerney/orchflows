@@ -1,0 +1,35 @@
+{
+  "responseContext": {
+    "visitorData": "CgtIYXJib3VybGlnaHQSBAgBGAA%3D"
+  },
+  "contents": {
+    "twoColumnWatchNextResults": {
+      "results": {
+        "results": {
+          "contents": [
+            {
+              "videoPrimaryInfoRenderer": {
+                "title": {"runs": [{"text": "Quarterly results call, no questions taken"}]},
+                "viewCount": {
+                  "videoViewCountRenderer": {"viewCount": {"simpleText": "8,412 views"}}
+                }
+              }
+            },
+            {
+              "videoSecondaryInfoRenderer": {
+                "owner": {
+                  "videoOwnerRenderer": {"title": {"runs": [{"text": "Harbourlight Optics"}]}}
+                }
+              }
+            },
+            {
+              "compositeVideoPrimaryInfoRenderer": {
+                "title": {"runs": [{"text": "Quarterly results call, no questions taken"}]}
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

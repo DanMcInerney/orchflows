@@ -1,0 +1,33 @@
+{
+  "markets": [
+    {
+      "id": "QNSd6yNzLQ",
+      "creatorId": "gL1FVCjzD5bGehGk67g2AZwe2l83",
+      "creatorUsername": "BillClintonBubba",
+      "creatorName": "Bill Clinton",
+      "createdTime": 1785251677477,
+      "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FTumblesBrother%2FnP6pN2ydtt.PNG?alt=media&token=0cb3bcbd-b7cc-4a47-805d-2a681c5d0ac9",
+      "closeTime": 1798761540000,
+      "question": "SpaceX vs Tesla - Will SpaceX have a higher market cap than Tesla on Dec. 31, 2026?",
+      "slug": "spacex-vs-tesla-will-spacex-have-a",
+      "url": "https://manifold.markets/BillClintonBubba/spacex-vs-tesla-will-spacex-have-a",
+      "pool": {
+        "NO": 1022.3249293486219,
+        "YES": 978.1625893023613
+      },
+      "probability": 0.5110378944218665,
+      "p": 0.5000000000000004,
+      "totalLiquidity": 1000,
+      "outcomeType": "BINARY",
+      "mechanism": "cpmm-1",
+      "volume": 637.8061530219741,
+      "volume24Hours": 72.77733898761427,
+      "isResolved": false,
+      "uniqueBettorCount": 10,
+      "lastUpdatedTime": 1786912073796,
+      "lastBetTime": 1786912073796,
+      "lastCommentTime": 1785352458123,
+      "token": "MANA"
+    }
+  ]
+}

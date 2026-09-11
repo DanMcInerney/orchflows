@@ -1,0 +1,15 @@
+{
+  "data": [
+    {
+      "id": "1abc234",
+      "title": "The captive portal ate my request",
+      "selftext": "Every blocked domain came back with <base href=\"/login/\"> in the head.",
+      "created_utc": 1786000800,
+      "score": 12,
+      "num_comments": 4,
+      "subreddit": "networking",
+      "author": "vram_hoarder",
+      "permalink": "/r/networking/comments/1abc234/the_captive_portal_ate_my_request/"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "responseContext": {
+    "visitorData": "CgtIYXJib3VybGlnaHQSBAgBGAA%3D"
+  },
+  "playabilityStatus": {
+    "status": "OK",
+    "playableInEmbed": true
+  },
+  "videoDetails": {
+    "videoId": "dQw4w9WgXcQ",
+    "title": "Running a 70B locally on two consumer GPUs",
+    "lengthSeconds": "1122",
+    "channelId": "UCq7Hb4Lm9PxWnR2vT0aYdKg",
+    "author": "Harbourlight Optics",
+    "viewCount": "1284553",
+    "shortDescription": "Notes, benchmarks, and the two settings that turned out to matter.",
+    "isPrivate": false,
+    "isLiveContent": false
+  },
+  "microformat": {
+    "playerMicroformatRenderer": {
+      "publishDate": "2026-07-26",
+      "uploadDate": "2026-07-26",
+      "ownerChannelName": "Harbourlight Optics",
+      "externalChannelId": "UCq7Hb4Lm9PxWnR2vT0aYdKg",
+      "viewCount": "1284553",
+      "category": "Science & Technology",
+      "isFamilySafe": true,
+      "isUnlisted": false,
+      "lengthSeconds": "1122",
+      "embed": {
+        "iframeUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        "width": 1280,
+        "height": 720
+      }
+    }
+  },
+  "captions": {
+    "playerCaptionsTracklistRenderer": {
+      "captionTracks": [],
+      "audioTracks": [],
+      "translationLanguages": []
+    }
+  }
+}

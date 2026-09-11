@@ -1,0 +1,24 @@
+{
+ "responseContext": {},
+ "onResponseReceivedEndpoints": [
+  {
+   "reloadContinuationItemsCommand": {
+    "targetId": "comments-section",
+    "continuationItems": [
+     {
+      "commentThreadRenderer": {
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentId": "UgyyGmQFMmFbbTn5MfN4AaABAg",
+         "commentKey": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAoKAE%3D",
+         "toolbarStateKey": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAsKAE%3D"
+        }
+       },
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

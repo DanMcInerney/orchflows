@@ -1,7 +1,7 @@
 {
   "name": "orchflows-light",
-  "version": "0.2.0",
-  "description": "Native delegation skills and plain Markdown quality standards.",
+  "version": "0.3.0",
+  "description": "Composable native workflows, quality standards and a portable user library.",
   "author": {
     "name": "orchflows-light"
   },

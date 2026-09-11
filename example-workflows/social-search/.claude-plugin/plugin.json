@@ -1,0 +1,10 @@
+{
+  "name": "social-search",
+  "version": "0.1.0",
+  "description": "Bounded source research with peer search skills, evidence preparation and a fresh ranking judge.",
+  "author": {
+    "name": "Dan McInerney"
+  },
+  "license": "MIT",
+  "skills": "./skills/"
+}

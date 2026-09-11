@@ -1,0 +1,36 @@
+[
+  {
+    "id": 189440221,
+    "node_id": "RE_kwDOKfPJgs4LSm5d",
+    "tag_name": "v0.9.0",
+    "name": "v0.9.0 — split-GPU runs",
+    "draft": false,
+    "prerelease": false,
+    "author": {
+      "login": "harbourlight-bot",
+      "id": 22140087,
+      "type": "User"
+    },
+    "created_at": "2026-08-05T10:02:11Z",
+    "published_at": "2026-08-05T10:44:19Z",
+    "html_url": "https://github.com/harbourlight/gpu-bench/releases/tag/v0.9.0",
+    "body": "Adds the two-card split harness and fixes the dtype flag on repeated runs."
+  },
+  {
+    "id": 186002114,
+    "node_id": "RE_kwDOKfPJgs4LFcaC",
+    "tag_name": "v0.8.2",
+    "name": "v0.8.2",
+    "draft": false,
+    "prerelease": false,
+    "author": {
+      "login": "harbourlight-bot",
+      "id": 22140087,
+      "type": "User"
+    },
+    "created_at": "2026-07-18T14:30:00Z",
+    "published_at": "2026-07-18T15:01:47Z",
+    "html_url": "https://github.com/harbourlight/gpu-bench/releases/tag/v0.8.2",
+    "body": "Pins the kernel and re-runs the quantization table."
+  }
+]
