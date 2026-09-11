@@ -22,7 +22,14 @@ codex plugin add orchflows-light@orchflows-light-local
 
 These commands update native Codex configuration. In CLI/IDE, select a skill with `/skills` or `$orchflows-light:make-and-review`; use the skill picker in the app. See [host details](docs/native-hosts.md) for availability and updates.
 
-**Claude Code:** load for this session without installing:
+**Claude Code:** register the included local marketplace and install for your user:
+
+```sh
+claude plugin marketplace add "/absolute/path/to/orchflows-light"
+claude plugin install orchflows-light@orchflows-light-local --scope user
+```
+
+Start a new session. For development, you can instead load the checkout for one session:
 
 ```sh
 claude --plugin-dir "/absolute/path/to/orchflows-light"
