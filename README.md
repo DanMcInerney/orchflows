@@ -6,10 +6,13 @@ Two skill primitives, plain-Markdown quality standards and a portable home for C
 | --- | --- |
 | [orch-work](skills/orch-work/SKILL.md) | A fresh child makes a result under chosen standards. |
 | [orch-review](skills/orch-review/SKILL.md) | A fresh child who did not make it reviews without fixing. |
+| [orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) | Deliver a request when the user names no workflow or skill, with concurrent makers and one final review. |
 | [orch-build-workflow](skills/orch-build-workflow/SKILL.md) | Author a workflow, run a real trial, cut what the trial did not need. |
 | [orch-self-improve](skills/orch-self-improve/SKILL.md) | Mine native history to fix the environment, a workflow or orchflows itself. |
 
-The first two are the primitives; the other two are built from them.
+The first two are the primitives; the others are built from them.
+
+A useful dynamic run can later become a trial for `orch-build-workflow`.
 
 ## Install
 
