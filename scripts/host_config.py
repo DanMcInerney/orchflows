@@ -13,7 +13,8 @@ import uuid
 
 
 DEFAULT_CONCURRENCY = 15
-CODEX_KEY = "max_concurrent_threads_per_session"
+CODEX_KEY = "max_threads"  # Accepted by CLI 0.144.0 and retained as an alias in newer hosts.
+CODEX_RENAMED_KEY = "max_concurrent_threads_per_session"
 CLAUDE_KEY = "CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"
 
 
@@ -43,13 +44,13 @@ def _codex(text: str, concurrency: int) -> str:
     agents = data.get("agents", {})
     if not isinstance(agents, dict):
         raise ValueError("Codex agents must be a table")
-    keys = (CODEX_KEY, "max_threads")
+    keys = (CODEX_KEY, CODEX_RENAMED_KEY)
     for key in keys:
         if key in agents:
             _positive(agents[key])
     if all(key in agents for key in keys) and agents[keys[0]] != agents[keys[1]]:
-        raise ValueError("Conflicting Codex concurrency keys; reconcile max_threads and " + CODEX_KEY)
-    if agents.get(CODEX_KEY) == concurrency and "max_threads" not in agents:
+        raise ValueError("Conflicting Codex concurrency keys; reconcile " + CODEX_KEY + " and " + CODEX_RENAMED_KEY)
+    if agents.get(CODEX_KEY) == concurrency and CODEX_RENAMED_KEY not in agents:
         return text
 
     newline = "\r\n" if "\r\n" in text else "\n"
@@ -82,11 +83,11 @@ def _codex(text: str, concurrency: int) -> str:
                 raise ValueError("Unsupported concurrency assignment; use a decimal integer in [agents]")
             found.add(key)
             prefix, _, suffix, ending = match.groups()
-            if key == "max_threads" and CODEX_KEY in agents:
+            if key == CODEX_RENAMED_KEY and CODEX_KEY in agents:
                 comment = suffix[suffix.index("#"):] if "#" in suffix else ""
                 replacement = comment + (ending or "")
             else:
-                replacement = prefix.replace("max_threads", CODEX_KEY) + str(concurrency) + suffix + (ending or "")
+                replacement = prefix.replace(CODEX_RENAMED_KEY, CODEX_KEY) + str(concurrency) + suffix + (ending or "")
             edits.append((start, end, replacement))
     if found != {key for key in keys if key in agents}:
         raise ValueError("Unsupported Codex concurrency layout; move settings into [agents]")
@@ -103,7 +104,7 @@ def _codex(text: str, concurrency: int) -> str:
     for start, end, replacement in sorted(edits, reverse=True):
         text = text[:start] + replacement + text[end:]
     expected = dict(agents, **{CODEX_KEY: concurrency})
-    expected.pop("max_threads", None)
+    expected.pop(CODEX_RENAMED_KEY, None)
     if tomllib.loads(text) != dict(data, agents=expected):
         raise ValueError("Codex update would alter unrelated settings; file preserved")
     return text

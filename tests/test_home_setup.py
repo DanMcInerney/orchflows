@@ -119,7 +119,7 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["host_configs"]["codex"]["value"], 22)
-        self.assertEqual(tomllib.loads((self.root / "codex/config.toml").read_text())["agents"]["max_concurrent_threads_per_session"], 22)
+        self.assertEqual(tomllib.loads((self.root / "codex/config.toml").read_text())["agents"]["max_threads"], 22)
         self.assertEqual(json.loads((self.root / "claude/settings.json").read_text())["env"]["CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"], "22")
 
     def test_host_preflight_and_invalid_concurrency_do_not_create_home(self) -> None:

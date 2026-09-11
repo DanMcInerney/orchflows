@@ -39,6 +39,7 @@ class HostConfigTests(unittest.TestCase):
 
     def test_new_homes_and_repeat_have_no_backups_or_rewrites(self):
         first = self.apply()
+        self.assertEqual(tomllib.loads(self.codex.read_text())["agents"], {"max_threads": 15})
         self.assertEqual(tomllib.loads(self.codex.read_text())["agents"][host_config.CODEX_KEY], 15)
         self.assertEqual(json.loads(self.claude.read_text())["env"][host_config.CLAUDE_KEY], "15")
         for host in ("codex", "claude"):
@@ -88,7 +89,7 @@ class HostConfigTests(unittest.TestCase):
         for original in examples:
             with self.subTest(original=original):
                 expected = tomllib.loads(original)
-                expected.setdefault("agents", {}).pop("max_threads", None)
+                expected.setdefault("agents", {}).pop("max_concurrent_threads_per_session", None)
                 expected["agents"][host_config.CODEX_KEY] = 15
                 updated = host_config._codex(original, 15)
                 self.assertEqual(tomllib.loads(updated), expected)

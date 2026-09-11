@@ -18,10 +18,10 @@ Normal `setup` sets both hosts' user limits to 15, including when an existing va
 
 | Host | User file | Setting and meaning |
 | --- | --- | --- |
-| Codex | `$CODEX_HOME/config.toml`, or `~/.codex/config.toml` | `[agents] max_concurrent_threads_per_session = 15` limits concurrently open spawned-agent threads, excluding the primary. |
+| Codex | `$CODEX_HOME/config.toml`, or `~/.codex/config.toml` | `[agents] max_threads = 15` limits concurrently open spawned-agent threads. |
 | Claude Code | `$CLAUDE_CONFIG_DIR/settings.json`, or `~/.claude/settings.json` | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY = "15"` shares 15 parallel slots between read-only tools and subagents. |
 
-These are different limits. Claude's tool activity can consume slots that would otherwise be available to subagents. Codex accepts `max_threads` as a legacy alias; setup migrates it to the current key and rejects disagreeing old/new values. [Codex subagent settings](https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings), [Claude environment variables](https://code.claude.com/docs/en/env-vars).
+These are different limits. Claude's tool activity can consume slots that would otherwise be available to subagents. Setup writes Codex's compatible `max_threads` key: CLI 0.144.0 accepts it but rejects the newer documented `max_concurrent_threads_per_session` name. Newer documentation retains `max_threads` as an alias. Setup normalizes the renamed field to this compatible spelling and rejects disagreeing values. The installed CLI's config-loading command was checked with generated settings. [Codex subagent settings](https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings), [Claude environment variables](https://code.claude.com/docs/en/env-vars).
 
 Setup validates both configs before creating the home. It preserves unrelated TOML text and JSON values, rejects malformed files, duplicate JSON keys, non-object Claude `env`, and unsupported Codex layouts requiring a structural rewrite, such as an inline `agents` table. Use ordinary `[agents]` assignments with decimal integers or root dotted keys; move an unsupported layout into that form, or opt out. Existing empty Claude files are malformed; an absent file is created. Changed Claude JSON is formatted with two-space indentation.
 
