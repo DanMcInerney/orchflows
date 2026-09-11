@@ -1,7 +1,7 @@
 {
   "name": "social-search",
-  "version": "0.1.0",
-  "description": "Bounded source research with peer search skills, evidence preparation and a fresh ranking judge.",
+  "version": "0.2.0",
+  "description": "Composable site searches with parallel workers and one final evidence reviewer.",
   "author": {
     "name": "Dan McInerney"
   },

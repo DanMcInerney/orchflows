@@ -1,6 +1,6 @@
 # Bounded acquisition
 
-[acquire.py](../scripts/acquire.py) runs discovery, pauses for the maker's semantic choices, then acquires selected depth. The [offline fixture](../scripts/acquire_fixture.py) is an executable example. Resolve `<method>` to the loaded research-acquire skill directory and `<interpreter>` to the explicit home runtime interpreter from the caller's [home and runtime context](../../../references/home-runtime.md). Resolve plan, selection and output arguments to absolute task paths so commands also work from an unrelated project. The retained backend uses Python 3.9+ and the standard library.
+[acquire.py](../scripts/acquire.py) runs discovery, pauses for the worker's semantic choices, then acquires selected depth. The [offline fixture](../scripts/acquire_fixture.py) is an executable example. Resolve `<method>` to the loaded skill directory and `<interpreter>` to the caller's Python 3.9+ interpreter, normally the orchflows home runtime. Resolve plan, selection and output arguments to absolute task paths. The backend uses only the standard library.
 
 ## Plan and run
 
@@ -32,7 +32,7 @@ Replace the example dates and sources with the resolved request. `window: null` 
 
 The validator requires worst-case steps/records to fit plan limits. Discovery has at most five pages per step; `max_targets` bounds depth choices and `max_items` bounds each result. Request reservations are charged before I/O and shared across stages/resumes, including guest activation; internal redirect hops are not separate attempts. `max_seconds` bounds active work and new read/pacing admission, while an in-flight read retains its transport timeout. These are ceilings, not completeness or wall-time guarantees.
 
-Allocate workflow budgets across plans and reserve repair allowance: enforcement is per plan. One plan shares paced/cache state and serializes each origin; serialize separate plans sharing an origin. Only explicitly permitted adapters may run; supply no credentials. Refusal and reserved pacing state survive resume; there is no retry or fallback stage.
+Allocate caller budgets across plans: enforcement is per plan. One plan shares paced/cache state and serializes each origin; serialize separate plans sharing an origin. Only explicitly permitted adapters may run; supply no credentials. Refusal and reserved pacing state survive resume; there is no retry or fallback stage.
 
 ## Select and deepen
 
@@ -56,7 +56,7 @@ Use `choices: []` when no depth read is justified. Choices validate before reads
 
 ## Resume and hand off
 
-Reissue the unchanged plan/output command after interruption; bound choices may be omitted. Completed steps, including empty/refused results, make no more requests. Changed plan/package identity, corrupt/missing checkpoints or completed receipts refuse reuse. A started step without a durable result is uncertain and is not replayed; preserve its reserved budget and gap while independent work may finish. The process lock prevents concurrent invocation. New scope requires a separate plan within existing authorization and the workflow's single repair boundary.
+Reissue the unchanged plan/output command after interruption; bound choices may be omitted. Completed steps, including empty/refused results, make no more requests. Changed plan/package identity, corrupt/missing checkpoints or completed receipts refuse reuse. A started step without a durable result is uncertain and is not replayed; preserve its reserved budget and gap while independent work may finish. The process lock prevents concurrent invocation. New scope requires a separate plan within the caller's authorization and remaining bounds.
 
 Preserve the output directory together:
 

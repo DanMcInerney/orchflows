@@ -27,7 +27,7 @@ Use `libraries/<library>/skills/<skill>/SKILL.md` for both helpers and orchestra
 
 Relative links resolve within the loaded package. Resolve an external dependency by package name at the composition boundary and pass its concrete paths onward. For example, `social-search` resolves installed `orchflows-light` Research/Writing standards and delegation skills once, while source profiles link directly to sibling `search-site` and `prepare-evidence` skills.
 
-Home catalogs expose core and the seeded example to native hosts. They are portable source lists, not an automatic directory watcher. Register a new library in the relevant native catalog, install it with the host, and refresh cached plugins after source edits. Setup preserves existing catalogs; it reports missing entries instead of rewriting your catalog. Directly asking an agent to read an absolute `SKILL.md` path also works without named host discovery.
+`setup --example NAME` installs any matching named package from the source's `example-workflows/`. For example, `research-acquire` is an optional acquisition library independent of `social-search`. New home catalogs include the core and valid installed libraries. Existing catalogs remain user-owned: setup reports missing registrations without rewriting them. Register a new library in the relevant native catalog, install it with the host, and refresh cached plugins after source edits. Directly asking an agent to read an absolute `SKILL.md` path also works without named host discovery.
 
 Use the [native host guide](native-hosts.md) for registration and reload commands. Core development may still load the source checkout directly; user custom workflows belong in their home library unless a project-local destination was requested.
 
