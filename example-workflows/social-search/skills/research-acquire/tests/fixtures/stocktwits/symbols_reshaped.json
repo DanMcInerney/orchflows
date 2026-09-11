@@ -1,0 +1,17 @@
+{
+  "symbols": [
+    {
+      "type": "symbol",
+      "title": "SpaceX",
+      "symbol": "SPCX",
+      "exchange": "NASDAQ",
+      "weight_offset": 8,
+      "watchlist_count": 102752,
+      "country": "US",
+      "id": 282365
+    }
+  ],
+  "response": {
+    "status": 200
+  }
+}

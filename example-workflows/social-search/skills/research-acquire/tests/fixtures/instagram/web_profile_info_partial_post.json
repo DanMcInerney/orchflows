@@ -1,0 +1,53 @@
+{
+  "data": {
+    "user": {
+      "id": "528817152",
+      "username": "kestrel.field.notes",
+      "full_name": "Kestrel Field Notes",
+      "biography": "Ringing records and nest cameras, updated when the birds allow it.",
+      "edge_followed_by": {"count": 12844},
+      "edge_owner_to_timeline_media": {
+        "count": 2,
+        "edges": [
+          {
+            "node": {
+              "id": "3421900000000000101",
+              "shortcode": "C8mA1qKLbNr",
+              "taken_at_timestamp": 1786299600,
+              "edge_liked_by": {"count": 903},
+              "edge_media_to_comment": {"count": 47},
+              "edge_media_to_caption": {
+                "edges": [
+                  {"node": {"text": "Third brood confirmed on the east box."}}
+                ]
+              }
+            }
+          },
+          {
+            "node": {
+              "id": "3421900000000000102",
+              "shortcode": "C8jZ8nHLaKp",
+              "edge_liked_by": {"count": 611},
+              "edge_media_to_caption": {"edges": []}
+            }
+          },
+          {
+            "node": {
+              "id": "3421900000000000103",
+              "shortcode": "C8gY5kGLzHm",
+              "taken_at_timestamp": 1785314100,
+              "edge_liked_by": {"count": 0},
+              "edge_media_to_comment": {"count": 0},
+              "edge_media_to_caption": {
+                "edges": [
+                  {"node": {"text": "Box camera offline for maintenance until Friday."}}
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "status": "ok"
+}

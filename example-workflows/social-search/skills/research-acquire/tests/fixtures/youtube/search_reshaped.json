@@ -1,0 +1,18 @@
+{
+  "responseContext": {
+    "visitorData": "CgtIYXJib3VybGlnaHQSBAgBGAA%3D"
+  },
+  "estimatedResults": "184000",
+  "contents": {
+    "twoColumnBrowseResultsRenderer": {
+      "tabs": [
+        {
+          "tabRenderer": {
+            "title": "Results",
+            "content": {"richGridRenderer": {"contents": []}}
+          }
+        }
+      ]
+    }
+  }
+}

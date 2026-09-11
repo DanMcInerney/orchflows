@@ -1,0 +1,32 @@
+{
+  "id": 704212099,
+  "node_id": "R_kgDOKfPJgw",
+  "name": "gpu-bench",
+  "full_name": "harbourlight/gpu-bench",
+  "private": false,
+  "owner": {
+    "login": "harbourlight",
+    "id": 18422107,
+    "type": "Organization"
+  },
+  "html_url": "https://github.com/harbourlight/gpu-bench",
+  "description": "Reproducible local inference benchmarks for consumer GPUs.",
+  "fork": false,
+  "created_at": "2024-11-03T09:14:22Z",
+  "updated_at": "2026-08-09T07:41:10Z",
+  "pushed_at": "2026-08-08T22:03:55Z",
+  "homepage": "https://harbourlight.example/gpu-bench",
+  "size": 10422,
+  "stargazers_count": 8241,
+  "watchers_count": 8241,
+  "language": "Python",
+  "forks_count": 512,
+  "open_issues_count": 47,
+  "license": {
+    "key": "apache-2.0",
+    "name": "Apache License 2.0"
+  },
+  "topics": ["benchmarks", "inference", "gpu"],
+  "visibility": "public",
+  "default_branch": "main"
+}

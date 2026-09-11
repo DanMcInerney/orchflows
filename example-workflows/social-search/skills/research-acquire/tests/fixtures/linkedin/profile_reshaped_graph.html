@@ -1,0 +1,55 @@
+<!--
+  Fixture: the same route answering 200 with an application/ld+json block that
+  no longer holds a Person.
+
+  The other half of a reshaped page, and the harder half. The block is there,
+  it is valid JSON, and it is full of plausible-looking nodes - a WebPage, a
+  ProfilePage, an Organization with a name on it. A parser that went hunting
+  for something familiar rather than reading the node the standard names would
+  find the Organization's "name" and report a profile. That is the failure a
+  declared @type exists to prevent: nothing here is a Person, so nothing here
+  is this route's answer.
+
+  Typed schema_drift, naming what was looked for and not found.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Avery Lindqvist | LinkedIn</title>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav__button-tertiary" href="/signup">Join now</a>
+  <a class="nav__button-secondary" href="/login">Sign in to view Avery's full profile</a>
+</nav>
+
+<script type="application/ld+json">
+{
+ "@context": "http://schema.org",
+ "@graph": [
+  {
+   "@type": "WebPage",
+   "url": "https://www.linkedin.com/in/avery-lindqvist-8a41b207"
+  },
+  {
+   "@type": "ProfilePage",
+   "name": "Avery Lindqvist",
+   "description": "Reliability and data infrastructure.",
+   "mainEntity": {"identifier": "avery-lindqvist-8a41b207"}
+  },
+  {
+   "@type": "Organization",
+   "name": "Northwind Analytics",
+   "jobTitle": ["Principal Reliability Engineer"],
+   "url": "https://www.linkedin.com/company/northwind-analytics"
+  }
+ ]
+}
+</script>
+
+<main class="profile">
+  <h1 class="top-card-layout__title">Avery Lindqvist</h1>
+</main>
+</body>
+</html>

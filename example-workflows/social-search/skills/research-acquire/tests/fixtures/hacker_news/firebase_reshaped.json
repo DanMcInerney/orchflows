@@ -1,0 +1,10 @@
+{
+  "id": 44831234,
+  "item": {
+    "by": "kessel_run",
+    "descendants": 233,
+    "kids": [44831402, 44831377, 44831301],
+    "kind": "story",
+    "title": "Running a 70B locally on two consumer GPUs"
+  }
+}

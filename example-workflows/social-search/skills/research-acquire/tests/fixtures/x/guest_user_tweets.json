@@ -1,0 +1,112 @@
+{
+  "data": {
+    "user": {
+      "result": {
+        "__typename": "User",
+        "timeline_v2": {
+          "timeline": {
+            "instructions": [
+              {
+                "type": "TimelineClearCache"
+              },
+              {
+                "type": "TimelineAddEntries",
+                "entries": [
+                  {
+                    "entryId": "tweet-1799990000000000001",
+                    "sortIndex": "1799990000000000001",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1799990000000000001",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "rest_id": "12497",
+                                  "legacy": {
+                                    "screen_name": "simonw",
+                                    "name": "Simon Willison",
+                                    "followers_count": 61234
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "id_str": "1799990000000000001",
+                              "conversation_id_str": "1799990000000000001",
+                              "full_text": "Ran the same eleven prompts through the new local build this morning.",
+                              "created_at": "Sun Aug 09 07:00:00 +0000 2026",
+                              "favorite_count": 412,
+                              "retweet_count": 57,
+                              "reply_count": 23,
+                              "quote_count": 4,
+                              "lang": "en"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1799990000000000003",
+                    "sortIndex": "1799990000000000003",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1799990000000000003",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "rest_id": "12497",
+                                  "legacy": {
+                                    "screen_name": "simonw",
+                                    "name": "Simon Willison",
+                                    "followers_count": 61234
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "id_str": "1799990000000000003",
+                              "conversation_id_str": "1799990000000000002",
+                              "full_text": "Second run on identical hardware came out three percent slower, same outputs.",
+                              "created_at": "Sun Aug 09 07:02:14 +0000 2026",
+                              "favorite_count": 96,
+                              "retweet_count": 8,
+                              "reply_count": 5,
+                              "quote_count": 1,
+                              "lang": "en"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "cursor-bottom-1799990000000000000",
+                    "sortIndex": "1799989999999999999",
+                    "content": {
+                      "entryType": "TimelineTimelineCursor",
+                      "cursorType": "Bottom",
+                      "value": "DAABCgABGel3Xxi2ZAAKAAIY6WOMSt-QAAgAAgAAAAI"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "Not authorized.",
+      "code": 37,
+      "kind": "Permission",
+      "name": "AuthorizationError",
+      "source": "Server"
+    }
+  ]
+}

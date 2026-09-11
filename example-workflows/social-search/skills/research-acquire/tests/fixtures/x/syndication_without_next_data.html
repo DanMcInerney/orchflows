@@ -1,0 +1,25 @@
+<!--
+  Fixture: the same route answering 200 with a page that embeds no
+  __NEXT_DATA__ script at all.
+
+  A K2 route is structured data inside a public page, so the page changing is
+  the failure mode the class is exposed to (spec Risks, "Structured-data
+  drift"). The page below is a plain 200 with real prose in it, which is the
+  case that would read as "this profile has no posts" to a parser that
+  answered a missing container with an empty result set.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>simonw on X</title>
+</head>
+<body>
+<div id="__next">
+  <section>
+    <p>Posts are loading.</p>
+  </section>
+</div>
+<script type="application/json">{"unrelated": true}</script>
+</body>
+</html>

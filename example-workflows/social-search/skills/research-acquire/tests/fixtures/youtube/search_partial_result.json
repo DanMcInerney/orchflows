@@ -1,0 +1,52 @@
+{
+  "responseContext": {
+    "visitorData": "CgtIYXJib3VybGlnaHQSBAgBGAA%3D"
+  },
+  "contents": {
+    "twoColumnSearchResultsRenderer": {
+      "primaryContents": {
+        "sectionListRenderer": {
+          "contents": [
+            {
+              "itemSectionRenderer": {
+                "contents": [
+                  {
+                    "videoRenderer": {
+                      "videoId": "dQw4w9WgXcQ",
+                      "title": {"runs": [{"text": "Running a 70B locally on two consumer GPUs"}]},
+                      "ownerText": {"runs": [{"text": "Harbourlight Optics"}]},
+                      "publishedTimeText": {"simpleText": "2 weeks ago"},
+                      "viewCountText": {"simpleText": "1,284,553 views"},
+                      "navigationEndpoint": {
+                        "commandMetadata": {
+                          "webCommandMetadata": {"url": "/watch?v=dQw4w9WgXcQ"}
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "Wq8tB3kM5vN",
+                      "title": {"runs": [{"text": "Premiere: the harness, live"}]},
+                      "navigationEndpoint": {
+                        "commandMetadata": {
+                          "webCommandMetadata": {"url": "/watch?v=Wq8tB3kM5vN"}
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "title": {"runs": [{"text": "A row this adapter cannot identify or address"}]},
+                      "ownerText": {"runs": [{"text": "Kestrel Systems"}]}
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

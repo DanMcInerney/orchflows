@@ -1,0 +1,33 @@
+<!--
+  Fixture: the block is there, and it is not JSON.
+
+  Distinct from a page that carries no block and from one whose block moved:
+  the origin sent something under application/ld+json that no reader can
+  parse, which is a different thing to tell an operator than "the shape
+  changed" and a different thing again from "sign in". Typed malformed_json,
+  so the three stay apart in the artifact.
+
+  The truncation below is the shape a body cut short by a proxy or a partial
+  render arrives in.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Avery Lindqvist | LinkedIn</title>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav__button-tertiary" href="/signup">Join now</a>
+  <a class="nav__button-secondary" href="/login">Sign in to view Avery's full profile</a>
+</nav>
+
+<script type="application/ld+json">
+{"@context":"http://schema.org","@graph":[{"@type":"Person","name":"Avery Lindqv
+</script>
+
+<main class="profile">
+  <h1 class="top-card-layout__title">Avery Lindqvist</h1>
+</main>
+</body>
+</html>

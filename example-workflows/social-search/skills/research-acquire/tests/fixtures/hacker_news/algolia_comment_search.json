@@ -1,0 +1,46 @@
+{
+  "hits": [
+    {
+      "created_at": "2026-08-09T17:05:19.000Z",
+      "title": null,
+      "url": null,
+      "author": "sea_urchin",
+      "points": null,
+      "story_text": null,
+      "comment_text": "We ran the same benchmark on a single 3090 and got within 8%.",
+      "num_comments": null,
+      "story_id": 44831234,
+      "story_title": "Running a 70B locally on two consumer GPUs",
+      "story_url": "https://harbourlight.example/70b-two-gpus",
+      "parent_id": 44831402,
+      "created_at_i": 1786295119,
+      "_tags": ["comment", "author_sea_urchin", "story_44831234"],
+      "objectID": "44831500"
+    },
+    {
+      "created_at": "2026-08-09T18:12:44.000Z",
+      "title": null,
+      "url": null,
+      "author": "bramble",
+      "points": null,
+      "story_text": null,
+      "comment_text": "The KV cache dtype is the one that moved the needle for us too.",
+      "num_comments": null,
+      "story_id": 44831234,
+      "story_title": "Running a 70B locally on two consumer GPUs",
+      "story_url": "https://harbourlight.example/70b-two-gpus",
+      "parent_id": 44831234,
+      "created_at_i": 1786299164,
+      "_tags": ["comment", "author_bramble", "story_44831234"],
+      "objectID": "44831402"
+    }
+  ],
+  "nbHits": 41,
+  "page": 2,
+  "nbPages": 3,
+  "hitsPerPage": 2,
+  "exhaustiveNbHits": true,
+  "query": "kv cache",
+  "params": "query=kv+cache&tags=comment&page=2",
+  "processingTimeMS": 2
+}

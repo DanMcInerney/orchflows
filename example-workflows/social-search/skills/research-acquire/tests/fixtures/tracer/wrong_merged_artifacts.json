@@ -1,0 +1,191 @@
+{
+  "_note": "Wrong results, built beside the tree. Each case is an artifact the K4 hybrid oracle must reject. Nothing here is produced by the package; the fixture exists so the oracle can be shown to fail.",
+  "record_defaults": {
+    "record_id": "wrong#0.0",
+    "artifact_id": "artifact:wrong",
+    "manifest_id": "wrong",
+    "step_id": "s1-discover",
+    "adapter_id": "web_search",
+    "adapter_version": "1",
+    "route_id": "ddg_html",
+    "access_class": "K4",
+    "operator_identity": "duckduckgo",
+    "platform": "duckduckgo",
+    "native_identity_namespace": "",
+    "group_scope": "duckduckgo",
+    "representation_kind": "index",
+    "canonical_content_kind": "web_hit",
+    "native_item_id": "",
+    "native_parent_id": "",
+    "canonical_locator": "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/what_is_the_best_local_model_right_now/",
+    "normalized_locator": "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/what_is_the_best_local_model_right_now",
+    "exact_content_hash": "",
+    "title": "",
+    "body": "",
+    "author": "",
+    "community": "",
+    "published_at": "",
+    "observed_at": "2026-08-10T09:00:00Z",
+    "time_confidence": "unknown",
+    "usable_basis_time": "",
+    "engagement": [],
+    "page_index": 0,
+    "list_index": 0,
+    "native_position": 0,
+    "discovery_locator": "",
+    "outcome": "ok",
+    "loss": []
+  },
+  "cases": {
+    "merged_into_one_record": {
+      "_wrong_because": "the DDG hit and its Arctic Shift hydration were folded into a single record carrying both the snippet and the native score",
+      "records": [
+        {
+          "record_id": "s1-discover#0.0",
+          "representation_kind": "native",
+          "access_class": "K3",
+          "operator_identity": "arctic-shift",
+          "platform": "reddit",
+          "native_identity_namespace": "reddit",
+          "group_scope": "reddit",
+          "canonical_content_kind": "post",
+          "native_item_id": "t3_1abc234",
+          "title": "What is the best local model right now?",
+          "body": "120 votes, 88 comments. I have 24GB of VRAM and I keep going back and forth.",
+          "exact_content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "published_at": "2026-08-09T13:20:00Z",
+          "usable_basis_time": "2026-08-09T13:20:00Z",
+          "time_confidence": "reported",
+          "engagement": [["score", 120, "2026-08-10T09:00:00Z"], ["num_comments", 88, "2026-08-10T09:00:00Z"]]
+        }
+      ],
+      "edges": [],
+      "groups": [
+        {"key_kind": "strong", "key": ["native", "reddit", "t3_1abc234", "post"], "member_record_ids": ["s1-discover#0.0"]}
+      ]
+    },
+    "grouped_pair": {
+      "_wrong_because": "two records survived, but one group holds both ids, so the index hit and the native target were merged into one identity after all",
+      "records": [
+        {
+          "record_id": "s1-discover#0.0",
+          "title": "What is the best local model right now? : r/LocalLLaMA",
+          "body": "120 votes, 88 comments. I have 24GB of VRAM and I keep going back and forth.",
+          "exact_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "loss": ["native_identity_unknown", "unknown_publication_time", "engagement_unavailable", "target_not_hydrated"]
+        },
+        {
+          "record_id": "s2-hydrate#0.0",
+          "step_id": "s2-hydrate",
+          "adapter_id": "reddit_archive",
+          "route_id": "arctic_shift_posts_ids",
+          "representation_kind": "native",
+          "access_class": "K3",
+          "operator_identity": "arctic-shift",
+          "platform": "reddit",
+          "native_identity_namespace": "reddit",
+          "group_scope": "reddit",
+          "canonical_content_kind": "post",
+          "native_item_id": "t3_1abc234",
+          "title": "What is the best local model right now?",
+          "body": "I have 24GB of VRAM and I keep going back and forth between two builds.",
+          "exact_content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+          "published_at": "2026-08-09T13:20:00Z",
+          "usable_basis_time": "2026-08-09T13:20:00Z",
+          "time_confidence": "reported",
+          "engagement": [["score", 120, "2026-08-10T09:00:00Z"], ["num_comments", 88, "2026-08-10T09:00:00Z"]],
+          "discovery_locator": "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/what_is_the_best_local_model_right_now",
+          "loss": ["third_party_archive"]
+        }
+      ],
+      "edges": [
+        {"edge_kind": "discovery_hydration", "from_record_id": "s1-discover#0.0", "to_record_id": "s2-hydrate#0.0"}
+      ],
+      "groups": [
+        {"key_kind": "weak", "key": ["reddit", "native", "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/what_is_the_best_local_model_right_now", "post", "2222222222222222222222222222222222222222222222222222222222222222"], "member_record_ids": ["s1-discover#0.0", "s2-hydrate#0.0"]}
+      ]
+    },
+    "folded_engagement": {
+      "_wrong_because": "two ungrouped records survived, but the index hit was given the native record's engagement snapshots, so a field of one was folded into the other",
+      "records": [
+        {
+          "record_id": "s1-discover#0.0",
+          "title": "What is the best local model right now? : r/LocalLLaMA",
+          "body": "120 votes, 88 comments. I have 24GB of VRAM and I keep going back and forth.",
+          "exact_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "engagement": [["score", 120, "2026-08-10T09:00:00Z"], ["num_comments", 88, "2026-08-10T09:00:00Z"]],
+          "loss": ["native_identity_unknown", "unknown_publication_time"]
+        },
+        {
+          "record_id": "s2-hydrate#0.0",
+          "step_id": "s2-hydrate",
+          "adapter_id": "reddit_archive",
+          "route_id": "arctic_shift_posts_ids",
+          "representation_kind": "native",
+          "access_class": "K3",
+          "operator_identity": "arctic-shift",
+          "platform": "reddit",
+          "native_identity_namespace": "reddit",
+          "group_scope": "reddit",
+          "canonical_content_kind": "post",
+          "native_item_id": "t3_1abc234",
+          "title": "What is the best local model right now?",
+          "body": "I have 24GB of VRAM and I keep going back and forth between two builds.",
+          "exact_content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+          "published_at": "2026-08-09T13:20:00Z",
+          "usable_basis_time": "2026-08-09T13:20:00Z",
+          "time_confidence": "reported",
+          "engagement": [["score", 120, "2026-08-10T09:00:00Z"], ["num_comments", 88, "2026-08-10T09:00:00Z"]],
+          "discovery_locator": "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/what_is_the_best_local_model_right_now",
+          "loss": ["third_party_archive"]
+        }
+      ],
+      "edges": [
+        {"edge_kind": "discovery_hydration", "from_record_id": "s1-discover#0.0", "to_record_id": "s2-hydrate#0.0"}
+      ],
+      "groups": [
+        {"key_kind": "ungrouped", "key": ["s1-discover#0.0"], "member_record_ids": ["s1-discover#0.0"]},
+        {"key_kind": "strong", "key": ["native", "reddit", "t3_1abc234", "post"], "member_record_ids": ["s2-hydrate#0.0"]}
+      ]
+    },
+    "unlinked_pair": {
+      "_wrong_because": "two correct records survived but no provenance edge ties the hydration back to the hit it came from, so the lineage was lost",
+      "records": [
+        {
+          "record_id": "s1-discover#0.0",
+          "title": "What is the best local model right now? : r/LocalLLaMA",
+          "body": "120 votes, 88 comments. I have 24GB of VRAM and I keep going back and forth.",
+          "exact_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "loss": ["native_identity_unknown", "unknown_publication_time", "engagement_unavailable", "target_not_hydrated"]
+        },
+        {
+          "record_id": "s2-hydrate#0.0",
+          "step_id": "s2-hydrate",
+          "adapter_id": "reddit_archive",
+          "route_id": "arctic_shift_posts_ids",
+          "representation_kind": "native",
+          "access_class": "K3",
+          "operator_identity": "arctic-shift",
+          "platform": "reddit",
+          "native_identity_namespace": "reddit",
+          "group_scope": "reddit",
+          "canonical_content_kind": "post",
+          "native_item_id": "t3_1abc234",
+          "title": "What is the best local model right now?",
+          "body": "I have 24GB of VRAM and I keep going back and forth between two builds.",
+          "exact_content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+          "published_at": "2026-08-09T13:20:00Z",
+          "usable_basis_time": "2026-08-09T13:20:00Z",
+          "time_confidence": "reported",
+          "engagement": [["score", 120, "2026-08-10T09:00:00Z"], ["num_comments", 88, "2026-08-10T09:00:00Z"]],
+          "loss": ["third_party_archive"]
+        }
+      ],
+      "edges": [],
+      "groups": [
+        {"key_kind": "ungrouped", "key": ["s1-discover#0.0"], "member_record_ids": ["s1-discover#0.0"]},
+        {"key_kind": "strong", "key": ["native", "reddit", "t3_1abc234", "post"], "member_record_ids": ["s2-hydrate#0.0"]}
+      ]
+    }
+  }
+}

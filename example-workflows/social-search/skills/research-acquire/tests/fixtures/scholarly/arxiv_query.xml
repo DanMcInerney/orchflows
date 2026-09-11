@@ -1,0 +1,298 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/2vGn3DLdiJaD6VBz5W+jFVUvB/c</id>
+  <title>arXiv Query: search_query=all:"machine learning"&amp;id_list=&amp;start=0&amp;max_results=10</title>
+  <updated>2026-09-01T13:59:12Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:%22machine+learning%22&amp;start=0&amp;max_results=10&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>10</opensearch:itemsPerPage>
+  <opensearch:totalResults>338611</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2306.04338v1</id>
+    <title>Changing Data Sources in the Age of Machine Learning for Official Statistics</title>
+    <updated>2023-06-07T11:08:12Z</updated>
+    <link href="https://arxiv.org/abs/2306.04338v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2306.04338v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Data science has become increasingly essential for the production of official statistics, as it enables the automated collection, processing, and analysis of large amounts of data. With such data science practices in place, it enables more timely, more insightful and more flexible reporting. However, the quality and integrity of data-science-driven statistics rely on the accuracy and reliability of the data sources and the machine learning techniques that support them. In particular, changes in data sources are inevitable to occur and pose significant risks that are crucial to address in the context of machine learning for official statistics.
+  This paper gives an overview of the main risks, liabilities, and uncertainties associated with changing data sources in the context of machine learning for official statistics. We provide a checklist of the most prevalent origins and causes of changing data sources; not only on a technical level but also regarding ownership, ethics, regulation, and public perception. Next, we highlight the repercussions of changing data sources on statistical reporting. These include technical effects such as concept drift, bias, availability, validity, accuracy and completeness, but also the neutrality and potential discontinuation of the statistical offering. We offer a few important precautionary measures, such as enhancing robustness in both data sourcing and statistical techniques, and thorough monitoring. In doing so, machine learning-based official statistics can maintain integrity, reliability, consistency, and relevance in policy-making, decision-making, and public discourse.</summary>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-06-07T11:08:12Z</published>
+    <arxiv:comment>Presented at UNECE Machine Learning for Official Statistics Workshop 2023</arxiv:comment>
+    <arxiv:primary_category term="stat.ML"/>
+    <arxiv:journal_ref>UNECE Machine Learning for Official Statistics Workshop 2023</arxiv:journal_ref>
+    <author>
+      <name>Cedric De Boom</name>
+    </author>
+    <author>
+      <name>Michael Reusens</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2304.02381v2</id>
+    <title>Physics-Inspired Interpretability Of Machine Learning Models</title>
+    <updated>2024-12-15T17:17:01Z</updated>
+    <link href="https://arxiv.org/abs/2304.02381v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2304.02381v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The ability to explain decisions made by machine learning models remains one of the most significant hurdles towards widespread adoption of AI in highly sensitive areas such as medicine, cybersecurity or autonomous driving. Great interest exists in understanding which features of the input data prompt model decision making. In this contribution, we propose a novel approach to identify relevant features of the input data, inspired by methods from the energy landscapes field, developed in the physical sciences. By identifying conserved weights within groups of minima of the loss landscapes, we can identify the drivers of model decision making. Analogues to this idea exist in the molecular sciences, where coordinate invariants or order parameters are employed to identify critical features of a molecule. However, no such approach exists for machine learning loss landscapes. We will demonstrate the applicability of energy landscape methods to machine learning models and give examples, both synthetic and from the real world, for how these methods can help to make models more interpretable.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-04-05T11:35:17Z</published>
+    <arxiv:comment>6 pages, 2 figures, ICLR 2023 Workshop on Physics for Machine Learning</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <arxiv:journal_ref>ICLR 2023 Workshop on Physics for Machine Learning</arxiv:journal_ref>
+    <author>
+      <name>Maximilian P Niroomand</name>
+    </author>
+    <author>
+      <name>David J Wales</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2201.12150v2</id>
+    <title>Learning Curves for Decision Making in Supervised Machine Learning: A Survey</title>
+    <updated>2025-01-28T14:39:26Z</updated>
+    <link href="https://arxiv.org/abs/2201.12150v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2201.12150v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Learning curves are a concept from social sciences that has been adopted in the context of machine learning to assess the performance of a learning algorithm with respect to a certain resource, e.g., the number of training examples or the number of training iterations. Learning curves have important applications in several machine learning contexts, most notably in data acquisition, early stopping of model training, and model selection. For instance, learning curves can be used to model the performance of the combination of an algorithm and its hyperparameter configuration, providing insights into their potential suitability at an early stage and often expediting the algorithm selection process. Various learning curve models have been proposed to use learning curves for decision making. Some of these models answer the binary decision question of whether a given algorithm at a certain budget will outperform a certain reference performance, whereas more complex models predict the entire learning curve of an algorithm. We contribute a framework that categorises learning curve approaches using three criteria: the decision-making situation they address, the intrinsic learning curve question they answer and the type of resources they use. We survey papers from the literature and classify them into this framework.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2022-01-28T14:34:32Z</published>
+    <arxiv:comment>Accepted in Machine Learning Journal</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <arxiv:journal_ref>Machine Learning, Volume 113, pages 8371-8425 (2024)</arxiv:journal_ref>
+    <author>
+      <name>Felix Mohr</name>
+    </author>
+    <author>
+      <name>Jan N. van Rijn</name>
+    </author>
+    <arxiv:doi>10.1007/s10994-024-06619-7</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1007/s10994-024-06619-7" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2303.15563v1</id>
+    <title>Privacy-preserving machine learning for healthcare: open challenges and future perspectives</title>
+    <updated>2023-03-27T19:20:51Z</updated>
+    <link href="https://arxiv.org/abs/2303.15563v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2303.15563v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Machine Learning (ML) has recently shown tremendous success in modeling various healthcare prediction tasks, ranging from disease diagnosis and prognosis to patient treatment. Due to the sensitive nature of medical data, privacy must be considered along the entire ML pipeline, from model training to inference. In this paper, we conduct a review of recent literature concerning Privacy-Preserving Machine Learning (PPML) for healthcare. We primarily focus on privacy-preserving training and inference-as-a-service, and perform a comprehensive review of existing trends, identify challenges, and discuss opportunities for future research directions. The aim of this review is to guide the development of private and efficient ML models in healthcare, with the prospects of translating research efforts into real-world settings.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-03-27T19:20:51Z</published>
+    <arxiv:comment>ICLR 2023 Workshop on Trustworthy Machine Learning for Healthcare (TML4H)</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <arxiv:journal_ref>Trustworthy Machine Learning for Healthcare. TML4H 2023. Lecture Notes in Computer Science, vol 13932</arxiv:journal_ref>
+    <author>
+      <name>Alejandro Guerra-Manzanares</name>
+    </author>
+    <author>
+      <name>L. Julian Lechuga Lopez</name>
+    </author>
+    <author>
+      <name>Michail Maniatakos</name>
+    </author>
+    <author>
+      <name>Farah E. Shamout</name>
+    </author>
+    <arxiv:doi>10.1007/978-3-031-39539-0_3</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1007/978-3-031-39539-0_3" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2602.11092v2</id>
+    <title>MerLin: A Discovery Engine for Photonic and Hybrid Quantum Machine Learning</title>
+    <updated>2026-04-17T23:13:30Z</updated>
+    <link href="https://arxiv.org/abs/2602.11092v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2602.11092v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Identifying where quantum models may offer practical benefits in near term quantum machine learning (QML) requires moving beyond isolated algorithmic proposals toward systematic and empirical exploration across models, datasets, and hardware constraints. We introduce MerLin, an open-source framework designed as a discovery engine for photonic and hybrid quantum machine learning. MerLin integrates optimized strong simulation of linear optical circuits into standard PyTorch and scikit learn workflows, enabling end-to-end differentiable training of quantum layers.
+  MerLin is designed around systematic benchmarking and reproducibility. As an initial contribution, we reproduce eighteen state-of-the-art photonic and hybrid QML works spanning kernel methods, reservoir computing, convolutional and recurrent architectures, generative models, and modern training paradigms. These reproductions are released as reusable, modular experiments that can be directly extended and adapted, establishing a shared experimental baseline consistent with empirical benchmarking methodologies widely adopted in modern artificial intelligence.
+  By embedding photonic quantum models within established machine learning ecosystems, MerLin allows practitioners to leverage existing tooling for ablation studies, cross-modality comparisons, and hybrid classical-quantum workflows. The framework already implements hardware-aware features, allowing tests on available quantum hardware while enabling exploration beyond its current capabilities, positioning MerLin as a forward-looking co-design tool linking algorithms, benchmarks, and hardware.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.PL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="quant-ph" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-02-11T18:00:01Z</published>
+    <arxiv:comment>Accepted to IJCNN SS07 Quantum Machine Learning Algorithms and Applications, IEE WCCI 2026</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <arxiv:journal_ref>IJCNN SS07 Quantum Machine Learning Algorithms and Applications, IEEE WCCI 2026</arxiv:journal_ref>
+    <author>
+      <name>Cassandre Notton</name>
+    </author>
+    <author>
+      <name>Benjamin Stott</name>
+    </author>
+    <author>
+      <name>Philippe Schoeb</name>
+    </author>
+    <author>
+      <name>Anthony Walsh</name>
+    </author>
+    <author>
+      <name>Grégoire Leboucher</name>
+    </author>
+    <author>
+      <name>Vincent Espitalier</name>
+    </author>
+    <author>
+      <name>Vassilis Apostolou</name>
+    </author>
+    <author>
+      <name>Louis-Félix Vigneux</name>
+    </author>
+    <author>
+      <name>Alexia Salavrakos</name>
+    </author>
+    <author>
+      <name>Jean Senellart</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.04749v2</id>
+    <title>A Benchmark Study of Machine Learning Models for Online Fake News Detection</title>
+    <updated>2021-03-26T05:30:08Z</updated>
+    <link href="https://arxiv.org/abs/1905.04749v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.04749v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The proliferation of fake news and its propagation on social media has become a major concern due to its ability to create devastating impacts. Different machine learning approaches have been suggested to detect fake news. However, most of those focused on a specific type of news (such as political) which leads us to the question of dataset-bias of the models used. In this research, we conducted a benchmark study to assess the performance of different applicable machine learning approaches on three different datasets where we accumulated the largest and most diversified one. We explored a number of advanced pre-trained language models for fake news detection along with the traditional and deep learning ones and compared their performances from different aspects for the first time to the best of our knowledge. We find that BERT and similar pre-trained models perform the best for fake news detection, especially with very small dataset. Hence, these models are significantly better option for languages with limited electronic contents, i.e., training data. We also carried out several analysis based on the models' performance, article's topic, article's length, and discussed different lessons learned from them. We believe that this benchmark study will help the research community to explore further and news sites/blogs to select the most appropriate fake news detection method.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.IR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-12T17:15:11Z</published>
+    <arxiv:comment>22 pages, 5 figures, to be published in Machine Learning with Applications journal</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <arxiv:journal_ref>Machine Learning with Applications: 4(2021).100032</arxiv:journal_ref>
+    <author>
+      <name>Junaed Younus Khan</name>
+    </author>
+    <author>
+      <name>Md. Tawkat Islam Khondaker</name>
+    </author>
+    <author>
+      <name>Sadia Afroz</name>
+    </author>
+    <author>
+      <name>Gias Uddin</name>
+    </author>
+    <author>
+      <name>Anindya Iqbal</name>
+    </author>
+    <arxiv:doi>10.1016/j.mlwa.2021.100032</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1016/j.mlwa.2021.100032" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01101v1</id>
+    <title>MEMe: An Accurate Maximum Entropy Method for Efficient Approximations in Large-Scale Machine Learning</title>
+    <updated>2019-06-03T22:10:52Z</updated>
+    <link href="https://arxiv.org/abs/1906.01101v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01101v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Efficient approximation lies at the heart of large-scale machine learning problems. In this paper, we propose a novel, robust maximum entropy algorithm, which is capable of dealing with hundreds of moments and allows for computationally efficient approximations. We showcase the usefulness of the proposed method, its equivalence to constrained Bayesian variational inference and demonstrate its superiority over existing approaches in two applications, namely, fast log determinant estimation and information-theoretic Bayesian optimisation.</summary>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-03T22:10:52Z</published>
+    <arxiv:comment>18 pages, 3 figures, Published at Entropy 2019: Special Issue Entropy Based Inference and Optimization in Machine Learning</arxiv:comment>
+    <arxiv:primary_category term="stat.ML"/>
+    <arxiv:journal_ref>MEMe: An Accurate Maximum Entropy Method for Efficient Approximations in Large-Scale Machine Learning. Entropy, 21(6), 551 (2019)</arxiv:journal_ref>
+    <author>
+      <name>Diego Granziol</name>
+    </author>
+    <author>
+      <name>Binxin Ru</name>
+    </author>
+    <author>
+      <name>Stefan Zohren</name>
+    </author>
+    <author>
+      <name>Xiaowen Doing</name>
+    </author>
+    <author>
+      <name>Michael Osborne</name>
+    </author>
+    <author>
+      <name>Stephen Roberts</name>
+    </author>
+    <arxiv:doi>10.3390/e21060551</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.3390/e21060551" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2404.12511v1</id>
+    <title>Generalizing Machine Learning Evaluation through the Integration of Shannon Entropy and Rough Set Theory</title>
+    <updated>2024-04-18T21:22:42Z</updated>
+    <link href="https://arxiv.org/abs/2404.12511v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2404.12511v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This research paper delves into the innovative integration of Shannon entropy and rough set theory, presenting a novel approach to generalize the evaluation approach in machine learning. The conventional application of entropy, primarily focused on information uncertainty, is extended through its combination with rough set theory to offer a deeper insight into data's intrinsic structure and the interpretability of machine learning models. We introduce a comprehensive framework that synergizes the granularity of rough set theory with the uncertainty quantification of Shannon entropy, applied across a spectrum of machine learning algorithms. Our methodology is rigorously tested on various datasets, showcasing its capability to not only assess predictive performance but also to illuminate the underlying data complexity and model robustness. The results underscore the utility of this integrated approach in enhancing the evaluation landscape of machine learning, offering a multi-faceted perspective that balances accuracy with a profound understanding of data attributes and model dynamics. This paper contributes a groundbreaking perspective to machine learning evaluation, proposing a method that encapsulates a holistic view of model performance, thereby facilitating more informed decision-making in model selection and application.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2024-04-18T21:22:42Z</published>
+    <arxiv:comment>8th International Conference on Computational Linguistics and Intelligent Systems, Machine Learning Workshop, April, 2024, Lviv, Ukraine</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <arxiv:journal_ref>Proceedings of the 8th International Conference on Computational Linguistics and Intelligent Systems. Volume I: Machine Learning Workshop, April 2024</arxiv:journal_ref>
+    <author>
+      <name>Olga Cherednichenko</name>
+    </author>
+    <author>
+      <name>Dmytro Chernyshov</name>
+    </author>
+    <author>
+      <name>Dmytro Sytnikov</name>
+    </author>
+    <author>
+      <name>Polina Sytnikova</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2402.01393v3</id>
+    <title>ALERT-Transformer: Bridging Asynchronous and Synchronous Machine Learning for Real-Time Event-based Spatio-Temporal Data</title>
+    <updated>2024-07-30T11:20:47Z</updated>
+    <link href="https://arxiv.org/abs/2402.01393v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2402.01393v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We seek to enable classic processing of continuous ultra-sparse spatiotemporal data generated by event-based sensors with dense machine learning models. We propose a novel hybrid pipeline composed of asynchronous sensing and synchronous processing that combines several ideas: (1) an embedding based on PointNet models -- the ALERT module -- that can continuously integrate new and dismiss old events thanks to a leakage mechanism, (2) a flexible readout of the embedded data that allows to feed any downstream model with always up-to-date features at any sampling rate, (3) exploiting the input sparsity in a patch-based approach inspired by Vision Transformer to optimize the efficiency of the method. These embeddings are then processed by a transformer model trained for object and gesture recognition. Using this approach, we achieve performances at the state-of-the-art with a lower latency than competitors. We also demonstrate that our asynchronous model can operate at any desired sampling rate.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.NE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2024-02-02T13:17:19Z</published>
+    <arxiv:comment>Originally published in the Proceedings of Machine Learning Research ICML 2024</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <arxiv:journal_ref>Proceedings of the 41st International Conference on Machine Learning (2024), in Proceedings of Machine Learning Research 235:48837-48854</arxiv:journal_ref>
+    <author>
+      <name>Carmen Martin-Turrero</name>
+    </author>
+    <author>
+      <name>Maxence Bouvier</name>
+    </author>
+    <author>
+      <name>Manuel Breitenstein</name>
+    </author>
+    <author>
+      <name>Pietro Zanuttigh</name>
+    </author>
+    <author>
+      <name>Vincent Parret</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2111.07508v1</id>
+    <title>Public Policymaking for International Agricultural Trade using Association Rules and Ensemble Machine Learning</title>
+    <updated>2021-11-15T02:58:03Z</updated>
+    <link href="https://arxiv.org/abs/2111.07508v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2111.07508v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>International economics has a long history of improving our understanding of factors causing trade, and the consequences of free flow of goods and services across countries. The recent shocks to the free trade regime, especially trade disputes among major economies, as well as black swan events, such as trade wars and pandemics, raise the need for improved predictions to inform policy decisions. AI methods are allowing economists to solve such prediction problems in new ways. In this manuscript, we present novel methods that predict and associate food and agricultural commodities traded internationally. Association Rules (AR) analysis has been deployed successfully for economic scenarios at the consumer or store level, such as for market basket analysis. In our work however, we present analysis of imports and exports associations and their effects on commodity trade flows. Moreover, Ensemble Machine Learning methods are developed to provide improved agricultural trade predictions, outlier events' implications, and quantitative pointers to policy makers.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="econ.GN" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2021-11-15T02:58:03Z</published>
+    <arxiv:comment>Paper published at Elsevier's Journal of Machine Learning with Applications https://www.sciencedirect.com/science/article/pii/S2666827021000232</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <arxiv:journal_ref>Machine Learning with Applications, Volume 5, 2021, 100046, ISSN 2666-8270</arxiv:journal_ref>
+    <author>
+      <name>Feras A. Batarseh</name>
+    </author>
+    <author>
+      <name>Munisamy Gopinath</name>
+    </author>
+    <author>
+      <name>Anderson Monken</name>
+    </author>
+    <author>
+      <name>Zhengrong Gu</name>
+    </author>
+    <arxiv:doi>10.1016/j.mlwa.2021.100046</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1016/j.mlwa.2021.100046" title="doi"/>
+  </entry>
+</feed>

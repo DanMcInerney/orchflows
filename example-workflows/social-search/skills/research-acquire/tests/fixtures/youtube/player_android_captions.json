@@ -1,0 +1,26 @@
+{
+ "playabilityStatus": {
+  "status": "OK"
+ },
+ "videoDetails": {
+  "videoId": "ggdyD2Un5zo",
+  "title": "SpaceX Just Crushed Earnings. Why Is the Stock Falling? SPCX",
+  "lengthSeconds": "1154",
+  "channelId": "UCnlyaLgmqTcmXLRLLfH1Rsg",
+  "author": "UNRIVALED INVESTING",
+  "viewCount": "21075",
+  "shortDescription": "SpaceX just posted exceptionally strong 2Q\u201926 earnings, yet the stock is falling as investors confront a staggering level of cash burn and what may be a much shorter funding runway than expected. At t"
+ },
+ "captions": {
+  "playerCaptionsTracklistRenderer": {
+   "captionTracks": [
+    {
+     "baseUrl": "https://www.youtube.com/api/timedtext?v=ggdyD2Un5zo&ei=3iaDaujAJaaDmdgPpNPqgQQ&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1787005262&sparams=ip,ipbits,expire,v,ei,caps,opi,xoaf&signature=25D90414BB9E328493A118E2B4FBB849737AF9D6.56100CA78172F7EB4D4916450466FE690253505C&key=yt8&kind=asr&lang=en&variant=gemini&fmt=srv3",
+     "languageCode": "en",
+     "kind": "asr",
+     "vssId": "a.en"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,11 @@
+{
+  "hits": [],
+  "nbHits": 0,
+  "page": 0,
+  "nbPages": 0,
+  "hitsPerPage": 20,
+  "exhaustiveNbHits": true,
+  "query": "a phrase nobody on this site has written",
+  "params": "query=a+phrase+nobody+on+this+site+has+written&page=0",
+  "processingTimeMS": 1
+}

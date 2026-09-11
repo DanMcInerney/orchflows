@@ -1,0 +1,18 @@
+{
+  "name": "orchflows-light",
+  "version": "0.3.0",
+  "description": "Composable native workflows, quality standards and a portable user library.",
+  "author": {
+    "name": "orchflows-light"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Orchflows Light",
+    "shortDescription": "Delegate work and independent review with native agents.",
+    "longDescription": "Composable delegation workflows and focused quality standards for Codex and Claude Code.",
+    "developerName": "orchflows-light",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Use make-and-review for this task."
+  }
+}

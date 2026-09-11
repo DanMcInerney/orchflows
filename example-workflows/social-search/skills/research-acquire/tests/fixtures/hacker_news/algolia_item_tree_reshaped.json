@@ -1,0 +1,80 @@
+{
+  "item": {
+    "author": "DearAll",
+    "children": [
+      {
+        "author": "bigyabai",
+        "children": [
+          {
+            "author": "gota",
+            "children": [
+              {
+                "author": "unsupp0rted",
+                "children": [],
+                "created_at": "2026-08-05T21:55:26.000Z",
+                "created_at_i": 1785966926,
+                "id": 49189563,
+                "options": [],
+                "parent_id": 49189532,
+                "points": null,
+                "story_id": 49189113,
+                "text": "&gt; the telegraph, the telephone, the television<p>None of those let a random person Hawk Tuah their way to reaching millions. Seriously: x disintermediates and offers distribution in a way no other communication tech does.<p>Granted you can always post a blog or whatever, but X&#x27;s ambition to be the &quot;town square&quot; is a valid one and it does achieve it in notable ways, even if there&#x27;s still 100 years worth of improvement needed.",
+                "title": null,
+                "type": "comment",
+                "url": null
+              }
+            ],
+            "created_at": "2026-08-05T21:52:42.000Z",
+            "created_at_i": 1785966762,
+            "id": 49189532,
+            "options": [],
+            "parent_id": 49189278,
+            "points": null,
+            "story_id": 49189113,
+            "text": "Twitter is indeed the greatest communication techonlogy if you do not count the telegraph, the telephone, the television, radio, almost every single aspect of the internet, etc.<p>It beats shouting from your window in reach and carrier pigeons in needing less birdfeed, though.",
+            "title": null,
+            "type": "comment",
+            "url": null
+          },
+          {
+            "author": "OlivOnTech",
+            "children": [],
+            "created_at": "2026-08-06T06:20:56.000Z",
+            "created_at_i": 1785997256,
+            "id": 49193140,
+            "options": [],
+            "parent_id": 49189278,
+            "points": null,
+            "story_id": 49189113,
+            "text": "This is sadly too common in silicon valley mindset. Full of superlatives, and often not understanding the world outside.",
+            "title": null,
+            "type": "comment",
+            "url": null
+          }
+        ],
+        "created_at": "2026-08-05T21:28:37.000Z",
+        "created_at_i": 1785965317,
+        "id": 49189278,
+        "options": [],
+        "parent_id": 49189113,
+        "points": null,
+        "story_id": 49189113,
+        "text": "&gt; X is, and will remain, the most important communication technology in history.<p>A little cocky.",
+        "title": null,
+        "type": "comment",
+        "url": null
+      }
+    ],
+    "created_at": "2026-08-05T21:15:40.000Z",
+    "created_at_i": 1785964540,
+    "id": 49189113,
+    "options": [],
+    "parent_id": null,
+    "points": 138,
+    "story_id": 49189113,
+    "text": "<a href=\"https:&#x2F;&#x2F;xcancel.com&#x2F;nikitabier&#x2F;status&#x2F;2085105586966827343&#x2F;\" rel=\"nofollow\">https:&#x2F;&#x2F;xcancel.com&#x2F;nikitabier&#x2F;status&#x2F;2085105586966827343&#x2F;</a>",
+    "title": "I'll be stepping back from leading product for X",
+    "type": "story",
+    "url": "https://twitter.com/nikitabier/status/2085105586966827343/"
+  }
+}

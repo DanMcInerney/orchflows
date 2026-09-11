@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"
+      xmlns="http://www.w3.org/2005/Atom">
+  <link rel="self" href="https://www.youtube.com/feeds/videos.xml?channel_id=UCquietchannel00000000"/>
+  <id>yt:channel:UCquietchannel00000000</id>
+  <yt:channelId>UCquietchannel00000000</yt:channelId>
+  <title>A channel that has published nothing</title>
+  <link rel="alternate" href="https://www.youtube.com/channel/UCquietchannel00000000"/>
+  <published>2026-01-05T10:00:00+00:00</published>
+</feed>

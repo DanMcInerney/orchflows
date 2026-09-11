@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <category term="LocalLLaMA" label="r/LocalLLaMA"/>
+  <updated>2026-08-10T08:52:11+00:00</updated>
+  <id>/r/LocalLLaMA/.rss</id>
+  <link rel="self" href="https://www.reddit.com/r/LocalLLaMA.rss" type="application/atom+xml"/>
+  <link rel="alternate" href="https://www.reddit.com/r/LocalLLaMA" type="text/html"/>
+  <title>Local LLaMA</title>
+  <entry>
+    <author>
+      <name>/u/harbourlight</name>
+      <uri>https://www.reddit.com/user/harbourlight</uri>
+    </author>
+    <category term="LocalLLaMA" label="r/LocalLLaMA"/>
+    <content type="html">&lt;div&gt;Two 3090s, 70B at 4-bit. Numbers inside.&lt;/div&gt;</content>
+    <id>t3_1abc234</id>
+    <link href="https://www.reddit.com/r/LocalLLaMA/comments/1abc234/what_is_the_best_local_model_right_now/"/>
+    <updated>2026-08-10T08:41:03+00:00</updated>
+    <title>What is the best local model right now?</title>
+  </entry>
+  <entry>
+    <author>
+      <name>/u/quiet_tensor</name>
+      <uri>https://www.reddit.com/user/quiet_tensor</uri>
+    </author>
+    <category term="LocalLLaMA" label="r/LocalLLaMA"/>
+    <content type="html">&lt;div&gt;Quantization notes.&lt;/div&gt;</content>
+    <id>t3_1abc999</id>
+    <link href="https://www.reddit.com/r/LocalLLaMA/comments/1abc999/awq_versus_gptq_on_ada/"/>
+    <updated>2026-08-10T07:12:44+00:00</updated>
+    <title>AWQ versus GPTQ on Ada</title>
+  </entry>
+  <entry>
+    <author>
+      <name>/u/harbourlight</name>
+      <uri>https://www.reddit.com/user/harbourlight</uri>
+    </author>
+    <category term="LocalLLaMA" label="r/LocalLLaMA"/>
+    <content type="html">&lt;div&gt;Weekly thread.&lt;/div&gt;</content>
+    <id>t3_1abd001</id>
+    <link href="https://www.reddit.com/r/LocalLLaMA/comments/1abd001/weekly_hardware_thread/"/>
+    <updated>2026-08-09T23:05:00+00:00</updated>
+    <title>Weekly hardware thread</title>
+  </entry>
+</feed>

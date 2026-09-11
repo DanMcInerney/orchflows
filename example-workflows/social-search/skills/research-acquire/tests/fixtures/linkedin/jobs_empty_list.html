@@ -1,0 +1,14 @@
+<!--
+  Fixture: the results list is there and holds nothing.
+
+  The one empty this route may honestly answer with. A caller asking for a
+  keyword nobody has posted against, or paging with start= past the last
+  result, gets the container and no card in it - which is the origin saying
+  "no jobs", and is not the page having changed shape.
+
+  It is the case that keeps the drift verdict meaningful. Without it an
+  adapter could type every cardless answer as schema_drift and an operator
+  would go looking for a markup change every time a search came up short.
+-->
+<ul class="jobs-search__results-list">
+</ul>
