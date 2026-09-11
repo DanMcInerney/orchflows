@@ -612,6 +612,8 @@ def main(argv: list[str] | None = None) -> int:
     finish_parser.add_argument("run_dir", type=Path)
     finish_parser.add_argument("--status", required=True, choices=["complete", "partial", "blocked"])
     finish_parser.add_argument("--summary", required=True, type=Path)
+    from native_logs import add_parser, run as read_native_history
+    add_parser(commands)
     args = parser.parse_args(argv)
     try:
         home = home_path(getattr(args, "home", None))
@@ -622,6 +624,8 @@ def main(argv: list[str] | None = None) -> int:
             result = doctor(home)
         elif args.command == "resolve":
             result = resolve(home, args.library, args.skill, args.resource)
+        elif args.command == "history":
+            result = read_native_history(args)
         else:
             from run_log import finish_run, start_run
             if args.run_command == "start":
@@ -631,7 +635,8 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, subprocess.SubprocessError, ImportError) as exc:
         print(json.dumps({"status": "error", "error": str(exc)}), file=sys.stderr)
         return 2
-    print(json.dumps(result, separators=(",", ":"), ensure_ascii=False))
+    # Native logs can exceed the character repertoire of Windows pipe encodings.
+    print(json.dumps(result, separators=(",", ":"), ensure_ascii=args.command == "history"))
     return 1 if args.command in {"setup", "doctor"} and result.get("issues") else 0
 
 

@@ -61,6 +61,7 @@ class HomeSetupTests(unittest.TestCase):
         (self.source / "scripts").mkdir()
         shutil.copy2(SCRIPT, self.source / "scripts/orchflows.py")
         shutil.copy2(SCRIPT.with_name("host_config.py"), self.source / "scripts/host_config.py")
+        shutil.copy2(SCRIPT.with_name("native_logs.py"), self.source / "scripts/native_logs.py")
         self.example = self.source / "example-workflows/social-search"
         package(self.example, "social-search")
         write(self.example / "README.md", "Example library.\n")

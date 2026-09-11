@@ -3,10 +3,10 @@
 Evaluate actual artifacts and agent events.
 
 - The installed skills work from an unrelated project without source-checkout paths. Native-only work remains possible without the home runtime, with the history gap reported.
-- Profiles invoke search-site in the coordinator. Each search-site call uses delegate-work for one collector; workers receive collection assignments and prepare-evidence, not delegation entrypoints.
+- Profiles invoke search-site in the coordinator. Each search-site call uses orch-work for one collector; workers receive collection assignments and prepare-evidence, not delegation entrypoints.
 - Source workers overlap when capacity permits. Available assignments launch before waiting; capacity constraints remain visible. No invented timing or speedup claims.
 - Every selected source returns an actual outcome or explicit gap. Handoffs preserve original locators, relevant dates, inspected support and local rank reasons. Missing work never becomes no-results evidence.
-- After gathering, rank-evidence invokes delegate-review once. The fresh reviewer inspects all returned support, deduplicates and ranks globally, and produces a cited assessment without changing evidence, acquiring more or launching children.
+- After gathering, rank-evidence invokes orch-review once. The fresh reviewer inspects all returned support, deduplicates and ranks globally, and produces a cited assessment without changing evidence, acquiring more or launching children.
 - Two sources produce exactly two work agents and one reviewer. There are no per-source reviews or later repair loops.
 - Caller bounds hold. Required evidence gaps prevent a complete research claim.
 - One outer home run owns finalization; nested skills reuse it. Sources have separate output directories outside the package. The run summary describes the actual outcome.

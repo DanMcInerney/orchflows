@@ -1,6 +1,6 @@
 {
   "name": "orchflows-light",
-  "version": "0.5.1",
+  "version": "0.5.1+codex.20260911181724",
   "description": "Composable native workflows, quality standards and a portable user library.",
   "author": {
     "name": "orchflows-light"
@@ -13,6 +13,6 @@
     "developerName": "orchflows-light",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Use make-and-review for this task."
+    "defaultPrompt": "Use orch-make-and-review for this task."
   }
 }

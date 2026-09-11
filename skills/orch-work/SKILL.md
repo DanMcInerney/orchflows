@@ -1,5 +1,5 @@
 ---
-name: delegate-work
+name: orch-work
 description: Delegate a requested result to a fresh native child agent with relevant quality standards.
 ---
 

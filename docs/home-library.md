@@ -35,7 +35,7 @@ Use the [native host guide](native-hosts.md) for registration and reload command
 
 ## One run per outer workflow
 
-`record-run` starts a run at the outer workflow boundary. Nested workflows and source workers reuse its context. Run directories are unique so concurrent sessions do not share a writable global log.
+`orch-record-run` starts a run at the outer workflow boundary. Nested workflows and source workers reuse its context. Run directories are unique so concurrent sessions do not share a writable global log.
 
 ```sh
 python /absolute/home/.local/packages/orchflows-light/scripts/orchflows.py run start --workflow social-search:social-search --project demo
@@ -47,6 +47,10 @@ Use the home runtime interpreter in place of `python` and pass `--home` for a no
 Logs record workflow identity, available provenance, timestamps, status and the supplied summary. They do not automatically capture full native conversations, token usage or tool calls. Preserve real host receipts when available; never invent missing telemetry. Workflows must call the logging skill to participate. A requested project artifact can remain in that project while the home summary records its location.
 
 ## Git and another computer
+
+For troubleshooting, `history inspect HOST ID` and `history read HOST ID` read
+native Claude/Codex history directly. See [native history](native-history.md)
+for agent trees, pagination, output expansion and evidence limits.
 
 Generated ignore rules keep `.local/`, Python caches and run bulk output out of Git. Portable configuration, libraries, catalogs, `run.json` and `summary.md` remain eligible for tracking. Review which summaries you want to share before committing. Setup never commits or pushes.
 

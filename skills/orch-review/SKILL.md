@@ -1,5 +1,5 @@
 ---
-name: delegate-review
+name: orch-review
 description: Delegate independent review of identified work to a fresh native child who did not make it, without repairs.
 ---
 

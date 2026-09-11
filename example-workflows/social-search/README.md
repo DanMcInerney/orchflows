@@ -5,11 +5,11 @@ A small library built from orchflows-light's two delegation primitives. Source p
 ```text
 social-search — current coordinator
   fan out selected profiles through search-site
-    delegate-work → one worker per source
+    orch-work → one worker per source
       collect → prepare-evidence
   gather all outcomes
   rank-evidence
-    delegate-review → one ranked, cited assessment
+    orch-review → one ranked, cited assessment
 ```
 
 Launch available source workers before waiting. Capacity limits use waves. For N selected sources there are N workers and one final reviewer, with no source reviews or review-to-acquisition loop.

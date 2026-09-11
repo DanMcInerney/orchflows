@@ -2,16 +2,36 @@
 
 Composable native workflow skills and plain Markdown quality standards for Codex and Claude Code. The host runs agents; orchflows supplies delegation and review guidance. Small skills compose into larger workflows using the same `SKILL.md` format.
 
+The installed CLI also reads native agent history: `history find HOST` selects
+candidate sessions and agents by date and recorded project path; `history inspect HOST ID`
+summarizes a parent and its descendants; `history read HOST ID` pages through
+their available messages, calls and outputs. [Reader usage](docs/native-history.md).
+
 | Skill | Action |
 | --- | --- |
-| [delegate-work](skills/delegate-work/SKILL.md) | Ask a fresh child to make a result. |
-| [delegate-review](skills/delegate-review/SKILL.md) | Ask a fresh child who did not make it to review without fixing. |
-| [make-and-review](skills/make-and-review/SKILL.md) | Make, review, and allow one repair pass. |
-| [compare-approaches](skills/compare-approaches/SKILL.md) | Develop alternatives and compare their actual results. |
-| [parallel-build](skills/parallel-build/SKILL.md) | Make separable pieces concurrently, then join and review them. |
-| [build-workflow](skills/build-workflow/SKILL.md) | Author a workflow, try it, and refine it from observed behavior. |
-| [setup-library](skills/setup-library/SKILL.md) | Initialize a portable user library and local Python runtime. |
-| [record-run](skills/record-run/SKILL.md) | Record one workflow run and its actual summary. |
+| [orch-work](skills/orch-work/SKILL.md) | Ask a fresh child to make a result. |
+| [orch-review](skills/orch-review/SKILL.md) | Ask a fresh child who did not make it to review without fixing. |
+| [orch-make-and-review](skills/orch-make-and-review/SKILL.md) | Make, review, and allow one repair pass. |
+| [orch-compare](skills/orch-compare/SKILL.md) | Develop alternatives and compare their actual results. |
+| [orch-parallel](skills/orch-parallel/SKILL.md) | Make separable pieces concurrently, then join and review them. |
+| [orch-build-workflow](skills/orch-build-workflow/SKILL.md) | Author a workflow, try it, and refine it from observed behavior. |
+| [orch-self-improve](skills/orch-self-improve/SKILL.md) | Use native history to improve the environment, custom workflows or Orchflows itself. |
+| [orch-setup](skills/orch-setup/SKILL.md) | Initialize a portable user library and local Python runtime. |
+| [orch-record-run](skills/orch-record-run/SKILL.md) | Record one workflow run and its actual summary. |
+
+Built-in skills use the `orch-` prefix. Custom workflows keep their own names,
+such as `recent-search`. This is a naming convention; native plugin registration
+still controls which skills are discoverable. Existing built-ins were renamed,
+including `delegate-work` → `orch-work` and `delegate-review` → `orch-review`;
+update custom callers and refresh cached plugins when upgrading.
+
+Ask `orch-self-improve` to examine this session, a date range, or a project's
+history. It uses the native reader to find evidence and checks the current state
+before recommending or making changes. Environment findings belong in local
+setup or tooling; custom workflow findings belong in the user's library;
+Orchflows core findings belong in its development source. Specify core development
+when you want changes to Orchflows itself. A review-only request produces findings;
+an improvement request can apply and test changes within its authorized scope.
 
 ## Set up your library
 
@@ -72,7 +92,7 @@ Start a new session and use `/social-search:social-search`. Both hosts cache ins
 
 ## Compose a workflow
 
-Ask `build-workflow` to create a reusable workflow and give it a bounded example to try. It defaults to your home library, such as `~/.orchflows/libraries/personal/skills/prepare-proposal/SKILL.md`. An explicit project or repository destination takes precedence.
+Ask `orch-build-workflow` to create a reusable workflow and give it a bounded example to try. It defaults to your home library, such as `~/.orchflows/libraries/personal/skills/prepare-proposal/SKILL.md`. An explicit project or repository destination takes precedence.
 
 A library is a complete native package. Put small capabilities and larger orchestrators together under `skills/`; place scripts, references and assets beside their owning skill. Load another skill in the current context by default. Delegate when the workflow calls for an independent worker or reviewer.
 
@@ -84,9 +104,9 @@ The `social-search` example package demonstrates the pattern:
 social-search → choose sources
                → source workflows in parallel
                    search-reddit / search-youtube / search-site
-                     → delegate-work → evidence
+                     → orch-work → evidence
                → gather all results
-               → rank-evidence → delegate-review → cited assessment
+               → rank-evidence → orch-review → cited assessment
 ```
 
 Each source workflow owns one work-agent launch; the coordinator starts independent searches before gathering their results. One fresh reviewer assesses the collected evidence and returns a ranked, cited answer. There are no source reviews or review/collection loops. `search-site` accepts any named site; `rank-evidence` also reviews independently supplied evidence. `prepare-evidence` provides a shared handoff inside each worker, without another agent. Source profiles add only site-specific guidance.

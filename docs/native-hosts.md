@@ -31,7 +31,7 @@ Start fresh host sessions to use the settings. Setup does not resize the running
 
 ## Resources and composition
 
-Resolve a relative link from the file containing it, not the current project directory. For a loaded `skills/delegate-work/SKILL.md`, `../../standards/` is inside that same package. A copied or cached installation must retain the package's skills, standards and documentation together. Copying only individual skill folders loses those links. Custom libraries resolve external core dependencies through the [home CLI](home-library.md), then pass concrete file paths to workers; they do not link into a presumed sibling source checkout.
+Resolve a relative link from the file containing it, not the current project directory. For a loaded `skills/orch-work/SKILL.md`, `../../standards/` is inside that same package. A copied or cached installation must retain the package's skills, standards and documentation together. Copying only individual skill folders loses those links. Custom libraries resolve external core dependencies through the [home CLI](home-library.md), then pass concrete file paths to workers; they do not link into a presumed sibling source checkout.
 
 Workflow composition means loading another native skill's instructions in the current orchestrator. A workflow can instead ask a child to orchestrate when the actual host supports that nesting. Claude's `context: fork` selects a child context; it does not itself select a worktree. This package's skills stay in the current context and allow native skill invocation. [Claude skills](https://code.claude.com/docs/en/skills).
 

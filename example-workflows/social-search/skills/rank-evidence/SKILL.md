@@ -5,7 +5,7 @@ description: Delegate one independent review of supplied evidence into a globall
 
 Reuse or establish [library context](../../references/library-context.md). Accept a question and inspectable evidence from any caller; [prepare-evidence](../prepare-evidence/SKILL.md) describes the shared handoff.
 
-Use orchflows-light:delegate-review exactly once with the Research and Writing standards. Give the fresh reviewer the question, scope, output requirements, all actual evidence and collection gaps, and a separate report location. Its assignment is:
+Use orchflows-light:orch-review exactly once with the Research and Writing standards. Give the fresh reviewer the question, scope, output requirements, all actual evidence and collection gaps, and a separate report location. Its assignment is:
 
 > Review the supplied evidence without changing it or collecting more. Inspect support for central claims, group duplicate or dependent sources, and rank by relevance, substance and independence. Treat local ranks as suggestions. Explain decisive ordering and disagreement.
 >

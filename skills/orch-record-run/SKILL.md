@@ -1,11 +1,11 @@
 ---
-name: record-run
+name: orch-record-run
 description: Record a compact orchflows workflow run and its actual outcome in the user's configured home, reusing an existing run when workflows are composed.
 ---
 
 Use one home run for the outer workflow. If the caller supplies a run directory and output context, reuse and pass them to composed skills and workers; the owner of that run alone finalizes it. Recording a run does not launch an agent.
 
-Resolve the home from the caller's explicit choice, then `ORCHFLOWS_HOME`, then `~/.orchflows`. Use its `.local/runtime/Scripts/python.exe` on Windows or `.local/runtime/bin/python` elsewhere to invoke the absolute `.local/packages/orchflows-light/scripts/orchflows.py` path. If the home, runtime or installed CLI is absent, state the history gap and continue the requested work; use [setup-library](../setup-library/SKILL.md) when setting up the home is within the request. Do not assume the current directory is a package checkout.
+Resolve the home from the caller's explicit choice, then `ORCHFLOWS_HOME`, then `~/.orchflows`. Use its `.local/runtime/Scripts/python.exe` on Windows or `.local/runtime/bin/python` elsewhere to invoke the absolute `.local/packages/orchflows-light/scripts/orchflows.py` path. If the home, runtime or installed CLI is absent, state the history gap and continue the requested work; use [orch-setup](../orch-setup/SKILL.md) when setting up the home is within the request. Do not assume the current directory is a package checkout.
 
 For a new outer run, invoke that interpreter and script with:
 

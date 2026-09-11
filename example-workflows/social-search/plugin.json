@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Social Search",
     "shortDescription": "Search sources in parallel, then review the gathered evidence.",
-    "longDescription": "Small source workflows compose through delegate-work and delegate-review.",
+    "longDescription": "Small source workflows compose through orch-work and orch-review.",
     "developerName": "Dan McInerney",
     "category": "Productivity",
     "capabilities": [],

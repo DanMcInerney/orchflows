@@ -1,5 +1,5 @@
 ---
-name: setup-library
+name: orch-setup
 description: Set up or restore a portable orchflows home with a local Python runtime and installed core package, and resolve user-owned workflow libraries from any project.
 ---
 

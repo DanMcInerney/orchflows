@@ -40,8 +40,26 @@ class InstalledCliTests(unittest.TestCase):
             python = installed["runtime_python"]
             core = Path(installed["core"]["package_root"])
             script = core / "scripts/orchflows.py"
+            self.assertEqual((core / "scripts/native_logs.py").read_bytes(), (ROOT / "scripts/native_logs.py").read_bytes())
             self.assertFalse((core / "example-workflows").exists())
             self.assertEqual(cli(python, script, "setup")["core"]["status"], "reused")
+
+            native_log = outside / "claude/projects/demo/native-session.jsonl"
+            native_log.parent.mkdir(parents=True)
+            native_log.write_text(json.dumps({"type": "assistant", "cwd": str(project), "timestamp": "2026-09-11T12:00:00Z", "message": {"content": [
+                {"type": "tool_use", "id": "call", "name": "Read", "input": {"file_path": "evidence-λ.txt"}}
+            ]}}) + "\n", encoding="utf-8")
+            inspected = cli(python, script, "history", "inspect", "claude", "native-session")
+            self.assertEqual(inspected["agents"][0]["unmatched_count"], 1)
+            found = cli(python, script, "history", "find", "claude", "--project", str(project), "--since", "2026-09-04")
+            self.assertEqual(found["candidates"][0]["id"], "native-session")
+            self.assertEqual(cli(python, script, "history", "read", "claude", "native-session", "--until", "2026-09-11")["events"], [])
+            page = cli(python, script, "history", "read", "claude", "native-session", "--limit", "1")
+            expanded = cli(python, script, "history", "read", "claude", "native-session", "--event", page["events"][0]["event_id"])
+            self.assertEqual(json.loads(expanded["text"])["file_path"], "evidence-λ.txt")
+            for skill in (ROOT / "skills").iterdir():
+                resolved_core = cli(python, script, "resolve", "orchflows-light", "--skill", skill.name)
+                self.assertEqual(Path(resolved_core["skill_path"]), core / "skills" / skill.name / "SKILL.md")
 
             def files(path):
                 return {item.relative_to(path).as_posix(): hashlib.sha256(item.read_bytes()).hexdigest()
