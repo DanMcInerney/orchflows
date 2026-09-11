@@ -188,6 +188,84 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual(repeat["example"]["status"], "unavailable")
         self.assertFalse((self.home / "libraries/social-search").exists())
         self.assertIn("absent from this core source", " ".join(repeat["issues"]))
+        self.assertNotIn("needs registration for social-search", " ".join(repeat["issues"]))
+
+    def test_cli_installs_any_named_example_and_catalogs_all_valid_libraries(self) -> None:
+        example = self.source / "example-workflows/research-acquire"
+        package(example, "research-acquire")
+        package(self.home / "libraries/my-folder", "custom-research")
+        installed = self.cli(
+            SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source),
+            "--example", "research-acquire",
+        )
+        self.assertEqual(installed.returncode, 0, installed.stdout + installed.stderr)
+        self.assertEqual(json.loads(installed.stdout)["example"]["status"], "installed")
+        self.assertEqual(snapshot(example), snapshot(self.home / "libraries/research-acquire"))
+        expected = {
+            "orchflows-light": "./.local/packages/orchflows-light",
+            "custom-research": "./libraries/my-folder",
+            "research-acquire": "./libraries/research-acquire",
+        }
+        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
+            catalog = json.loads((self.home / relative).read_text(encoding="utf-8"))
+            actual = {entry["name"]: entry["source"]["path"] if isinstance(entry["source"], dict)
+                      else entry["source"] for entry in catalog["plugins"]}
+            self.assertEqual(actual, expected)
+        self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
+
+    def test_second_example_preserves_catalogs_and_reports_missing_registration(self) -> None:
+        self.install(example=True)
+        package(self.source / "example-workflows/research-acquire", "research-acquire")
+        paths = [self.home / relative for relative in
+                 (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json")]
+        before = {path: path.read_bytes() for path in paths}
+        report = orchflows.setup(self.home, self.source, "research-acquire")
+        self.assertEqual(report["status"], "partial")
+        self.assertEqual(report["example"]["status"], "installed")
+        self.assertEqual({path: path.read_bytes() for path in paths}, before)
+        for result in (report, orchflows.doctor(self.home)):
+            for path in paths:
+                self.assertIn(
+                    f"Catalog {path.relative_to(self.home).as_posix()} needs registration for research-acquire at ./libraries/research-acquire",
+                    " ".join(result["issues"]),
+                )
+        resolved = orchflows.resolve(self.home, "research-acquire", skill="sample")
+        self.assertEqual(Path(resolved["skill_path"]), self.home / "libraries/research-acquire/skills/sample/SKILL.md")
+
+    def test_example_names_reject_traversal_and_invalid_names_before_mutation(self) -> None:
+        for name in ("../outside", "..\\outside", "/outside", "C:\\outside", "C:outside", "..", "", "sample.dot", "x" * 65):
+            with self.subTest(name=name):
+                result = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), "--example", name)
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn("Invalid example name", json.loads(result.stderr)["error"])
+                self.assertFalse(self.home.exists())
+
+    def test_example_manifest_must_match_before_setup_mutates_home(self) -> None:
+        for manifest in ('{"name":"different","version":"1"}', '{malformed'):
+            with self.subTest(manifest=manifest):
+                write(self.example / "plugin.json", manifest)
+                with self.assertRaisesRegex(ValueError, "Example identity differs|Malformed package manifest"):
+                    orchflows.setup(self.home, self.source, "social-search")
+                self.assertFalse(self.home.exists())
+
+    def test_catalogs_exclude_malformed_and_ambiguous_libraries_without_changing_them(self) -> None:
+        package(self.home / "libraries/first", "duplicate")
+        package(self.home / "libraries/second", "duplicate")
+        package(self.home / "libraries/shadow-core", "orchflows-light")
+        write(self.home / "libraries/broken/plugin.json", "{broken")
+        package(self.home / "libraries/valid", "valid")
+        before = snapshot(self.home / "libraries")
+        report = orchflows.setup(self.home, self.source)
+        self.assertEqual(report["status"], "partial")
+        self.assertEqual(snapshot(self.home / "libraries"), before)
+        for result in (report, orchflows.doctor(self.home)):
+            issues = " ".join(result["issues"])
+            self.assertIn("Ambiguous library name: duplicate", issues)
+            self.assertIn("Ambiguous library name: orchflows-light", issues)
+            self.assertIn("Malformed package manifest", issues)
+        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
+            catalog = json.loads((self.home / relative).read_text(encoding="utf-8"))
+            self.assertEqual([item["name"] for item in catalog["plugins"]], ["orchflows-light", "valid"])
 
     def test_resolve_rejects_traversal_absolute_paths_and_ambiguous_names(self) -> None:
         self.install(example=True)

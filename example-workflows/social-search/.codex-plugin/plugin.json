@@ -1,7 +1,7 @@
 {
   "name": "social-search",
-  "version": "0.1.0+codex.20260911131817",
-  "description": "Bounded source research with peer search skills, evidence preparation and a fresh ranking judge.",
+  "version": "0.2.0+codex.20260911141952",
+  "description": "Composable site searches with parallel workers and one final evidence reviewer.",
   "author": {
     "name": "Dan McInerney"
   },
@@ -9,8 +9,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Social Search",
-    "shortDescription": "Gather inspectable source evidence and rank it with a fresh judge.",
-    "longDescription": "A portable user library with eleven composable research skills, current-context evidence preparation and optional bounded acquisition.",
+    "shortDescription": "Search sources in parallel, then review the gathered evidence.",
+    "longDescription": "Small source workflows compose through delegate-work and delegate-review.",
     "developerName": "Dan McInerney",
     "category": "Productivity",
     "capabilities": [],

@@ -1,14 +1,17 @@
 ---
 name: prepare-evidence
-description: Prepare or check a site evidence handoff in the current context, preserving inspectable support, scope, stable IDs and truthful completion status.
+description: Turn collected or saved research into a compact, inspectable evidence handoff in the current context.
 ---
 
-Work in the current context without agents or new source reads. Own the shared [evidence contract](references/evidence-contract.md). Use this before collecting a site's evidence and before handing it off, or to make compatible saved evidence ready for a caller. Follow the resolved Research standard and reuse the caller's [home and runtime context](../../references/home-runtime.md); standalone use resolves that boundary once.
+Use existing material; launch no agents or source reads. Preserve supplied evidence and write a compact handoff, normally `results.md`:
 
-Before acquisition, turn the resolved request into the scope and coverage sections of the assigned `results.md`. Identify the site, question, publication/event window or explicit all-time, separate cutoff/horizon, required depth, allowed access routes, bounds and output directory. Use only supplied or observed values; return material missing scope to the caller before reads. Create the unique output directory outside the package. Mark the draft as unfinished, without preclaiming `complete` or `no_results`. Reserve stable site-prefixed IDs as candidates arrive, and keep available raw source files and receipts at their existing paths.
+- Question, source, relevant dates and constraints.
+- Locally ranked items with stable IDs, original URLs, authors when relevant, dates or unknowns, and a reason for inclusion.
+- Support the next reader can inspect: contextual excerpts, labeled paraphrases or accessible saved responses with precise locators. A URL or inaccessible tool handle alone is insufficient. Distinguish an index snippet from inspected source content.
+- Coverage, missing context and required gaps; observed usage when relevant to caller bounds. Separate source origin, access provider and observation time where they affect interpretation.
 
-Before handoff, read the actual draft and supporting files. Check that every ranked candidate has its observed original locator, dates or explicit unknowns, observation time, relevance reason and inspectable support. Follow each saved-support locator and verify that it exposes the claim's relevant context, including parent comments or transcript cues when required. Label snippets and paraphrases accurately; an inaccessible handle or URL alone cannot pass this check. Preserve unavailable support as a specific gap. Check stable IDs, per-record authors/counts, archive attribution, required depth, missing assignments, caps and refusals against the actual returned evidence. Do not infer unknown dates, engagement or coverage.
+Keep source assertions distinct from established facts. Retain the item's own dates and engagement; newer replies or reposts do not refresh their parents.
 
-Correct handoff defects supported by existing material in the current context. Keep local rank reasons and qualifications; this step neither reranks across sites nor writes the final synthesis. For third-party saved results, preserve the originals and write the compatible handoff in the assigned output directory, citing the source files. Do not duplicate raw packets or manufacture a second receipt format. Set `complete`, `partial`, `blocked` or `no_results` from the contract; a required unresolved gap prevents `complete`.
+Report `complete` for the bounded assignment fulfilled, `partial` for useful unfinished evidence, `blocked` for unusable access or constraints, or `no_results` for a completed search with no matches. Failed or missing collection is not no-results evidence.
 
-Return `results.md` with a short preparation note stating what was checked and any unresolved handoff gaps. Do not create a separate checklist artifact. Reuse a caller's run without extra logging; independent use finalizes its one outer run through the shared home/runtime convention. A judge reads this result and checks substantive support independently; it need not rerun preparation on a compatible handoff. On a targeted follow-up, update the same result and existing IDs with only the newly authorized evidence, retaining prior limitations that remain true.
+Check the handoff against the supplied support. Return its location and material gaps.

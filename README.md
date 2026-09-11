@@ -79,14 +79,17 @@ Use relative links within a library, resolved from the loaded file. Across libra
 The `social-search` example package demonstrates the pattern:
 
 ```text
-social-search → select sites and divide the budget
-                    ├── search-reddit  → search-site → prepare-evidence
-                    ├── search-youtube → search-site → prepare-evidence
-                    └── other relevant site workers in parallel
-               → rank-research → one ranked, cited report
+social-search → choose sources
+               → source workflows in parallel
+                   search-reddit / search-youtube / search-site
+                     → delegate-work → evidence
+               → gather all results
+               → rank-evidence → delegate-review → cited assessment
 ```
 
-The coordinator chooses relevant sites and respects native concurrency, using waves when needed. Source workflows run independently and return locally ranked evidence. One fresh judge deduplicates, reranks and synthesizes their actual outputs. One bounded evidence follow-up is available. Each source workflow and the judge also works on its own; `search-site` accepts arbitrary named sites. The optional acquisition scripts retain their deterministic request accounting and resume behavior; ordinary native tools do not gain those guarantees.
+Each source workflow owns one work-agent launch; the coordinator starts independent searches before gathering their results. One fresh reviewer assesses the collected evidence and returns a ranked, cited answer. There are no source reviews or review/collection loops. `search-site` accepts any named site; `rank-evidence` also reviews independently supplied evidence. `prepare-evidence` provides a shared handoff inside each worker, without another agent. Source profiles add only site-specific guidance.
+
+Native tools are sufficient for search. The separate `research-acquire` example offers optional bounded acquisition and resume; install it with `setup --example research-acquire` when needed. Its scripts own those mechanics without adding them to the workflow instructions.
 
 The repo example and its initial home copy contain the same files. The home copy becomes yours to edit; later setup runs do not overwrite it. In a source checkout, browse `example-workflows/README.md`. After setup, use `resolve social-search --resource README.md` through the installed CLI to find the package guide and its trial instructions.
 
