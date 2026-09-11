@@ -1,39 +1,21 @@
 # Social Search
 
-A small library built from orchflows-light's two delegation primitives. Source profiles are partial applications of a generic site-search workflow; a separate evidence reviewer accepts their results or independently supplied research.
+Reference composition of orchflows-light's two primitives. Source profiles add site knowledge to one site-search workflow; one reviewer assesses everything gathered.
 
 ```text
-social-search — current coordinator
-  fan out selected profiles through search-site
-    orch-work → one worker per source
-      collect → prepare-evidence
-  gather all outcomes
-  rank-evidence
-    orch-review → one ranked, cited assessment
+social-search
+  choose profiles → each invokes search-site with deferred gathering
+    search-site → orch-work → worker: collect, prepare-evidence
+  gather every outcome, keep gaps
+  rank-evidence → orch-review → ranked, cited assessment
 ```
 
-Launch available source workers before waiting. Capacity limits use waves. For N selected sources there are N workers and one final reviewer, with no source reviews or review-to-acquisition loop.
+N selected sources = N workers + 1 reviewer. No source reviews, no review-to-acquisition loop. Profiles: [source-workflows.md](skills/social-search/references/source-workflows.md). `search-site` and `rank-evidence` also work alone.
 
-## Components
+The prompt supplies question, dates, sources, bounds and output location; there is no default window. Workers use native tools plus resolved [source readers](references/source-readers.md); the optional `research-acquire` library supplies a YouTube transcript script that owns fetch, parse and fallback, and missing readers leave native search usable.
 
-| Skill | Responsibility |
-| --- | --- |
-| [social-search](skills/social-search/SKILL.md) | Select sources, fan out, gather, request one review |
-| [search-site](skills/search-site/SKILL.md) | Delegate a named-site search; return evidence or a handle for deferred gathering |
-| [prepare-evidence](skills/prepare-evidence/SKILL.md) | Shape an inspectable handoff in the current worker |
-| [rank-evidence](skills/rank-evidence/SKILL.md) | Delegate independent assessment of supplied evidence |
-| Six [source profiles](skills/social-search/references/source-workflows.md) | Only source-specific knowledge |
+## Install
 
-An ordinary prompt supplies the question and any dates, sources, bounds or output preferences. There is no default date window. Workers use native public tools and installed [source readers](references/source-readers.md). The optional research-acquire library supplies a deterministic YouTube transcript reader; it owns fetching, parsing and fallback mechanics without another agent or research plan. Missing readers leave native search usable.
+`scripts/orchflows.py setup --example social-search` (Python 3.11+) seeds `~/.orchflows/libraries/social-search` once. Register the package with the host and refresh after edits. `setup --example research-acquire` adds the readers; its README declares dependencies.
 
-These ten skills compose without extra coordinating agents. Search-site also works alone; rank-evidence needs no search run. Reviewers inspect support without editing source evidence or making new source reads. Required gaps remain visible in partial assessments.
-
-## Install and use
-
-From an available orchflows-light package, run `scripts/orchflows.py setup --example social-search` with Python 3.11+. This seeds `~/.orchflows/libraries/social-search` when absent and preserves existing libraries. Register the complete package with the native host; disk placement alone does not register it. Refresh cached installations after edits.
-
-Install scripted readers with `setup --example research-acquire`; its README declares their optional dependencies. Workers receive resolved script paths, so reading a video needs no additional skill invocation or acquisition planner.
-
-Public identities are `social-search:<skill-name>`. From another project, load the installed native skill or locate it with `resolve social-search --skill <skill-name>`. Core dependencies and output locations follow [library context](references/library-context.md). A missing home runtime does not prevent native research if the core skills are available.
-
-The [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) test composition, evidence and actual agent behavior. [Provenance](references/provenance.md) records the upstream origin. Trial specifications are not claims of successful execution.
+Identities are `social-search:<skill>`; `resolve social-search --skill <skill>` locates files. Dependency and output resolution: [library context](references/library-context.md). Origin: [provenance](references/provenance.md). Trial: [request](trials/request.md) and [acceptance](trials/expected-behavior.md).
