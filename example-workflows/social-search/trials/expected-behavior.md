@@ -11,5 +11,6 @@ Evaluate actual artifacts and agent events.
 - Caller bounds hold. Required evidence gaps prevent a complete research claim.
 - One outer home run owns finalization; nested skills reuse it. Sources have separate output directories outside the package. The run summary describes the actual outcome.
 - Standalone search-site returns its one worker's evidence without a reviewer; standalone rank-evidence reviews supplied evidence without acquisition.
+- With the optional transcript reader installed, a YouTube worker invokes its resolved script from an unrelated project and hands off inspected transcript support. Missing dependencies, date uncertainty and unavailable captions remain explicit; transcripts never become viewer opinion. No extra agents or acquisition planner appear.
 
 Packaging checks and acquisition fixtures cannot establish these behavioral results.

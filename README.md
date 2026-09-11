@@ -21,7 +21,9 @@ From a complete copy of this package, use Python 3.11 or newer:
 python3 /absolute/path/to/orchflows-light/scripts/orchflows.py setup --example social-search
 ```
 
-On Windows, use your Python 3.11+ interpreter in place of `python3`. Setup creates `~/.orchflows`, its Python venv, a managed core copy, and an editable copy of the example. It initializes a Git repository when Git is available, without committing or publishing. Existing user files are preserved. Set `ORCHFLOWS_HOME` or pass `--home` to choose another home.
+On Windows, use your Python 3.11+ interpreter in place of `python3`. Setup creates `~/.orchflows`, its Python venv, a managed core copy, and an editable copy of the example. It initializes a Git repository when Git is available, without committing or publishing. Existing home files are preserved. Set `ORCHFLOWS_HOME` or pass `--home` to choose another home.
+
+Setup also sets concurrency to **15** in both hosts' user settings: Codex's cap on open spawned-agent threads, excluding the primary, and Claude Code's shared cap on parallel read-only tools and subagents. Use `--concurrency N` to choose another positive integer or `--skip-host-config` to preserve host settings. These files live under `CODEX_HOME` or `~/.codex`, and `CLAUDE_CONFIG_DIR` or `~/.claude`; `--home` changes only the orchflows home. Changed configs receive sibling backups, and unrelated settings survive. Start a fresh host session afterward. [Exact settings and limits](docs/native-hosts.md#concurrency-defaults).
 
 ```text
 ~/.orchflows/
@@ -89,7 +91,7 @@ social-search → choose sources
 
 Each source workflow owns one work-agent launch; the coordinator starts independent searches before gathering their results. One fresh reviewer assesses the collected evidence and returns a ranked, cited answer. There are no source reviews or review/collection loops. `search-site` accepts any named site; `rank-evidence` also reviews independently supplied evidence. `prepare-evidence` provides a shared handoff inside each worker, without another agent. Source profiles add only site-specific guidance.
 
-Native tools are sufficient for search. The separate `research-acquire` example offers optional bounded acquisition and resume; install it with `setup --example research-acquire` when needed. Its scripts own those mechanics without adding them to the workflow instructions.
+Native tools are sufficient for search. Install the optional `research-acquire` library with `setup --example research-acquire` for scripted readers, including known-video YouTube transcripts, or bounded acquisition and resume. The caller resolves readers once and passes their paths to source workers; their scripts own fetching, parsing and fallback mechanics without adding agents or another research plan. The library's README declares optional dependencies.
 
 The repo example and its initial home copy contain the same files. The home copy becomes yours to edit; later setup runs do not overwrite it. In a source checkout, browse `example-workflows/README.md`. After setup, use `resolve social-search --resource README.md` through the installed CLI to find the package guide and its trial instructions.
 

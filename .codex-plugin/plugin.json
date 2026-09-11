@@ -1,6 +1,6 @@
 {
   "name": "orchflows-light",
-  "version": "0.4.0+codex.20260911141147",
+  "version": "0.5.0",
   "description": "Composable native workflows, quality standards and a portable user library.",
   "author": {
     "name": "orchflows-light"

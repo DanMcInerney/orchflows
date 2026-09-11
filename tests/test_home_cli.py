@@ -22,7 +22,8 @@ class InstalledCliTests(unittest.TestCase):
             home = outside / "home"
             project = outside / "unrelated-project"
             project.mkdir()
-            environment = dict(os.environ, ORCHFLOWS_HOME=str(home), PYTHONDONTWRITEBYTECODE="1")
+            environment = dict(os.environ, ORCHFLOWS_HOME=str(home), PYTHONDONTWRITEBYTECODE="1",
+                               CODEX_HOME=str(outside / "codex"), CLAUDE_CONFIG_DIR=str(outside / "claude"))
 
             def cli(python, script, *arguments, expected=0):
                 result = subprocess.run(
@@ -33,6 +34,9 @@ class InstalledCliTests(unittest.TestCase):
                 return json.loads(result.stdout or result.stderr)
 
             installed = cli(sys.executable, ROOT / "scripts/orchflows.py", "setup", "--example", "social-search")
+            self.assertEqual(installed["host_config_status"], "configured")
+            self.assertEqual(installed["host_configs"]["codex"]["value"], 15)
+            self.assertEqual(installed["host_configs"]["claude"]["value"], 15)
             python = installed["runtime_python"]
             core = Path(installed["core"]["package_root"])
             script = core / "scripts/orchflows.py"

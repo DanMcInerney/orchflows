@@ -7,8 +7,8 @@ Reuse or establish [library context](../../references/library-context.md). Resol
 
 Use orchflows-light:delegate-work once with the Research standard. Give the worker a concrete collection assignment, source advice and [prepare-evidence](../prepare-evidence/SKILL.md). Keep profile and delegation entrypoints in this caller:
 
-> Search the assigned site, inspect promising material and locally rank evidence for the question. Use available native public tools and honor the supplied scope and bounds. Return inspectable support through prepare-evidence. Work without child agents.
+> Search the assigned site, inspect promising material and locally rank evidence for the question. Use supplied source readers and native public tools within the caller's scope and bounds. Return inspectable support through prepare-evidence. Work without child agents.
 
-If requested or needed, resolve optional research-acquire:research-acquire for acquisition; otherwise native search has no dependency on that library. Before reads, establish that the method can honor hard caller limits.
+Pass relevant [source readers](../../references/source-readers.md) from the library context. Before reads, establish that the method can honor hard caller limits.
 
 When the caller gathers, return the native worker handle and expected evidence location immediately. Otherwise await this worker and return its actual outcome, finalizing the outer run if owned. Neither path launches a reviewer.

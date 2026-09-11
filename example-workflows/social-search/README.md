@@ -24,13 +24,15 @@ Launch available source workers before waiting. Capacity limits use waves. For N
 | [rank-evidence](skills/rank-evidence/SKILL.md) | Delegate independent assessment of supplied evidence |
 | Six [source profiles](skills/social-search/references/source-workflows.md) | Only source-specific knowledge |
 
-An ordinary prompt supplies the question and any dates, sources, bounds or output preferences. There is no default date window. Native public tools are the default. Optional `research-acquire:research-acquire` belongs to a separate library; it is needed only when its acquisition capabilities are chosen.
+An ordinary prompt supplies the question and any dates, sources, bounds or output preferences. There is no default date window. Workers use native public tools and installed [source readers](references/source-readers.md). The optional research-acquire library supplies a deterministic YouTube transcript reader; it owns fetching, parsing and fallback mechanics without another agent or research plan. Missing readers leave native search usable.
 
 These ten skills compose without extra coordinating agents. Search-site also works alone; rank-evidence needs no search run. Reviewers inspect support without editing source evidence or making new source reads. Required gaps remain visible in partial assessments.
 
 ## Install and use
 
 From an available orchflows-light package, run `scripts/orchflows.py setup --example social-search` with Python 3.11+. This seeds `~/.orchflows/libraries/social-search` when absent and preserves existing libraries. Register the complete package with the native host; disk placement alone does not register it. Refresh cached installations after edits.
+
+Install scripted readers with `setup --example research-acquire`; its README declares their optional dependencies. Workers receive resolved script paths, so reading a video needs no additional skill invocation or acquisition planner.
 
 Public identities are `social-search:<skill-name>`. From another project, load the installed native skill or locate it with `resolve social-search --skill <skill-name>`. Core dependencies and one shared home history run follow [library context](references/library-context.md). A missing home runtime does not prevent native research if the core skills are available.
 

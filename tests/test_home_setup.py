@@ -45,6 +45,11 @@ class HomeSetupTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="orchflows-home-test-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()
+        self.host_environment = {"CODEX_HOME": str(self.root / "codex"),
+                                 "CLAUDE_CONFIG_DIR": str(self.root / "claude")}
+        self.environment_patch = patch.dict(os.environ, self.host_environment)
+        self.environment_patch.start()
+        self.addCleanup(self.environment_patch.stop)
         self.home = self.root / "home"
         self.source = self.root / "source"
         package(self.source, "orchflows-light", "7.8.9")
@@ -55,6 +60,7 @@ class HomeSetupTests(unittest.TestCase):
         write(self.source / "README.md", "Fixture core.\n")
         (self.source / "scripts").mkdir()
         shutil.copy2(SCRIPT, self.source / "scripts/orchflows.py")
+        shutil.copy2(SCRIPT.with_name("host_config.py"), self.source / "scripts/host_config.py")
         self.example = self.source / "example-workflows/social-search"
         package(self.example, "social-search")
         write(self.example / "README.md", "Example library.\n")
@@ -100,6 +106,40 @@ class HomeSetupTests(unittest.TestCase):
         # Setup does not install pip or third-party dependencies.
         probe = subprocess.run([result["runtime_python"], "-I", "-c", "import importlib.util; print(importlib.util.find_spec('pip'))"], text=True, capture_output=True, check=True)
         self.assertEqual(probe.stdout.strip(), "None")
+
+    def test_setup_cli_concurrency_override_and_opt_out(self) -> None:
+        write(self.root / "codex/config.toml", "malformed = [\n")
+        result = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), "--skip-host-config")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["host_config_status"], "skipped")
+        self.assertEqual((self.root / "codex/config.toml").read_text(), "malformed = [\n")
+        self.assertFalse((self.root / "claude").exists())
+        write(self.root / "codex/config.toml", 'model = "personal"\n')
+        result = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), "--concurrency", "22")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["host_configs"]["codex"]["value"], 22)
+        self.assertEqual(tomllib.loads((self.root / "codex/config.toml").read_text())["agents"]["max_concurrent_threads_per_session"], 22)
+        self.assertEqual(json.loads((self.root / "claude/settings.json").read_text())["env"]["CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"], "22")
+
+    def test_host_preflight_and_invalid_concurrency_do_not_create_home(self) -> None:
+        write(self.root / "claude/settings.json", '{"env":null}')
+        with self.assertRaisesRegex(ValueError, "Host configuration preserved"):
+            orchflows.setup(self.home, self.source)
+        self.assertFalse(self.home.exists())
+        self.assertFalse((self.root / "codex").exists())
+        for arguments in (("--concurrency", "0"), ("--concurrency", "-1"), ("--concurrency", "many"),
+                          ("--concurrency", "5", "--skip-host-config")):
+            result = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), *arguments)
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+            self.assertFalse(self.home.exists())
+
+    def test_runpy_load_finds_its_own_host_helper(self) -> None:
+        import runpy
+
+        loaded = runpy.run_path(str(SCRIPT))
+        result = loaded["setup"](self.home, self.source)
+        self.assertEqual(result["host_config_status"], "configured")
 
     def test_repeat_preserves_custom_config_library_and_venv(self) -> None:
         first = self.install(example=True)

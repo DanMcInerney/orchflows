@@ -6,6 +6,8 @@
 
 Run `scripts/orchflows.py setup --example social-search` using Python 3.11+ from a complete core package or checkout. Setup creates a fresh venv at `.local/runtime/`, copies the core into `.local/packages/orchflows-light/`, and seeds the example in `libraries/social-search/` when absent. It installs no third-party Python dependencies. Libraries declare any additional script dependencies themselves; conflicting dependencies can use separate ignored environments under `.local/envs/`.
 
+Setup also applies 15 to Codex's spawned-thread cap and Claude Code's shared tool/subagent cap in their user config files. `--concurrency N` overrides the value; `--skip-host-config` leaves both hosts alone. Host directories come from `CODEX_HOME` and `CLAUDE_CONFIG_DIR`, otherwise `~/.codex` and `~/.claude`, independently of the orchflows `--home` path. The JSON result's `host_configs` records each path, setting, value, change status, and backup path. [Native host settings](native-hosts.md#concurrency-defaults) explains preservation, failure handling, and the different limits. Restart the hosts after setup; higher-priority settings may override these user defaults.
+
 Use the returned `runtime_python` path and the installed CLI afterward. Activation is optional. For example, from any PowerShell working directory:
 
 ```powershell
@@ -19,7 +21,7 @@ $orchflowsCli = Join-Path $orchflowsRoot '.local/packages/orchflows-light/script
 
 On macOS/Linux the interpreter is `.local/runtime/bin/python`. Use your selected home or setup's returned paths when overridden. Resolution returns a package root and requested skill/resource path. It rejects escaping paths and duplicate package identities. It does not install dependencies or execute a workflow.
 
-Setup is additive initialization, not a core upgrade command. Repeat setup reuses matching managed files and the runtime, and preserves user libraries, configuration and catalogs. Malformed configuration, an unrelated runtime or a differing installed core is reported instead of overwritten. Before replacing a managed core for an upgrade, preserve any local edits and supply the intended complete core version; no automatic upgrade/merge is implemented here.
+Setup is additive initialization, not a core upgrade command. Repeat setup reuses matching managed files and the runtime, preserves user libraries, home configuration and catalogs, and reapplies the selected host concurrency value unless opted out. Malformed configuration, an unrelated runtime or a differing installed core is reported instead of overwritten. Before replacing a managed core for an upgrade, preserve any local edits and supply the intended complete core version; no automatic upgrade/merge is implemented here.
 
 ## Libraries are native packages
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -60,7 +61,10 @@ checks the installation and `resolve NAME --skill SKILL` returns concrete paths.
 The portable native catalogs live in `.agents/plugins/marketplace.json` (Codex)
 and `.claude-plugin/marketplace.json` (Claude), named `orchflows-home`. Setup seeds
 them when absent and preserves edits. Register this home through each host's
-native marketplace controls; setup does not change host configuration.
+native marketplace controls. Setup sets both hosts' user concurrency settings
+to 15; use --concurrency N to choose another value or --skip-host-config to
+preserve host settings. See the installed core's docs/native-hosts.md for the
+different limits, configuration paths, and backups.
 """
 HOME_GITIGNORE = """# Machine-specific packages, runtime, caches and working files.
 /.local/
@@ -351,7 +355,13 @@ def _gitattributes_issues(home: Path) -> list[str]:
             for path in paths if values.get(path) != "unset"]
 
 
-def setup(home: Path, source: Path, example: str | None = None) -> dict:
+def setup(home: Path, source: Path, example: str | None = None, *,
+          concurrency: int = 15, skip_host_config: bool = False) -> dict:
+    # Load the sibling even when a caller uses runpy/importlib from another directory.
+    spec = importlib.util.spec_from_file_location("orchflows_host_config", Path(__file__).with_name("host_config.py"))
+    host_config = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(host_config)
+
     home, source = home.resolve(), source.resolve()
     # Validate input and existing configuration before any filesystem mutation.
     for relative in ("config.toml", "README.md", ".gitignore", ".gitattributes", ".git", "libraries", "logs", ".local",
@@ -368,6 +378,7 @@ def setup(home: Path, source: Path, example: str | None = None) -> dict:
         if not destination.exists() and example_source.is_dir():
             if _manifest(example_source)["name"] != example:
                 raise ValueError(f"Example identity differs from its requested name: {example_source}")
+    host_plans = [] if skip_host_config else host_config.prepare_host_configs(concurrency)
     home.mkdir(parents=True, exist_ok=True)
     for relative in ("libraries", "logs", ".local/packages"):
         (home / relative).mkdir(parents=True, exist_ok=True)
@@ -441,11 +452,15 @@ def setup(home: Path, source: Path, example: str | None = None) -> dict:
             git_status = "unavailable"
     issues.extend(_gitignore_issues(home))
     issues.extend(_gitattributes_issues(home))
+    host_configs, host_issues = host_config.apply_host_configs(host_plans)
+    issues.extend(host_issues)
     return {"status": "partial" if issues else "ready", "home": str(home), "files": files,
             "runtime_python": str(python),
             "core": {"status": core_status, "package_root": str(core), **identity},
             "runtime": {"status": runtime_status, **runtime_info}, "example": example_info,
-            "git": git_status, "issues": issues}
+            "git": git_status, "host_configs": host_configs,
+            "host_config_status": "skipped" if skip_host_config else "partial" if host_issues else "configured",
+            "issues": issues}
 
 
 def _libraries(home: Path) -> tuple[list[dict], list[str]]:
@@ -573,6 +588,10 @@ def main(argv: list[str] | None = None) -> int:
     _add_home(setup_parser)
     setup_parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1])
     setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the supplied source's example-workflows directory")
+    host_options = setup_parser.add_mutually_exclusive_group()
+    host_options.add_argument("--concurrency", type=int, default=15, metavar="N",
+                              help="Set Codex's spawned-thread cap and Claude's shared tool/subagent cap (default: 15)")
+    host_options.add_argument("--skip-host-config", action="store_true", help="Preserve all native host settings")
     doctor_parser = commands.add_parser("doctor", help="Check a home without changing it")
     _add_home(doctor_parser)
     resolve_parser = commands.add_parser("resolve", help="Resolve a package, skill or resource")
@@ -597,7 +616,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         home = home_path(getattr(args, "home", None))
         if args.command == "setup":
-            result = setup(home, args.source.expanduser().resolve(), args.example)
+            result = setup(home, args.source.expanduser().resolve(), args.example,
+                           concurrency=args.concurrency, skip_host_config=args.skip_host_config)
         elif args.command == "doctor":
             result = doctor(home)
         elif args.command == "resolve":
