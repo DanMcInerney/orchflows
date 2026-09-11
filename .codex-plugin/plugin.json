@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Orchflows Light",
     "shortDescription": "Delegate work and independent review with native agents.",
-    "longDescription": "Four composable skills and focused quality standards for Codex and Claude Code.",
+    "longDescription": "Composable delegation workflows and focused quality standards for Codex and Claude Code.",
     "developerName": "orchflows-light",
     "category": "Productivity",
     "capabilities": [],

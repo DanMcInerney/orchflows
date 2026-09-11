@@ -14,7 +14,7 @@ Codex installs a cached package copy. After editing the source, use the native r
 
 Resolve a relative link from the file containing it, not the current project directory. For a loaded `skills/delegate-work/SKILL.md`, `../../standards/` is inside that same package. A copied or cached installation must retain the package's skills, standards and documentation together. Copying only individual skill folders loses those links.
 
-Workflow composition means loading another native skill's instructions in the current orchestrator. A workflow can instead ask a child to orchestrate when the actual host supports that nesting. Claude's `context: fork` selects a child context; it does not itself select a worktree. These four skills stay in the current context and allow native skill invocation. [Claude skills](https://code.claude.com/docs/en/skills).
+Workflow composition means loading another native skill's instructions in the current orchestrator. A workflow can instead ask a child to orchestrate when the actual host supports that nesting. Claude's `context: fork` selects a child context; it does not itself select a worktree. This package's skills stay in the current context and allow native skill invocation. [Claude skills](https://code.claude.com/docs/en/skills).
 
 Place scripts, references and assets beside the skill that uses them and link them where needed. Resolve script paths from the loaded skill directory; resolve inputs and outputs from the assignment's workspace. Claude's `${CLAUDE_SKILL_DIR}` is available there, but is not portable Codex syntax. Ordinary dependency tools suffice. [Codex skills](https://developers.openai.com/codex/skills), [Claude skills](https://code.claude.com/docs/en/skills).
 
