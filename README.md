@@ -1,6 +1,6 @@
 # orchflows-light
 
-Two delegation skills, three example workflows, and plain Markdown quality standards for Codex and Claude Code. The host runs agents; this library supplies reusable delegation and review guidance. Use ordinary conversation for work that does not benefit from delegation.
+Two delegation skills, composable workflows, and plain Markdown quality standards for Codex and Claude Code. The host runs agents; this library supplies reusable delegation and review guidance. Use ordinary conversation for work that does not benefit from delegation.
 
 | Skill | Action |
 | --- | --- |
@@ -9,6 +9,7 @@ Two delegation skills, three example workflows, and plain Markdown quality stand
 | [make-and-review](skills/make-and-review/SKILL.md) | Make, review, and allow one repair pass. |
 | [compare-approaches](skills/compare-approaches/SKILL.md) | Develop alternatives and compare their actual results. |
 | [build-workflow](skills/build-workflow/SKILL.md) | Author a workflow skill, try it on a bounded request, and refine it from observed behavior. |
+| [parallel-build](skills/parallel-build/SKILL.md) | Make separable pieces concurrently, then join and review the combined result. |
 
 ## Load locally
 
@@ -48,7 +49,7 @@ Write useful making and review criteria. The two headings are a reading conventi
 
 ## Compose a workflow
 
-Use [build-workflow](skills/build-workflow/SKILL.md) with the recurring request you want to support and a bounded example to try. It composes make-and-review, then exercises the resulting skill in a disposable workspace and improves it from the observed result.
+Use [build-workflow](skills/build-workflow/SKILL.md) with the recurring request you want to support and a bounded example to try. In this library's checkout, try `$orchflows-light:build-workflow Add a workflow that compares two designs and develops the selected design. Try it on a small example.` In Claude Code, use `/orchflows-light:build-workflow` with the same request. It composes make-and-review, then exercises the resulting skill in a disposable workspace. Edit the source checkout and refresh the installed plugin before trying changes in a new session.
 
 Add a native `skills/<action>/SKILL.md` with a name, description and useful prose. For example, a new `prepare-proposal` skill in this package could contain:
 
