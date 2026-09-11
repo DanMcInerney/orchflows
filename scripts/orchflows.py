@@ -262,10 +262,13 @@ def _check_config_identity(config: dict, identity: dict) -> list[str]:
             if key in expected and expected[key] != identity[key]]
 
 
-def _catalogs(home: Path, *, include_example: bool, create: bool) -> tuple[dict, list[str]]:
+def _catalogs(home: Path, libraries: list[dict], *, create: bool) -> tuple[dict, list[str]]:
     sources = {CORE_NAME: f"./.local/packages/{CORE_NAME}"}
-    if include_example:
-        sources["social-search"] = "./libraries/social-search"
+    names = [entry["name"] for entry in libraries]
+    for entry in libraries:
+        if entry["name"] != CORE_NAME and names.count(entry["name"]) == 1:
+            relative = Path(entry["package_root"]).relative_to(home).as_posix()
+            sources[entry["name"]] = f"./{relative}"
     catalogs = {
         ".agents/plugins/marketplace.json": {
             "name": "orchflows-home",
@@ -360,6 +363,11 @@ def setup(home: Path, source: Path, example: str | None = None) -> dict:
     source_identity = _validate_core(source)
     if example is not None:
         _name(example, "example")
+        destination = _contained(home, home / "libraries" / example)
+        example_source = _contained(source, source / "example-workflows" / example)
+        if not destination.exists() and example_source.is_dir():
+            if _manifest(example_source)["name"] != example:
+                raise ValueError(f"Example identity differs from its requested name: {example_source}")
     home.mkdir(parents=True, exist_ok=True)
     for relative in ("libraries", "logs", ".local/packages"):
         (home / relative).mkdir(parents=True, exist_ok=True)
@@ -405,25 +413,20 @@ def setup(home: Path, source: Path, example: str | None = None) -> dict:
 
     example_info = None
     if example is not None:
-        destination = _contained(home, home / "libraries" / example)
-        example_source = _contained(source, source / "example-workflows" / example)
         if destination.exists():
             example_status = "preserved"
         elif not example_source.is_dir():
             example_status = "unavailable"
             issues.append(f"Example {example} is absent from this core source; supply a checkout containing it")
         else:
-            manifest = _manifest(example_source)
-            if manifest["name"] != example:
-                raise ValueError(f"Example identity differs from its requested name: {example_source}")
             _copy_package(example_source, destination, core=False)
             example_status = "installed"
         example_info = {"name": example, "status": example_status, "package_root": str(destination)}
 
-    catalogs, catalog_issues = _catalogs(
-        home, include_example=example == "social-search" or (home / "libraries/social-search").exists(), create=True,
-    )
+    libraries, library_issues = _libraries(home)
+    catalogs, catalog_issues = _catalogs(home, libraries, create=True)
     files.update(catalogs)
+    issues.extend(library_issues)
     issues.extend(catalog_issues)
 
     git_status = "preserved"
@@ -531,6 +534,7 @@ def doctor(home: Path) -> dict:
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         checks["runtime"] = "unavailable"
         issues.append(str(exc))
+    entries = []
     try:
         entries, library_issues = _libraries(home)
         checks["libraries"] = entries
@@ -545,9 +549,7 @@ def doctor(home: Path) -> dict:
         except ValueError as exc:
             issues.append(str(exc))
     try:
-        checks["catalogs"], catalog_issues = _catalogs(
-            home, include_example=(home / "libraries/social-search").exists(), create=False,
-        )
+        checks["catalogs"], catalog_issues = _catalogs(home, entries, create=False)
         issues.extend(catalog_issues)
     except (OSError, ValueError) as exc:
         issues.append(str(exc))
@@ -570,7 +572,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_parser = commands.add_parser("setup", help="Initialize or restore a portable home")
     _add_home(setup_parser)
     setup_parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1])
-    setup_parser.add_argument("--example", choices=["social-search"])
+    setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the supplied source's example-workflows directory")
     doctor_parser = commands.add_parser("doctor", help="Check a home without changing it")
     _add_home(doctor_parser)
     resolve_parser = commands.add_parser("resolve", help="Resolve a package, skill or resource")
