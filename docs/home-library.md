@@ -19,9 +19,11 @@ $orchflowsCli = Join-Path $orchflowsRoot '.local/packages/orchflows-light/script
 & $orchflowsPython $orchflowsCli resolve orchflows-light --resource standards/research.md --home $orchflowsRoot
 ```
 
-On macOS/Linux the interpreter is `.local/runtime/bin/python`. Use your selected home or setup's returned paths when overridden. Resolution returns a package root and requested skill/resource path. It rejects escaping paths and duplicate package identities. It does not install dependencies or execute a workflow.
+On macOS/Linux the interpreter is `.local/runtime/bin/python`. Use your selected home or setup's returned paths when overridden. Resolution returns a package root, requested skill/resource path and an unverified `runtime_python` path hint. It rejects escaping paths and duplicate package identities. It neither launches the runtime nor hashes the package; use `doctor` for runtime and installation health. You can run the resolver with another Python 3.11+ interpreter when the home runtime is unavailable.
 
-Setup is additive initialization, not a core upgrade command. Repeat setup reuses matching managed files and the runtime, preserves user libraries, home configuration and catalogs, and reapplies the selected host concurrency value unless opted out. Malformed configuration, an unrelated runtime or a differing installed core is reported instead of overwritten. Before replacing a managed core for an upgrade, preserve any local edits and supply the intended complete core version; no automatic upgrade/merge is implemented here.
+To update, rerun the desired package's setup command, or pass that complete package with `--source`. Setup stages the new core, backs up the old core and configuration under `.local/backups/`, replaces the managed copy and updates the identity in `config.toml`. It checks the installed core against its recorded identity before replacement; local edits or a missing identity are reported for reconciliation. A failed replacement restores the previous core. Unchanged reruns reuse the core and runtime without creating another backup.
+
+Authored libraries, saved outputs, unrelated configuration and existing runtimes are preserved. Setup adds missing entries to the `orchflows-home` catalogs, retaining entry order, metadata and custom sources; conflicting registrations are reported. It reapplies the selected host concurrency value unless opted out. Refresh the native core plugin afterward using the [host guide](native-hosts.md). A leftover `.local/packages/.setup.lock` means an installer may be active; remove it only after checking that no installer is running.
 
 ## Libraries are native packages
 
@@ -29,7 +31,7 @@ Use `libraries/<library>/skills/<skill>/SKILL.md` for both helpers and orchestra
 
 Relative links resolve within the loaded package. Resolve an external dependency by package name at the composition boundary and pass its concrete paths onward. For example, `social-search` resolves installed `orchflows-light` Research/Writing standards and delegation skills once, while source profiles link directly to sibling `search-site` and `prepare-evidence` skills.
 
-`setup --example NAME` installs any matching named package from the source's `example-workflows/`. For example, `research-acquire` is an optional acquisition library independent of `social-search`. New home catalogs include the core and valid installed libraries. Existing catalogs remain user-owned: setup reports missing registrations without rewriting them. Register a new library in the relevant native catalog, install it with the host, and refresh cached plugins after source edits. Directly asking an agent to read an absolute `SKILL.md` path also works without named host discovery.
+`setup --example NAME` installs any matching named package from the source's `example-workflows/` when absent. For example, `research-acquire` is an optional acquisition library independent of `social-search`. Setup registers valid installed libraries in the home catalogs; existing library content stays yours. Install the library with the host and refresh cached plugins after source edits. Directly asking an agent to read an absolute `SKILL.md` path also works without named host discovery.
 
 Use the [native host guide](native-hosts.md) for registration and reload commands. Core development may still load the source checkout directly; user custom workflows belong in their home library unless a project-local destination was requested.
 
@@ -56,9 +58,9 @@ logs.
 
 After cloning your home to another computer:
 
-1. Obtain the intended orchflows-light core package or checkout, matching the identity recorded in `config.toml`.
+1. Obtain the intended orchflows-light core package or checkout.
 2. Run that package's setup with `--home` pointing at the clone. The default source is the package containing the CLI; `--source` can select another complete bundle.
 3. Recreate library-specific Python dependencies from its declared requirements.
 4. Register the cloned home's native marketplace and install the libraries you use. Start a new host session.
 
-No source download or lockfile-driven restore is promised. Portable config records core provenance; machine paths are kept in ignored `.local/config.toml`. An absent venv is recreated in its final location, never copied across computers. A supplied source may differ from the recorded identity; inspect setup/doctor's reported mismatch before using it.
+Portable config records the installed core identity; restoring from a different supplied version updates that identity. Machine paths are kept in ignored `.local/config.toml`. An absent venv is recreated in its final location, never copied across computers. Setup uses the supplied package and does not download a core version.

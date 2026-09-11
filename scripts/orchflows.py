@@ -14,6 +14,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import tomllib
 import uuid
 import venv
@@ -46,20 +47,19 @@ Use native history for execution evidence; see the core's docs/native-history.md
 
 After cloning this home, restore `.local/` using Python 3.11+ and a supplied core
 package: `python /path/to/orchflows-light/scripts/orchflows.py setup --home
-/path/to/this-home --source /path/to/orchflows-light`. Setup preserves existing
-files and libraries. Rerunning setup initializes missing pieces; it is not an
-upgrade command. If a supplied source differs from the installed core, inspect
-and explicitly move the old managed core aside before restoring from that source.
-An unknown remote source cannot be restored automatically.
+/path/to/this-home --source /path/to/orchflows-light`. Rerun setup from the desired
+core package to update. It backs up and replaces an unchanged managed core,
+updates its recorded identity, and preserves authored libraries and other home
+content. Local core edits are reported for reconciliation before replacement.
 
 Use `.local/runtime/Scripts/python.exe` on Windows or `.local/runtime/bin/python`
 elsewhere to call `.local/packages/orchflows-light/scripts/orchflows.py`. Pass
 `--home /path/to/this-home`, or set `ORCHFLOWS_HOME`, from any project. `doctor`
 checks the installation and `resolve NAME --skill SKILL` returns concrete paths.
 The portable native catalogs live in `.agents/plugins/marketplace.json` (Codex)
-and `.claude-plugin/marketplace.json` (Claude), named `orchflows-home`. Setup seeds
-them when absent and preserves edits. Register this home through each host's
-native marketplace controls. Setup sets both hosts' user concurrency settings
+and `.claude-plugin/marketplace.json` (Claude), named `orchflows-home`. Setup adds
+missing library entries and preserves existing entries. Register this home through
+each host's native marketplace controls. Setup sets both hosts' user concurrency settings
 to 15; use --concurrency N to choose another value or --skip-host-config to
 preserve host settings. See the installed core's docs/native-hosts.md for the
 different limits, configuration paths, and backups.
@@ -209,9 +209,7 @@ def _create_text(path: Path, contents: str) -> str:
 
 def runtime_python(home: Path) -> Path:
     relative = "Scripts/python.exe" if os.name == "nt" else "bin/python"
-    # A POSIX venv normally links its executable to the base interpreter.
-    runtime = _contained(home, home / ".local/runtime")
-    return runtime / relative
+    return home / ".local/runtime" / relative
 
 
 def _check_runtime(home: Path) -> dict:
@@ -258,7 +256,112 @@ def _check_config_identity(config: dict, identity: dict) -> list[str]:
             if key in expected and expected[key] != identity[key]]
 
 
+def _replace_text(path: Path, contents: str) -> None:
+    temporary = path.with_name(f".{path.name}-{uuid.uuid4().hex}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8", newline="") as stream:
+            stream.write(contents)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _updated_core_config(original: bytes | None, identity: dict) -> str:
+    if original is None:
+        return _config_text(identity)
+    text = original.decode("utf-8")
+    config = tomllib.loads(text)
+    previous = config.get("core", {})
+    if not isinstance(previous, dict):
+        raise ValueError("config.toml [core] must be a table; file preserved")
+    if all(previous.get(key) == value for key, value in identity.items()):
+        return text
+    expected = {**config, "core": {**previous, **identity}}
+    if "core" not in config:
+        text += "\n[core]\n" + "".join(f"{key} = {_toml_string(value)}\n" for key, value in identity.items())
+    else:
+        table = re.search(r"(?ms)^\[core\][ \t]*(?:#[^\r\n]*)?\r?\n(.*?)(?=^[ \t]*\[|\Z)", text)
+        if table is None:
+            raise ValueError("Use a [core] table in config.toml to update its identity; file preserved")
+        body = table[1]
+        for key, value in identity.items():
+            body, count = re.subn(rf"(?m)^([ \t]*{key}[ \t]*=[ \t]*)[^\r\n]*",
+                                 lambda match: match[1] + _toml_string(value), body)
+            if not count:
+                body = body.rstrip("\r\n") + f"\n{key} = {_toml_string(value)}\n"
+        text = text[:table.start(1)] + body + text[table.end(1):]
+    # Do not rewrite an unfamiliar TOML layout or alter user-owned values.
+    if tomllib.loads(text) != expected:
+        raise ValueError("Cannot update core identity without changing other configuration; file preserved")
+    return text
+
+
+def _setup_core(home: Path, source: Path, desired: dict, config: dict) -> tuple[dict, str, list[str]]:
+    core = home / ".local/packages" / CORE_NAME
+    config_path = home / "config.toml"
+    original = config_path.read_bytes() if config_path.exists() else None
+    previous = _validate_core(core) if core.exists() else None
+    result = {"package_root": str(core), **(previous or desired)}
+    if previous == desired:
+        status = _create_text(config_path, _config_text(previous))
+        return {**result, "status": "reused"}, status, _check_config_identity(config, previous)
+    if previous and (_check_config_identity(config, previous)
+                     or config.get("core", {}).get("content_sha256") != previous["content_sha256"]):
+        return {**result, "status": "preserved"}, "preserved", [
+            f"Managed core has local changes or no matching recorded identity; preserved {core}. "
+            "Reconcile those changes before rerunning setup."]
+    updated = _updated_core_config(original, desired)
+    config_changed = updated.encode("utf-8") != original
+    for path in (core, config_path):
+        if path.exists() and _is_link(path):
+            raise ValueError(f"Setup does not replace linked core/config paths: {path}")
+    lock = core.parent / ".setup.lock"
+    try:
+        lock.open("x").close()
+    except FileExistsError as exc:
+        raise ValueError(f"Core setup lock exists: {lock}; check for an active installer before removing it") from exc
+    backup = None
+    try:
+        with tempfile.TemporaryDirectory(prefix=".core-", dir=core.parent) as temporary:
+            staged = Path(temporary) / CORE_NAME
+            _copy_package(source, staged, core=True)
+            if _validate_core(staged) != desired:
+                raise ValueError("Core source changed while copying; rerun setup")
+            current_config = config_path.read_bytes() if config_path.exists() else None
+            current_core = _validate_core(core) if core.exists() else None
+            if current_config != original or current_core != previous:
+                raise ValueError("Installed core or configuration changed during setup; rerun setup")
+            if previous or (original is not None and config_changed):
+                backup = _contained(home, home / ".local/backups" / f"core-{uuid.uuid4().hex}")
+                backup.mkdir(parents=True)
+                if original is not None:
+                    shutil.copy2(config_path, backup / "config.toml")
+            if previous:
+                core.rename(backup / CORE_NAME)
+            try:
+                staged.rename(core)
+                if config_changed:
+                    _replace_text(config_path, updated)
+            except OSError:
+                if core.exists():
+                    core.rename(staged)
+                if previous:
+                    (backup / CORE_NAME).rename(core)
+                raise
+    finally:
+        lock.unlink()
+    config_status = "created" if original is None else "updated" if config_changed else "preserved"
+    return {"package_root": str(core), **desired, "status": "updated" if previous else "installed",
+            "backup_path": str(backup) if backup else None}, config_status, []
+
+
 def _catalogs(home: Path, libraries: list[dict], *, create: bool) -> tuple[dict, list[str]]:
+    def unique_object(pairs):
+        value = dict(pairs)
+        if len(value) != len(pairs):
+            raise ValueError("Duplicate JSON keys; catalog preserved")
+        return value
+
     sources = {CORE_NAME: f"./.local/packages/{CORE_NAME}"}
     names = [entry["name"] for entry in libraries]
     for entry in libraries:
@@ -286,19 +389,30 @@ def _catalogs(home: Path, libraries: list[dict], *, create: bool) -> tuple[dict,
             path.parent.mkdir(parents=True, exist_ok=True)
             statuses[relative] = _create_text(path, json.dumps(catalog, indent=2) + "\n")
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            original = path.read_bytes()
+            data = json.loads(original, object_pairs_hook=unique_object)
             plugins = data.get("plugins") if isinstance(data, dict) else None
             if not isinstance(plugins, list) or not all(isinstance(item, dict) for item in plugins):
                 raise ValueError("plugins must be an array of objects")
+            additions = []
             for name, source in sources.items():
                 matches = [item for item in plugins if item.get("name") == name]
+                if not matches and create and data.get("name") == "orchflows-home":
+                    additions.append(next(item for item in catalog["plugins"] if item["name"] == name))
+                    continue
                 registered = matches[0].get("source") if len(matches) == 1 else None
                 if isinstance(registered, dict):
                     registered = registered.get("path") if registered.get("source") == "local" else None
                 if registered != source:
-                    issues.append(f"Catalog {relative} needs registration for {name} at {source}; existing file preserved")
+                    issues.append(f"Catalog {relative} needs registration for {name} at {source}; existing entries preserved")
             if data.get("name") != "orchflows-home":
                 issues.append(f"Catalog {relative} has a different marketplace name; existing file preserved")
+            if additions:
+                if path.read_bytes() != original:
+                    raise ValueError("Catalog changed during setup; rerun setup")
+                plugins.extend(additions)
+                _replace_text(path, json.dumps(data, indent=2) + "\n")
+                statuses[relative] = "updated"
             statuses.setdefault(relative, "ok")
         except (OSError, UnicodeError, ValueError) as exc:
             statuses.setdefault(relative, "unavailable")
@@ -350,26 +464,14 @@ def setup(home: Path, source: Path, example: str | None = None, *,
     for relative in ("libraries", ".local/packages"):
         (home / relative).mkdir(parents=True, exist_ok=True)
 
-    issues = []
     core = home / ".local/packages" / CORE_NAME
-    if core.exists():
-        identity = _validate_core(core)
-        core_status = "reused"
-        if identity != source_identity:
-            core_status = "preserved"
-            issues.append(f"Existing core differs from supplied source; setup preserves it. Setup is not an upgrade command: inspect {core} and explicitly move it aside before restoring a different source")
-    else:
-        _copy_package(source, core, core=True)
-        identity = source_identity
-        core_status = "installed"
+    core_info, config_status, issues = _setup_core(home, source, source_identity, config)
 
     files = {
-        "config.toml": _create_text(home / "config.toml", _config_text(identity)),
+        "config.toml": config_status,
         "README.md": _create_text(home / "README.md", HOME_README),
         ".gitignore": _create_text(home / ".gitignore", HOME_GITIGNORE),
     }
-    if files["config.toml"] == "preserved":
-        issues.extend(_check_config_identity(config, identity))
     python = runtime_python(home)
     local_text = ("# Machine-local paths; ignored by the home repository.\nschema_version = 1\n"
                   f"source = {_toml_string(str(source))}\n"
@@ -421,7 +523,7 @@ def setup(home: Path, source: Path, example: str | None = None, *,
     issues.extend(host_issues)
     return {"status": "partial" if issues else "ready", "home": str(home), "files": files,
             "runtime_python": str(python),
-            "core": {"status": core_status, "package_root": str(core), **identity},
+            "core": core_info,
             "runtime": {"status": runtime_status, **runtime_info}, "example": example_info,
             "git": git_status, "host_configs": host_configs,
             "host_config_status": "skipped" if skip_host_config else "partial" if host_issues else "configured",
@@ -461,7 +563,10 @@ def resolve(home: Path, library: str, skill: str | None = None, resource: str | 
     matches = [entry for entry in entries if entry["name"] == library]
     if library == CORE_NAME:
         root = _contained(home, home / ".local/packages" / CORE_NAME)
-        matches.append({**_validate_core(root), "package_root": str(root)})
+        manifest = _manifest(root)
+        if manifest["name"] != CORE_NAME:
+            raise ValueError(f"Core package must identify as {CORE_NAME}: {root}")
+        matches.append({**manifest, "package_root": str(root)})
     if len(matches) > 1:
         raise ValueError(f"Ambiguous library name: {library}")
     if not matches:
@@ -484,7 +589,7 @@ def resolve(home: Path, library: str, skill: str | None = None, resource: str | 
         if not path.exists():
             raise ValueError(f"Resource does not exist: {path}")
         result["resource_path"] = str(path)
-    result["runtime_python"] = _check_runtime(home)["runtime_python"]
+    result["runtime_python"] = str(runtime_python(home))
     return result
 
 
@@ -548,7 +653,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     _add_home(parser)
     commands = parser.add_subparsers(dest="command", required=True)
-    setup_parser = commands.add_parser("setup", help="Initialize or restore a portable home")
+    setup_parser = commands.add_parser("setup", help="Install or update the managed core and initialize a portable home")
     _add_home(setup_parser)
     setup_parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1])
     setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the supplied source's example-workflows directory")

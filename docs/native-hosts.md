@@ -39,9 +39,9 @@ Place scripts, references and assets beside the skill that uses them and link th
 
 ## Workspaces and native agents
 
-Every delegated repository assignment, including review, uses its own worktree at the intended input state. Prefer native per-child worktree creation when the actual launch interface supports it. Claude's Agent tool and agent definitions support `isolation: worktree`. Confirm the starting revision: host defaults can start from a default branch rather than the current candidate. [Claude worktrees](https://code.claude.com/docs/en/worktrees).
+A child can use the current workspace when edits will not overlap. A read-only reviewer can inspect a stable candidate there. Use a separate worktree when concurrent edits or verification side effects need isolation. When using a worktree, prefer native per-child creation when supported. Claude's Agent tool and agent definitions support `isolation: worktree`. Confirm the starting revision: host defaults can start from a default branch rather than the current candidate. [Claude worktrees](https://code.claude.com/docs/en/worktrees).
 
-A Codex app session worktree does not automatically isolate its children. The child interface inspected here has no worktree or working-directory argument. Where that is still true, create an ordinary Git worktree and explicitly direct all child operations there, for example:
+A Codex app session worktree does not automatically isolate its children. The child interface inspected here has no worktree or working-directory argument. When isolation is needed and the interface cannot provide it, create an ordinary Git worktree and explicitly direct all child operations there, for example:
 
 ```sh
 git worktree add -b task-candidate "../task-candidate" <intended-commit>

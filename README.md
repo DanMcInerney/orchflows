@@ -36,7 +36,7 @@ From a complete copy of this package, use Python 3.11 or newer:
 python3 /absolute/path/to/orchflows-light/scripts/orchflows.py setup --example social-search
 ```
 
-On Windows, use your Python 3.11+ interpreter in place of `python3`. Setup creates `~/.orchflows`, its Python venv, a managed core copy, and an editable copy of the example. It initializes a Git repository when Git is available, without committing or publishing. Existing home files are preserved. Set `ORCHFLOWS_HOME` or pass `--home` to choose another home.
+On Windows, use your Python 3.11+ interpreter in place of `python3`. Setup creates `~/.orchflows`, its Python venv, a managed core copy, and an editable copy of the example. It initializes a Git repository when Git is available, without committing or publishing. Rerun setup from the desired core package to update: it backs up and replaces an unchanged managed core, preserves authored libraries, and adds missing catalog entries. Local core edits are reported before replacement. Set `ORCHFLOWS_HOME` or pass `--home` to choose another home.
 
 Setup also sets concurrency to **15** in both hosts' user settings: Codex's cap on open spawned-agent threads, excluding the primary, and Claude Code's shared cap on parallel read-only tools and subagents. Use `--concurrency N` to choose another positive integer or `--skip-host-config` to preserve host settings. These files live under `CODEX_HOME` or `~/.codex`, and `CLAUDE_CONFIG_DIR` or `~/.claude`; `--home` changes only the orchflows home. Changed configs receive sibling backups, and unrelated settings survive. Start a fresh host session afterward. [Exact settings and limits](docs/native-hosts.md#concurrency-defaults).
 
