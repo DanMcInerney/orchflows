@@ -11,4 +11,4 @@ Locally rank retained items by contribution to the question. Each has:
 - Relevant publication, event and revision dates, with reported versus original-source verification distinguished. Label in-window evidence, older context and undated leads; replies or revisions do not refresh original publication.
 - Available item-level engagement, its metric meaning, access provider and observation time. Missing counts differ from zero. For sampled discussion, preserve participant identities, parent context and selection or coverage limits; counts are not sentiment.
 
-Keep source origin distinct from access provider and source claims distinct from collector interpretation. Return the handoff location and material gaps.
+Keep source origin, discovery provider and access provider distinct, and source claims distinct from collector interpretation. Return the handoff location and material gaps.
