@@ -169,7 +169,8 @@ class RosterIsCompleteTest(unittest.TestCase):
             for descriptor in runner.surface_descriptors(adapter_id)
         )
 
-        self.assertEqual(len(reachable), len(set(reachable)))
+        self.assertEqual({route for route in reachable if reachable.count(route) > 1},
+                         {transport.WEB_PAGE_OPEN_ROUTE})
         for route_id in reachable:
             with self.subTest(route=route_id):
                 self.assertIn(route_id, budgets)

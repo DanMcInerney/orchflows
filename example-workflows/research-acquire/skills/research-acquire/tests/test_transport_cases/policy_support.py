@@ -90,7 +90,10 @@ def sent_and_answered(route_id, params=None):
     request = transport.build_transport_request(
         route_id, dict(helpers.probe_params(route_id), **(params or {}))
     )
-    with mock.patch.object(urllib.request, "urlopen", recorder):
+    public = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+    with mock.patch.object(urllib.request, "urlopen", recorder), \
+            mock.patch.object(urllib.request, "build_opener", return_value=mock.Mock(open=recorder)), \
+            mock.patch.object(socket, "getaddrinfo", return_value=public):
         answered = transport.urlopen_read(request)
     return answered, recorder.requests[0]
 

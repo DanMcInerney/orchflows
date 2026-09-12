@@ -145,7 +145,7 @@ def can_address(record: schema.AcquisitionRecord, adapter_id: str, operation: st
                 and len(parts) in (4, 5) and parts[0] == "r" and parts[2] == "comments"
                 and parts[1].replace("_", "").isalnum() and parts[3].isalnum())
     return (adapter_id == "open_page" and operation == ""
-            and record.representation_kind == "index"
+            and record.representation_kind in ("index", "feed")
             and address.scheme == "https" and bool(address.hostname))
 
 

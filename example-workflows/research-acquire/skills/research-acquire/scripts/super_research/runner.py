@@ -479,7 +479,8 @@ def run_step(
             # origin answered the read it cost — a refused activation did —
             # and that answer is what the ledger bills.
             page = build_native_page(
-                descriptor,
+                next((surface for surface in surface_descriptors(step.adapter_id)
+                      if surface.route_id == error.route_id), descriptor),
                 (),
                 outcome="failed",
                 loss=(error.loss,),

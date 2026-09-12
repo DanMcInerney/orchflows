@@ -254,7 +254,7 @@ class FeedPageOneCallOnePageTest(unittest.TestCase):
 
         self.assertEqual([route for route in reachable if route not in budgets], [])
         self.assertEqual(len(reachable), len(set(reachable)))
-        self.assertEqual(len(reachable), 5)
+        self.assertEqual(len(reachable), 6)
 
     def test_the_second_selection_is_paced_rather_than_refused(self):
         clock = helpers.FakeClock()

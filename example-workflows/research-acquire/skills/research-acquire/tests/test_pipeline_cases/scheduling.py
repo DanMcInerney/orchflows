@@ -210,7 +210,10 @@ class BurstAndCooldownTest(unittest.TestCase):
         self.assertIn(str(transport.RATE_LIMITED_STATUS), said)
 
     def test_no_package_module_can_become_a_different_client(self):
-        self.assertEqual(sources_naming(IDENTITY_ROTATION_NAMES, package_sources()), [])
+        self.assertEqual(sources_naming(IDENTITY_ROTATION_NAMES, package_sources()),
+                         [("transport.py", "build_opener")])
+        # The one exception installs only a redirect policy, not a new
+        # identity. Its actual handlers are checked in test_public_feeds.
         identities = {
             value
             for route_id in transport.ROUTE_CONSTANTS

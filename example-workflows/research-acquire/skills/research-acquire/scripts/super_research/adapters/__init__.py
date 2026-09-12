@@ -196,6 +196,16 @@ class NativePage:
     loss: Tuple[str, ...] = ()
 
 
+def open_read_descriptor(adapter_id: str, representation_kind: str, adapter_version: str = "1") -> AdapterDescriptor:
+    """Shared declaration for parsers using the same public-document HTTP route."""
+    return AdapterDescriptor(
+        adapter_id=adapter_id, adapter_version=adapter_version, access_class="K0",
+        route_id=transport.WEB_PAGE_OPEN_ROUTE, platform="web",
+        native_identity_namespace="", representation_kind=representation_kind,
+        operator_identity="open_web", min_interval_ms=2000, burst=1, page_size=1,
+    )
+
+
 def build_native_page(
     descriptor: AdapterDescriptor,
     records: Tuple[NativeRecord, ...],
@@ -245,7 +255,14 @@ def fetch_one_page(
     of its own.
     """
 
-    response = carrier.fetch(transport.build_transport_request(descriptor.route_id, params))
+    try:
+        response = carrier.fetch(transport.build_transport_request(descriptor.route_id, params))
+    except transport.TransportError as error:
+        # Keep the selected surface when an adapter's first descriptor names
+        # another route. Loss and origin accounting stay the transport's.
+        if not error.route_id:
+            error.route_id = descriptor.route_id
+        raise
     if response.channel_verdict == transport.NETWORK_INTERCEPTED:
         return build_native_page(
             descriptor,

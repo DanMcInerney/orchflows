@@ -1,7 +1,7 @@
 {
   "name": "social-search",
-  "version": "0.4.0",
-  "description": "Composable site searches with parallel workers and one final evidence reviewer.",
+  "version": "0.5.0",
+  "description": "Composable web, feed and community research with one final evidence reviewer.",
   "author": {
     "name": "Dan McInerney"
   },

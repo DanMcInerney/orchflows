@@ -42,7 +42,7 @@ class ReviewManifestTest(unittest.TestCase):
     def test_an_unwindowed_step_is_named_only_where_the_origin_would_have_bounded_it(self):
         """The 2026-08-17 news case, and the false positive it used to carry.
 
-        `web_search` pushes Google News `when:` server-side, so omitting the
+        `web_search` pushes Google News date bounds server-side, so omitting the
         window there is strictly wasteful. `prediction_markets` does not, and
         an unwindowed markets step is ordinarily deliberate — open markets
         closing next year are the point. Warning about both trained a reader

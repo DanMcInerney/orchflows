@@ -17,7 +17,7 @@ News publishes the same shape for its news index (``news/search?format=rss``,
 ten to fourteen items measured across queries, each ``<link>`` wrapped in
 ``news/apiclick.aspx?...&url=<percent-encoded publisher>`` and unwrapped here,
 plus ``<News:Source>``); and Google News publishes an RSS search
-(``rss/search?q=<q>+when:30d&hl=en-US&gl=US&ceid=US:en``, one hundred items in
+(``rss/search?q=<q>&hl=en-US&gl=US&ceid=US:en``, one hundred items in
 131 KB, each ``<link>`` an opaque redirect on Google's own origin, each
 ``<source url=>`` naming the publisher). All three answered 200 today.
 
@@ -46,7 +46,7 @@ ask it to allocate a gigabyte.
 
 from __future__ import annotations
 
-import urllib.parse, email.utils
+import urllib.parse, email.utils, re
 from html.parser import HTMLParser
 from typing import List, Optional, Tuple, Dict
 
@@ -59,7 +59,7 @@ from . import (
     build_native_page,
     fetch_one_page,
 )
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 
 RSS_ROOT_TAG = "rss"
@@ -86,9 +86,6 @@ QUERY_PARAM = "q"
 BING_OFFSET_PARAM = "first"
 BING_FIRST_OFFSET = 1
 GOOGLE_LOCALE_PARAMS = (("hl", "en-US"), ("gl", "US"), ("ceid", "US:en"))
-GOOGLE_WHEN_OPERATOR = "when:"
-GOOGLE_WHEN_UNIT = "d"
-SECONDS_PER_DAY = 86400
 RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
@@ -355,18 +352,27 @@ def instant_moment(stamped: str) -> Optional[datetime]:
         return None
 
 
-def google_when_days(window_start: str, window_end: str) -> int:
-    """Return the whole days Google's relative ``when:`` should cover."""
+def google_date_query(query: str, request: AdapterRequest) -> str:
+    """The window owns dates, including all-time; quoted search text stays literal.
 
-    start = instant_moment(window_start) if window_start else None
-    if start is None:
-        return 0
-    end = instant_moment(window_end) if window_end else instant_moment(transport.utc_now_iso())
-    if end is None:
-        return 0
-    seconds = (end - start).total_seconds()
-    days = int(seconds // SECONDS_PER_DAY) + (1 if seconds % SECONDS_PER_DAY else 0)
-    return max(1, days)
+    Google's operators address days, while the core includes both endpoint
+    instants. Retrieve surrounding days conservatively and let the core apply
+    its precise filter once. Absolute bounds also preserve historical windows.
+    """
+
+    query = re.sub(
+        r'"(?:\\.|[^"\\])*"|(?<!\S)(?:after|before|when):\S+',
+        lambda match: match[0] if match[0].startswith('"') else "",
+        query,
+        flags=re.IGNORECASE,
+    ).strip()
+    start = instant_moment(request.window_start) if request.window_start else None
+    end = instant_moment(request.window_end) if request.window_end else None
+    if start is not None and start.date() > date.min:
+        query += " after:" + (start.date() - timedelta(days=1)).isoformat()
+    if end is not None and end.date() < date.max:
+        query += " before:" + (end.date() + timedelta(days=1)).isoformat()
+    return query.strip()
 
 
 def feed_params(
@@ -378,10 +384,7 @@ def feed_params(
         return {QUERY_PARAM: query, FORMAT_PARAM: RSS_FORMAT, BING_OFFSET_PARAM: request.cursor}
     if operation == BING_NEWS_OPERATION:
         return {QUERY_PARAM: query, FORMAT_PARAM: RSS_FORMAT}
-    days = google_when_days(request.window_start, request.window_end)
-    if days:
-        query = query + " " + GOOGLE_WHEN_OPERATOR + str(days) + GOOGLE_WHEN_UNIT
-    params = {QUERY_PARAM: query}
+    params = {QUERY_PARAM: google_date_query(query, request)}
     params.update(GOOGLE_LOCALE_PARAMS)
     return params
 

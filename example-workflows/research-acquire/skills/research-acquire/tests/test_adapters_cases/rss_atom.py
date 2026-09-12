@@ -35,21 +35,7 @@ def rss_atom_page(fixture, status=200, channel_id=FEED_CHANNEL_ID, module=None):
 
 
 class RssAtomReaderTest(unittest.TestCase):
-    """One parser over both syndication vocabularies, on one selected route.
-
-    The roster row's "generic" is the parser and not the route. The 2026-08-10 probes
-    measured one RSS/Atom document — `feeds/videos.xml?channel_id=`, 200, 39 KB,
-    0.35 s — and that is the one route this adapter declares. The RSS 2.0 half
-    of the row, enclosures and transcript links, is proven against a document of
-    that shape rather than against a route known to send one, which is a real
-    limit and is stated in `## Risks` rather than papered over.
-
-    The claim this half defends is that a generic reader stays generic. The
-    measured feed carries `media:statistics views=` in a vendor namespace, and
-    reading it would make this adapter quietly YouTube-aware — a second opinion
-    about a count `youtube_innertube` already reports, under a name this row
-    does not name. It is left where it is, and that is checked.
-    """
+    """RSS/Atom parsing and compatibility with the original YouTube feed route."""
 
     def test_an_atom_feed_yields_the_entries_it_listed(self):
         page, opener = rss_atom_page("youtube_channel_feed.xml")
@@ -237,7 +223,7 @@ class RssAtomReaderTest(unittest.TestCase):
 
 
 class RssAtomDescriptorTest(unittest.TestCase):
-    """One route, its measured cost, and the seam a second feed would use."""
+    """Legacy pacing and the shared route for caller-supplied feeds."""
 
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
         budget = runner.route_budgets()[transport.YOUTUBE_CHANNEL_FEED_ROUTE]
@@ -279,13 +265,10 @@ class RssAtomDescriptorTest(unittest.TestCase):
         self.assertEqual(len(page.records), 2)
         self.assertEqual(len(opener.opened), 1)
 
-    def test_one_route_today_and_the_seam_a_second_feed_would_arrive_through(self):
-        # A second measured feed is a second route constant and a second
-        # descriptor under this same id, reachable through `surface_descriptors`
-        # — not a second adapter and not a caller-supplied address.
+    def test_supplied_feeds_share_the_existing_open_read_route(self):
         self.assertEqual(
             [descriptor.route_id for descriptor in runner.surface_descriptors("rss_atom")],
-            [transport.YOUTUBE_CHANNEL_FEED_ROUTE],
+            [transport.YOUTUBE_CHANNEL_FEED_ROUTE, transport.WEB_PAGE_OPEN_ROUTE],
         )
 
     def test_the_code_for_a_missing_credential_is_declared_and_never_produced(self):

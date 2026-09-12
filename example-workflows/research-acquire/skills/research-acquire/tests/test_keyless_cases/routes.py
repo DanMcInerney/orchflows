@@ -44,12 +44,12 @@ class KeylessRosterTest(unittest.TestCase):
         # returns a token rather than a record, and only the composed carrier
         # spends it. This dispatch hands in a bare carrier, so no activation
         # goes out here at all; `test_transport` owns that half.
-        readable = sorted(
+        readable = sorted({
             surface.route_id
             for adapter_id in runner.ADAPTER_IDS
             for surface in runner.surface_descriptors(adapter_id)
             if surface.route_id not in transport.TOKEN_ACTIVATION_ROUTES
-        )
+        })
 
         self.assertEqual(len(roster_manifest().steps), 52)
         self.assertEqual(sorted(request.route_id for request in self.opener.opened), readable)

@@ -10,7 +10,9 @@ from __future__ import annotations
 import email.utils
 import gzip
 import io
+import ipaddress
 import json
+import socket
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -132,10 +134,11 @@ class TransportError(RuntimeError):
     activation did — so the ledger bills that call.
     """
 
-    def __init__(self, message: str, loss: str = UNREACHABLE, reached: bool = False) -> None:
+    def __init__(self, message: str, loss: str = UNREACHABLE, reached: bool = False, route_id: str = "") -> None:
         RuntimeError.__init__(self, message)
         self.loss = loss
         self.reached = reached
+        self.route_id = route_id
 
 
 @dataclass(frozen=True)
@@ -474,18 +477,55 @@ def declared_origin_hosts() -> Tuple[str, ...]:
 def open_read_refusal(url: str) -> str:
     """Why an open read is refused, or an empty string when admitted."""
 
-    parts = urllib.parse.urlsplit(url)
+    try:
+        parts = urllib.parse.urlsplit(url)
+        host = (parts.hostname or "").lower().rstrip(".")
+        port = parts.port
+    except ValueError:
+        return "an open read takes a valid public HTTPS address"
+    if any(ord(character) <= 32 or ord(character) == 127 for character in url):
+        return "an open read refuses whitespace and control characters in addresses"
     if parts.scheme != "https":
         return "an open read takes an https address, not " + repr(url)
-    host = (parts.hostname or "").lower()
     if not host:
         return "an open read takes an address naming a host, not " + repr(url)
+    if parts.username is not None or parts.password is not None or port not in (None, 443):
+        return "an open read refuses credentials and nonstandard ports"
+    if host == "localhost" or host.endswith((".localhost", ".local", ".internal")) or "." not in host:
+        return "an open read takes a public host, not " + repr(host)
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        pass
+    else:
+        if not address.is_global:
+            return "an open read refuses non-public IP addresses"
     if host in declared_origin_hosts():
         return (
             "an open read never lands on a host a declared route reads: {0}; ask that"
             " route".format(host)
         )
     return ""
+
+
+def _validate_open_destination(url: str) -> None:
+    """Check the actual destination before an open read or redirect reaches it."""
+    refusal = open_read_refusal(url)
+    if refusal:
+        raise TransportError(refusal)
+    host = urllib.parse.urlsplit(url).hostname
+    try:
+        answers = socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+    except OSError as error:
+        raise TransportError("could not resolve the open-read host") from error
+    if not answers or any(not ipaddress.ip_address(answer[4][0]).is_global for answer in answers):
+        raise TransportError("an open read refuses hosts resolving to non-public addresses")
+
+
+class _PublicReadRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _validate_open_destination(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 def build_transport_request(
@@ -632,10 +672,9 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
                 request.method, request.route_id
             )
         )
-    if is_open_route(route_constant(request.route_id)):
-        refusal = open_read_refusal(request.url)
-        if refusal:
-            raise TransportError(refusal)
+    open_route = is_open_route(route_constant(request.route_id))
+    if open_route:
+        _validate_open_destination(request.url)
     token_route_id = route_constant(request.route_id).token_route_id
     if token_route_id and not GUEST_TOKENS.token_for(token_route_id):
         raise TransportError(
@@ -653,8 +692,10 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
     headers = tokened_headers(credentialed_headers(request.headers, credential), token_route_id)
     for name, value in headers:
         outbound.add_header(name, value)
+    opener = (urllib.request.build_opener(_PublicReadRedirect()).open
+              if open_route else urllib.request.urlopen)
     try:
-        with urllib.request.urlopen(outbound, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+        with opener(outbound, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             return (
                 response.status,
                 decoded_body(response.read(MAX_RESPONSE_BYTES), response.headers),

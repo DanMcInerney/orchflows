@@ -299,7 +299,10 @@ class SecondSurfaceIsPacedTest(unittest.TestCase):
         # being counted twice.
         self.assertIn(transport.HN_ALGOLIA_SEARCH_ROUTE, budgets)
         self.assertIn(transport.GITHUB_SEARCH_ROUTE, budgets)
-        self.assertEqual(len(reachable), len(set(reachable)))
+        # Feed and document parsers deliberately share the open HTTP route;
+        # route_budgets above rejects any disagreement about its pacing.
+        self.assertEqual({route for route in reachable if reachable.count(route) > 1},
+                         {transport.WEB_PAGE_OPEN_ROUTE})
 
     def test_a_search_on_the_second_surface_is_paced_and_never_refused(self):
         governor, opener, _ = self._paced(

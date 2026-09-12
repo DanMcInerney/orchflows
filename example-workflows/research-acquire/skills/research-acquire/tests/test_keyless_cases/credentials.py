@@ -65,6 +65,9 @@ class EnvironmentIsEmptyTest(unittest.TestCase):
             for path in package_sources()
             for name in CREDENTIAL_STORE_NAMES
             if name in path.read_text(encoding="utf-8")
+            # The transport's sole custom opener adds a public-redirect
+            # guard; test_public_feeds verifies its handlers carry no auth.
+            if not (path == PACKAGE_DIR / "transport.py" and name == "build_opener")
         )
 
         self.assertEqual(found, [])

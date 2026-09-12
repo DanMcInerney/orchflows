@@ -176,7 +176,7 @@ budget and never a record. Read back off `dispatch.surface_descriptors`.
 | `instagram_public` | `K1` | `instagram_web_profile` | `web_profile_info`: biography, follower count, recent posts with like and comment counts |
 | `hacker_news` | `K0` | `hn_algolia_search`, `hn_firebase_item`, `hn_algolia_item` | Algolia search for stories and comments, Firebase v0 item and `kids` traversal, and one Algolia call returning a story's whole comment tree. Search asks `typoTolerance=false` |
 | `github_rest` | `K0` | `github_rest`, `github_search` | anonymous repositories, issues, releases, search |
-| `rss_atom` | `K0` | `youtube_channel_feed` | one generic RSS 2.0 and Atom parser: identity, dates, enclosures, transcript links |
+| `rss_atom` | `K0` | `youtube_channel_feed`, `web_page_open` | supplied public HTTPS feed URL or YouTube channel ID: RSS 2.0/Atom title, prose, original link, publication and separate modification, feed provenance, enclosures and transcript links |
 | `prediction_markets` | `K0` | `polymarket_gamma`, `kalshi_markets`, `manifold_markets` | Polymarket search, events and markets, Kalshi's open markets and events, Manifold search; prices and volumes ride as the exact decimal strings each API wrote |
 | `stocktwits` | `K0` | `stocktwits_symbol_stream`, `stocktwits_symbol_search` | one ticker's message stream with `likes.total` and the poster's `Bullish`/`Bearish` label, and symbol lookup |
 | `gdelt` | `K4` | `gdelt_doc` | GDELT DOC 2.0's global news index: article hits with `url`, `title`, `seendate` and `domain`, bounded at the origin by `startdatetime`/`enddatetime` |
@@ -187,8 +187,10 @@ budget and never a record. Read back off `dispatch.surface_descriptors`.
 | `oembed` | `K0` | `youtube_oembed`, `vimeo_oembed`, `spotify_oembed`, `soundcloud_oembed`, `tiktok_oembed`, `x_publish_oembed` | one platform URL hydrated into the item's own author, title and thumbnail through the platform's documented oEmbed endpoint; no date and no counts, both typed |
 | `fake` | `offline` | `fake_offline` | deterministic fixture pages, never live evidence |
 
-A second feed for `rss_atom` is a second route constant in
-`super_research.routes`, never a caller-supplied address.
+`rss_atom` reads a supplied URL through the shared open-page transport and host
+budget; YouTube channel-feed URLs retain their dedicated route. It does not
+search feeds or infer archive pagination. Publication dates may be unknown;
+`updated` never makes an entry newly published. See [feed inputs and coverage](selection-routes.md#feeds).
 
 No keyless read-only route exists for Instagram comments and feeds beyond the
 one profile surface, Threads, Pinterest, Facebook, Truth Social, TikTok

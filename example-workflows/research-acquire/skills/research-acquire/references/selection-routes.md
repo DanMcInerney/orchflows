@@ -40,6 +40,23 @@ depth operation `""`, using carried HTTPS locators. Open-page policy refuses
 hosts a declared route reads and unsafe addresses; it cannot bypass a platform
 refusal. Search snippets are not page bodies.
 
+## Feeds
+
+`rss_atom` discovery takes one caller-supplied public HTTPS feed URL as its
+query. Add one bounded step per selected feed; no feed registry or automatic
+feed discovery is implied. A bare YouTube channel ID or its channel-feed URL
+uses the existing YouTube feed route. Other URLs use the shared open-page
+transport policy, including host budgets, safe redirects and refusal of
+declared platform hosts.
+
+RSS 2.0 and Atom entries carry title, available prose, original item link,
+publication time, and `feed_url`/`final_feed_url` provenance. Atom `updated`
+is retained as `modified_at`, never substituted for missing publication.
+The core filters known publication times to the requested window; undated
+entries remain explicitly incomplete. Feeds expose publisher-selected slices,
+not complete historical coverage, and this operation does not follow pagination.
+Selected linked articles may use the existing `open_page` depth operation.
+
 ## X
 
 `x_xcancel` discovery `search:<words>` and depth `status` use public HTML; a

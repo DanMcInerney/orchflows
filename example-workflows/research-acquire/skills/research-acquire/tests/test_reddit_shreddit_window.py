@@ -10,7 +10,7 @@ cap in-window at the origin rather than trimming it after the fact.
 
 Reddit's `t=` is a span measured back from *now*, never from an explicit
 endpoint, so `origin_time_bucket` reads the real wall clock
-(`transport.utc_now_iso`) exactly as `web_search.google_when_days` does when
+(`transport.utc_now_iso`) when
 its own `window_end` is absent. The pure-function tests below build `window_start`
 from the same wall clock at call time and land each case a full bucket away
 from its nearest boundary (30 minutes inside "hour", not 55; 10 days inside

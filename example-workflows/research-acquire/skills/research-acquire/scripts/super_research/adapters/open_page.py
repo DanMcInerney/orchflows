@@ -34,12 +34,12 @@ from typing import Tuple, Any, Dict, List, Mapping, Optional, Sequence
 
 from .. import transport, schema
 from . import (
-    AdapterDescriptor,
     AdapterRequest,
     NativePage,
     NativeRecord,
     build_native_page,
     fetch_one_page,
+    open_read_descriptor,
 )
 import json
 from datetime import datetime, timezone
@@ -415,25 +415,7 @@ def unreadable_record(
     )
 
 
-DESCRIPTOR = AdapterDescriptor(
-    adapter_id="open_page",
-    adapter_version="1",
-    access_class="K0",
-    route_id=transport.WEB_PAGE_OPEN_ROUTE,
-    platform="web",
-    # A document has no platform-native id anywhere: its identity is its
-    # address, which is what the weak grouping key is built on.
-    native_identity_namespace="",
-    representation_kind="page",
-    operator_identity="open_web",
-    # No measured ceiling: every host is a different origin and none of them
-    # has been measured, so this is the protocol's conservative default made
-    # explicit. The governor paces this route per host rather than per route,
-    # so one publisher's page never waits on another's.
-    min_interval_ms=2000,
-    burst=1,
-    page_size=1,
-)
+DESCRIPTOR = open_read_descriptor("open_page", "page")
 
 NATIVE_ORDER = "web_page_document_order"
 PAGE_KIND = "web_page"
