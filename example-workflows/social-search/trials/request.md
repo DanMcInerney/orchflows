@@ -8,4 +8,4 @@ Run from an unrelated project using the installed home libraries.
 
 Replace the explicit publication window when testing another period. These trial bounds are caller requirements, not workflow defaults. They count native operations, not underlying network attempts, and do not promise cancellation of an already admitted read.
 
-Also exercise search-site independently on a named domain and rank-evidence on compatible saved evidence. Supply suitable bounds for those requests.
+Also exercise search-site alone on YouTube with the transcript reader installed, and rank-evidence on compatible saved evidence. Supply suitable bounds for those requests.
