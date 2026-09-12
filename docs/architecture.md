@@ -1,17 +1,17 @@
 # Architecture
 
-Every word in a skill, workflow, guidance file or doc fights for its life.
-
 ## Two primitives
 
 - [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
-Every other agent is launched through these two. The host runs agents; orchflows adds no agent runtime, scheduler or workflow language. A workflow is a `SKILL.md` that loads other skills into the current context and delegates through the primitives. A larger workflow composes smaller ones and adds only what it owns. Loading another skill does not launch another coordinator.
+Every other agent is launched through these two. The host runs agents; orchflows adds no agent runtime, scheduler or workflow language. A workflow is a `SKILL.md` that loads other skills into the current context and delegates through the primitives. A larger workflow composes smaller ones and adds only what it owns. Loading a skill applies its instructions to the caller; the parent supplies each child's assignment and context. Loading does not launch an agent.
+
+Choose planning, delegation and isolation from unknowns, dependencies and possible edit conflicts, not task-size labels. Run independent work concurrently.
 
 ## Where things live
 
-Write the least prescription that produces the result now; each model release lets you delete more.
+Give each instruction and mechanism one owner; reference shared facts. README introduces the library to users; docs and guidance address agents.
 
 | Thing | Lives in | Owner |
 | --- | --- | --- |
@@ -22,21 +22,23 @@ Write the least prescription that produces the result now; each model release le
 | deterministic mechanics: fetch, parse, bound, resume | `skills/<skill>/scripts/`, tests beside them; core `scripts/` for the CLI | the library providing the mechanism |
 | source knowledge | library guidance; operational notes in `references/` | the library using that source |
 | host facts | [hosts.md](hosts.md) | core host documentation |
-| built-ins | core `skills/orch-*/`; that name is reserved | orchflows developers |
+| built-ins | core `skills/orch-*/`; the prefix is reserved | orchflows developers |
 | custom workflows | `~/.orchflows/libraries/<lib>/skills/<workflow>/`; `personal` unless the caller names a library or repository | the user |
 | outputs | the caller's workspace, never a package | each run |
 
-One-off criteria stay in the prompt. Defaults belong to the caller: no default window, source, model, effort or path.
+Request defaults belong to the caller: window, source, model, effort and output location.
 
 ## Guidance selection
 
-A guidance file has `## Make` and `## Review` sections, either omitted when empty. The maker and reviewer read and apply their respective sections. This section owns the selection rule; workflows name the domains they need.
+Guidance adds preferences and local criteria to the assignment; it need not restate general competence. A file has `## Make` and `## Review` sections, either omitted when empty. Apply Make when producing work and Review when assessing it. Workflows name the domains they need; select `orchflows` for authoring workflows, guidance or libraries. A domain being extended is source material for its author.
 
 Select independent names, for example `writing`, `visual-design`, `short-video.marketing`. Dots specialize within a domain: for each name, visit its prefixes from general to specific, reading core then the selected libraries in caller-supplied order at each specificity. Thus `short-video.marketing` considers `short-video.md` before `short-video.marketing.md` in each package's `guidance/`. Library-only domains are valid. More specific guidance wins within its domain; independent domains compose without replacing one another. Keep each resolved file once, in first-use order.
 
 Missing implicit parents are fine. An explicitly selected name must exist in at least one selected package; report a missing selection as a gap and block work that requires it. For an unfamiliar site or genre, select applicable general guidance instead of inventing a missing specialization.
 
-Resolve these files and package dependencies once at the outer entrypoint, including a leaf invoked alone. Use available native skills or supplied package roots; a configured home also provides [CLI resolution](home.md). Pass concrete absolute paths and request context to composed skills and primitives. Reuse that context; extend it only for newly introduced dependencies. Profiles may supply additional names and package roots. No guidance inheritance graph or repeated resolution is needed in children.
+Resolve these files and package dependencies once at the outer entrypoint, including a leaf invoked alone. Use available native skills or supplied package roots; a configured home also provides [CLI resolution](home.md). Pass concrete absolute paths and request context to composed skills and primitives. Reuse that context; extend it only for newly introduced dependencies.
+
+A selected library can supply removable model corrections under the same domain names. Selection is explicit and normal specificity still applies; model names do not belong in the domain hierarchy.
 
 ## Three roots
 
@@ -73,4 +75,4 @@ The optional `example-workflows/social-search` library has three skills: `search
 - A skill names a script, its inputs and its result, never its internals.
 - Declare the agent count; extra reviews, loops or repairs only when the request asks.
 - Gaps stay visible; missing work is never no-results evidence.
-- Behavior is established by a trial on a real bounded request, not by valid frontmatter. [orch-build-workflow](../skills/orch-build-workflow/SKILL.md) composes existing skills, authors what is missing and simplifies from observed behavior. An unexercised failure path is untested, not evidence that its handling is unnecessary.
+- Behavior is established by a trial on a real bounded request, not by valid frontmatter. An unexercised failure path is untested, not evidence that its handling is unnecessary.

@@ -1,1 +1,1 @@
-`docs/architecture.md`: how orchflows fits together, where anything belongs. `docs/home.md`: paths, setup, update. `docs/hosts.md`: isolation, plugin registration. `docs/history.md`: agent transcripts.
+`docs/architecture.md`: contracts and file placement. `guidance/<domain>.md`: preferences for making or reviewing domain work; `guidance/orchflows.md` for authoring workflows, guidance or libraries. `docs/home.md`: paths, setup, update. `docs/hosts.md`: isolation and plugin registration. `docs/history.md`: agent transcripts.

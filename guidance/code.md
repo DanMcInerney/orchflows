@@ -2,14 +2,12 @@
 
 ## Make
 
-Start from observable behavior and the interfaces callers already use. Trace the relevant path before changing it; preserve compatibility unless the requested change intentionally alters it. Make failure behavior as deliberate as the happy path, especially at input, permission, persistence and concurrency boundaries.
+Prefer code files below roughly 500 lines; split longer changed files at coherent responsibility boundaries when this improves the design. Give each behavior one owner. Use a maintained dependency when it simplifies the implementation.
 
-Prefer the smallest coherent change that fits the surrounding code. Keep ownership and data flow easy to follow. Introduce an abstraction when it removes a recurring source of mistakes. Treat dependencies, migrations and generated output as part of the change.
-
-Check behavior where a user or caller can observe it. A useful regression test fails for the original defect and survives reasonable refactoring. Exercise the relevant integration and failure paths; distinguish checks actually run from assumptions. Explain material tradeoffs or migration needs.
+Design tests to run independently and in parallel, with isolated state and fixtures. Test observable behavior rather than implementation structure.
 
 ## Review
 
-Look first for incorrect outcomes, security defects, data loss, broken callers and regressions. Follow a concrete input through the changed behavior; inspect both successful and unsuccessful cases. Check whether tests can detect the claimed defect rather than merely echoing the implementation.
+Look for coherent splits in oversized changed files, duplicated ownership, and tests coupled through shared state or execution order. Treat file size as a design preference, not an automatic refactoring requirement.
 
-Assess maintainability through likely changes: can a reader find the owner of a behavior and modify it without coordinating scattered copies? Identify defects with a location, trigger and consequence. Separate correctness findings from optional style preferences, and account for what the available checks leave unobserved.
+Before reporting, enumerate all findings and make a second pass for shared causes. Report only high-impact findings or the smallest structural changes that resolve several findings together, supported by concrete consequences.
