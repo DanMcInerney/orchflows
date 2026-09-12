@@ -30,7 +30,7 @@ Request defaults belong to the caller: window, source, model, effort and output 
 
 ## Guidance selection
 
-Guidance adds preferences and local criteria to the assignment; it need not restate general competence. A file has `## Make` and `## Review` sections, either omitted when empty. Apply Make when producing work and Review when assessing it. Workflows name the domains they need; select `orchflows` for authoring workflows, guidance or libraries. A domain being extended is source material for its author.
+Guidance adds preferences and local criteria to the assignment. A file has `## Make` and `## Review` sections, either omitted when empty. Apply Make when producing work and Review when assessing it. Workflows name the domains they need; select `orchflows` for authoring workflows, guidance or libraries. A domain being extended is source material for its author.
 
 Select independent names, for example `writing`, `visual-design`, `short-video.marketing`. Dots specialize within a domain: for each name, visit its prefixes from general to specific, reading core then the selected libraries in caller-supplied order at each specificity. Thus `short-video.marketing` considers `short-video.md` before `short-video.marketing.md` in each package's `guidance/`. Library-only domains are valid. More specific guidance wins within its domain; independent domains compose without replacing one another. Keep each resolved file once, in first-use order.
 

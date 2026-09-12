@@ -1,5 +1,7 @@
 # Orchflows guidance review — 12 September 2026
 
+Historical research and recommendations, not current instructions. Current contracts: [architecture](../docs/architecture.md).
+
 **Keep the Make/Review structure, but tighten what it contains.** The strongest candidates for deletion are generic competence reminders and repeated process instructions. The strongest candidates for retention are consequential distinctions, explicit preferences and criteria that make a result assessable. A mandatory vocabulary section is not supported by the evidence. Your concern about `principles.md` is justified: my previous draft still includes general code advice that does not explain an Orchflows design decision.
 
 These are evidence-informed recommendations, not demonstrated improvements to Orchflows. No comparative runs of our guidance were performed. Neither popularity nor a literature review can establish that we have the “best” instructions.
