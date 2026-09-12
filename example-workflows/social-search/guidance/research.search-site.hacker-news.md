@@ -2,4 +2,4 @@
 
 ## Make
 
-Separate the linked article from the submission. Sentiment needs actual comments with parent context. Story-date filters can miss recent comments on older stories; story points are not comment scores.
+Story-date filters can miss recent comments on older stories. Story points belong to the submission, not its linked article or individual comments.

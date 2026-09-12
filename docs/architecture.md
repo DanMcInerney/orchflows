@@ -36,7 +36,7 @@ Select independent names, for example `writing`, `visual-design`, `short-video.m
 
 Missing implicit parents are fine. An explicitly selected name must exist in at least one selected package; report a missing selection as a gap and block work that requires it. For an unfamiliar site or genre, select applicable general guidance instead of inventing a missing specialization.
 
-Resolve these files and package dependencies once at the outer entrypoint, including a leaf invoked alone. Use available native skills or supplied package roots; a configured home also provides [CLI resolution](home.md). Pass concrete absolute paths and request context to composed skills and primitives. Reuse that context; extend it only for newly introduced dependencies.
+Resolve these files and package dependencies once at the outer entrypoint, including a leaf invoked alone. Use available native skills or supplied package roots; a configured home also provides [CLI resolution](home.md). Pass the resolved absolute paths unchanged, with request context, to composed skills and primitives. Reuse that context; extend it only for newly introduced dependencies.
 
 A selected library can supply removable model corrections under the same domain names. Selection is explicit and normal specificity still applies; model names do not belong in the domain hierarchy.
 
@@ -68,7 +68,7 @@ Identity is `<library>:<skill>`. Links stay inside the package; other packages a
 
 ## Reference: social-search
 
-The optional `example-workflows/social-search` library has three skills: `search-site` launches one orch-work for a bounded collection scope, `rank-evidence` one orch-review, and `social-search` composes them. A scope can be a site, web domains or a feed set. Source knowledge and the evidence handoff belong to its `research.search-site` guidance; deterministic acquisition belongs to the separate `research-acquire` library. The installed core has five skills; example libraries are separate packages, not built-ins.
+The optional `example-workflows/social-search` library has three skills: `search-site` launches one orch-work for a bounded collection scope, `rank-evidence` one orch-review, and `social-search` composes them. A scope can be a site, web domains or a feed set. Its shared evidence reference defines handoffs; `research.search-site` guidance adds domain preferences. Deterministic acquisition belongs to the separate `research-acquire` library. The installed core has five skills; example libraries are separate packages, not built-ins.
 
 ## Invariants
 

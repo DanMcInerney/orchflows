@@ -1,6 +1,6 @@
 # Forward trial
 
-Run a stable candidate from an unrelated project using the installed home libraries. Use the ordinary request below; the skill supplies its own agent composition.
+Run a stable candidate from an unrelated project using installed libraries or supplied package roots. Give the runner only the ordinary request and an output location; keep [expected behavior](expected-behavior.md) separate.
 
 > Use social-search to examine friction developers report when adopting uv for Python project and dependency management. Use Hacker News participant discussion and GitHub issues or discussions in astral-sh/uv. Include material published from 2026-08-12 through 2026-09-11, preserving older context separately. Distinguish firsthand reports, maintainer explanations and unresolved claims. Return a concise globally ranked, cited assessment with coverage limits.
 >
@@ -8,4 +8,8 @@ Run a stable candidate from an unrelated project using the installed home librar
 
 Replace the explicit publication window when testing another period. These trial bounds are caller requirements, not workflow defaults. They count native operations, not underlying network attempts, and do not promise cancellation of an already admitted read.
 
-Also exercise search-site alone on YouTube with the transcript reader installed, and rank-evidence on compatible saved evidence. Supply suitable bounds for those requests.
+Exercise the leaves separately:
+
+> Use search-site to find what uv's maintainers say about adoption in public YouTube videos. Use the available transcript reader, inspect at most two videos and spend at most four search/read targets. Save a bounded evidence handoff in the supplied output directory.
+
+> Use rank-evidence on the supplied saved handoffs to assess reported uv adoption friction. Make no new collection calls. Save a concise cited assessment in the supplied report directory.

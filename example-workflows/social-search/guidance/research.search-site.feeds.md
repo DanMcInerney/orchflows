@@ -2,6 +2,4 @@
 
 ## Make
 
-Collect the supplied feed URL set within one assignment's bounds. Preserve the feed URL and each entry's original link; a feed's build time or an entry's update time does not establish publication time. Filter by the requested date meaning and retain unknown dates as a gap.
-
-A feed may expose only its latest entries. State that retention limit instead of claiming historical coverage or treating rolled-off entries as absent. Report each feed's outcome, including inaccessible or empty feeds. Distinguish summaries from full content, and inspect linked pages for claims the feed does not contain.
+Preserve feed and entry URLs and each feed's outcome. Build and entry-update times do not establish publication. Feeds expose a publisher-selected slice, often only recent entries; rolled-off entries are not evidence of absence. Follow entry links when the requested claim needs more than the feed summary.
