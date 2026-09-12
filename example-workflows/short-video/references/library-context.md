@@ -9,6 +9,6 @@ Use available native skills or caller-supplied package roots. For a configured h
 <python> <cli> resolve <library> --resource <relative-path> --home <home>
 ```
 
-Select independent `writing`, `visual-design` and `short-video` guidance; for marketing, select `short-video.marketing` as the video specialization. Include this library and any caller-supplied profile names and package roots. Profiles add product facts and specialized criteria while retaining the other domains. Pass the resolved guidance paths, primitives, brief, assets and output locations through composed skills and children.
+Select independent `writing`, `visual-design` and `short-video` guidance; for marketing, select `short-video.marketing` as the video specialization. Include this library and any caller-supplied guidance names and package roots. Pass the resolved guidance paths, primitives, brief, assets and output locations through composed skills and children.
 
 Choose unspecified creative settings for this brief. Use the caller's output directory or a task directory in its workspace, with separate locations for different films. Required missing skills, guidance or rendering capabilities are explicit blockers; missing playback/listening limits the review. An absent home runtime alone does not block native skills with resolved resources.
