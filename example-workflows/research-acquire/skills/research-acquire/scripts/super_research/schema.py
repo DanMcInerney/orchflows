@@ -11,8 +11,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Mapping, Sequence, Tuple
 
-MANIFEST_SCHEMA_VERSION = 2
-
 # The one spelling every instant in this package is written in, owned here
 # because this is the module that validates. `ordering.instant_seconds` parses
 # with it and returns nothing for anything else, so an `as_of` this module
@@ -21,20 +19,15 @@ MANIFEST_SCHEMA_VERSION = 2
 # total validation is one that catches that here rather than nowhere.
 INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
-# A `staged` manifest round-trips through the caller between discovery and
-# hydration; a `fused` manifest collapses that latency without collapsing
-# lineage. Both emit discovery and hydration as distinct linked records.
-ACQUISITION_MODES = ("staged", "fused")
-
 STEP_KINDS = ("discovery", "hydration")
 
 # Ordered by severity for `reduce_outcomes`; a usable record never hides a
 # failure and a failure never erases a usable record.
 OUTCOMES = ("ok", "empty", "partial", "failed", "refused")
 
-# Preference order, not authority order. K0-K4 need no user-supplied credential;
-# K1 may use a public client credential. `offline` is for fixtures.
-ACCESS_CLASSES = ("K0", "K1", "K2", "K3", "K4", "K5", "offline")
+# Preference order, not authority order. No class needs a user-supplied
+# credential; K1 may use a public client credential. `offline` is for fixtures.
+ACCESS_CLASSES = ("K0", "K1", "K2", "K3", "K4", "offline")
 
 REPRESENTATION_KINDS = ("index", "native", "page", "feed", "transcript")
 
@@ -46,7 +39,7 @@ GROUP_KEY_KINDS = ("strong", "weak", "ungrouped")
 
 MAX_ENGAGEMENT_VALUE = 2 ** 63 - 1
 
-MANIFEST_KEYS = ("schema_version", "manifest_id", "mode", "as_of", "steps")
+MANIFEST_KEYS = ("manifest_id", "as_of", "steps")
 STEP_KEYS = (
     "step_id",
     "kind",
@@ -87,18 +80,6 @@ class AcquisitionStep:
     prior_step_id: str = ""
     selected_hits: Tuple[SelectedHit, ...] = ()
     max_items: int = 0
-    # How many pages this step wants, where it wants a particular number. Zero
-    # is the ordinary case: the step named none, and `runner.MAX_PAGES_PER_STEP`
-    # — the core's backstop against an origin that never stops offering — is
-    # the only page bound it has. A number here is the caller's own bound, like
-    # `max_items`: reaching it is the step finishing rather than a recall cut
-    # short, and it only ever lowers the count, because the backstop still
-    # stops a step that declared more than the core will spend.
-    #
-    # No `STEP_KEYS` entry names it, so no manifest can set one. The caller
-    # that declares a bound is this package's own smoke, in process, where one
-    # read is the whole of what a liveness check is authorized to cost.
-    max_pages: int = 0
     # The window this step's records must fall in, as two instants in
     # `INSTANT_FORMAT`, either or both empty. A dated record outside it is
     # dropped by the core before the cap counts it, so the cap is spent on
@@ -113,10 +94,8 @@ class AcquisitionStep:
 @dataclass(frozen=True)
 class AcquisitionManifest:
     manifest_id: str
-    mode: str
     as_of: str
     steps: Tuple[AcquisitionStep, ...]
-    schema_version: int = MANIFEST_SCHEMA_VERSION
 
 
 @dataclass(frozen=True)
@@ -211,9 +190,8 @@ class StepResult:
     ``kind`` and ``query`` are the step's own two, echoed here because an
     artifact carries steps and not the manifest they came from. Without them a
     reader asking what a step *was* has only the records to go on, and every
-    answer read off record shape is a guess: `coverage.review_artifact` told a
-    caller holding 57 comment records that nothing had deepened anything,
-    because the shape it inspected could not say that a `next:` step had run.
+    answer read off record shape is a guess — a comment's shape cannot say
+    that a `next:` step ran.
     """
 
     step_id: str
@@ -226,7 +204,7 @@ class StepResult:
     loss: Tuple[str, ...] = ()
     warnings: Tuple[str, ...] = ()
     # Last and defaulted, for `attributes`' reason above: `dataclasses.asdict`
-    # is how an artifact crosses a ticket, so an additive field reaches every
+    # is how an artifact leaves the process, so an additive field reaches every
     # reader while a reordered one breaks any caller that constructs positionally.
     # Empty is the one thing an emitted `kind` never is — `_parse_step` refuses
     # a step whose kind is absent or outside `STEP_KINDS` — so an empty `kind`
@@ -244,7 +222,6 @@ class StepResult:
 class AcquisitionArtifact:
     artifact_id: str
     manifest_id: str
-    mode: str
     as_of: str
     records: Tuple[AcquisitionRecord, ...]
     steps: Tuple[StepResult, ...]
@@ -369,19 +346,7 @@ def parse_manifest(payload: Any) -> AcquisitionManifest:
     mapping = _require_mapping(payload, "manifest")
     _reject_unknown_keys(mapping, MANIFEST_KEYS, "manifest")
 
-    schema_version = mapping.get("schema_version")
-    if schema_version != MANIFEST_SCHEMA_VERSION:
-        raise ManifestError(
-            "manifest schema_version must be {0}, got {1!r}".format(
-                MANIFEST_SCHEMA_VERSION, schema_version
-            )
-        )
-
     manifest_id = _require_text(mapping, "manifest_id", "manifest")
-
-    mode = _require_text(mapping, "mode", "manifest")
-    if mode not in ACQUISITION_MODES:
-        raise ManifestError("manifest names unknown mode {0}".format(mode))
 
     as_of = _require_text(mapping, "as_of", "manifest")
     try:
@@ -409,10 +374,4 @@ def parse_manifest(payload: Any) -> AcquisitionManifest:
                 "step {0} names unknown prior_step_id {1}".format(step.step_id, step.prior_step_id)
             )
 
-    return AcquisitionManifest(
-        manifest_id=manifest_id,
-        mode=mode,
-        as_of=as_of,
-        steps=steps,
-        schema_version=schema_version,
-    )
+    return AcquisitionManifest(manifest_id=manifest_id, as_of=as_of, steps=steps)

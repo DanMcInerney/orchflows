@@ -16,7 +16,7 @@ class SkillPreparationContractTests(unittest.TestCase):
     def test_method_links_reachable_essential_and_manual_owners(self):
         links = set(re.findall(r"\]\(([^)#]+)", (ROOT / "SKILL.md").read_text(encoding="utf-8")))
         required = {"references/acquisition.md", "references/selection-routes.md",
-                    "references/protocol.md", "references/operating.md"}
+                    "references/protocol.md"}
         self.assertTrue(required <= links)
         self.assertTrue(all((ROOT / link).is_file() for link in required))
 

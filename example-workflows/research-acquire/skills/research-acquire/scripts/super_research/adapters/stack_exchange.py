@@ -1,6 +1,6 @@
 """K0 Stack Exchange search/advanced with unix-second window bounds.
 
-Measured 2026-09-01, keyless and 200: ``GET api.stackexchange.com``
+Measured, keyless and 200: ``GET api.stackexchange.com``
 ``/2.3/search/advanced?site=stackoverflow&q=python&pagesize=30&order=desc``
 ``&sort=creation`` answered ``{"items": [...], "has_more": true,``
 ``"quota_max": 300, "quota_remaining": 293}``, the anonymous daily quota this

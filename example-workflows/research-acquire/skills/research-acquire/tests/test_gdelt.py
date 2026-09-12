@@ -193,7 +193,7 @@ class FixedShapeAndQueryTest(unittest.TestCase):
         # reads its own: `target_ids` is never consulted, so a hydration
         # step's request (query empty, target_ids populated) is served, not
         # specially refused. An empty-string param is never sent at all
-        # (`_support.transport_request.build_transport_request` drops it),
+        # (`transport.build_transport_request` drops it),
         # so the origin sees no `query` key rather than a blank one.
         request = AdapterRequest(step_id="s1", target_ids=("some-hit",))
         page, opener = fetch(NO_MATCH_OBJECT, request)

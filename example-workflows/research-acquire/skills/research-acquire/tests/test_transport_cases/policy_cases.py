@@ -44,9 +44,10 @@ class ThreatRemapTest(unittest.TestCase):
             with self.subTest(threat=threat):
                 self.assertEqual(THREAT_REMAP[threat][0], NO_CLASS)
 
-    def test_no_first_release_route_answers_at_the_credentialed_class(self):
-        self.assertEqual(routes_at((CREDENTIALED_CLASS,)), ())
-        self.assertTrue(routes_at(("K1",)))
+    def test_the_only_credentialed_class_is_the_vendor_published_one(self):
+        self.assertEqual(CREDENTIAL_CLASSES, ("K1",))
+        self.assertTrue(routes_at(CREDENTIAL_CLASSES))
+        self.assertNotIn("K5", schema.ACCESS_CLASSES)
 
 class NoWriteIsReachableTest(unittest.TestCase):
     """T04 and T06, and the four conditions the T07 widening was granted under.
@@ -155,7 +156,7 @@ class NoWriteIsReachableTest(unittest.TestCase):
 
                     with forbid_io():
                         with self.assertRaises(transport.TransportError):
-                            transport.urlopen_response(request)
+                            transport.urlopen_read(request)
 
 
 class AbsentMachineryTest(unittest.TestCase):
@@ -278,7 +279,7 @@ class UntrustedContentOracleCanFailTest(unittest.TestCase):
         self.assertEqual([call.method for call in obeying], ["POST", "POST"])
         with forbid_io():
             with self.assertRaises(transport.TransportError):
-                transport.urlopen_response(obeying[0])
+                transport.urlopen_read(obeying[0])
 
     def test_a_run_that_acquired_nothing_is_refused_rather_than_passed(self):
         # The vacuity direction: "no text changed anything" is satisfied
@@ -287,7 +288,6 @@ class UntrustedContentOracleCanFailTest(unittest.TestCase):
         empty = schema.AcquisitionArtifact(
             artifact_id="artifact:m-injected",
             manifest_id="m-injected",
-            mode="staged",
             as_of=FROZEN_OBSERVED_AT,
             records=(),
             steps=(),
@@ -363,7 +363,6 @@ class RefusalThreatTest(unittest.TestCase):
         )
         manifest = schema.AcquisitionManifest(
             manifest_id="m-unreachable",
-            mode="staged",
             as_of=FROZEN_OBSERVED_AT,
             steps=(
                 schema.AcquisitionStep(
@@ -427,66 +426,6 @@ class RefusalThreatTest(unittest.TestCase):
         self.assertEqual(artifact.loss, ("http_status",))
         self.assertEqual([call.route_id for call in carrier.calls], [transport.DDG_HTML_ROUTE])
         self.assertEqual(len(opener.opened), 1)
-
-class ThreatTableIsReadOffTheDocumentTest(unittest.TestCase):
-    """`internals.md`'s sixteen threat rows, checked against `THREAT_REMAP`.
-
-    `THREAT_REMAP` is guarded three ways above. The copy of it a reader
-    actually meets was guarded not at all, and it restates **two** hand-kept
-    judgments per row: the classes a threat applies to, and the form it takes
-    here. `protocol.md` tells that reader this table gets the treatment the
-    loss tables get, so it gets it — both columns of all sixteen rows are
-    parsed out of the document and compared, and neither side can be corrected
-    while the other is left.
-    """
-
-    def setUp(self):
-        self.rows = threat_table_rows()
-
-    def test_the_table_was_found_and_every_row_is_three_cells(self):
-        # A parse that silently found nothing passes every assertion below
-        # while checking no table at all.
-        self.assertEqual(len(self.rows), 16)
-        self.assertEqual(len(self.rows), len(THREAT_REMAP))
-        for row in self.rows:
-            self.assertEqual(len(row), 3, "a threat row is {0} cells".format(len(row)))
-
-    def test_the_table_names_every_remapped_threat_exactly_once(self):
-        self.assertEqual([row[0] for row in self.rows], sorted(THREAT_REMAP))
-
-    def test_each_row_applies_to_exactly_the_classes_the_remap_gives_it(self):
-        for threat, applies, _ in self.rows:
-            with self.subTest(threat=threat):
-                self.assertEqual(
-                    documented_classes(applies),
-                    THREAT_REMAP[threat][0],
-                    "internals.md says {0} applies to {1}; THREAT_REMAP says {2}".format(
-                        threat, applies, THREAT_REMAP[threat][0]
-                    ),
-                )
-
-    def test_each_row_states_exactly_the_form_the_remap_gives_it(self):
-        for threat, _, form in self.rows:
-            with self.subTest(threat=threat):
-                self.assertEqual(
-                    comparable(form),
-                    comparable(THREAT_REMAP[threat][1]),
-                    "internals.md states {0} as {1!r}; THREAT_REMAP states it as {2!r}".format(
-                        threat, comparable(form), comparable(THREAT_REMAP[threat][1])
-                    ),
-                )
-
-    def test_the_parse_can_tell_two_cells_apart(self):
-        # The oracle can fail. A class reader that collapsed the range, or a
-        # form comparison that normalized the words away, would pass over any
-        # table at all — so both are shown distinguishing, on hand-built cells.
-        self.assertEqual(documented_classes("`K0`–`K5`"), EVERY_CLASS)
-        self.assertEqual(documented_classes("`K1`, `K5`"), CREDENTIAL_CLASSES)
-        self.assertEqual(documented_classes("`K4`"), ("K4",))
-        self.assertEqual(documented_classes("no class"), NO_CLASS)
-        self.assertNotEqual(documented_classes("`K1`, `K5`"), EVERY_CLASS)
-        self.assertEqual(comparable("a `K1`\n  credential"), "a K1 credential")
-        self.assertNotEqual(comparable("no fallback"), comparable("no fallbacks"))
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

@@ -253,7 +253,7 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
                 # measured on: a module that quotes evidence for its own typing
                 # under a status nobody probed is its own witness.
                 self.assertEqual(
-                    "The 2026-08-10 probes recorded this status" in warning,
+                    "The probes recorded this status" in warning,
                     status in youtube_innertube.ATTESTED_PLAYABILITY,
                 )
 
@@ -394,6 +394,7 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
 
                 self.assertNotIn(youtube_innertube.AUTH_REQUIRED, page.loss)
                 self.assertEqual(page.outcome, "ok")
-                self.assertTrue(
-                    transport.route_admissions()[transport.YOUTUBE_INNERTUBE_ROUTE]
+                self.assertEqual(
+                    transport.route_constant(transport.YOUTUBE_INNERTUBE_ROUTE).access_class,
+                    "K1",
                 )

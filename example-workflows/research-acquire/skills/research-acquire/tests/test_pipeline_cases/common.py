@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, cache, normalize, probes, runner, schema, transport
+from super_research import adapters, cache, normalize, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
 from tests import helpers
 
@@ -78,24 +78,18 @@ HYDRATION_STEP = {
     "max_items": 6,
 }
 DISCOVERY_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "pipeline-discover",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [DISCOVERY_STEP],
 }
 TWO_STEP_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "pipeline-two-step",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [DISCOVERY_STEP, HYDRATION_STEP],
 }
-FUSED_MANIFEST = dict(TWO_STEP_MANIFEST, manifest_id="pipeline-fused", mode="fused")
+FUSED_MANIFEST = dict(TWO_STEP_MANIFEST, manifest_id="pipeline-fused")
 STAGED_HYDRATION_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "pipeline-hydrate",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [dict(HYDRATION_STEP, prior_step_id="")],
 }
@@ -104,23 +98,6 @@ ROUTE_LATENCIES = {
     transport.DDG_HTML_ROUTE: helpers.DEFAULT_LATENCY_SECONDS,
     transport.ARCTIC_SHIFT_POSTS_ROUTE: 1.5,
 }
-
-
-def probe_request_for(adapter_id):
-    probe = probes.probe_for(adapter_id)
-    if probe is None:
-        return PROBE_REQUEST
-    # A probe that declares its own window is an adapter whose smoke reads
-    # windowed, and one of them (`wikimedia_pageviews`) has no windowless
-    # shape at all: what its own smoke asks it includes the bound.
-    window_start = "2026-08-01T00:00:00Z" if probe.window_days else ""
-    if probe.kind == "discovery":
-        return adapters.AdapterRequest(
-            step_id="s-probe", query=probe.target, window_start=window_start
-        )
-    return adapters.AdapterRequest(
-        step_id="s-probe", target_ids=(probe.target,), window_start=window_start
-    )
 
 
 def tracer_responses():

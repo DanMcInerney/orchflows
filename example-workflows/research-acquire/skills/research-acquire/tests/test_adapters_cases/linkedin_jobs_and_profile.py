@@ -39,7 +39,7 @@ class LinkedInRouteConstantTest(unittest.TestCase):
             with self.subTest(route=route_id):
                 route = transport.route_constant(route_id)
 
-                self.assertTrue(transport.route_admissions()[route_id])
+                self.assertNotEqual(route.access_class, "K5")
                 self.assertEqual(transport.admitted_methods(route_id), transport.READ_METHODS)
                 self.assertEqual(route.operator_identity, "linkedin")
                 # Neither route carries a credential of any kind. The whole

@@ -80,7 +80,6 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
             with self.subTest(route=route_id):
                 route = transport.route_constant(route_id)
 
-                self.assertTrue(transport.route_admissions()[route_id])
                 self.assertEqual(route.access_class, "K1")
 
     def test_each_route_names_the_vendor_published_credential_the_evidence_records(self):
@@ -155,7 +154,7 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
 
                 with helpers.forbid_io():
                     with self.assertRaises(transport.TransportError) as caught:
-                        transport.urlopen_response(request)
+                        transport.urlopen_read(request)
 
                 self.assertIn("refusing a write-capable method", str(caught.exception))
 
@@ -209,7 +208,7 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
         )
 
         with mock.patch.object(urllib.request, "urlopen", recorder):
-            transport.urlopen_response(request)
+            transport.urlopen_read(request)
 
         outbound = recorder.requests[0]
         key = transport.PUBLIC_CLIENT_CREDENTIALS[transport.YOUTUBE_INNERTUBE_WEB_KEY]
@@ -227,7 +226,7 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
         )
 
         with mock.patch.object(urllib.request, "urlopen", recorder):
-            transport.urlopen_response(request)
+            transport.urlopen_read(request)
 
         outbound = recorder.requests[0]
         app_id = transport.PUBLIC_CLIENT_CREDENTIALS[transport.INSTAGRAM_WEB_APP_ID]

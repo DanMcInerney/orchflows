@@ -1,6 +1,6 @@
 """K3 Reddit hydration through the Arctic Shift archive.
 
-Measured 2026-08-10 (Reddit): Reddit's own ``.json``
+Measured: Reddit's own ``.json``
 surfaces return 403 to every User-Agent tried, and its RSS ceiling is one
 to two requests per thirty seconds. Arctic Shift answered six back-to-back
 requests at ~0.25 s with no throttle, returning ``score``,
@@ -47,8 +47,8 @@ SEARCH_DESCRIPTOR = replace(DESCRIPTOR, route_id=transport.ARCTIC_SHIFT_SEARCH_R
 SURFACE_DESCRIPTORS = (DESCRIPTOR, SEARCH_DESCRIPTOR)
 NATIVE_ORDER = "archive_ids_order"
 REDDIT_ORIGIN = transport.REDDIT_SITE_ORIGIN
-# Reddit names a submission by its fullname, not its bare id; wrong_merge_law
-# rule 6 makes that prefix part of platform identity.
+# Reddit names a submission by its fullname, not its bare id, so the prefix
+# is part of platform identity.
 POST_FULLNAME_PREFIX = "t3_"
 ENGAGEMENT_FIELDS = ("score", "num_comments")
 
@@ -89,8 +89,8 @@ def submission_fullname(post: Mapping[str, Any]) -> str:
     The prefix alone is not an identity. Two submissions the archive answered
     without an ``id`` would both be ``t3_``, would present the same strong
     identity, and ``normalize.group_records`` would fold two distinct threads
-    into one group on a key neither of them has — the merge wrong_merge_law
-    rule 1 exists to forbid. A row that named no id keeps everything else it
+    into one group on a key neither of them has — the merge strong identity
+    exists to forbid. A row that named no id keeps everything else it
     reported and says the id is the field it is short of.
     """
 

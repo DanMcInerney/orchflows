@@ -66,7 +66,7 @@ class ReviewManifestTest(unittest.TestCase):
         The old `SERVER_SIDE_WINDOW` tuple named `bluesky` whole, so an
         unwindowed `author:` step would have fired this advisory too — the
         author feed sends no bound however it is asked. This is the case
-        that forces `coverage` to read `window_reach`'s per-operation table
+        that forces `coverage` to read `runner.WINDOW_REACH`'s per-operation table
         rather than a per-adapter one.
         """
 
@@ -114,7 +114,7 @@ class ReviewManifestTest(unittest.TestCase):
     def test_a_depth_cap_under_the_floor_is_named_at_review_time_as_well(self):
         """The plan refuses this cap, and a hand-written manifest never met the plan.
 
-        `evidence.md` §2, exactly: a `transcript:` step at max_items 1 is valid,
+        The measured failure, exactly: a `transcript:` step at max_items 1 is valid,
         passes review, runs, reaches no cue and reports success. `plan_depth`
         refuses it — but a manifest written by hand, or amended after planning,
         arrives at the review having never been through the plan, and the review

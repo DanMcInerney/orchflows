@@ -5,5 +5,6 @@
   "author": {
     "name": "Dan McInerney"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "skills": "./skills/"
 }

@@ -49,7 +49,7 @@ class XRouteConstantTest(unittest.TestCase):
             with self.subTest(route=route_id):
                 route = transport.route_constant(route_id)
 
-                self.assertTrue(transport.route_admissions()[route_id])
+                self.assertNotEqual(route.access_class, "K5")
                 self.assertEqual(transport.admitted_methods(route_id), transport.READ_METHODS)
                 self.assertEqual(route.operator_identity, "x")
 
@@ -87,7 +87,7 @@ class GuestTokenAttachTest(unittest.TestCase):
         results = []
         with mock.patch.object(urllib.request, "urlopen", opener):
             for request in requests:
-                results.append(transport.urlopen_response(request))
+                results.append(transport.urlopen_read(request))
         return results, opener
 
     def test_a_read_carries_the_token_the_run_is_holding(self):
@@ -130,20 +130,21 @@ class GuestTokenAttachTest(unittest.TestCase):
         self.assertEqual(len(opener.requests), 1)
         self.assertNotIn(transport.GUEST_TOKEN_HEADER, opener.headers_of(0))
 
-    def test_a_run_holding_no_token_sends_the_read_unauthorized(self):
+    def test_a_run_holding_no_token_refuses_the_read_before_the_wire(self):
         # A process that never minted — because nothing paced it, or because
-        # the origin refused the activation — still sends the read, once, with
-        # no token on it. The origin's own 401 or 403 is then what the adapter
-        # records as the platform's refusal. Inventing a token, or turning a
-        # failed mint into a retry, are the two wrong answers.
-        results, opener = self._sent(
-            [guest_read_request()], [("/graphql/", 401, "unauthorized", "application/json")]
-        )
+        # the origin refused the activation — sends no read that needed the
+        # token: the opener refuses it, typed `auth_required`, and nothing
+        # goes on the wire. Inventing a token, sending the read bare, and
+        # turning a failed mint into a retry are the three wrong answers.
+        opener = RoutingUrlopen([("/graphql/", 401, "unauthorized", "application/json")])
 
+        with mock.patch.object(urllib.request, "urlopen", opener):
+            with self.assertRaises(transport.TransportError) as caught:
+                transport.urlopen_read(guest_read_request())
+
+        self.assertEqual(caught.exception.loss, transport.AUTH_REQUIRED)
         self.assertEqual(transport.GUEST_TOKENS._tokens, {})
-        self.assertEqual(len(opener.requests), 1)
-        self.assertNotIn(transport.GUEST_TOKEN_HEADER, opener.headers_of(0))
-        self.assertEqual(results[0][0], 401)
+        self.assertEqual(opener.requests, [])
 
     def test_the_token_the_run_holds_reaches_no_request_the_run_records(self):
         transport.GUEST_TOKENS.remember(

@@ -67,7 +67,7 @@ class StaleIdentifierTest(unittest.TestCase):
 
                 self.assertNotIn("auth_required", page.loss)
                 self.assertEqual(page.outcome, "ok")
-                self.assertTrue(transport.route_admissions()[module.DESCRIPTOR.route_id])
+                self.assertNotEqual(transport.route_constant(module.DESCRIPTOR.route_id).access_class, "K5")
 
 
 class StaleIdentifierOracleCanFailTest(unittest.TestCase):
@@ -284,8 +284,17 @@ class RouteTtlTest(unittest.TestCase):
         self.addCleanup(transport.GUEST_TOKENS.clear)
 
     def _paced(self, clock, route_id, body, content_type):
+        # The governor mints before the first guest read, so the activation
+        # route answers here too: a read whose activation nothing answers is
+        # refused, never sent bare.
         carrier, opener = helpers.offline_transport(
-            clock, {route_id: (200, body, content_type)}
+            clock,
+            {
+                route_id: (200, body, content_type),
+                transport.X_GUEST_ACTIVATE_ROUTE: (
+                    200, json.dumps({"guest_token": MINTED_GUEST_TOKEN}), "application/json"
+                ),
+            },
         )
         governor = runner.RateGovernor(
             carrier,
@@ -367,7 +376,6 @@ def x_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-x",
-        mode="staged",
         as_of="2026-08-10T09:00:00Z",
         steps=(
             schema.AcquisitionStep(

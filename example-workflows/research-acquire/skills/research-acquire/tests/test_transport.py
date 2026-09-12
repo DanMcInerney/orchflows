@@ -22,7 +22,6 @@ from .test_transport_cases.policy_cases import (
     NoWriteIsReachableTest,
     RefusalThreatTest,
     ThreatRemapTest,
-    ThreatTableIsReadOffTheDocumentTest,
     UntrustedContentOracleCanFailTest,
     UntrustedContentTest,
 )

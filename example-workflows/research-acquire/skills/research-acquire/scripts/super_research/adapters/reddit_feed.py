@@ -1,6 +1,6 @@
 """K0 Reddit freshness probe over the one Reddit surface that answers.
 
-Measured 2026-08-10 (Reddit): ``www.reddit.com/r/<sub>.rss``
+Measured: ``www.reddit.com/r/<sub>.rss``
 answered 200 with 32 KB in 1.4 s, carrying a title, a link, an author and an
 updated stamp per entry. Every ``.json`` form answered **403** — on ``www.``,
 ``old.`` and ``api.`` alike, to a curl User-Agent, a custom app User-Agent and a
@@ -65,7 +65,7 @@ DESCRIPTOR = AdapterDescriptor(
     # True of every entry this route will ever return rather than of some of
     # them, which is what makes it standing rather than per-record.
     standing_loss=("engagement_unavailable",),
-    # The 2026-08-10 probes: four requests back to back answered 1x 200 then 3x 429;
+    # The probes: four requests back to back answered 1x 200 then 3x 429;
     # after a thirty-second cooldown, paced one per six seconds, it answered
     # 2x 200 and then refused again; a custom UA changed none of it. The
     # effective ceiling is 1–2 per ~30 s per IP, and a client that respects a
@@ -92,7 +92,7 @@ ENTRY_TAG = "entry"
 AUTHOR_TAG = "author"
 HREF_ATTRIBUTE = "href"
 
-# The four fields the 2026-08-10 probes record this route returning, plus the entry's
+# The four fields the probes record this route returning, plus the entry's
 # own identifier. `id` is not in the measured field list and is read anyway: it
 # is required of every Atom entry, and without it a record can be grouped with
 # nothing. It is not engagement, which is the one thing this row forbids.
@@ -114,7 +114,7 @@ ROSTER_FIELDS = (TITLE_FIELD, LINK_TAG, NAME_FIELD, UPDATED_FIELD)
 
 # Reddit spells one thing two ways across its own surfaces, and the rule for
 # which prefix survives is whether it is an identity or an address. `t3_` is
-# part of how Reddit names a submission — wrong_merge_law rule 6 — so it stays,
+# part of how Reddit names a submission, so it stays,
 # and it is the same spelling the archive adapter produces. `/u/` is the path a
 # user's page lives at, not the handle who wrote the post, so it goes.
 AUTHOR_PATH_PREFIX = "/u/"
@@ -214,7 +214,7 @@ def author_handle(name: str) -> str:
 
 
 def roster_row_of(entry: Dict[str, str]) -> Dict[str, str]:
-    """One entry's roster row, named as the 2026-08-10 probes name it."""
+    """One entry's roster row, named as the probes name it."""
 
     return {
         TITLE_FIELD: entry[TITLE_FIELD].strip(),

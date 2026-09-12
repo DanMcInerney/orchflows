@@ -1,15 +1,14 @@
-"""Staged acquisition orchestration cases."""
+"""Acquisition orchestration cases."""
 
 from .support import *  # noqa: F403
 
-class StagedRunTest(unittest.TestCase):
+class RunTest(unittest.TestCase):
     """The core owns the run: route selection, caps, page count, and stop."""
 
-    def test_staged_run_produces_discovery_and_hydration_records(self):
+    def test_a_run_produces_discovery_and_hydration_records(self):
         artifact, carrier, _ = run_tracer(TRACER_MANIFEST)
 
         self.assertEqual(artifact.manifest_id, "tracer-k4-reddit")
-        self.assertEqual(artifact.mode, "staged")
         self.assertEqual(artifact.outcome, "ok")
         self.assertEqual([step.step_id for step in artifact.steps], ["s1-discover", "s2-hydrate"])
         self.assertEqual([step.outcome for step in artifact.steps], ["ok", "ok"])

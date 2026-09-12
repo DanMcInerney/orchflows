@@ -21,7 +21,7 @@ import urllib.parse
 from datetime import datetime, timedelta, timezone
 
 from super_research import runner, schema, transport
-from super_research._support import window_reach
+from super_research import runner as window_reach
 from super_research.adapters import AdapterRequest, github_rest
 from tests import helpers
 
@@ -133,7 +133,7 @@ class WindowedStepReachesTheOriginTest(unittest.TestCase):
         self.assertEqual(query_param(opener.opened[0].url, "since"), "")
 
     def test_declaration_matches_behavior(self):
-        from super_research._support import window_reach
+        from super_research import runner as window_reach
 
         self.assertTrue(window_reach.reach_for("github_rest", query="search:x"))
         self.assertTrue(window_reach.reach_for("github_rest", query="issues:owner/repo"))
@@ -144,7 +144,7 @@ class WindowedStepReachesTheOriginTest(unittest.TestCase):
 class UnwindowedStepIsUnchangedTest(unittest.TestCase):
     """Goal 4: a step carrying no window at all is the baseline request, byte for byte.
 
-    `index` is a path segment (`route_catalog`'s own `path_params`), not a
+    `index` is a path segment (`routes.py`'s own `path_params`), not a
     query parameter, so the baseline query string is `q` alone.
     """
 
@@ -202,7 +202,6 @@ class ReleasesTypedStatementTest(unittest.TestCase):
             adapter_id="github_rest",
             selected_hits=(schema.SelectedHit(target_id="releases:owner/repo", discovery_locator=""),),
             max_items=50,
-            max_pages=1,
             window_start=window_start,
         )
         result, records, _ = runner.run_step(

@@ -29,6 +29,7 @@ from typing import Callable, Dict, Iterable, List, Optional
 
 from . import cache, transport
 from .adapters import AdapterDescriptor
+from .dispatch import ADAPTER_IDS, RunnerError, surface_descriptors
 
 
 US_PER_SECOND = 1000000
@@ -73,7 +74,7 @@ def budgets_from(descriptors: Iterable[AdapterDescriptor]) -> Dict[str, RouteBud
         declared = budget_of(descriptor)
         held = budgets.get(descriptor.route_id)
         if held is not None and held != declared:
-            raise runner.RunnerError(
+            raise RunnerError(
                 "route {0} is declared two different budgets: {1} and {2}".format(
                     descriptor.route_id, held, declared
                 )
@@ -87,8 +88,8 @@ def route_budgets() -> Dict[str, RouteBudget]:
 
     return budgets_from(
         descriptor
-        for adapter_id in runner.ADAPTER_IDS
-        for descriptor in runner.surface_descriptors(adapter_id)
+        for adapter_id in ADAPTER_IDS
+        for descriptor in surface_descriptors(adapter_id)
     )
 
 
@@ -129,12 +130,17 @@ class RateGovernor:
         sleep: Callable[[float], None] = time.sleep,
         state: Optional[dict] = None,
         checkpoint: Optional[Callable[[dict], None]] = None,
+        admit: Optional[Callable[[transport.TransportRequest], None]] = None,
     ) -> None:
         self._carrier = carrier
         self._cache = run_cache
         self._budgets = dict(route_budgets() if budgets is None else budgets)
         self._clock = clock
         self._sleep = sleep
+        # The caller's own refusal, asked before any budget is spent: a read a
+        # plan already knows its origin refuses raises here typed with that
+        # refusal, never minting a token or reserving an interval for it.
+        self._admit = admit
         self._origin_us = tick_us(clock)
         # Per measured budget key, including shared RSS and open-route hosts:
         # the arrival time the declared interval implies, and the moment a
@@ -197,20 +203,21 @@ class RateGovernor:
 
         Entered with the origin's lock already held by :meth:`fetch` — or by
         the read that is minting a token, which enters here directly for the
-        activation and never re-takes the lock it holds.
+        activation and never re-takes the lock it holds. The caller's refusal
+        comes first: a read it declines never reaches the wire and spends
+        nothing.
         """
 
+        if self._admit is not None:
+            self._admit(request)
         self._mint_for(request.route_id)
         budget = self._budget_for(request.route_id)
         key = transport.budget_key(request)
         waited_us = self._wait_until(self._ready_at(key, budget))
         began_us = self._elapsed_us()
-        if self._checkpoint is not None:
-            self._reserve(key, budget, began_us)
+        self._reserve(key, budget, began_us)
         response = self._carrier.fetch(request)
         stopped_us = self._elapsed_us()
-        if self._checkpoint is None:
-            self._reserve(key, budget, began_us)
         self._charge(key, budget, stopped_us, response)
         with self._tables_lock:
             self.log.append(
@@ -238,12 +245,15 @@ class RateGovernor:
         costs no activation: a token buys an origin read, and a cache hit
         reaches no origin.
 
-        A caller who hands in a bare :class:`transport.Transport` instead of the
-        composed carrier gets no mint, the same way it gets no pacing and no
-        cache — one choice, named in :func:`runner.run_scheduled`, not three.
-        Its read then goes out unauthorized and the origin's own 401 or 403 is
-        what the run records: never an invented token and never a retry, which
-        is the rule :func:`transport.mint_guest_token` states.
+        An activation that fails is remembered as failed, whether the origin
+        refused it or it never answered at all, and every read that needed its
+        token is refused with that failure rather than sent unauthorized —
+        never an invented token and never a retry, which is the rule
+        :func:`transport.mint_guest_token` states. A caller who hands in a
+        bare :class:`transport.Transport` instead of the composed carrier gets
+        no mint, the same way it gets no pacing and no cache — one choice, named
+        in :func:`runner.run_scheduled`, not three — and its opener refuses the
+        same read for the same reason.
         """
 
         token_route_id = transport.route_constant(route_id).token_route_id
@@ -253,17 +263,38 @@ class RateGovernor:
         # lanes needing one token mint it once between them.
         with self._tables_lock:
             claimed = transport.GUEST_TOKENS.claim(token_route_id)
-        if not claimed:
-            return
-        transport.GUEST_TOKENS.remember(
-            token_route_id,
-            transport.mint_guest_token(self._paced_fetch, token_route_id),
-        )
+        if claimed:
+            try:
+                token = transport.mint_guest_token(self._paced_fetch, token_route_id)
+            except transport.TransportError as failure:
+                transport.GUEST_TOKENS.refuse(token_route_id, failure)
+            except BaseException as failure:
+                # A mint that never answered — the activation route declaring
+                # no budget, an interrupt mid-activation — holds its claim as
+                # a refusal too, or the next read would proceed untokened.
+                transport.GUEST_TOKENS.refuse(
+                    token_route_id,
+                    transport.TransportError(
+                        "activation {0} failed before it answered: {1}".format(
+                            token_route_id, failure
+                        )
+                    ),
+                )
+                raise
+            else:
+                transport.GUEST_TOKENS.remember(token_route_id, token)
+        failure = transport.GUEST_TOKENS.failure_for(token_route_id)
+        if failure is not None:
+            # The activation's own answer is billed once, to the read that
+            # minted; a remembered refusal costs nothing further.
+            raise transport.TransportError(
+                str(failure), loss=failure.loss, reached=claimed and failure.reached
+            )
 
     def _budget_for(self, route_id: str) -> RouteBudget:
         budget = self._budgets.get(route_id)
         if budget is None:
-            raise runner.RunnerError("route {0} declares no rate budget".format(route_id))
+            raise RunnerError("route {0} declares no rate budget".format(route_id))
         return budget
 
     def _ready_at(self, key: str, budget: RouteBudget) -> int:
@@ -298,7 +329,8 @@ class RateGovernor:
             })
 
     def _reserve(self, key: str, budget: RouteBudget, began_us: int) -> None:
-        # Durable callers reserve before I/O; legacy callers charge answers only.
+        """Spend this read's interval before it leaves, so a read that never answers still spent it."""
+
         with self._tables_lock:
             arrival_us = self._route_arrival_us.get(key, began_us)
             self._route_arrival_us[key] = max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
@@ -351,15 +383,13 @@ def paced_carrier(
     *,
     state: Optional[dict] = None,
     checkpoint: Optional[Callable[[dict], None]] = None,
+    admit: Optional[Callable[[transport.TransportRequest], None]] = None,
 ) -> RateGovernor:
     """The carrier a run gets when it does not build one: paced, and remembering.
 
-    One constructor, because the composition is not optional. Spec change 1
-    calls the run-local cache mandatory and change 2 says the scheduler enforces
-    each route's budget; a `RateGovernor` that passes its own unit test while
-    nothing in the delivery ever builds one satisfies neither. This is the one
-    place the two are put together, so "a rate limit is respected, never evaded"
-    is a property of the shipped path rather than of a test fixture.
+    One constructor, because the composition is not optional: the run-local
+    cache and the per-route budget are properties of the shipped path rather
+    than of a test fixture, and this is the one place they are put together.
 
     The cache takes the same clock the governor paces on, so a TTL and an
     interval cannot disagree about how much time has passed. Building the real
@@ -374,13 +404,6 @@ def paced_carrier(
         sleep=time.sleep if sleep is None else sleep,
         state=state,
         checkpoint=checkpoint,
+        admit=admit,
     )
 
-
-# Imported last, and as a module rather than by name. This module reads the
-# core's adapter table at call time, and the core re-exports every public name
-# above, so the two import each other. Binding the module object down here —
-# after every name above exists — is what makes the pair safe to import in
-# either order; a ``from .runner import ...`` at the top would fail whenever
-# this module was imported before the core.
-from . import runner

@@ -1,6 +1,6 @@
 """K1 Instagram public profiles under a vendor-published web app id.
 
-Measured 2026-08-10 (Instagram): one request to
+Measured: one request to
 ``api/v1/users/web_profile_info/?username=`` carrying ``x-ig-app-id`` answered
 200 in 2.9 s with 455 KB — ``username``, ``biography``, a follower count, a
 post count, and **12 recent posts** each with ``shortcode``,
@@ -24,7 +24,7 @@ origin stating that nobody holds the name.
 Counts travel under the exact key paths Instagram publishes them at. Spelling
 them ``like_count`` and ``comment_count`` would be this package inventing a
 cross-platform vocabulary, which is the aliasing the descriptor's own metric
-law forbids and a non-goal of the spec besides.
+law forbids.
 """
 
 from __future__ import annotations
@@ -64,7 +64,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="instagram",
     representation_kind="native",
     operator_identity="instagram",
-    # The 2026-08-10 probes: 2.9 s per request, the slowest read in the roster.
+    # The probes: 2.9 s per request, the slowest read in the roster.
     # Nothing here was measured refusing, so `burst` and `cooldown_ms` keep the
     # protocol's conservative defaults rather than a ceiling nobody observed.
     min_interval_ms=2900,

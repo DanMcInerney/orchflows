@@ -1,24 +1,33 @@
-"""Inspect one known source URL and save evidence without a research plan."""
+"""Read one known YouTube video's captions through a single yt-dlp invocation and save a receipt."""
 
 import argparse
 from datetime import datetime, timedelta, timezone
+import hashlib
+import importlib.util
 import json
 import math
+import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
-import time
 from urllib.parse import parse_qs, urlsplit
 
-from acquire_checkpoint import atomic_json
-import inspect_youtube as youtube
-
 PACKAGE = Path(__file__).resolve().parents[3]
+MAX_BYTES = 8 * 1024 * 1024
+STDERR_TAIL = 2000
+VIDEO_ID = re.compile(r"[A-Za-z0-9_-]{11}\Z")
+LANGUAGE = re.compile(r"[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})?\Z")
+LIMITATIONS = [
+    "Captions represent video speech, not viewer comments; speaker identity is unverified.",
+    "Caption text may repeat rolling captions or contain recognition errors.",
+    "Publication time belongs to the video; the caption track has no independent publication date.",
+]
 
 
 def video_id(value):
-    if youtube.VIDEO_ID.fullmatch(value):
+    if VIDEO_ID.fullmatch(value):
         return value
     parsed = urlsplit(value)
     if parsed.scheme != "https" or parsed.username or parsed.password or parsed.port:
@@ -32,7 +41,7 @@ def video_id(value):
                   parts[1] if len(parts) == 2 and parts[0] in {"shorts", "embed", "live"} else "")
     else:
         result = ""
-    if not youtube.VIDEO_ID.fullmatch(result):
+    if not VIDEO_ID.fullmatch(result):
         raise ValueError("expected a single YouTube video, not a channel or playlist")
     return result
 
@@ -45,41 +54,17 @@ def instant(value):
 
 
 def publication(metadata):
-    """Return an observed publication interval, preserving day-only uncertainty."""
-    raw = metadata.get("published_at")
-    origin = "published_at"
-    if not raw:
-        stamp = metadata.get("timestamp")
-        if isinstance(stamp, (int, float)) and not isinstance(stamp, bool) and math.isfinite(stamp):
-            try:
-                raw = datetime.fromtimestamp(stamp, timezone.utc).isoformat()
-                origin = "timestamp"
-            except (ValueError, OverflowError, OSError):
-                pass
-    if not raw and metadata.get("upload_date"):
-        raw = metadata["upload_date"]
-        origin = "upload_date"
-        if isinstance(raw, str) and len(raw) == 8 and raw.isdigit():
-            raw = raw[:4] + "-" + raw[4:6] + "-" + raw[6:]
-    if not isinstance(raw, str):
-        return {"precision": "unknown", "raw": raw, "field": origin}
-    try:
-        if len(raw) == 10:
-            lower = datetime.strptime(raw, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            upper = lower + timedelta(days=1)
-            # yt-dlp upload_date is a UTC date; a native date-only publishDate
-            # has no stated zone, so allow the full UTC-12 through UTC+14 range.
-            zone = "UTC" if origin == "upload_date" else "unspecified"
-            if zone == "unspecified":
-                lower -= timedelta(hours=14)
-                upper += timedelta(hours=12)
-            return {"precision": "day", "raw": raw, "field": origin,
-                    "timezone": zone,
-                    "earliest": lower.isoformat(), "latest_exclusive": upper.isoformat()}
-        point = instant(raw).isoformat()
-        return {"precision": "instant", "raw": raw, "field": origin, "earliest": point, "latest": point}
-    except ValueError:
-        return {"precision": "unknown", "raw": raw, "field": origin}
+    """An instant from yt-dlp's timestamp, else a UTC day from upload_date, else unknown."""
+    stamp = metadata.get("timestamp")
+    if isinstance(stamp, (int, float)) and not isinstance(stamp, bool) and math.isfinite(stamp):
+        point = datetime.fromtimestamp(stamp, timezone.utc).isoformat()
+        return {"precision": "instant", "field": "timestamp", "earliest": point, "latest": point}
+    date = metadata.get("upload_date")
+    if isinstance(date, str) and len(date) == 8 and date.isdigit():
+        lower = datetime.strptime(date, "%Y%m%d").replace(tzinfo=timezone.utc)
+        return {"precision": "day", "field": "upload_date", "timezone": "UTC",
+                "earliest": lower.isoformat(), "latest_exclusive": (lower + timedelta(days=1)).isoformat()}
+    return {"precision": "unknown"}
 
 
 def date_relation(published, start, end):
@@ -97,97 +82,125 @@ def date_relation(published, start, end):
     return "inside" if lower >= start and upper <= end else "boundary_uncertain"
 
 
-def caption_track(result, requested_language):
-    """Expose only bounded, understood track facts from either backend."""
-    attributes = result.get("attributes", {})
-    attributes = attributes if isinstance(attributes, dict) else {}
-    track = {"automatic": None}
-    if type(attributes.get("automatic")) is bool:
-        track["automatic"] = attributes["automatic"]
-    language = attributes.get("languageCode", result.get("language", requested_language))
-    if isinstance(language, str) and youtube.LANGUAGE.fullmatch(language):
-        track["language"] = language
-    kind = attributes.get("kind")
-    if kind in ("asr", "published"):
-        track.update(kind=kind, automatic=kind == "asr")
-    for key in ("cue_count", "duration_ms"):
-        value = attributes.get(key)
-        if type(value) is int and 0 <= value < 10 ** 15:
-            track[key] = value
-        elif isinstance(value, str) and 1 <= len(value) <= 15 and value.isascii() and value.isdecimal():
-            track[key] = int(value)
-    return track
+def parse_json3(raw):
+    """One cue per timed event; the newline-only events of a rolling window carry no text and are skipped."""
+    cues = []
+    for event in json.loads(raw).get("events", []):
+        if not isinstance(event, dict):
+            continue
+        text = " ".join("".join(seg.get("utf8", "") for seg in event.get("segs", []) if isinstance(seg, dict)).split())
+        start, duration = event.get("tStartMs"), event.get("dDurationMs", 0)
+        if text and type(start) is int and type(duration) is int and duration >= 0:
+            cues.append({"start_ms": start, "end_ms": start + duration, "text": text})
+    return cues
 
 
-def inspect(video, language="en", timeout_seconds=45, max_chars=24000, *,
-            clock=time.monotonic, ytdlp_read=youtube.read_ytdlp, run=subprocess.run):
-    started = clock()
-    attempts, result = [], {}
-    with tempfile.TemporaryDirectory(prefix="research-caption-") as temp:
-        attempt_start = clock()
-        result = ytdlp_read(video, language, temp, min(30, timeout_seconds * 0.7))
-        attempts.append({"backend": "yt-dlp", "status": result["status"],
-                         "process_status": result.get("process_status"), "exit_code": result.get("exit_code"),
-                         "elapsed_seconds": round(clock() - attempt_start, 3)})
-        remaining = timeout_seconds - (clock() - started)
-        if result["status"] != "ok" and remaining > 0:
-            attempt_start = clock()
-            try:
-                child = run([sys.executable, str(Path(youtube.__file__).resolve()), video, language],
-                            capture_output=True, timeout=remaining,
-                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-                result = json.loads(child.stdout) if child.returncode == 0 else {"status": "backend_error"}
-            except subprocess.TimeoutExpired:
-                result = {"status": "timeout"}
-            except (ValueError, OSError):
-                result = {"status": "backend_error"}
-            attempts.append({"backend": "youtube_innertube", "status": result["status"],
-                             "pages": result.get("pages", []), "requests": result.get("requests"),
-                             "elapsed_seconds": round(clock() - attempt_start, 3)})
-        elif result["status"] != "ok":
-            result["fallback_skipped"] = "deadline"
+def track_automatic(info, language):
+    """yt-dlp writes the manual track when one exists, so the track is automatic only when the language is listed solely under automatic captions."""
+    manual = isinstance(info.get("subtitles"), dict) and language in info["subtitles"]
+    automatic = isinstance(info.get("automatic_captions"), dict) and language in info["automatic_captions"]
+    return False if manual else True if automatic else None
+
+
+def find_command():
+    return [sys.executable, "-m", "yt_dlp"] if importlib.util.find_spec("yt_dlp") else None
+
+
+def read(video, language, timeout_seconds, directory, *, run=None, command=None):
+    """One yt-dlp invocation with a fixed argument list; any failure is reported, never retried."""
+    argv = (command or find_command)()
+    if not argv:
+        return {"status": "dependency_missing"}
+    directory = Path(directory)
+    args = argv + [
+        "--ignore-config", "--no-plugin-dirs", "--no-cookies", "--no-cookies-from-browser",
+        "--no-playlist", "--skip-download", "--write-subs", "--write-auto-subs",
+        "--extractor-args", "youtube:player_client=android",
+        "--sub-langs", language, "--sub-format", "json3", "--write-info-json",
+        "--retries", "0", "--extractor-retries", "0", "--fragment-retries", "0", "--file-access-retries", "0",
+        "--socket-timeout", str(min(10, timeout_seconds)), "--no-progress", "--no-warnings",
+        "-o", str(directory / "%(id)s.%(ext)s"), "https://www.youtube.com/watch?v=" + video,
+    ]
+    try:
+        completed = (run or subprocess.run)(args, capture_output=True, timeout=timeout_seconds,
+                                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except subprocess.TimeoutExpired:
+        return {"status": "timeout"}
+    except OSError as error:
+        return {"status": "backend_error", "error": str(error)}
+    result = {"exit_code": completed.returncode}
+    if completed.returncode:
+        stderr = completed.stderr.decode("utf-8", errors="replace") if isinstance(completed.stderr, bytes) else str(completed.stderr or "")
+        return {"status": "backend_error", "stderr": stderr[-STDERR_TAIL:], **result}
+    paths = sorted(directory.glob(video + ".*.json3"))
+    if not paths:
+        return {"status": "no_matching_captions", **result}
+    path = paths[0]
+    if path.stat().st_size > MAX_BYTES:
+        return {"status": "caption_too_large", **result}
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    info_path = directory / (video + ".info.json")
+    try:
+        cues = parse_json3(raw)
+        info = json.loads(info_path.read_text(encoding="utf-8")) if info_path.is_file() and info_path.stat().st_size <= MAX_BYTES else {}
+    except (ValueError, AttributeError) as error:
+        return {"status": "backend_error", "error": f"yt-dlp output unreadable: {error}", **result}
+    if not cues:
+        return {"status": "no_matching_captions", **result}
+    info = info if isinstance(info, dict) else {}
+    return {"status": "ok", "text": "\n".join(cue["text"] for cue in cues), "raw": raw,
+            "metadata": {key: info[key] for key in ("id", "title", "channel", "upload_date", "timestamp") if key in info},
+            "caption_track": {"language": path.name[len(video) + 1:-len(".json3")], "automatic": track_automatic(info, language),
+                              "cue_count": len(cues), "duration_ms": max(cue["end_ms"] for cue in cues)},
+            **result}
+
+
+def inspect(video, language="en", timeout_seconds=45, max_chars=24000, *, run=None, command=None):
+    with tempfile.TemporaryDirectory(prefix="research-caption-") as directory:
+        result = read(video, language, timeout_seconds, directory, run=run, command=command)
     text = result.get("text", "")
-    truncated = len(text) > max_chars
-    packet = {"schema": "research-acquire/source-inspection/v1", "source": "youtube",
-              "operation": "youtube-transcript", "url": "https://www.youtube.com/watch?v=" + video,
-              "video_id": video, "content_kind": "transcript", "audience_opinion": False,
-              "status": result["status"], "observed_at": datetime.now(timezone.utc).isoformat(),
-              "backend": attempts[-1]["backend"], "attempts": attempts,
-              "elapsed_seconds": round(clock() - started, 3),
-              "bounds": {"timeout_seconds": timeout_seconds, "max_chars": max_chars,
-                         "videos": 1, "yt_dlp_attempts": 1, "innertube_requests_max": 2,
-                         "caption_support_bytes_max": youtube.MAX_BYTES},
-              "metadata": result.get("metadata", {}), "language": result.get("language", language),
-              "caption_track": caption_track(result, language),
-              "text": text[:max_chars], "truncated": truncated,
-              "limitations": ["Captions represent video speech, not viewer comments; speaker identity is unverified.",
-                              "Caption text may repeat rolling captions or contain recognition errors.",
-                              "Publication time belongs to the video; the transcript track has no independent publication date.",
-                              "yt-dlp has internal requests; the receipt counts backend attempts, not every HTTP request."]}
-    for key in ("caption_sha256", "caption_format", "_raw_caption", "dependency", "fallback_skipped"):
+    packet = {"schema": "research-acquire/source-inspection/v2", "source": "youtube", "operation": "youtube-transcript",
+              "url": "https://www.youtube.com/watch?v=" + video, "video_id": video, "content_kind": "transcript",
+              "audience_opinion": False, "status": result["status"], "route": "yt-dlp",
+              "observed_at": datetime.now(timezone.utc).isoformat(),
+              "bounds": {"timeout_seconds": timeout_seconds, "max_chars": max_chars, "invocations": 1,
+                         "caption_support_bytes_max": MAX_BYTES},
+              "metadata": result.get("metadata", {}), "language": result.get("caption_track", {}).get("language", language),
+              "caption_track": result.get("caption_track"), "text": text[:max_chars], "truncated": len(text) > max_chars,
+              "limitations": LIMITATIONS}
+    for key in ("exit_code", "stderr", "error"):
         if key in result:
             packet[key] = result[key]
+    if "raw" in result:
+        packet.update(caption_format="json3", caption_sha256=hashlib.sha256(result["raw"].encode("utf-8")).hexdigest())
     packet["publication"] = publication(packet["metadata"])
-    return packet
+    return packet, result.get("raw")
+
+
+def atomic_json(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
+    os.replace(temporary, path)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     operations = parser.add_subparsers(dest="operation", required=True)
-    command = operations.add_parser("youtube-transcript", help="fetch captions for one known YouTube video")
-    command.add_argument("--url", required=True)
-    command.add_argument("--output", required=True, type=Path)
-    command.add_argument("--language", default="en")
-    command.add_argument("--timeout-seconds", type=float, default=45)
-    command.add_argument("--max-chars", type=int, default=24000)
-    command.add_argument("--window-start")
-    command.add_argument("--window-end")
-    command.add_argument("--start-date")
-    command.add_argument("--end-date")
+    parse = operations.add_parser("youtube-transcript", help="fetch captions for one known YouTube video")
+    parse.add_argument("--url", required=True)
+    parse.add_argument("--output", required=True, type=Path)
+    parse.add_argument("--language", default="en")
+    parse.add_argument("--timeout-seconds", type=float, default=45)
+    parse.add_argument("--max-chars", type=int, default=24000)
+    parse.add_argument("--window-start")
+    parse.add_argument("--window-end")
+    parse.add_argument("--start-date")
+    parse.add_argument("--end-date")
     args = parser.parse_args(argv)
     try:
         video = video_id(args.url)
-        if not youtube.LANGUAGE.fullmatch(args.language):
+        if not LANGUAGE.fullmatch(args.language):
             raise ValueError("language must be one language code, such as en or pt-BR")
         if not math.isfinite(args.timeout_seconds) or not 1 <= args.timeout_seconds <= 120:
             raise ValueError("timeout-seconds must be between 1 and 120")
@@ -210,19 +223,17 @@ def main(argv=None):
             raise ValueError("evidence output must be outside the installed package")
     except ValueError as error:
         parser.error(str(error))
-    packet = inspect(video, args.language, args.timeout_seconds, args.max_chars)
+    packet, raw = inspect(video, args.language, args.timeout_seconds, args.max_chars)
     packet["window"] = {"start": start.isoformat(), "end_exclusive": end.isoformat()} if start else None
     packet["date_relation"] = date_relation(packet["publication"], start, end)
-    raw = packet.pop("_raw_caption", None)
     if raw is not None:
-        support = output.with_name(output.name + "." + packet["caption_format"])
+        support = output.with_name(output.name + ".json3")
         support.parent.mkdir(parents=True, exist_ok=True)
         with support.open("w", encoding="utf-8", newline="") as stream:
             stream.write(raw)
         packet["caption_support"] = str(support)
     atomic_json(output, packet)
-    print(json.dumps({"status": packet["status"], "output": str(output),
-                      "backend": packet["backend"], "characters": len(packet["text"]),
+    print(json.dumps({"status": packet["status"], "output": str(output), "characters": len(packet["text"]),
                       "date_relation": packet["date_relation"]}))
     return 0 if packet["status"] == "ok" else 3
 

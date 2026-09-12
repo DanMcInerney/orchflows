@@ -97,7 +97,7 @@ class WindowedStepReachesTheOriginTest(unittest.TestCase):
         self.assertEqual(body_params_field(opener.opened[0].body, "params"), "")
 
     def test_declaration_matches_behavior(self):
-        from super_research._support import window_reach
+        from super_research import runner as window_reach
 
         self.assertTrue(window_reach.reach_for("youtube_innertube", query="search:x"))
         self.assertFalse(window_reach.reach_for("youtube_innertube", target_ids=("dQw4w9WgXcQ",)))

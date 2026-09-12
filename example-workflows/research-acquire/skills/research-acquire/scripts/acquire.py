@@ -14,11 +14,14 @@ from pathlib import Path
 import time
 
 import acquire_plan
-from acquire_checkpoint import (BoundedRead, CheckpointError, Store, atomic_json,
+from acquire_checkpoint import (BoundedRead, CheckpointError, Store, UncertainStepError, atomic_json,
                                 exclusive, package_identity, read_json)
 from super_research import coverage, normalize, pacing, runner, schema, transport
 
 PACKAGE = Path(__file__).resolve().parents[3]
+# A step carrying one of these refused its origin for the rest of the plan;
+# the first listed is the loss every later read on that origin carries.
+DECLINING_LOSSES = ("auth_required", "attestation_required", "rate_limited")
 
 
 def record_from(row):
@@ -36,7 +39,7 @@ def joined(manifest, receipts, selected_records=None):
     typed = normalize.type_discovery_gaps(records, selected_records)
     return schema.AcquisitionArtifact(
         artifact_id=runner.artifact_id_for(manifest.manifest_id), manifest_id=manifest.manifest_id,
-        mode="fused", as_of=manifest.as_of, records=typed, steps=results,
+        as_of=manifest.as_of, records=typed, steps=results,
         edges=normalize.link_discovery_hydration(typed, selected_records), groups=normalize.group_records(typed),
         outcome=schema.reduce_outcomes(tuple(row.outcome for row in results)),
         loss=tuple(sorted({loss for row in results for loss in row.loss})))
@@ -56,7 +59,8 @@ def execute(plan, output, selection=None, *, opener=None, now=None, clock=time.m
         bounded = BoundedRead(store, transport.urlopen_read if opener is None else opener,
                               transport.utc_now_iso if now is None else now, clock, sleep)
         carrier = pacing.paced_carrier(transport.Transport(opener=bounded, now=now), clock, bounded.wait,
-                                      state=bounded.pacing_state(), checkpoint=bounded.save_pacing)
+                                      state=bounded.pacing_state(), checkpoint=bounded.save_pacing,
+                                      admit=bounded.admit)
         receipts = {}
         reused = []
         uncertain = []
@@ -65,9 +69,7 @@ def execute(plan, output, selection=None, *, opener=None, now=None, clock=time.m
             step_identity = acquire_plan.digest(asdict(step))
             try:
                 held = store.begin(step.step_id, step_identity)
-            except CheckpointError as error:
-                if "uncertain interrupted step" not in str(error):
-                    raise
+            except UncertainStepError:
                 uncertain.append(step.step_id)
                 return
             if held is not None:
@@ -78,9 +80,9 @@ def execute(plan, output, selection=None, *, opener=None, now=None, clock=time.m
             bounded.local.step_id = step.step_id
             single = replace(manifest, steps=(step,))
             run = runner.run_scheduled(single, carrier=carrier, clock=clock, lanes=1)
-            if run.artifact.outcome == "refused" or set(run.artifact.loss) & {
-                    "auth_required", "attestation_required", "rate_limited"}:
-                bounded.decline_step(step.step_id)
+            declined = [code for code in DECLINING_LOSSES if code in run.artifact.loss]
+            if declined:
+                bounded.decline_step(step.step_id, declined[0])
             held = {"artifact": asdict(run.artifact), "ledger": [asdict(row) for row in run.ledger],
                     "manifest_advisories": [asdict(row) for row in coverage.review_manifest(single)],
                     "elapsed_seconds": clock() - step_started}

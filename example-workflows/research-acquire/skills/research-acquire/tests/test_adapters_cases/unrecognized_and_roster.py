@@ -1,3 +1,4 @@
+from super_research import dispatch
 from tests.test_adapters_cases.feed_page_artifact import *  # noqa: F401,F403
 from tests.test_adapters import _next_data
 
@@ -82,7 +83,7 @@ class UnrecognizedContainerIsNeverAnEmptySuccessTest(unittest.TestCase):
                 for descriptor in runner.surface_descriptors(row["adapter"])
             },
         )
-        module = getattr(runner, row["adapter"])
+        module = getattr(dispatch, row["adapter"])
         return module.fetch_native_page(carrier, row["request"]), opener
 
     def test_a_container_holding_nothing_this_adapter_reads_is_typed_drift(self):
@@ -193,17 +194,16 @@ class RosterIsCompleteTest(unittest.TestCase):
         )
 
     def test_every_listed_adapter_resolves_to_a_descriptor_and_to_a_call(self):
-        # Each adapter is asked what its own smoke asks it, because two of them
-        # take an address and nothing else: `open_page` refuses anything that is
-        # not an https locator on an undeclared host, and `reddit_shreddit`
-        # refuses a target its grammar does not name. A universal nonsense
-        # string would prove those two refuse, which is not what this row is
-        # about — it is about every listed adapter resolving to a descriptor and
-        # spending exactly one call.
+        # Each adapter is asked in its own grammar (`helpers.roster_request`),
+        # because two of them take an address and nothing else: `open_page`
+        # refuses anything that is not an https locator on an undeclared host,
+        # and `reddit_shreddit` refuses a target its grammar does not name. A
+        # universal nonsense string would prove those two refuse, which is not
+        # what this row is about — it is about every listed adapter resolving
+        # to a descriptor and spending exactly one call.
         for adapter_id in sorted(ROSTER):
             with self.subTest(adapter=adapter_id):
                 descriptor = runner.descriptor_for(adapter_id)
-                probe = probes.probe_for(adapter_id)
                 clock = helpers.FakeClock()
                 carrier, opener = helpers.offline_transport(
                     clock,
@@ -212,26 +212,8 @@ class RosterIsCompleteTest(unittest.TestCase):
                         for surface in runner.surface_descriptors(adapter_id)
                     },
                 )
-                asked = (
-                    adapters.AdapterRequest(
-                        step_id="s-roster",
-                        query=probe.target if probe.kind == "discovery" else "",
-                        target_ids=() if probe.kind == "discovery" else (probe.target,),
-                        # A probe that declares its own window is an adapter
-                        # whose smoke reads windowed, and one of them
-                        # (`wikimedia_pageviews`) has no windowless shape at
-                        # all: what its own smoke asks it includes the bound.
-                        window_start=(
-                            "2026-08-01T00:00:00Z" if probe.window_days else ""
-                        ),
-                    )
-                    if probe is not None
-                    else adapters.AdapterRequest(
-                        step_id="s-roster", query="probe", target_ids=("1abc234",)
-                    )
-                )
 
-                page = runner.call_adapter(adapter_id, carrier, asked)
+                page = runner.call_adapter(adapter_id, carrier, helpers.roster_request(adapter_id))
 
                 self.assertEqual(page.adapter_id, adapter_id)
                 self.assertIn(

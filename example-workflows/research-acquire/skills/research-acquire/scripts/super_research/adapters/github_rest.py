@@ -1,6 +1,6 @@
 """K0 GitHub reads, anonymous, under the tightest hourly ceiling in the roster.
 
-Measured 2026-08-10 (Carry-over routes): `api.github.com`
+Measured: `api.github.com`
 answered anonymously, `api.github.com/search/repositories` answered 200 with no
 credential, and `api.github.com/rate_limit` reported the anonymous ceiling as
 **60/hr for core and 60/hr for code_search** — two buckets, measured apart. Two
@@ -14,9 +14,9 @@ listed in ``OPERATION_SURFACES``, each a GET on one of the two declared read
 routes. There is no other path from :func:`fetch_native_page` to the carrier,
 this module names no HTTP verb at all — the verb is the route's — and
 ``transport.admitted_methods`` returns reads and nothing else for both routes,
-so a hand-built POST is refused in the opener before a socket exists. T07
-widened that gate by one closed set for a route with no GET form; neither of
-these is in it.
+so a hand-built POST is refused in the opener before a socket exists. The
+gate admits POST for exactly two named routes with no GET form; neither of
+these is one.
 
 **A 403 here is never ``auth_required``.** GitHub answers an anonymous client
 that has spent its hour with 403 and a message about rate limits, and waiting
@@ -35,16 +35,9 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, List
 
 from .. import schema, transport
-from ._support.github_rest_records import (
-    ID_KEY,
-    id_text,
-    issue_record,
-    release_record,
-    repository_record,
-)
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -53,6 +46,241 @@ from . import (
     build_native_page,
     fetch_one_page,
 )
+
+
+ID_KEY = "id"
+FULL_NAME_KEY = "full_name"
+HTML_URL_KEY = "html_url"
+DESCRIPTION_KEY = "description"
+OWNER_KEY = "owner"
+USER_KEY = "user"
+AUTHOR_KEY = "author"
+LOGIN_KEY = "login"
+CREATED_AT_KEY = "created_at"
+PUBLISHED_AT_KEY = "published_at"
+TITLE_KEY = "title"
+BODY_KEY = "body"
+NAME_KEY = "name"
+NUMBER_KEY = "number"
+STATE_KEY = "state"
+TAG_NAME_KEY = "tag_name"
+LANGUAGE_KEY = "language"
+TOPICS_KEY = "topics"
+REPOSITORY_URL_KEY = "repository_url"
+
+STARS_METRIC = "stargazers_count"
+FORKS_METRIC = "forks_count"
+OPEN_ISSUES_METRIC = "open_issues_count"
+COMMENTS_METRIC = "comments"
+
+REPOSITORY_KIND = "repository"
+ISSUE_KIND = "issue"
+RELEASE_KIND = "release"
+
+# What each kind of row promises, so a record short of it says so. The evidence
+# records that these routes answer and what they cost, not a field list, so
+# these are this adapter's own declaration.
+REPOSITORY_ROW_KEYS = (ID_KEY, FULL_NAME_KEY, HTML_URL_KEY, OWNER_KEY, CREATED_AT_KEY)
+ISSUE_ROW_KEYS = (ID_KEY, TITLE_KEY, USER_KEY, CREATED_AT_KEY, HTML_URL_KEY)
+RELEASE_ROW_KEYS = (ID_KEY, TAG_NAME_KEY, AUTHOR_KEY, PUBLISHED_AT_KEY, HTML_URL_KEY)
+
+ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
+
+def _text(value: Any) -> str:
+    return value if isinstance(value, str) else ""
+
+
+def exact_count(value: Any) -> Optional[int]:
+    """One count GitHub published as an exact number, or nothing."""
+
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def id_text(value: Any) -> str:
+    """One GitHub id as its decimal spelling, which is the form a record holds."""
+
+    if isinstance(value, bool):
+        return ""
+    if isinstance(value, int):
+        return str(value)
+    return value if isinstance(value, str) else ""
+
+
+def login_of(payload: Mapping[str, Any], key: str) -> str:
+    """The account one nested party names itself by, or nothing."""
+
+    party = payload.get(key)
+    return _text(party.get(LOGIN_KEY)) if isinstance(party, Mapping) else ""
+
+
+def route_instant_to_utc_iso(stamped: Any) -> str:
+    """GitHub's stamp as the artifact's instant, or nothing.
+
+    GitHub writes ISO-8601 UTC with a trailing ``Z`` and no fraction, which is
+    the artifact's own form. Anything else is a missing time rather than an
+    approximated one.
+    """
+
+    if not isinstance(stamped, str) or not stamped.strip():
+        return ""
+    try:
+        moment = datetime.strptime(stamped.strip(), ROUTE_INSTANT_FORMAT)
+    except ValueError:
+        return ""
+    return moment.replace(tzinfo=timezone.utc).strftime(RECORD_INSTANT_FORMAT)
+
+
+def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:
+    """Which of this row's declared fields the payload did not report.
+
+    Absence, never falsehood: a repository nobody has starred reports zero
+    stars, and zero is a count.
+    """
+
+    return tuple(key for key in keys if row.get(key) is None or row.get(key) == "")
+
+
+def _engagement(pairs: Sequence[Tuple[str, Any]]) -> Tuple[Tuple[str, int], ...]:
+    counted = []
+    for name, value in pairs:
+        exact = exact_count(value)
+        if exact is not None:
+            counted.append((name, exact))
+    return tuple(counted)
+
+
+def repository_record(
+    position: int, payload: Mapping[str, Any], missing_loss: str
+) -> NativeRecord:
+    """One repository as GitHub described it, read or found."""
+
+    owner = login_of(payload, OWNER_KEY)
+    row = {
+        ID_KEY: id_text(payload.get(ID_KEY)),
+        FULL_NAME_KEY: _text(payload.get(FULL_NAME_KEY)),
+        HTML_URL_KEY: _text(payload.get(HTML_URL_KEY)),
+        OWNER_KEY: owner,
+        CREATED_AT_KEY: route_instant_to_utc_iso(payload.get(CREATED_AT_KEY)),
+    }
+    named: List[Tuple[str, str]] = []
+    language = _text(payload.get(LANGUAGE_KEY))
+    if language:
+        named.append((LANGUAGE_KEY, language))
+    topics = payload.get(TOPICS_KEY)
+    for topic in topics if isinstance(topics, list) else ():
+        # A repository's own labels for itself, in its own order, each carried
+        # as the exact string GitHub published.
+        if _text(topic):
+            named.append((TOPICS_KEY, topic))
+    return NativeRecord(
+        canonical_content_kind=REPOSITORY_KIND,
+        # The address GitHub published for it, absolute and carried as
+        # published: this origin states an item's own address, so nothing here
+        # is composed from a host.
+        canonical_locator=row[HTML_URL_KEY],
+        native_item_id=row[ID_KEY],
+        # The repository's full name is what identifies it to a person, and its
+        # numeric id is what identifies it to GitHub. The title is the first
+        # and the identity is the second.
+        title=row[FULL_NAME_KEY],
+        body=_text(payload.get(DESCRIPTION_KEY)),
+        author=owner,
+        published_at=row[CREATED_AT_KEY],
+        engagement=_engagement(
+            (
+                (STARS_METRIC, payload.get(STARS_METRIC)),
+                (FORKS_METRIC, payload.get(FORKS_METRIC)),
+                (OPEN_ISSUES_METRIC, payload.get(OPEN_ISSUES_METRIC)),
+            )
+        ),
+        attributes=tuple(named),
+        native_position=position,
+        loss=(missing_loss,) if _missing(row, REPOSITORY_ROW_KEYS) else (),
+    )
+
+
+def issue_record(
+    position: int, payload: Mapping[str, Any], missing_loss: str
+) -> NativeRecord:
+    """One issue as the repository listed it."""
+
+    row = {
+        ID_KEY: id_text(payload.get(ID_KEY)),
+        TITLE_KEY: _text(payload.get(TITLE_KEY)),
+        USER_KEY: login_of(payload, USER_KEY),
+        CREATED_AT_KEY: route_instant_to_utc_iso(payload.get(CREATED_AT_KEY)),
+        HTML_URL_KEY: _text(payload.get(HTML_URL_KEY)),
+    }
+    named: List[Tuple[str, str]] = []
+    number = id_text(payload.get(NUMBER_KEY))
+    if number:
+        # The number a person cites an issue by, which is not the id GitHub
+        # identifies it by: two repositories both have an issue 1.
+        named.append((NUMBER_KEY, number))
+    state = _text(payload.get(STATE_KEY))
+    if state:
+        named.append((STATE_KEY, state))
+    repository_url = _text(payload.get(REPOSITORY_URL_KEY))
+    if repository_url:
+        # How this route names the repository an issue belongs to: an address,
+        # never the numeric id a repository record is identified by. Carried
+        # verbatim so a caller can tie the two, because recovering an id by
+        # taking a url apart would be this adapter inventing an identity.
+        named.append((REPOSITORY_URL_KEY, repository_url))
+    return NativeRecord(
+        canonical_content_kind=ISSUE_KIND,
+        canonical_locator=row[HTML_URL_KEY],
+        native_item_id=row[ID_KEY],
+        # Left unstated for the reason above: this payload states no id for the
+        # repository, and `native_parent_id` holds an id or nothing.
+        native_parent_id="",
+        title=row[TITLE_KEY],
+        body=_text(payload.get(BODY_KEY)),
+        author=row[USER_KEY],
+        published_at=row[CREATED_AT_KEY],
+        engagement=_engagement(((COMMENTS_METRIC, payload.get(COMMENTS_METRIC)),)),
+        attributes=tuple(named),
+        native_position=position,
+        loss=(missing_loss,) if _missing(row, ISSUE_ROW_KEYS) else (),
+    )
+
+
+def release_record(
+    position: int, payload: Mapping[str, Any], missing_loss: str
+) -> NativeRecord:
+    """One release as the repository listed it."""
+
+    row = {
+        ID_KEY: id_text(payload.get(ID_KEY)),
+        TAG_NAME_KEY: _text(payload.get(TAG_NAME_KEY)),
+        AUTHOR_KEY: login_of(payload, AUTHOR_KEY),
+        PUBLISHED_AT_KEY: route_instant_to_utc_iso(payload.get(PUBLISHED_AT_KEY)),
+        HTML_URL_KEY: _text(payload.get(HTML_URL_KEY)),
+    }
+    named = ((TAG_NAME_KEY, row[TAG_NAME_KEY]),) if row[TAG_NAME_KEY] else ()
+    return NativeRecord(
+        canonical_content_kind=RELEASE_KIND,
+        canonical_locator=row[HTML_URL_KEY],
+        native_item_id=row[ID_KEY],
+        # A release payload states no id for its repository either, and unlike
+        # an issue it states no address for one, so there is nothing to carry.
+        native_parent_id="",
+        # A release published without a name is titled by its tag, which is
+        # what GitHub itself shows for it.
+        title=_text(payload.get(NAME_KEY)) or row[TAG_NAME_KEY],
+        body=_text(payload.get(BODY_KEY)),
+        author=row[AUTHOR_KEY],
+        # When it was published, not when its commit was made: a release exists
+        # for a reader at the moment it is published.
+        published_at=row[PUBLISHED_AT_KEY],
+        attributes=named,
+        native_position=position,
+        loss=(missing_loss,) if _missing(row, RELEASE_ROW_KEYS) else (),
+    )
+
 
 # The `core` bucket: a repository and the two collections under it. This is the
 # adapter's primary descriptor because a request naming a target reads a
@@ -66,10 +294,9 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="github",
     representation_kind="native",
     operator_identity="github",
-    # The 2026-08-10 probes: `rate_limit` reported 60/hr anonymous. GitHub spends an
+    # The probes: `rate_limit` reported 60/hr anonymous. GitHub spends an
     # hour as one bucket, so sixty reads may leave at once and one refills per
-    # minute; a refusal costs the window the bucket resets in. T04 seeded these
-    # three numbers as a replay constant before this route existed.
+    # minute; a refusal costs the window the bucket resets in.
     min_interval_ms=60000,
     burst=60,
     cooldown_ms=3600000,
@@ -136,9 +363,9 @@ ITEMS_KEY = "items"
 # `ordering`: each origin-adjacent adapter module owns its own tiny parser of
 # the same name, rather than reaching into a shared one.
 RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
-# GitHub's search qualifiers read a day, never a finer instant — measured live
-# 2026-08-31: `created:>=2026-08-24` and `created:2026-08-01..2026-08-15` both
-# answered with every `created_at` inside the named day boundary.
+# GitHub's search qualifiers read a day, never a finer instant: `created:>=`
+# and `created:<from>..<to>` both answer with every `created_at` inside the
+# named day boundary.
 GITHUB_SEARCH_DATE_FORMAT = "%Y-%m-%d"
 
 # Every key these payloads publish that this module reads, under GitHub's own
@@ -360,13 +587,11 @@ def _search_date(stamped: str) -> str:
 def origin_created_qualifier(window_start: str, window_end: str) -> str:
     """The `created:` qualifier `search`'s `q` should carry, or nothing.
 
-    Measured live 2026-08-31: `created:>=2026-08-24` moved `total_count` from
-    1,244,282 to 6,725 and every returned `created_at` after the named day;
-    `created:2026-08-01..2026-08-15` (both edges) put every returned
-    `created_at` inside that exact span. The one-sided `<=` form is the same
-    qualifier grammar mirrored, not independently re-measured. A pure
-    function of the step's two instants, day-precision because that is what
-    was measured, returning nothing when neither edge is usable.
+    `created:>=<day>` and `created:<day>..<day>` both filter at the origin;
+    the one-sided `<=` form is the same qualifier grammar mirrored, not
+    independently measured. A pure function of the step's two instants, at
+    day precision because that is the grammar, returning nothing when neither
+    edge is usable.
     """
 
     start = _search_date(window_start)
@@ -383,14 +608,10 @@ def origin_created_qualifier(window_start: str, window_end: str) -> str:
 def origin_since_param(window_start: str) -> str:
     """The `since` value `issues` should carry, or nothing.
 
-    Measured live 2026-08-31: `since=<a few minutes in the future>` on an
-    active repository's issue list answered zero rows where the same call
-    without it answered a full page, so `since` genuinely filters by
-    `updated_at` rather than being silently ignored (as `releases`' own
-    `since` is — measured the same way, unchanged). No `until`/`before`
-    exists on this route (undocumented, unmeasured): the far edge stays the
-    core's own post-filter, exactly as an adapter with no window reach at all
-    already leaves it.
+    `since` filters an issue list by `updated_at` at the origin; `releases`'
+    own `since` is ignored there and sends nothing. No `until`/`before`
+    exists on this route, so the far edge stays the core's own post-filter,
+    exactly as an adapter with no window reach at all already leaves it.
     """
 
     return window_start

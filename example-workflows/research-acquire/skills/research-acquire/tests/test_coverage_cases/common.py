@@ -82,7 +82,7 @@ def step_result(step_id, adapter_id, kind="discovery", query="", outcome="ok", l
 
 def manifest(*steps):
     return schema.AcquisitionManifest(
-        manifest_id="m", mode="fused", as_of="2026-08-17T19:00:00Z", steps=tuple(steps)
+        manifest_id="m", as_of="2026-08-17T19:00:00Z", steps=tuple(steps)
     )
 
 
@@ -90,7 +90,6 @@ def artifact(steps=(), records=()):
     return schema.AcquisitionArtifact(
         artifact_id="a",
         manifest_id="m",
-        mode="fused",
         as_of="2026-08-17T19:00:00Z",
         records=tuple(records),
         steps=tuple(steps),

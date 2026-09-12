@@ -44,7 +44,8 @@ from __future__ import annotations
 
 import unittest
 
-from super_research.adapters._support import bluesky_extract, x_fxtwitter_records
+from super_research.adapters import bluesky as bluesky_adapter
+from super_research.adapters import x_fxtwitter as x_fxtwitter_adapter
 from tests.test_social_adapters_cases.bluesky import *  # noqa: F401,F403
 from tests.test_social_adapters_cases.x_fxtwitter import *  # noqa: F401,F403
 
@@ -53,13 +54,13 @@ class BothAdaptersRefuseToInventNumbersTest(unittest.TestCase):
     """Engagement admits only what the origin published as an exact integer."""
 
     def test_neither_module_reads_a_float_a_bool_or_a_formatted_string_as_a_count(self):
-        for module in (bluesky_extract, x_fxtwitter_records):
+        for module in (bluesky_adapter, x_fxtwitter_adapter):
             for value in (1.5, True, False, "21,068", "1.2K", None, [], {}):
                 with self.subTest(module=module.__name__, value=value):
                     self.assertIsNone(module.exact_count(value))
 
     def test_a_json_integer_is_a_count_and_zero_is_one_too(self):
-        for module in (bluesky_extract, x_fxtwitter_records):
+        for module in (bluesky_adapter, x_fxtwitter_adapter):
             with self.subTest(module=module.__name__):
                 self.assertEqual(module.exact_count(0), 0)
                 self.assertEqual(module.exact_count(9487), 9487)

@@ -194,7 +194,6 @@ def youtube_instagram_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-yt-ig",
-        mode="staged",
         as_of="2026-08-10T09:00:00Z",
         steps=(
             schema.AcquisitionStep(

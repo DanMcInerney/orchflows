@@ -6,8 +6,8 @@ and refuse a mixed set rather than ranking a Reddit post against a web hit;
 chronology is the one that crosses source roles on purpose.
 
 Reliability bar: pure. The only thing reached outside this module is the
-core's adapter table, read at call time to learn which surface published a
-metric name.
+adapter table in :mod:`.dispatch`, read at call time to learn which surface
+published a metric name.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from typing import Dict, Iterable, Optional, Tuple
 
 from . import schema
 from .adapters import AdapterDescriptor
+from .dispatch import declared_descriptors, surface_descriptors
 
 
 # The five named views, and which of them stay inside one platform/content
@@ -151,7 +152,7 @@ def _surface_descriptor(
     declared = descriptors.get(record.adapter_id)
     if declared is not None and declared.route_id == record.route_id:
         return declared
-    for surface in runner.surface_descriptors(record.adapter_id):
+    for surface in surface_descriptors(record.adapter_id):
         if surface.route_id == record.route_id:
             return surface
     return declared
@@ -178,7 +179,7 @@ def ordering_key(
     as_of: str,
     descriptors: Dict[str, AdapterDescriptor],
 ) -> Tuple:
-    """One record's position under one named view, as the retained contract states it."""
+    """One record's position under one named view, as the contract states it."""
 
     if order == "newest":
         return (
@@ -233,14 +234,14 @@ def order_records(
             raise OrderingError(
                 "{0} ranks within one platform/content family; got {1}".format(order, families)
             )
-    declared = runner.declared_descriptors() if descriptors is None else descriptors
+    declared = declared_descriptors() if descriptors is None else descriptors
     if order in COUNTED_ORDERS and ordered:
         # A counted view over a set in which nothing counts is not that view:
         # every metric key would be MISSING and the sort would fall through
-        # to chronology while still answering to the counted name. Measured
-        # 2026-08-17: a frozen `as_of` set at noon over records observed at
-        # half past silently returned `newest` under `most_commented`. Two
-        # causes, one sentence each, and the horizon that would admit them.
+        # to chronology while still answering to the counted name — an
+        # `as_of` frozen before every snapshot returns `newest` under
+        # `most_commented`. So: two causes, one sentence each, and the
+        # horizon that would admit them.
         eligible = [
             record
             for record in ordered
@@ -284,11 +285,3 @@ def observation_horizon(records: Iterable[schema.AcquisitionRecord]) -> str:
                 latest = snapshot.observed_at
     return latest
 
-
-# Imported last, and as a module rather than by name. This module reads the
-# core's adapter table at call time, and the core re-exports every public name
-# above, so the two import each other. Binding the module object down here —
-# after every name above exists — is what makes the pair safe to import in
-# either order; a ``from .runner import ...`` at the top would fail whenever
-# this module was imported before the core.
-from . import runner

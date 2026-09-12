@@ -1,6 +1,6 @@
 """K0 Wikimedia per-article pageviews: attention over time, window in the path.
 
-Measured 2026-09-01: keyless ``GET`` on the per-article pageviews endpoint
+Measured: keyless ``GET`` on the per-article pageviews endpoint
 answered 200 with ``items``: one row per day inside the requested range, each
 row carrying its own ``project``, ``article``, ``granularity``, ``access``,
 ``agent``, a ``timestamp`` spelled ``YYYYMMDD00``, and an integer ``views``.
@@ -10,7 +10,7 @@ data for (nonexistent article or a range before the article existed) answered
 404 with a JSON body naming its own ``detail`` sentence. A percent-encoded
 segment (``%28``/``%29`` for the parentheses a disambiguated title carries)
 answered identically to the literal characters, so the ordinary path quoting
-``_support.transport_request.path_segments`` already does needs nothing
+``transport.path_segments`` already does needs nothing
 special here. A cold first request from a fresh address answered 429 once and
 200 on the next attempt; the package's own pacing and cooldown cover that
 without this module retrying anything.
@@ -71,7 +71,7 @@ ACCESS = "all-access"
 AGENT = "all-agents"
 GRANULARITY = "daily"
 
-# The route's own path-segment names, in `_support/route_contracts.py`'s
+# The route's own path-segment names, in `routes.py`'s
 # declared order, spelled here once so a params dict can be built without
 # re-typing the route's grammar.
 PROJECT_PARAM = "project"
@@ -82,7 +82,7 @@ GRANULARITY_PARAM = "granularity"
 START_PARAM = "start"
 END_PARAM = "end"
 
-# Measured 2026-09-01: a far-future end segment answers 200 and returns
+# Measured: a far-future end segment answers 200 and returns
 # through the latest day the origin holds, rather than refusing. A spelled
 # constant rather than a value derived from the wall clock, so a window with
 # no end builds the identical request every time it is built.

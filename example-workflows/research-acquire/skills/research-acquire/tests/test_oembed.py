@@ -5,11 +5,10 @@ Standalone and offline throughout: every carrier here is
 (`tests/fixtures/oembed/*.json`, X's status and one more provider) or a
 small synthetic answer shaped exactly like this module's own docstring
 describes the remaining four. No test in this file names a declared route's
-origin literally — an item url on a host `_support/route_catalog_k0.py`
-declares is composed from `transport.route_constant(...).origin` at run
-time, the way the item under test is required to; X's `x.com` is not a
-declared route origin (the declared one is `publish.x.com`), so its status
-url is spelled directly, the same as the probe in `probes.py` does.
+origin literally — an item url on a host `routes.py` declares is composed
+from `transport.route_constant(...).origin` at run time, the way the item
+under test is required to; X's `x.com` is not a declared route origin (the
+declared one is `publish.x.com`), so its status url is spelled directly.
 """
 
 from __future__ import annotations

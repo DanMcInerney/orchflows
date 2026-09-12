@@ -1,30 +1,30 @@
-"""Runner facade: literal adapter dispatch, paging, and ``run_step``.
+"""Runner: planning, window reach, ``run_step``, and lane scheduling.
 
-Every adapter is statically imported and reached through one literal branch in
-both :func:`descriptor_for` and :func:`call_adapter`. The facade alone turns a
-returned cursor into another request and applies the caller and core caps.
-Planning and scheduling live in private support, while their established names
-remain available here for the suite and CLI. The carrier and clock stay
-injected, so this seam reaches neither network nor filesystem on its own.
+The literal adapter table is :mod:`.dispatch`'s and its names are re-exported
+here. This module alone turns a returned cursor into another request and
+applies the caller and core caps. The carrier and clock stay injected, so it
+reaches neither network nor filesystem on its own.
 """
 
 from __future__ import annotations
 
 import time
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from typing import Callable, Dict, List, Optional, Tuple
 
-from . import cache, normalize, router, schema, transport
+from . import cache, normalize, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage, build_native_page
-from .adapters import bluesky, fake, gdelt, github_rest, hacker_news, instagram_public
-from .adapters import linkedin_jobs, linkedin_public, oembed, open_page, prediction_markets
-from .adapters import public_page
-from .adapters import reddit_archive
-from .adapters import reddit_feed, reddit_shreddit
-from .adapters import rss_atom, scholarly, stack_exchange, stocktwits, tiktok_public
-from .adapters import web_search, wikimedia_pageviews
-from .adapters import x_xcancel
-from .adapters import x_fxtwitter, x_guest, x_syndication, youtube_innertube
+from .dispatch import (
+    ADAPTER_IDS,
+    RunnerError,
+    call_adapter,
+    declared_descriptors,
+    descriptor_for,
+    operation_for,
+    surface_descriptors,
+)
 from .ledger import (
     ADDITIVE_METRICS,
     METRIC_ORDINALS,
@@ -66,51 +66,9 @@ from .pacing import (
     route_budgets,
     tick_us,
 )
-from ._support.runner_plan import artifact_id_for, in_window, planned_calls, reached_origin
-from ._support.runner_plan import offers_another_page as _offers_another_page
-from ._support.runner_plan import refused_step as _refused_step
-from ._support.runner_schedule import MAX_CONCURRENT_LANES, StepOutcome, lanes_of
-from ._support import runner_schedule
-from ._support.window_reach import WindowReachError, reach_for, step_window_loss
-_RUN_STEPS_IMPL = runner_schedule.run_steps
-# Every adapter this core can reach, spelled once. It is a literal tuple, not a
-# registry: exact search over an id still finds the two branches below, and a
-# later adapter listed here without both of them fails loudly.
-ADAPTER_IDS = (
-    "bluesky",
-    "fake",
-    "gdelt",
-    "github_rest",
-    "hacker_news",
-    "instagram_public",
-    "linkedin_jobs",
-    "linkedin_public",
-    "oembed",
-    "open_page",
-    "prediction_markets",
-    "public_page",
-    "reddit_archive",
-    "reddit_feed",
-    "reddit_shreddit",
-    "rss_atom",
-    "scholarly",
-    "stack_exchange",
-    "stocktwits",
-    "tiktok_public",
-    "web_search",
-    "wikimedia_pageviews",
-    "x_xcancel",
-    "x_fxtwitter",
-    "x_guest",
-    "x_syndication",
-    "youtube_innertube",
-)
-
 
 # The most pages one discovery step may read, whatever the origin keeps
-# offering and whatever the step asked for: a step declaring its own
-# `max_pages` lowers the count, and one declaring more than this still stops
-# here. Every other way out of the page loop is the origin's own statement —
+# offering. Every other way out of the page loop is the origin's own statement —
 # it stopped naming a cursor, or it named one this step already spent — and an
 # origin that never makes either statement would spend a budget nobody set, so
 # the last stop is the core's. Five, because the roster's measured pages hold
@@ -120,200 +78,330 @@ ADAPTER_IDS = (
 # rather than a step.
 MAX_PAGES_PER_STEP = 5
 
+MAX_CONCURRENT_LANES = 8
 
-class RunnerError(RuntimeError):
-    """The core was asked for something it refuses to guess at."""
+StepOutcome = Tuple[
+    schema.StepResult, Tuple[schema.AcquisitionRecord, ...], Tuple[PlannedOperation, ...]
+]
 
 
-def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
-    """Literal branches only. An unknown adapter is refused, never guessed."""
+def planned_calls(step: schema.AcquisitionStep) -> Tuple[Tuple[AdapterRequest, str], ...]:
+    """Every bounded call this step authorizes, paired with its discovery locator."""
 
-    if adapter_id == "bluesky":
-        return bluesky.DESCRIPTOR
-    if adapter_id == "fake":
-        return fake.DESCRIPTOR
-    if adapter_id == "gdelt":
-        return gdelt.DESCRIPTOR
-    if adapter_id == "github_rest":
-        return github_rest.DESCRIPTOR
-    if adapter_id == "hacker_news":
-        return hacker_news.DESCRIPTOR
-    if adapter_id == "instagram_public":
-        return instagram_public.DESCRIPTOR
-    if adapter_id == "linkedin_jobs":
-        return linkedin_jobs.DESCRIPTOR
-    if adapter_id == "linkedin_public":
-        return linkedin_public.DESCRIPTOR
-    if adapter_id == "oembed":
-        return oembed.DESCRIPTOR
-    if adapter_id == "open_page":
-        return open_page.DESCRIPTOR
-    if adapter_id == "prediction_markets":
-        return prediction_markets.DESCRIPTOR
-    if adapter_id == "public_page":
-        return public_page.DESCRIPTOR
-    if adapter_id == "reddit_archive":
-        return reddit_archive.DESCRIPTOR
-    if adapter_id == "reddit_feed":
-        return reddit_feed.DESCRIPTOR
-    if adapter_id == "reddit_shreddit":
-        return reddit_shreddit.DESCRIPTOR
-    if adapter_id == "rss_atom":
-        return rss_atom.DESCRIPTOR
-    if adapter_id == "scholarly":
-        return scholarly.DESCRIPTOR
-    if adapter_id == "stack_exchange":
-        return stack_exchange.DESCRIPTOR
-    if adapter_id == "stocktwits":
-        return stocktwits.DESCRIPTOR
-    if adapter_id == "tiktok_public":
-        return tiktok_public.DESCRIPTOR
-    if adapter_id == "web_search":
-        return web_search.DESCRIPTOR
-    if adapter_id == "wikimedia_pageviews":
-        return wikimedia_pageviews.DESCRIPTOR
-    if adapter_id == "x_xcancel":
-        return x_xcancel.DESCRIPTOR
-    if adapter_id == "x_fxtwitter":
-        return x_fxtwitter.DESCRIPTOR
-    if adapter_id == "x_guest":
-        return x_guest.DESCRIPTOR
-    if adapter_id == "x_syndication":
-        return x_syndication.DESCRIPTOR
-    if adapter_id == "youtube_innertube":
-        return youtube_innertube.DESCRIPTOR
+    if step.kind == "discovery":
+        return (
+            (
+                AdapterRequest(
+                    step_id=step.step_id,
+                    query=step.query,
+                    window_start=step.window_start,
+                    window_end=step.window_end,
+                ),
+                "",
+            ),
+        )
+    return tuple(
+        (
+            AdapterRequest(
+                step_id=step.step_id,
+                target_ids=(hit.target_id,),
+                window_start=step.window_start,
+                window_end=step.window_end,
+            ),
+            normalize.normalized_locator(hit.discovery_locator),
+        )
+        for hit in step.selected_hits
+    )
+
+
+def in_window(step: schema.AcquisitionStep, published_at: str) -> bool:
+    """Whether one record's own time falls inside the step's window."""
+
+    if not step.window_start and not step.window_end:
+        return True
+    moment = instant_seconds(published_at)
+    if moment is None:
+        return True
+    start = instant_seconds(step.window_start) if step.window_start else None
+    end = instant_seconds(step.window_end) if step.window_end else None
+    if start is not None and moment < start:
+        return False
+    if end is not None and moment > end:
+        return False
+    return True
+
+
+def artifact_id_for(manifest_id: str) -> str:
+    return "artifact:" + manifest_id
+
+
+def _refused_step(
+    step: schema.AcquisitionStep, route_id: str, reason: str
+) -> schema.StepResult:
+    return schema.StepResult(
+        step_id=step.step_id,
+        adapter_id=step.adapter_id,
+        route_id=route_id,
+        pages=0,
+        records_received=0,
+        records_kept=0,
+        outcome="refused",
+        loss=(reason,),
+        kind=step.kind,
+        query=step.query,
+    )
+
+
+def reached_origin(page: NativePage) -> bool:
+    """Whether this page cost the origin a read."""
+
+    return page.outcome != "refused" and cache.CACHE_HIT not in page.loss
+
+
+def _offers_another_page(step: schema.AcquisitionStep, page: NativePage, kept: int) -> bool:
+    """Whether this page leaves a next one the step could still want.
+
+    Three questions, and only the first is about the page. A hydration step
+    never pages: its calls are one per hit the caller froze, which is what makes
+    each hydration record's provenance exact rather than inferred, and a page
+    read off a cursor was authorized by nobody. A page that names no cursor is
+    the origin saying there is nothing after it. And a step whose cap is already
+    met wants nothing further — the caller's own bound reached, so every stop
+    this function makes is a step finishing rather than a recall cut short.
+    That is the whole difference between here and the two refusals in
+    `runner.run_step`'s own loop: those stop a step that still wanted more, and
+    say so with a loss code.
+    """
+
+    return step.kind == "discovery" and bool(page.cursor_out) and kept < step.max_items
+
+
+# ---------------------------------------------------------------------------
+# Window reach: whether one operation's origin can bound acquisition time
+# ---------------------------------------------------------------------------
+#
+# Capability is a property of an *operation*, not of an adapter: `bluesky`
+# sends `since`/`until` on search and none on its author feed, and `x_guest`
+# and `github_rest` split the same way. So `WINDOW_REACH` is keyed by adapter
+# id and then by operation, and an adapter whose operations agree declares
+# once under the empty-string operation. It is total over `ADAPTER_IDS`. An
+# adapter or operation nothing here names raises `WindowReachError` rather
+# than reading as either "can" or "cannot", because a silent default would be
+# a claim nobody measured. `True` and `False` are both measured; `None` is
+# declared and unmeasured, a third reading `window_loss_code` types apart.
+# No bound is carried into an origin request here: that is each adapter's own.
+
+
+class WindowReachError(ValueError):
+    """An adapter or operation named no window-reach declaration."""
+
+
+# Loud and typed, on `StepResult.loss`: a windowed step whose operation is
+# declared unable to bound time at the origin carries this code, so an empty
+# in-window answer (no code) and an unhonored bound (this code) are two
+# readings a caller tells apart mechanically rather than by parsing a
+# sentence. `runner.run_step` is the one place that appends it.
+WINDOW_NOT_HONORED = "window_not_honored"
+
+# Loud and typed, beside it: a windowed step whose operation this table names
+# but has never measured carries this code instead — never both at once, and
+# never silently folded into `WINDOW_NOT_HONORED`, because a limit nobody
+# checked and a limit measured are two different readings for a caller to
+# act on differently. `window_loss_code` is the one place that chooses
+# between them.
+WINDOW_CAPABILITY_UNMEASURED = "window_capability_unmeasured"
+
+# adapter_id -> operation -> whether that operation's origin can be asked to
+# bound the read by time, in the origin's own terms — `True` or `False`, both
+# measured — or `None`, declared but never measured. `""` is the operation
+# key for an adapter whose calls are all one shape, matching the convention
+# `coverage.DEPTH_TARGETS` already uses for `reddit_archive`.
+WINDOW_REACH: Dict[str, Dict[str, Optional[bool]]] = {
+    # Measured: `bluesky.operation_params` sends `since`/`until` on search
+    # only; the author feed takes none.
+    "bluesky": {"search": True, "author": False},
+    # Measured: `hacker_news._fetch_search` serves search, search_by_date and
+    # comments and always applies `window_filters`; item and tree read
+    # Firebase/Algolia by one id and have no ordering a window could act on.
+    "hacker_news": {
+        "search": True,
+        "search_by_date": True,
+        "comments": True,
+        "item": False,
+        "tree": False,
+    },
+    # Measured: `web_search.feed_params` sends Google's
+    # `when:Nd` only on the `gnews` branch; `ddg`, `bing` and `bingnews`
+    # never build one.
+    "web_search": {"gnews": True, "ddg": False, "bing": False, "bingnews": False},
+    # Measured: `_fetch_listing`/`_fetch_search` (`adapters/reddit_shreddit.py`)
+    # both send `t=<window>`, derived from the step's own `window_start` when
+    # one is carried (`_origin_window`, `origin_time_bucket`) or from the
+    # argument grammar otherwise;
+    # `_fetch_comments` takes no window at all.
+    "reddit_shreddit": {"listing": True, "search": True, "comments": False},
+    # `repo` is a single repository hydration by name: no ordering, no bound.
+    # `issues` and `search` measured live: `since=` on an active
+    # repository's issue list and `created:` on search both genuinely filter
+    # (`adapters/github_rest.origin_since_param`, `.origin_created_qualifier`).
+    # `releases` measured the same way and does not: a `since=` set minutes in
+    # the future answered the identical unfiltered page, so it stays `False`
+    # as a measured fact rather than a conservative default.
+    "github_rest": {"repo": False, "issues": True, "releases": False, "search": True},
+    # `TweetResultByRestId` and `UserByScreenName` are single-item
+    # hydrations with no ordering, measured `False`. `UserTweets` is the one
+    # operation with an ordering and is unmeasured: `None`, not the
+    # conservative `False` a caller would read as a checked limit.
+    "x_guest": {"TweetResultByRestId": False, "UserByScreenName": False, "UserTweets": None},
+    # Origin accepts none, measured: neither selection carries a time
+    # concept (`adapters/public_page.py`).
+    "public_page": {"": False},
+    # Origin accepts none: an arbitrary document fetch takes no query string
+    # at all (`transport.build_transport_request` returns before one is
+    # built).
+    "open_page": {"": False},
+    # Origin accepts none for this hydration: one archived post by id.
+    "reddit_archive": {"ids": False, "search": True},
+    "reddit_feed": {"feed": False, "search": None},
+    "x_xcancel": {"search": None, "status": False},
+    "rss_atom": {"": False},
+    "x_syndication": {"": False},
+    # Origin accepts none, measured: this adapter never sets `published_at`
+    # at all, so there is nothing on either side for a window to act on.
+    "linkedin_public": {"": False},
+    "instagram_public": {"": False},
+    # Origin accepts none: the stream's `since` and `max` are message ids
+    # and not moments (`stocktwits._fetch_stream`); the symbol search is a
+    # name lookup.
+    "stocktwits": {"": False},
+    # Origin accepts none (`prediction_markets.operation_params`).
+    "prediction_markets": {"": False},
+    # Measured live: `keywords=python` bare vs. with a candidate
+    # `f_TPR=r<seconds>` moved the oldest posting's date forward, and on a
+    # rarer keyword (not already saturating the page) also dropped the row
+    # count 10 -> 6 (`adapters/linkedin_jobs.origin_recency_term`).
+    "linkedin_jobs": {"": True},
+    # `x_fxtwitter.operation_params` states no term for a bound it could send
+    # without inventing a query syntax, and no live read has settled whether
+    # one exists. `None`: an absence of measurement, not a proven absence of
+    # capability.
+    "x_fxtwitter": {"": None},
+    # `search` measured live: an origin-published upload-date
+    # filter value, added to the route's closed POST-body list
+    # (`routes.py`), moved every returned
+    # `publishedTimeText` inside the named span against a nine-year-old
+    # unfiltered baseline (`adapters/youtube_innertube.origin_upload_date_
+    # filter`). `player`, `next` and `transcript` read one video and have
+    # no time concept regardless — confidently `False`, not re-measured.
+    "youtube_innertube": {
+        "search": True,
+        "player": False,
+        "next": False,
+        "transcript": False,
+    },
+    # Measured, each in the origin's
+    # own grammar: GDELT DOC's `startdatetime`/`enddatetime` returned only
+    # in-window `seendate`s; Stack Exchange's `fromdate`/`todate` returned
+    # only in-window `creation_date`s; the Wikimedia pageviews date range is
+    # two path segments and the answer held exactly the days inside them;
+    # OpenAlex, Crossref and arXiv each filtered publication time at the
+    # origin, so `scholarly`'s three operations agree and it declares once.
+    "gdelt": {"": True},
+    "stack_exchange": {"": True},
+    "wikimedia_pageviews": {"": True},
+    "scholarly": {"": True},
+    # Origin accepts none, measured: a TikTok page read and an
+    # oEmbed lookup each address one item and carry no time concept.
+    "tiktok_public": {"": False},
+    "oembed": {"": False},
+    # The offline fixture reader: no origin exists for a bound to reach.
+    "fake": {"": False},
+}
+
+
+def can_bound_at_origin(adapter_id: str, operation: str) -> Optional[bool]:
+    """Whether this exact (adapter, operation) pair can bound time at the origin.
+
+    Three readings, not two. `True` and `False` are both measured facts;
+    `None` is a declaration this table carries with no measurement behind it
+    yet, for an operation a live read was blocked before it could settle.
+    Raises rather than guesses where the table names nothing at all: an
+    adapter this table does not name and an operation a named adapter does
+    not name are both a declaration nothing made, and reading either as
+    `True`, `False` or `None` would be a capability this module never
+    considered.
+    """
+
+    row = WINDOW_REACH.get(adapter_id)
+    if row is None:
+        raise WindowReachError(
+            "no window-reach declared for adapter {0!r}; declared: {1}".format(
+                adapter_id, ", ".join(sorted(WINDOW_REACH))
+            )
+        )
+    if operation not in row:
+        raise WindowReachError(
+            "adapter {0!r} declares no window-reach for operation {1!r}; declared: {2}".format(
+                adapter_id, operation, ", ".join(sorted(row)) or "<none>"
+            )
+        )
+    return row[operation]
+
+
+def reach_for(
+    adapter_id: str, query: str = "", target_ids: Tuple[str, ...] = ()
+) -> Optional[bool]:
+    """Whether the operation this query or target names can bound time.
+
+    The one entry point a caller needs: it resolves the operation the same
+    way a real dispatch would and reads the declaration for it, without the
+    caller building an :class:`AdapterRequest` of its own. `None` when that
+    operation is declared but unmeasured, same as :func:`can_bound_at_origin`.
+    """
+
+    request = AdapterRequest(step_id="", query=query, target_ids=target_ids)
+    return can_bound_at_origin(adapter_id, operation_for(adapter_id, request))
+
+
+def window_loss_code(reach: Optional[bool]) -> Optional[str]:
+    """The loss code one windowed call's own reach reading contributes, or none.
+
+    Where :func:`reach_for`'s three readings become the two codes a caller
+    sees on `StepResult.loss`: `None` — unmeasured — becomes
+    :data:`WINDOW_CAPABILITY_UNMEASURED`; `False` — measured unable —
+    becomes :data:`WINDOW_NOT_HONORED`; `True` contributes nothing, because a
+    call that could bound the window needs no typed statement saying so.
+    `runner.run_step` is the one caller.
+    """
+
+    if reach is None:
+        return WINDOW_CAPABILITY_UNMEASURED
+    if not reach:
+        return WINDOW_NOT_HONORED
     return None
 
 
-def call_adapter(
-    adapter_id: str, carrier: transport.Transport, request: AdapterRequest
-) -> NativePage:
-    """One bounded adapter call returning exactly one NativePage."""
+def step_window_loss(
+    step: schema.AcquisitionStep, request: AdapterRequest, found: Optional[str]
+) -> Optional[str]:
+    """One call's contribution to its step's running window-loss reading.
 
-    if adapter_id == "bluesky":
-        return bluesky.fetch_native_page(carrier, request)
-    if adapter_id == "fake":
-        return fake.fetch_native_page(carrier, request)
-    if adapter_id == "gdelt":
-        return gdelt.fetch_native_page(carrier, request)
-    if adapter_id == "github_rest":
-        return github_rest.fetch_native_page(carrier, request)
-    if adapter_id == "hacker_news":
-        return hacker_news.fetch_native_page(carrier, request)
-    if adapter_id == "instagram_public":
-        return instagram_public.fetch_native_page(carrier, request)
-    if adapter_id == "linkedin_jobs":
-        return linkedin_jobs.fetch_native_page(carrier, request)
-    if adapter_id == "linkedin_public":
-        return linkedin_public.fetch_native_page(carrier, request)
-    if adapter_id == "oembed":
-        return oembed.fetch_native_page(carrier, request)
-    if adapter_id == "open_page":
-        return open_page.fetch_native_page(carrier, request)
-    if adapter_id == "prediction_markets":
-        return prediction_markets.fetch_native_page(carrier, request)
-    if adapter_id == "public_page":
-        return public_page.fetch_native_page(carrier, request)
-    if adapter_id == "reddit_archive":
-        return reddit_archive.fetch_native_page(carrier, request)
-    if adapter_id == "reddit_feed":
-        return reddit_feed.fetch_native_page(carrier, request)
-    if adapter_id == "reddit_shreddit":
-        return reddit_shreddit.fetch_native_page(carrier, request)
-    if adapter_id == "rss_atom":
-        return rss_atom.fetch_native_page(carrier, request)
-    if adapter_id == "scholarly":
-        return scholarly.fetch_native_page(carrier, request)
-    if adapter_id == "stack_exchange":
-        return stack_exchange.fetch_native_page(carrier, request)
-    if adapter_id == "stocktwits":
-        return stocktwits.fetch_native_page(carrier, request)
-    if adapter_id == "tiktok_public":
-        return tiktok_public.fetch_native_page(carrier, request)
-    if adapter_id == "web_search":
-        return web_search.fetch_native_page(carrier, request)
-    if adapter_id == "wikimedia_pageviews":
-        return wikimedia_pageviews.fetch_native_page(carrier, request)
-    if adapter_id == "x_xcancel":
-        return x_xcancel.fetch_native_page(carrier, request)
-    if adapter_id == "x_fxtwitter":
-        return x_fxtwitter.fetch_native_page(carrier, request)
-    if adapter_id == "x_guest":
-        return x_guest.fetch_native_page(carrier, request)
-    if adapter_id == "x_syndication":
-        return x_syndication.fetch_native_page(carrier, request)
-    if adapter_id == "youtube_innertube":
-        return youtube_innertube.fetch_native_page(carrier, request)
-    raise RunnerError("no adapter branch for " + adapter_id)
-
-
-def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
-    """Every route one adapter can reach, one descriptor each.
-
-    Most adapters read one route and this is its one descriptor. Sixteen do not.
-    Nine read a further route plainly — ``bluesky``, ``oembed``,
-    ``prediction_markets``, ``reddit_shreddit``, ``scholarly``,
-    ``stocktwits``, ``tiktok_public``, ``web_search`` and
-    ``youtube_innertube`` — and four are worth a reason each: ``hacker_news``
-    reads two origins, ``github_rest`` reads one origin whose anonymous hour is
-    counted in two separate buckets, ``public_page`` selects between two
-    documents, and ``x_guest`` spends an activation to authorize the route it
-    reads. A budget belongs to whoever sets it, so an adapter like those
-    declares one descriptor per route and this is where the second becomes
-    reachable. Literal branches, like the two above: a surface the core cannot
-    see here is a route the scheduler would refuse to pace.
-
-    A surface is not always something a caller reads. ``x_guest``'s activation
-    returns a token rather than a record, so it appears here — where budgets
-    are collected — and never in :func:`descriptor_for`, which answers what an
-    adapter reads.
+    A declaration about the call's own shape, asked before the read rather
+    than the answer: whether this operation could have spent the window at
+    the origin does not depend on what came back. ``found`` is the step's
+    reading so far and is returned unchanged once it holds anything, because
+    a hydration step's calls address hits the caller named and are not
+    guaranteed to share an operation the way a discovery step's continuations
+    always do, and a caller wants to know a step's window went unspent at
+    least once, not how many times. `runner.run_step` folds this across every
+    call a step makes and appends the result to `StepResult.loss` once, at
+    the end, the same place every other reading below the read loop lands.
     """
 
-    if adapter_id == "x_xcancel":
-        return x_xcancel.SURFACE_DESCRIPTORS
-    if adapter_id == "reddit_archive":
-        return reddit_archive.SURFACE_DESCRIPTORS
-    if adapter_id == "reddit_feed":
-        return reddit_feed.SURFACE_DESCRIPTORS
-    if adapter_id == "bluesky":
-        return bluesky.SURFACE_DESCRIPTORS
-    if adapter_id == "github_rest":
-        return github_rest.SURFACE_DESCRIPTORS
-    if adapter_id == "hacker_news":
-        return hacker_news.SURFACE_DESCRIPTORS
-    if adapter_id == "oembed":
-        return oembed.SURFACE_DESCRIPTORS
-    if adapter_id == "prediction_markets":
-        return prediction_markets.SURFACE_DESCRIPTORS
-    if adapter_id == "public_page":
-        return public_page.SURFACE_DESCRIPTORS
-    if adapter_id == "reddit_shreddit":
-        return reddit_shreddit.SURFACE_DESCRIPTORS
-    if adapter_id == "scholarly":
-        return scholarly.SURFACE_DESCRIPTORS
-    if adapter_id == "stocktwits":
-        return stocktwits.SURFACE_DESCRIPTORS
-    if adapter_id == "tiktok_public":
-        return tiktok_public.SURFACE_DESCRIPTORS
-    if adapter_id == "web_search":
-        return web_search.SURFACE_DESCRIPTORS
-    if adapter_id == "x_guest":
-        return x_guest.SURFACE_DESCRIPTORS
-    if adapter_id == "youtube_innertube":
-        return youtube_innertube.SURFACE_DESCRIPTORS
-    descriptor = descriptor_for(adapter_id)
-    return () if descriptor is None else (descriptor,)
-
-
-def declared_descriptors() -> Dict[str, AdapterDescriptor]:
-    """Every adapter this core lists, by id."""
-
-    found: Dict[str, AdapterDescriptor] = {}
-    for adapter_id in ADAPTER_IDS:
-        descriptor = descriptor_for(adapter_id)
-        if descriptor is not None:
-            found[adapter_id] = descriptor
-    return found
+    if found is not None or not (step.window_start or step.window_end):
+        return found
+    reach = can_bound_at_origin(step.adapter_id, operation_for(step.adapter_id, request))
+    return window_loss_code(reach)
 
 
 def run_step(
@@ -329,10 +417,6 @@ def run_step(
     if descriptor is None:
         return (_refused_step(step, "", "no_route"), (), ())
 
-    decision = router.select_route(step, descriptor, transport.route_admissions())
-    if not decision.admitted:
-        return (_refused_step(step, decision.route_id, decision.refusal_reason), (), ())
-
     records: List[schema.AcquisitionRecord] = []
     operations: List[PlannedOperation] = []
     page_outcomes: List[str] = []
@@ -343,7 +427,7 @@ def run_step(
     pages = 0
     truncated = False
     outside_window = 0
-    window_loss: Optional[str] = None  # this step's own; window_reach.step_window_loss's
+    window_loss: Optional[str] = None  # folded by `step_window_loss`, one call at a time
 
     # Every call this step will make. A discovery step's continuations are
     # appended as they are earned, one per page that offers a cursor worth
@@ -381,24 +465,27 @@ def run_step(
         began_us = tick_us(clock)
         try:
             page = call_adapter(step.adapter_id, carrier, request)
+            reached = reached_origin(page)
         except transport.TransportError as error:
             # The one read that comes back with nothing to type — a refused
-            # connection, an unresolvable name, a TLS handshake that failed, or
-            # the transport declining to send it at all (`transport.urlopen_read`
-            # raises the same class for a non-https address, a write-capable
-            # method and an undeclared route or credential).
-            # Typed here rather than raised, because raising discards every
-            # step already run: `composition.md` §8 asks a failure path for the
-            # partial result plus the evidence gathered, and everything read
-            # before this call is exactly that. The error's own text is the
-            # only part of it naming where to look, so it rides as a warning.
+            # connection, an unresolvable name, a TLS handshake that failed,
+            # the transport declining to send it at all (a non-https address,
+            # a write-capable method, an undeclared route or credential), or a
+            # guest token its activation never minted. Typed here rather than
+            # raised, because raising would discard every step already run and
+            # everything read before this call is the partial result a failure
+            # owes. The error's own text is the only part of it naming where
+            # to look, so it rides as a warning. The error says whether an
+            # origin answered the read it cost — a refused activation did —
+            # and that answer is what the ledger bills.
             page = build_native_page(
                 descriptor,
                 (),
                 outcome="failed",
-                loss=(transport.UNREACHABLE,),
+                loss=(error.loss,),
                 warnings=(str(error),),
             )
+            reached = error.reached
         pages += 1
         page_outcomes.append(page.outcome)
         page_routes.append(page.route_id)
@@ -412,14 +499,13 @@ def run_step(
                 step_id=step.step_id,
                 adapter_id=step.adapter_id,
                 # The route the page says answered, which is the route the read
-                # actually left on. For an adapter reading one route that is
-                # the descriptor's; for one reading two it is whichever surface
-                # this call used, and charging both to the descriptor's would
-                # bill one origin for another's read.
-                route_id=page.route_id or descriptor.route_id,
+                # actually left on: for an adapter reading two surfaces it is
+                # whichever this call used, and charging both to the
+                # descriptor's would bill one origin for another's read.
+                route_id=page.route_id,
                 page_index=page_index,
                 duration_us=tick_us(clock) - began_us,
-                reached_origin=reached_origin(page),
+                reached_origin=reached,
                 records_received=len(page.records),
             )
         )
@@ -447,7 +533,7 @@ def run_step(
                 discovery_locator=discovery_locator,
             )
         )
-        if _offers_another_page(step, page, len(records), len(calls)):
+        if _offers_another_page(step, page, len(records)):
             if page.cursor_out in spent_cursors or len(calls) >= MAX_PAGES_PER_STEP:
                 # The origin had more and the core would not spend it: a
                 # cursor it has already asked on, or one page past its own cap.
@@ -471,17 +557,17 @@ def run_step(
     if window_loss:
         loss.append(window_loss)
     outcome = "partial" if truncated else schema.reduce_outcomes(tuple(page_outcomes))
-    # The route this step actually read, when its pages agree on one. They
-    # always do for an adapter with one surface, and they do for a two-surface
-    # adapter whose calls all hydrate or all search; a step that mixed both
-    # falls back to the route it was admitted on, because no single route is
-    # what it read and the records carry the exact one each came from.
-    read = {route_id for route_id in page_routes if route_id}
+    # The route the step's first page answered on: the route its read left on.
+    # A continuation may answer on a surface page one published (a transcript's
+    # caption track), and each record and each ledger operation carries the
+    # exact route it came from. A step with no call to make — a hydration
+    # whose caller selected nothing — is `empty` on the route it was admitted
+    # to read.
     return (
         schema.StepResult(
             step_id=step.step_id,
             adapter_id=step.adapter_id,
-            route_id=next(iter(read)) if len(read) == 1 else decision.route_id,
+            route_id=page_routes[0] if page_routes else descriptor.route_id,
             pages=pages,
             records_received=received,
             records_kept=len(records),
@@ -494,11 +580,29 @@ def run_step(
         tuple(records),
         tuple(operations),
     )
-def _sync_schedule_seams() -> None:
-    runner_schedule.paced_carrier = paced_carrier
-    runner_schedule.artifact_id_for = artifact_id_for
-    runner_schedule.ledger_of = ledger_of
-    runner_schedule.run_steps = _RUN_STEPS_IMPL if run_steps is _FACADE_RUN_STEPS else run_steps
+
+
+def lanes_of(
+    steps: Tuple[schema.AcquisitionStep, ...],
+) -> "OrderedDict[str, List[schema.AcquisitionStep]]":
+    """The steps grouped by adapter, each group in declared order."""
+
+    lanes: "OrderedDict[str, List[schema.AcquisitionStep]]" = OrderedDict()
+    for step in steps:
+        lanes.setdefault(step.adapter_id, []).append(step)
+    return lanes
+
+
+def run_lane(
+    steps: List[schema.AcquisitionStep],
+    carrier: transport.Transport,
+    artifact_id: str,
+    manifest_id: str,
+    clock: Callable[[], float],
+) -> List[StepOutcome]:
+    return [run_step(step, carrier, artifact_id, manifest_id, clock) for step in steps]
+
+
 def run_steps(
     manifest: schema.AcquisitionManifest,
     carrier: transport.Transport,
@@ -506,10 +610,26 @@ def run_steps(
     clock: Callable[[], float] = time.monotonic,
     lanes: int = MAX_CONCURRENT_LANES,
 ) -> Tuple[StepOutcome, ...]:
-    """Every step's outcome, in declared order, however the mode ran them."""
-    _sync_schedule_seams()
-    return _RUN_STEPS_IMPL(manifest, carrier, artifact_id, run_step, clock, lanes)
-_FACADE_RUN_STEPS = run_steps
+    """Every step's outcome, in declared order, however many lanes ran them."""
+
+    grouped = lanes_of(manifest.steps)
+    workers = max(1, min(lanes, MAX_CONCURRENT_LANES, len(grouped)))
+    if workers < 2:
+        return tuple(
+            run_lane(list(manifest.steps), carrier, artifact_id, manifest.manifest_id, clock)
+        )
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [
+            pool.submit(run_lane, steps, carrier, artifact_id, manifest.manifest_id, clock)
+            for steps in grouped.values()
+        ]
+        by_step_id: Dict[str, StepOutcome] = {}
+        for future in futures:
+            for outcome in future.result():
+                by_step_id[outcome[0].step_id] = outcome
+    return tuple(by_step_id[step.step_id] for step in manifest.steps)
+
+
 def run_scheduled(
     manifest: schema.AcquisitionManifest,
     carrier: Optional[transport.Transport] = None,
@@ -520,9 +640,40 @@ def run_scheduled(
 ) -> ScheduledRun:
     """Run one validated manifest to one immutable artifact and its work ledger."""
 
-    _sync_schedule_seams()
-    return runner_schedule.run_scheduled(
-        manifest, run_step, carrier, clock, dispatch_ordinal, start_tick_us, lanes
+    reached = paced_carrier(clock=clock) if carrier is None else carrier
+    artifact_id = artifact_id_for(manifest.manifest_id)
+    steps: List[schema.StepResult] = []
+    records: List[schema.AcquisitionRecord] = []
+    operations: List[PlannedOperation] = []
+    for result, step_records, step_operations in run_steps(
+        manifest, reached, artifact_id, clock=clock, lanes=lanes
+    ):
+        steps.append(result)
+        records.extend(step_records)
+        operations.extend(step_operations)
+
+    typed = normalize.type_discovery_gaps(tuple(records))
+    loss = tuple(sorted({code for step in steps for code in step.loss}))
+    artifact = schema.AcquisitionArtifact(
+        artifact_id=artifact_id,
+        manifest_id=manifest.manifest_id,
+        as_of=manifest.as_of,
+        records=typed,
+        steps=tuple(steps),
+        edges=normalize.link_discovery_hydration(typed),
+        groups=normalize.group_records(typed),
+        outcome=schema.reduce_outcomes(tuple(step.outcome for step in steps)),
+        loss=loss,
+    )
+    return ScheduledRun(
+        artifact=artifact,
+        ledger=ledger_of(
+            tuple(operations),
+            manifest,
+            stop_reason=artifact.outcome,
+            dispatch_ordinal=dispatch_ordinal,
+            start_tick_us=start_tick_us,
+        ),
     )
 
 

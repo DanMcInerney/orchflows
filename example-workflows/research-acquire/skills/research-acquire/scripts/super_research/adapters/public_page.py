@@ -1,13 +1,13 @@
 """K0 one *selected* public document, read as a document.
 
-Measured 2026-08-10 (control probes): ``example.com`` and
+Measured: ``example.com`` and
 ``wikipedia.org`` answered 200 with genuine origin content from this host, while
 the network appliance answered other domains with a 503 login portal. Those are
 the two static documents the evidence records, and they are what this adapter
 may select between.
 
 **This is the one adapter in the roster that could have been a generic HTTP
-primitive, and the spec's non-goals forbid one.** Every other adapter here is
+primitive, and this package has none.** Every other adapter here is
 pinned to a vendor's endpoint shape: a caller cannot point the GitHub reader at
 Wikipedia, because ``/repos/<owner>/<repo>`` is GitHub's shape and the host is
 ``routes.py``'s. This one takes an argument, and an argument is one bad
