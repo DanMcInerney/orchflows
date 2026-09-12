@@ -5,74 +5,77 @@
 - [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
-Every other agent is launched through these two. The host runs agents; orchflows adds no agent runtime, scheduler or workflow language. A workflow is a `SKILL.md` that loads other skills into the current context and delegates through the primitives. A larger workflow composes smaller ones and adds only what it owns. Loading a skill applies its instructions to the caller; the parent supplies each child's assignment and context. Loading does not launch an agent.
+All delegation goes through these primitives. The host owns agent execution; orchflows adds no runtime, scheduler or workflow language. Loading a `SKILL.md` applies its instructions in the caller's context; it does not launch an agent. Composing workflows add only their own decisions and supply each child's assignment and context.
 
-Choose planning, delegation and isolation from unknowns, dependencies and possible edit conflicts, not task-size labels. Run independent work concurrently.
+Choose planning, delegation and isolation from unknowns, dependencies and edit conflicts. Run independent work concurrently.
 
 ## Where things live
 
-Give each instruction and mechanism one owner; reference shared facts. README introduces the library to users; docs and guidance address agents.
+Give each instruction and mechanism one owner; reference shared facts. READMEs address humans; other live documentation addresses agents.
 
-| Thing | Lives in | Owner |
-| --- | --- | --- |
-| question, dates, sources, bounds, output location | the prompt | caller |
-| quality criteria for one domain | `guidance/<name>.md` | domain guidance |
-| composition, control flow, agent count | `SKILL.md` prose | the workflow composing those calls |
-| package dependencies, guidance selection, resolved paths | the library's `references/library-context.md`, reused by its entrypoints | outermost package entrypoint |
-| deterministic mechanics: fetch, parse, bound, resume | `skills/<skill>/scripts/`, tests beside them; core `scripts/` for the CLI | the library providing the mechanism |
-| source knowledge | library guidance; operational notes in `references/` | the library using that source |
-| host facts | [hosts.md](hosts.md) | core host documentation |
-| built-ins | core `skills/orch-*/`; the prefix is reserved | orchflows developers |
-| custom workflows | `~/.orchflows/libraries/<lib>/skills/<workflow>/`; `personal` unless the caller names a library or repository | the user |
-| outputs | the caller's workspace, never a package | each run |
-
-Request defaults belong to the caller: window, source, model, effort and output location.
+| Concept | Owner / location |
+| --- | --- |
+| Request and defaults: question, dates, sources, bounds, model, effort, output location | Caller prompt |
+| Coordination: composition, control flow, agent count | Composing workflow's `SKILL.md` |
+| Quality criteria, including source-specific preferences | `guidance/<domain>.md` |
+| Shared contracts and operational knowledge | Library `references/`; skill-local `references/` for one consumer |
+| Package dependencies and guidance requirements | `references/library-context.md`, reused by entrypoints |
+| Resolved paths and request context | Outermost entrypoint; pass through composed calls |
+| Deterministic mechanics | Owning skill's `scripts/`, with sibling `tests/`; core CLI in `scripts/` |
+| Package identity | Root `plugin.json` |
+| Native skill discovery | Host manifests and catalogs per [hosts.md](hosts.md) |
+| Host registration, execution and isolation facts | [hosts.md](hosts.md) |
+| Setup, updates and home paths | [home.md](home.md) |
+| Transcript access and interpretation | [history.md](history.md) |
+| Run outputs and evidence | Caller workspace, never a package |
 
 ## Guidance selection
 
-Guidance adds preferences and local criteria to the assignment. A file has `## Make` and `## Review` sections, either omitted when empty. Apply Make when producing work and Review when assessing it. Workflows name the domains they need; select `orchflows` for authoring workflows, guidance or libraries. A domain being extended is source material for its author.
+Guidance records domain preferences in `## Make` and `## Review`; omit empty sections. Apply Make when producing and Review when assessing. Workflows name required domains; select `orchflows` for authoring workflows, guidance or libraries. A domain being extended is source material for its author.
 
-Select independent names, for example `writing`, `visual-design`, `short-video.marketing`. Dots specialize within a domain: for each name, visit its prefixes from general to specific, reading core then the selected libraries in caller-supplied order at each specificity. Thus `short-video.marketing` considers `short-video.md` before `short-video.marketing.md` in each package's `guidance/`. Library-only domains are valid. More specific guidance wins within its domain; independent domains compose without replacing one another. Keep each resolved file once, in first-use order.
+Resolve once at the outer entrypoint, including a leaf invoked alone:
 
-Missing implicit parents are fine. An explicitly selected name must exist in at least one selected package; report a missing selection as a gap and block work that requires it. For an unfamiliar site or genre, select applicable general guidance instead of inventing a missing specialization.
+1. Select independent domain names, such as `writing`, `visual-design`, `short-video.marketing`.
+2. For each name, visit dotted prefixes from general to specific. At each prefix, read core then selected libraries in caller-supplied order. Example: `short-video` across packages, then `short-video.marketing` across packages.
+3. Keep each resolved file once, in first-use order. More specific guidance wins within its domain; independent domains compose.
+4. Missing implicit parents are allowed; library-only domains are valid. An explicit selection must exist in core or a selected library; report a gap and block dependent work otherwise. Use general guidance for unfamiliar sites or genres.
+5. Resolve package dependencies through native skills, supplied roots or the [home CLI](home.md#resolve). Pass absolute paths and request context unchanged to composed skills and primitives; extend only for new dependencies.
 
-Resolve these files and package dependencies once at the outer entrypoint, including a leaf invoked alone. Use available native skills or supplied package roots; a configured home also provides [CLI resolution](home.md). Pass the resolved absolute paths unchanged, with request context, to composed skills and primitives. Reuse that context; extend it only for newly introduced dependencies.
-
-A selected library can supply removable model corrections under the same domain names. Selection is explicit and normal specificity still applies; model names do not belong in the domain hierarchy.
+Selected libraries may supply removable model corrections under existing domain names. Normal specificity applies; model names are not domain specializations.
 
 ## Three roots
 
-| Root | Owner | Holds |
-| --- | --- | --- |
-| Core checkout | orchflows developers | `skills/`, `guidance/`, `docs/`, `scripts/`, `tests/`, `example-workflows/` |
-| Home `~/.orchflows` | the user | `libraries/`, managed core, runtime: [home.md](home.md) |
-| Project workspace | the task | outputs |
+| Root | Contents / editing owner |
+| --- | --- |
+| Core checkout | Built-in `skills/orch-*/`, guidance, docs, CLI, tests, example libraries; orchflows developers |
+| Home `~/.orchflows` | User-owned libraries and runtime; setup-managed core per [home.md](home.md) |
+| Project workspace | Task outputs |
 
-The managed core contains the root manifest, native plugin directories, `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, and `skills/`, `guidance/`, `docs/`, `scripts/`. Setup's `CORE_ENTRIES` owns that explicit packaging list. Tests and example libraries remain in the checkout; core Markdown links stay within the shipped core. Developers edit the checkout, run `python -m unittest discover -s tests`, load it as a plugin ([hosts.md](hosts.md)) and run its `setup` to update a home.
+Reserve `orch-` for built-ins. Create custom workflows in `~/.orchflows/libraries/personal/skills/<workflow>/` unless the caller names another library or repository. Edit the checkout or user library, never managed core or host caches.
+
+Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tests and example libraries stay in the checkout; core Markdown links must resolve within the shipped core. To update core: edit the checkout, run `python -m unittest discover -s tests`, then [load it for development](hosts.md#register-and-refresh) or [run setup](home.md#setup) to update a home.
 
 ## A library
 
 ```text
 <library>/
-├── plugin.json  .claude-plugin/plugin.json  .codex-plugin/plugin.json   name, version, "skills": "./skills/"
-├── README.md                        composition diagram, agent count, install, dependencies
-├── references/                      context shared by several skills
-├── guidance/<name>.md              domain or dotted specialization
-├── skills/<skill>/SKILL.md          frontmatter name + description, then prose
-├── skills/<skill>/references/       knowledge only that skill loads
-├── skills/<skill>/scripts/          mechanics that skill runs; tests/ beside them
-└── trials/                          request.md, expected-behavior.md
+├── plugin.json                     name, version, skills: "./skills/"
+├── .claude-plugin/plugin.json      Claude manifest
+├── .codex-plugin/plugin.json       Codex manifest
+├── README.md                       composition, agent count, install, dependencies
+├── references/                     shared context and contracts
+├── guidance/<domain>.md            domain or dotted specialization
+├── skills/<skill>/SKILL.md          frontmatter name + description; instructions
+├── skills/<skill>/references/       knowledge used by this skill only
+├── skills/<skill>/scripts/          mechanics; sibling tests/
+└── trials/                         request.md, expected-behavior.md
 ```
 
-Identity is `<library>:<skill>`. Links stay inside the package; other packages are reached by native skill name or resolved paths. Do not bake machine-specific checkout, home, cache or project paths into a package. Declare runtime dependencies in its README; setup installs no library dependencies.
-
-## Reference: social-search
-
-The optional `example-workflows/social-search` library has three skills: `search-site` launches one orch-work for a bounded collection scope, `rank-evidence` one orch-review, and `social-search` composes them. A scope can be a site, web domains or a feed set. Its shared evidence reference defines handoffs; `research.search-site` guidance adds domain preferences. Deterministic acquisition belongs to the separate `research-acquire` library. The installed core has five skills; example libraries are separate packages, not built-ins.
+Skill identity is `<library>:<skill>`. Keep links within the package; reach other packages by native skill name or resolved paths. Never embed machine-specific paths. Declare runtime dependencies in the README; setup installs none for libraries.
 
 ## Invariants
 
-- A skill names a script, its inputs and its result, never its internals.
-- Declare the agent count; extra reviews, loops or repairs only when the request asks.
-- Gaps stay visible; missing work is never no-results evidence.
-- Behavior is established by a trial on a real bounded request, not by valid frontmatter. An unexercised failure path is untested, not evidence that its handling is unnecessary.
+- Skills name scripts, inputs and results; scripts own their internals.
+- Declare agent counts; extra reviews, loops or repairs require a caller request.
+- Report missing work as a gap, never as no-results evidence.
+- Establish behavior with a real bounded trial. Valid frontmatter proves no behavior; unexercised failure paths remain untested.

@@ -1,20 +1,28 @@
 # History
 
-`history`, a subcommand of the [home CLI](home.md), reads Claude Code and Codex transcripts in place without changing them. `history <find|inspect|read> --help` lists flags. Native home: `CODEX_HOME` or `~/.codex`, `CLAUDE_CONFIG_DIR` or `~/.claude`, or `--native-home PATH`. Codex discovery reads the host's `state_*.sqlite` index and nothing else.
+The [home CLI](home.md)'s `history` command reads native transcripts without changing them or resuming agents. `HOST` is `codex` or `claude`; each command accepts `--native-home PATH` and `--help`.
+
+Native home: `CODEX_HOME` → `~/.codex`; `CLAUDE_CONFIG_DIR` → `~/.claude`. An explicit `--native-home` wins. Codex discovery requires `state_*.sqlite`; it has no transcript-scan fallback.
 
 ## Scope
 
 | Request | Calls |
 | --- | --- |
-| This session | `inspect HOST SESSION_ID`, then `read` relevant agents |
-| A period | `find codex --since A --until B`, and the same for `claude` |
+| This session | `history inspect HOST SESSION_ID`, then `history read HOST AGENT_ID` |
+| A period | `history find codex --since A --until B`, then repeat for `claude` |
 | A project in a period | add `--project <recorded path fragment>` |
 
-Take the current session ID from the host (Codex: `CODEX_THREAD_ID`); never assume the newest transcript. `--since` is inclusive, `--until` exclusive; bare `YYYY-MM-DD` is UTC midnight, timestamps need an offset. Repeat the same dates on every `read` page; drop them when earlier assignment context is needed. `--project` is a case-insensitive substring of the recorded cwd with slashes normalized, not a repository identity; worktrees and directory changes need their own fragments. `find` returns candidates whose index or endpoint bounds overlap the window, so a candidate may hold no events in it; missing metadata is `scope_unknown`. Query both hosts; no merged index exists. Follow every `next_cursor` with unchanged selectors until null.
+Take the session ID from the host (Codex: `CODEX_THREAD_ID`), never the newest transcript. `--since` is inclusive; `--until` exclusive. Dates are UTC midnight; timestamps require an offset. Repeat dates on every `read` page; start a separate read without dates for earlier assignment context.
+
+`--project` matches a case-insensitive recorded-cwd substring with normalized slashes, not repository identity. Include worktree/directory variants. `find` returns overlapping index or endpoint bounds; candidates may contain no matching events. Missing scope metadata is `scope_unknown`.
+
+Page with `--after NEXT_CURSOR`, preserving selectors. Stop `find`/`inspect` at `next_cursor: null`; stop `read` at `has_more: false`. A read cursor remains valid for later appends. Changed/truncated sources invalidate it; restart that read.
 
 ## Reading
 
-`inspect` returns the tree from ID down: per-agent event and tool counts, latest activity, errors, `calls_without_recorded_results`, gaps, and transcript path, line and event references; a wrapper call and its nested command activities are separate categories. Rerun to see newly spawned agents. `read` returns events in file order with previews; `has_more: false` is the current end and the cursor still reads later appends. Event IDs are `BYTE_OFFSET:INDEX`, local to one transcript; `--event` expands one field: `data` (tool input, message, command metadata), `presented_output` (tool response as recorded), `captured_output` (Codex command stdout), `stderr`, `sidecar` (one retained spill file inside the native home).
+`inspect` returns the descendant tree: per-agent counts, latest activity, errors, unmatched calls, gaps and source references. Wrapper calls and nested command activities are separate categories. Rerun to discover new children.
+
+`read` returns file-order previews. Expand a field with `history read HOST ID --event BYTE_OFFSET:INDEX --field FIELD`; event IDs are transcript-local. Fields: `data` (input/message/metadata), `presented_output` (recorded tool response), `captured_output` (Codex stdout), `stderr`, `sidecar` (one available native-home spill file). Continue expansion with `--offset NEXT_OFFSET` until `next_offset: null`. `--event` cannot combine with dates or `--after`.
 
 ## Limits
 
