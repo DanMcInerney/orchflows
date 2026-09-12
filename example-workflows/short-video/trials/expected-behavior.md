@@ -1,0 +1,11 @@
+# Observable acceptance
+
+- Use a stable candidate and an ordinary entrypoint request. Record initial tools, the actual invocation and author interventions; distinguish delegation supplied by the workflow from supplemental production instructions. Installed prerequisites are legitimate preparation, not proof of autonomous setup.
+- Resolve and run from an unrelated workspace without authoring-checkout paths. Every child receives concrete dependencies and the full, deduplicated standard ancestry. Marketing applies only to the marketing request.
+- Marketing uses two agents; the combined humor/personal request uses four. The standalone maker uses one and launches no review; the standalone reviewer uses one and makes no edits. No research gate, direction review, extra coordinator or repair cycle appears.
+- Actual files exist: editable projects with usable render instructions and complete playable exports. Check every MP4's SHA-256, duration, dimensions, frame rate where requested and intentional audio absence; decode the entire file. Verify the reviewer examined those hashes and that exports remain unchanged afterward.
+- The marketing film explains the actual composition-to-export relationship without invented efficacy, stock footage or a CTA. The joke contains a legible setup and earned surprise. The personal film uses the supplied memory with emotional specificity and no invented biography or advertising. The education leaf visibly explains equivalent fractions.
+- Each review identifies the actual opening, payoff, joins and dense moments examined, with useful timestamps. Normal-speed motion and audio claims require corresponding viewing/listening evidence. Frame samples alone produce a partial visual review; unavailable capabilities remain explicit and do not trigger extra agents.
+- Requested placements and settings survive composition. Personal landscape delivery does not inherit a vertical advertising default. A film without a usable export is incomplete, regardless of source or preview quality.
+
+Record actual outcomes, agent events, export identities and observed gaps outside the library. Packaging checks alone establish none of these creative or playback results.

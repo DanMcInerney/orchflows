@@ -49,7 +49,7 @@ social-search → search-reddit / search-youtube / search-site → orch-work →
              → rank-evidence → orch-review → ranked, cited assessment
 ```
 
-Ask `orch-build-workflow` for your own workflow; it lands in `~/.orchflows/libraries/personal/`. `setup --example research-acquire` adds optional scripted readers (YouTube transcripts, bounded acquisition). Both examples live in `example-workflows/`.
+Ask `orch-build-workflow` for your own workflow; it lands in `~/.orchflows/libraries/personal/`. `setup --example research-acquire` adds optional scripted readers (YouTube transcripts, bounded acquisition). `setup --example short-video` adds video creation and independent export review, with marketing as a quality specialization. These libraries live in `example-workflows/`.
 
 ## Docs for agents
 
