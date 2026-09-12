@@ -68,7 +68,7 @@ Identity is `<library>:<skill>`. Links stay inside the package; other packages a
 
 ## Reference: social-search
 
-The optional `example-workflows/social-search` library has three skills: `search-site` launches one orch-work for a bounded collection scope, `rank-evidence` one orch-review, and `social-search` composes them. A scope can be a site, web domains or a feed set. Source knowledge and the evidence handoff belong to its `research.search-site` guidance; deterministic acquisition belongs to the separate `research-acquire` library. The installed core has five skills; example libraries are separate packages, not built-ins.
+The optional `example-workflows/social-search` library has three skills: `search-site` launches one orch-work for a bounded collection scope, `rank-evidence` one orch-review, and `social-search` composes them. A scope can be a site, web domains or a feed set. Its shared evidence reference defines handoffs; `research.search-site` guidance adds domain preferences. Deterministic acquisition belongs to the separate `research-acquire` library. The installed core has five skills; example libraries are separate packages, not built-ins.
 
 ## Invariants
 

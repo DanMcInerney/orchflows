@@ -2,4 +2,4 @@
 
 ## Make
 
-Read relevant comment branches with their parent context; top comments are a selected sample.
+Scores are net votes and may be negative; they are not counts of agreeing participants. Top comments are a selected sample.

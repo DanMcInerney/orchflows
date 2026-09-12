@@ -1,11 +1,10 @@
 # Trial acceptance
 
-Evaluate actual artifacts and agent events. Record the stable candidate, tools, ordinary entrypoint invocation and author preparation or interventions as limits on what the trial establishes.
+Evaluate artifacts and agent events. Record candidate versions, tools, elapsed time, entrypoint invocation and author preparation or interventions; unexercised behavior remains a limit.
 
-- The installed skills work from an unrelated project without source-checkout paths.
-- Guidance is resolved once at the package boundary and passed as concrete paths. Known sites add their specialization; an unfamiliar site still uses general site-search guidance. The final reviewer loads the shared source guidance's Review section and writing guidance. Explicitly requested missing guidance is a visible gap or blocker.
-- The chosen bounded assignments produce one work agent each and one reviewer after gathering; workers launch no children. Independent assignments launch before gathering, within capacity and shared provider limits.
-- Caller bounds hold; no invented timing or speedup claims.
-- Each handoff preserves original locators, relevant dates, inspected support and rank reasons; missing work never becomes no-results evidence; required gaps prevent a complete claim.
-- Sources have separate output directories outside the package; the report describes the actual outcome.
-- With the reader installed, the YouTube worker invokes its resolved script and hands off inspected transcript support, with dependency and caption gaps explicit.
+- The workflow works from an unrelated project using only the brief and declared dependencies. Distinguish installed-package testing from explicitly supplied candidate roots.
+- Each chosen assignment uses one maker; one fresh reviewer receives every outcome and performs no collection. Workers launch no children. Independent assignments launch before gathering.
+- Guidance and optional readers resolve at the package boundary and reach their consumers. Unfamiliar sites use general guidance; missing explicit selections block dependent work.
+- Caller bounds survive delegation, including time for handoffs and review when the caller supplies a total deadline. Shared originals have one owner; inspect actual reads for avoidable overlap.
+- Handoffs preserve inspected support, dates, rank reasons, useful engagement and coverage gaps. Missing work never becomes no-results evidence. Outputs stay outside packages.
+- Standalone leaves return their own results without invoking the composition. With the transcript reader available, YouTube speech claims have inspected transcript or media support; missing captions remain a gap.
