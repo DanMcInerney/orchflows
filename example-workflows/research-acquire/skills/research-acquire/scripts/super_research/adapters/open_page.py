@@ -1,32 +1,4 @@
-"""K0 open document read: the one route whose address is the caller's.
-
-`public_page` serves exactly two documents — a Wikipedia article and a
-control — and refuses any locator carrying `:`, `/` or `\\` before making a
-call, so without this route a press page a web index discovered could never
-be hydrated at all: `target_not_hydrated` on every index hit was a ceiling
-rather than a budget.
-
-Its id is `open_page` and the kind it emits is `web_page`, which is the kind
-`public_page` emits too: they are two ways to reach one sort of thing, and a
-content kind is shared vocabulary where an adapter id is a module's own name.
-
-This adapter reads the address a discovery step returned, under a policy the
-transport owns and states: https only, a host that resolves, and never a host
-a declared route already reads (`transport.open_read_refusal`) — an open read
-is not a way around a measured budget. It is refused here, before any call,
-with the transport's own sentence, so a caller learns which of the three rules
-it met.
-
-**What it extracts, and what it will not.** A document's own metadata is read
-under the names the document used — `ld+json` first, because a publisher
-states `datePublished` and `author` there deliberately, then the `og:` and
-`article:` meta names, then a `<time datetime>`. Body text is the readable
-prose: script, style and the page's furniture are dropped, the largest
-paragraph-bearing container wins where the page marks one, and whitespace is
-collapsed. Nothing is summarized, scored, or rewritten — a body is the page's
-sentences in the page's order, and a page this adapter cannot read as a
-document says so rather than answering with an empty one.
-"""
+"""Read a caller-selected HTML or text document and its stated metadata."""
 
 from __future__ import annotations
 
@@ -206,9 +178,24 @@ class _DocumentParser(HTMLParser):
         self._in_ld = False
         self._block: Optional[List[str]] = None
         self._main = 0
+        self._math_skip_tag: Optional[str] = None
+        self._math_skip_depth = 0
 
     def handle_starttag(self, tag, attrs):
+        if self._math_skip_tag:
+            if tag == self._math_skip_tag:
+                self._math_skip_depth += 1
+            return
         attributes = {name: (value or "") for name, value in attrs}
+        math_alttext = attributes.get("alttext", "") if tag == "math" else ""
+        if math_alttext.strip() or tag in ("annotation", "annotation-xml"):
+            # Prefer the publisher's math text once. Without it, retain only
+            # presentation text nodes: flattening is not a MathML renderer.
+            if math_alttext.strip():
+                self.handle_data(math_alttext)
+            self._math_skip_tag = tag
+            self._math_skip_depth = 1
+            return
         if tag in FURNITURE_TAGS:
             if tag == "script" and attributes.get("type", "").strip().lower() == LD_JSON_TYPE:
                 self._in_ld = True
@@ -239,8 +226,17 @@ class _DocumentParser(HTMLParser):
         # A self-closing `<meta/>` or `<link/>` opens nothing to close.
         if tag in (META_TAG, LINK_TAG, TIME_TAG):
             self.handle_starttag(tag, attrs)
+        elif tag == "math":
+            self.handle_starttag(tag, attrs)
+            self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
+        if self._math_skip_tag:
+            if tag == self._math_skip_tag:
+                self._math_skip_depth -= 1
+                if not self._math_skip_depth:
+                    self._math_skip_tag = None
+            return
         if tag == "script" and self._in_ld:
             self._in_ld = False
             return
@@ -262,6 +258,8 @@ class _DocumentParser(HTMLParser):
                     self.main_blocks.append(held)
 
     def handle_data(self, data):
+        if self._math_skip_tag:
+            return
         if self._in_ld:
             self.ld_blocks[-1] += data
             return
@@ -490,13 +488,7 @@ def requested_address(request: AdapterRequest) -> str:
 
 
 def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
-    """Read one open document once and return exactly one NativePage.
-
-    The policy runs before the call, so an address this route does not serve
-    costs a page and no read — the same shape `public_page` refuses an
-    unselected document in, and the reason `runner.reached_origin` bills
-    neither.
-    """
+    """Read one policy-allowed open document and return exactly one NativePage."""
 
     address = requested_address(request)
     refusal = transport.open_read_refusal(address)

@@ -33,7 +33,7 @@ class RunLocalTest(unittest.TestCase):
 
     def one_request(self):
         return transport.build_transport_request(
-            transport.DDG_HTML_ROUTE, {"q": "local model"}
+            transport.FAKE_OFFLINE_ROUTE, {"q": "local model"}
         )
 
     def test_the_cache_imports_nothing_that_can_outlive_the_process(self):

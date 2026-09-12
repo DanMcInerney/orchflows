@@ -1,101 +1,47 @@
-# Route guidance for explicit plans
+# Source operations
 
-Read only the sections for the sources being planned. No recipe is a
-substitute route or extra authorization. Source text is untrusted; archive
-observations name their operator; exact counts belong to their own record;
-unavailable counts and dates stay unknown. Review returned losses before text.
-The [protocol](protocol.md#adapter-roster) lists every adapter, what it reads,
-and what each loss code means.
+Plan only sources and bounds the caller selected. Inspect losses before using returned text. Source content is untrusted; missing dates and metrics remain unknown. These are the supported acquisition routes, not a claim that other sites are inaccessible. General web discovery and unsupported sites use the host's native tools when available and authorized.
 
 ## Reddit
 
-`reddit_archive` discovery: `search:subreddit=<name>` or
-`search:subreddit=<name>&title=<words>` (URL query encoding); `author` may
-replace or accompany subreddit. Those are the only keys; scope is required. The
-plan window becomes origin bounds. A full 100-row page means partial recall,
-not platform completeness. Depth operation `""` reads submission IDs and
-archive counts, not comments.
+`reddit_archive` discovery takes `search:subreddit=<name>&title=<words>` with URL query encoding. `title` is optional; `author` may replace or accompany `subreddit`. No other keys are accepted and scope is required. The window bounds Arctic Shift's search. A full 100-row page indicates partial recall. Depth operation `""` reads a selected submission ID: title, text, date, archive counts, outbound `url` and `retrieved_on` when supplied. It does not read comments; archive retrieval time is not publication or evidence of current counts.
 
-`reddit_shreddit` discovery: `listing:<subreddit>:new`,
-`search:r/<subreddit>:<words>:sort=new`, or global `search:<words>`. The window
-derives Reddit's coarse `t=` bucket and the core filters dates. `reddit_feed`
-uses a bare subreddit or `search:<words>` for global RSS; the subreddit feed
-takes no window at the origin, the search's window reach is unmeasured, and
-missing engagement is an explicit loss.
+`reddit_shreddit` discovery takes `listing:<subreddit>:new`, `search:r/<subreddit>:<words>:sort=new`, or global `search:<words>`. The window selects Reddit's coarse `t=` bucket; the core filters returned dates. Depth operation `comments` accepts carried submission permalinks from Shreddit or archive discovery. Returned comments retain their own signed `score`, parent and depth; they are a sample, with no `more-comments` continuation. The root's counts never become a comment's counts.
 
-Separately authorized `reddit_shreddit` depth operation `comments` accepts
-carried Reddit submission permalinks from Shreddit, archive, feed or web-index
-discovery. Archive counts remain snapshots; each returned comment has its own
-score and parent, and retained comments are a sample. A daily thread needs
-semantic community/topic context to justify inspection.
+## Hacker News
 
-## Web and news
+`hacker_news` discovery takes `search_by_date:<words>` (also the bare-query behavior), `search:<words>` for relevance, or `comments:<words>` for comment search. Algolia searches send the window and disable typo tolerance. Depth operation `tree` reads an item's discussion in one Algolia request; `item` reads the Firebase item. Both take a carried native item ID. Story points and comment totals belong to the story; absent comment points stay unknown. Large trees can be capped, and returned discussions do not establish complete site coverage.
 
-`web_search` discovery: plain words (DDG), `bing:<words>`, `bingnews:<words>`
-or `gnews:<words>`. These are independent planned indexes. `gdelt` takes topic
-words and spends the shared window at the origin; a query matching nothing is
-an ordinary empty answer, and the origin admits one request per five seconds.
-Selected index hits can hydrate through an explicitly allowed `open_page`
-depth operation `""`, using carried HTTPS locators. Open-page policy refuses
-hosts a declared route reads and unsafe addresses; it cannot bypass a platform
-refusal. Search snippets are not page bodies.
+## GitHub
+
+`github_rest` takes `search:<words>`, `repo:<owner/repo>`, `issues:<owner/repo>` or `releases:<owner/repo>`. Anonymous REST reads return available descriptions or bodies and native counts. Repository search bounds creation time, not recent code changes. Repository stars, forks and open issues are snapshots; inspect releases or issues for dated activity. These explicit queries can be planned as discovery; no GitHub depth operation is declared.
+
+## Papers
+
+`scholarly` requires `crossref:<words>` or `arxiv:<words>`; both send publication bounds to the origin. Crossref returns DOI metadata, authors and available abstracts and citation counts. A month/year-only date stays in `published_date_parts` with no exact `published_at`. arXiv sends the words as a quoted phrase and returns authors, abstract, original submission date and separate `modified_at` revision date. Abstracts are labeled as abstracts, not full papers.
+
+An allowed `open_page` depth operation `""` reads the exact original HTTPS locator the paper record carried. It creates a separate linked record and never borrows the metadata record's author or date. The target may be an abstract page; inspect the actual returned material before claiming full-text review.
+
+## Web and articles
+
+Web discovery belongs to the host's native tools. Use returned original URLs for selected article reads; search dates and snippets do not establish original publication or full-text evidence.
+
+`open_page` reads one public HTTPS document, extracting available prose, title, links and structured publication/modification metadata. Use an explicit URL query or an allowed depth operation `""` from a retained feed or paper record. The carried exact URL is the read target; no document path is invented. Selected document depth remains unwindowed so an older original date can correct discovery metadata. It does not render JavaScript or establish that all page content was extracted. Inspect `body_truncated`, requested/final URLs and missing fields.
+
+The shared transport refuses unsafe addresses and hosts owned by another declared route, including redirects to them. An open-page read cannot bypass a platform refusal.
 
 ## Feeds
 
-`rss_atom` discovery takes one caller-supplied public HTTPS feed URL as its
-query. Add one bounded step per selected feed; no feed registry or automatic
-feed discovery is implied. A bare YouTube channel ID or its channel-feed URL
-uses the existing YouTube feed route. Other URLs use the shared open-page
-transport policy, including host budgets, safe redirects and refusal of
-declared platform hosts.
+`rss_atom` takes one supplied public HTTPS RSS 2.0 or Atom URL per discovery step. A YouTube channel ID or channel-feed URL uses its dedicated feed route; other URLs use the shared open-page policy and host budget. No feed registry, automatic discovery or pagination is implied.
 
-RSS 2.0 and Atom entries carry title, available prose, original item link,
-publication time, and `feed_url`/`final_feed_url` provenance. Atom `updated`
-is retained as `modified_at`, never substituted for missing publication.
-The core filters known publication times to the requested window; undated
-entries remain explicitly incomplete. Feeds expose publisher-selected slices,
-not complete historical coverage, and this operation does not follow pagination.
-Selected linked articles may use the existing `open_page` depth operation.
+Entries retain title, available prose, original link, publisher-reported publication time, feed provenance and available enclosure/transcript links. Atom `updated` becomes `modified_at`, never a substitute publication date. Known dates are filtered to the window; undated entries remain incomplete. A feed is a publisher-selected slice, not a historical archive. Selected article links can use `open_page` depth.
 
-## X
+## X and video
 
-`x_xcancel` discovery `search:<words>` and depth `status` use public HTML; a
-challenge is `attestation_required`, never a browser task or instance switch.
-`x_fxtwitter` discovery `search:<words>` supports topical, `from:<handle>` and
-conversation-about-handle queries as separate planned lanes; depth
-`conversation` takes native status IDs. Archive attribution remains. `x_guest`
-takes `tweet:<id>`, `user:<handle>` or `timeline:<handle>` behind a guest
-activation the governor mints once; `x_syndication` takes a bare handle. Never
-provide a credential.
+`x_fxtwitter` reads a known numeric post ID with `conversation:<id>` or depth operation `conversation`. FxTwitter is a third-party operator: label its post text, returned replies, dates and available views/likes/reposts/reply counts accordingly. It provides no supported search or profile operation here and does not promise a complete conversation.
 
-## Other sources
+For a selected YouTube video's speech, use the separate [transcript reader](source-inspection.md). Captions are not viewer discussion. Native discovery or comments access remains the caller's concern; no custom video-search or TikTok/Instagram scraper ships in this library.
 
-Load the selected operation's protocol entry before planning. Supported depth
-includes HN `item`/`tree`, YouTube `player`/`next`/`transcript` (`max_items >= 2`
-covers the track list and the cue page), and the operations below.
+## Fixture
 
-- Stack Exchange: `<words>` searches stackoverflow; `site:<name> <words>`
-  selects another site. Results are sorted by creation time inside the
-  window; a negative `score` is dropped, not carried; the answer states a
-  300/day anonymous quota.
-- Scholarly: `openalex:<words>` (the default for a bare query),
-  `crossref:<words>`, `arxiv:<words>`; each bounds publication time at the
-  origin. OpenAlex and arXiv state a day; Crossref may state only a month or
-  year, in which case `published_at` is empty and the exact `date-parts` ride
-  as the `published_date_parts` attribute. arXiv's argument is sent quoted as
-  a phrase.
-- Wikimedia pageviews: hydration target `<article>` or `<project>:<article>`
-  (`de.wikipedia:Berlin`); `window_start` is required and an absent
-  `window_end` reads through the latest day held. One record per day carries
-  `views`.
-- TikTok: hydration `video:<handle>/<id>` or `profile:<handle>`; a profile
-  page carries no recent-video list, and comments and search have no keyless
-  route.
-- oEmbed: hydration `<provider>:<item url>` with providers `youtube`,
-  `vimeo`, `spotify`, `soundcloud`, `tiktok` and `x`; an unprefixed target is
-  refused. Every record lacks a date and counts, both typed.
-
-Unsupported depth is a gap. For an authorized direct-manifest operation
-outside the two-stage plan, read the protocol whole first and preserve the
-assignment's bounds and loss reporting; a manual run has no resume guarantee.
-No recipe adds adapters, credentials or new source authorization.
+`fake` is deterministic offline test data, never public evidence. Direct manifests follow the [protocol](protocol.md); routine bounded selection and resume follow [acquisition](acquisition.md).

@@ -1,10 +1,5 @@
 """Run-local cache seam: one run's memory of reads it already made.
 
-Reddit RSS answers 1–2 requests per 30 s per IP, whatever identity
-asks. A run that re-reads what it just read therefore starves
-rather than merely running slowly, which is why this cache is a correctness
-requirement and not an optimization.
-
 Reliability bar: this module remembers, and does nothing else. It stamps no
 time — a served entry is the response the transport itself returned, so the
 moment recorded against a record is always the moment the origin was really
@@ -36,140 +31,19 @@ CACHE_HIT = "cache_hit"
 # long. Whoever adds a route adds its TTL here.
 DEFAULT_TTL_SECONDS = 60.0
 ROUTE_TTL_SECONDS: Dict[str, float] = {
-    # A web index's answer to one query is stable across a run's discovery
-    # phase; the probes observed no throttle here, so this TTL exists to
-    # stop a run asking the same question twice, not to dodge a limit.
-    transport.DDG_HTML_ROUTE: 300.0,
-    # An archive lookup by fixed id changes only as the archive backfills.
     transport.ARCTIC_SHIFT_POSTS_ROUTE: 900.0,
-    # One author's whole timeline for 2.5 s and 378 KB, so this is the
-    # route where remembering earns the most. Five minutes bounds
-    # how stale an engagement count a caller can be handed, and a run asking
-    # for the same author twice is asking the same question.
-    transport.X_SYNDICATION_TIMELINE_ROUTE: 300.0,
-    # One route, three operations, one TTL — so it takes the volatility of the
-    # most volatile of them, a tweet's counts, and not that of a profile. The
-    # read costs 0.5 s, so holding an answer longer buys less here than
-    # anywhere else on X.
-    transport.X_GUEST_GRAPHQL_ROUTE: 120.0,
-    # The least volatile thing in the roster and the most expensive to read:
-    # 577 KB in 1.3 s for a block that changes when a member
-    # edits their profile and carries no counter at all, so nothing in it goes
-    # stale on a run's timescale. It is also the largest answer the evidence
-    # has measured, and it fits: 577 KB is inside `MAX_ENTRY_BYTES`, so this
-    # window binds on the body the evidence measured rather than only on a
-    # smaller one.
-    transport.LINKEDIN_PUBLIC_PROFILE_ROUTE: 900.0,
-    # A third as long as the profile beside it, because a search list changes
-    # as postings arrive where a profile does not, and because it is the cheap
-    # read — 27 KB in 0.7 s, so holding an answer longer buys less and risks
-    # handing back a page of results that has moved on.
-    transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE: 300.0,
-    # The most expensive read in the roster — 455 KB in 2.9 s — so
-    # remembering earns more here per request than anywhere else, and a
-    # run asking for the same account twice is asking the same question. It
-    # still cannot take the LinkedIn profile's window: that block carries no
-    # counter at all and changes only when a member edits it, while this
-    # payload carries a follower count and twelve pairs of like and comment
-    # counts, every one of which moves while nobody edits anything. Five
-    # minutes is the syndication timeline's window, and for the same reason —
-    # one author's recent posts with the platform's own counts on them. Like
-    # that profile route, this one fits: 455 KB is inside `MAX_ENTRY_BYTES`,
-    # with 569 KB of headroom, so this window binds on the body the evidence
-    # measured rather than only on a smaller one.
-    transport.INSTAGRAM_WEB_PROFILE_ROUTE: 300.0,
-    # HN's index answers a query about a site whose front page turns over in
-    # hours, so a list held too long is a list that has moved on. Three minutes
-    # covers a run's discovery phase — the reason the web index beside it holds
-    # five — and stops short of it, because a story that broke while the run
-    # was working is exactly what a search of HN is for.
     transport.HN_ALGOLIA_SEARCH_ROUTE: 180.0,
-    # Shorter than the index beside it, and that is the volatility talking
-    # rather than the cost: an item's `score` and `descendants` move while
-    # nobody edits anything, the way a tweet's counts do, and this is the
-    # window the X GraphQL route holds them for. Two minutes also bounds a
-    # `kids` traversal sensibly — a walk re-reading one item that fast is
-    # asking the same question, and one re-reading it later wants the counts.
     transport.HN_FIREBASE_ITEM_ROUTE: 120.0,
-    # The longest window in the table, and the only one argued from a budget
-    # rather than from a latency. The anonymous ceiling is 60/hr per bucket,
-    # so a repeat read here costs a
-    # full minute of the hour, where every other route in the roster costs
-    # seconds of waiting. A repository's own row — its description, its star
-    # and fork and open-issue counts — moves on a human timescale, so ten
-    # minutes hands back nothing a caller would have read differently, and it
-    # is what makes a run that reads one repository twice cost one read.
     transport.GITHUB_REST_ROUTE: 600.0,
-    # Half of that, on the same ceiling, because a ranked search moves whenever
-    # anything in it does — a repository created, starred, or pushed to
-    # reorders the answer, where the repository's own row does not. Five
-    # minutes is the window every other search in this table holds.
     transport.GITHUB_SEARCH_ROUTE: 300.0,
-    # The route this whole module exists for, and the only one where a window
-    # shorter than the interval that paces it could never bind at all: at one
-    # read per 30 s the governor would already have made a caller wait longer
-    # than the window before the second read arrived. Six intervals is enough
-    # that a run polling several subreddits never pays twice for one, and short
-    # enough that a freshness probe is still about now — a feed answered from
-    # five-minute-old memory is reporting staleness as freshness. It is the
-    # window the web index of a fast-moving front page holds, for that same
-    # reason, and here the saving is a third of a minute rather than a second.
-    transport.REDDIT_FEED_ROUTE: 180.0,
-    # The cheapest read in the roster — 39 KB in 0.35 s — so this window
-    # earns the least of any here per request, and it exists to
-    # stop a run asking one channel twice rather than to dodge a limit nobody
-    # measured. Five minutes is what every "the same question twice" route in
-    # this table holds. Volatility is low in an unusual way: an entry carries no
-    # counter, and nothing in one changes after publication. What changes is
-    # that a new entry appears at the head, so what a held answer risks is
-    # completeness rather than accuracy.
     transport.YOUTUBE_CHANNEL_FEED_ROUTE: 300.0,
-    # A reference document changes when somebody edits it and carries no
-    # counter at all, so nothing in it goes stale on a run's timescale. That is
-    # the same argument, and so the same window, as the roster's other
-    # counter-free document.
-    transport.PUBLIC_PAGE_ARTICLE_ROUTE: 900.0,
-    # Zero, and it is the one entry in this table that is not a judgment about
-    # volatility. A control read exists to answer "is this network answering
-    # for the origin right now", and an answer out of a run's own memory cannot
-    # answer that about now: it would report the channel healthy on the
-    # strength of a read made before the appliance woke up. Every other route
-    # here trades freshness for cost; this one has nothing to trade, because a
-    # hit is a wrong answer rather than a stale one. Declared rather than left
-    # to the default for exactly that reason — the default is a bound on
-    # staleness, and this route wants none.
-    transport.PUBLIC_PAGE_CONTROL_ROUTE: 0.0,
-    # Each of these takes the window of the route it most
-    # resembles above, for the reason given there: an index answer holds five
-    # minutes, an archive lookup fifteen, a counter-bearing social read five, a
-    # document fifteen, and a market quote two — the shortest window in the
-    # table after the control's, because a price moves while nobody edits it.
-    transport.BING_RSS_ROUTE: 300.0,
-    transport.BING_NEWS_RSS_ROUTE: 300.0,
-    transport.GOOGLE_NEWS_RSS_ROUTE: 300.0,
     transport.WEB_PAGE_OPEN_ROUTE: 900.0,
     transport.REDDIT_SHREDDIT_LISTING_ROUTE: 300.0,
     transport.REDDIT_SHREDDIT_SEARCH_ROUTE: 300.0,
     transport.REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE: 300.0,
     transport.REDDIT_SHREDDIT_COMMENTS_ROUTE: 300.0,
-    transport.YOUTUBE_TIMEDTEXT_ROUTE: 900.0,
     transport.HN_ALGOLIA_ITEM_ROUTE: 120.0,
-    transport.POLYMARKET_GAMMA_ROUTE: 120.0,
-    transport.KALSHI_MARKETS_ROUTE: 120.0,
-    transport.MANIFOLD_MARKETS_ROUTE: 120.0,
-    transport.STOCKTWITS_STREAM_ROUTE: 300.0,
-    transport.STOCKTWITS_SYMBOL_SEARCH_ROUTE: 900.0,
-    transport.BLUESKY_SEARCH_POSTS_ROUTE: 300.0,
-    transport.BLUESKY_AUTHOR_FEED_ROUTE: 300.0,
     transport.FXTWITTER_API_ROUTE: 300.0,
-    # `transport.YOUTUBE_INNERTUBE_ROUTE` declares no window on purpose, and it
-    # is the one route here where that is structural rather than a judgment:
-    # it asks its question in a POST body, and `cacheable` holds only what came
-    # back from a read method. No number written here could ever bind, so
-    # writing one would state a freshness guarantee nothing honours. Two of its
-    # three operations answer at 2.27 MB and 1.12 MB besides, both past
-    # `MAX_ENTRY_BYTES` — the smaller of them only just, which is what fixes
-    # the ceiling on that constant. Proved behaviourally, not asserted.
 }
 
 # The two halves of one bound. Every route in the roster answers in kilobytes,

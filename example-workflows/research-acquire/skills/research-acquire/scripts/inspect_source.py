@@ -169,8 +169,13 @@ def read(video, language, timeout_seconds, directory, *, run=None, command=None)
         info = {}
         result["error"] = f"yt-dlp metadata unreadable: {error}"
     info = info if isinstance(info, dict) else {}
+    metadata = {key: info[key] for key in ("id", "title", "channel", "upload_date", "timestamp") if key in info}
+    for key in ("view_count", "like_count", "comment_count"):
+        value = info.get(key)
+        if type(value) is int and value >= 0:
+            metadata[key] = value
     return {**result, "status": "ok", "text": "\n".join(cue["text"] for cue in cues), "raw": raw,
-            "metadata": {key: info[key] for key in ("id", "title", "channel", "upload_date", "timestamp") if key in info},
+            "metadata": metadata,
             "caption_track": {"language": path.name[len(video) + 1:-len(".json3")], "automatic": track_automatic(info, language),
                               "cue_count": len(cues), "duration_ms": max(cue["end_ms"] for cue in cues)}}
 

@@ -150,7 +150,7 @@ class AcquisitionPlanTests(unittest.TestCase):
         self.runtime["opener"] = concurrent
         self.run_plan()
         packet = json.loads((self.output / "packet.json").read_text())
-        self.assertEqual([step["step_id"] for step in packet["steps"]], ["archive", "index"])
+        self.assertEqual([step["step_id"] for step in packet["steps"]], ["archive", "feed"])
 
     def test_unsupported_cross_adapter_and_duplicate_target_selection_are_refused(self):
         self.run_plan()

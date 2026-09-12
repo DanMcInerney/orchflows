@@ -22,6 +22,8 @@ One known video, one route: a single yt-dlp invocation with a fixed argument lis
 
 `caption_support` is the sidecar `<output>.json3`, the track exactly as yt-dlp wrote it, cue timing included, at most 8 MiB. `process_status` records `ok`, `backend_error` or `timeout` when an invocation was attempted, independently of whether captions were retained. Missing or unreadable metadata leaves publication unknown; unreadable metadata also records `error`.
 
+`metadata` also retains `view_count`, `like_count` and `comment_count` from the same yt-dlp result when they are nonnegative integers, including zero; unavailable or invalid counts are omitted. These counts provide engagement context, not inspected viewer comments or sentiment.
+
 ## Statuses and exit codes
 
 - `ok`: valid caption text retained. Exit 0, including after a later process failure; inspect `process_status` and diagnostics for that failure.

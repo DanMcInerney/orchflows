@@ -1,4 +1,4 @@
-"""Transport seam: protocol policy, request construction, credentials, the urllib opener, and the carrier.
+"""Transport seam: protocol policy, request construction, the urllib opener, and the carrier.
 
 Route declarations live in :mod:`.routes` and are re-exported here, so this
 is the one address callers reach route data at and the one module that
@@ -11,7 +11,6 @@ import email.utils
 import gzip
 import io
 import ipaddress
-import json
 import socket
 import urllib.error
 import urllib.parse
@@ -22,74 +21,28 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 from .routes import (
     ARCTIC_SHIFT_SEARCH_ROUTE,
-    REDDIT_SEARCH_FEED_ROUTE,
-    XCANCEL_SEARCH_ROUTE,
-    XCANCEL_STATUS_ROUTE,
     X_SITE_ORIGIN,
-    ARCTIC_SHIFT_ORIGIN,
+    WEB_PAGE_OPEN_ROUTE,
     ARCTIC_SHIFT_POSTS_ROUTE,
-    ARXIV_QUERY_ROUTE,
-    BING_NEWS_RSS_ROUTE,
-    BING_RSS_ROUTE,
-    CROSSREF_WORKS_ROUTE,
-    GDELT_DOC_ROUTE,
-    OPENALEX_WORKS_ROUTE,
-    SOUNDCLOUD_OEMBED_ROUTE,
-    SPOTIFY_OEMBED_ROUTE,
-    STACKEXCHANGE_SEARCH_ROUTE,
-    TIKTOK_OEMBED_ROUTE,
-    TIKTOK_PROFILE_PAGE_ROUTE,
-    TIKTOK_VIDEO_PAGE_ROUTE,
-    VIMEO_OEMBED_ROUTE,
-    WIKIMEDIA_PAGEVIEWS_ROUTE,
-    X_PUBLISH_OEMBED_ROUTE,
-    YOUTUBE_OEMBED_ROUTE,
-    BLUESKY_AUTHOR_FEED_ROUTE,
-    BLUESKY_SEARCH_POSTS_ROUTE,
-    CREDENTIAL_PLACEMENTS,
-    DDG_HTML_ROUTE,
-    FAKE_OFFLINE_ROUTE,
-    FXTWITTER_API_ROUTE,
-    GITHUB_REST_ROUTE,
-    GITHUB_SEARCH_ROUTE,
-    GOOGLE_NEWS_RSS_ROUTE,
-    HEADER_PLACEMENT,
-    HN_ALGOLIA_ITEM_ROUTE,
-    HN_ALGOLIA_SEARCH_ROUTE,
-    HN_FIREBASE_ITEM_ROUTE,
-    INSTAGRAM_WEB_APP_ID,
-    INSTAGRAM_WEB_PROFILE_ROUTE,
-    JSON_CONTENT_TYPE,
-    KALSHI_MARKETS_ROUTE,
-    LINKEDIN_JOBS_GUEST_SEARCH_ROUTE,
-    LINKEDIN_PUBLIC_PROFILE_ROUTE,
-    MANIFOLD_MARKETS_ROUTE,
-    OPEN_ORIGIN,
-    POLYMARKET_GAMMA_ROUTE,
-    PUBLIC_CLIENT_CREDENTIALS,
-    PUBLIC_PAGE_ARTICLE_ROUTE,
-    PUBLIC_PAGE_CONTROL_ROUTE,
-    QUERY_PLACEMENT,
-    REDDIT_FEED_ROUTE,
-    REDDIT_SHREDDIT_COMMENTS_ROUTE,
     REDDIT_SHREDDIT_LISTING_ROUTE,
     REDDIT_SHREDDIT_SEARCH_ROUTE,
     REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE,
-    REDDIT_SITE_ORIGIN,
-    ROUTE_CONSTANTS,
-    STOCKTWITS_STREAM_ROUTE,
-    STOCKTWITS_SYMBOL_SEARCH_ROUTE,
-    PublicClientCredential,
-    RouteConstant,
-    WEB_PAGE_OPEN_ROUTE,
-    X_GUEST_ACTIVATE_ROUTE,
-    X_GUEST_GRAPHQL_ROUTE,
-    X_GUEST_PUBLIC_BEARER,
-    X_SYNDICATION_TIMELINE_ROUTE,
+    REDDIT_SHREDDIT_COMMENTS_ROUTE,
+    HN_ALGOLIA_ITEM_ROUTE,
+    FXTWITTER_API_ROUTE,
+    HN_ALGOLIA_SEARCH_ROUTE,
+    HN_FIREBASE_ITEM_ROUTE,
+    GITHUB_REST_ROUTE,
+    GITHUB_SEARCH_ROUTE,
     YOUTUBE_CHANNEL_FEED_ROUTE,
-    YOUTUBE_INNERTUBE_ROUTE,
-    YOUTUBE_INNERTUBE_WEB_KEY,
-    YOUTUBE_TIMEDTEXT_ROUTE,
+    CROSSREF_WORKS_ROUTE,
+    ARXIV_QUERY_ROUTE,
+    FAKE_OFFLINE_ROUTE,
+    REDDIT_SITE_ORIGIN,
+    ARCTIC_SHIFT_ORIGIN,
+    OPEN_ORIGIN,
+    ROUTE_CONSTANTS,
+    RouteConstant,
 )
 from dataclasses import dataclass
 from . import schema
@@ -108,10 +61,6 @@ OBSERVED_AT_FORMAT = schema.INSTANT_FORMAT
 
 AnsweredHeaders = Tuple[Tuple[str, str], ...]
 
-TOKEN_ACTIVATION_ROUTES = (X_GUEST_ACTIVATE_ROUTE,)
-TOKEN_ACTIVATION_METHODS = ("POST",)
-QUERY_BODY_ROUTES = (YOUTUBE_INNERTUBE_ROUTE,)
-QUERY_BODY_METHODS = ("POST",)
 
 ORIGIN_CONTENT = "origin_content"
 ORIGIN_FAILURE = "origin_failure"
@@ -127,11 +76,8 @@ AUTH_REQUIRED = "auth_required"
 class TransportError(RuntimeError):
     """An outbound request was refused or could not be completed.
 
-    ``loss`` is the code a step records for the read this error cost it:
-    `unreachable` for a channel that carried nothing, or the activation's
-    refusal (`auth_required` or `rate_limited`) for a read needing its token.
-    ``reached`` says an origin answered the read this error cost — a refused
-    activation did — so the ledger bills that call.
+    ``loss`` is the typed reason recorded by the step. ``reached`` says the
+    origin answered; accounting preserves that distinction from local failure.
     """
 
     def __init__(self, message: str, loss: str = UNREACHABLE, reached: bool = False, route_id: str = "") -> None:
@@ -143,7 +89,7 @@ class TransportError(RuntimeError):
 
 @dataclass(frozen=True)
 class TransportRequest:
-    """One read, spelled completely, before any credential is attached."""
+    """One public read, spelled completely before it is sent."""
 
     route_id: str
     method: str
@@ -195,7 +141,7 @@ def rate_refused(status: int, body: str) -> bool:
 
 
 def refusal_loss(status: int, body: str) -> Optional[str]:
-    """The loss an origin's refusal carries, shared by activation and checkpoints."""
+    """The loss an origin's refusal carries, used by persisted refusal checkpoints."""
     if rate_refused(status, body):
         return RATE_LIMITED
     if status in (401, 403):
@@ -300,18 +246,6 @@ def route_constant(route_id: str) -> RouteConstant:
     return route
 
 
-def admitted_methods(route_id: str) -> Tuple[str, ...]:
-    """Every method this route may use: reads plus two closed exceptions."""
-
-    if route_id in TOKEN_ACTIVATION_ROUTES:
-        return READ_METHODS + TOKEN_ACTIVATION_METHODS
-    if route_id in QUERY_BODY_ROUTES:
-        return READ_METHODS + QUERY_BODY_METHODS
-    return READ_METHODS
-
-
-GUEST_TOKEN_FIELD = "guest_token"
-GUEST_TOKEN_HEADER = "x-guest-token"
 OPEN_URL_PARAM = "url"
 
 
@@ -331,9 +265,6 @@ def is_open_route(route: RouteConstant) -> bool:
 def budget_key(request: TransportRequest) -> str:
     """The measured budget paying for this read, separate from cache identity."""
 
-    # Reddit's RSS listing and search share the same measured origin ceiling.
-    if request.route_id in (REDDIT_FEED_ROUTE, REDDIT_SEARCH_FEED_ROUTE):
-        return REDDIT_FEED_ROUTE + "@" + origin_key(request)
     if is_open_route(route_constant(request.route_id)):
         return request.route_id + "@" + origin_key(request)
     return request.route_id
@@ -349,37 +280,6 @@ def origin_locator(route_id: str, published: str) -> str:
     return urllib.parse.urljoin(route_constant(route_id).origin, published)
 
 
-def route_credential(route_id: str) -> Optional[PublicClientCredential]:
-    """The public client credential this route needs, or None."""
-
-    credential_id = route_constant(route_id).credential_id
-    if not credential_id:
-        return None
-    credential = PUBLIC_CLIENT_CREDENTIALS.get(credential_id)
-    if credential is None:
-        raise TransportError("unknown public client credential " + credential_id)
-    return credential
-
-
-def credentialed_url(url: str, credential: Optional[PublicClientCredential]) -> str:
-    """Apply a query-placed credential at send time."""
-
-    if credential is None or credential.placement != QUERY_PLACEMENT:
-        return url
-    separator = "&" if "?" in url else "?"
-    return url + separator + urllib.parse.urlencode(((credential.name, credential.value),))
-
-
-def credentialed_headers(
-    headers: Tuple[Tuple[str, str], ...], credential: Optional[PublicClientCredential]
-) -> Tuple[Tuple[str, str], ...]:
-    """Apply a header-placed credential at send time."""
-
-    if credential is None or credential.placement != HEADER_PLACEMENT:
-        return tuple(headers)
-    return tuple(headers) + ((credential.name, credential.value),)
-
-
 def path_segments(route: RouteConstant, params: Dict[str, str]) -> str:
     """Spend declared path params in order, removing them from params."""
 
@@ -390,75 +290,6 @@ def path_segments(route: RouteConstant, params: Dict[str, str]) -> str:
             return spent
         spent = spent + "/" + urllib.parse.quote(value, safe="")
     return spent + route.path_suffix
-
-
-def json_body(route: RouteConstant, params: Dict[str, str]) -> str:
-    """Spend declared body params into deterministic JSON."""
-
-    if not route.body_params:
-        return ""
-    body: Dict[str, Any] = {}
-    for name, key_path in route.body_params:
-        value = params.pop(name, "")
-        if not value:
-            continue
-        held = body
-        for key in key_path[:-1]:
-            held = held.setdefault(key, {})
-        held[key_path[-1]] = value
-    return json.dumps(body, separators=(",", ":"), sort_keys=True) if body else ""
-
-
-class GuestTokenStore:
-    """Anonymous guest tokens kept only in process memory.
-
-    A token route is claimed once per process. The claim then holds either the
-    token the activation minted or the failure it met, and a failed activation
-    is never retried: every read that needed the token is refused with that
-    failure.
-    """
-
-    def __init__(self) -> None:
-        self._tokens: Dict[str, str] = {}
-        self._failures: Dict[str, TransportError] = {}
-
-    def token_for(self, token_route_id: str) -> str:
-        return self._tokens.get(token_route_id, "")
-
-    def failure_for(self, token_route_id: str) -> Optional[TransportError]:
-        return self._failures.get(token_route_id)
-
-    def claim(self, token_route_id: str) -> bool:
-        if token_route_id in self._tokens:
-            return False
-        self._tokens[token_route_id] = ""
-        return True
-
-    def remember(self, token_route_id: str, token: str) -> None:
-        self._tokens[token_route_id] = token
-
-    def refuse(self, token_route_id: str, failure: TransportError) -> None:
-        self._failures[token_route_id] = failure
-
-    def clear(self) -> None:
-        self._tokens.clear()
-        self._failures.clear()
-
-
-GUEST_TOKENS = GuestTokenStore()
-
-
-def tokened_headers(
-    headers: Tuple[Tuple[str, str], ...], token_route_id: str
-) -> Tuple[Tuple[str, str], ...]:
-    """Attach an already-minted guest token, never minting one."""
-
-    if not token_route_id:
-        return tuple(headers)
-    token = GUEST_TOKENS.token_for(token_route_id)
-    if not token:
-        return tuple(headers)
-    return tuple(headers) + ((GUEST_TOKEN_HEADER, token),)
 
 
 def declared_origin_hosts() -> Tuple[str, ...]:
@@ -543,53 +374,14 @@ def build_transport_request(
         headers = (("User-Agent", USER_AGENT), ("Accept", route.accept))
         return TransportRequest(route_id=route_id, method=route.method, url=url, headers=headers)
     path = route.path + path_segments(route, supplied)
-    body = json_body(route, supplied)
     pairs = [(key, value) for key, value in sorted(supplied.items()) if value != ""]
     url = route.origin + path
     if pairs:
         url = url + "?" + urllib.parse.urlencode(pairs)
     headers = (("User-Agent", USER_AGENT), ("Accept", route.accept))
-    if body:
-        headers = headers + (("Content-Type", JSON_CONTENT_TYPE),)
     return TransportRequest(
-        route_id=route_id, method=route.method, url=url, headers=headers, body=body
+        route_id=route_id, method=route.method, url=url, headers=headers
     )
-
-
-def mint_guest_token(
-    fetch: Callable[[TransportRequest], TransportResponse], token_route_id: str
-) -> str:
-    """One activation request, returning the token it minted.
-
-    An activation the origin refuses raises a :class:`TransportError` carrying
-    its refusal loss; an answer without a token is typed `auth_required`.
-    Both are marked reached, since the origin answered: every dependent read is refused
-    rather than sent unauthorized, and the activation is never retried. An
-    activation the channel never carried raises the transport's own error.
-    The caller's fetch remains the recorded and paced seam.
-    """
-
-    response = fetch(build_transport_request(token_route_id))
-    if response.status != 200:
-        raise TransportError(
-            "activation {0} answered http status {1}: the reads it authorizes are"
-            " refused rather than sent unauthorized".format(token_route_id, response.status),
-            loss=refusal_loss(response.status, response.body) or AUTH_REQUIRED,
-            reached=True,
-        )
-    try:
-        payload = json.loads(response.body)
-    except ValueError:
-        payload = None
-    token = payload.get(GUEST_TOKEN_FIELD) if isinstance(payload, dict) else None
-    if not isinstance(token, str) or not token:
-        raise TransportError(
-            "activation {0} answered 200 with no {1}: the reads it authorizes are"
-            " refused rather than sent unauthorized".format(token_route_id, GUEST_TOKEN_FIELD),
-            loss=AUTH_REQUIRED,
-            reached=True,
-        )
-    return token
 
 
 REQUEST_TIMEOUT_SECONDS = 20
@@ -602,27 +394,10 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).strftime(OBSERVED_AT_FORMAT)
 
 
-def without_query_credential(
-    url: str, credential: Optional[PublicClientCredential]
-) -> str:
-    """Remove this route's query credential from an answering address."""
-
-    if credential is None or credential.placement != QUERY_PLACEMENT:
-        return url
-    split = urllib.parse.urlsplit(url)
-    pairs = urllib.parse.parse_qsl(split.query, keep_blank_values=True)
-    if not any(name == credential.name for name, _ in pairs):
-        return url
-    kept = [(name, value) for name, value in pairs if name != credential.name]
-    return urllib.parse.urlunsplit(
-        (split.scheme, split.netloc, split.path, urllib.parse.urlencode(kept), split.fragment)
-    )
-
-
 def answering_address(response: Any, request: TransportRequest) -> str:
-    """Where the read was answered, without a query credential."""
+    """The address at which the public read was answered."""
 
-    return without_query_credential(response.url, route_credential(request.route_id))
+    return response.url
 
 
 def answered_headers(carried: Any) -> AnsweredHeaders:
@@ -636,8 +411,8 @@ def answered_headers(carried: Any) -> AnsweredHeaders:
 def decoded_body(raw: bytes, headers: Any) -> str:
     """One answer's bytes as text, gunzipped when the origin says it gzipped.
 
-    Stack Exchange's API compresses every answer whether or not the request
-    asked, and gzip bytes decoded as UTF-8 are garbage an adapter can only
+    Origins may compress an answer whether or not the request asked. Gzip
+    bytes decoded as UTF-8 are garbage an adapter can only
     type as `malformed_json` — a wrong reading of an origin that answered
     correctly. The stated encoding is honored here, bounded by the same byte
     ceiling the raw read has. A body that declares gzip and is not gzip is a
@@ -666,7 +441,7 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
 
     if not request.url.startswith("https://"):
         raise TransportError("refusing a non-https url for route " + request.route_id)
-    if request.method not in admitted_methods(request.route_id):
+    if request.method not in READ_METHODS:
         raise TransportError(
             "refusing a write-capable method {0} on route {1}".format(
                 request.method, request.route_id
@@ -675,22 +450,13 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
     open_route = is_open_route(route_constant(request.route_id))
     if open_route:
         _validate_open_destination(request.url)
-    token_route_id = route_constant(request.route_id).token_route_id
-    if token_route_id and not GUEST_TOKENS.token_for(token_route_id):
-        raise TransportError(
-            "route {0} reads under a guest token from {1} and none was minted: refused"
-            " rather than sent unauthorized".format(request.route_id, token_route_id),
-            loss=AUTH_REQUIRED,
-        )
-
-    credential = route_credential(request.route_id)
-    outbound = urllib.request.Request(
-        credentialed_url(request.url, credential),
-        data=request.body.encode("utf-8") if request.body else None,
-        method=request.method,
-    )
-    headers = tokened_headers(credentialed_headers(request.headers, credential), token_route_id)
-    for name, value in headers:
+    if request.body:
+        raise TransportError("a public read cannot carry a request body")
+    if any(name.lower() in ("authorization", "cookie", "x-api-key", "x-guest-token")
+           for name, _ in request.headers):
+        raise TransportError("a public read cannot carry credentials")
+    outbound = urllib.request.Request(request.url, method=request.method)
+    for name, value in request.headers:
         outbound.add_header(name, value)
     opener = (urllib.request.build_opener(_PublicReadRedirect()).open
               if open_route else urllib.request.urlopen)

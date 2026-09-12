@@ -1,4 +1,4 @@
-from tests.test_adapters_cases.reddit_feed import *  # noqa: F401,F403
+from tests.test_adapters_cases.feed_page_routes import *  # noqa: F401,F403
 
 RSS_ATOM_FIXTURE_DIR = TEST_DIR / "fixtures" / "rss_atom"
 FEED_VIDEO_ID = "yt:video:dQw4w9WgXcQ"
@@ -134,23 +134,6 @@ class RssAtomReaderTest(unittest.TestCase):
         self.assertIn("field_omitted", undated.loss)
         self.assertNotEqual(undated.published_at, page.observed_at)
 
-    def test_a_vendor_extension_the_feed_carries_is_left_where_it_is(self):
-        # `media:statistics views="128455"` is in the measured document. A
-        # generic reader that mined it would be publishing a count under a name
-        # this roster row does not name, about a platform it does not know it
-        # is reading, beside an adapter that reports the same quantity from the
-        # platform's own API.
-        page, _ = rss_atom_page("youtube_channel_feed.xml")
-
-        for record in page.records:
-            with self.subTest(entry=record.native_item_id):
-                self.assertEqual(record.engagement, ())
-                self.assertEqual(
-                    [name for name, _ in record.attributes if "statistic" in name], []
-                )
-                self.assertNotIn("128455", repr(record))
-        self.assertEqual(rss_atom.DESCRIPTOR.comment_count_metric, "")
-        self.assertEqual(rss_atom.DESCRIPTOR.reply_count_metric, "")
 
     def test_a_syndication_identity_is_recorded_and_never_used_to_merge(self):
         # A `guid` is unique inside its own feed and nowhere else, and this
@@ -242,8 +225,6 @@ class RssAtomDescriptorTest(unittest.TestCase):
 
         self.assertEqual(cheapest, transport.YOUTUBE_CHANNEL_FEED_ROUTE)
 
-    def test_it_declares_no_rotating_identifier_because_it_depends_on_none(self):
-        self.assertEqual(rss_atom.DESCRIPTOR.volatile_identifiers, ())
 
     def test_the_core_can_reach_it_by_both_of_its_literal_branches(self):
         clock = helpers.FakeClock()

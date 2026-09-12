@@ -167,7 +167,6 @@ class OracleCanFailTest(unittest.TestCase):
         )
 
 
-YOUTUBE_FIXTURE_DIR = TESTS_DIR / "fixtures" / "youtube"
 GUEST_HYDRATION_MANIFEST = {
     "manifest_id": "pipeline-guest",
     "as_of": "2026-08-10T00:00:00Z",
@@ -216,81 +215,8 @@ class AStepWithNoCallIsEmptyTest(unittest.TestCase):
         self.assertEqual((result.pages, records, operations, opener.opened), (0, (), (), []))
 
 
-class ARefusedActivationIsBilledOnceTest(unittest.TestCase):
-    def setUp(self):
-        transport.GUEST_TOKENS.clear()
-        self.addCleanup(transport.GUEST_TOKENS.clear)
-
-    def test_the_ledger_bills_the_activation_the_origin_answered_and_nothing_more(self):
-        run, opener, governor = refused_mint_run()
-        sums = runner.ledger_sums(run.ledger)
-        step = run.artifact.steps[0]
-
-        self.assertEqual(step.outcome, "failed")
-        self.assertEqual(step.loss, (transport.AUTH_REQUIRED, transport.AUTH_REQUIRED))
-        self.assertEqual(step.pages, 2)
-        # One origin read in the whole run — the refused activation — and the
-        # ledger bills exactly that one: to the read that minted, and not to
-        # the read the remembered refusal cost nothing.
-        self.assertEqual([read.route_id for read in governor.log], [transport.X_GUEST_ACTIVATE_ROUTE])
-        self.assertEqual(sums["calls"], len(governor.log))
-        self.assertEqual(
-            [event.delta for event in run.ledger if event.metric == "calls"], [1, 0]
-        )
-        self.assertEqual([request.route_id for request in opener.opened], [transport.X_GUEST_ACTIVATE_ROUTE])
 
 
-class TheStepRouteIsItsFirstPagesTest(unittest.TestCase):
-    def test_a_search_answers_on_the_search_route_and_never_the_descriptors(self):
-        clock = helpers.FakeClock()
-        carrier, opener = helpers.offline_transport(
-            clock, {transport.GITHUB_SEARCH_ROUTE: (200, '{"total_count": 0, "items": []}', "application/json")}
-        )
-        manifest = schema.parse_manifest({
-            "manifest_id": "pipeline-search-route",
-            "as_of": "2026-08-10T00:00:00Z",
-            "steps": [{"step_id": "s1", "kind": "discovery", "adapter_id": "github_rest",
-                       "query": "search:python", "max_items": 3}],
-        })
-
-        artifact = runner.run_acquisition(manifest, carrier, clock=clock.monotonic)
-
-        self.assertEqual(artifact.steps[0].route_id, transport.GITHUB_SEARCH_ROUTE)
-        self.assertNotEqual(artifact.steps[0].route_id, runner.descriptor_for("github_rest").route_id)
-        self.assertEqual([request.route_id for request in opener.opened], [transport.GITHUB_SEARCH_ROUTE])
-
-    def test_a_transcript_step_keeps_page_ones_route_while_page_two_answered_elsewhere(self):
-        clock = helpers.FakeClock()
-        carrier, _ = helpers.offline_transport(clock, {
-            transport.YOUTUBE_INNERTUBE_ROUTE: (
-                200, YOUTUBE_FIXTURE_DIR.joinpath("player_with_caption_tracks.json").read_text(encoding="utf-8"),
-                "application/json",
-            ),
-            transport.YOUTUBE_TIMEDTEXT_ROUTE: (
-                200, YOUTUBE_FIXTURE_DIR.joinpath("timedtext_json3.json").read_text(encoding="utf-8"),
-                "application/json",
-            ),
-        })
-        manifest = schema.parse_manifest({
-            "manifest_id": "pipeline-transcript-route",
-            "as_of": "2026-08-10T00:00:00Z",
-            "steps": [{"step_id": "s1", "kind": "discovery", "adapter_id": "youtube_innertube",
-                       "query": "transcript:7pQm3nXkT2a", "max_items": 2}],
-        })
-
-        run = runner.run_scheduled(manifest, carrier, clock=clock.monotonic, lanes=1)
-        step = run.artifact.steps[0]
-
-        self.assertEqual((step.outcome, step.pages), ("ok", 2))
-        self.assertEqual(step.route_id, transport.YOUTUBE_INNERTUBE_ROUTE)
-        self.assertEqual(
-            [event.route_id for event in runner.planned_operations(run.ledger)],
-            [transport.YOUTUBE_INNERTUBE_ROUTE, transport.YOUTUBE_TIMEDTEXT_ROUTE],
-        )
-        self.assertEqual(
-            [record.route_id for record in run.artifact.records],
-            [transport.YOUTUBE_INNERTUBE_ROUTE, transport.YOUTUBE_TIMEDTEXT_ROUTE],
-        )
 
 
 class ARefusalTheCallerAdmitsNothingForTest(unittest.TestCase):

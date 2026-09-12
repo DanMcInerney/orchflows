@@ -20,8 +20,8 @@ class TheDocumentedPathPacesAndRemembersTest(unittest.TestCase):
             carrier, clock=clock.monotonic, sleep=clock.sleep
         )
         self.assertIsInstance(composed, runner.RateGovernor)
-        composed.fetch(probe_request(transport.DDG_HTML_ROUTE))
-        composed.fetch(probe_request(transport.DDG_HTML_ROUTE))
+        composed.fetch(probe_request(transport.FAKE_OFFLINE_ROUTE))
+        composed.fetch(probe_request(transport.FAKE_OFFLINE_ROUTE))
         self.assertEqual(len(opener.opened), 1)
         self.assertEqual([serve.cache_hit for serve in composed.serves], [False, True])
 
@@ -75,7 +75,7 @@ class RateBudgetTest(unittest.TestCase):
         self.assertEqual([read.waited_us for read in governor.log], [0, 0])
 
     def test_a_route_is_paced_by_the_interval_its_own_descriptor_declares(self):
-        descriptor = runner.descriptor_for("web_search")
+        descriptor = runner.descriptor_for("reddit_archive")
         clock = helpers.FakeClock()
         carrier, _ = helpers.offline_transport(
             clock, {descriptor.route_id: EMPTY_PAGE_BODY}
@@ -92,8 +92,8 @@ class RateBudgetTest(unittest.TestCase):
         )
 
     def test_two_adapters_may_not_declare_one_route_two_different_budgets(self):
-        declared = runner.descriptor_for("web_search")
-        agreeing = dataclasses.replace(declared, adapter_id="web_search_mirror")
+        declared = runner.descriptor_for("reddit_archive")
+        agreeing = dataclasses.replace(declared, adapter_id="reddit_archive_mirror")
         disagreeing = dataclasses.replace(
             agreeing, min_interval_ms=declared.min_interval_ms + 1
         )
@@ -177,7 +177,7 @@ class BurstAndCooldownTest(unittest.TestCase):
     def test_a_rate_limited_step_keeps_its_own_route_and_substitutes_nothing(self):
         clock = helpers.FakeClock()
         carrier, opener = helpers.offline_transport(
-            clock, {transport.DDG_HTML_ROUTE: RATE_LIMITED_ANSWER}
+            clock, {transport.FAKE_OFFLINE_ROUTE: RATE_LIMITED_ANSWER}
         )
         governor = runner.RateGovernor(
             carrier, clock=clock.monotonic, sleep=clock.sleep
@@ -185,19 +185,19 @@ class BurstAndCooldownTest(unittest.TestCase):
         artifact = runner.run_acquisition(
             schema.parse_manifest(DISCOVERY_MANIFEST), governor
         )
-        self.assertEqual(artifact.steps[0].route_id, transport.DDG_HTML_ROUTE)
+        self.assertEqual(artifact.steps[0].route_id, transport.FAKE_OFFLINE_ROUTE)
         self.assertEqual(artifact.steps[0].loss, (transport.RATE_LIMITED,))
         self.assertEqual(artifact.steps[0].outcome, "failed")
         self.assertEqual(artifact.loss, (transport.RATE_LIMITED,))
         self.assertEqual(artifact.records, ())
         self.assertEqual(
-            {request.route_id for request in opener.opened}, {transport.DDG_HTML_ROUTE}
+            {request.route_id for request in opener.opened}, {transport.FAKE_OFFLINE_ROUTE}
         )
 
     def test_the_page_s_own_account_of_the_read_reaches_the_artifact(self):
         clock = helpers.FakeClock()
         carrier, _ = helpers.offline_transport(
-            clock, {transport.DDG_HTML_ROUTE: RATE_LIMITED_ANSWER}
+            clock, {transport.FAKE_OFFLINE_ROUTE: RATE_LIMITED_ANSWER}
         )
         governor = runner.RateGovernor(
             carrier, clock=clock.monotonic, sleep=clock.sleep
@@ -206,7 +206,7 @@ class BurstAndCooldownTest(unittest.TestCase):
             schema.parse_manifest(DISCOVERY_MANIFEST), governor
         )
         said = " ".join(artifact.steps[0].warnings)
-        self.assertIn(transport.DDG_HTML_ROUTE, said)
+        self.assertIn(transport.FAKE_OFFLINE_ROUTE, said)
         self.assertIn(str(transport.RATE_LIMITED_STATUS), said)
 
     def test_no_package_module_can_become_a_different_client(self):
@@ -327,31 +327,6 @@ class OriginStatedCooldownTest(unittest.TestCase):
         self.assertEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
 
 
-class VolatileIdentifierTest(unittest.TestCase):
-    def test_a_volatile_identifier_declared_without_a_recovery_is_refused(self):
-        descriptor = runner.descriptor_for("web_search")
-        with self.assertRaises(adapters.AdapterError):
-            dataclasses.replace(
-                descriptor,
-                volatile_identifiers=(
-                    adapters.VolatileIdentifier(name="ddg_result_class", recovery=""),
-                ),
-            )
-        with self.assertRaises(adapters.AdapterError):
-            dataclasses.replace(
-                descriptor,
-                volatile_identifiers=(
-                    adapters.VolatileIdentifier(name="", recovery="re-read one saved page"),
-                ),
-            )
-
-    def test_an_adapter_declares_a_rotating_identifier_only_when_it_depends_on_one(self):
-        declaring = tuple(
-            adapter_id
-            for adapter_id in runner.ADAPTER_IDS
-            if runner.descriptor_for(adapter_id).volatile_identifiers
-        )
-        self.assertEqual(declaring, ADAPTERS_WITH_ROTATING_IDENTIFIERS)
 
 
 class FakeClockOnlyTest(unittest.TestCase):

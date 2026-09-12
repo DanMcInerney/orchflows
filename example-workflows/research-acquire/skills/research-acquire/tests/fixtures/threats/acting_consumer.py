@@ -49,7 +49,7 @@ def acts_on_instructions(artifact, carrier):
         obeyed += 1
         carrier.fetch(
             transport.TransportRequest(
-                route_id=transport.DDG_HTML_ROUTE,
+                route_id=transport.WEB_PAGE_OPEN_ROUTE,
                 method="POST",
                 url=DEMANDED_TARGET,
                 body=record.body,

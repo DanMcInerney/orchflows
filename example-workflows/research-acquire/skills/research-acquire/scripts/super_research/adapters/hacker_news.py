@@ -107,7 +107,6 @@ DESCRIPTOR = AdapterDescriptor(
     # Firebase names a story's comment count `descendants`. Algolia names the
     # same quantity `num_comments`, and each surface declares the name its own
     # route reports — the two are never aliased into one.
-    comment_count_metric="descendants",
 )
 
 # How many hits one search answer holds when the index has that many. Measured
@@ -131,7 +130,6 @@ SEARCH_DESCRIPTOR = AdapterDescriptor(
     # read here carries `third_party_archive`: this is not an independent
     # mirror speaking for the platform.
     operator_identity="algolia",
-    comment_count_metric="num_comments",
     page_size=SEARCH_PAGE_SIZE,
 )
 

@@ -302,7 +302,6 @@ DESCRIPTOR = AdapterDescriptor(
     cooldown_ms=3600000,
     # An issue reports an exact count of its own comments. Nothing on these
     # routes reports a count of replies, and neither name is inferred.
-    comment_count_metric="comments",
 )
 
 # The `code_search` bucket: the same origin, a different hour.
@@ -318,7 +317,6 @@ SEARCH_DESCRIPTOR = AdapterDescriptor(
     min_interval_ms=60000,
     burst=60,
     cooldown_ms=3600000,
-    comment_count_metric="comments",
 )
 
 SURFACE_DESCRIPTORS = (DESCRIPTOR, SEARCH_DESCRIPTOR)
@@ -359,9 +357,7 @@ NATIVE_ORDERS = {
 # nothing.
 ITEMS_KEY = "items"
 
-# The manifest's own instant spelling, parsed here rather than imported from
-# `ordering`: each origin-adjacent adapter module owns its own tiny parser of
-# the same name, rather than reaching into a shared one.
+# The normalized record spelling is shared with manifest validation.
 RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 # GitHub's search qualifiers read a day, never a finer instant: `created:>=`
 # and `created:<from>..<to>` both answer with every `created_at` inside the
@@ -563,22 +559,10 @@ def repository_params(target: str) -> Dict[str, str]:
     return {"owner": owner, "repo": repository}
 
 
-def _instant_seconds(stamped: str) -> Optional[int]:
-    """One manifest instant as whole UTC seconds, or nothing unparseable."""
-
-    if not stamped:
-        return None
-    try:
-        moment = datetime.strptime(stamped, RECORD_INSTANT_FORMAT).replace(tzinfo=timezone.utc)
-    except ValueError:
-        return None
-    return int(moment.timestamp())
-
-
 def _search_date(stamped: str) -> str:
     """One manifest instant as the day GitHub's search qualifiers read."""
 
-    seconds = _instant_seconds(stamped)
+    seconds = schema.instant_seconds(stamped)
     if seconds is None:
         return ""
     return datetime.fromtimestamp(seconds, tz=timezone.utc).strftime(GITHUB_SEARCH_DATE_FORMAT)

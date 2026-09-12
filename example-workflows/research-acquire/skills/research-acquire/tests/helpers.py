@@ -54,39 +54,20 @@ def probe_params(route_id):
 
 # One request each adapter answers with a single call, shaped the way its own
 # grammar requires: `open_page` takes an https address on an undeclared host,
-# `reddit_shreddit` a target its grammar names, and `wikimedia_pageviews` has
-# no windowless shape at all. Suites that walk `runner.ADAPTER_IDS` read this
-# rather than sending one universal string to every adapter.
+# `reddit_shreddit` a target its grammar names. Suites that walk
+# `runner.ADAPTER_IDS` use this instead of sending one universal string.
 ROSTER_WINDOW_START = "2026-08-01T00:00:00Z"
 ROSTER_QUERIES = {
-    "bluesky": ("author:bsky.app", ROSTER_WINDOW_START),
-    "gdelt": ("climate", ROSTER_WINDOW_START),
     "hacker_news": ("python", ROSTER_WINDOW_START),
-    "linkedin_jobs": ("reliability engineer", ""),
-    "prediction_markets": ("polymarket:SpaceX", ""),
-    "reddit_feed": ("programming", ""),
     "reddit_shreddit": ("listing:programming", ""),
     "rss_atom": ("UC_x5XG1OV2P6uZZ5FSM9Ttw", ""),
-    "scholarly": ("openalex:machine learning", ""),
-    "stack_exchange": ("python", ""),
-    "stocktwits": ("stream:AAPL", ""),
-    "web_search": ("rate limiting", ""),
-    "x_fxtwitter": ("search:spacex", ""),
-    "x_xcancel": ("search:python", ""),
+    "scholarly": ("crossref:machine learning", ""),
+    "x_fxtwitter": ("conversation:123", ""),
 }
 ROSTER_TARGETS = {
     "github_rest": ("python/cpython", ""),
-    "instagram_public": ("instagram", ""),
-    "linkedin_public": ("williamhgates", ""),
-    "oembed": ("x:https://x.com/jack/status/20", ""),
     "open_page": ("https://www.iana.org/help/example-domains", ""),
-    "public_page": ("article:Rate_limiting", ""),
     "reddit_archive": ("z1c9z", ""),
-    "tiktok_public": ("video:nba/7606907506589207838", ""),
-    "wikimedia_pageviews": ("Python_(programming_language)", ROSTER_WINDOW_START),
-    "x_guest": ("user:simonw", ""),
-    "x_syndication": ("simonw", ""),
-    "youtube_innertube": ("dQw4w9WgXcQ", ""),
 }
 
 

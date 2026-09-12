@@ -177,7 +177,7 @@ class Store:
 class BoundedRead:
     """Wrap the transport opener beneath the ordinary paced/cache governor.
 
-    The request cap counts outbound opener attempts, including guest activation;
+    The request cap counts outbound opener attempts;
     urllib redirect hops remain inside that transport operation. Reservations
     are durable before I/O, so a crash cannot silently reclaim spent allowance.
     Refused origins, each with the loss its refusal typed, and the governor's

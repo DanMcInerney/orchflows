@@ -19,6 +19,7 @@ JSON3 = json.dumps({"events": [
     {"tStartMs": 4000, "dDurationMs": 2500, "segs": [{"utf8": "Second line"}]},
     {"tStartMs": 7000, "dDurationMs": 10, "segs": [{"utf8": "  "}]}]})
 INFO = {"id": "dQw4w9WgXcQ", "title": "Sample", "channel": "Channel", "upload_date": "20260901", "timestamp": 1788264000,
+        "view_count": 12345, "like_count": 42, "comment_count": 0,
         "subtitles": {}, "automatic_captions": {"en": [{"ext": "json3", "url": "https://www.youtube.com/api/timedtext?caps=asr"}]}}
 
 
@@ -59,6 +60,10 @@ class TranscriptReaderTests(unittest.TestCase):
         self.assertEqual(packet["text"], "Hello & welcome\nSecond line")
         self.assertEqual(packet["caption_track"], {"language": "en", "automatic": True, "cue_count": 2, "duration_ms": 6500})
         self.assertEqual(packet["metadata"]["title"], "Sample")
+        self.assertEqual({key: packet["metadata"][key] for key in ("view_count", "like_count", "comment_count")},
+                         {"view_count": 12345, "like_count": 42, "comment_count": 0})
+        self.assertEqual(packet["content_kind"], "transcript")
+        self.assertFalse(packet["audience_opinion"])
         self.assertEqual(packet["publication"]["precision"], "instant")
         self.assertEqual(packet["caption_format"], "json3")
         self.assertEqual(len(packet["caption_sha256"]), 64)
@@ -70,7 +75,20 @@ class TranscriptReaderTests(unittest.TestCase):
         self.assertEqual(packet["text"], "Hello")
         self.assertTrue(packet["truncated"])
         self.assertEqual(packet["publication"], {"precision": "unknown"})
+        self.assertEqual(packet["metadata"], {})
         self.assertIsNone(packet["caption_track"]["automatic"])
+
+    def test_invalid_engagement_counts_are_omitted_without_losing_captions(self):
+        for invalid in (-1, True, False, None, "0", 0.0, 1.5, [], {}, float("nan"), float("inf")):
+            with self.subTest(invalid=invalid):
+                info = {**INFO, **dict.fromkeys(("view_count", "like_count", "comment_count"), invalid)}
+                packet, raw = self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": JSON3,
+                                                     "dQw4w9WgXcQ.info.json": json.dumps(info)}))
+                self.assertEqual(packet["status"], "ok")
+                self.assertEqual(raw, JSON3)
+                self.assertEqual(packet["metadata"]["title"], "Sample")
+                for key in ("view_count", "like_count", "comment_count"):
+                    self.assertNotIn(key, packet["metadata"])
 
     def test_missing_or_empty_track_is_no_matching_captions(self):
         for files in ({}, {"dQw4w9WgXcQ.en.json3": '{"events": []}'}, {"dQw4w9WgXcQ.en.json3": '{"events": [{"tStartMs": 1, "dDurationMs": 1, "segs": [{"utf8": "\\n"}]}]}'}):

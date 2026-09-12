@@ -30,8 +30,6 @@ class AcquisitionRepairTests(unittest.TestCase):
         self.wall = patch.object(acquire_checkpoint.time, "time", self.clock.monotonic)
         self.wall.start()
         self.addCleanup(self.wall.stop)
-        transport.GUEST_TOKENS.clear()
-        self.addCleanup(transport.GUEST_TOKENS.clear)
 
     def opener(self, request):
         self.opened.append((request.route_id, self.clock.seconds))
@@ -103,43 +101,9 @@ class AcquisitionRepairTests(unittest.TestCase):
         self.assertEqual(len(self.opened), 1)
         self.assertEqual(result["requests_total"], 1)
 
-    def test_a_refused_activation_keeps_its_loss_and_spends_no_interval_after_resume(self):
-        self.check_refused_activation(401, "unauthorized", "auth_required")
 
-    def test_a_rate_limited_activation_keeps_the_same_loss_in_receipts_and_checkpoint(self):
-        self.check_refused_activation(429, "Too Many Requests", "rate_limited")
 
-    def test_a_secondary_rate_limit_on_activation_stays_rate_limited_after_resume(self):
-        self.check_refused_activation(403, "secondary rate limit", "rate_limited")
 
-    def check_refused_activation(self, status, body, loss):
-        self.plan.update(allowed_adapters=["x_guest"])
-        self.plan["discovery"] = [dict(step_id="s0", adapter_id="x_guest", query="user:a", max_items=1),
-                                  dict(step_id="s1", adapter_id="x_guest", query="user:b", max_items=1)]
-        self.plan["limits"] = dict(max_steps=2, max_requests=4, max_records=2, max_seconds=180)
-        def refuse_activation(request):
-            self.opened.append((request.route_id, self.clock.seconds))
-            if request.route_id == transport.X_GUEST_ACTIVATE_ROUTE:
-                return status, body, "application/json", request.url, ()
-            return 200, "{}", "application/json", request.url, ()
-        self.runtime["opener"] = refuse_activation
-        def interrupt(step_id):
-            raise KeyboardInterrupt()
-        with self.assertRaises(KeyboardInterrupt):
-            self.execute(after_checkpoint=interrupt)
-        pacing_before = json.loads((self.output / "checkpoint.json").read_text())["pacing"]
-        # A new process holds no token memory: the refusal it knows is the checkpoint's.
-        transport.GUEST_TOKENS.clear()
-        result = self.execute()
-        checkpoint = json.loads((self.output / "checkpoint.json").read_text())
-        packet = json.loads((self.output / "packet.json").read_text())
-        self.assertEqual(self.opened, [(transport.X_GUEST_ACTIVATE_ROUTE, 0)])
-        self.assertEqual([row["loss"] for row in packet["steps"]], [[loss], [loss]])
-        self.assertEqual(packet["loss"], [loss])
-        self.assertEqual(checkpoint["refused_origins"], {"api.twitter.com": loss})
-        self.assertEqual(checkpoint["pacing"], pacing_before)
-        self.assertEqual(transport.GUEST_TOKENS._tokens, {})
-        self.assertEqual(result["requests_this_invocation"], 0)
 
     def test_second_observation_and_cross_source_selection_keep_exact_edges(self):
         for cross_source in (False, True):
@@ -148,7 +112,7 @@ class AcquisitionRepairTests(unittest.TestCase):
                 runtime, opened = fixture_runtime()
                 original = runtime["opener"]
                 if cross_source:
-                    plan["depth"][0]["from_steps"].append("index")
+                    plan["depth"][0]["from_steps"].append("feed")
                 def duplicates(request):
                     status, body, content_type, url, headers = original(request)
                     if not cross_source and request.route_id == transport.ARCTIC_SHIFT_SEARCH_ROUTE:
@@ -158,7 +122,7 @@ class AcquisitionRepairTests(unittest.TestCase):
                                       created_utc=second["created_utc"] + 3600)
                         payload["data"].insert(1, second)
                         body = json.dumps(payload)
-                    elif cross_source and request.route_id == "bing_rss":
+                    elif cross_source and request.url == "https://feeds.example.net/research.xml":
                         body = body.replace("https://example.net/outlook",
                                             "https://www.reddit.com/r/BitcoinMarkets/comments/abc/daily/")
                     return status, body, content_type, url, headers
@@ -167,7 +131,7 @@ class AcquisitionRepairTests(unittest.TestCase):
                 acquire.execute(plan, output, **runtime)
                 batch = json.loads((output / "candidates.json").read_text())
                 selected = next(row for row in batch["candidates"] if (
-                    row["adapter_id"] == "web_search" if cross_source else row["title"] == "Second observation"))
+                    row["adapter_id"] == "rss_atom" if cross_source else row["title"] == "Second observation"))
                 selection = choose(output)
                 selection["choices"] = [dict(record_id=selected["record_id"], depth_id="comments",
                                               reason="Inspect this exact observation.")]

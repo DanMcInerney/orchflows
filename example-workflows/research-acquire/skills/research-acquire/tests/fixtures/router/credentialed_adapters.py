@@ -21,7 +21,7 @@ from __future__ import annotations
 import os
 from dataclasses import replace
 
-from super_research.adapters import reddit_feed
+from super_research.adapters import rss_atom
 
 TOKEN_VARIABLE = "SUPER_RESEARCH_TOKEN"
 AUTH_REQUIRED = "auth_required"
@@ -30,7 +30,7 @@ AUTH_REQUIRED = "auth_required"
 def correct(carrier, request):
     """Reddit's own feed, unchanged. What makes the three below attributable."""
 
-    return reddit_feed.fetch_native_page(carrier, request)
+    return rss_atom.fetch_native_page(carrier, request)
 
 
 def environment_reading(carrier, request):

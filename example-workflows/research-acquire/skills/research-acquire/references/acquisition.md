@@ -28,15 +28,15 @@ Write a plan in the task workspace, with output outside the package:
 <interpreter> <method>/scripts/acquire.py --plan <output>/plan.json --output <output>/evidence
 ```
 
-Replace the example dates and sources with the resolved request. `window: null` means explicitly chosen all-time. The window propagates to discovery and depth; put its dates here, not in query operators. Freeze `as_of` as an observation ceiling at or after the permitted reads, tied to the assignment's finite deadline; stop reads when it expires. It is distinct from publication/event dates, completed observation times and any forecast horizon.
+Replace the example dates and sources with the request. `window: null` explicitly chooses all-time. Put bounds here, not in query operators. Discovery and discussion depth inherit the window; selected `open_page` depth does not, so an older original date remains available to correct discovery metadata. Freeze `as_of` as the finite observation deadline and stop reads when it expires. It is separate from publication, event, revision and completed observation times.
 
-The validator requires worst-case steps/records to fit plan limits. Discovery has at most five pages per step; `max_targets` bounds depth choices and `max_items` bounds each result. Request reservations are charged before I/O and shared across stages/resumes, including guest activation; internal redirect hops are not separate attempts. `max_seconds` bounds active work and new read/pacing admission, while an in-flight read retains its transport timeout. These are ceilings, not completeness or wall-time guarantees.
+Worst-case steps/records must fit plan limits. Discovery has at most five pages per step; `max_targets` bounds depth choices and `max_items` bounds each result. Request reservations are charged before I/O and shared across stages/resumes; redirect hops are not separate attempts. `max_seconds` bounds active work and new read/pacing admission; an in-flight read retains its transport timeout. These are ceilings, not completeness or wall-time guarantees.
 
 Allocate caller budgets across plans: enforcement is per plan. One plan shares paced/cache state and serializes each origin; serialize separate plans sharing an origin. Only explicitly permitted adapters may run; supply no credentials. An origin that refuses (`auth_required`, `attestation_required`, `rate_limited`) refuses every later read in the plan with that same code, before any budget is spent; refusals and reserved pacing state survive resume; there is no retry and no substitute stage.
 
 ## Select and deepen
 
-At `selection_required`, read step outcomes/losses and the complete capped batch in `candidates.json`. Choose exact record/depth IDs from retained text and context, with reasons grounded in relevance, credibility, disagreement and likely value. Engagement or a generic daily title is insufficient. Inspect hydrated text before final inclusion; selection is provisional, and omissions/caps remain visible.
+At `selection_required`, read step outcomes/losses and the capped batch in `candidates.json`. Choose exact record/depth IDs from retained text and context, with reasons grounded in relevance and likely evidential value. `date_eligibility` and `date_qualification` distinguish reported feed/archive dates from verified original publication; `reported_in_window` alone does not establish freshness. Inspect selected depth before final inclusion. Counts alone cannot establish claim quality, and omissions/caps remain visible.
 
 ```json
 {

@@ -139,10 +139,10 @@ class RateGovernor:
         self._sleep = sleep
         # The caller's own refusal, asked before any budget is spent: a read a
         # plan already knows its origin refuses raises here typed with that
-        # refusal, never minting a token or reserving an interval for it.
+        # refusal, without reserving an interval for it.
         self._admit = admit
         self._origin_us = tick_us(clock)
-        # Per measured budget key, including shared RSS and open-route hosts:
+        # Per measured budget key, including open-route hosts:
         # the arrival time the declared interval implies, and the moment a
         # refusal's cooldown ends. They are separate because a burst allowance
         # may be spent against the first and never against the second — an
@@ -201,16 +201,12 @@ class RateGovernor:
     ) -> transport.TransportResponse:
         """Reached only on a cache miss, which is what makes a hit free.
 
-        Entered with the origin's lock already held by :meth:`fetch` — or by
-        the read that is minting a token, which enters here directly for the
-        activation and never re-takes the lock it holds. The caller's refusal
-        comes first: a read it declines never reaches the wire and spends
-        nothing.
+        Entered with the origin's lock already held by :meth:`fetch`. The
+        caller's refusal comes first: a read it declines spends nothing.
         """
 
         if self._admit is not None:
             self._admit(request)
-        self._mint_for(request.route_id)
         budget = self._budget_for(request.route_id)
         key = transport.budget_key(request)
         waited_us = self._wait_until(self._ready_at(key, budget))
@@ -231,65 +227,6 @@ class RateGovernor:
             )
         return response
 
-    def _mint_for(self, route_id: str) -> None:
-        """Mint this route's guest token, once per process, as one paced read.
-
-        The only site in the package that mints. It runs here rather than at
-        the carrier because an activation is a read like any other: it belongs
-        in the call log, on the injected opener, and inside a budget of its
-        own. The carrier cannot give it the third — a request the carrier makes
-        for itself is nested inside the one this governor is already timing, so
-        it would be charged to no route at all.
-
-        On the miss path with the pacing, so a read a run already remembers
-        costs no activation: a token buys an origin read, and a cache hit
-        reaches no origin.
-
-        An activation that fails is remembered as failed, whether the origin
-        refused it or it never answered at all, and every read that needed its
-        token is refused with that failure rather than sent unauthorized —
-        never an invented token and never a retry, which is the rule
-        :func:`transport.mint_guest_token` states. A caller who hands in a
-        bare :class:`transport.Transport` instead of the composed carrier gets
-        no mint, the same way it gets no pacing and no cache — one choice, named
-        in :func:`runner.run_scheduled`, not three — and its opener refuses the
-        same read for the same reason.
-        """
-
-        token_route_id = transport.route_constant(route_id).token_route_id
-        if not token_route_id:
-            return
-        # The claim is one test-and-set under this governor's own lock, so two
-        # lanes needing one token mint it once between them.
-        with self._tables_lock:
-            claimed = transport.GUEST_TOKENS.claim(token_route_id)
-        if claimed:
-            try:
-                token = transport.mint_guest_token(self._paced_fetch, token_route_id)
-            except transport.TransportError as failure:
-                transport.GUEST_TOKENS.refuse(token_route_id, failure)
-            except BaseException as failure:
-                # A mint that never answered — the activation route declaring
-                # no budget, an interrupt mid-activation — holds its claim as
-                # a refusal too, or the next read would proceed untokened.
-                transport.GUEST_TOKENS.refuse(
-                    token_route_id,
-                    transport.TransportError(
-                        "activation {0} failed before it answered: {1}".format(
-                            token_route_id, failure
-                        )
-                    ),
-                )
-                raise
-            else:
-                transport.GUEST_TOKENS.remember(token_route_id, token)
-        failure = transport.GUEST_TOKENS.failure_for(token_route_id)
-        if failure is not None:
-            # The activation's own answer is billed once, to the read that
-            # minted; a remembered refusal costs nothing further.
-            raise transport.TransportError(
-                str(failure), loss=failure.loss, reached=claimed and failure.reached
-            )
 
     def _budget_for(self, route_id: str) -> RouteBudget:
         budget = self._budgets.get(route_id)

@@ -1,11 +1,4 @@
-"""The transport's stated-encoding decode, proven at the seam that owns it.
-
-Stack Exchange's API compresses every answer whether or not the request asked
-(measured 2026-09-01: `Content-Encoding: gzip` on a request that sent no
-`Accept-Encoding`), and gzip bytes decoded as UTF-8 are garbage an adapter
-can only mis-type as `malformed_json`. These cases prove the three readings
-`transport.decoded_body` can make: honored, absent, and refused.
-"""
+"""Decode stated gzip encoding at the shared transport seam."""
 
 import gzip
 import unittest
@@ -25,7 +18,7 @@ class GzipBytesResponse:
 
     def __init__(self, raw):
         self.status = 200
-        self.url = "https://api.stackexchange.com/2.3/search/advanced"
+        self.url = "https://api.github.com/repos/example/project"
         self.headers = sent_headers("application/json", GZIP_HEADERS)
         self._raw = raw
 
@@ -85,7 +78,7 @@ class DecodedBodyTest(unittest.TestCase):
         # which the runner types `unreachable`, rather than an exception that
         # escapes the step and discards every step already run.
         request = transport.build_transport_request(
-            transport.STACKEXCHANGE_SEARCH_ROUTE, {"q": "probe"}
+            transport.CROSSREF_WORKS_ROUTE, {"q": "probe"}
         )
         for raw in (TRUNCATED_GZIP, GZIP_HEADER_OVER_GARBAGE, b'{"a": 1}'):
             with self.subTest(raw=raw[:12]):

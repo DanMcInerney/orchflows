@@ -4,54 +4,6 @@ from .common import *
 
 THREAT_FIXTURE_DIR = TEST_DIR / "fixtures" / "threats"
 
-# The ladder the retained threat oracles are remapped onto. `offline` is the
-# fixture adapter's class and is not on it: nothing about `fake` is a claim
-# about a route.
-EVERY_CLASS = ("K0", "K1", "K2", "K3", "K4")
-# The one class where a credential exists at all: `K1`'s is vendor-published
-# and names no user. No class takes the user's own.
-CREDENTIAL_CLASSES = ("K1",)
-NO_CLASS = ()
-
-# T01-T16, retained by reference from the superseded spec and remapped from
-# `A0`-`A5` to `K0`-`K4`. The remap is of *applicability* — which classes a
-# threat is about — and the rule is the one the old mapping used: a threat
-# applies to a class when that class has the machinery the threat is about.
-#
-# Three threats apply to no class, and that is the finding rather than a gap.
-# `A2` was a CLI with an ambient identity and `A3` was an exported browser
-# session; the new ladder has neither, so T05, T06's argv half, T07 and T08
-# are about machinery this package does not contain. They are answered by its
-# absence, which `test_dependency_boundary` proves and which the row below
-# restates at this seam.
-#
-# One clause is dropped on purpose. The superseded T09 also demanded a
-# `hostile_instruction_present` code. The frozen spec's criterion 11 states
-# the remapped T09 without it — "acquired text is `untrusted_content` and
-# cannot alter plan, grants, or write set" — and the criterion is the runnable
-# authority here. Emitting a code would mean this package judging which text
-# is hostile, which is the calling lane's job and is the one thing an
-# acquisition core must not start doing.
-THREAT_REMAP = {
-    "T01": (CREDENTIAL_CLASSES, "no credential id or value reaches a request, a response, a call log, or an artifact"),
-    "T02": (CREDENTIAL_CLASSES, "an echoed credential — the address a query-placed key was appended to — comes back stripped"),
-    "T03": (CREDENTIAL_CLASSES, "a credential is attached at send time from the route's own constant, so it reaches that origin and no other"),
-    "T04": (EVERY_CLASS, "no route admits a state-changing verb: PUT, PATCH and DELETE nowhere, POST only for two named reads"),
-    "T05": (NO_CLASS, "no process is launched, because none can be: nothing here imports one or spells a command"),
-    "T06": (EVERY_CLASS, "a caller cannot escape a route's admitted method set, and a body is the route's shape with the caller's values"),
-    "T07": (NO_CLASS, "there is no session state to export: the one token a run mints lives in memory and nowhere else"),
-    "T08": (NO_CLASS, "nothing navigates, clicks or submits: the only outbound operation is one bounded read"),
-    "T09": (EVERY_CLASS, "acquired text is untrusted_content: it changes no plan, no grant, and no write set"),
-    "T10": (CREDENTIAL_CLASSES, "a K1 credential names no user, so there is no principal to mismatch; the operator that answered is declared"),
-    "T11": (EVERY_CLASS, "a refusal is typed rate_limited on one call, and no identity changes because of it"),
-    "T12": (EVERY_CLASS, "a route the run cannot reach is refused with a typed reason and never probed"),
-    "T13": (("K4",), "an index surface declares itself an index, and it is the only surface in the roster that does"),
-    "T14": (EVERY_CLASS, "the package has no delete primitive: its only stores are in memory and clearing one is all there is"),
-    "T15": (EVERY_CLASS, "a refusal costs the origin nothing: it is decided before any call is made"),
-    "T16": (EVERY_CLASS, "no fallback: a failed read is a typed failure, never a second read somewhere else"),
-}
-
-
 def load_threat_fixture(name):
     """Load one module written beside the tree, by path."""
 
@@ -67,35 +19,8 @@ def read_threat_fixture(name):
     return THREAT_FIXTURE_DIR.joinpath(name).read_text(encoding="utf-8")
 
 
-def routes_at(classes):
-    """Every declared route answering at one of these access classes."""
-
-    return tuple(
-        route_id
-        for route_id, route in sorted(transport.ROUTE_CONSTANTS.items())
-        if route.access_class in classes
-    )
 
 
-def sent_and_answered(route_id, params=None):
-    """One read through the real opener, with the wire captured and no socket.
-
-    The recorder answers from the address it was asked at, which is what
-    urllib reports for a read nobody redirected. That makes the outbound blob
-    and the returned address two different things: the credential belongs in
-    the first and must not survive into the second.
-    """
-
-    recorder = RecordingUrlopen(200, "{}", "application/json")
-    request = transport.build_transport_request(
-        route_id, dict(helpers.probe_params(route_id), **(params or {}))
-    )
-    public = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
-    with mock.patch.object(urllib.request, "urlopen", recorder), \
-            mock.patch.object(urllib.request, "build_opener", return_value=mock.Mock(open=recorder)), \
-            mock.patch.object(socket, "getaddrinfo", return_value=public):
-        answered = transport.urlopen_read(request)
-    return answered, recorder.requests[0]
 
 
 def route_grants():
@@ -107,7 +32,7 @@ def route_grants():
 
     return (
         tuple(
-            (route_id, transport.admitted_methods(route_id))
+            (route_id, transport.READ_METHODS)
             for route_id in sorted(transport.ROUTE_CONSTANTS)
         ),
     )
@@ -145,7 +70,7 @@ def assert_acquired_text_changed_nothing(case, manifest, artifact, calls, grants
             case.fail(
                 "acquired text reached a route the plan never authorized: " + call.route_id
             )
-        if call.method not in transport.admitted_methods(call.route_id):
+        if call.method not in transport.READ_METHODS:
             case.fail(
                 "acquired text put {0} on the wire, which route {1} does not admit".format(
                     call.method, call.route_id
@@ -201,7 +126,7 @@ def assert_hostile_text_is_carried_as_content(case, artifact, markers):
 
 
 def injected_manifest():
-    """One discovery step over the K4 surface, answered with an injected page."""
+    """One discovery step over a publisher feed, answered with an injected page."""
 
     return schema.AcquisitionManifest(
         manifest_id="m-injected",
@@ -210,8 +135,8 @@ def injected_manifest():
             schema.AcquisitionStep(
                 step_id="s1-discover",
                 kind="discovery",
-                adapter_id="web_search",
-                query="local model benchmarks",
+                adapter_id="rss_atom",
+                query="https://8.8.8.8/feed.xml",
                 max_items=10,
             ),
         ),
@@ -230,58 +155,3 @@ def injected_run():
     manifest = injected_manifest()
     artifact = runner.run_acquisition(manifest, carrier)
     return manifest, artifact, carrier, opener
-
-MINTED_GUEST_TOKEN = "a-token-this-run-minted"
-ACTIVATION_ANSWER = (
-    200,
-    json.dumps({transport.GUEST_TOKEN_FIELD: MINTED_GUEST_TOKEN}),
-    "application/json",
-)
-GUEST_READ_ANSWER = (200, "{}", "application/json")
-
-# The one function that turns an activation into a token. A place that calls it
-# is a place that mints, which is what the site scan below counts.
-MINTER = "mint_guest_token"
-
-
-def guest_read_request():
-    """One read on the route that declares an activation route of its own."""
-
-    return transport.build_transport_request(
-        transport.X_GUEST_GRAPHQL_ROUTE,
-        {"query_id": "abc123", "operation_name": "UserByScreenName"},
-    )
-
-
-def called_name(func):
-    """The bare name a call node spells, whether it was reached plainly or dotted."""
-
-    if isinstance(func, ast.Name):
-        return func.id
-    return func.attr if isinstance(func, ast.Attribute) else ""
-
-
-def sites_calling(node, owners, module_name, found):
-    """Collect every enclosing function in one tree that calls the minter."""
-
-    for child in ast.iter_child_nodes(node):
-        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            sites_calling(child, owners + (child.name,), module_name, found)
-            continue
-        if isinstance(child, ast.Call) and called_name(child.func) == MINTER:
-            found.add(module_name + ":" + ".".join(owners))
-        sites_calling(child, owners, module_name, found)
-
-
-def minting_sites():
-    """Every place in the package that mints, as ``module:qualified name``.
-
-    Stated as the set of sites for the reason `test_pipeline` states the set of
-    modules that build a carrier as a set: naming one site would not notice a
-    second one appearing beside it, and a count would not say which.
-    """
-
-    found = set()
-    for path in sorted(PACKAGE_DIR.rglob("*.py")):
-        sites_calling(ast.parse(path.read_text(encoding="utf-8")), (), path.name, found)
-    return sorted(found)

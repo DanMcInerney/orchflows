@@ -1,4 +1,4 @@
-from tests.test_adapters_cases.youtube_ttl_and_artifact import *  # noqa: F401,F403
+from tests.test_adapters import *  # noqa: F401,F403
 
 HN_ALGOLIA_ENDPOINTS = ("search", "search_by_date")
 HN_COMMENT_TAG = "comment"
@@ -146,8 +146,8 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
                 route = transport.route_constant(route_id)
 
                 self.assertEqual(route.access_class, "K0")
-                self.assertIsNone(transport.route_credential(route_id))
-                self.assertEqual(route.credential_id, "")
+
+
 
     def test_every_one_of_them_names_the_party_that_answers_it(self):
         # HN's own search is operated by Algolia and published by HN: the
@@ -159,20 +159,6 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
             ["algolia", "hacker-news", "github", "github"],
         )
 
-    def test_none_of_the_four_is_inside_the_verb_gates_one_widening(self):
-        # T07 widened the gate by one closed set, for a route with no GET form.
-        # These four are ordinary reads and stay entirely outside it.
-        for route_id in self._routes():
-            with self.subTest(route=route_id):
-                route = transport.route_constant(route_id)
-
-                self.assertIn(route.method, transport.READ_METHODS)
-                self.assertNotIn(route_id, transport.TOKEN_ACTIVATION_ROUTES)
-                self.assertNotIn(route_id, transport.QUERY_BODY_ROUTES)
-                self.assertEqual(
-                    transport.admitted_methods(route_id), transport.READ_METHODS
-                )
-                self.assertEqual(route.body_params, ())
 
     def test_no_request_any_of_them_builds_can_carry_a_body(self):
         # The body is how the one widened route asks its question. A caller

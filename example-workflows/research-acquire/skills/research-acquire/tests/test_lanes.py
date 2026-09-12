@@ -41,8 +41,8 @@ ONE_ORIGIN = {
     "manifest_id": "lanes-one-origin",
     "as_of": "2026-08-17T12:00:00Z",
     "steps": [
-        {"step_id": "s1-feed", "kind": "discovery", "adapter_id": "rss_atom", "query": "UCabc", "max_items": 3},
-        {"step_id": "s2-search", "kind": "discovery", "adapter_id": "youtube_innertube", "query": "search:x", "max_items": 3},
+        {"step_id": "s1-feed", "kind": "discovery", "adapter_id": "reddit_shreddit", "query": "search:x", "max_items": 3},
+        {"step_id": "s2-search", "kind": "discovery", "adapter_id": "reddit_shreddit", "query": "listing:x", "max_items": 3},
     ],
 }
 EMPTY_FEED = '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>t</title></feed>'
@@ -120,8 +120,8 @@ class FusedLanesOverlapTest(unittest.TestCase):
 
         opener = IntervalOpener(
             {
-                transport.YOUTUBE_CHANNEL_FEED_ROUTE: (200, EMPTY_FEED, "application/atom+xml"),
-                transport.YOUTUBE_INNERTUBE_ROUTE: (200, EMPTY_SEARCH, "application/json"),
+                transport.REDDIT_SHREDDIT_SEARCH_ROUTE: (200, EMPTY_FEED, "application/atom+xml"),
+                transport.REDDIT_SHREDDIT_LISTING_ROUTE: (200, EMPTY_SEARCH, "application/json"),
             },
             hold,
         )

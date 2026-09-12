@@ -14,8 +14,8 @@ class ManifestSchemaTest(unittest.TestCase):
 
         discovery, hydration = manifest.steps
         self.assertEqual(discovery.kind, "discovery")
-        self.assertEqual(discovery.adapter_id, "web_search")
-        self.assertEqual(discovery.query, "site:reddit.com best local model")
+        self.assertEqual(discovery.adapter_id, "fake")
+        self.assertEqual(discovery.query, "fixture:local-model-index")
         self.assertEqual(discovery.selected_hits, ())
 
         self.assertEqual(hydration.kind, "hydration")
@@ -29,12 +29,7 @@ class ManifestSchemaTest(unittest.TestCase):
             )
         )
 
-    def test_an_as_of_the_ordering_cannot_parse_is_refused_at_the_manifest(self):
-        # `schema.py` says validation is total, and `as_of` was checked only for
-        # being a nonempty string. `ordering.instant_seconds` returns nothing
-        # for any other spelling, so `2026-08-10T09:00:00+00:00` left the
-        # horizon unset, made every snapshot eligible, and stopped the replay
-        # being frozen without saying anything.
+    def test_an_unparseable_as_of_is_refused_at_the_manifest(self):
         for spelling in (
             "2026-08-10T09:00:00+00:00",
             "2026-08-10 09:00:00Z",
@@ -48,7 +43,7 @@ class ManifestSchemaTest(unittest.TestCase):
                 self.assertIn(spelling, str(caught.exception))
 
         parsed = schema.parse_manifest(TRACER_MANIFEST)
-        self.assertIsNotNone(runner.instant_seconds(parsed.as_of))
+        self.assertIsNotNone(schema.instant_seconds(parsed.as_of))
 
     def test_unknown_step_field_is_refused(self):
         steps = [dict(TRACER_MANIFEST["steps"][0], follow_pagination=True)]

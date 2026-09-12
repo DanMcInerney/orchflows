@@ -15,7 +15,7 @@ class TtlServeTest(unittest.TestCase):
         carrier, opener = offline_transport(clock)
         run_cache = cache.RunCache(clock=clock.monotonic)
         request = transport.build_transport_request(
-            transport.DDG_HTML_ROUTE, {"q": "local model"}
+            transport.FAKE_OFFLINE_ROUTE, {"q": "local model"}
         )
 
         miss = run_cache.serve(request, carrier.fetch)
@@ -35,7 +35,7 @@ class TtlServeTest(unittest.TestCase):
         carrier, opener = offline_transport(clock)
         run_cache = cache.RunCache(clock=clock.monotonic)
         sooner = transport.build_transport_request(
-            transport.DDG_HTML_ROUTE, {"q": "local model"}
+            transport.FAKE_OFFLINE_ROUTE, {"q": "local model"}
         )
         later = transport.build_transport_request(
             transport.ARCTIC_SHIFT_POSTS_ROUTE, {"ids": "1abc234"}
@@ -57,7 +57,7 @@ class TtlServeTest(unittest.TestCase):
 
     def test_the_ttl_boundary_is_the_last_instant_before_expiry(self):
         request = transport.build_transport_request(
-            transport.DDG_HTML_ROUTE, {"q": "local model"}
+            transport.FAKE_OFFLINE_ROUTE, {"q": "local model"}
         )
         ttl = cache.ttl_seconds(request.route_id)
 
@@ -80,7 +80,7 @@ class TtlServeTest(unittest.TestCase):
         carrier, opener = offline_transport(clock)
         run_cache = cache.RunCache(clock=clock.monotonic)
         request = transport.build_transport_request(
-            transport.DDG_HTML_ROUTE, {"q": "local model"}
+            transport.FAKE_OFFLINE_ROUTE, {"q": "local model"}
         )
         ttl = cache.ttl_seconds(request.route_id)
 

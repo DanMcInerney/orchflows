@@ -5,7 +5,6 @@ from __future__ import annotations
 import unittest
 
 from tests.test_coverage_cases.artifact_review import (
-    DepthReviewTest,
     ReviewArtifactTest,
     StepIdentityTest,
 )
@@ -17,7 +16,6 @@ from tests.test_coverage_cases.no_io import NoIOTest
 
 __all__ = [
     "DepthPlanTest",
-    "DepthReviewTest",
     "NoIOTest",
     "ProtocolDocTest",
     "ReviewArtifactTest",

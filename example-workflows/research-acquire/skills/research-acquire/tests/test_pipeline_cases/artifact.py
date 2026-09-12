@@ -234,7 +234,7 @@ class FusedModeTest(unittest.TestCase):
         first, second = staged_pair(self)
         self.assertEqual(
             [operation.route_id for operation in runner.planned_operations(fused.ledger)],
-            [transport.DDG_HTML_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE],
+            [transport.FAKE_OFFLINE_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE],
         )
         self.assertEqual(
             runner.ledger_sums(fused.ledger),

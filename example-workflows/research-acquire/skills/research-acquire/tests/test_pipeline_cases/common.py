@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest import mock
 
 from super_research import adapters, cache, normalize, runner, schema, transport
-from super_research.adapters import fake, reddit_archive, web_search
+from super_research.adapters import fake, reddit_archive
 from tests import helpers
 
 
@@ -22,10 +22,9 @@ PACKAGE_DIR = TESTS_DIR.parent / "scripts" / "super_research"
 LATER_ADAPTER = TESTS_DIR / "fixtures" / "transport" / "minimal_adapter.py"
 TRACER_FIXTURE_DIR = TESTS_DIR / "fixtures" / "tracer"
 
-SHIPPED_ADAPTERS = (web_search, reddit_archive, fake)
-ADAPTERS_WITH_ROTATING_IDENTIFIERS = ("x_guest", "youtube_innertube")
+SHIPPED_ADAPTERS = (reddit_archive, fake)
 
-REDDIT_FEED_ROUTE = "reddit_feed"
+REDDIT_FEED_ROUTE = "reddit_shreddit_listing"
 GITHUB_REST_ROUTE = "github_rest"
 REDDIT_FEED_BUDGET = runner.RouteBudget(
     min_interval_ms=30000, burst=1, cooldown_ms=30000
@@ -53,7 +52,7 @@ UNREADABLE_STATED_INTERVALS = (
 )
 EMPTY_PAGE_BODY = (200, '{"data": [], "records": []}', "application/json")
 PROBE_REQUEST = adapters.AdapterRequest(
-    step_id="s-probe", query="probe", target_ids=("1abc234",)
+    step_id="s-probe", query="probe", target_ids=("probe",)
 )
 
 REDDIT_THREAD_LOCATOR = (
@@ -63,8 +62,8 @@ REDDIT_THREAD_LOCATOR = (
 DISCOVERY_STEP = {
     "step_id": "s1-discover",
     "kind": "discovery",
-    "adapter_id": "web_search",
-    "query": "site:reddit.com best local model",
+    "adapter_id": "fake",
+    "query": "fixture:local-model-index",
     "max_items": 6,
 }
 HYDRATION_STEP = {
@@ -93,19 +92,19 @@ STAGED_HYDRATION_MANIFEST = {
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [dict(HYDRATION_STEP, prior_step_id="")],
 }
-REPEAT_ROUTES = (transport.DDG_HTML_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE)
+REPEAT_ROUTES = (transport.FAKE_OFFLINE_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE)
 ROUTE_LATENCIES = {
-    transport.DDG_HTML_ROUTE: helpers.DEFAULT_LATENCY_SECONDS,
+    transport.FAKE_OFFLINE_ROUTE: helpers.DEFAULT_LATENCY_SECONDS,
     transport.ARCTIC_SHIFT_POSTS_ROUTE: 1.5,
 }
 
 
 def tracer_responses():
     return {
-        transport.DDG_HTML_ROUTE: (
+        transport.FAKE_OFFLINE_ROUTE: (
             200,
-            TRACER_FIXTURE_DIR.joinpath("ddg_html_results.html").read_text(encoding="utf-8"),
-            "text/html",
+            TRACER_FIXTURE_DIR.joinpath("index_results.json").read_text(encoding="utf-8"),
+            "application/json",
         ),
         transport.ARCTIC_SHIFT_POSTS_ROUTE: (
             200,

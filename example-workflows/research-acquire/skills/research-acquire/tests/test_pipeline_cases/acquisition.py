@@ -243,40 +243,15 @@ class PagingIsTheCoresTest(unittest.TestCase):
         self.assertEqual(sums["items"], 9)
 
     def test_the_cursor_a_page_offered_is_the_cursor_the_next_call_goes_out_with(self):
-        html = TRACER_FIXTURE_DIR.joinpath("ddg_html_results.html").read_text(
-            encoding="utf-8"
-        )
+        from super_research.adapters import hacker_news
+        body = {"hits": [{"objectID": "1", "title": "first", "_tags": ["story"]}], "page": 0, "nbPages": 2}
+        second = {"hits": [{"objectID": "2", "title": "second", "_tags": ["story"]}], "page": 1, "nbPages": 2}
         clock = helpers.FakeClock()
-        carrier, opener = helpers.offline_transport(
-            clock,
-            {
-                transport.DDG_HTML_ROUTE: [
-                    (200, html, "text/html"),
-                    (
-                        200,
-                        html.replace('<input type="hidden" name="s" value="30" />', ""),
-                        "text/html",
-                    ),
-                ]
-            },
-        )
-        runner.run_acquisition(
-            schema.AcquisitionManifest(
-                manifest_id="m-paging-ddg",
-                as_of="2026-08-10T09:30:00Z",
-                steps=(
-                    schema.AcquisitionStep(
-                        step_id="s1-discover",
-                        kind="discovery",
-                        adapter_id="web_search",
-                        query="site:reddit.com best local model",
-                        max_items=100,
-                    ),
-                ),
-            ),
-            carrier,
-            clock=clock.monotonic,
-        )
+        carrier, opener = helpers.offline_transport(clock, {
+            transport.HN_ALGOLIA_SEARCH_ROUTE: [(200, json.dumps(body), "application/json"), (200, json.dumps(second), "application/json")]
+        })
+        step = schema.AcquisitionStep(step_id="hn", kind="discovery", adapter_id="hacker_news", query="python", max_items=10)
+        result, records, _ = runner.run_step(step, carrier, "a", "m", clock=clock.monotonic)
         self.assertEqual(len(opener.opened), 2)
-        self.assertNotIn("s=30", opener.opened[0].url)
-        self.assertIn("s=30", opener.opened[1].url)
+        self.assertEqual([row.native_item_id for row in records], ["1", "2"])
+        self.assertIn("page=1", opener.opened[1].url)

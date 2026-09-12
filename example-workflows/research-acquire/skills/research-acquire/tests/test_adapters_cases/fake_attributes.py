@@ -106,43 +106,6 @@ def attribute_names_of(page):
     return tuple(names)
 
 
-class FakeStandsInForTheAttributedRoutesTest(unittest.TestCase):
-    """The two routes that are named attributes almost entirely, replayed.
-
-    `linkedin_public` and `public_page` each carry four of their facts under
-    `attributes` and nowhere else, so a stand-in that dropped the family would
-    answer for those two rows with the row's own subject missing — and answer
-    confidently, since every other field survived. Each case replays a live
-    adapter's own page and checks the named family survived, name for name.
-    """
-
-    def test_the_fixture_adapter_stands_in_for_linkedin_public(self):
-        lived, _ = profile_page("profile_person.html")
-
-        replayed = stand_in_for(lived)
-
-        self.assertEqual(replayed.platform, lived.platform)
-        self.assertEqual(
-            [record.attributes for record in replayed.records],
-            [record.attributes for record in lived.records],
-        )
-        for name in ("jobTitle", "addressLocality", "worksFor", "alumniOf"):
-            self.assertIn(name, attribute_names_of(replayed))
-
-    def test_the_fixture_adapter_stands_in_for_public_page(self):
-        lived, _ = selected_page("article.html")
-
-        replayed = stand_in_for(lived)
-
-        # This route states no platform on purpose, and an unstated one is what
-        # the fixture adapter reads its own descriptor for, so the declaration
-        # is not part of what is replayed here. The attribute family is.
-        self.assertEqual(
-            [record.attributes for record in replayed.records],
-            [record.attributes for record in lived.records],
-        )
-        for name in ("content_type", "link", "requested_url", "final_url"):
-            self.assertIn(name, attribute_names_of(replayed))
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

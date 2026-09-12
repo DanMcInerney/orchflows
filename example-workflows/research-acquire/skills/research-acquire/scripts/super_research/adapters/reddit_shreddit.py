@@ -25,7 +25,6 @@ from . import (
     AdapterDescriptor,
     NativeRecord,
 )
-from datetime import datetime, timezone
 from html.parser import HTMLParser
 
 
@@ -44,7 +43,6 @@ DESCRIPTOR = AdapterDescriptor(
     operator_identity="reddit",
     min_interval_ms=1500,
     burst=10,
-    comment_count_metric="comment-count",
     page_size=24,
 )
 
@@ -59,7 +57,6 @@ SEARCH_DESCRIPTOR = AdapterDescriptor(
     operator_identity="reddit",
     min_interval_ms=1500,
     burst=10,
-    comment_count_metric="comment-count",
     page_size=7,
 )
 
@@ -74,7 +71,6 @@ SUBREDDIT_SEARCH_DESCRIPTOR = AdapterDescriptor(
     operator_identity="reddit",
     min_interval_ms=1500,
     burst=10,
-    comment_count_metric="comment-count",
     page_size=7,
 )
 
@@ -166,7 +162,6 @@ AFTER_PARAM = "after"
 CURSOR_PARAM = "cursor"
 
 ROUTE_INSTANT_LENGTH = 19
-RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 UTC_OFFSETS = ("+0000", "+00:00", "Z")
 
 HTTP_STATUS = "http_status"
@@ -198,13 +193,14 @@ def route_instant_to_utc_iso(stamp: Any) -> str:
     return head + "Z"
 
 
-def exact_count(value: Any) -> Optional[int]:
-    """One exact decimal count, or nothing for a display-formatted value."""
+def exact_count(value: Any, *, signed: bool = False) -> Optional[int]:
+    """One exact decimal value; only a native score permits a minus sign."""
 
     if not isinstance(value, str):
         return None
     held = value.strip()
-    if not held or not held.isdigit():
+    digits = held[1:] if signed and held.startswith("-") else held
+    if not digits or not digits.isascii() or not digits.isdigit():
         return None
     return int(held)
 
@@ -269,23 +265,6 @@ _T_BUCKET_SPANS: Tuple[Tuple[str, int], ...] = (
 )
 
 
-def _instant_seconds(stamped: str) -> Optional[int]:
-    """One manifest instant (``RECORD_INSTANT_FORMAT``) as whole UTC seconds.
-
-    A local parser rather than a shared one: each origin-adjacent adapter
-    owns its own tiny parser rather than reaching into `ordering`, which
-    stays a core-only import.
-    """
-
-    if not stamped:
-        return None
-    try:
-        moment = datetime.strptime(stamped, RECORD_INSTANT_FORMAT).replace(tzinfo=timezone.utc)
-    except ValueError:
-        return None
-    return int(moment.timestamp())
-
-
 def origin_time_bucket(window_start: str, window_end: str) -> str:
     """The coarsest-covering native ``t=`` value for one step's window, or nothing.
 
@@ -310,10 +289,10 @@ def origin_time_bucket(window_start: str, window_end: str) -> str:
     """
 
     del window_end  # Documented above: the near edge is fixed at "now" here.
-    start_seconds = _instant_seconds(window_start)
+    start_seconds = schema.instant_seconds(window_start)
     if start_seconds is None:
         return ""
-    now_seconds = _instant_seconds(transport.utc_now_iso())
+    now_seconds = schema.instant_seconds(transport.utc_now_iso())
     if now_seconds is None:
         return ""
     age = now_seconds - start_seconds
@@ -436,7 +415,7 @@ def _named(pairs: List[Tuple[str, str]], name: str, value: Any) -> None:
 def _engagement(pairs: Tuple[Tuple[str, Any], ...]) -> Tuple[Tuple[str, int], ...]:
     counted = []
     for name, value in pairs:
-        exact = exact_count(value)
+        exact = exact_count(value, signed=name == SCORE_METRIC)
         if exact is not None:
             counted.append((name, exact))
     return tuple(counted)

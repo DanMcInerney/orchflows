@@ -41,19 +41,7 @@ from .ledger import (
     planned_operations,
     schedule_of,
 )
-from .ordering import (
-    FAMILY_SCOPED_ORDERS,
-    INSTANT_FORMAT,
-    MISSING,
-    ORDERING_CONTRACT,
-    PRESENT,
-    OrderingError,
-    content_family,
-    eligible_snapshot,
-    instant_seconds,
-    order_records,
-    ordering_key,
-)
+from .schema import instant_seconds
 from .pacing import (
     US_PER_MS,
     US_PER_SECOND,
@@ -180,9 +168,8 @@ def _offers_another_page(step: schema.AcquisitionStep, page: NativePage, kept: i
 # Window reach: whether one operation's origin can bound acquisition time
 # ---------------------------------------------------------------------------
 #
-# Capability is a property of an *operation*, not of an adapter: `bluesky`
-# sends `since`/`until` on search and none on its author feed, and `x_guest`
-# and `github_rest` split the same way. So `WINDOW_REACH` is keyed by adapter
+# Capability is a property of an operation: Hacker News search accepts a
+# time bound while its selected-item read does not. WINDOW_REACH is keyed by adapter
 # id and then by operation, and an adapter whose operations agree declares
 # once under the empty-string operation. It is total over `ADAPTER_IDS`. An
 # adapter or operation nothing here names raises `WindowReachError` rather
@@ -217,12 +204,6 @@ WINDOW_CAPABILITY_UNMEASURED = "window_capability_unmeasured"
 # key for an adapter whose calls are all one shape, matching the convention
 # `coverage.DEPTH_TARGETS` already uses for `reddit_archive`.
 WINDOW_REACH: Dict[str, Dict[str, Optional[bool]]] = {
-    # Measured: `bluesky.operation_params` sends `since`/`until` on search
-    # only; the author feed takes none.
-    "bluesky": {"search": True, "author": False},
-    # Measured: `hacker_news._fetch_search` serves search, search_by_date and
-    # comments and always applies `window_filters`; item and tree read
-    # Firebase/Algolia by one id and have no ordering a window could act on.
     "hacker_news": {
         "search": True,
         "search_by_date": True,
@@ -230,91 +211,13 @@ WINDOW_REACH: Dict[str, Dict[str, Optional[bool]]] = {
         "item": False,
         "tree": False,
     },
-    # Measured: `web_search.feed_params` sends Google's
-    # `when:Nd` only on the `gnews` branch; `ddg`, `bing` and `bingnews`
-    # never build one.
-    "web_search": {"gnews": True, "ddg": False, "bing": False, "bingnews": False},
-    # Measured: `_fetch_listing`/`_fetch_search` (`adapters/reddit_shreddit.py`)
-    # both send `t=<window>`, derived from the step's own `window_start` when
-    # one is carried (`_origin_window`, `origin_time_bucket`) or from the
-    # argument grammar otherwise;
-    # `_fetch_comments` takes no window at all.
     "reddit_shreddit": {"listing": True, "search": True, "comments": False},
-    # `repo` is a single repository hydration by name: no ordering, no bound.
-    # `issues` and `search` measured live: `since=` on an active
-    # repository's issue list and `created:` on search both genuinely filter
-    # (`adapters/github_rest.origin_since_param`, `.origin_created_qualifier`).
-    # `releases` measured the same way and does not: a `since=` set minutes in
-    # the future answered the identical unfiltered page, so it stays `False`
-    # as a measured fact rather than a conservative default.
     "github_rest": {"repo": False, "issues": True, "releases": False, "search": True},
-    # `TweetResultByRestId` and `UserByScreenName` are single-item
-    # hydrations with no ordering, measured `False`. `UserTweets` is the one
-    # operation with an ordering and is unmeasured: `None`, not the
-    # conservative `False` a caller would read as a checked limit.
-    "x_guest": {"TweetResultByRestId": False, "UserByScreenName": False, "UserTweets": None},
-    # Origin accepts none, measured: neither selection carries a time
-    # concept (`adapters/public_page.py`).
-    "public_page": {"": False},
-    # Origin accepts none: an arbitrary document fetch takes no query string
-    # at all (`transport.build_transport_request` returns before one is
-    # built).
     "open_page": {"": False},
-    # Origin accepts none for this hydration: one archived post by id.
     "reddit_archive": {"ids": False, "search": True},
-    "reddit_feed": {"feed": False, "search": None},
-    "x_xcancel": {"search": None, "status": False},
     "rss_atom": {"": False},
-    "x_syndication": {"": False},
-    # Origin accepts none, measured: this adapter never sets `published_at`
-    # at all, so there is nothing on either side for a window to act on.
-    "linkedin_public": {"": False},
-    "instagram_public": {"": False},
-    # Origin accepts none: the stream's `since` and `max` are message ids
-    # and not moments (`stocktwits._fetch_stream`); the symbol search is a
-    # name lookup.
-    "stocktwits": {"": False},
-    # Origin accepts none (`prediction_markets.operation_params`).
-    "prediction_markets": {"": False},
-    # Measured live: `keywords=python` bare vs. with a candidate
-    # `f_TPR=r<seconds>` moved the oldest posting's date forward, and on a
-    # rarer keyword (not already saturating the page) also dropped the row
-    # count 10 -> 6 (`adapters/linkedin_jobs.origin_recency_term`).
-    "linkedin_jobs": {"": True},
-    # `x_fxtwitter.operation_params` states no term for a bound it could send
-    # without inventing a query syntax, and no live read has settled whether
-    # one exists. `None`: an absence of measurement, not a proven absence of
-    # capability.
-    "x_fxtwitter": {"": None},
-    # `search` measured live: an origin-published upload-date
-    # filter value, added to the route's closed POST-body list
-    # (`routes.py`), moved every returned
-    # `publishedTimeText` inside the named span against a nine-year-old
-    # unfiltered baseline (`adapters/youtube_innertube.origin_upload_date_
-    # filter`). `player`, `next` and `transcript` read one video and have
-    # no time concept regardless — confidently `False`, not re-measured.
-    "youtube_innertube": {
-        "search": True,
-        "player": False,
-        "next": False,
-        "transcript": False,
-    },
-    # Measured, each in the origin's
-    # own grammar: GDELT DOC's `startdatetime`/`enddatetime` returned only
-    # in-window `seendate`s; Stack Exchange's `fromdate`/`todate` returned
-    # only in-window `creation_date`s; the Wikimedia pageviews date range is
-    # two path segments and the answer held exactly the days inside them;
-    # OpenAlex, Crossref and arXiv each filtered publication time at the
-    # origin, so `scholarly`'s three operations agree and it declares once.
-    "gdelt": {"": True},
-    "stack_exchange": {"": True},
-    "wikimedia_pageviews": {"": True},
+    "x_fxtwitter": {"": False},
     "scholarly": {"": True},
-    # Origin accepts none, measured: a TikTok page read and an
-    # oEmbed lookup each address one item and carry no time concept.
-    "tiktok_public": {"": False},
-    "oembed": {"": False},
-    # The offline fixture reader: no origin exists for a bound to reach.
     "fake": {"": False},
 }
 
@@ -467,17 +370,9 @@ def run_step(
             page = call_adapter(step.adapter_id, carrier, request)
             reached = reached_origin(page)
         except transport.TransportError as error:
-            # The one read that comes back with nothing to type — a refused
-            # connection, an unresolvable name, a TLS handshake that failed,
-            # the transport declining to send it at all (a non-https address,
-            # a write-capable method, an undeclared route or credential), or a
-            # guest token its activation never minted. Typed here rather than
-            # raised, because raising would discard every step already run and
-            # everything read before this call is the partial result a failure
-            # owes. The error's own text is the only part of it naming where
-            # to look, so it rides as a warning. The error says whether an
-            # origin answered the read it cost — a refused activation did —
-            # and that answer is what the ledger bills.
+            # Keep completed work when transport refuses or cannot finish a read.
+            # The error preserves any known route and origin receipt so the
+            # partial result and request accounting remain inspectable.
             page = build_native_page(
                 next((surface for surface in surface_descriptors(step.adapter_id)
                       if surface.route_id == error.route_id), descriptor),

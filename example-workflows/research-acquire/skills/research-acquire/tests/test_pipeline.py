@@ -12,19 +12,15 @@ from tests.test_pipeline_cases.artifact import (
 )
 from tests.test_pipeline_cases.failure import (
     ARefusalTheCallerAdmitsNothingForTest,
-    ARefusedActivationIsBilledOnceTest,
     AStepThatGotNoAnswerIsTypedTest,
     AStepWithNoCallIsEmptyTest,
     AdapterBranchTest,
     OracleCanFailTest,
-    TheStepRouteIsItsFirstPagesTest,
 )
-from tests.test_pipeline_cases.ordering import OrderingContractTest
 from tests.test_pipeline_cases.scheduling import (
     BurstAndCooldownTest,
     FakeClockOnlyTest,
     OriginStatedCooldownTest,
     RateBudgetTest,
     TheDocumentedPathPacesAndRemembersTest,
-    VolatileIdentifierTest,
 )

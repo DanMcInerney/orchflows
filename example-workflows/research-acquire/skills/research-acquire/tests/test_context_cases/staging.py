@@ -23,7 +23,7 @@ class RunTest(unittest.TestCase):
         self.assertEqual(discovered[0].representation_kind, "index")
         self.assertEqual(discovered[0].time_confidence, "unknown")
         self.assertEqual(discovered[0].usable_basis_time, "")
-        self.assertEqual(discovered[0].group_scope, "duckduckgo")
+        self.assertEqual(discovered[0].group_scope, "fixture_index")
         self.assertEqual(discovered[0].observed_at, FROZEN_OBSERVED_AT)
         self.assertEqual(discovered[0].record_id, "s1-discover#0.0")
         self.assertEqual(discovered[0].adapter_version, "1")

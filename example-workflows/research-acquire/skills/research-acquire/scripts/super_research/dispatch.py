@@ -11,41 +11,18 @@ from typing import Dict, Optional, Tuple
 
 from . import transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage
-from .adapters import bluesky, fake, gdelt, github_rest, hacker_news, instagram_public
-from .adapters import linkedin_jobs, linkedin_public, oembed, open_page, prediction_markets
-from .adapters import public_page, reddit_archive, reddit_feed, reddit_shreddit
-from .adapters import rss_atom, scholarly, stack_exchange, stocktwits, tiktok_public
-from .adapters import web_search, wikimedia_pageviews
-from .adapters import x_fxtwitter, x_guest, x_syndication, x_xcancel, youtube_innertube
+from .adapters import fake, github_rest, hacker_news, open_page, reddit_archive, reddit_shreddit, rss_atom, scholarly, x_fxtwitter
 
 ADAPTERS = {
-    "bluesky": (bluesky, bluesky.operation_for),
     "fake": (fake, None),
-    "gdelt": (gdelt, None),
     "github_rest": (github_rest, github_rest.operation_for),
     "hacker_news": (hacker_news, hacker_news.operation_for),
-    "instagram_public": (instagram_public, None),
-    "linkedin_jobs": (linkedin_jobs, None),
-    "linkedin_public": (linkedin_public, None),
-    "oembed": (oembed, None),
-    "open_page": (open_page, None),
-    "prediction_markets": (prediction_markets, None),
-    "public_page": (public_page, None),
     "reddit_archive": (reddit_archive, reddit_archive.operation_for),
-    "reddit_feed": (reddit_feed, reddit_feed.operation_for),
     "reddit_shreddit": (reddit_shreddit, reddit_shreddit.operation_for),
     "rss_atom": (rss_atom, None),
     "scholarly": (scholarly, None),
-    "stack_exchange": (stack_exchange, None),
-    "stocktwits": (stocktwits, None),
-    "tiktok_public": (tiktok_public, None),
-    "web_search": (web_search, web_search.operation_for),
-    "wikimedia_pageviews": (wikimedia_pageviews, None),
-    "x_xcancel": (x_xcancel, x_xcancel.operation_for),
+    "open_page": (open_page, None),
     "x_fxtwitter": (x_fxtwitter, None),
-    "x_guest": (x_guest, lambda request: x_guest.operation_for(request.target_ids[0] if request.target_ids else request.query)),
-    "x_syndication": (x_syndication, None),
-    "youtube_innertube": (youtube_innertube, youtube_innertube.operation_for),
 }
 ADAPTER_IDS = tuple(ADAPTERS)
 
@@ -71,7 +48,7 @@ def call_adapter(
 
 
 def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
-    """Every budgeted route, including token activation that returns no records."""
+    """Every budgeted route used by this adapter."""
     entry = ADAPTERS.get(adapter_id)
     if entry is None:
         return ()

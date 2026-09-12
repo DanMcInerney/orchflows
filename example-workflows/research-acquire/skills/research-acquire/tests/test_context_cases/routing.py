@@ -6,18 +6,18 @@ class RouteConstantOwnershipTest(unittest.TestCase):
     """Route constants live in transport.py; callers see booleans, not hosts."""
 
     def test_every_declared_route_carries_its_origin_and_access_class(self):
-        route = transport.ROUTE_CONSTANTS["ddg_html"]
+        route = transport.ROUTE_CONSTANTS[transport.ARCTIC_SHIFT_POSTS_ROUTE]
 
-        self.assertEqual(route.access_class, "K4")
-        self.assertEqual(route.origin, "https://html.duckduckgo.com")
+        self.assertEqual(route.access_class, "K3")
+        self.assertEqual(route.origin, "https://arctic-shift.photon-reddit.com")
 
-        built = transport.build_transport_request("ddg_html", {"q": "best local model"})
-        self.assertTrue(built.url.startswith("https://html.duckduckgo.com/html/?"))
-        self.assertIn("q=best+local+model", built.url)
+        built = transport.build_transport_request(transport.ARCTIC_SHIFT_POSTS_ROUTE, {"ids": "1abc234"})
+        self.assertTrue(built.url.startswith(route.origin + route.path + "?"))
+        self.assertIn("ids=1abc234", built.url)
 
     def test_default_opener_refuses_a_non_https_url_without_touching_a_socket(self):
         offline = transport.TransportRequest(
-            route_id="ddg_html", method="GET", url="http://html.duckduckgo.com/html/"
+            route_id=transport.ARCTIC_SHIFT_POSTS_ROUTE, method="GET", url="http://example.net/posts"
         )
 
         with forbid_io():

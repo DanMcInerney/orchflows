@@ -2,105 +2,6 @@
 
 from .support import *  # noqa: F403
 
-class WebSearchDiscoveryTest(unittest.TestCase):
-    """The K4 discovery adapter: one page in, one NativePage out, nothing else."""
-
-    def setUp(self):
-        self.html = read_fixture("ddg_html_results.html")
-        self.request = adapters.AdapterRequest(
-            step_id="s1-discover", query="site:reddit.com best local model"
-        )
-
-    def test_ddg_html_yields_one_native_page_of_index_hits(self):
-        carrier, opener = tracer_transport({"ddg_html": (200, self.html, "text/html")})
-
-        page = web_search.fetch_native_page(carrier, self.request)
-
-        self.assertEqual(page.adapter_id, "web_search")
-        self.assertEqual(page.route_id, "ddg_html")
-        self.assertEqual(page.outcome, "ok")
-        self.assertEqual(len(page.records), 6)
-        self.assertEqual(len(opener.opened), 1)
-        self.assertEqual([call.route_id for call in carrier.calls], ["ddg_html"])
-
-        first = page.records[0]
-        self.assertEqual(first.canonical_content_kind, "web_hit")
-        self.assertEqual(first.canonical_locator, REDDIT_THREAD_LOCATOR)
-        self.assertEqual(first.title, "What is the best local model right now? : r/LocalLLaMA")
-        self.assertIn("24GB of VRAM", first.body)
-        self.assertEqual(first.native_position, 0)
-        self.assertEqual(first.engagement, ())
-
-        self.assertEqual(page.records[1].canonical_locator, X_POST_LOCATOR)
-
-        snippetless = page.records[5]
-        self.assertEqual(snippetless.canonical_locator, "https://example.net/empty")
-        self.assertEqual(snippetless.body, "")
-        self.assertIn("field_omitted", snippetless.loss)
-
-    def test_index_hit_snippet_never_becomes_native_engagement(self):
-        carrier, _ = tracer_transport({"ddg_html": (200, self.html, "text/html")})
-
-        page = web_search.fetch_native_page(carrier, self.request)
-
-        # The first snippet literally reads "120 votes, 88 comments"; a K4 index
-        # hit reports it as prose and claims no native metric from it.
-        self.assertEqual(page.records[0].engagement, ())
-        self.assertIn("engagement_unavailable", page.records[0].loss)
-        self.assertIn("target_not_hydrated", page.records[0].loss)
-
-    def test_next_page_cursor_is_surfaced_but_never_followed(self):
-        carrier, opener = tracer_transport({"ddg_html": (200, self.html, "text/html")})
-
-        page = web_search.fetch_native_page(carrier, self.request)
-
-        self.assertEqual(page.cursor_out, "30")
-        self.assertEqual(len(opener.opened), 1)
-
-    def test_non_success_status_is_typed_and_never_a_silent_empty(self):
-        carrier, _ = tracer_transport({"ddg_html": (503, "<html>Service Unavailable</html>", "text/html")})
-
-        page = web_search.fetch_native_page(carrier, self.request)
-
-        self.assertEqual(page.outcome, "failed")
-        self.assertEqual(page.records, ())
-        self.assertIn("http_status", page.loss)
-        self.assertIn("503", " ".join(page.warnings))
-
-    def test_two_nav_forms_leave_the_last_offset_and_nobody_spends_it(self):
-        # A paginated page carries an `s` input in the "< Previous" form and
-        # another in "Next", and this parser takes the last. Whether the last
-        # is the forward one is not in the evidence — page one, which is what
-        # The 2026-08-10 probes recorded, has only the forward form. Recorded here
-        # rather than guarded, because nothing reads the value:
-        # `runner.planned_calls` sets no cursor, which
-        # `NothingOverlapsAndNothingPagesTest` pins.
-        backwards = self.html.replace(
-            '<div class="nav-link">',
-            '<div class="nav-link"><form action="/html/" method="post">'
-            '<input type="hidden" name="s" value="0" /></form></div>'
-            '<div class="nav-link">',
-            1,
-        )
-        carrier, _ = tracer_transport({"ddg_html": (200, backwards, "text/html")})
-
-        page = web_search.fetch_native_page(carrier, self.request)
-
-        self.assertEqual(page.cursor_out, "30")
-        self.assertEqual(backwards.count('name="s"'), 2)
-
-    def test_a_parsed_page_with_no_results_is_empty_not_failed(self):
-        carrier, _ = tracer_transport(
-            {"ddg_html": (200, "<html><body><div class='results'></div></body></html>", "text/html")}
-        )
-
-        page = web_search.fetch_native_page(carrier, self.request)
-
-        self.assertEqual(page.outcome, "empty")
-        self.assertEqual(page.records, ())
-        self.assertNotIn("http_status", page.loss)
-
-
 class RedditArchiveHydrationTest(unittest.TestCase):
     """The K3 hydration adapter: the archive's own fields, labelled as the archive."""
 
@@ -272,7 +173,6 @@ class AdapterDeclarationTest(unittest.TestCase):
     def test_live_pages_agree_with_their_static_descriptor(self):
         carrier, _ = tracer_transport(
             {
-                "ddg_html": (200, read_fixture("ddg_html_results.html"), "text/html"),
                 "arctic_shift_posts_ids": (
                     200,
                     read_fixture("arctic_shift_posts_ids.json"),
@@ -281,14 +181,11 @@ class AdapterDeclarationTest(unittest.TestCase):
             }
         )
         pages = (
-            web_search.fetch_native_page(
-                carrier, adapters.AdapterRequest(step_id="s1-discover", query="q")
-            ),
             reddit_archive.fetch_native_page(
                 carrier, adapters.AdapterRequest(step_id="s2-hydrate", target_ids=("1abc234",))
             ),
         )
-        descriptors = (web_search.DESCRIPTOR, reddit_archive.DESCRIPTOR)
+        descriptors = (reddit_archive.DESCRIPTOR,)
 
         for page, descriptor in zip(pages, descriptors):
             self.assertEqual(page.adapter_id, descriptor.adapter_id)
@@ -299,7 +196,3 @@ class AdapterDeclarationTest(unittest.TestCase):
             self.assertEqual(
                 page.native_identity_namespace, descriptor.native_identity_namespace
             )
-
-    def test_discovery_and_hydration_declare_different_representations(self):
-        self.assertEqual(web_search.DESCRIPTOR.representation_kind, "index")
-        self.assertEqual(reddit_archive.DESCRIPTOR.representation_kind, "native")

@@ -7,7 +7,6 @@ from .test_context_cases.adapters import (
     AdapterDeclarationTest,
     FakeAdapterTest,
     RedditArchiveHydrationTest,
-    WebSearchDiscoveryTest,
 )
 from .test_context_cases.lineage import (
     K4HybridNeverMergesTest,

@@ -113,6 +113,11 @@ def _record_for(position: int, post: Mapping[str, Any]) -> NativeRecord:
         community=post.get("subreddit") or "",
         published_at=epoch_to_utc_iso(post.get("created_utc")),
         engagement=_engagement_of(post),
+        attributes=tuple(
+            (name, str(post[name])) for name in ("url", "retrieved_on")
+            if name in post and post[name] is not None
+            and isinstance(post[name], (str, int, float)) and not isinstance(post[name], bool)
+        ),
         native_position=position,
         loss=DESCRIPTOR.standing_loss + (() if fullname else (FIELD_OMITTED,)),
     )

@@ -8,16 +8,20 @@ network.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence, Tuple
 
-# The one spelling every instant in this package is written in, owned here
-# because this is the module that validates. `ordering.instant_seconds` parses
-# with it and returns nothing for anything else, so an `as_of` this module
-# admitted in another spelling would leave the ordering's horizon unset and
-# every snapshot eligible — the frozen replay silently stops being frozen. A
-# total validation is one that catches that here rather than nowhere.
+# Manifest validation and window filtering share one UTC spelling.
 INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
+
+def instant_seconds(value: str) -> int | None:
+    """Parse a UTC instant; unavailable or malformed source dates stay unknown."""
+    try:
+        return int(datetime.strptime(value, INSTANT_FORMAT).replace(tzinfo=timezone.utc).timestamp())
+    except ValueError:
+        return None
+
 
 STEP_KINDS = ("discovery", "hydration")
 
@@ -333,11 +337,7 @@ def _parse_step(payload: Any, position: int) -> AcquisitionStep:
 
 
 def _is_instant(value: str) -> bool:
-    try:
-        datetime.strptime(value, INSTANT_FORMAT)
-    except ValueError:
-        return False
-    return True
+    return instant_seconds(value) is not None
 
 
 def parse_manifest(payload: Any) -> AcquisitionManifest:
@@ -349,13 +349,9 @@ def parse_manifest(payload: Any) -> AcquisitionManifest:
     manifest_id = _require_text(mapping, "manifest_id", "manifest")
 
     as_of = _require_text(mapping, "as_of", "manifest")
-    try:
-        datetime.strptime(as_of, INSTANT_FORMAT)
-    except ValueError:
+    if not _is_instant(as_of):
         raise ManifestError(
-            "manifest as_of must be spelled YYYY-MM-DDTHH:MM:SSZ, got {0!r}: an"
-            " as_of the ordering cannot parse bounds nothing, and the frozen"
-            " replay stops being frozen without saying so".format(as_of)
+            "manifest as_of must be spelled YYYY-MM-DDTHH:MM:SSZ, got {0!r}".format(as_of)
         )
 
     raw_steps = mapping.get("steps", ())
