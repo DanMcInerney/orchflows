@@ -16,7 +16,7 @@ Optional libraries live under `example-workflows/` in the repository and install
 
 | Library | Provides |
 | --- | --- |
-| `social-search` | Three skills: collect per site, rank evidence, compose both. |
+| `social-search` | Three skills: collect a source scope, rank evidence, compose both. |
 | `research-acquire` | Scripted public-source acquisition and transcript readers. |
 | `short-video` | Three skills: make a film, review its exports, compose both. |
 
@@ -48,10 +48,10 @@ Install each optional library by the same command with its package name. Hosts c
 
 ## Use
 
-Invoke `$orchflows-light:orch-dynamic-workflow` in Codex or `/orchflows-light:orch-dynamic-workflow` in Claude Code, or name a specific workflow. Put the requested result, constraints and output location in the prompt. With social-search installed, its coordinator launches one worker per source and one reviewer:
+Invoke `$orchflows-light:orch-dynamic-workflow` in Codex or `/orchflows-light:orch-dynamic-workflow` in Claude Code, or name a specific workflow. Put the requested result, constraints and output location in the prompt. Social-search groups sources into collection assignments, then sends their evidence to one reviewer:
 
 ```text
-social-search → search-site per site → orch-work → evidence
+social-search → search-site per assignment → orch-work → evidence
              → rank-evidence → orch-review → ranked, cited assessment
 ```
 
