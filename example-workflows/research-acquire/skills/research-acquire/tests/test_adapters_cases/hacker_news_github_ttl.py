@@ -152,7 +152,6 @@ def hacker_news_github_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-hn-gh",
-        mode="staged",
         # After the reads this dispatch makes, because a frozen horizon that
         # fell before its own observations would replay to nothing.
         as_of="2026-08-10T09:05:00Z",

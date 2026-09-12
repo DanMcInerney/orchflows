@@ -128,7 +128,7 @@ class FootprintLawTest(unittest.TestCase):
     """Criterion 4: the declared footprint law says what the constants do.
 
     The law is stated twice — once beside the constants in `cache.py`, once in
-    `internals.md` for a reader who never opens the source — and a run's whole
+    `protocol.md` for a reader who never opens the source — and a run's whole
     memory ceiling is the product of two numbers. Either sentence drifting from
     the constants turns a bound a caller relies on into a wrong number that
     nothing reddens to report, so both are parsed here rather than restated.
@@ -137,7 +137,7 @@ class FootprintLawTest(unittest.TestCase):
     def document_sentence(self):
         stated = document_footprint_paragraphs()
 
-        self.assertEqual(len(stated), 1, "the footprint law is stated once in internals.md")
+        self.assertEqual(len(stated), 1, "the footprint law is stated once in protocol.md")
         return stated[0]
 
     def test_the_source_sentence_names_both_halves_of_the_bound(self):
@@ -161,7 +161,7 @@ class FootprintLawTest(unittest.TestCase):
         # correctly and still state the ceiling wrong.
         for where, stated in (
             ("cache.py", footprint_comment()),
-            ("internals.md", self.document_sentence()),
+            ("protocol.md", self.document_sentence()),
         ):
             with self.subTest(sentence=where):
                 product = STATED_PRODUCT.findall(stated)

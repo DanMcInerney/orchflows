@@ -19,7 +19,7 @@ from __future__ import annotations
 import unittest
 
 from super_research import runner, schema, transport
-from super_research._support import window_reach
+from super_research import runner as window_reach
 from tests import helpers
 from tests.test_social_adapters_cases._support import FXTWITTER_DIR, read_fixture
 
@@ -96,7 +96,6 @@ class TypedReadingAtTheSeamTest(unittest.TestCase):
             adapter_id="x_fxtwitter",
             query="spacex",
             max_items=50,
-            max_pages=1,
             window_start=window_start,
         )
         result, records, _ = runner.run_step(
@@ -117,7 +116,6 @@ class TypedReadingAtTheSeamTest(unittest.TestCase):
                 schema.SelectedHit(target_id="releases:owner/repo", discovery_locator=""),
             ),
             max_items=50,
-            max_pages=1,
             window_start=window_start,
         )
         result, records, _ = runner.run_step(

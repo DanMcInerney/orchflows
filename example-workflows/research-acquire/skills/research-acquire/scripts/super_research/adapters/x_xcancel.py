@@ -1,7 +1,7 @@
 """K3 X search and selected status reads through xcancel's public Nitter HTML.
 
-Markup is source-derived, not a captured successful xcancel response. Both
-2026-09-10 live probes returned a browser challenge. This parser never runs
+Markup is source-derived, not a captured successful xcancel response: both
+live reads returned a browser challenge. This parser never runs
 that challenge, imports cookies, retries, switches hosts or follows links.
 Pagination and server-side time filtering remain unverified.
 """

@@ -222,7 +222,7 @@ class GithubWriteVerbOracleCanFailTest(unittest.TestCase):
         # second line of defence rather than the first.
         with helpers.forbid_io():
             with self.assertRaises(transport.TransportError):
-                transport.urlopen_response(opener.opened[0])
+                transport.urlopen_read(opener.opened[0])
 
     def test_nothing_in_the_package_can_reach_either_wrong_adapter(self):
         named = sorted(

@@ -1,11 +1,10 @@
 """K2 LinkedIn public profiles from the structured data the page embeds.
 
-Measured 2026-08-10 (LinkedIn): ``linkedin.com/in/<slug>``
+Measured: ``linkedin.com/in/<slug>``
 answered 200 in 1.3 s with 577 KB carrying a **complete** ``ld+json`` Person
 block — ``name``, ``jobTitle[]``, ``addressLocality``, ``description``,
-``worksFor[]`` and ``alumniOf[]``. That is the largest single divergence from
-the superseded spec, which placed this whole platform outside the roster on an
-assumed 999 authwall.
+``worksFor[]`` and ``alumniOf[]`` — not the 999 authwall an earlier
+assumption placed this whole platform behind.
 
 So the one thing this module must not do is read an authwall. The measured
 page carries "Sign in to" and "Join now" above the block and below it: they
@@ -22,8 +21,8 @@ would eventually report.
 
 This module reads ``linkedin.com/in/<slug>`` and only that.
 ``linkedin.com/company/<slug>`` is a different path and would be a different
-route; the 2026-08-10 probes record a marker name for it and no field set, so a company
-parser would be inferred rather than read.
+route; the measurement records a marker name for it and no field set, so a
+company parser would be inferred rather than read.
 """
 
 from __future__ import annotations
@@ -51,7 +50,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="linkedin",
     representation_kind="native",
     operator_identity="linkedin",
-    # The 2026-08-10 probes: 1.3 s per request. Nothing on this route was measured
+    # The probes: 1.3 s per request. Nothing on this route was measured
     # refusing, so `burst` and `cooldown_ms` keep the protocol's conservative
     # defaults rather than a ceiling nobody observed.
     min_interval_ms=1300,
@@ -63,7 +62,7 @@ DESCRIPTOR = AdapterDescriptor(
 NATIVE_ORDER = "linkedin_profile_block_order"
 CONTENT_KIND = "profile"
 
-# The two strings the superseded spec's authwall assumption rested on. They are
+# The two strings the earlier authwall assumption rested on. They are
 # named here, once, so this module states that it has seen them and does not
 # read them, and they appear nowhere else in this file — no branch, no filter,
 # no warning. Declaring them is what makes that absence checkable from outside
@@ -81,7 +80,7 @@ GRAPH_KEY = "@graph"
 NODE_TYPE_KEY = "@type"
 PERSON_TYPE = "Person"
 
-# Every field the 2026-08-10 probes record this block carrying, under the block's own
+# Every field the probes record this block carrying, under the block's own
 # keys. A record missing one says so.
 NAME_KEY = "name"
 JOB_TITLE_KEY = "jobTitle"

@@ -60,14 +60,14 @@ class AStepThatGotNoAnswerIsTypedTest(unittest.TestCase):
             "the step names no route for the read that never completed",
         )
 
-    def test_the_run_reaches_its_ledger_and_bills_no_call_for_the_read_nobody_took(self):
+    def test_the_run_reaches_its_ledger_and_bills_no_call_for_the_read_nobody_answered(self):
         run, opener, governor = unreachable_run()
         sums = runner.ledger_sums(run.ledger)
         self.assertEqual(sums["calls"], len(governor.log))
         self.assertEqual(len(opener.opened), len(governor.log) + 1)
-        self.assertNotIn(
-            transport.ARCTIC_SHIFT_POSTS_ROUTE, governor._route_arrival_us
-        )
+        # The interval is spent before the read leaves: a read nobody answered
+        # may still have reached the origin, so its route's budget was charged.
+        self.assertIn(transport.ARCTIC_SHIFT_POSTS_ROUTE, governor._route_arrival_us)
         self.assertEqual(sums["pages"], sum(step.pages for step in run.artifact.steps))
         self.assertEqual(
             sums["items"], sum(step.records_received for step in run.artifact.steps)
@@ -167,6 +167,151 @@ class OracleCanFailTest(unittest.TestCase):
         )
 
 
+YOUTUBE_FIXTURE_DIR = TESTS_DIR / "fixtures" / "youtube"
+GUEST_HYDRATION_MANIFEST = {
+    "manifest_id": "pipeline-guest",
+    "as_of": "2026-08-10T00:00:00Z",
+    "steps": [
+        {
+            "step_id": "s1-guest",
+            "kind": "hydration",
+            "adapter_id": "x_guest",
+            "prior_step_id": "",
+            "selected_hits": [
+                {"discovery_locator": "https://x.com/a", "target_id": "user:a"},
+                {"discovery_locator": "https://x.com/b", "target_id": "user:b"},
+            ],
+            "max_items": 1,
+        }
+    ],
+}
+
+
+def refused_mint_run():
+    """Two guest reads whose activation the origin refuses: one answered call between them."""
+
+    clock = helpers.FakeClock()
+    carrier, opener = helpers.offline_transport(clock, {
+        transport.X_GUEST_ACTIVATE_ROUTE: (401, "unauthorized", "application/json"),
+        transport.X_GUEST_GRAPHQL_ROUTE: OK_JSON,
+    })
+    governor = real_governor(carrier, None, clock)
+    return run_on(clock, governor, GUEST_HYDRATION_MANIFEST), opener, governor
+
+
+class AStepWithNoCallIsEmptyTest(unittest.TestCase):
+    def test_a_hydration_selecting_nothing_is_empty_on_the_route_it_was_admitted_to(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(clock, {})
+        step = schema.AcquisitionStep(
+            step_id="s-none", kind="hydration", adapter_id="fake", selected_hits=()
+        )
+
+        result, records, operations = runner.run_step(
+            step, carrier, "artifact:none", "none", clock.monotonic
+        )
+
+        self.assertEqual(result.outcome, "empty")
+        self.assertEqual(result.route_id, runner.descriptor_for("fake").route_id)
+        self.assertEqual((result.pages, records, operations, opener.opened), (0, (), (), []))
+
+
+class ARefusedActivationIsBilledOnceTest(unittest.TestCase):
+    def setUp(self):
+        transport.GUEST_TOKENS.clear()
+        self.addCleanup(transport.GUEST_TOKENS.clear)
+
+    def test_the_ledger_bills_the_activation_the_origin_answered_and_nothing_more(self):
+        run, opener, governor = refused_mint_run()
+        sums = runner.ledger_sums(run.ledger)
+        step = run.artifact.steps[0]
+
+        self.assertEqual(step.outcome, "failed")
+        self.assertEqual(step.loss, (transport.AUTH_REQUIRED, transport.AUTH_REQUIRED))
+        self.assertEqual(step.pages, 2)
+        # One origin read in the whole run — the refused activation — and the
+        # ledger bills exactly that one: to the read that minted, and not to
+        # the read the remembered refusal cost nothing.
+        self.assertEqual([read.route_id for read in governor.log], [transport.X_GUEST_ACTIVATE_ROUTE])
+        self.assertEqual(sums["calls"], len(governor.log))
+        self.assertEqual(
+            [event.delta for event in run.ledger if event.metric == "calls"], [1, 0]
+        )
+        self.assertEqual([request.route_id for request in opener.opened], [transport.X_GUEST_ACTIVATE_ROUTE])
+
+
+class TheStepRouteIsItsFirstPagesTest(unittest.TestCase):
+    def test_a_search_answers_on_the_search_route_and_never_the_descriptors(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock, {transport.GITHUB_SEARCH_ROUTE: (200, '{"total_count": 0, "items": []}', "application/json")}
+        )
+        manifest = schema.parse_manifest({
+            "manifest_id": "pipeline-search-route",
+            "as_of": "2026-08-10T00:00:00Z",
+            "steps": [{"step_id": "s1", "kind": "discovery", "adapter_id": "github_rest",
+                       "query": "search:python", "max_items": 3}],
+        })
+
+        artifact = runner.run_acquisition(manifest, carrier, clock=clock.monotonic)
+
+        self.assertEqual(artifact.steps[0].route_id, transport.GITHUB_SEARCH_ROUTE)
+        self.assertNotEqual(artifact.steps[0].route_id, runner.descriptor_for("github_rest").route_id)
+        self.assertEqual([request.route_id for request in opener.opened], [transport.GITHUB_SEARCH_ROUTE])
+
+    def test_a_transcript_step_keeps_page_ones_route_while_page_two_answered_elsewhere(self):
+        clock = helpers.FakeClock()
+        carrier, _ = helpers.offline_transport(clock, {
+            transport.YOUTUBE_INNERTUBE_ROUTE: (
+                200, YOUTUBE_FIXTURE_DIR.joinpath("player_with_caption_tracks.json").read_text(encoding="utf-8"),
+                "application/json",
+            ),
+            transport.YOUTUBE_TIMEDTEXT_ROUTE: (
+                200, YOUTUBE_FIXTURE_DIR.joinpath("timedtext_json3.json").read_text(encoding="utf-8"),
+                "application/json",
+            ),
+        })
+        manifest = schema.parse_manifest({
+            "manifest_id": "pipeline-transcript-route",
+            "as_of": "2026-08-10T00:00:00Z",
+            "steps": [{"step_id": "s1", "kind": "discovery", "adapter_id": "youtube_innertube",
+                       "query": "transcript:7pQm3nXkT2a", "max_items": 2}],
+        })
+
+        run = runner.run_scheduled(manifest, carrier, clock=clock.monotonic, lanes=1)
+        step = run.artifact.steps[0]
+
+        self.assertEqual((step.outcome, step.pages), ("ok", 2))
+        self.assertEqual(step.route_id, transport.YOUTUBE_INNERTUBE_ROUTE)
+        self.assertEqual(
+            [event.route_id for event in runner.planned_operations(run.ledger)],
+            [transport.YOUTUBE_INNERTUBE_ROUTE, transport.YOUTUBE_TIMEDTEXT_ROUTE],
+        )
+        self.assertEqual(
+            [record.route_id for record in run.artifact.records],
+            [transport.YOUTUBE_INNERTUBE_ROUTE, transport.YOUTUBE_TIMEDTEXT_ROUTE],
+        )
+
+
+class ARefusalTheCallerAdmitsNothingForTest(unittest.TestCase):
+    def test_a_read_the_caller_refuses_spends_no_budget_and_reaches_no_opener(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(clock, {REDDIT_FEED_ROUTE: OK_JSON})
+
+        def refuse(request):
+            raise transport.TransportError("refused earlier", loss=transport.RATE_LIMITED)
+
+        governor = runner.RateGovernor(
+            carrier, budgets=SEEDED_BUDGETS, clock=clock.monotonic, sleep=clock.sleep, admit=refuse
+        )
+
+        with self.assertRaises(transport.TransportError) as caught:
+            governor.fetch(probe_request(REDDIT_FEED_ROUTE))
+
+        self.assertEqual(caught.exception.loss, transport.RATE_LIMITED)
+        self.assertEqual((governor.log, governor._route_arrival_us, opener.opened), ([], {}, []))
+
+
 class AdapterBranchTest(unittest.TestCase):
     def test_every_listed_adapter_id_resolves_to_a_descriptor_and_to_a_call(self):
         for adapter_id in runner.ADAPTER_IDS:
@@ -183,7 +328,7 @@ class AdapterBranchTest(unittest.TestCase):
                     },
                 )
                 page = runner.call_adapter(
-                    adapter_id, carrier, probe_request_for(adapter_id)
+                    adapter_id, carrier, helpers.roster_request(adapter_id, "s-probe")
                 )
                 self.assertIn(
                     page.route_id,

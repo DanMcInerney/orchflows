@@ -78,20 +78,20 @@ class KeylessRosterTest(unittest.TestCase):
         # the live ones.
         assert_nothing_wanted_a_credential(self, self.artifact, ("fake",))
 
-    def test_the_router_admitted_every_adapter_on_its_own_route(self):
-        # The other end of the same claim, at the seam that decides it: the
-        # admissions map is booleans only, and every adapter's route is in it
-        # and true. `auth_required` is the reason it would answer otherwise.
-        admissions = transport.route_admissions()
+    def test_every_adapter_reads_a_route_needing_no_user_credential(self):
+        # The other end of the same claim, at the table that states it: no
+        # route any adapter reads is declared K5.
         for adapter_id in runner.ADAPTER_IDS:
             for surface in runner.surface_descriptors(adapter_id):
                 with self.subTest(adapter=adapter_id, route=surface.route_id):
-                    self.assertIs(admissions[surface.route_id], True)
+                    self.assertNotEqual(
+                        transport.route_constant(surface.route_id).access_class, "K5"
+                    )
 
     def test_no_string_in_the_whole_artifact_says_a_credential_was_wanted(self):
         # Belt and braces over the oracle's field-by-field reading: seven
-        # adapters and the router all spell the same word, and none of them is
-        # anywhere in what the run produced.
+        # adapters spell the same word, and it is nowhere in what the run
+        # produced.
         self.assertNotIn(AUTH_REQUIRED, repr(self.artifact))
 
     def test_every_row_the_run_kept_came_from_an_uncredentialed_class(self):

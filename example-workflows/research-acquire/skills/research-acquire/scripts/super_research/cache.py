@@ -1,7 +1,7 @@
 """Run-local cache seam: one run's memory of reads it already made.
 
-Measured Reddit RSS answers 1–2 requests per 30 s per IP, whatever identity
-asks (measured 2026-08-10). A run that re-reads what it just read therefore starves
+Reddit RSS answers 1–2 requests per 30 s per IP, whatever identity
+asks. A run that re-reads what it just read therefore starves
 rather than merely running slowly, which is why this cache is a correctness
 requirement and not an optimization.
 
@@ -37,13 +37,13 @@ CACHE_HIT = "cache_hit"
 DEFAULT_TTL_SECONDS = 60.0
 ROUTE_TTL_SECONDS: Dict[str, float] = {
     # A web index's answer to one query is stable across a run's discovery
-    # phase; the 2026-08-10 probes observed no throttle here, so this TTL exists to
+    # phase; the probes observed no throttle here, so this TTL exists to
     # stop a run asking the same question twice, not to dodge a limit.
     transport.DDG_HTML_ROUTE: 300.0,
     # An archive lookup by fixed id changes only as the archive backfills.
     transport.ARCTIC_SHIFT_POSTS_ROUTE: 900.0,
-    # One author's whole timeline for 2.5 s and 378 KB (measured 2026-08-10), so
-    # this is the route where remembering earns the most. Five minutes bounds
+    # One author's whole timeline for 2.5 s and 378 KB, so this is the
+    # route where remembering earns the most. Five minutes bounds
     # how stale an engagement count a caller can be handed, and a run asking
     # for the same author twice is asking the same question.
     transport.X_SYNDICATION_TIMELINE_ROUTE: 300.0,
@@ -53,7 +53,7 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # anywhere else on X.
     transport.X_GUEST_GRAPHQL_ROUTE: 120.0,
     # The least volatile thing in the roster and the most expensive to read:
-    # 577 KB in 1.3 s (measured 2026-08-10) for a block that changes when a member
+    # 577 KB in 1.3 s for a block that changes when a member
     # edits their profile and carries no counter at all, so nothing in it goes
     # stale on a run's timescale. It is also the largest answer the evidence
     # has measured, and it fits: 577 KB is inside `MAX_ENTRY_BYTES`, so this
@@ -65,8 +65,8 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # read — 27 KB in 0.7 s, so holding an answer longer buys less and risks
     # handing back a page of results that has moved on.
     transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE: 300.0,
-    # The most expensive read in the roster — 455 KB in 2.9 s (measured 2026-08-10)
-    # — so remembering earns more here per request than anywhere else, and a
+    # The most expensive read in the roster — 455 KB in 2.9 s — so
+    # remembering earns more here per request than anywhere else, and a
     # run asking for the same account twice is asking the same question. It
     # still cannot take the LinkedIn profile's window: that block carries no
     # counter at all and changes only when a member edits it, while this
@@ -91,9 +91,9 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # `kids` traversal sensibly — a walk re-reading one item that fast is
     # asking the same question, and one re-reading it later wants the counts.
     transport.HN_FIREBASE_ITEM_ROUTE: 120.0,
-    # The longest window this ticket declares, and the only one in the table
-    # argued from a budget rather than from a latency. The 2026-08-10 probes recorded
-    # the anonymous ceiling at 60/hr per bucket: a repeat read here costs a
+    # The longest window in the table, and the only one argued from a budget
+    # rather than from a latency. The anonymous ceiling is 60/hr per bucket,
+    # so a repeat read here costs a
     # full minute of the hour, where every other route in the roster costs
     # seconds of waiting. A repository's own row — its description, its star
     # and fork and open-issue counts — moves on a human timescale, so ten
@@ -115,8 +115,8 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # window the web index of a fast-moving front page holds, for that same
     # reason, and here the saving is a third of a minute rather than a second.
     transport.REDDIT_FEED_ROUTE: 180.0,
-    # The cheapest read in the roster — 39 KB in 0.35 s (measured 2026-08-10) — so
-    # this window earns the least of any here per request, and it exists to
+    # The cheapest read in the roster — 39 KB in 0.35 s — so this window
+    # earns the least of any here per request, and it exists to
     # stop a run asking one channel twice rather than to dodge a limit nobody
     # measured. Five minutes is what every "the same question twice" route in
     # this table holds. Volatility is low in an unusual way: an entry carries no
@@ -139,7 +139,7 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # to the default for exactly that reason — the default is a bound on
     # staleness, and this route wants none.
     transport.PUBLIC_PAGE_CONTROL_ROUTE: 0.0,
-    # The routes added 2026-08-17. Each takes the window of the route it most
+    # Each of these takes the window of the route it most
     # resembles above, for the reason given there: an index answer holds five
     # minutes, an archive lookup fifteen, a counter-bearing social read five, a
     # document fifteen, and a market quote two — the shortest window in the

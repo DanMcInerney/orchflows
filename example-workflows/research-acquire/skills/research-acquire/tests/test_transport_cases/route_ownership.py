@@ -207,16 +207,6 @@ class RouteOwnershipScanTest(unittest.TestCase):
             ],
         )
 
-    def test_no_credential_value_reaches_the_tracked_evidence_document(self):
-        # `references/evidence.md` distils records of live reads, and a
-        # transcript is exactly where a credential value would be copied from.
-        # The scan above, the same literals, one surface that is prose.
-        credentials = sorted(
-            credential.value for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values()
-        )
-
-        self.assertEqual(sources_naming(credentials, [EVIDENCE_DOC]), [])
-
     def test_no_module_outside_the_declared_seam_reaches_the_network(self):
         # Quantified over the seam declaration and not the route one, because
         # the two answer different questions: a module admitted to the route
@@ -227,23 +217,6 @@ class RouteOwnershipScanTest(unittest.TestCase):
 
                 for module in NETWORK_MODULES:
                     self.assertNotIn(module, named)
-
-    def test_the_router_never_sees_a_module_that_holds_an_address(self):
-        # `router.py`'s own docstring states the law: it never sees a host, a
-        # path, or a credential. While one module held every address, naming
-        # that module here was the whole law. Now that the addresses are
-        # declared, this reads the declaration — because `from . import routes`
-        # would hand the router every origin in the allowlist without spelling
-        # one literal for the scan above to catch.
-        holding = sorted(
-            {Path(name).name for name in ROUTE_OWNING_MODULES}
-            | set(NETWORK_SEAM_MODULES)
-        )
-        named = imported_names(PACKAGE_DIR / "router.py")
-
-        self.assertEqual(
-            [name for name in sorted(named) if any(held in name for held in holding)], []
-        )
 
 
 class RouteOwnershipIsStatedTrulyTest(unittest.TestCase):

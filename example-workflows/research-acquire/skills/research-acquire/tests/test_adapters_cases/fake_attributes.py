@@ -95,81 +95,54 @@ def stand_in_for(page):
     )
 
 
-def probe_for(adapter_id):
-    """The one smoke probe declared for this adapter."""
+def attribute_names_of(page):
+    """Every attribute name this page's records carry, first-seen order."""
 
-    return next(probe for probe in probes.SMOKE_PROBES if probe.adapter_id == adapter_id)
-
-
-def declared_attribute_names(probe):
-    """The names this roster row asks for under `attributes`, in the row's order."""
-
-    return tuple(
-        name[len(probes.ATTRIBUTE_PREFIX):]
-        for _, names in probe.field_sets
-        for name in names
-        if name.startswith(probes.ATTRIBUTE_PREFIX)
-    )
-
-
-def roster_row_shortfall(page, probe):
-    """What this probe's own roster row would find absent on this page's records."""
-
-    step = schema.AcquisitionStep(step_id="s-stand-in", kind="hydration", adapter_id="fake")
-    records = normalize.normalize_page(page, step, "artifact:stand-in", "m-stand-in")
-    return smoke.field_set_report(records, probe.field_sets)[0]
+    names = []
+    for record in page.records:
+        for name, _ in record.attributes:
+            if name not in names:
+                names.append(name)
+    return tuple(names)
 
 
 class FakeStandsInForTheAttributedRoutesTest(unittest.TestCase):
-    """The two roster rows that are named attributes almost entirely, replayed.
+    """The two routes that are named attributes almost entirely, replayed.
 
-    `linkedin_public` and `public_page` each carry four of what their smoke
-    asserts under `attributes` and nowhere else, so a stand-in that dropped the
-    family would answer for those two rows with the row's own subject missing —
-    and answer confidently, since every other field survived.
-
-    Each row here replays a live adapter's own page and then asks the roster
-    row itself, read off `probes.SMOKE_PROBES` rather than transcribed into the
-    assertion, whether anything went missing. Two live records equal to two
-    empty families would satisfy the equality alone; the shortfall is what
-    forbids that, because an absent attribute is a shortfall.
+    `linkedin_public` and `public_page` each carry four of their facts under
+    `attributes` and nowhere else, so a stand-in that dropped the family would
+    answer for those two rows with the row's own subject missing — and answer
+    confidently, since every other field survived. Each case replays a live
+    adapter's own page and checks the named family survived, name for name.
     """
 
     def test_the_fixture_adapter_stands_in_for_linkedin_public(self):
-        probe = probe_for("linkedin_public")
         lived, _ = profile_page("profile_person.html")
 
         replayed = stand_in_for(lived)
 
-        self.assertEqual(
-            declared_attribute_names(probe),
-            ("jobTitle", "addressLocality", "worksFor", "alumniOf"),
-        )
         self.assertEqual(replayed.platform, lived.platform)
         self.assertEqual(
             [record.attributes for record in replayed.records],
             [record.attributes for record in lived.records],
         )
-        self.assertEqual(roster_row_shortfall(replayed, probe), ())
+        for name in ("jobTitle", "addressLocality", "worksFor", "alumniOf"):
+            self.assertIn(name, attribute_names_of(replayed))
 
     def test_the_fixture_adapter_stands_in_for_public_page(self):
-        probe = probe_for("public_page")
         lived, _ = selected_page("article.html")
 
         replayed = stand_in_for(lived)
 
-        self.assertEqual(
-            declared_attribute_names(probe),
-            ("content_type", "link", "requested_url", "final_url"),
-        )
         # This route states no platform on purpose, and an unstated one is what
         # the fixture adapter reads its own descriptor for, so the declaration
-        # is not part of what is replayed here. The roster row is.
+        # is not part of what is replayed here. The attribute family is.
         self.assertEqual(
             [record.attributes for record in replayed.records],
             [record.attributes for record in lived.records],
         )
-        self.assertEqual(roster_row_shortfall(replayed, probe), ())
+        for name in ("content_type", "link", "requested_url", "final_url"):
+            self.assertIn(name, attribute_names_of(replayed))
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

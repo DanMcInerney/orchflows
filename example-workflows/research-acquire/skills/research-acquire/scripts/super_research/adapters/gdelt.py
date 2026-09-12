@@ -1,9 +1,9 @@
 """K4 GDELT DOC 2.0: a global news index with an origin-side time bound.
 
-Measured 2026-09-01, this host. HTTPS to ``api.gdeltproject.org`` times out
+Measured, this host. HTTPS to ``api.gdeltproject.org`` times out
 at connect (curl and this package's own opener alike) while plain HTTP
-answers, and the transport admits https only — so a live smoke here types
-``unreachable`` and concludes nothing about the platform. The fixture below
+answers, and the transport admits https only — so a live read from such a
+host types ``unreachable`` and concludes nothing about the platform. The fixture below
 and every fact in this docstring were captured over plain HTTP as test
 evidence; the shipped module never sends anything but https, through the
 same declared route every other K4 adapter uses.
@@ -17,7 +17,7 @@ only rows whose ``seendate`` fell inside them. Each row carries ``url``,
 (``YYYYMMDDTHHMMSSZ``), ``socialimage`` (often blank), ``domain``,
 ``language`` and ``sourcecountry`` — no native id, no author, no counts.
 The origin's own stated ceiling, in a plain-text 429 body also measured
-2026-09-01, is one request per five seconds.
+is one request per five seconds.
 
 **A missing ``articles`` key is not schema drift.** A query matching
 nothing answered 200 with the literal body ``{}`` — no ``articles`` key at
@@ -38,8 +38,7 @@ carries.
 
 **mode=timelinevol and mode=context are deliberately not shipped.** Neither
 is this module's ``mode``; `mode=context` answered 200 with an empty
-``articles`` list on every query tried 2026-09-01 and `timelinevol` was not
-tried. See ``references/route-notes/gdelt.md`` for the reopen condition.
+``articles`` list on every query tried and `timelinevol` was not tried.
 
 Every record stands on the same three losses `web_search` attaches to an
 index hit, minus the one GDELT does not deserve: this surface states a
@@ -89,7 +88,7 @@ DESCRIPTOR = AdapterDescriptor(
     representation_kind="index",
     operator_identity="gdelt",
     # The origin's own stated ceiling, in a plain-text 429 body measured
-    # 2026-09-01: one request per five seconds.
+    # one request per five seconds.
     min_interval_ms=5000,
     burst=1,
     cooldown_ms=60000,

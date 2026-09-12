@@ -1,6 +1,6 @@
 """Closed two-stage research plan: validate bounds, present candidates, bind choices.
 
-No keyword floor, ranking, route inference, fallback, or semantic selection.
+No keyword floor, ranking, route inference, substitution, or semantic selection.
 The caller names discovery and depth routes; a model supplies record IDs and
 reasons after inspecting the complete capped candidate batch.
 """
@@ -95,8 +95,7 @@ def _validate(plan):
         if re.search(r"(?:since:|until:|after:|before:|after=|before=)\d{4}", raw["query"]):
             raise PlanError("put date bounds in window, not embedded query operators")
     try:
-        manifest = schema.parse_manifest(dict(schema_version=2, manifest_id=plan["plan_id"],
-                                             mode="fused", as_of=plan["as_of"], steps=steps))
+        manifest = schema.parse_manifest(dict(manifest_id=plan["plan_id"], as_of=plan["as_of"], steps=steps))
     except schema.ManifestError as error:
         raise PlanError(str(error)) from error
     ids = {step.step_id for step in manifest.steps}
@@ -194,7 +193,7 @@ def selections(plan, records, selection, candidate_id):
             raise PlanError("choice is outside the authorized candidate/depth set")
         step = depth_step(plan, route, record, "depth-" + str(index + 1))
         if step is None:
-            raise PlanError("choice is incompatible with the selected source route")
+            raise PlanError("choice names a record the selected depth route cannot address")
         key = (route["adapter_id"], route["operation"],
                step.selected_hits[0].target_id if step.selected_hits else step.query)
         if key in targets:

@@ -36,13 +36,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
+from tests import helpers
 from super_research import cache, runner, schema, transport
 
 
 TESTS_DIR = Path(__file__).resolve().parent.parent
 PACKAGE_DIR = TESTS_DIR.parent / "scripts" / "super_research"
 CACHE_SOURCE = PACKAGE_DIR / "cache.py"
-INTERNALS_SOURCE = TESTS_DIR.parent / "references" / "internals.md"
+PROTOCOL_SOURCE = TESTS_DIR.parent / "references" / "protocol.md"
 FIXTURE_DIR = TESTS_DIR / "fixtures" / "cache"
 # T01's tracer fixtures, read rather than copied: the strongest repeat-read
 # claim is over the run's own end-to-end path, on the run's own data.
@@ -58,9 +59,7 @@ REDDIT_THREAD_LOCATOR = (
 )
 
 REPEAT_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "cache-repeat-read",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [
         {
@@ -159,7 +158,7 @@ class RecordingOpener:
         outcome = self.responses[request.route_id]
         if isinstance(outcome, Exception):
             raise outcome
-        return outcome
+        return helpers.answered(request, outcome)
 
 
 def offline_transport(clock, responses=None):
@@ -323,9 +322,9 @@ def footprint_comment():
 
 
 def document_footprint_paragraphs():
-    """Every paragraph in ``internals.md`` that states the footprint law."""
+    """Every paragraph in ``protocol.md`` that states the footprint law."""
 
-    text = INTERNALS_SOURCE.read_text(encoding="utf-8")
+    text = PROTOCOL_SOURCE.read_text(encoding="utf-8")
     return [
         " ".join(block.split())
         for block in text.split("\n\n")

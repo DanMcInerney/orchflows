@@ -19,19 +19,12 @@ Why this exists at all. The failure this package actually sees is not a
 malformed manifest — :func:`schema.parse_manifest` is total and rejects
 unknown keys before any transport call, so malformed manifests never run. It
 is a **valid manifest that under-acquires**: every field well-formed, every
-step legal, and the run comes back thin. Two of those were measured on
-2026-08-17 in one session, by a caller that had read the contract:
-
-1. `window_start`/`window_end` omitted on two `web_search` steps while every
-   other step in the same manifest carried them. Valid; the news lane reached
-   back four months and spent its cap there.
-2. `search:` called on `youtube_innertube` and the run reported "no
-   transcripts, no view counts". Valid; the adapter serves four operations and
-   the other three are where both of those live.
-
-Neither is a validation problem, so no amount of stricter parsing reaches
-them. Both are visible in the manifest before it runs, which is what this
-module reads.
+step legal, and the run comes back thin — a `web_search` step with no window
+that spends its cap months back, or a `search:` on `youtube_innertube` that
+reports no transcripts and no view counts because the other three operations
+are where both live. Neither is a validation problem, so no amount of stricter
+parsing reaches them. Both are visible in the manifest before it runs, which
+is what this module reads.
 
 **Nothing here plans, selects, ranks, or judges.** :func:`plan_depth`
 builds steps and never runs one; the caller passes the records it chose, and
@@ -39,7 +32,7 @@ the selection is frozen in the manifest exactly as before — this is the
 ceremony removed. The reviews warn and return: an advisory is a sentence, never
 an edit. A module that added the missing step would be the internal planner this
 package deliberately does not have, and the frozen inputs it would give up are
-the whole reason a fused manifest can run its lanes at once.
+the whole reason a manifest can run its lanes at once.
 
 What a cap *buys* did change, for the rows :data:`DEPTH_TARGETS` declares as
 paging and only those. A hydration step spends exactly one origin call per hit
@@ -54,25 +47,271 @@ absorb.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Sequence, Tuple, Union
+from typing import Dict, Sequence, Tuple, Union, Iterable
 
 from . import runner, schema
-# Keep the established ``coverage.*`` depth seam while its implementation
-# lives with the other private support code.
-from ._support import coverage_depth as _coverage_depth
-from ._support.coverage_depth import (
-    DEPTH_TARGETS,
-    CoverageError,
-    DepthPlan,
-    DepthTarget,
-    SkippedRecord,
-    plan_depth as _plan_depth,
-)
+from urllib.parse import urlsplit
 
 
-def plan_depth(*args, **kwargs):
-    _coverage_depth.DEPTH_TARGETS = DEPTH_TARGETS
-    return _plan_depth(*args, **kwargs)
+class CoverageError(ValueError):
+    """A plan named an adapter, an operation, or a bound it may not have."""
+
+
+@dataclass(frozen=True)
+class DepthTarget:
+    """One depth operation: how it is addressed, and what shape it is lawful as.
+
+    ``id_from`` names which field of a discovery record addresses the target:
+
+      "locator"  the normalized locator the discovery row carried. Reddit's
+                 comments grammar takes a permalink directly, so nothing is
+                 taken apart and no subreddit is re-derived here.
+      "native"   the platform-native item id.
+
+    Neither is inferred. A record missing the named field is reported as
+    skipped rather than addressed by the other one, because guessing which id a
+    route meant is how a read lands on the wrong item and still looks
+    authorized.
+
+    ``kind`` is the step kind this operation answers under, and it is not a
+    style choice: :func:`runner._offers_another_page` spends a continuation
+    only for a discovery step, so an operation whose evidence rides one is
+    reachable no other way. ``min_items`` is the floor that cap needs for the
+    same reason — one page is not two.
+    """
+
+    id_from: str
+    kind: str
+    min_items: int = 1
+
+
+# The operations that deepen a discovery record, per adapter, and what each one
+# is worth. Declared rather than discovered: an adapter's operation tuple says
+# which names it answers to, and says nothing about which of them a caller who
+# wants evidence should spend, nor which shape spends it. This table is that
+# second fact, and it is the single source for depth planning and review, so a
+# route added to one is never missing from the other.
+#
+# The `kind` column is read off `runner._offers_another_page`, whose whole
+# answer is `step.kind == "discovery" and bool(page.cursor_out) and kept <
+# step.max_items`. `next` publishes a continuation and puts the comment
+# threads on page two, and `transcript` publishes one and puts the cues there;
+# planned as hydration either returns nothing while holding a cursor nothing
+# would spend. Every other row answers in one call and stays hydration, where
+# each hit's provenance is exact rather than inferred.
+DEPTH_TARGETS: Dict[str, Dict[str, DepthTarget]] = {
+    "open_page": {"": DepthTarget("locator", "hydration")},
+    "reddit_shreddit": {"comments": DepthTarget("locator", "hydration")},
+    "youtube_innertube": {
+        "player": DepthTarget("native", "hydration"),
+        # Page one is the player's caption track list; the cues are on page
+        # two, which `kept < max_items` is the only clause that buys.
+        "transcript": DepthTarget("native", "discovery", min_items=2),
+        "next": DepthTarget("native", "discovery"),
+    },
+    "hacker_news": {
+        "tree": DepthTarget("native", "hydration"),
+        "item": DepthTarget("native", "hydration"),
+    },
+    "x_fxtwitter": {
+        "conversation": DepthTarget("native", "hydration"),
+        "user": DepthTarget("native", "hydration"),
+    },
+    "x_xcancel": {"status": DepthTarget("locator", "hydration")},
+    "reddit_archive": {"": DepthTarget("native", "hydration")},
+}
+
+
+def can_address(record: schema.AcquisitionRecord, adapter_id: str, operation: str) -> bool:
+    """Whether this operation can address the record; relevance and route authorization are the caller's.
+
+    An archive post is not rewritten as a live post. Its carried Reddit
+    permalink can address the independently authorized comments route, and the
+    resulting edge retains both operators' records and counts.
+    """
+    if record.adapter_id == adapter_id:
+        return True
+    try:
+        address = urlsplit(record.normalized_locator)
+        port = address.port
+    except ValueError:
+        return False
+    if adapter_id == "reddit_shreddit" and operation == "comments":
+        parts = address.path.strip("/").split("/")
+        return (record.adapter_id in ("reddit_archive", "reddit_feed", "web_search")
+                and address.scheme == "https"
+                and address.hostname in ("reddit.com", "www.reddit.com", "old.reddit.com")
+                and not (address.username or address.password or port or address.query or address.fragment)
+                and len(parts) in (4, 5) and parts[0] == "r" and parts[2] == "comments"
+                and parts[1].replace("_", "").isalnum() and parts[3].isalnum())
+    return (adapter_id == "open_page" and operation == ""
+            and record.representation_kind == "index"
+            and address.scheme == "https" and bool(address.hostname))
+
+
+@dataclass(frozen=True)
+class SkippedRecord:
+    """One record the plan could not address, and the reason it could not."""
+
+    record_id: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class DepthPlan:
+    """The steps a caller would run, and every record they left behind.
+
+    Both halves: a selection whose leftovers were never listed is a silent
+    drop wearing a plan's clothes. `skipped` is the audit — a record off another adapter, a
+    record with no addressable id, and a record past the caller's own limit
+    each land here with which of the three it was.
+
+    ``steps`` is plural because the two shapes count differently. A hydration
+    operation is one step carrying every addressable hit, and it is returned
+    even when the selection came back empty, because an empty selection is a
+    fact about the records and not about the plan. A paging operation is one
+    discovery step per record — a discovery step forbids `selected_hits`, so
+    the target rides in the query and one step can address exactly one — and
+    nothing addressable means no step at all.
+    """
+
+    steps: Tuple[schema.AcquisitionStep, ...]
+    skipped: Tuple[SkippedRecord, ...]
+
+
+def plan_depth(
+    records: Iterable[schema.AcquisitionRecord],
+    adapter_id: str,
+    operation: str,
+    step_id: str,
+    max_items: int,
+    limit: int = 0,
+) -> DepthPlan:
+    """The steps that deepen these records, in the shape their operation pages in.
+
+    ``operation`` is a key of this adapter's :data:`DEPTH_TARGETS` row, and an
+    operation the row does not name is refused rather than passed through to an
+    adapter that would read it as a query. ``limit`` caps how many records are
+    addressed — zero means every addressable one — and the records past it are
+    reported in ``skipped`` rather than dropped, so a caller can see that its
+    own bound, not the data, ended the selection.
+
+    What ``max_items`` bounds follows the kind the row declares, and so does
+    what it costs. On a hydration step it bounds each authorized call: every
+    selected hit was named by the caller and every one is called exactly once,
+    so a first hit that answers richly cannot starve the rest and no
+    continuation is ever spent. On a discovery step it bounds the whole step and
+    is also the budget the core's paging spends, so this one record's step can
+    cost up to :data:`runner.MAX_PAGES_PER_STEP` origin calls — five — against
+    the single call the same record cost as a hydration. That is what a paging
+    row buys with a cap, and it is why a row declaring a ``min_items`` floor
+    refuses a cap under it rather than planning a step that stops one page short
+    of its own evidence and reports success.
+    """
+
+    row = DEPTH_TARGETS.get(adapter_id)
+    if row is None:
+        raise CoverageError(
+            "no depth target declared for adapter {0!r}; declared: {1}".format(
+                adapter_id, ", ".join(sorted(DEPTH_TARGETS))
+            )
+        )
+    if operation not in row:
+        raise CoverageError(
+            "adapter {0!r} declares no depth operation {1!r}; declared: {2}".format(
+                adapter_id, operation, ", ".join(sorted(name for name in row if name))
+            )
+        )
+    if max_items <= 0:
+        raise CoverageError("max_items must be a positive integer, got {0!r}".format(max_items))
+    if limit < 0:
+        raise CoverageError("limit must not be negative, got {0!r}".format(limit))
+
+    target = row[operation]
+    if max_items < target.min_items:
+        raise CoverageError(
+            "{0} {1!r} needs max_items of at least {2}, got {3}: page one of this"
+            " operation is the record it starts from, and `kept < max_items` is the"
+            " clause that buys page two, which is where its evidence is.".format(
+                adapter_id, operation, target.min_items, max_items
+            )
+        )
+
+    id_from = target.id_from
+    hits = []
+    skipped = []
+    for record in records:
+        if not can_address(record, adapter_id, operation):
+            skipped.append(
+                SkippedRecord(record.record_id, "off adapter {0}".format(record.adapter_id))
+            )
+            continue
+        if record.representation_kind != "index" and record.discovery_locator:
+            # A hydration record already is a hydration. Feeding one back would
+            # ask the route to deepen its own answer, and the edge it formed
+            # names a discovery this artifact holds — re-hydrating it would put
+            # a second record under the same locator with no way to tell which
+            # read produced which.
+            skipped.append(SkippedRecord(record.record_id, "already hydrated"))
+            continue
+        addressed = record.normalized_locator if id_from == "locator" else record.native_item_id
+        if not addressed:
+            skipped.append(
+                SkippedRecord(
+                    record.record_id,
+                    "carries no {0} to address".format(
+                        "locator" if id_from == "locator" else "native item id"
+                    ),
+                )
+            )
+            continue
+        if not record.normalized_locator:
+            # The locator is the only thing that ties a hydration record back
+            # to its discovery record, and nothing is matched by similarity. A
+            # record with none can be read but never linked, so the edge would
+            # be missing and the run would type `discovery_not_recorded`
+            # against itself.
+            skipped.append(SkippedRecord(record.record_id, "carries no normalized locator"))
+            continue
+        if limit and len(hits) >= limit:
+            skipped.append(SkippedRecord(record.record_id, "past the caller's limit"))
+            continue
+        named = addressed if operation == "" else operation + ":" + addressed
+        hits.append(schema.SelectedHit(record.normalized_locator, named))
+
+    if target.kind == "hydration":
+        return DepthPlan(
+            steps=(
+                schema.AcquisitionStep(
+                    step_id=step_id,
+                    kind="hydration",
+                    adapter_id=adapter_id,
+                    query=operation,
+                    selected_hits=tuple(hits),
+                    max_items=max_items,
+                ),
+            ),
+            skipped=tuple(skipped),
+        )
+
+    # One step per record, and the target in the query. A discovery step
+    # forbids `selected_hits`, so the operation's own `<name>:<argument>`
+    # grammar — the one an adapter reads off a step that names no target — is
+    # the only place left to say which item this step is about, and it says one.
+    return DepthPlan(
+        steps=tuple(
+            schema.AcquisitionStep(
+                step_id="{0}-{1}".format(step_id, index + 1),
+                kind="discovery",
+                adapter_id=adapter_id,
+                query=hit.target_id,
+                max_items=max_items,
+            )
+            for index, hit in enumerate(hits)
+        ),
+        skipped=tuple(skipped),
+    )
+
 
 # What a step is, to the two functions that ask whether one is depth. A manifest
 # holds `AcquisitionStep`s and an artifact holds `StepResult`s, and both carry
@@ -123,21 +362,18 @@ class Advisory:
 # Whether a step's own operation would have spent the window at the origin,
 # in the origin's own terms — Google News `when:`, HN Algolia
 # `numericFilters`, Bluesky `since`/`until`. Read from
-# :data:`window_reach.WINDOW_REACH`, keyed by adapter and then by operation,
+# :data:`runner.WINDOW_REACH`, keyed by adapter and then by operation,
 # because capability is a property of an operation and not of an adapter:
 # `bluesky` sends `since`/`until` on search and none on its author feed, so a
-# tuple of adapter ids could not say what is true here and this module no
-# longer keeps one.
+# tuple of adapter ids could not say what is true here.
 #
 # The window check below fires only where the operation can, and the
 # narrowing is what makes it worth reading. Every unwindowed step spends its
 # cap on whatever the origin ranks first; where the operation can also bound
 # it server-side, omitting the window is strictly wasteful and never a
 # choice. Elsewhere it is frequently deliberate — `prediction_markets` wants
-# open markets closing next year, and warning about those trained a reader to
-# skip the line that mattered. Measured 2026-08-17, at the coarser
-# per-adapter granularity this table has since replaced: unnarrowed, this
-# fired on five steps of which three were correct as written.
+# open markets closing next year — and warning about those trains a reader to
+# skip the line that matters.
 
 DEPTH_NOT_PLANNED = "depth_not_planned"
 WINDOW_ABSENT = "window_absent"
@@ -187,10 +423,7 @@ def _is_depth(step: Step) -> bool:
 def _page_size(adapter_id: str) -> int:
     """The largest page any of this adapter's surfaces declares, or zero."""
 
-    try:
-        surfaces = runner.surface_descriptors(adapter_id)
-    except Exception:  # pragma: no cover - an adapter the core does not declare
-        return 0
+    surfaces = runner.surface_descriptors(adapter_id)
     sizes = [surface.page_size for surface in surfaces if surface.page_size]
     return max(sizes) if sizes else 0
 
@@ -236,15 +469,7 @@ def review_manifest(manifest: schema.AcquisitionManifest) -> Tuple[Advisory, ...
             # omission — it is the ordinary shape.
             if step.kind != "discovery":
                 continue
-            try:
-                can_bound = runner.reach_for(step.adapter_id, query=step.query)
-            except runner.WindowReachError:
-                # An adapter or operation this table does not name is not
-                # this review's failure to report: `runner.run_step` is
-                # where an unrecognized adapter is refused, and this
-                # advisory stays as silent about it as it always has been.
-                continue
-            if not can_bound:
+            if not runner.reach_for(step.adapter_id, query=step.query):
                 continue
             found.append(
                 Advisory(
@@ -263,7 +488,7 @@ def review_manifest(manifest: schema.AcquisitionManifest) -> Tuple[Advisory, ...
             continue
         # The floor `plan_depth` refuses a cap under, read at review time too.
         # A manifest hand-written or amended after planning never passed through
-        # the plan, and this is the failure `evidence.md` §2 measured: a
+        # the plan, and this is the measured failure: a
         # `transcript:` step at max_items 1 is valid, runs, reaches no cue, and
         # reports success. The row is already in hand here.
         operation = _depth_operation(step)
@@ -341,20 +566,17 @@ def review_artifact(artifact: schema.AcquisitionArtifact) -> Tuple[Advisory, ...
     # similarity or read off a record's shape.
     #
     # It reads the step because every shape a record could be asked for is a
-    # proxy, and the last one this held was wrong in the field. A paging depth
-    # step's records carry no `discovery_locator` — the core sets one only on a
-    # hydration step's own calls — so the clause fell back to asking a comment
-    # to name a parent *this artifact holds*. Paging depth is inherently a
-    # second artifact: :func:`plan_depth` takes the records a discovery run
-    # returned and its steps run as their own dispatch, so the video a comment
-    # names is in artifact one. That is what told a caller who had just
-    # acquired 57 comment records that nothing had deepened anything, measured
-    # 2026-08-17 on the artifact the comments arrived in.
+    # proxy. A paging depth step's records carry no `discovery_locator` — the
+    # core sets one only on a hydration step's own calls — and paging depth is
+    # inherently a second artifact: :func:`plan_depth` takes the records a
+    # discovery run returned and its steps run as their own dispatch, so the
+    # video a comment names is in artifact one, and asking a comment to name a
+    # parent *this artifact holds* reports nothing deepened.
     #
     # Still read off the records rather than the step list alone, for the
-    # reason `normalize` reads `discovery_not_recorded` off records: a staged
-    # hydration runs against a selection frozen from an artifact this one never
-    # saw, so an artifact holding hydrations and no discovery established no
+    # reason `normalize` reads `discovery_not_recorded` off records: a
+    # hydration dispatched on its own runs against a selection frozen from an
+    # artifact this one never saw, so an artifact holding hydrations and no discovery established no
     # lineage and has nothing to report.
     by_step = {result.step_id: result for result in artifact.steps}
     deepened = set()

@@ -1,6 +1,6 @@
 """K2 X profile timelines from the structured data a public page embeds.
 
-Measured 2026-08-10 (X): the syndication profile route
+Measured: the syndication profile route
 answered 200 in 2.5 s with 378 KB carrying 100 timeline entries, each with
 ``full_text``, ``created_at``, ``favorite_count``, ``retweet_count``,
 ``reply_count``, ``quote_count``, ``conversation_id_str``, ``lang``, and an
@@ -40,7 +40,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="x",
     representation_kind="native",
     operator_identity="x",
-    # The 2026-08-10 probes: 2.5 s per request. Nothing on this route was measured
+    # The probes: 2.5 s per request. Nothing on this route was measured
     # refusing, so `burst` and `cooldown_ms` keep the protocol's conservative
     # defaults rather than a ceiling nobody observed.
     min_interval_ms=2500,
@@ -63,7 +63,7 @@ TIMELINE_PATH = ("props", "pageProps", "timeline", "entries")
 TWEET_ENTRY_TYPE = "tweet"
 TWEET_PATH = ("content", "tweet")
 
-# Every field the 2026-08-10 probes record this route returning per entry. A record
+# Every field the probes record this route returning per entry. A record
 # missing one says so, because a caller comparing a timeline needs to know
 # which rows were incomplete rather than which were zero.
 ROSTER_FIELDS = (
@@ -78,7 +78,7 @@ ROSTER_FIELDS = (
 ENGAGEMENT_FIELDS = ("favorite_count", "retweet_count", "reply_count", "quote_count")
 
 # The stamps this route has been measured emitting, and the one an artifact
-# record holds. Measured 2026-08-12, on one authorized read, off entry
+# record holds. Measured, on one authorized read, off entry
 # 1944260043001737216: `Sun Jul 13 04:58:11 +0000 2025`. The ISO spelling beside
 # it is the one this module was written against and the one the whole offline
 # corpus is written in; no live entry has ever been seen in it, and it is kept

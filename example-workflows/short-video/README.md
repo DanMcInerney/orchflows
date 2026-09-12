@@ -9,7 +9,7 @@ short-video → make-short-video   → orch-work   → editable project + export
 
 The coordinator stays in the caller. N requested films use N makers and N fresh reviewers: 2N agents. Placement versions of one film stay with its pair; every delivered export receives review. Either leaf works alone with one agent. Additional research agents, direction reviews and repair rounds require a caller request.
 
-Quality inherits Writing + Visual design → [Short video](standards/short-video.md) → [Marketing](standards/short-video/marketing.md) when applicable. Brand profiles invoke `short-video:short-video` with product references and a standard extending Marketing. Every ancestor is passed once; profiles add no agents.
+Guidance combines independent `writing`, `visual-design` and [short-video](guidance/short-video.md) domains. [short-video.marketing](guidance/short-video.marketing.md) specializes the video domain when applicable. Brand profiles invoke `short-video:short-video` with product references, additional guidance names and their package roots; profiles add no agents. For example, a personal library can supply `guidance/short-video.marketing.orchflows.md` while core and short-video supply its general criteria. [Library context](references/library-context.md) selects these dependencies once.
 
 ## Install and dependencies
 
@@ -19,6 +19,8 @@ Register the selected home using `codex plugin marketplace add <home>` or `claud
 
 Invoke `$short-video:short-video` in Codex or `/short-video:short-video` in Claude Code. Supply the subject, audience, intent, placements, constraints and output location. [Library context](references/library-context.md) handles path resolution, including standalone leaves and direct file invocation.
 
-Requires native child delegation, orchflows-light's two primitives and Writing/Visual design standards, an available authoring/export toolchain, and access to the exported media. Full audiovisual review requires actual motion viewing and listening capabilities; limited tools yield explicitly partial review. [Remotion](references/remotion.md) is an optional toolchain. Generated projects carry their own dependencies and stay outside this package.
+Requires orchflows-light 0.6.0 or later, native child delegation, an available authoring/export toolchain, and access to the exported media. Full audiovisual review requires actual motion viewing and listening capabilities; limited tools yield explicitly partial review. [Remotion](references/remotion.md) is an optional toolchain. Generated projects carry their own dependencies and stay outside this package.
+
+When updating an existing library or profile, replace old `standards/` references with guidance names and caller-supplied package roots. Replace `Extends:` declarations with dotted specialization and explicit independent domains; setup preserves your library files.
 
 [Trial requests](trials/request.md) and [expected behavior](trials/expected-behavior.md) describe tests to run; they are not results.

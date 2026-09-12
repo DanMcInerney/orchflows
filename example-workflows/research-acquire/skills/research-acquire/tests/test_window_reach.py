@@ -1,8 +1,7 @@
 """Window-reach seam: per-operation capability, and the typed reading it buys.
 
-Goal 2's two halves, proven at the seam this member owns. The declaration
-half: every live probe's own operation resolves through
-`_support.window_reach`, and a declaration nothing names fails loudly rather
+Two halves. The declaration half: every listed adapter resolves through
+`runner.WINDOW_REACH`, and a declaration nothing names fails loudly rather
 than reading as either answer. The typed-reading half: a windowed step
 against an operation declared unable to bound time at its origin carries
 `window_reach.WINDOW_NOT_HONORED` in its `StepResult.loss`, distinct from the
@@ -20,8 +19,8 @@ from __future__ import annotations
 
 import unittest
 
-from super_research import probes, runner, schema, transport
-from super_research._support import window_reach
+from super_research import runner, schema, transport
+from super_research import runner as window_reach
 from tests import helpers
 from tests.test_social_adapters_cases._support import (
     BLUESKY_DIR,
@@ -42,7 +41,7 @@ RECENT_WINDOW = ("2026-08-10T18:23:00Z", "2026-08-10T18:24:00Z")
 DECADE_OLD_WINDOW = ("2016-01-01T00:00:00Z", "2016-02-01T00:00:00Z")
 
 
-def run_bluesky_step(query, route_id, fixture_name, window_start="", window_end=""):
+def run_bluesky_step(query, route_id, fixture_name, window_start="", window_end="", max_items=3):
     clock = helpers.FakeClock()
     carrier, opener = helpers.offline_transport(
         clock, {route_id: (200, read_fixture(BLUESKY_DIR, fixture_name), "application/json")}
@@ -52,8 +51,7 @@ def run_bluesky_step(query, route_id, fixture_name, window_start="", window_end=
         kind="discovery",
         adapter_id="bluesky",
         query=query,
-        max_items=50,
-        max_pages=1,
+        max_items=max_items,
         window_start=window_start,
         window_end=window_end,
     )
@@ -64,13 +62,10 @@ def run_bluesky_step(query, route_id, fixture_name, window_start="", window_end=
 
 
 class DeclarationCoversTheLiveRosterTest(unittest.TestCase):
-    """Every probe `cli.py smoke` can be asked for resolves through this table."""
+    """Every adapter the core lists resolves through this table, and no other."""
 
-    def test_every_live_probe_adapter_is_declared(self):
-        self.assertEqual(
-            {probe.adapter_id for probe in probes.SMOKE_PROBES},
-            set(window_reach.WINDOW_REACH) - {"fake"},
-        )
+    def test_every_listed_adapter_is_declared(self):
+        self.assertEqual(set(runner.ADAPTER_IDS), set(window_reach.WINDOW_REACH))
 
     def test_an_unnamed_adapter_fails_loudly_rather_than_reading_either_way(self):
         with self.assertRaises(window_reach.WindowReachError):

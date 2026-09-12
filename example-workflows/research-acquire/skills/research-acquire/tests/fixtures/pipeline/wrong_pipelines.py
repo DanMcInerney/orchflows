@@ -139,9 +139,22 @@ def unlinked_fused_run(manifest, carrier, clock):
 
 
 def serialized_fused_run(manifest, carrier, clock):
-    """Calls itself fused and schedules like staged: the label without the collapse."""
+    """Runs the lanes and then places every operation on one line: the records without the collapse."""
 
-    run = runner.run_scheduled(replace(manifest, mode="staged"), carrier, clock=clock.monotonic)
-    return runner.ScheduledRun(
-        artifact=replace(run.artifact, mode="fused"), ledger=run.ledger
-    )
+    run = runner.run_scheduled(manifest, carrier, clock=clock.monotonic)
+    placed = []
+    free_us = 0
+    shift = {}
+    for event in run.ledger:
+        if event.operation_id not in shift:
+            shift[event.operation_id] = free_us - event.start_tick_us
+            free_us = event.stop_tick_us + shift[event.operation_id]
+        offset = shift[event.operation_id]
+        placed.append(
+            replace(
+                event,
+                start_tick_us=event.start_tick_us + offset,
+                stop_tick_us=event.stop_tick_us + offset,
+            )
+        )
+    return runner.ScheduledRun(artifact=run.artifact, ledger=tuple(placed))

@@ -16,7 +16,6 @@ from pathlib import Path
 
 from super_research import transport
 from super_research.adapters import AdapterRequest, tiktok_public
-from super_research.adapters._support import tiktok_public_records as records
 from tests import helpers
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tiktok_public"
@@ -351,8 +350,7 @@ class ChallengeMarkerIsAuthRequiredTest(unittest.TestCase):
     """A 200 with no script and a genuine challenge marker: `auth_required`.
 
     `WALL_BODY` is constructed, not captured — see the module docstring on
-    `tiktok_public` for why no live wall was available to capture, and the
-    reopen condition in `references/_drafts/tiktok_public.md`.
+    `tiktok_public` for why no live wall was available to capture.
     """
 
     def test_a_video_read_behind_a_challenge_marker_is_auth_required(self):
@@ -398,55 +396,55 @@ class ValidJsonWrongShapeIsSchemaDriftTest(unittest.TestCase):
 
 
 class RecordsPureFunctionTest(unittest.TestCase):
-    """`tiktok_public_records`, exercised directly: the two edges the fixture never carries."""
+    """The record builders, exercised directly: the two edges the fixture never carries."""
 
     def test_a_statsv2_digit_string_wins_over_stats(self):
         item = {"statsV2": {"diggCount": "5"}, "stats": {"diggCount": 9}}
-        self.assertEqual(dict(records.video_engagement(item))["diggCount"], 5)
+        self.assertEqual(dict(tiktok_public.video_engagement(item))["diggCount"], 5)
 
     def test_a_statsv2_key_with_a_non_digit_string_is_dropped_not_fallen_back(self):
         item = {"statsV2": {"diggCount": "N/A"}, "stats": {"diggCount": 9}}
-        self.assertNotIn("diggCount", dict(records.video_engagement(item)))
+        self.assertNotIn("diggCount", dict(tiktok_public.video_engagement(item)))
 
     def test_a_statsv2_absent_key_falls_back_to_an_exact_stats_int(self):
         item = {"statsV2": {}, "stats": {"diggCount": 9}}
-        self.assertEqual(dict(records.video_engagement(item))["diggCount"], 9)
+        self.assertEqual(dict(tiktok_public.video_engagement(item))["diggCount"], 9)
 
     def test_a_stats_float_or_bool_is_never_read_as_a_count(self):
         item = {"statsV2": {}, "stats": {"diggCount": 9.5, "playCount": True}}
-        engagement = dict(records.video_engagement(item))
+        engagement = dict(tiktok_public.video_engagement(item))
         self.assertNotIn("diggCount", engagement)
         self.assertNotIn("playCount", engagement)
 
     def test_a_non_digit_create_time_carries_no_instant(self):
-        self.assertEqual(records.route_instant_to_utc_iso("not-a-number"), "")
+        self.assertEqual(tiktok_public.route_instant_to_utc_iso("not-a-number"), "")
 
     def test_an_empty_create_time_carries_no_instant(self):
-        self.assertEqual(records.route_instant_to_utc_iso(""), "")
+        self.assertEqual(tiktok_public.route_instant_to_utc_iso(""), "")
 
     def test_a_digit_create_time_matches_the_stdlib_conversion(self):
         expected = datetime.fromtimestamp(1700000000, tz=timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%SZ"
         )
-        self.assertEqual(records.route_instant_to_utc_iso("1700000000"), expected)
+        self.assertEqual(tiktok_public.route_instant_to_utc_iso("1700000000"), expected)
 
     def test_a_mention_entry_contributes_no_hashtag(self):
         item = {"textExtra": [{"hashtagName": "", "type": 0}, {"hashtagName": "real", "type": 1}]}
-        self.assertEqual(records.hashtags_of(item), ("real",))
+        self.assertEqual(tiktok_public.hashtags_of(item), ("real",))
 
     def test_a_missing_id_marks_the_video_row_field_omitted(self):
-        record = records.video_record(0, {}, "https://www.tiktok.com", "field_omitted")
+        record = tiktok_public.video_record(0, {}, "https://www.tiktok.com")
         self.assertIn("field_omitted", record.loss)
 
     def test_a_complete_profile_row_carries_no_loss(self):
         user = {"uniqueId": "h", "nickname": "N", "signature": "S", "id": "1"}
         stats = {"followerCount": 1, "heartCount": 2, "videoCount": 3}
-        record = records.profile_record(user, stats, "https://www.tiktok.com", "field_omitted")
+        record = tiktok_public.profile_record(user, stats, "https://www.tiktok.com")
         self.assertEqual(record.loss, ())
 
     def test_profile_native_item_id_falls_back_to_the_handle_with_no_numeric_id(self):
         user = {"uniqueId": "h", "nickname": "N", "signature": "S"}
-        record = records.profile_record(user, {}, "https://www.tiktok.com", "field_omitted")
+        record = tiktok_public.profile_record(user, {}, "https://www.tiktok.com")
         self.assertEqual(record.native_item_id, "h")
 
 

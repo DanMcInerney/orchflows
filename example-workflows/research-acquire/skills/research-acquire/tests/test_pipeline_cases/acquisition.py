@@ -5,7 +5,7 @@ from tests.test_pipeline_cases.artifact import run_on, tracer_governor
 
 
 CONCURRENCY_OWNERS = {
-    "runner_schedule.py": (
+    "runner.py": (
         "concurrent.futures",
         "concurrent.futures.ThreadPoolExecutor",
     ),
@@ -51,17 +51,6 @@ class LanesOverlapAndTheCoreOwnsPagingTest(unittest.TestCase):
             if "cursor=" in path.read_text(encoding="utf-8")
         )
         self.assertEqual(building, [("runner.py", 1)])
-
-    def test_a_fused_run_makes_the_same_calls_in_the_same_order_as_a_staged_one(self):
-        staged_governor, staged_opener, staged_clock = tracer_governor()
-        fused_governor, fused_opener, fused_clock = tracer_governor()
-        staged = run_on(staged_clock, staged_governor, TWO_STEP_MANIFEST)
-        fused = run_on(fused_clock, fused_governor, FUSED_MANIFEST)
-        self.assertEqual(
-            [request.route_id for request in staged_opener.opened],
-            [request.route_id for request in fused_opener.opened],
-        )
-        self.assertEqual(len(staged.artifact.records), len(fused.artifact.records))
 
 
 def fixture_page(rows, cursor_out="", first=0):
@@ -150,7 +139,6 @@ class PagingIsTheCoresTest(unittest.TestCase):
         artifact = runner.run_acquisition(
             schema.AcquisitionManifest(
                 manifest_id="m-paging",
-                mode="staged",
                 as_of="2026-08-10T09:30:00Z",
                 steps=(fixture_step(),),
             ),
@@ -243,7 +231,6 @@ class PagingIsTheCoresTest(unittest.TestCase):
         run = runner.run_scheduled(
             schema.AcquisitionManifest(
                 manifest_id="m-paging",
-                mode="staged",
                 as_of="2026-08-10T09:30:00Z",
                 steps=(fixture_step(),),
             ),
@@ -276,7 +263,6 @@ class PagingIsTheCoresTest(unittest.TestCase):
         runner.run_acquisition(
             schema.AcquisitionManifest(
                 manifest_id="m-paging-ddg",
-                mode="staged",
                 as_of="2026-08-10T09:30:00Z",
                 steps=(
                     schema.AcquisitionStep(
@@ -294,35 +280,3 @@ class PagingIsTheCoresTest(unittest.TestCase):
         self.assertEqual(len(opener.opened), 2)
         self.assertNotIn("s=30", opener.opened[0].url)
         self.assertIn("s=30", opener.opened[1].url)
-
-
-class AStepMayDeclareItsOwnPageBoundTest(unittest.TestCase):
-    def bounded_run(self, pages, max_pages):
-        return fixture_run(
-            fixture_pages(pages, last_offers_more=True),
-            step=dataclasses.replace(fixture_step(), max_pages=max_pages),
-        )
-
-    def test_a_step_that_declares_one_page_reads_exactly_one(self):
-        result, records, _, opener = self.bounded_run(6, 1)
-        self.assertEqual(len(opener.opened), 1)
-        self.assertEqual(result.pages, 1)
-        self.assertEqual(len(records), 3)
-
-    def test_stopping_at_a_bound_the_step_declared_is_not_a_recall_cut_short(self):
-        result, _, _, _ = self.bounded_run(6, 1)
-        self.assertEqual(result.outcome, "ok")
-        self.assertEqual(result.loss, ())
-
-    def test_the_number_the_step_declares_is_the_number_it_reads(self):
-        result, records, _, opener = self.bounded_run(6, 3)
-        self.assertEqual(len(opener.opened), 3)
-        self.assertEqual(result.pages, 3)
-        self.assertEqual(len(records), 9)
-        self.assertEqual(result.outcome, "ok")
-
-    def test_a_declared_bound_lowers_the_core_cap_and_never_raises_it(self):
-        result, _, _, opener = self.bounded_run(12, 12)
-        self.assertEqual(len(opener.opened), runner.MAX_PAGES_PER_STEP)
-        self.assertEqual(result.outcome, "partial")
-        self.assertIn("recall_window_partial", result.loss)

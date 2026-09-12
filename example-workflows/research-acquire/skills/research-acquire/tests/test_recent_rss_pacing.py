@@ -8,12 +8,12 @@ from tests.helpers import FakeClock
 from tests.test_recent_routes import ATOM
 
 
-def manifest(queries, mode="staged", extra=()):
+def manifest(queries, extra=()):
     steps = [dict(step_id="rss-{0}".format(index), kind="discovery",
                   adapter_id="reddit_feed", query=query, max_items=1)
              for index, query in enumerate(queries)]
     return schema.parse_manifest(dict(
-        schema_version=2, manifest_id="rss-origin-budget", mode=mode,
+        manifest_id="rss-origin-budget",
         as_of="2026-09-10T23:00:00Z", steps=steps + list(extra)))
 
 
@@ -25,7 +25,7 @@ class RecentRssPacingTests(unittest.TestCase):
 
                 def opener(request):
                     calls.append((request.route_id, clock.seconds))
-                    return 200, ATOM, "application/atom+xml"
+                    return 200, ATOM, "application/atom+xml", request.url, ()
 
                 with mock.patch.object(transport, "urlopen_read", side_effect=opener), \
                         mock.patch.object(pacing.time, "sleep", side_effect=clock.sleep):
@@ -48,7 +48,7 @@ class RecentRssPacingTests(unittest.TestCase):
                     calls.append(clock.seconds)
                     if len(calls) == 1:
                         return 429, "slow down", "text/plain", request.url, (("Retry-After", "90"),)
-                    return 200, ATOM, "application/atom+xml"
+                    return 200, ATOM, "application/atom+xml", request.url, ()
 
                 with mock.patch.object(transport, "urlopen_read", side_effect=opener), \
                         mock.patch.object(pacing.time, "sleep", side_effect=clock.sleep):
@@ -71,15 +71,15 @@ class RecentRssPacingTests(unittest.TestCase):
             if request.route_id == transport.XCANCEL_SEARCH_ROUTE:
                 self.assertTrue(waiting.wait(5), "the RSS surfaces never shared a wait")
                 other_finished.set()
-                return 200, '<div class="timeline"><div class="timeline-none">No items</div></div>', "text/html"
-            return 200, ATOM, "application/atom+xml"
+                return 200, '<div class="timeline"><div class="timeline-none">No items</div></div>', "text/html", request.url, ()
+            return 200, ATOM, "application/atom+xml", request.url, ()
 
         extra = (dict(step_id="other", kind="discovery", adapter_id="x_xcancel",
                       query="search:python", max_items=1),)
         with mock.patch.object(transport, "urlopen_read", side_effect=opener), \
                 mock.patch.object(pacing.time, "sleep", side_effect=sleep):
             artifact = runner.run_acquisition(
-                manifest(("python", "search:python"), mode="fused", extra=extra),
+                manifest(("python", "search:python"), extra=extra),
                 clock=clock.monotonic)
         self.assertTrue(other_finished.is_set())
         self.assertEqual(artifact.outcome, "ok")

@@ -55,13 +55,15 @@ def fixture_runtime(refuse=False):
     def opener(request):
         opened.append(request)
         if request.route_id == transport.ARCTIC_SHIFT_SEARCH_ROUTE:
-            return 200, archive, "application/json"
+            return 200, archive, "application/json", request.url, ()
         if request.route_id == "bing_rss":
-            return 200, index, "application/rss+xml"
+            return 200, index, "application/rss+xml", request.url, ()
         if request.route_id == "reddit_shreddit_comments":
-            return (403, "Forbidden", "text/html") if refuse else (200, comments, "text/html")
+            if refuse:
+                return 403, "Forbidden", "text/html", request.url, ()
+            return 200, comments, "text/html", request.url, ()
         if request.route_id == transport.WEB_PAGE_OPEN_ROUTE:
-            return 200, article, "text/html"
+            return 200, article, "text/html", request.url, ()
         raise AssertionError("fixture has no route: " + request.route_id)
 
     # No repeated origin in this fixture, so pacing needs no fake wait.

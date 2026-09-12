@@ -20,7 +20,11 @@ from super_research import pacing, transport
 
 
 class CheckpointError(ValueError):
-    """A checkpoint is incompatible, corrupt, locked, or uncertain."""
+    """A checkpoint belongs to another plan or package, is corrupt, is locked, or is uncertain."""
+
+
+class UncertainStepError(CheckpointError):
+    """A step began and never finished: its reads may have happened, so it is not replayed."""
 
 
 def read_json(path):
@@ -98,13 +102,13 @@ class Store:
             raise CheckpointError("checkpoint missing for existing evidence; no replay authorized")
         self.state = read_json(self.path) if self.path.exists() else {
             "identity": identity, "steps": {}, "requests": [], "selection": None,
-            "spent_seconds": 0.0, "pacing": None, "refused_origins": []}
+            "spent_seconds": 0.0, "pacing": None, "refused_origins": {}}
         if not isinstance(self.state, dict) or self.state.get("identity") != identity:
             raise CheckpointError("plan/package identity changed; use a separate evidence directory")
         required = {"identity", "steps", "requests", "selection", "spent_seconds", "pacing", "refused_origins"}
         if (set(self.state) != required or not isinstance(self.state["steps"], dict)
                 or not isinstance(self.state["requests"], list)
-                or not isinstance(self.state["refused_origins"], list)
+                or not isinstance(self.state["refused_origins"], dict)
                 or not isinstance(self.state["spent_seconds"], (int, float))):
             raise CheckpointError("malformed checkpoint state")
         self.save()
@@ -149,7 +153,7 @@ class Store:
                     self.save()
                 return held
             if name in self.state["steps"]:
-                raise CheckpointError("uncertain interrupted step; no replay authorized: " + name)
+                raise UncertainStepError("uncertain interrupted step; no replay authorized: " + name)
             self.state["steps"][name] = {"state": "started", "input": identity}
             self.save()
             return None
@@ -176,7 +180,9 @@ class BoundedRead:
     The request cap counts outbound opener attempts, including guest activation;
     urllib redirect hops remain inside that transport operation. Reservations
     are durable before I/O, so a crash cannot silently reclaim spent allowance.
-    Refused origins and the governor's reserved budget state survive resume.
+    Refused origins, each with the loss its refusal typed, and the governor's
+    reserved budget state survive resume; `admit` is the governor's first
+    question, so a read on a refused origin spends no budget.
     """
     def __init__(self, store, opener, now, clock=time.monotonic, sleep=time.sleep):
         self.store, self.opener, self.now = store, opener, now
@@ -209,11 +215,19 @@ class BoundedRead:
             self.store.state["pacing"] = {"saved_at": time.time(), "state": state}
             self.store.save()
 
-    def decline_step(self, step_id):
+    def admit(self, request):
+        """Refuse a read on an origin this plan saw refuse, typed as that refusal was."""
+        with self.store.lock:
+            loss = self.store.state["refused_origins"].get(transport.origin_key(request))
+        if loss is not None:
+            raise transport.TransportError("origin refused earlier in this plan; no further read", loss=loss)
+
+    def decline_step(self, step_id, loss):
+        """Refuse every origin this step read, with the loss the step typed; a first refusal stands."""
         with self.store.lock:
             for request in self.store.state["requests"]:
-                if request["step_id"] == step_id and request["origin"] not in self.store.state["refused_origins"]:
-                    self.store.state["refused_origins"].append(request["origin"])
+                if request["step_id"] == step_id:
+                    self.store.state["refused_origins"].setdefault(request["origin"], loss)
             self.store.save()
 
     def check_time(self, wait=0):
@@ -230,9 +244,6 @@ class BoundedRead:
     def __call__(self, request):
         origin = transport.origin_key(request)
         with self.store.lock:
-            if origin in self.store.state["refused_origins"]:
-                raise transport.TransportError("origin refused earlier in this plan; no further read")
-        with self.store.lock:
             self.check_time()
             if len(self.store.state["requests"]) >= self.store.limits["max_requests"]:
                 raise transport.TransportError("plan request cap exhausted")
@@ -242,16 +253,14 @@ class BoundedRead:
                 "origin": origin, "step_id": self.local.step_id})
             self.store.save()
         began = self.clock()
-        try:
-            answered = self.opener(request)
-        except BaseException:
-            # The unacknowledged reservation stays uncertain. Never retry it.
-            raise
+        # A reservation the opener never acknowledges stays uncertain; nothing retries it.
+        answered = self.opener(request)
         with self.store.lock:
             entry = self.store.state["requests"][position]
             entry.update(state="answered", status=answered[0], duration_seconds=self.clock() - began)
-            if answered[0] in (401, 403, 429) or transport.rate_refused(answered[0], answered[1]):
-                self.store.state["refused_origins"].append(origin)
+            loss = transport.refusal_loss(answered[0], answered[1])
+            if loss is not None:
+                self.store.state["refused_origins"].setdefault(origin, loss)
             self.store.state["spent_seconds"] = self.prior + self.clock() - self.started
             self.store.save()
         return answered

@@ -63,8 +63,8 @@ class DepthPlanTest(unittest.TestCase):
             youtube_innertube.DESCRIPTOR, (), cursor_out="A_CONTINUATION_TOKEN"
         )
 
-        self.assertTrue(runner._offers_another_page(paging, offering, 1, 1))
-        self.assertFalse(runner._offers_another_page(single, offering, 1, 1))
+        self.assertTrue(runner._offers_another_page(paging, offering, 1))
+        self.assertFalse(runner._offers_another_page(single, offering, 1))
 
     def test_a_transcript_cap_under_two_is_refused(self):
         """Page one is the video's own record; the cues are on page two.
@@ -119,7 +119,7 @@ class DepthPlanTest(unittest.TestCase):
         self.assertEqual(plan.steps[0].query, "transcript:4jZjM0Zs_LY")
 
     def test_records_off_the_adapter_are_listed_and_never_silently_dropped(self):
-        """The leftovers are returned, for `relevance.partition`'s reason.
+        """The leftovers are returned.
 
         A selection whose leftovers were never listed is a silent drop wearing
         a plan's clothes.

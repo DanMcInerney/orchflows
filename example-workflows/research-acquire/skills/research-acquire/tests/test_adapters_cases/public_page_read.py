@@ -39,17 +39,16 @@ def page_request(target):
 def selected_page(fixture, status=200, target=ARTICLE_TARGET, module=None, final_url=None):
     """Run the page adapter over one canned answer; return its page and the opener.
 
-    A four-part answer is how an offline read reports that the origin answered
-    from an address other than the one asked for. The carrier treats a
-    three-part answer as a read that was not redirected, so every existing
-    seeding in this suite keeps meaning what it meant.
+    A full five-part answer is how an offline read reports that the origin
+    answered from an address other than the one asked for; a three-part seed
+    is a read that was not redirected.
     """
 
     reader = public_page if module is None else module
     body = read_public_page(fixture)
     answer = (status, body, "text/html")
     if final_url is not None:
-        answer = answer + (final_url,)
+        answer = answer + (final_url, ())
     clock = helpers.FakeClock()
     carrier, opener = helpers.offline_transport(
         clock, {route_id: answer for route_id in transport.ROUTE_CONSTANTS}

@@ -1,6 +1,6 @@
 # History
 
-`history` reads Claude Code and Codex transcripts in place: standard library only, writes nothing, resumes nothing, ignores `--home`. `history <find|inspect|read> --help` lists flags. Native home: `CODEX_HOME` or `~/.codex`, `CLAUDE_CONFIG_DIR` or `~/.claude`, or `--native-home PATH`.
+`history`, a subcommand of the [home CLI](home.md), reads Claude Code and Codex transcripts in place and writes nothing. `history <find|inspect|read> --help` lists flags. Native home: `CODEX_HOME` or `~/.codex`, `CLAUDE_CONFIG_DIR` or `~/.claude`, or `--native-home PATH`. Codex discovery reads the host's `state_*.sqlite` index and nothing else.
 
 ## Scope
 
@@ -18,4 +18,4 @@ Take the current session ID from the host (Codex: `CODEX_THREAD_ID`); never assu
 
 ## Limits
 
-Codex delegation message bodies are encrypted and reported `unavailable`; reasoning and system prompts are omitted. Captured output can exceed what the agent saw; some records were already truncated; referenced files may be gone. Malformed records and incomplete tails appear as gaps. A call without a recorded result has an unknown outcome. Records are evidence of past activity, not current process state, workflow success or authorization to redo a write. Schemas and retention vary. Keep raw history local.
+Codex delegation message bodies are encrypted and reported `unavailable`; reasoning and system prompts are omitted. Captured output can exceed what the agent saw. Malformed records and incomplete tails appear as gaps. A call without a recorded result has an unknown outcome. Records are evidence of past activity, not current process state, workflow success or authorization to redo a write. Keep raw history local.

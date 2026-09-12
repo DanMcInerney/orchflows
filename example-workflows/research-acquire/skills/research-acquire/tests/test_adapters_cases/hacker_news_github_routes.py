@@ -146,7 +146,6 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
                 route = transport.route_constant(route_id)
 
                 self.assertEqual(route.access_class, "K0")
-                self.assertTrue(transport.route_admissions()[route_id])
                 self.assertIsNone(transport.route_credential(route_id))
                 self.assertEqual(route.credential_id, "")
 
@@ -199,7 +198,7 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
 
                     with helpers.forbid_io():
                         with self.assertRaises(transport.TransportError) as caught:
-                            transport.urlopen_response(request)
+                            transport.urlopen_read(request)
 
                     self.assertIn("refusing a write-capable method", str(caught.exception))
 

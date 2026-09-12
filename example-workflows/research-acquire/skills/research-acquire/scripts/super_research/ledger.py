@@ -1,9 +1,8 @@
-"""Work-ledger seam: what a dispatch consumed, and the schedule a mode admits.
+"""Work-ledger seam: what a dispatch consumed, and where its lanes placed the work.
 
-Additive per-operation deltas in one causal order, plus the schedule a mode
-admits. ``staged`` and ``fused`` produce the same artifact and differ only in
-that schedule, which is what "collapses latency, never lineage" means
-arithmetically.
+Additive per-operation deltas in one causal order, plus the placement a lane
+schedule admits: a step waits only for its own earlier pages and for its own
+route, which is what "collapses latency, never lineage" means arithmetically.
 
 Reliability bar: pure. Nothing here reads a clock, a socket, or a file — every
 tick is a number the caller already had.
@@ -17,7 +16,7 @@ from typing import Dict, Iterable, List, Tuple
 from . import schema
 
 
-# The retained work-ledger contract's two closed sets, verbatim. Their ordinals
+# The work-ledger contract's two closed sets, verbatim. Their ordinals
 # are half of the causal key, so they are the contract rather than a
 # convenience: a kind or a metric added without an ordinal cannot be ordered
 # against the ones that have one. This core schedules exactly one kind of
@@ -71,7 +70,7 @@ class PlannedOperation:
 
 @dataclass(frozen=True)
 class ScheduledOperation:
-    """One operation and where the mode's schedule placed it."""
+    """One operation and where the schedule placed it."""
 
     operation: PlannedOperation
     start_tick_us: int
@@ -113,11 +112,11 @@ class ScheduledRun:
 
 
 def causal_key(event: WorkLedgerEvent) -> Tuple[int, int, int, int, str]:
-    """The retained contract's serialization key, verbatim.
+    """The contract's serialization key, verbatim.
 
-    Ordinals rather than ticks, because a fused schedule deliberately places
-    two lanes overlapping: the order work happened in is a fact about the
-    dispatch, and the order it was placed in is a fact about the mode.
+    Ordinals rather than ticks, because the schedule deliberately places two
+    lanes overlapping: the order work happened in is a fact about the
+    dispatch, and the order it was placed in is a fact about the placement.
     """
 
     return (
@@ -144,7 +143,7 @@ def fake_makespan_us(events: Iterable[WorkLedgerEvent]) -> int:
 
     Derived, never accumulated: two operations that overlap are counted once
     between them, which is exactly the quantity a sum of durations cannot
-    express and the only one that tells staged from fused.
+    express and the only one that tells overlapping lanes from a serial line.
     """
 
     ticks = [
@@ -166,45 +165,34 @@ def planned_operations(events: Iterable[WorkLedgerEvent]) -> Tuple[WorkLedgerEve
 
 
 def schedule_of(
-    operations: Iterable[PlannedOperation], mode: str, start_tick_us: int = 0
+    operations: Iterable[PlannedOperation], start_tick_us: int = 0
 ) -> Tuple[ScheduledOperation, ...]:
-    """Place each operation where this mode admits it.
+    """Place each operation where the lane schedule admits it.
 
-    This places; it does not run. Every operation has already happened, in
-    declared order, one at a time — nothing in this package executes two at
-    once — and what this function produces is where a scheduler *could* have
-    put them, which is what ``fake_makespan_us`` is the span of.
-
-    ``staged`` models a caller between one step's output and the next step's
-    input, so every step waits for the one before it and the placement is a
-    single line. ``fused`` freezes both steps' inputs in one manifest, so a
-    step waits only for its own earlier pages and for its own route — one
-    route's budget never overlaps itself, whatever the mode.
+    This places; it does not run. Every operation has already happened, and
+    what this function produces is where a scheduler *could* have put them,
+    which is what ``fake_makespan_us`` is the span of: a step waits only for
+    its own earlier pages and for its own route — one route's budget never
+    overlaps itself.
 
     Placing two steps side by side is sound because no step here reads what
     another step produced: a hydration step's calls come from ``selected_hits``
     the caller froze, as :func:`planned_calls` shows, so ``prior_step_id``
     records where a selection came from rather than a dependency a scheduler
-    must serialize. That is the whole of the difference between the modes —
-    placement moves, and nothing a step produces does.
+    must serialize.
     """
 
     placed: List[ScheduledOperation] = []
     lane_free_us: Dict[str, int] = {}
     route_free_us: Dict[str, int] = {}
-    serial_free_us = start_tick_us
     for operation in operations:
-        if mode == "fused":
-            start_us = max(
-                lane_free_us.get(operation.step_id, start_tick_us),
-                route_free_us.get(operation.route_id, start_tick_us),
-            )
-        else:
-            start_us = serial_free_us
+        start_us = max(
+            lane_free_us.get(operation.step_id, start_tick_us),
+            route_free_us.get(operation.route_id, start_tick_us),
+        )
         stop_us = start_us + operation.duration_us
         lane_free_us[operation.step_id] = stop_us
         route_free_us[operation.route_id] = stop_us
-        serial_free_us = max(serial_free_us, stop_us)
         placed.append(
             ScheduledOperation(operation=operation, start_tick_us=start_us, stop_tick_us=stop_us)
         )
@@ -220,7 +208,7 @@ def ledger_of(
 ) -> Tuple[WorkLedgerEvent, ...]:
     """Every metric delta this dispatch produced, in causal order, then its stop marker."""
 
-    placed = schedule_of(operations, manifest.mode, start_tick_us)
+    placed = schedule_of(operations, start_tick_us)
     events: List[WorkLedgerEvent] = []
     ordinal = 0
     for scheduled in placed:

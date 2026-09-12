@@ -95,11 +95,9 @@ ROSTER_PAYLOADS = {
     "bluesky_search_posts": ("bluesky/search_posts.json", "application/json"),
     "bluesky_author_feed": ("bluesky/author_feed.json", "application/json"),
     "fxtwitter_api": ("x_fxtwitter/search.json", "application/json"),
-    # The routes added 2026-09-01, each against the bytes its adapter was
-    # built on. GDELT's were captured over plain HTTP — port 443 to that
-    # origin timed out from the building host, evidence.md §"The route sweep
-    # of 2026-09-01" — and every other payload came off the declared https
-    # route itself.
+    # Each against the bytes its adapter was built on. GDELT's were captured
+    # over plain HTTP — port 443 to that origin timed out from the building
+    # host — and every other payload came off the declared https route.
     "gdelt_doc": ("gdelt/doc_artlist.json", "application/json"),
     "stackexchange_search_advanced": (
         "stack_exchange/search_advanced.json", "application/json",
@@ -177,6 +175,8 @@ NEXT_PAGE_CLAIMS = (
     ('"cursor": "2026-06-08T21:10:01.53Z"', '"cursor": ""'),
     ('"bottom":', '"spent":'),
     ("&amp;cursor=", "&amp;spent="),
+    # Stack Exchange states a next page as a flag rather than a token.
+    ('"has_more": true', '"has_more": false'),
 )
 
 
@@ -202,18 +202,13 @@ def roster_seeds():
     }
 
 
-def discovery(step_id, adapter_id, query, max_items=200, max_pages=0):
-    # `max_pages` is reachable here because this caller builds steps in
-    # process, the same door the smoke uses: the seeded Stack Exchange page
-    # says `has_more` on every read, so its step declares one page as its own bound
-    # and finishes rather than being stopped by the core's backstop.
+def discovery(step_id, adapter_id, query, max_items=200):
     return schema.AcquisitionStep(
         step_id=step_id,
         kind="discovery",
         adapter_id=adapter_id,
         query=query,
         max_items=max_items,
-        max_pages=max_pages,
     )
 
 
@@ -242,7 +237,6 @@ def roster_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-keyless",
-        mode="staged",
         # After every read this dispatch makes, so a frozen horizon never falls
         # before its own observations.
         as_of="2026-08-10T09:30:00Z",
@@ -335,7 +329,7 @@ def roster_manifest():
             discovery("s34-fxtwitter", "x_fxtwitter", "search:local models"),
             # The 2026-09-01 additions, one step per route they added.
             discovery("s35-gdelt", "gdelt", "local models"),
-            discovery("s36-stack-exchange", "stack_exchange", "local models", max_pages=1),
+            discovery("s36-stack-exchange", "stack_exchange", "local models"),
             hydration(
                 "s37-pageviews",
                 "wikimedia_pageviews",
@@ -520,7 +514,6 @@ def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):
     return schema.AcquisitionArtifact(
         artifact_id="artifact:m-wrong",
         manifest_id="m-wrong",
-        mode="staged",
         as_of="2026-08-10T09:30:00Z",
         records=records,
         steps=(

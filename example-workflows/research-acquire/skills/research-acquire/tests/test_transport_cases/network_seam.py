@@ -2,6 +2,7 @@
 
 from .common import *
 from .route_ownership import adapter_sources, sources_naming
+from super_research import dispatch
 
 class ChannelVerdictTest(unittest.TestCase):
     """Completion criteria 1 and 2: the detector types both halves of the caveat."""
@@ -271,7 +272,6 @@ def intercepted_step_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-intercepted",
-        mode="staged",
         as_of=FROZEN_OBSERVED_AT,
         steps=(
             schema.AcquisitionStep(
@@ -428,7 +428,7 @@ class InterceptionOracleCanFailTest(unittest.TestCase):
             {transport.DDG_HTML_ROUTE: (503, read_fixture("captive_portal.html"), "text/html")}
         )
 
-        with mock.patch.object(runner, "web_search", wrong):
+        with mock.patch.dict(dispatch.ADAPTERS, {"web_search": (wrong, None)}):
             artifact = runner.run_acquisition(intercepted_step_manifest(), carrier)
 
         self.assertEqual(artifact.loss, ("http_status",))

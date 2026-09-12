@@ -13,7 +13,8 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, normalize, project, router, runner, schema, transport
+from tests import helpers
+from super_research import adapters, normalize, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
 
 
@@ -27,7 +28,7 @@ REDDIT_THREAD_LOCATOR = (
 X_POST_LOCATOR = "https://x.com/simonw/status/1799990000000000001"
 
 # Spelled here rather than imported, so the spelling is pinned from outside the
-# module that owns it — the same way `test_router` holds `third_party_archive`.
+# module that owns it.
 DISCOVERY_NOT_RECORDED = "discovery_not_recorded"
 
 
@@ -56,7 +57,7 @@ class RecordingOpener:
         outcome = self.responses[request.route_id]
         if isinstance(outcome, Exception):
             raise outcome
-        return outcome
+        return helpers.answered(request, outcome)
 
 
 def tracer_transport(responses):
@@ -94,9 +95,7 @@ def forbid_io():
 
 
 TRACER_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "tracer-k4-reddit",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [
         {
@@ -127,9 +126,7 @@ TRACER_MANIFEST = {
 
 
 TRACER_X_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "tracer-k4-x",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [
         {
@@ -218,7 +215,6 @@ def load_wrong_artifact(case_name):
     return schema.AcquisitionArtifact(
         artifact_id="artifact:wrong",
         manifest_id="wrong",
-        mode="staged",
         as_of="2026-08-10T00:00:00Z",
         records=tuple(records),
         steps=(),

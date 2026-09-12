@@ -163,7 +163,14 @@ class CredentialStaysInsideTransportTest(unittest.TestCase):
                     self.assertNotIn(value, repr(carrier.calls))
 
 class CredentialThreatTest(unittest.TestCase):
-    """T01, T02, T03, T10 over `K1` and `K5`: the credential stays inside."""
+    """T01, T02, T03, T10 over `K1`: the credential stays inside."""
+
+    def setUp(self):
+        # The guest route is read through the real opener below, which
+        # refuses it without a minted token; one is held for the duration.
+        transport.GUEST_TOKENS.clear()
+        transport.GUEST_TOKENS.remember(transport.X_GUEST_ACTIVATE_ROUTE, "held-guest-token")
+        self.addCleanup(transport.GUEST_TOKENS.clear)
 
     def test_t01_no_credentialed_route_puts_its_secret_in_anything_kept(self):
         for route_id in routes_at(CREDENTIAL_CLASSES):

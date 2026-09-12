@@ -41,21 +41,14 @@ FIXTURE_DIR = TEST_DIR / "fixtures" / "transport"
 ITEM_DIR = TEST_DIR.parent
 PACKAGE_DIR = ITEM_DIR / "scripts" / "super_research"
 ADAPTER_DIR = PACKAGE_DIR / "adapters"
-EVIDENCE_DOC = ITEM_DIR / "references" / "evidence.md"
 FROZEN_OBSERVED_AT = "2026-08-10T09:00:00Z"
 
 # Only the transport seam may reach the network.
 NETWORK_MODULES = ("urllib.request", "http.client", "socket", "ssl")
 
-# The logical route table spans its facade and the two access-class catalogs.
 # `transport` deliberately is not an owner: it re-exports and reaches the
 # routes, but may not define an address or credential itself.
-ROUTE_OWNING_MODULES = (
-    "routes",
-    "_support/route_contracts",
-    "_support/route_catalog_k0",
-    "_support/route_catalog_k1_k4",
-)
+ROUTE_OWNING_MODULES = ("routes",)
 
 # Which modules hold the outbound read on everybody's behalf. A second
 # declaration and deliberately not the same list: owning a route's address is
@@ -115,7 +108,7 @@ class RecordingOpener:
         outcome = self.responses[request.route_id]
         if isinstance(outcome, Exception):
             raise outcome
-        return outcome
+        return helpers.answered(request, outcome)
 
 
 def offline_transport(responses):

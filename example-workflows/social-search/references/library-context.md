@@ -1,18 +1,16 @@
 # Library context
 
-Resolve dependencies once at the outer entrypoint; composed workflows and workers inherit the concrete paths, question, constraints and output directories. Resolve this library's relative links within the loaded package.
+Reuse supplied context, otherwise establish it at the outer entrypoint, including either leaf invoked alone. Resolve core primitives and `orchflows-light:docs/architecture.md`; its guidance-selection rule applies here. Composed workflows and workers inherit concrete paths, the question, constraints and output directories.
 
-Use the available orchflows-light native skills or caller-supplied core paths. With a configured home, its CLI can locate dependencies:
+Use available native skills or caller-supplied package roots. With a configured home (`--home`, `ORCHFLOWS_HOME`, then `~/.orchflows`), any Python 3.11+ can run `.local/packages/orchflows-light/scripts/orchflows.py`. Setup provides `.local/runtime/Scripts/python.exe` on Windows or `.local/runtime/bin/python` elsewhere:
 
 ```text
-<runtime-python> <core-cli> resolve orchflows-light --skill <name> --home <home>
-<runtime-python> <core-cli> resolve orchflows-light --resource standards/research.md --home <home>
+<python> <cli> resolve <library> --skill <name> --home <home>
+<python> <cli> resolve <library> --resource <relative-path> --home <home>
 ```
 
-Home is the caller's choice, then `ORCHFLOWS_HOME`, then `~/.orchflows`. Runtime and CLI are `.local/runtime/Scripts/python.exe` on Windows (`.local/runtime/bin/python` elsewhere) and `.local/packages/orchflows-light/scripts/orchflows.py` beneath home. Use returned absolute paths. Load orch-work or orch-review and Research or Writing as needed. Resolve optional libraries by their own package identity.
+For collection, select `research.search-site.<site>` when this library supplies that specialization, otherwise `research.search-site`. For the final assessment, select `research` and `writing`. Include caller-supplied guidance names and package roots; pass the resolved files to the relevant primitive.
 
-For sources with [scripted readers](source-readers.md), resolve available readers once and pass their paths and runtime to workers.
+For YouTube, optionally resolve `research-acquire:skills/research-acquire/scripts/inspect_source.py` and its `references/source-inspection.md` sibling under the skill directory. Pass that reader, its usage and a suitable Python to the worker. Without the reader, use native tools and record any resulting evidence gap; a missing home runtime alone is not a blocker. Required missing skills or guidance are blockers; without native delegation the workflow is blocked.
 
-Honor the caller's output location or choose a task-specific directory in the caller's workspace, with separate source and report directories. Keep generated files outside installed packages.
-
-A missing runtime does not block native research when core skills are available. Missing native delegation or a required core skill is a workflow blocker. Pass context onward without repeating setup or resolution.
+Outputs go to the caller's location or a task directory in the caller's workspace, with separate source and report directories.

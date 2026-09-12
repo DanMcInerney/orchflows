@@ -100,29 +100,22 @@ class GuestMintIsOnePacedRecordedCallTest(unittest.TestCase):
         self.assertGreater(interval_us, 0)
         self.assertEqual(activations[1].at_us - activations[0].at_us, interval_us)
 
-    def test_a_bare_transport_mints_nothing_and_the_read_goes_out_unauthorized(self):
-        # 4b. A caller reaches an unpaced origin only by building a carrier and
+    def test_a_bare_transport_mints_nothing_and_the_read_is_refused_before_the_wire(self):
+        # A caller reaches an unpaced origin only by building a carrier and
         # handing it in, which `run_scheduled` already calls an act rather than
-        # a default. The mint is now inside that same choice: no governor, no
-        # activation — and the read that needed one goes out without it, so the
-        # origin's own refusal is what the run records.
-        clock = helpers.FakeClock()
-        carrier, opener = helpers.offline_transport(clock, {
-            transport.X_GUEST_ACTIVATE_ROUTE: ACTIVATION_ANSWER,
-            transport.X_GUEST_GRAPHQL_ROUTE: (401, "unauthorized", "application/json"),
-        })
+        # a default. The mint is inside that same choice: no governor, no
+        # activation — and the opener refuses the read that needed one rather
+        # than sending it unauthorized, before anything goes on the wire.
+        recorder = RecordingUrlopen(401, "unauthorized", "application/json")
+        carrier = transport.Transport(now=lambda: FROZEN_OBSERVED_AT)
 
-        response = carrier.fetch(guest_read_request())
+        with mock.patch.object(urllib.request, "urlopen", recorder):
+            with self.assertRaises(transport.TransportError) as caught:
+                carrier.fetch(guest_read_request())
 
-        self.assertEqual([call.route_id for call in carrier.calls], [transport.X_GUEST_GRAPHQL_ROUTE])
-        self.assertEqual(
-            [request.route_id for request in opener.opened], [transport.X_GUEST_GRAPHQL_ROUTE]
-        )
-        # No invented token, and the refusal is the origin's own — not a local
-        # error and not a retry.
+        self.assertEqual(caught.exception.loss, transport.AUTH_REQUIRED)
+        self.assertEqual(recorder.requests, [])
         self.assertEqual(transport.GUEST_TOKENS._tokens, {})
-        self.assertEqual(response.status, 401)
-        self.assertEqual(response.channel_verdict, transport.ORIGIN_FAILURE)
 
     def test_the_bare_carrier_consequence_is_stated_where_the_mint_is_documented(self):
         # 4b's second half. The behaviour is proven above; this is the claim
@@ -165,49 +158,100 @@ class GuestMintIsOnePacedRecordedCallTest(unittest.TestCase):
         self.assertEqual([call.route_id for call in carrier.calls], [transport.DDG_HTML_ROUTE])
         self.assertEqual(transport.GUEST_TOKENS._tokens, {})
 
-    def test_an_activation_the_opener_refuses_outright_yields_no_token(self):
-        # The opener raises rather than answering, so the read that needed a
-        # token goes out without one and the origin's own 401 is what the run
-        # records — never an invented token.
+    def test_an_activation_the_opener_refuses_outright_refuses_the_read(self):
+        # The opener raises rather than answering the activation, so the read
+        # that needed a token is refused with the activation's own failure —
+        # never an invented token, never a read sent unauthorized.
         clock = helpers.FakeClock()
-        carrier, _ = helpers.offline_transport(
+        carrier, opener = helpers.offline_transport(
             clock,
             {transport.X_GUEST_GRAPHQL_ROUTE: (401, "unauthorized", "application/json")},
         )
         governor = runner.RateGovernor(carrier, clock=clock.monotonic, sleep=clock.sleep)
 
-        response = governor.fetch(guest_read_request())
+        with self.assertRaises(transport.TransportError) as caught:
+            governor.fetch(guest_read_request())
 
+        self.assertEqual(caught.exception.loss, transport.UNREACHABLE)
         self.assertEqual(
             transport.GUEST_TOKENS._tokens, {transport.X_GUEST_ACTIVATE_ROUTE: ""}
         )
-        self.assertEqual(response.status, 401)
+        self.assertEqual(
+            [request.route_id for request in opener.opened], [transport.X_GUEST_ACTIVATE_ROUTE]
+        )
 
-    def test_a_refused_mint_sends_the_read_unauthorized_and_is_never_retried(self):
-        # The rule :func:`mint_guest_token` states, now under test: a mint that
-        # produced nothing is not turned into a second activation, and the
-        # origin's own 401 is what the run records. A refusal re-attempted per
-        # read would spend two requests on every one the origin already refused.
+    def test_a_refused_mint_refuses_every_dependent_read_and_is_never_retried(self):
+        # The rule :func:`mint_guest_token` states, now under test: a mint the
+        # origin refused is not turned into a second activation, and no read
+        # that needed the token goes out — each is refused with the
+        # activation's own answer, typed `auth_required`.
         governor, carrier, _ = self.guest_carrier(
             activation=(403, "forbidden", "text/plain"),
             read=(401, "unauthorized", "application/json"),
         )
 
-        first = governor.fetch(guest_read_request())
-        second = governor.fetch(guest_read_request())
+        with self.assertRaises(transport.TransportError) as first:
+            governor.fetch(guest_read_request())
+        with self.assertRaises(transport.TransportError) as second:
+            governor.fetch(guest_read_request())
 
         self.assertEqual(
             transport.GUEST_TOKENS._tokens, {transport.X_GUEST_ACTIVATE_ROUTE: ""}
         )
         self.assertEqual(
-            [call.route_id for call in carrier.calls],
-            [
-                transport.X_GUEST_ACTIVATE_ROUTE,
-                transport.X_GUEST_GRAPHQL_ROUTE,
-                transport.X_GUEST_GRAPHQL_ROUTE,
-            ],
+            [call.route_id for call in carrier.calls], [transport.X_GUEST_ACTIVATE_ROUTE]
         )
-        self.assertEqual((first.status, second.status), (401, 401))
+        self.assertEqual(
+            (first.exception.loss, second.exception.loss),
+            (transport.AUTH_REQUIRED, transport.AUTH_REQUIRED),
+        )
+        self.assertIn("403", str(second.exception))
+        # The origin answered the activation once, and that one answer is
+        # billed to the read that minted; the remembered refusal costs nothing.
+        self.assertEqual((first.exception.reached, second.exception.reached), (True, False))
+
+    def test_a_mint_that_never_answered_holds_its_claim_and_refuses_the_next_read(self):
+        # The activation route declares no budget here, so the mint raises
+        # before it reaches the opener. The claim it took must still refuse
+        # every later read, or the second would go out untokened.
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(clock, {
+            transport.X_GUEST_ACTIVATE_ROUTE: ACTIVATION_ANSWER,
+            transport.X_GUEST_GRAPHQL_ROUTE: GUEST_READ_ANSWER,
+        })
+        governor = runner.RateGovernor(
+            carrier,
+            budgets={
+                transport.X_GUEST_GRAPHQL_ROUTE: runner.route_budgets()[transport.X_GUEST_GRAPHQL_ROUTE]
+            },
+            clock=clock.monotonic,
+            sleep=clock.sleep,
+        )
+
+        with self.assertRaises(runner.RunnerError):
+            governor.fetch(guest_read_request())
+        with self.assertRaises(transport.TransportError) as second:
+            governor.fetch(guest_read_request())
+
+        self.assertEqual(second.exception.loss, transport.UNREACHABLE)
+        self.assertIn(transport.X_GUEST_ACTIVATE_ROUTE, str(second.exception))
+        self.assertEqual(opener.opened, [])
+        self.assertEqual(
+            transport.GUEST_TOKENS._tokens, {transport.X_GUEST_ACTIVATE_ROUTE: ""}
+        )
+
+    def test_a_rate_limited_activation_types_both_dependent_reads_without_retry(self):
+        for status, body in ((429, "Too Many Requests"), (403, "secondary rate limit")):
+            with self.subTest(status=status):
+                transport.GUEST_TOKENS.clear()
+                governor, carrier, _ = self.guest_carrier(activation=(status, body, "text/plain"))
+                with self.assertRaises(transport.TransportError) as first:
+                    governor.fetch(guest_read_request())
+                with self.assertRaises(transport.TransportError) as second:
+                    governor.fetch(guest_read_request())
+                self.assertEqual((first.exception.loss, second.exception.loss), ("rate_limited", "rate_limited"))
+                self.assertEqual((first.exception.reached, second.exception.reached), (True, False))
+                self.assertEqual([call.route_id for call in carrier.calls], [transport.X_GUEST_ACTIVATE_ROUTE])
 
     def test_an_activation_route_that_named_a_token_route_cannot_recurse(self):
         # Minting at the governor is re-entrant: the activation is itself a

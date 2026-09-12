@@ -98,7 +98,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, cache, normalize, probes, runner, schema, smoke, transport
+from super_research import adapters, cache, normalize, runner, schema, transport
 from super_research.adapters import fake
 from super_research.adapters import github_rest, hacker_news, instagram_public
 from super_research.adapters import public_page, reddit_archive, reddit_feed, rss_atom
@@ -161,34 +161,15 @@ def adapters_named(path, own_id):
 
 
 def adapter_owner_paths(path):
-    """One facade and the private support modules it imports directly."""
+    """One adapter module: every source that owns its behavior."""
 
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    helpers = []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.ImportFrom) or node.level != 1:
-            continue
-        parts = (node.module or "").split(".")
-        if not parts or parts[0] != "_support":
-            continue
-        if len(parts) > 1:
-            helper = path.parent.joinpath(*parts).with_suffix(".py")
-            if helper.is_file():
-                helpers.append(helper)
-        else:
-            for alias in node.names:
-                helper = path.parent / "_support" / (alias.name + ".py")
-                if helper.is_file():
-                    helpers.append(helper)
-    return (path,) + tuple(sorted(set(helpers)))
+    return (path,)
 
 
 def adapter_owner_source(path):
     """The source read as one logical adapter owner, never as dispatch modules."""
 
-    return "\n".join(
-        owner.read_text(encoding="utf-8") for owner in adapter_owner_paths(path)
-    )
+    return path.read_text(encoding="utf-8")
 
 
 def _next_data(entries):
@@ -289,10 +270,11 @@ def adapter_page(module, status, body, content_type="text/html", request=None):
 
 
 class FakeHTTPResponse:
-    """The little of an http response that ``urlopen_response`` reads."""
+    """The little of an http response that ``urlopen_read`` reads."""
 
-    def __init__(self, status, body, content_type):
+    def __init__(self, status, body, content_type, url=""):
         self.status = status
+        self.url = url
         self.headers = {"Content-Type": content_type}
         self._body = body.encode("utf-8")
 
@@ -323,8 +305,8 @@ class RoutingUrlopen:
         self.requests.append(outbound)
         for fragment, status, body, content_type in self.answers:
             if fragment in outbound.full_url:
-                return FakeHTTPResponse(status, body, content_type)
-        return FakeHTTPResponse(*self.default)
+                return FakeHTTPResponse(status, body, content_type, outbound.full_url)
+        return FakeHTTPResponse(*self.default, url=outbound.full_url)
 
     def urls(self):
         return [outbound.full_url for outbound in self.requests]

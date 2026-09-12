@@ -72,7 +72,7 @@ class AdapterDescriptor:
 
     ``access_class`` is exactly one class off the ladder :mod:`schema` owns,
     and it is checked here because three separate rules read it and none of
-    them can tell an unnamed class from a wrong one: the router admits a step
+    them can tell an unnamed class from a wrong one: the runner admits a step
     on it, ``time_confidence_for`` decides on it how far a record's time is
     trusted, and the artifact publishes it to a caller. A descriptor declaring
     a class nothing names would carry that quietly past all three, so the

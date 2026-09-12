@@ -39,7 +39,6 @@ class PublicPageIsSelectedNotGenericTest(unittest.TestCase):
         )
         manifest = schema.AcquisitionManifest(
             manifest_id="m-page",
-            mode="staged",
             as_of="2026-08-10T09:05:00Z",
             steps=(
                 schema.AcquisitionStep(
@@ -160,7 +159,6 @@ class PublicPageIsSelectedNotGenericTest(unittest.TestCase):
         run = runner.run_scheduled(
             schema.AcquisitionManifest(
                 manifest_id="m-refused",
-                mode="staged",
                 as_of="2026-08-10T09:05:00Z",
                 steps=(
                     schema.AcquisitionStep(

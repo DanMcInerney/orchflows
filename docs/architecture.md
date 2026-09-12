@@ -1,41 +1,52 @@
 # Architecture
 
-Every word in a skill, workflow, standard or doc fights for its life.
+Every word in a skill, workflow, guidance file or doc fights for its life.
 
 ## Two primitives
 
-- [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen standards.
+- [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
-Every other agent is launched through these two. The host runs agents; orchflows adds no runtime, scheduler or workflow language. A workflow is a `SKILL.md` that loads other skills into the current context and delegates only through the primitives. A small workflow does one thing behind one entrypoint; a larger one invokes it by name, as a program imports a module, and adds only what is new at its level. Depth is unbounded; every level stays small.
+Every other agent is launched through these two. The host runs agents; orchflows adds no agent runtime, scheduler or workflow language. A workflow is a `SKILL.md` that loads other skills into the current context and delegates through the primitives. A larger workflow composes smaller ones and adds only what it owns. Loading another skill does not launch another coordinator.
 
 ## Where things live
 
 Write the least prescription that produces the result now; each model release lets you delete more.
 
-| Thing | Lives in | Changed by |
+| Thing | Lives in | Owner |
 | --- | --- | --- |
-| question, dates, sources, bounds, output location | the prompt | each request |
-| quality criteria for one lens | `standards/<lens>.md`; `standards/<lens>/<sub>.md` specializes it | model releases |
-| composition, control flow, agent count | `SKILL.md` prose | nothing |
-| deterministic mechanics: fetch, parse, bound, resume | `skills/<skill>/scripts/` of the owning library, tests beside them; core `scripts/` for the CLI | the mechanism |
-| source knowledge | a profile skill or `references/` | the source |
-| host facts | [hosts.md](hosts.md) | host releases |
-| built-ins | core `skills/orch-*/`; the prefix is reserved | orchflows developers |
+| question, dates, sources, bounds, output location | the prompt | caller |
+| quality criteria for one domain | `guidance/<name>.md` | domain guidance |
+| composition, control flow, agent count | `SKILL.md` prose | the workflow composing those calls |
+| package dependencies, guidance selection, resolved paths | the library's `references/library-context.md`, reused by its entrypoints | outermost package entrypoint |
+| deterministic mechanics: fetch, parse, bound, resume | `skills/<skill>/scripts/`, tests beside them; core `scripts/` for the CLI | the library providing the mechanism |
+| source knowledge | library guidance; operational notes in `references/` | the library using that source |
+| host facts | [hosts.md](hosts.md) | core host documentation |
+| built-ins | core `skills/orch-*/`; that name is reserved | orchflows developers |
 | custom workflows | `~/.orchflows/libraries/<lib>/skills/<workflow>/`; `personal` unless the caller names a library or repository | the user |
 | outputs | the caller's workspace, never a package | each run |
 
-A workflow that needs prose deleted after a model release was over-specified. A standard is one lens with Doing and Reviewing sections, matching orch-work and orch-review; a specialization opens with `Extends:` and is passed with its parent. One-off criteria stay in the prompt. Defaults belong to the caller: no default window, source, model, effort or path.
+One-off criteria stay in the prompt. Defaults belong to the caller: no default window, source, model, effort or path.
+
+## Guidance selection
+
+A guidance file has `## Make` and `## Review` sections, either omitted when empty. The maker and reviewer read and apply their respective sections. This section owns the selection rule; workflows name the domains they need.
+
+Select independent names, for example `writing`, `visual-design`, `short-video.marketing`. Dots specialize within a domain: for each name, visit its prefixes from general to specific, reading core then the selected libraries in caller-supplied order at each specificity. Thus `short-video.marketing` considers `short-video.md` before `short-video.marketing.md` in each package's `guidance/`. Library-only domains are valid. More specific guidance wins within its domain; independent domains compose without replacing one another. Keep each resolved file once, in first-use order.
+
+Missing implicit parents are fine. An explicitly selected name must exist in at least one selected package; report a missing selection as a gap and block work that requires it. For an unfamiliar site or genre, select applicable general guidance instead of inventing a missing specialization.
+
+Resolve these files and package dependencies once at the outer entrypoint, including a leaf invoked alone. Use available native skills or supplied package roots; a configured home also provides [CLI resolution](home.md). Pass concrete absolute paths and request context to composed skills and primitives. Reuse that context; extend it only for newly introduced dependencies. Profiles may supply additional names and package roots. No guidance inheritance graph or repeated resolution is needed in children.
 
 ## Three roots
 
 | Root | Owner | Holds |
 | --- | --- | --- |
-| Core checkout | orchflows developers | `skills/`, `standards/`, `docs/`, `scripts/`, `tests/`, `example-workflows/` |
+| Core checkout | orchflows developers | `skills/`, `guidance/`, `docs/`, `scripts/`, `tests/`, `example-workflows/` |
 | Home `~/.orchflows` | the user | `libraries/`, managed core, runtime: [home.md](home.md) |
 | Project workspace | the task | outputs |
 
-The managed core ships root files, `skills/`, `standards/`, `docs/` and `scripts/`; core `.md` files never link into `tests/` or `example-workflows/`. Developers edit the checkout, run `python -m unittest discover -s tests`, load it as a plugin ([hosts.md](hosts.md)) and run its `setup` to update a home.
+The managed core contains the root manifest, native plugin directories, `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, and `skills/`, `guidance/`, `docs/`, `scripts/`. Setup's `CORE_ENTRIES` owns that explicit packaging list. Tests and example libraries remain in the checkout; core Markdown links stay within the shipped core. Developers edit the checkout, run `python -m unittest discover -s tests`, load it as a plugin ([hosts.md](hosts.md)) and run its `setup` to update a home.
 
 ## A library
 
@@ -44,28 +55,22 @@ The managed core ships root files, `skills/`, `standards/`, `docs/` and `scripts
 ├── plugin.json  .claude-plugin/plugin.json  .codex-plugin/plugin.json   name, version, "skills": "./skills/"
 ├── README.md                        composition diagram, agent count, install, dependencies
 ├── references/                      context shared by several skills
+├── guidance/<name>.md              domain or dotted specialization
 ├── skills/<skill>/SKILL.md          frontmatter name + description, then prose
 ├── skills/<skill>/references/       knowledge only that skill loads
 ├── skills/<skill>/scripts/          mechanics that skill runs; tests/ beside them
 └── trials/                          request.md, expected-behavior.md
 ```
 
-Identity is `<library>:<skill>`. Links stay inside the package; other packages are reached by native skill name or a path resolved once at the outer boundary, after which children receive absolute paths. No checkout, home, cache or project path is written into a package. Setup installs no dependencies.
+Identity is `<library>:<skill>`. Links stay inside the package; other packages are reached by native skill name or resolved paths. Do not bake machine-specific checkout, home, cache or project paths into a package. Declare runtime dependencies in its README; setup installs no library dependencies.
 
 ## Reference: social-search
 
-`example-workflows/social-search/`, or `~/.orchflows/libraries/social-search/` after setup. N sources → N workers + 1 reviewer.
-
-- Leaf: `search-site` launches one `orch-work` for any named site; `rank-evidence` launches one `orch-review` over supplied evidence; `prepare-evidence` shapes the handoff inside the worker. Leaves work alone.
-- Profile: `search-reddit` … `search-polymarket` invoke `search-site` with a few sentences of source knowledge, never control flow or an agent.
-- Coordinator: `social-search` chooses profiles, fans out, gathers, invokes `rank-evidence` once; it owns the agent count and repeats nothing a leaf says. Loading a skill in context replaces a coordinating agent.
-- Script: `research-acquire` `inspect_source.py` owns transcript fetch, parse, fallback and bounds; `references/source-readers.md` resolves it by package resource.
-
-The files carry the remaining patterns: `references/library-context.md` resolves dependencies once, and skills that need it open "Reuse or establish library context"; `search-site` returns a handle when the caller gathers, else awaits, and quotes the worker's assignment ending "Work without child agents"; `trials/` holds a real bounded request and observable acceptance.
+The optional `example-workflows/social-search` library has three skills: `search-site` launches one orch-work, `rank-evidence` one orch-review, and `social-search` composes them. Site knowledge and the evidence handoff belong to its `research.search-site` guidance. Optional transcript acquisition belongs to the separate `research-acquire` library. The installed core has five skills; example libraries are separate packages, not built-ins.
 
 ## Invariants
 
 - A skill names a script, its inputs and its result, never its internals.
 - Declare the agent count; extra reviews, loops or repairs only when the request asks.
 - Gaps stay visible; missing work is never no-results evidence.
-- Behavior is established by a trial on a real bounded request, not by valid frontmatter. [orch-build-workflow](../skills/orch-build-workflow/SKILL.md) imports existing leaves, writes missing ones, then a coordinator, then deletes every instruction the trial did not need.
+- Behavior is established by a trial on a real bounded request, not by valid frontmatter. [orch-build-workflow](../skills/orch-build-workflow/SKILL.md) composes existing skills, authors what is missing and simplifies from observed behavior. An unexercised failure path is untested, not evidence that its handling is unnecessary.

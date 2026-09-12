@@ -1,6 +1,6 @@
 """K0 LinkedIn job postings from the guest search surface.
 
-Measured 2026-08-10 (LinkedIn): the jobs-guest search route
+Measured: the jobs-guest search route
 answered 200 in 0.7 s with 27 KB carrying ten postings, each with a
 ``jobPosting`` URN id, a title, a company and a ``datetime``, and ``start=``
 paginating. No account, no token, and no vendor-published credential — the
@@ -51,7 +51,7 @@ DESCRIPTOR = AdapterDescriptor(
     # True of every card this route will ever return rather than of some of
     # them, which is what makes it standing rather than per-record.
     standing_loss=("date_precision_only",),
-    # The 2026-08-10 probes: 0.7 s per request. Nothing on this route was measured
+    # The probes: 0.7 s per request. Nothing on this route was measured
     # refusing, so `burst` and `cooldown_ms` keep the protocol's conservative
     # defaults rather than a ceiling nobody observed.
     min_interval_ms=700,
@@ -92,7 +92,7 @@ LISTDATE_ATTRIBUTE = "datetime"
 CARD_TEXT_CLASSES = (("title", TITLE_CLASS), ("company", COMPANY_CLASS))
 CARD_KEYS = ("urn_id", "title", "company", "posted_at", "locator")
 
-# Every field the 2026-08-10 probes record this route returning per card. A record
+# Every field the probes record this route returning per card. A record
 # missing one says so, because a caller comparing postings needs to know which
 # rows were incomplete rather than which were undated.
 ROSTER_FIELDS = ("urn_id", "title", "company", "posted_date")
@@ -173,7 +173,7 @@ def untracked_locator(href: str) -> str:
 
 
 def roster_row_of(card: Dict[str, str]) -> Dict[str, str]:
-    """One card's roster row, named as the 2026-08-10 probes name it."""
+    """One card's roster row, named as the probes name it."""
 
     return {
         "urn_id": card["urn_id"].strip(),
@@ -302,12 +302,12 @@ def _instant_seconds(stamped: str) -> Optional[int]:
 def origin_recency_term(window_start: str, window_end: str) -> str:
     """The origin's own ``f_TPR=r<seconds>`` value for one step's window, or nothing.
 
-    Measured live 2026-08-31: the same ``keywords`` read twice, once bare and
+    Measured live: the same ``keywords`` read twice, once bare and
     once with a candidate ``f_TPR=r<seconds>`` added, moved the oldest posting
     forward (a common term: every card in the last 24 h) and, on a rarer
     keyword where the unfiltered page was not already saturated, dropped the
-    row count too (10 postings bare, 6 with ``r3600``) — the exact pair
-    Details asked for, so the term is real. LinkedIn reports a posting's date
+    row count too (10 postings bare, 6 with ``r3600``), so the term is real.
+    LinkedIn reports a posting's date
     at day precision (``DESCRIPTOR.standing_loss``), which is why the reading
     above needed a rare keyword to see the row count move: a common one fills
     every page regardless, so only the oldest-date signal was visible on it.

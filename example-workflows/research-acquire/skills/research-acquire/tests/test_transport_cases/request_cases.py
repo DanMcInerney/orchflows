@@ -33,7 +33,9 @@ class GuestActivationRouteTest(unittest.TestCase):
         self.assertEqual(route.credential_id, transport.X_GUEST_PUBLIC_BEARER)
 
     def test_the_activation_route_needs_no_user_credential(self):
-        self.assertTrue(transport.route_admissions()[transport.X_GUEST_ACTIVATE_ROUTE])
+        self.assertNotEqual(
+            transport.route_constant(transport.X_GUEST_ACTIVATE_ROUTE).access_class, "K5"
+        )
 
     def test_the_routes_declaring_a_non_read_method_are_exactly_the_declared_exceptions(self):
         # Both directions. A route declaring a non-read method and named in
@@ -87,7 +89,7 @@ class WriteVerbRefusalTest(unittest.TestCase):
 
         with forbid_io():
             with self.assertRaises(transport.TransportError) as caught:
-                transport.urlopen_response(request)
+                transport.urlopen_read(request)
 
         return str(caught.exception)
 
@@ -126,7 +128,7 @@ class WriteVerbRefusalTest(unittest.TestCase):
 
         with forbid_io():
             with self.assertRaises(transport.TransportError) as caught:
-                transport.urlopen_response(request)
+                transport.urlopen_read(request)
 
         self.assertIn("non-https", str(caught.exception))
 
@@ -311,29 +313,20 @@ class TheAnswerCarriesWhatTheOriginSaidTest(unittest.TestCase):
             transport.header_value(answered[4], "X-RateLimit-Remaining"), "59"
         )
 
-    def test_the_three_value_view_is_still_three_values(self):
-        recorder = RecordingUrlopen(200, "{}", "application/json")
-        request = transport.build_transport_request(
-            transport.GITHUB_REST_ROUTE, {"owner": "o"}
-        )
-
-        with mock.patch.object(urllib.request, "urlopen", recorder):
-            self.assertEqual(len(transport.urlopen_response(request)), 3)
-
 
 class OutboundRequestTest(unittest.TestCase):
     """What the default opener would put on the wire, captured without a socket."""
 
     def _sent(self, request, recorder):
         with mock.patch.object(urllib.request, "urlopen", recorder):
-            result = transport.urlopen_response(request)
+            result = transport.urlopen_read(request)
         return result, recorder.requests[0]
 
     def test_the_activation_post_carries_the_public_bearer_and_no_body(self):
         recorder = RecordingUrlopen(200, '{"guest_token": "1234567890"}', "application/json")
         request = transport.build_transport_request(transport.X_GUEST_ACTIVATE_ROUTE)
 
-        (status, body, content_type), outbound = self._sent(request, recorder)
+        (status, body, content_type, _, _), outbound = self._sent(request, recorder)
 
         bearer = transport.PUBLIC_CLIENT_CREDENTIALS[transport.X_GUEST_PUBLIC_BEARER].value
         self.assertEqual(outbound.get_method(), "POST")

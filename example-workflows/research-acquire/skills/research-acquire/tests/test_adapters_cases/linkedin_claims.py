@@ -5,7 +5,6 @@ def profile_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-li",
-        mode="staged",
         as_of="2026-08-10T09:00:00Z",
         steps=(
             schema.AcquisitionStep(
@@ -289,7 +288,7 @@ class ChromeIsNotAnAuthwallTest(unittest.TestCase):
 
                 self.assertNotIn("auth_required", page.loss)
                 self.assertEqual(page.outcome, "ok")
-                self.assertTrue(transport.route_admissions()[module.DESCRIPTOR.route_id])
+                self.assertNotEqual(transport.route_constant(module.DESCRIPTOR.route_id).access_class, "K5")
                 self.assertIsNone(transport.route_credential(module.DESCRIPTOR.route_id))
 
 

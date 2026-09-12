@@ -1,6 +1,6 @@
 """K0 oEmbed hydration over six platforms' own documented endpoints.
 
-Measured 2026-09-01, all six keyless and all 200 from this host, each on one
+Measured, all six keyless and all 200 from this host, each on one
 platform URL passed as ``url``: YouTube's ``www.youtube.com/oembed?url=&
 format=json`` answers ``author_name``, ``author_url``, ``title``,
 ``thumbnail_url`` and a ``type`` of ``video``. Vimeo's
@@ -19,9 +19,8 @@ id restated, and a ``type`` of ``video``. X's ``publish.x.com/oembed?url=``
 answers ``author_name``, ``author_url`` and a ``type`` of ``rich``, and never
 a ``title`` — the payload states none. ``publish.twitter.com`` answers this
 host with a bare 301 onto ``publish.x.com``, so the newer name is the one
-declared; a datacenter-IP survey elsewhere reported 402 from this same
-endpoint and that did not reproduce from here, keyless, at any point in this
-delivery. No provider states a structured publication date and none states
+declared; a report of 402 from this endpoint for datacenter addresses did
+not reproduce from here, keyless. No provider states a structured publication date and none states
 an engagement count of any kind — both are standing absences on every record
 this module builds, never a zero or a time this module invented.
 

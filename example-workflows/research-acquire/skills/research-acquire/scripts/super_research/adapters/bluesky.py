@@ -1,6 +1,6 @@
 """K0 Bluesky's public AppView over two surfaces: post search, and one actor's feed.
 
-Measured 2026-08-17 (Bluesky), keyless on both and answering two different
+Measured, keyless on both and answering two different
 ways on *this host*:
 
 - ``getAuthorFeed?actor=bsky.app&limit=100`` answered 200 with
@@ -12,9 +12,9 @@ ways on *this host*:
   ``getProfile`` and ``getAuthorFeed`` on the same origin answered 200 in the
   same minute. That is a per-host administrative block on one method, not a
   platform gap and not a credential this package is missing — the method is
-  documented keyless and the roster's own liveness read is what decides. The
-  smoke decides liveness per host: another host may well be served, and this
-  module is written against the shape the method documents and returns.
+  documented keyless and a live read decides per host: another host may
+  well be served, and this module is written against the shape the method
+  documents and returns.
 
 The search payload's shape is read off the corpus this package holds:
 ``{"posts", "cursor", "hitsTotal"}``, where every post carries the same
@@ -43,9 +43,9 @@ from __future__ import annotations
 
 import json
 from html.parser import HTMLParser
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Sequence
 
-from .. import transport
+from .. import transport, schema
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -54,16 +54,189 @@ from . import (
     build_native_page,
     fetch_one_page,
 )
-from ._support import bluesky_extract as _extract
+from datetime import datetime, timezone
 
-URI_KEY = _extract.URI_KEY
-FIELD_OMITTED = "field_omitted"
-exact_count = _extract.exact_count
-_text = _extract._text
+
+# Where a Bluesky post lives for a reader. The AppView answers at an API host,
+# while neither payload publishes a web locator for a post. Its ``at://`` URI
+# is an identity, so the reader address is composed from the stated handle and
+# record key.
+BLUESKY_APP_ORIGIN = "https://bsky.app"
+PROFILE_PATH = "/profile/"
+POST_PATH = "/post/"
+
+# Both surfaces answer with native post views.
+POST_KIND = "post"
+
+# The AppView's own names for fields carried into a native record.
+URI_KEY = "uri"
+CID_KEY = "cid"
+AUTHOR_KEY = "author"
+HANDLE_KEY = "handle"
+DID_KEY = "did"
+RECORD_KEY = "record"
+TEXT_KEY = "text"
+CREATED_AT_KEY = "createdAt"
+INDEXED_AT_KEY = "indexedAt"
+REPLY_KEY = "reply"
+PARENT_KEY = "parent"
+ROOT_KEY = "root"
+
+LIKE_COUNT_METRIC = "likeCount"
+REPOST_COUNT_METRIC = "repostCount"
+REPLY_COUNT_METRIC = "replyCount"
+QUOTE_COUNT_METRIC = "quoteCount"
+POST_METRICS = (
+    LIKE_COUNT_METRIC,
+    REPOST_COUNT_METRIC,
+    REPLY_COUNT_METRIC,
+    QUOTE_COUNT_METRIC,
+)
+
+# A reply's thread root is separate from its native parent.
+ROOT_URI_ATTRIBUTE = "root_uri"
+
+# A row naming no URI is not a post; these other omissions are record loss.
+POST_ROW_KEYS = (URI_KEY, TEXT_KEY, HANDLE_KEY, CREATED_AT_KEY)
+
+ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%S"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
+
+
+def record_key(uri: str) -> str:
+    """One post's record key: the last segment of the ``at://`` URI naming it.
+
+    An ``at://`` URI is an identity — an authority, a collection, and a key —
+    and the key is the part a reader's address ends in. Nothing else is taken
+    apart: the authority in the URI is a decentralised identifier and the
+    address is built from the handle the payload states beside it.
+    """
+
+    held = (uri or "").strip()
+    if not held or held.endswith("/"):
+        return ""
+    _, separator, last = held.rpartition("/")
+    return last if separator else ""
+
+
+def post_locator(handle: str, uri: str) -> str:
+    """One post's address on Bluesky's own app, or nothing without both parts."""
+
+    key = record_key(uri)
+    if not handle or not key:
+        return ""
+    return BLUESKY_APP_ORIGIN + PROFILE_PATH + handle + POST_PATH + key
+
+
+def _text(value: Any) -> str:
+    return value if isinstance(value, str) else ""
+
+
+def exact_count(value: Any) -> Optional[int]:
+    """One exact integer the AppView published, or nothing at all."""
+
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def route_instant_to_utc_iso(stamped: Any) -> str:
+    """This payload's stamp as the artifact's instant, or nothing.
+
+    The fraction is dropped rather than rounded, so nothing is stated that
+    the origin did not; another spelling is a missing time, not an estimate.
+    """
+
+    if not isinstance(stamped, str) or not stamped.strip():
+        return ""
+    text = stamped.strip()
+    if text.endswith("Z"):
+        text = text[:-1]
+    text = text.split(".")[0]
+    try:
+        moment = datetime.strptime(text, ROUTE_INSTANT_FORMAT)
+    except ValueError:
+        return ""
+    return moment.replace(tzinfo=timezone.utc).strftime(RECORD_INSTANT_FORMAT)
+
+
+def _nested(payload: Any, *keys: str) -> Any:
+    """One value under a key path, or None once the path leaves a mapping."""
+
+    held: Any = payload
+    for key in keys:
+        if not isinstance(held, Mapping):
+            return None
+        held = held.get(key)
+    return held
+
+
+def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:
+    """Which of this row's declared fields the payload did not report."""
+
+    return tuple(key for key in keys if not row.get(key))
+
+
+def _engagement(post: Mapping[str, Any]) -> Tuple[Tuple[str, int], ...]:
+    """The counts this post stated, in the declared order, and no others."""
+
+    counted: List[Tuple[str, int]] = []
+    for name in POST_METRICS:
+        exact = exact_count(post.get(name))
+        if exact is not None:
+            counted.append((name, exact))
+    return tuple(counted)
+
+
+def reply_parents_of(post: Mapping[str, Any]) -> Tuple[str, str]:
+    """The post this one answers, and the root of its thread.
+
+    Both are empty for a post that answers nothing. The AppView states each on
+    the record, so neither is derived and a root is never treated as a parent.
+    """
+
+    parent = _text(_nested(post, RECORD_KEY, REPLY_KEY, PARENT_KEY, URI_KEY))
+    root = _text(_nested(post, RECORD_KEY, REPLY_KEY, ROOT_KEY, URI_KEY))
+    return (parent, root)
 
 
 def _post_record(position: int, post: Mapping[str, Any]) -> NativeRecord:
-    return _extract._post_record(position, post, FIELD_OMITTED)
+    """One post as either method's post view described it."""
+
+    uri = _text(post.get(URI_KEY))
+    handle = _text(_nested(post, AUTHOR_KEY, HANDLE_KEY))
+    row = {
+        URI_KEY: uri,
+        TEXT_KEY: _text(_nested(post, RECORD_KEY, TEXT_KEY)),
+        HANDLE_KEY: handle,
+        CREATED_AT_KEY: route_instant_to_utc_iso(_nested(post, RECORD_KEY, CREATED_AT_KEY)),
+    }
+    parent, root = reply_parents_of(post)
+    named: List[Tuple[str, str]] = []
+    for name, value in (
+        (DID_KEY, _text(_nested(post, AUTHOR_KEY, DID_KEY))),
+        (CID_KEY, _text(post.get(CID_KEY))),
+        (INDEXED_AT_KEY, _text(post.get(INDEXED_AT_KEY))),
+        (ROOT_URI_ATTRIBUTE, root),
+    ):
+        if value:
+            named.append((name, value))
+    return NativeRecord(
+        canonical_content_kind=POST_KIND,
+        canonical_locator=post_locator(handle, uri),
+        native_item_id=uri,
+        native_parent_id=parent,
+        body=row[TEXT_KEY],
+        author=handle,
+        published_at=row[CREATED_AT_KEY],
+        engagement=_engagement(post),
+        attributes=tuple(named),
+        native_position=position,
+        loss=(FIELD_OMITTED,) if _missing(row, POST_ROW_KEYS) else (),
+    )
+
+
+FIELD_OMITTED = "field_omitted"
 
 # The search surface, and this adapter's primary: a step naming a query and no
 # operation is asking Bluesky to search.
@@ -76,7 +249,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="bluesky",
     representation_kind="native",
     operator_identity="bluesky",
-    # The 2026-08-17 probes met no throttle on the surface that answered — the
+    # The probes met no throttle on the surface that answered — the
     # one that refused did so on identity and not on rate, and a 403 about who
     # is asking states no interval to respect. An unmeasured ceiling is not one
     # to spend, so one read a second with a burst of five rather than a figure

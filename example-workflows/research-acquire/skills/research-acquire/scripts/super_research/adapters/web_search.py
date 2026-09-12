@@ -1,16 +1,16 @@
 """K4 web discovery over four keyless indexes: DuckDuckGo HTML, and three RSS forms.
 
-Measured 2026-08-10 (Web discovery): of nine keyless
+Measured: of nine keyless
 engines probed, ``html.duckduckgo.com/html/`` was the only one returning
 clean title/URL/snippet triples — ten per page, no throttle at probe
 volume. Brave and Bing returned content but resisted extraction and are
 declared secondary providers, not free wins.
 
-Measured 2026-08-17 (second sweep, this host, the package identity): the
+Measured: the
 DuckDuckGo route answered 202 with a bot challenge — to this identity and to a
-browser identity alike — so one index closed both web lanes of the bakeoff.
+browser identity alike — so one index closed both web lanes.
 Three more indexes are declared here as **parallel planned routes**, never as
-fallbacks: Bing publishes an RSS 2.0 form of its web results
+substitutes: Bing publishes an RSS 2.0 form of its web results
 (``bing.com/search?format=rss``, ten ``<item>`` per page, ``first=`` paging,
 each item a direct publisher ``<link>`` and an RFC 822 ``<pubDate>``); Bing
 News publishes the same shape for its news index (``news/search?format=rss``,
@@ -46,12 +46,11 @@ ask it to allocate a gigabyte.
 
 from __future__ import annotations
 
-import urllib.parse
+import urllib.parse, email.utils
 from html.parser import HTMLParser
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
-from .. import transport
-from ._support import web_search_feeds as _feeds
+from .. import transport, schema
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -60,6 +59,332 @@ from . import (
     build_native_page,
     fetch_one_page,
 )
+from datetime import datetime, timezone
+
+
+RSS_ROOT_TAG = "rss"
+CHANNEL_TAG = "channel"
+ITEM_TAG = "item"
+TITLE_TAG = "title"
+LINK_TAG = "link"
+DESCRIPTION_TAG = "description"
+PUBDATE_TAG = "pubdate"
+SOURCE_TAG = "source"
+SOURCE_URL_ATTRIBUTE = "url"
+SOURCE_URL_FIELD = "source_url"
+ITEM_TEXT_TAGS = (TITLE_TAG, LINK_TAG, DESCRIPTION_TAG, PUBDATE_TAG, SOURCE_TAG)
+ITEM_FIELDS = ITEM_TEXT_TAGS + (SOURCE_URL_FIELD,)
+
+SOURCE_ATTRIBUTE = "source"
+SOURCE_URL_ATTRIBUTE_NAME = "source_url"
+BING_NEWS_REDIRECT_PATH = "/news/apiclick.aspx"
+BING_NEWS_REDIRECT_TARGET_FIELD = "url"
+
+FORMAT_PARAM = "format"
+RSS_FORMAT = "rss"
+QUERY_PARAM = "q"
+BING_OFFSET_PARAM = "first"
+BING_FIRST_OFFSET = 1
+GOOGLE_LOCALE_PARAMS = (("hl", "en-US"), ("gl", "US"), ("ceid", "US:en"))
+GOOGLE_WHEN_OPERATOR = "when:"
+GOOGLE_WHEN_UNIT = "d"
+SECONDS_PER_DAY = 86400
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
+
+
+def local_name(tag: str) -> str:
+    """One tag without its namespace prefix."""
+
+    return tag.rsplit(":", 1)[-1]
+
+
+class _RssIndexParser(HTMLParser):
+    """Collect one RSS answer's root, channel, and item fields."""
+
+    def __init__(self) -> None:
+        HTMLParser.__init__(self, convert_charrefs=True)
+        self.root = ""
+        self.channels = 0
+        self.items: List[Dict[str, str]] = []
+        self._in_item = False
+        self._field = ""
+
+    def handle_starttag(self, tag, attrs):
+        if not self.root and tag == RSS_ROOT_TAG:
+            self.root = tag
+            return
+        if tag == CHANNEL_TAG:
+            self.channels += 1
+            return
+        if tag == ITEM_TAG:
+            self.items.append(dict.fromkeys(ITEM_FIELDS, ""))
+            self._in_item = True
+            self._field = ""
+            return
+        if not self._in_item:
+            return
+        name = local_name(tag)
+        if name in ITEM_TEXT_TAGS:
+            self._field = name
+            if name == SOURCE_TAG:
+                url = dict(attrs).get(SOURCE_URL_ATTRIBUTE) or ""
+                if url:
+                    self.items[-1][SOURCE_URL_FIELD] = url
+
+    def handle_endtag(self, tag):
+        if tag == ITEM_TAG:
+            self._in_item = False
+            self._field = ""
+        elif self._in_item and local_name(tag) == self._field:
+            self._field = ""
+
+    def handle_data(self, data):
+        if self._in_item and self._field:
+            self.items[-1][self._field] += data
+
+
+class _TextOnlyParser(HTMLParser):
+    """Keep the text of a fragment and drop its tags."""
+
+    def __init__(self) -> None:
+        HTMLParser.__init__(self, convert_charrefs=True)
+        self.parts: List[str] = []
+
+    def handle_data(self, data):
+        self.parts.append(data)
+
+
+def snippet_text(fragment: str) -> str:
+    """Strip markup and fold whitespace in one feed description."""
+
+    parser = _TextOnlyParser()
+    parser.feed(fragment)
+    parser.close()
+    return " ".join("".join(parser.parts).split())
+
+
+def rfc_822_to_utc_iso(stamped: str) -> str:
+    """Return an RSS date as a UTC artifact instant, or nothing."""
+
+    text = stamped.strip()
+    if not text:
+        return ""
+    try:
+        moment = email.utils.parsedate_to_datetime(text)
+    except (TypeError, ValueError, OverflowError):
+        return ""
+    if moment is None or moment.tzinfo is None:
+        return ""
+    return moment.astimezone(timezone.utc).strftime(RECORD_INSTANT_FORMAT)
+
+
+def unwrap_bing_news_url(link: str) -> str:
+    """Return the publisher address behind Bing News's redirect wrapper."""
+
+    parts = urllib.parse.urlsplit(link)
+    if parts.path.lower() == BING_NEWS_REDIRECT_PATH:
+        targets = urllib.parse.parse_qs(parts.query).get(BING_NEWS_REDIRECT_TARGET_FIELD, [])
+        if targets:
+            return targets[0]
+    return link
+
+
+def feed_locator(operation: str, link: str) -> str:
+    """Return the address represented by one feed hit."""
+
+    held = link.strip()
+    if operation == BING_NEWS_OPERATION:
+        return unwrap_bing_news_url(held)
+    return held
+
+
+def _declared_fields(operation: str) -> Tuple[str, ...]:
+    base = (TITLE_TAG, LINK_TAG, DESCRIPTION_TAG, PUBDATE_TAG)
+    if operation == BING_OPERATION:
+        return base
+    if operation == BING_NEWS_OPERATION:
+        return base + (SOURCE_TAG,)
+    return base + (SOURCE_TAG, SOURCE_URL_FIELD)
+
+
+def feed_record(
+    operation: str, position: int, item: Dict[str, str]
+) -> NativeRecord:
+    """Build one native record from the fields the feed listed."""
+
+    descriptor = SURFACE_OF[operation]
+    row = {
+        TITLE_TAG: item[TITLE_TAG].strip(),
+        LINK_TAG: feed_locator(operation, item[LINK_TAG]),
+        DESCRIPTION_TAG: snippet_text(item[DESCRIPTION_TAG]),
+        PUBDATE_TAG: rfc_822_to_utc_iso(item[PUBDATE_TAG]),
+        SOURCE_TAG: item[SOURCE_TAG].strip(),
+        SOURCE_URL_FIELD: item[SOURCE_URL_FIELD].strip(),
+    }
+    loss: Tuple[str, ...] = descriptor.standing_loss
+    if not row[PUBDATE_TAG]:
+        loss = loss + (UNKNOWN_PUBLICATION_TIME,)
+    if any(not row[name] for name in _declared_fields(operation)):
+        loss = loss + (FIELD_OMITTED,)
+    named: List[Tuple[str, str]] = []
+    if row[SOURCE_TAG]:
+        named.append((SOURCE_ATTRIBUTE, row[SOURCE_TAG]))
+    if row[SOURCE_URL_FIELD]:
+        named.append((SOURCE_URL_ATTRIBUTE_NAME, row[SOURCE_URL_FIELD]))
+    return NativeRecord(
+        canonical_content_kind=CONTENT_KIND,
+        canonical_locator=row[LINK_TAG],
+        title=row[TITLE_TAG],
+        body=row[DESCRIPTION_TAG],
+        published_at=row[PUBDATE_TAG],
+        attributes=tuple(named),
+        native_position=position,
+        loss=loss,
+    )
+
+
+def feed_answered(
+    operation: str,
+    response: transport.TransportResponse,
+    records: Tuple[NativeRecord, ...] = (),
+    outcome: str = "ok",
+    cursor_out: str = "",
+    warnings: Tuple[str, ...] = (),
+    loss: Tuple[str, ...] = (),
+) -> NativePage:
+    return build_native_page(
+        SURFACE_OF[operation],
+        records,
+        observed_at=response.observed_at,
+        cursor_out=cursor_out,
+        native_order=NATIVE_ORDERS[operation],
+        warnings=warnings,
+        outcome=outcome,
+        loss=loss,
+    )
+
+
+def next_bing_offset(cursor: str, listed: int, page_size: int) -> str:
+    """Return Bing's next ``first=`` offset when a full page was listed."""
+
+    if listed < page_size:
+        return ""
+    try:
+        offset = int(cursor) if cursor else BING_FIRST_OFFSET
+    except ValueError:
+        return ""
+    return str(offset + page_size)
+
+
+def feed_page_from(
+    operation: str,
+    response: transport.TransportResponse,
+    cursor: str,
+) -> NativePage:
+    """Turn one RSS answer the origin sent into exactly one page."""
+
+    descriptor = SURFACE_OF[operation]
+    if response.status != 200:
+        return feed_answered(
+            operation,
+            response,
+            outcome="failed",
+            warnings=(
+                "http status {0} from {1}".format(response.status, descriptor.route_id),
+            ),
+            loss=(HTTP_STATUS,),
+        )
+
+    parser = _RssIndexParser()
+    parser.feed(response.body)
+    parser.close()
+    if not parser.root or not parser.channels:
+        return feed_answered(
+            operation,
+            response,
+            outcome="failed",
+            warnings=(
+                "route {0} answered 200 with a document carrying no <{1}> {2}: the"
+                " feed this adapter reads has changed shape".format(
+                    descriptor.route_id,
+                    RSS_ROOT_TAG if not parser.root else CHANNEL_TAG,
+                    "root" if not parser.root else "container",
+                ),
+            ),
+            loss=(SCHEMA_DRIFT,),
+        )
+
+    records = tuple(
+        feed_record(operation, position, item)
+        for position, item in enumerate(parser.items)
+        if feed_locator(operation, item[LINK_TAG])
+    )
+    if not records:
+        return feed_answered(
+            operation,
+            response,
+            outcome="empty",
+            warnings=(
+                "route {0} answered 200 with a <{1}> holding no <{2}>: the index"
+                " matched nothing".format(descriptor.route_id, CHANNEL_TAG, ITEM_TAG),
+            )
+            if not parser.items
+            else (
+                "route {0} answered 200 with {1} <{2}>(s) and no readable <{3}>: the"
+                " index listed nothing this adapter can address".format(
+                    descriptor.route_id, len(parser.items), ITEM_TAG, LINK_TAG
+                ),
+            ),
+        )
+    return feed_answered(
+        operation,
+        response,
+        records=records,
+        cursor_out=next_bing_offset(cursor, len(parser.items), descriptor.page_size)
+        if operation == BING_OPERATION
+        else "",
+    )
+
+
+def instant_moment(stamped: str) -> Optional[datetime]:
+    """Return one manifest instant as a moment, or ``None``."""
+
+    try:
+        return datetime.strptime(stamped, RECORD_INSTANT_FORMAT).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def google_when_days(window_start: str, window_end: str) -> int:
+    """Return the whole days Google's relative ``when:`` should cover."""
+
+    start = instant_moment(window_start) if window_start else None
+    if start is None:
+        return 0
+    end = instant_moment(window_end) if window_end else instant_moment(transport.utc_now_iso())
+    if end is None:
+        return 0
+    seconds = (end - start).total_seconds()
+    days = int(seconds // SECONDS_PER_DAY) + (1 if seconds % SECONDS_PER_DAY else 0)
+    return max(1, days)
+
+
+def feed_params(
+    operation: str, query: str, request: AdapterRequest
+) -> Dict[str, str]:
+    """Return the origin parameters for one feed surface."""
+
+    if operation == BING_OPERATION:
+        return {QUERY_PARAM: query, FORMAT_PARAM: RSS_FORMAT, BING_OFFSET_PARAM: request.cursor}
+    if operation == BING_NEWS_OPERATION:
+        return {QUERY_PARAM: query, FORMAT_PARAM: RSS_FORMAT}
+    days = google_when_days(request.window_start, request.window_end)
+    if days:
+        query = query + " " + GOOGLE_WHEN_OPERATOR + str(days) + GOOGLE_WHEN_UNIT
+    params = {QUERY_PARAM: query}
+    params.update(GOOGLE_LOCALE_PARAMS)
+    return params
+
 
 # Every code this module can attach, spelled once each so a search over a name
 # finds the branch that emits it. The first three stand on every index hit,
@@ -100,7 +425,7 @@ DESCRIPTOR = AdapterDescriptor(
     ),
 )
 
-# Bing's RSS form of its web index. Ten items per answer, measured 2026-08-17.
+# Bing's RSS form of its web index. Ten items per answer, measured.
 BING_DESCRIPTOR = AdapterDescriptor(
     adapter_id="web_search",
     adapter_version="1",
@@ -115,8 +440,7 @@ BING_DESCRIPTOR = AdapterDescriptor(
 )
 
 # Bing's RSS form of its news index. Fourteen items was the most one answer
-# held across the queries measured 2026-08-17 (ten, eleven, twelve and four
-# on others): the number is a ceiling the origin reached, not a promise.
+# held across the queries measured: the number is a ceiling the origin reached, not a promise.
 BING_NEWS_DESCRIPTOR = AdapterDescriptor(
     adapter_id="web_search",
     adapter_version="1",
@@ -131,7 +455,7 @@ BING_NEWS_DESCRIPTOR = AdapterDescriptor(
 )
 
 # Google News's RSS search. One hundred items in one answer, measured
-# 2026-08-17; it states no next page.
+# ; it states no next page.
 GOOGLE_NEWS_DESCRIPTOR = AdapterDescriptor(
     adapter_id="web_search",
     adapter_version="1",
@@ -236,18 +560,16 @@ class _DuckDuckGoResultParser(HTMLParser):
             self._capturing = 2
         elif tag == "input" and attributes.get("name") == NEXT_OFFSET_FIELD:
             # Last one wins, and a paginated page carries two of these: one in
-            # the "< Previous" nav form and one in "Next". Which is which is not
-            # in the evidence — the 2026-08-10 probes recorded page one,
-            # where there is
-            # only the forward form — so a rule preferring one would be markup
-            # this package invented rather than markup it read, and reading the
-            # last is at least a rule rather than a coincidence.
+            # the "< Previous" nav form and one in "Next". Which is which is
+            # unmeasured — only page one, which carries the forward form alone,
+            # has been read — so a rule preferring one would be markup this
+            # package invented rather than markup it read, and reading the last
+            # is at least a rule rather than a coincidence.
             #
             # Nothing spends the value: `runner.planned_calls` sets no cursor,
             # so a backwards offset is a field on a page and never a read. The
             # hazard is recorded here rather than guarded against, because the
-            # guard would be a guess and the ticket that makes the core page is
-            # the one that has to measure page two.
+            # guard would be a guess until page two is measured.
             self.next_offset = attributes.get("value") or ""
 
     def handle_endtag(self, tag):
@@ -269,12 +591,12 @@ def unwrap_result_url(href: str) -> str:
     root-relative link on a page this adapter just read is a link on this
     route's own origin, so requiring a host left the third shape wrapped.
 
-    That failure is silent and it lands on the one route criterion 7 exists to
-    protect. A still-wrapped locator is host-less, ``normalize.normalized_locator``
+    That failure is silent and it lands on the one K4 route the linking law
+    exists to protect. A still-wrapped locator is host-less, ``normalize.normalized_locator``
     keeps it host-less, and ``normalize.link_discovery_hydration`` matches a
     caller-frozen locator exactly — so the K4 discovery-to-hydration edge simply
     never forms. It fails as an absent edge and never as a merge, which is the
-    one shape of K4 breakage no wrong_merge_law test would catch.
+    one shape of K4 breakage no linked-never-merged test would catch.
     """
 
     if href.startswith("//"):
@@ -306,7 +628,7 @@ def _drifted(response: transport.TransportResponse, detail: str) -> NativePage:
 
     Never `empty`: an index that matched nothing and an index whose markup this
     adapter no longer reads arrive at the same door, and only the first is a
-    statement about the query. The 2026-08-10 probes recorded three of the nine engines
+    statement about the query. The probes recorded three of the nine engines
     probed answering 200 with a challenge or a wall, so a 200 that is not a
     result page is a shape this route can genuinely produce.
     """
@@ -378,71 +700,6 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
     )
 
 
-# Feed parsing stays private while these original-facade names remain stable.
-_FEED_CONFIG = _feeds.FeedConfig(
-    surfaces=SURFACE_OF,
-    native_orders=NATIVE_ORDERS,
-    bing_operation=BING_OPERATION,
-    bing_news_operation=BING_NEWS_OPERATION,
-    content_kind=CONTENT_KIND,
-    unknown_publication_time=UNKNOWN_PUBLICATION_TIME,
-    field_omitted=FIELD_OMITTED,
-    schema_drift=SCHEMA_DRIFT,
-    http_status=HTTP_STATUS,
-)
-
-local_name = _feeds.local_name
-_RssIndexParser = _feeds._RssIndexParser
-_TextOnlyParser = _feeds._TextOnlyParser
-snippet_text = _feeds.snippet_text
-rfc_822_to_utc_iso = _feeds.rfc_822_to_utc_iso
-unwrap_bing_news_url = _feeds.unwrap_bing_news_url
-instant_moment = _feeds.instant_moment
-google_when_days = _feeds.google_when_days
-
-
-def _feed_locator(operation: str, link: str) -> str:
-    return _feeds.feed_locator(_FEED_CONFIG, operation, link)
-
-
-def _feed_record(operation: str, position: int, item) -> NativeRecord:
-    return _feeds.feed_record(_FEED_CONFIG, operation, position, item)
-
-
-def _feed_answered(
-    operation: str,
-    response: transport.TransportResponse,
-    records: Tuple[NativeRecord, ...] = (),
-    outcome: str = "ok",
-    cursor_out: str = "",
-    warnings: Tuple[str, ...] = (),
-    loss: Tuple[str, ...] = (),
-) -> NativePage:
-    return _feeds.feed_answered(
-        _FEED_CONFIG, operation, response, records, outcome, cursor_out, warnings, loss
-    )
-
-
-def next_bing_offset(cursor: str, listed: int) -> str:
-    return _feeds.next_bing_offset(cursor, listed, BING_DESCRIPTOR.page_size)
-
-
-def _feed_page_from(
-    operation: str, response: transport.TransportResponse, cursor: str
-) -> NativePage:
-    return _feeds.feed_page_from(
-        _FEED_CONFIG,
-        operation,
-        response,
-        cursor,
-        lambda config, kind, position, item: _feed_record(kind, position, item),
-    )
-
-
-def _feed_params(operation: str, query: str, request: AdapterRequest):
-    return _feeds.feed_params(_FEED_CONFIG, operation, query, request)
-
-
 def operation_for(request: AdapterRequest) -> Tuple[str, str]:
     """The operation this call performs, and the query it performs it on.
 
@@ -479,12 +736,12 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         )
 
     def parse(response: transport.TransportResponse) -> NativePage:
-        return _feed_page_from(operation, response, request.cursor)
+        return feed_page_from(operation, response, request.cursor)
 
     return fetch_one_page(
         SURFACE_OF[operation],
         carrier,
-        params=_feed_params(operation, query, request),
+        params=feed_params(operation, query, request),
         parse=parse,
         native_order=NATIVE_ORDERS[operation],
     )

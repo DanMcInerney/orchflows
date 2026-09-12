@@ -1,6 +1,6 @@
 """K0 syndication: one generic RSS/Atom reader on one selected feed route.
 
-Measured 2026-08-10: ``feeds/videos.xml?channel_id=`` answered
+Measured: ``feeds/videos.xml?channel_id=`` answered
 200 with 39 KB in 0.35 s — the cheapest read in the roster, and the only
 RSS/Atom document the evidence records. That is the one route this adapter
 declares.
@@ -29,7 +29,7 @@ unique inside its own feed and nowhere else, and nothing here can say which
 identity space it belongs to. So the id travels — it is the row's "identity" —
 and ``native_identity_namespace`` is left unstated, which is what makes
 ``normalize.strong_identity`` decline to fold two entries that happen to be
-named the same thing. That is ``wrong_merge_law``'s safe direction: standing
+named the same thing. That is the grouping law's safe direction: standing
 alone costs a caller a duplicate, and folding costs it a fact.
 
 The parser is :mod:`html.parser` rather than an XML reader, for the reason
@@ -69,7 +69,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="",
     representation_kind="feed",
     operator_identity="youtube",
-    # The 2026-08-10 probes: 0.35 s per request. Nothing on this route was measured
+    # The probes: 0.35 s per request. Nothing on this route was measured
     # refusing, so `burst` and `cooldown_ms` keep the protocol's conservative
     # defaults rather than a ceiling nobody observed.
     min_interval_ms=350,

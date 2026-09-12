@@ -169,8 +169,6 @@ class FeedPageRouteConstantTest(unittest.TestCase):
                     )
 
     def test_all_four_are_documented_keyless_and_need_no_credential_of_any_kind(self):
-        admissions = transport.route_admissions()
-
         for route_id in sorted(self._routes()):
             with self.subTest(route=route_id):
                 route = transport.route_constant(route_id)
@@ -179,7 +177,6 @@ class FeedPageRouteConstantTest(unittest.TestCase):
                 self.assertEqual(route.credential_id, "")
                 self.assertIsNone(transport.route_credential(route_id))
                 self.assertEqual(route.token_route_id, "")
-                self.assertTrue(admissions[route_id])
 
     def test_every_one_of_them_names_the_party_that_answers_it(self):
         for route_id in sorted(self._routes()):
@@ -223,6 +220,6 @@ class FeedPageRouteConstantTest(unittest.TestCase):
 
                     with helpers.forbid_io():
                         with self.assertRaises(transport.TransportError) as caught:
-                            transport.urlopen_response(request)
+                            transport.urlopen_read(request)
 
                     self.assertIn("write-capable method", str(caught.exception))

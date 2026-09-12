@@ -128,7 +128,6 @@ def linkedin_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-li-pair",
-        mode="staged",
         as_of="2026-08-10T09:00:00Z",
         steps=(
             schema.AcquisitionStep(

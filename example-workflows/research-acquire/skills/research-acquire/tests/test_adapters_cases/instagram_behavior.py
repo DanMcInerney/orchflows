@@ -74,8 +74,8 @@ class InstagramAnswersWithNoProfileTest(unittest.TestCase):
 
         self.assertNotIn(instagram_public.AUTH_REQUIRED, page.loss)
         self.assertEqual(page.outcome, "ok")
-        self.assertTrue(
-            transport.route_admissions()[transport.INSTAGRAM_WEB_PROFILE_ROUTE]
+        self.assertEqual(
+            transport.route_constant(transport.INSTAGRAM_WEB_PROFILE_ROUTE).access_class, "K1"
         )
 
 

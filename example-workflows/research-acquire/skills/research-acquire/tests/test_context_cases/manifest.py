@@ -5,11 +5,10 @@ from .support import *  # noqa: F403
 class ManifestSchemaTest(unittest.TestCase):
     """The schema seam: a manifest is validated before anything is fetched."""
 
-    def test_staged_manifest_parses_into_ordered_discovery_and_hydration_steps(self):
+    def test_manifest_parses_into_ordered_discovery_and_hydration_steps(self):
         manifest = schema.parse_manifest(TRACER_MANIFEST)
 
         self.assertEqual(manifest.manifest_id, "tracer-k4-reddit")
-        self.assertEqual(manifest.mode, "staged")
         self.assertEqual(manifest.as_of, "2026-08-10T00:00:00Z")
         self.assertEqual([step.step_id for step in manifest.steps], ["s1-discover", "s2-hydrate"])
 
@@ -29,14 +28,6 @@ class ManifestSchemaTest(unittest.TestCase):
                 "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/"
             )
         )
-
-    def test_unknown_mode_is_refused(self):
-        payload = dict(TRACER_MANIFEST, mode="turbo")
-
-        with self.assertRaises(schema.ManifestError) as caught:
-            schema.parse_manifest(payload)
-
-        self.assertIn("turbo", str(caught.exception))
 
     def test_an_as_of_the_ordering_cannot_parse_is_refused_at_the_manifest(self):
         # `schema.py` says validation is total, and `as_of` was checked only for

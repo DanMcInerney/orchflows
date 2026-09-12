@@ -7,17 +7,14 @@ THREAT_FIXTURE_DIR = TEST_DIR / "fixtures" / "threats"
 # The ladder the retained threat oracles are remapped onto. `offline` is the
 # fixture adapter's class and is not on it: nothing about `fake` is a claim
 # about a route.
-KEYLESS_CLASSES = ("K0", "K1", "K2", "K3", "K4")
-CREDENTIALED_CLASS = "K5"
-EVERY_CLASS = KEYLESS_CLASSES + (CREDENTIALED_CLASS,)
-# The two classes where a credential exists at all. `K1`'s is vendor-published
-# and names no user; `K5`'s is the user's own and no first-release capability
-# may depend on it. Every credential-handling threat is quantified over both.
-CREDENTIAL_CLASSES = ("K1", CREDENTIALED_CLASS)
+EVERY_CLASS = ("K0", "K1", "K2", "K3", "K4")
+# The one class where a credential exists at all: `K1`'s is vendor-published
+# and names no user. No class takes the user's own.
+CREDENTIAL_CLASSES = ("K1",)
 NO_CLASS = ()
 
 # T01-T16, retained by reference from the superseded spec and remapped from
-# `A0`-`A5` to `K0`-`K5`. The remap is of *applicability* — which classes a
+# `A0`-`A5` to `K0`-`K4`. The remap is of *applicability* — which classes a
 # threat is about — and the rule is the one the old mapping used: a threat
 # applies to a class when that class has the machinery the threat is about.
 #
@@ -106,7 +103,6 @@ def route_grants():
     """
 
     return (
-        tuple(sorted(transport.route_admissions().items())),
         tuple(
             (route_id, transport.admitted_methods(route_id))
             for route_id in sorted(transport.ROUTE_CONSTANTS)
@@ -206,7 +202,6 @@ def injected_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-injected",
-        mode="staged",
         as_of=FROZEN_OBSERVED_AT,
         steps=(
             schema.AcquisitionStep(
@@ -287,61 +282,3 @@ def minting_sites():
     for path in sorted(PACKAGE_DIR.rglob("*.py")):
         sites_calling(ast.parse(path.read_text(encoding="utf-8")), (), path.name, found)
     return sorted(found)
-
-INTERNALS_PATH = ITEM_DIR / "references" / "internals.md"
-
-# The one table in `internals.md` that restates `THREAT_REMAP`, named by its
-# header row. Only this table is read; every other table in that file belongs
-# to someone else.
-THREAT_TABLE_HEADER = "| threat | applies to | form here |"
-
-
-def threat_table_rows():
-    """`internals.md`'s threat table, as `(threat, applies, form)` cells in document order.
-
-    Parsed rather than transcribed: the table a reader meets is the one the
-    assertions run against, so a row corrected in the document and left in
-    `THREAT_REMAP` — or the reverse — is a red test rather than two statements
-    nobody compared.
-    """
-
-    rows = []
-    inside = False
-    for line in INTERNALS_PATH.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if stripped == THREAT_TABLE_HEADER:
-            inside = True
-            continue
-        if not inside:
-            continue
-        if not stripped.startswith("|"):
-            break
-        cells = tuple(cell.strip() for cell in stripped.strip("|").split("|"))
-        if set(cells[0]) <= set("- "):
-            continue
-        rows.append(cells)
-    return tuple(rows)
-
-
-def documented_classes(cell):
-    """The access classes one `applies to` cell names, `K0`–`K5` read as a range.
-
-    The ladder the range is expanded over is `schema.ACCESS_CLASSES`, so the
-    shorthand means whatever the package says it means and not a second list.
-    """
-
-    named = tuple(piece for index, piece in enumerate(cell.split("`")) if index % 2 and piece)
-    if not named or "–" not in cell:
-        return named
-    ladder = list(schema.ACCESS_CLASSES)
-    return tuple(ladder[ladder.index(named[0]) : ladder.index(named[-1]) + 1])
-
-
-def comparable(prose):
-    """One form statement with the document's typography taken off, and nothing else.
-
-    Backticks and line breaks are how a cell is written, not what it claims.
-    Every word survives, so a clause dropped on either side stays a difference.
-    """
-
-    return " ".join(prose.replace("`", "").split())

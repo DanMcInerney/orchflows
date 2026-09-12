@@ -32,9 +32,8 @@ def acquire(adapter, query, body, *, status=200, kind="discovery", target=None, 
         step["query"] = query
     if window:
         step.update(window_start="2026-09-08T00:00:00Z", window_end="2026-09-10T00:00:00Z")
-    manifest = schema.parse_manifest(dict(schema_version=2, manifest_id="recent-routes", mode="staged",
-                                          as_of="2026-09-10T23:00:00Z", steps=[step]))
-    carrier = transport.Transport(opener=lambda request: (status, body, "text/html"),
+    manifest = schema.parse_manifest(dict(manifest_id="recent-routes", as_of="2026-09-10T23:00:00Z", steps=[step]))
+    carrier = transport.Transport(opener=lambda request: (status, body, "text/html", request.url, ()),
                                   now=lambda: "2026-09-10T12:00:00Z")
     return runner.run_acquisition(manifest, carrier=carrier), carrier
 
