@@ -1,38 +1,61 @@
 # orchflows-light
 
-Five core skills, plain-Markdown guidance and a portable home for Codex and Claude Code. Small workflows compose through two delegation primitives. The host runs the agents; orchflows adds no agent runtime, scheduler or workflow language. Python utilities handle setup and native history.
+Composable workflows for Codex and Claude Code: five skills, domain guidance and a portable home for your libraries. The host runs the agents.
 
-| Built-in | Does |
+## One concept, one owner
+
+Each instruction or mechanism has one home; other layers reference it.
+
+| Concept | Owner |
 | --- | --- |
-| [orch-work](skills/orch-work/SKILL.md) | A fresh child makes a result under chosen guidance. |
-| [orch-review](skills/orch-review/SKILL.md) | A fresh child who did not make it reviews without fixing. |
-| [orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) | Deliver requests with no more specific skill, using direct or delegated work and one final review. |
-| [orch-build-workflow](skills/orch-build-workflow/SKILL.md) | Author workflows or guidance, try them on representative work, simplify from observed use. |
-| [orch-self-improve](skills/orch-self-improve/SKILL.md) | Mine native history to fix the environment, a workflow or orchflows itself. |
+| Request: result, constraints, sources, dates | Your prompt |
+| Coordination: steps, delegation, review, repairs | Workflow skills (`SKILL.md`) |
+| Quality: domain preferences for making and reviewing | `guidance/` |
+| Shared knowledge: dependencies, context, handoff contracts | `references/` |
+| Mechanics: setup, history, acquisition, parsing | `scripts/`, with tests |
+| Package identity and skill discovery | Plugin manifests |
+| Agent execution and isolation | Codex or Claude Code |
+| Results and run evidence | Your project workspace |
 
-The first two are the primitives; the other three compose them. A useful dynamic run can later become a trial for `orch-build-workflow`.
+The outer workflow resolves dependencies and guidance once, then passes that context through its calls. Detailed contracts live in [architecture](docs/architecture.md).
 
-Optional libraries live under `example-workflows/` in the repository and install separately:
+## Five core skills
 
-| Library | Provides |
+| Skill | Purpose |
 | --- | --- |
-| `social-search` | Three skills: collect a source scope, rank evidence, compose both. |
-| `research-acquire` | Scripted public-source acquisition and transcript readers. |
-| `short-video` | Three skills: make a film, review its exports, compose both. |
+| [orch-work](skills/orch-work/SKILL.md) | One fresh agent makes a result. |
+| [orch-review](skills/orch-review/SKILL.md) | One independent agent reviews without fixing. |
+| [orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) | Coordinate a request and one final review. |
+| [orch-build-workflow](skills/orch-build-workflow/SKILL.md) | Create workflows or guidance; refine through trials. |
+| [orch-self-improve](skills/orch-self-improve/SKILL.md) | Use agent history to improve the environment or workflows. |
 
-These packages are examples and reusable dependencies; none enlarges the installed five-skill core.
+The first two are delegation primitives; the others compose them. Loading a skill applies instructions in the current agent; delegation creates a child.
 
-## Install
+## Layout
 
-Python 3.11+ (`python` on Windows), from a complete checkout:
-
-```sh
-python3 /path/to/orchflows-light/scripts/orchflows.py setup
+```text
+skills/             five core skills
+guidance/           domain preferences and dotted specializations
+docs/               agent-facing contracts and operations
+scripts/ + tests/   core CLI and checks
+example-workflows/  separately installed libraries
 ```
 
-This creates `~/.orchflows` with a managed core, Python environment and host catalogs. It initializes Git without committing and sets host concurrency to 15 (`--concurrency N`, `--skip-host-config`). Add `--example social-search`, `--example research-acquire` or `--example short-video` to seed an editable library once. See [home](docs/home.md) for paths, updates and migration of existing libraries.
+Optional libraries: `social-search` collects and ranks evidence; `research-acquire` provides public-source readers; `short-video` makes and reviews films.
 
-Register the home with your host, then start a new session:
+Your editable libraries live in `~/.orchflows/libraries/`; `personal` is the default for new workflows. Setup maintains the core under `~/.orchflows/.local/`. Task outputs stay in the project workspace.
+
+## Install and use
+
+From a checkout, with Python 3.11+:
+
+```sh
+python scripts/orchflows.py setup
+```
+
+Setup creates the home, Python environment and host catalogs, initializes Git without committing, and sets host concurrency to 15. Options: `--concurrency N`, `--skip-host-config`, or `--example NAME` to seed one library.
+
+Register and install with your host, then start a new session:
 
 ```sh
 codex plugin marketplace add ~/.orchflows
@@ -44,26 +67,6 @@ claude plugin marketplace add ~/.orchflows
 claude plugin install orchflows-light@orchflows-home --scope user
 ```
 
-Install each optional library by the same command with its package name. Hosts cache plugins: after editing a library, refresh it and start a new session.
+Invoke `$orchflows-light:orch-dynamic-workflow` in Codex or `/orchflows-light:orch-dynamic-workflow` in Claude Code. Name a more specific skill when it fits; put the result, constraints and output location in your prompt.
 
-## Use
-
-Invoke `$orchflows-light:orch-dynamic-workflow` in Codex or `/orchflows-light:orch-dynamic-workflow` in Claude Code, or name a specific workflow. Put the requested result, constraints and output location in the prompt. Social-search groups sources into collection assignments, then sends their evidence to one reviewer:
-
-```text
-social-search → search-site per assignment → orch-work → evidence
-             → rank-evidence → orch-review → ranked, cited assessment
-```
-
-Ask `orch-build-workflow` for a workflow, domain guidance or specialization. Custom workflows land in `~/.orchflows/libraries/personal/` unless you name another location.
-
-## Docs for agents
-
-[AGENTS.md](AGENTS.md) routes agents to these; Claude Code reads it through [CLAUDE.md](CLAUDE.md).
-
-- [Architecture](docs/architecture.md): design contracts, composition, where anything belongs.
-- [Home](docs/home.md): the home tree and CLI.
-- [Hosts](docs/hosts.md): register, refresh, isolation, host-specific settings.
-- [History](docs/history.md): read transcripts as evidence.
-- [Authoring guidance](guidance/orchflows.md): preferences for reusable workflows, guidance and libraries.
-- [Domain guidance](guidance/): Code, Research, Writing, Visual design, Data analysis; `guidance/code.api.md` specializes Code.
+[AGENTS.md](AGENTS.md) routes agents to [architecture](docs/architecture.md), [setup and updates](docs/home.md), [host registration and refresh](docs/hosts.md), [history](docs/history.md) and [authoring guidance](guidance/orchflows.md).

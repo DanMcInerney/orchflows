@@ -12,45 +12,53 @@
     └── packages/orchflows-light/    managed core                      replaced by setup
 ```
 
-Setup owns what it generates and never touches what is yours. The installed core's `plugin.json` is its identity source; legacy home `config.toml` files are preserved and ignored. Selection: `--home PATH`, then `ORCHFLOWS_HOME`, then `~/.orchflows`; the current directory never selects it. Interpreter: `.local/runtime/Scripts/python.exe` on Windows, `.local/runtime/bin/python` elsewhere. CLI: `.local/packages/orchflows-light/scripts/orchflows.py`, Python 3.11+ with no packages; `--help` lists flags. One JSON line on stdout; errors exit 2, command errors as JSON on stderr; `setup` and `doctor` exit 1 when `issues` is non-empty.
+Home selection: `--home PATH` → `ORCHFLOWS_HOME` → `~/.orchflows`; never the current directory. Legacy home `config.toml` is preserved and ignored. Package contracts: [architecture.md](architecture.md).
+
+CLI: `python <core>/scripts/orchflows.py COMMAND`, using any Python 3.11+; no dependencies. `<core>` is a checkout or `<home>/.local/packages/orchflows-light`. The home interpreter is `.local/runtime/Scripts/python.exe` on Windows, `.local/runtime/bin/python` elsewhere.
+
+Commands return one JSON line on stdout. Exit 0: success; 1: `setup`/`doctor` has `issues`; 2: command error (JSON on stderr) or argument error. Use `COMMAND --help` for flags.
 
 ## setup
 
-`python <checkout>/scripts/orchflows.py setup [--example NAME] [--source PKG] [--concurrency N | --skip-host-config]`
+`setup [--home PATH] [--source CORE] [--example NAME] [--concurrency N | --skip-host-config]`
 
-- Creates the tree above, the venv and both `orchflows-home` catalogs, and runs `git init` when Git exists. Never commits.
-- `--example NAME` copies `<source>/example-workflows/NAME` to `libraries/NAME/` once; an existing library is preserved. An installed core has no examples; supply a checkout.
-- Rerun from any core to update: the managed core is staged and swapped in; the catalogs are regenerated. Running from the installed core itself reuses it. If the swap fails, setup restores the previous copy. If restoration also fails, the error names the retained backup; later setup preserves it for recovery.
-- Writes 15 to both hosts' user concurrency settings ([hosts.md](hosts.md)). Both files are validated before the home is touched; a file that cannot be edited safely aborts setup with exit 2, the file untouched: fix it or pass `--skip-host-config`. A changed file gets a sibling `<file>.orchflows-<id>.bak`; a write failure is `host_config_status: partial`. New sessions read the value; project or managed settings may override it.
-- The home lock covers the whole setup, including examples, runtime, catalogs and host updates, even when the installed core is reused. A leftover `.local/packages/.setup.lock` or `<file>.orchflows.lock` means an installer may be running; delete only after checking.
+- Creates the tree, dependency-free venv and both `orchflows-home` catalogs; runs `git init` if available, never commits. Existing seeded files and runtime contents are preserved; an incomplete runtime is an issue.
+- Source defaults to the executing CLI's core. `--example NAME` copies `<source>/example-workflows/NAME` into `libraries/NAME/` once, preserving an existing destination. Installed cores omit examples; supply a checkout.
+- Rerun to update the managed core and regenerate catalogs. The core is staged and swapped; running from the installed core reuses it. A failed swap restores the previous copy. If restoration fails, the error names the retained backup; later setup preserves it.
+- Sets both hosts' user concurrency to 15, or `--concurrency N`; [hosts.md](hosts.md) owns the keys and scope. Both files are validated before home changes. Unsafe edits abort with exit 2 and leave the files untouched; fix them or pass `--skip-host-config`. Changed files get `<file>.orchflows-<id>.bak`; write failures return `host_config_status: partial`.
+- `.local/packages/.setup.lock` covers all setup writes, including host updates and core reuse. Host files use `<file>.orchflows.lock`. Remove a leftover lock only after checking for an active installer.
 
 Result: `status`, `home`, `files`, `runtime_python`, `core` (`status`, `package_root`, `name`, `version`), `runtime`, `example`, `git`, `host_configs`, `host_config_status`, `issues`.
 
-### Upgrading from standards to guidance
+### Standards migration
 
-Before replacing an installed core that has `standards/`, setup checks installed libraries' Markdown instructions and references for the six removed core resources. It stops before changing the home and reports each file, line and replacement. Update those libraries deliberately, then rerun setup:
+When the installed core has `standards/`, setup blocks replacement until libraries stop referencing the six removed core resources. Errors report file, line and replacement; update the libraries, then rerun:
 
 - `standards/code/api.md` → `guidance/code.api.md`.
 - `standards/code.md`, `data-analysis.md`, `research.md`, `visual-design.md`, `writing.md` → the same filenames under `guidance/`.
 
-Libraries with only a native host manifest must add a root `plugin.json` carrying their name and version; this preflight reports them too. Move any custom entries from the old home catalogs to a separate user-owned marketplace before setup regenerates the home catalogs from installed libraries.
+This preflight also reports libraries with only native host manifests: add root `plugin.json` with name and version. Move custom catalog entries to a separate user-owned marketplace before setup regenerates the home catalogs.
 
-The resource check reads root Markdown plus `skills/`, `references/`, `standards/`, `guidance/` and `docs/`, excluding trials, outputs, artifacts, logs, tests and scripts. Existing library-local standards and references qualified with another package retain their meaning. Setup neither rewrites user libraries nor creates compatibility aliases; update a library's own guidance convention separately when needed.
+Scanned: root Markdown and `skills/`, `references/`, `standards/`, `guidance/`, `docs/`. Excluded: trials, outputs, artifacts, logs, tests, scripts. Existing library-local standards and other-package references retain their meaning. Setup does not rewrite libraries or create aliases.
 
 ## doctor
 
-Read-only: the managed core's manifest and required files, runtime files, each library's `plugin.json` and `skills/`, the seeded files, and both catalogs against the installed libraries.
+`doctor [--home PATH]`
+
+Read-only checks: core manifest and required files, runtime files, library manifests and `skills/`, seeded files, catalogs against installed libraries. Returns `checks`, `issues` and `status: ready|incomplete`.
 
 ## resolve
 
-`resolve <library> [--skill NAME | --resource RELATIVE/PATH]`
+`resolve <library> [--home PATH] [--skill NAME | --resource RELATIVE/PATH]`
 
-Returns `name`, `version`, `package_root`, `skill_path` or `resource_path`, and an unverified `runtime_python`. `orchflows-light` is the managed core, holding `guidance/*.md` and `docs/*.md`; any other name matches a library's `plugin.json` under `libraries/`. Escaping or absolute resources and duplicate names are rejected. Any Python 3.11+ can run it; it launches nothing. No home or runtime: continue with native skills if present and report the gap; without native delegation the workflow is blocked.
+Returns `name`, `version`, `package_root`, optional `skill_path`/`resource_path`, and unverified `runtime_python`; launches nothing. `orchflows-light` selects the managed core; other names match root `plugin.json` under `libraries/`. Rejects duplicate names and absolute or escaping resources.
+
+No home or runtime: use available native skills and report the gap. No native delegation: block the workflow.
 
 ## Libraries
 
-`libraries/<name>/` with `plugin.json` carrying `name` and `version`, and `skills/<skill>/SKILL.md`. Names are unique across the home and never `orchflows-light`. Edit here, never in `.local/packages/`. Register with the host after setup: [hosts.md](hosts.md).
+Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique across the home and cannot be `orchflows-light`. After adding a library, rerun setup to regenerate catalogs, then [register/install](hosts.md).
 
 ## Another computer
 
-`.local/`, `artifacts/` and caches are ignored; the rest is tracked. After cloning: run the intended core's `setup --home <clone>` (or `--source <bundle>`), reinstall library dependencies, register and install ([hosts.md](hosts.md)). Setup downloads nothing.
+After cloning the home, run the intended core's `setup --home <clone>`, reinstall library dependencies, then [register/install](hosts.md). Setup downloads nothing; `.local/`, `artifacts/` and Python caches are ignored by the seeded `.gitignore`.

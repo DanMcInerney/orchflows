@@ -1,6 +1,6 @@
 # Direct source inspection
 
-Resolve `research-acquire --resource skills/research-acquire/scripts/inspect_source.py` through the home CLI and run it with a Python that can import `yt_dlp`; see [dependencies](../../../README.md):
+Run [inspect_source.py](../scripts/inspect_source.py) with the caller's Python that can import `yt_dlp`; see [dependencies](../../../README.md):
 
 ```text
 python <script> youtube-transcript --url <video URL or ID> --output <outside-package>/caption.json [--language en] [--timeout-seconds 45] [--max-chars 24000] [--window-start <instant> --window-end <instant> | --start-date <date> --end-date <date>]

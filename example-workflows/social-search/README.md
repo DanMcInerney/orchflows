@@ -1,6 +1,6 @@
 # Social Search
 
-Optional library of three skills composing orchflows-light's two primitives.
+Research public sources in parallel, then independently rank the collected evidence.
 
 ```text
 social-search
@@ -10,12 +10,22 @@ social-search
   rank-evidence → orch-review → ranked, cited assessment
 ```
 
-An assignment covers a named site, web scope, feed set or related sources. Group overlapping work; give shared originals one owner. N assignments use N workers and one reviewer, with no fixed source roster or worker count. The prompt supplies question, dates, sources, bounds and output location; a total time limit includes final review.
+N collection assignments use N workers and one reviewer. Each assignment covers a site, web scope, feed set or related sources; shared originals have one owner. The prompt supplies question, dates, sources, bounds and output location. A total time limit includes review.
 
-`search-site` and `rank-evidence` also work alone, sharing an [evidence contract](references/evidence.md). [Research guidance](guidance/research.search-site.md) adds collection and assessment preferences; site specializations contain only source differences. [Library context](references/library-context.md) selects guidance and resolves dependencies once.
+## Structure
+
+| Owner | Responsibility |
+| --- | --- |
+| `skills/` | Composition, collection and assessment; either leaf also works alone |
+| [Library context](references/library-context.md) | Shared dependencies, guidance selection and paths |
+| [Evidence contract](references/evidence.md) | Collector-to-reviewer handoff |
+| [Research guidance](guidance/research.search-site.md) | Collection and assessment criteria; site specializations add differences |
+| `trials/` | Requests and expected behavior for [sites](trials/request.md), [web/feeds/Lemmy](trials/web-feeds-lemmy/request.md) and [papers/discussion](trials/papers-and-discussion/request.md) |
 
 ## Install
 
-`scripts/orchflows.py setup --example social-search` (Python 3.11+) seeds `~/.orchflows/libraries/social-search` once; register the package with the host. Requires orchflows-light 0.6.0 or later and native child delegation. Native public search and HTTP tools support collection; `setup --example research-acquire` adds optional public acquisition and a YouTube transcript reader. Its usage references own the supported routes; generic feeds require research-acquire 0.4.0 or later. Setup preserves existing libraries; update old copies deliberately.
+From a complete orchflows-light checkout, run `python scripts/orchflows.py setup --example social-search` (Python 3.11+). Setup preserves existing libraries. Core `docs/hosts.md` covers host registration and refresh. Invoke `social-search:<skill>`.
 
-Identities are `social-search:<skill>`. Trials: [site collection](trials/request.md), [web, feeds and Lemmy](trials/web-feeds-lemmy/request.md), and [papers, blogs and discussion](trials/papers-and-discussion/request.md), each with separate expected behavior. Origin: adapted from [orchflows recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under the retained [MIT license](LICENSE).
+Requires orchflows-light 0.6.0+, native child delegation and public search/read tools. Optional `setup --example research-acquire` adds acquisition and a YouTube transcript reader; that package owns its dependencies and routes. Its generic feed support requires version 0.4.0+.
+
+Adapted from [orchflows recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under the retained [MIT license](LICENSE).
