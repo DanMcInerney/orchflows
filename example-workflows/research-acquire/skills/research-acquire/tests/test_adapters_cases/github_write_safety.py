@@ -99,13 +99,6 @@ def assert_no_write_verb_is_reachable(case, adapter_id, module):
                     route.method, detail
                 )
             )
-        if transport.admitted_methods(route_id) != transport.READ_METHODS:
-            case.fail(
-                "a route this adapter reads admits a verb that is not a read:" + detail
-            )
-        if route.body_params:
-            case.fail("a route this adapter reads carries a request body:" + detail)
-
         carrier, opener = any_route_transport(read_github("repo.json"))
         module.fetch_native_page(
             carrier, gh_request(target_id=operation + ":" + GITHUB_TARGET)
@@ -222,7 +215,7 @@ class GithubWriteVerbOracleCanFailTest(unittest.TestCase):
         # second line of defence rather than the first.
         with helpers.forbid_io():
             with self.assertRaises(transport.TransportError):
-                transport.urlopen_response(opener.opened[0])
+                transport.urlopen_read(opener.opened[0])
 
     def test_nothing_in_the_package_can_reach_either_wrong_adapter(self):
         named = sorted(

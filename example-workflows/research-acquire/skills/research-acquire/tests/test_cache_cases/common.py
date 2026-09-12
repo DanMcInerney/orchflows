@@ -27,7 +27,6 @@ import contextlib
 import importlib.util
 import io
 import os
-import re
 import socket
 import time
 import unittest
@@ -36,38 +35,36 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
+from tests import helpers
 from super_research import cache, runner, schema, transport
 
 
 TESTS_DIR = Path(__file__).resolve().parent.parent
 PACKAGE_DIR = TESTS_DIR.parent / "scripts" / "super_research"
 CACHE_SOURCE = PACKAGE_DIR / "cache.py"
-INTERNALS_SOURCE = TESTS_DIR.parent / "references" / "internals.md"
 FIXTURE_DIR = TESTS_DIR / "fixtures" / "cache"
 # T01's tracer fixtures, read rather than copied: the strongest repeat-read
 # claim is over the run's own end-to-end path, on the run's own data.
 TRACER_FIXTURE_DIR = TESTS_DIR / "fixtures" / "tracer"
 
-DDG_ROUTE = transport.route_constant(transport.DDG_HTML_ROUTE)
+FIXTURE_ROUTE = transport.route_constant(transport.FAKE_OFFLINE_ROUTE)
 ARCHIVE_ROUTE = transport.route_constant(transport.ARCTIC_SHIFT_POSTS_ROUTE)
-DDG_URL = DDG_ROUTE.origin + DDG_ROUTE.path
-REPEAT_ROUTES = (transport.DDG_HTML_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE)
+FIXTURE_URL = FIXTURE_ROUTE.origin + FIXTURE_ROUTE.path
+REPEAT_ROUTES = (transport.FAKE_OFFLINE_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE)
 REDDIT_THREAD_LOCATOR = (
     "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/"
     "what_is_the_best_local_model_right_now/"
 )
 
 REPEAT_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "cache-repeat-read",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [
         {
             "step_id": "s1-discover",
             "kind": "discovery",
-            "adapter_id": "web_search",
-            "query": "site:reddit.com best local model",
+            "adapter_id": "fake",
+            "query": "fixture:local-model-index",
             "max_items": 6,
         },
         {
@@ -104,10 +101,10 @@ def tracer_responses():
     """One canned origin answer per route the repeat manifest reads."""
 
     return {
-        transport.DDG_HTML_ROUTE: (
+        transport.FAKE_OFFLINE_ROUTE: (
             200,
-            TRACER_FIXTURE_DIR.joinpath("ddg_html_results.html").read_text(encoding="utf-8"),
-            "text/html",
+            TRACER_FIXTURE_DIR.joinpath("index_results.json").read_text(encoding="utf-8"),
+            "application/json",
         ),
         transport.ARCTIC_SHIFT_POSTS_ROUTE: (
             200,
@@ -159,7 +156,7 @@ class RecordingOpener:
         outcome = self.responses[request.route_id]
         if isinstance(outcome, Exception):
             raise outcome
-        return outcome
+        return helpers.answered(request, outcome)
 
 
 def offline_transport(clock, responses=None):
@@ -249,90 +246,6 @@ def called_names(path):
     }
 
 
-# A byte count as this package's own prose writes one, and what it means. The
-# package spells a measured body in KB and MB and the cap in KiB, and means
-# binary multiples throughout — `MEASURED_INSTAGRAM_BYTES` in `test_adapters`
-# is `455 * 1024` for the "455 KB" the 2026-08-10 probes record.
-SIZE_UNIT_BYTES = {"KB": 1024, "KiB": 1024, "MB": 1024 * 1024, "MiB": 1024 * 1024}
-STATED_SIZE = re.compile(r"(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB)\b")
-STATED_HEADROOM = re.compile(r"(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB) of headroom")
-STATED_PRODUCT = re.compile(r"product,\s*(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB)")
-STATED_ENTRIES = re.compile(r"MAX_ENTRIES=(\d+)")
-STATED_ENTRY_BYTES = re.compile(r"MAX_ENTRY_BYTES=(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB)")
-# How a comment can place a body against the entry cap. A comment claiming
-# neither is reasoning about something else and is left alone.
-OVER_THE_CAP = ("exceed", "past", "too large")
-UNDER_THE_CAP = ("is inside", "fits")
-
-
-def as_bytes(amount, unit):
-    """One stated size in bytes."""
-
-    return int(round(float(amount) * SIZE_UNIT_BYTES[unit]))
-
-
-def stated_sizes(text):
-    """Every byte count this prose states, in bytes, in the order stated."""
-
-    return [as_bytes(amount, unit) for amount, unit in STATED_SIZE.findall(text)]
-
-
-def comment_blocks(lines):
-    """Each contiguous run of ``#`` lines, joined into one string."""
-
-    blocks = []
-    current = []
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith("#"):
-            current.append(stripped.lstrip("#").strip())
-        elif current:
-            blocks.append(" ".join(current))
-            current = []
-    if current:
-        blocks.append(" ".join(current))
-    return blocks
-
-
-def route_table_comments():
-    """The per-route comments inside ``ROUTE_TTL_SECONDS``, one string each.
-
-    Read off the source rather than restated here, because the thing under
-    test is what the comment actually says.
-    """
-
-    lines = CACHE_SOURCE.read_text(encoding="utf-8").splitlines()
-    start = next(
-        index for index, line in enumerate(lines) if line.startswith("ROUTE_TTL_SECONDS")
-    )
-    end = next(index for index, line in enumerate(lines) if index > start and line == "}")
-    return comment_blocks(lines[start + 1 : end])
-
-
-def footprint_comment():
-    """The comment block declaring the footprint law, above the constants."""
-
-    lines = CACHE_SOURCE.read_text(encoding="utf-8").splitlines()
-    end = next(
-        index for index, line in enumerate(lines) if line.startswith("MAX_ENTRY_BYTES")
-    )
-    start = end
-    while start > 0 and lines[start - 1].strip().startswith("#"):
-        start -= 1
-    return " ".join(comment_blocks(lines[start:end]))
-
-
-def document_footprint_paragraphs():
-    """Every paragraph in ``internals.md`` that states the footprint law."""
-
-    text = INTERNALS_SOURCE.read_text(encoding="utf-8")
-    return [
-        " ".join(block.split())
-        for block in text.split("\n\n")
-        if "MAX_ENTRIES=" in block
-    ]
-
-
 @contextlib.contextmanager
 def forbid_sleep():
     """Make any wall-clock sleep raise: TTL is proven by moving a fake clock."""
@@ -407,11 +320,11 @@ def assert_repeat_read_is_served_unrestamped(run_cache, clock):
         raise AssertionError("the clock never moved, so the restamp clause proves nothing")
 
 
-def ddg_request(url=DDG_URL + "?q=local+model&s=30", method="GET", headers=None):
+def fixture_request(url=FIXTURE_URL + "?q=local+model&s=30", method="GET", headers=None):
     """One request on the discovery route, spelled exactly as the caller asks."""
 
     return transport.TransportRequest(
-        route_id=transport.DDG_HTML_ROUTE,
+        route_id=transport.FAKE_OFFLINE_ROUTE,
         method=method,
         url=url,
         headers=(("User-Agent", "probe"), ("Accept", "text/html"))

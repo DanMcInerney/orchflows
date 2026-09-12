@@ -1,20 +1,17 @@
-"""Reddit Shreddit's window-carrying: R.02's half of Goal clause 2.
+"""Reddit Shreddit's window-carrying.
 
-`reddit_shreddit`'s `listing` and `search` operations already declare `True`
-in `_support.window_reach.WINDOW_REACH` (R.01); this file proves the origin
-side actually gets asked. `_fetch_listing`/`_fetch_search`
-(`adapters/reddit_shreddit.py`) now derive the origin's own `t=` bucket from
-a windowed step's `window_start`/`window_end`
-(`_support/reddit_shreddit_contract.origin_time_bucket`) instead of only from
-the caller's target string, so a windowed discovery step spends its cap
-in-window at the origin rather than trimming it after the fact, client-side.
-`_fetch_comments` stays unsent, per Details.
+`reddit_shreddit`'s `listing` and `search` operations declare `True` in
+`runner.WINDOW_REACH`; this file proves the origin side actually gets asked.
+`_fetch_listing`/`_fetch_search` derive the origin's own `t=` bucket from a
+windowed step's `window_start`/`window_end` (`origin_time_bucket`) instead of
+only from the caller's target string, so a windowed discovery step spends its
+cap in-window at the origin rather than trimming it after the fact.
+`_fetch_comments` sends none.
 
 Reddit's `t=` is a span measured back from *now*, never from an explicit
 endpoint, so `origin_time_bucket` reads the real wall clock
-(`transport.utc_now_iso`) exactly as its exemplar,
-`_support/web_search_feeds.google_when_days`, already does when its own
-`window_end` is absent. The pure-function tests below build `window_start`
+(`transport.utc_now_iso`) when
+its own `window_end` is absent. The pure-function tests below build `window_start`
 from the same wall clock at call time and land each case a full bucket away
 from its nearest boundary (30 minutes inside "hour", not 55; 10 days inside
 "month", not 29), so test execution time can never cross one.
@@ -32,7 +29,7 @@ from pathlib import Path
 
 from super_research import runner, schema, transport
 from super_research.adapters import AdapterRequest, reddit_shreddit
-from super_research.adapters._support.reddit_shreddit_contract import origin_time_bucket
+from super_research.adapters.reddit_shreddit import origin_time_bucket
 from tests import helpers
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "reddit_shreddit"
@@ -160,7 +157,6 @@ class WindowedStepReachesTheOriginTest(unittest.TestCase):
             adapter_id="reddit_shreddit",
             query="listing:programming",
             max_items=50,
-            max_pages=1,
             window_start=iso(2 * 86400),
         )
 

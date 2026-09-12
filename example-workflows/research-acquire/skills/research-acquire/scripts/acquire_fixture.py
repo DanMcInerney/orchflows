@@ -1,4 +1,4 @@
-"""Executable offline admission: real archive/index/comment/page adapters, no socket.
+"""Executable offline admission: real archive/feed/comment/page adapters, no socket.
 
 The fixture's choices are authored semantic examples, never a production
 selection heuristic. Timings are measured locally with canned responses; no
@@ -21,14 +21,14 @@ def fixture_plan():
     return {
         "version": 1, "plan_id": "representative", "question": "Compare conditional community and publisher cases.",
         "as_of": "2026-09-10T23:59:59Z", "window": {"start": "2026-09-08T00:00:00Z", "end": "2026-09-10T00:00:00Z"},
-        "allowed_adapters": ["reddit_archive", "reddit_shreddit", "web_search", "open_page"],
+        "allowed_adapters": ["reddit_archive", "reddit_shreddit", "rss_atom", "open_page"],
         "limits": {"max_steps": 4, "max_requests": 4, "max_records": 12, "max_seconds": 30},
         "discovery": [
             {"step_id": "archive", "adapter_id": "reddit_archive", "query": "search:subreddit=BitcoinMarkets", "max_items": 4},
-            {"step_id": "index", "adapter_id": "web_search", "query": "bing:conditional outlook", "max_items": 4}],
+            {"step_id": "feed", "adapter_id": "rss_atom", "query": "https://feeds.example.net/research.xml", "max_items": 4}],
         "depth": [
             {"depth_id": "comments", "adapter_id": "reddit_shreddit", "operation": "comments", "from_steps": ["archive"], "max_items": 2, "max_targets": 1},
-            {"depth_id": "pages", "adapter_id": "open_page", "operation": "", "from_steps": ["index"], "max_items": 2, "max_targets": 1}]
+            {"depth_id": "pages", "adapter_id": "open_page", "operation": "", "from_steps": ["feed"], "max_items": 2, "max_targets": 1}]
     }
 
 
@@ -41,9 +41,9 @@ def fixture_runtime(refuse=False):
     unrelated = dict(post, id="def", subreddit="CasualConversation", permalink="/r/CasualConversation/comments/def/daily/")
     old = dict(post, id="old", created_utc=stamp - 864000)
     archive = json.dumps({"data": [post, unrelated, old]})
-    index = '''<rss><channel><item><title>Conditional publisher case</title>
+    feed = '''<rss><channel><item><title>Conditional publisher case</title>
         <link>https://example.net/outlook</link><description>A publisher weighs opposing cases.</description>
-        <pubDate>Wed, 09 Sep 2026 12:00:00 GMT</pubDate></item></channel></rss>'''
+        <pubDate>Wed, 09 Sep 2026 12:00:00 GMT</pubDate><source url="https://example.net">Example</source></item></channel></rss>'''
     comments = '''<shreddit-comment-tree-stats total-comments="5" sort="TOP"></shreddit-comment-tree-stats>
         <shreddit-comment thingid="t1_comment" postid="t3_abc" author="reader" score="2" depth="0"
         created="2026-09-09T13:00:00+0000" permalink="/r/BitcoinMarkets/comments/abc/comment/comment/">
@@ -55,13 +55,15 @@ def fixture_runtime(refuse=False):
     def opener(request):
         opened.append(request)
         if request.route_id == transport.ARCTIC_SHIFT_SEARCH_ROUTE:
-            return 200, archive, "application/json"
-        if request.route_id == "bing_rss":
-            return 200, index, "application/rss+xml"
+            return 200, archive, "application/json", request.url, ()
+        if request.route_id == transport.WEB_PAGE_OPEN_ROUTE and request.url == "https://feeds.example.net/research.xml":
+            return 200, feed, "application/rss+xml", request.url, ()
         if request.route_id == "reddit_shreddit_comments":
-            return (403, "Forbidden", "text/html") if refuse else (200, comments, "text/html")
+            if refuse:
+                return 403, "Forbidden", "text/html", request.url, ()
+            return 200, comments, "text/html", request.url, ()
         if request.route_id == transport.WEB_PAGE_OPEN_ROUTE:
-            return 200, article, "text/html"
+            return 200, article, "text/html", request.url, ()
         raise AssertionError("fixture has no route: " + request.route_id)
 
     # No repeated origin in this fixture, so pacing needs no fake wait.
@@ -71,7 +73,7 @@ def fixture_runtime(refuse=False):
 def choose(output):
     batch = read_json(Path(output) / "candidates.json")
     daily = next(row for row in batch["candidates"] if row["community"] == "BitcoinMarkets")
-    publisher = next(row for row in batch["candidates"] if row["adapter_id"] == "web_search")
+    publisher = next(row for row in batch["candidates"] if row["adapter_id"] == "rss_atom")
     return {"candidate_id": batch["candidate_id"], "choices": [
         {"record_id": daily["record_id"], "depth_id": "comments",
          "reason": "The named market community makes this daily thread worth inspecting; no comment relevance is assumed."},

@@ -2,6 +2,7 @@
 
 from .common import *
 from .route_ownership import adapter_sources, sources_naming
+from super_research import dispatch
 
 class ChannelVerdictTest(unittest.TestCase):
     """Completion criteria 1 and 2: the detector types both halves of the caveat."""
@@ -56,10 +57,10 @@ class FetchedChannelVerdictTest(unittest.TestCase):
 
     def _fetched(self, body_fixture, status):
         carrier, opener = offline_transport(
-            {transport.DDG_HTML_ROUTE: (status, read_fixture(body_fixture), "text/html")}
+            {transport.WEB_PAGE_OPEN_ROUTE: (status, read_fixture(body_fixture), "text/html")}
         )
         response = carrier.fetch(
-            transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "probe"})
+            transport.build_transport_request(transport.WEB_PAGE_OPEN_ROUTE, {"url": "https://8.8.8.8/feed.xml"})
         )
         return response, opener
 
@@ -93,9 +94,8 @@ class FetchedChannelVerdictTest(unittest.TestCase):
 def adapter_page(module, status, body, content_type="text/html"):
     """Run one adapter over one canned response; return its page and the opener."""
 
-    carrier, opener = offline_transport(
-        {module.DESCRIPTOR.route_id: (status, body, content_type)}
-    )
+    route_id = transport.WEB_PAGE_OPEN_ROUTE if module is rss_atom else module.DESCRIPTOR.route_id
+    carrier, opener = offline_transport({route_id: (status, body, content_type)})
     return module.fetch_native_page(carrier, PROBE_REQUEST), opener
 
 
@@ -173,7 +173,7 @@ class InterceptionReachesThePageTest(unittest.TestCase):
                 self.assertEqual(page.loss, (transport.NETWORK_INTERCEPTED,))
                 self.assertEqual(page.outcome, "failed")
                 self.assertEqual(page.records, ())
-                self.assertEqual(page.route_id, module.DESCRIPTOR.route_id)
+                self.assertEqual(page.route_id, opener.opened[0].route_id)
                 self.assertEqual(len(opener.opened), 1)
 
     def test_an_adapter_that_writes_no_interception_branch_still_types_the_block(self):
@@ -212,7 +212,7 @@ class OriginBehaviorSurvivesTest(unittest.TestCase):
     """
 
     def test_a_marker_less_503_stays_the_origins_own_http_failure(self):
-        for module in (web_search, reddit_archive):
+        for module in (rss_atom, reddit_archive):
             with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
                 page, opener = adapter_page(
                     module, 503, read_fixture("origin_service_unavailable.html")
@@ -225,7 +225,7 @@ class OriginBehaviorSurvivesTest(unittest.TestCase):
                 self.assertEqual(len(opener.opened), 1)
 
     def test_a_403_authwall_stays_the_platforms_own_refusal(self):
-        for module in (web_search, reddit_archive):
+        for module in (rss_atom, reddit_archive):
             with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
                 page, _ = adapter_page(module, 403, read_fixture("origin_authwall.html"))
 
@@ -243,7 +243,7 @@ class OriginBehaviorSurvivesTest(unittest.TestCase):
 
     def test_a_success_carrying_the_portal_marker_still_parses_into_records(self):
         page, _ = adapter_page(
-            web_search, 200, read_fixture("origin_results_with_portal_marker.html")
+            rss_atom, 200, read_fixture("origin_results_with_portal_marker.html")
         )
 
         self.assertEqual(page.outcome, "ok")
@@ -271,14 +271,13 @@ def intercepted_step_manifest():
 
     return schema.AcquisitionManifest(
         manifest_id="m-intercepted",
-        mode="staged",
         as_of=FROZEN_OBSERVED_AT,
         steps=(
             schema.AcquisitionStep(
                 step_id="s1-discover",
                 kind="discovery",
-                adapter_id="web_search",
-                query="probe",
+                adapter_id="rss_atom",
+                query="https://8.8.8.8/feed.xml",
                 max_items=10,
             ),
         ),
@@ -308,7 +307,7 @@ class InterceptionReachesTheArtifactTest(unittest.TestCase):
 
     def test_a_blocked_run_is_recorded_as_a_local_block_end_to_end(self):
         carrier, _ = offline_transport(
-            {transport.DDG_HTML_ROUTE: (503, read_fixture("captive_portal.html"), "text/html")}
+            {transport.WEB_PAGE_OPEN_ROUTE: (503, read_fixture("captive_portal.html"), "text/html")}
         )
 
         artifact = runner.run_acquisition(intercepted_step_manifest(), carrier)
@@ -419,16 +418,16 @@ class InterceptionOracleCanFailTest(unittest.TestCase):
         )
 
     def test_a_status_first_adapter_fails_the_artifact_oracle_too(self):
-        # The same wrong adapter, stood in for `web_search` at the runner's
+        # The same wrong adapter, stood in for `rss_atom` at the runner's
         # own branch: the run completes and its artifact blames DuckDuckGo for
         # a page this network never let out. Restored on exit — the tree on
         # disk is never the thing mutated.
         wrong = load_adapter_fixture("status_first_adapter")
         carrier, _ = offline_transport(
-            {transport.DDG_HTML_ROUTE: (503, read_fixture("captive_portal.html"), "text/html")}
+            {transport.WEB_PAGE_OPEN_ROUTE: (503, read_fixture("captive_portal.html"), "text/html")}
         )
 
-        with mock.patch.object(runner, "web_search", wrong):
+        with mock.patch.dict(dispatch.ADAPTERS, {"rss_atom": (wrong, None)}):
             artifact = runner.run_acquisition(intercepted_step_manifest(), carrier)
 
         self.assertEqual(artifact.loss, ("http_status",))

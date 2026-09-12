@@ -1,6 +1,6 @@
 {
   "name": "research-acquire",
-  "version": "0.2.0+codex.20260911183235",
+  "version": "0.5.0",
   "description": "Optional bounded public-source acquisition with receipts and resume.",
   "author": {
     "name": "Dan McInerney"

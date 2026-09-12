@@ -171,7 +171,7 @@ class HackerNewsDescriptorTest(unittest.TestCase):
                 # `K3` carries `third_party_archive`; this is HN's own index of
                 # itself and HN's own item store, so neither surface does.
                 self.assertEqual(descriptor.standing_loss, ())
-                self.assertEqual(descriptor.volatile_identifiers, ())
+
 
     def test_nothing_was_measured_here_so_nothing_is_declared(self):
         # The 2026-08-10 probes record "no throttle observed" and no latency for
@@ -189,27 +189,6 @@ class HackerNewsDescriptorTest(unittest.TestCase):
                     ),
                 )
 
-    def test_each_surface_declares_the_comment_count_its_own_route_reports(self):
-        # The same quantity under two surfaces' own names: Firebase calls a
-        # story's comment count `descendants` and Algolia calls it
-        # `num_comments`. Declaring either under the other's name would be this
-        # package inventing a vocabulary; declaring neither would leave
-        # `most_commented` ranking on a number nobody reported.
-        by_route = {
-            descriptor.route_id: descriptor for descriptor in hacker_news.SURFACE_DESCRIPTORS
-        }
-
-        self.assertEqual(
-            by_route[transport.HN_FIREBASE_ITEM_ROUTE].comment_count_metric,
-            hacker_news.DESCENDANTS_METRIC,
-        )
-        self.assertEqual(
-            by_route[transport.HN_ALGOLIA_SEARCH_ROUTE].comment_count_metric,
-            hacker_news.NUM_COMMENTS_METRIC,
-        )
-        for descriptor in hacker_news.SURFACE_DESCRIPTORS:
-            with self.subTest(route=descriptor.route_id):
-                self.assertEqual(descriptor.reply_count_metric, "")
 
     def test_the_core_reaches_it_by_both_literal_branches_and_sees_both_surfaces(self):
         self.assertIn("hacker_news", runner.ADAPTER_IDS)

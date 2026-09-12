@@ -9,9 +9,9 @@ class NormalizeTest(unittest.TestCase):
         with self.assertRaises(normalize.NormalizeError):
             normalize.engagement_snapshots((("score", True),), FROZEN_OBSERVED_AT)
 
-    def test_engagement_refuses_a_negative_value(self):
+    def test_engagement_refuses_a_negative_comment_count(self):
         with self.assertRaises(normalize.NormalizeError):
-            normalize.engagement_snapshots((("score", -1),), FROZEN_OBSERVED_AT)
+            normalize.engagement_snapshots((("num_comments", -1),), FROZEN_OBSERVED_AT)
 
     def test_locator_normalization_is_stable_across_case_and_trailing_slash(self):
         self.assertEqual(

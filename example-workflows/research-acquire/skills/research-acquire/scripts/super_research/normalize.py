@@ -22,10 +22,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from . import schema
 from .adapters import NativePage
 
-# A third-party archive reports the platform's time; it is not the platform
-# speaking, so its times are `reported` rather than `authoritative`.
-REPORTED_ACCESS_CLASSES = ("K3",)
-
 # The lineage gap, typed. A hydration this run's own discovery does not account
 # for; the mirror of `target_not_hydrated`, which says the same thing about a
 # hit nobody hydrated. Both describe what one artifact holds, never a platform.
@@ -62,15 +58,20 @@ def content_hash(body: str) -> str:
 
 
 def engagement_snapshots(
-    pairs: Sequence[Tuple[str, Any]], observed_at: str
+    pairs: Sequence[Tuple[str, Any]], observed_at: str, *, platform: str = ""
 ) -> Tuple[schema.EngagementSnapshot, ...]:
-    """Admit only exact native integer metrics; a bool or a negative is invalid."""
+    """Admit exact integer counts and Reddit's signed native vote score.
+
+    The existing platform and metric name identify the exception: a Reddit
+    score can be negative; counts cannot. No missing value becomes zero.
+    """
 
     snapshots = []
     for metric_name, value in pairs:
         if isinstance(value, bool) or not isinstance(value, int):
             raise NormalizeError("engagement metric {0} is not an integer".format(metric_name))
-        if value < 0 or value > schema.MAX_ENGAGEMENT_VALUE:
+        minimum = -schema.MAX_ENGAGEMENT_VALUE - 1 if platform == "reddit" and metric_name == "score" else 0
+        if value < minimum or value > schema.MAX_ENGAGEMENT_VALUE:
             raise NormalizeError("engagement metric {0} is out of range".format(metric_name))
         snapshots.append(
             schema.EngagementSnapshot(
@@ -99,10 +100,26 @@ def named_attributes(
     return tuple((name, value) for name, value in pairs)
 
 
-def time_confidence_for(access_class: str, published_at: str) -> str:
+def published_at_basis_for(access_class: str, representation_kind: str) -> str:
+    """Qualify indirect timestamps without replacing the origin's value.
+
+    Archives and indexes report another source's time. Feed dates are
+    publisher assertions; none independently verifies target publication.
+    """
+
+    if representation_kind == "index" or access_class == "K4":
+        return "index_reported"
+    if access_class == "K3":
+        return "third_party_reported"
+    if representation_kind == "feed":
+        return "publisher_reported"
+    return ""
+
+
+def time_confidence_for(access_class: str, published_at: str, representation_kind: str = "") -> str:
     if not published_at:
         return "unknown"
-    if access_class in REPORTED_ACCESS_CLASSES:
+    if published_at_basis_for(access_class, representation_kind):
         return "reported"
     return "authoritative"
 
@@ -116,7 +133,7 @@ def group_scope_for(page: NativePage) -> str:
 def strong_identity(
     record: schema.AcquisitionRecord,
 ) -> Optional[Tuple[str, str, str]]:
-    """wrong_merge_law rule 1, verbatim: the exact three-field native identity.
+    """Strong identity: the exact three-field native identity.
 
     A record without all three components has no strong identity and falls to
     the weak key. An index hit has none: it names a locator, not an item.
@@ -133,7 +150,7 @@ def strong_identity(
 def weak_group_key(
     record: schema.AcquisitionRecord,
 ) -> Optional[Tuple[str, str, str, str, str]]:
-    """wrong_merge_law rule 3: the five-field key, only when every part is present.
+    """Weak identity: the five-field key, only when every part is present.
 
     An empty component means the key cannot distinguish this record from a
     different one, so the record stands alone rather than risking a merge.
@@ -183,25 +200,23 @@ def link_discovery_hydration(
     records: Sequence[schema.AcquisitionRecord],
     selected_records: Optional[Dict[str, str]] = None,
 ) -> Tuple[schema.ProvenanceEdge, ...]:
-    """wrong_merge_law rule 7: a hit and its hydrated target are linked, not merged.
+    """A hit and its hydrated target are linked, not merged.
 
     The tie is the locator the caller froze in the manifest, matched exactly
     against a discovery record's normalized locator. Nothing is inferred by
     similarity, and a selection matching no hit yields no edge rather than a
     guess.
 
-    A caller with exact selections can bind hydration step IDs to discovery
-    record IDs. Those observations must match the carried locators; callers
-    without that map retain the original first-observation-at-locator behavior.
+    A caller with exact selections binds hydration step IDs to discovery
+    record IDs, and those records must carry the frozen locators; without
+    that map the source is the first discovery record observed at the locator.
 
     A discovery record is any record no hydration produced — one carrying no
     ``discovery_locator`` — whatever surface it came from: an index hit, a
-    feed entry, a native search row. Until 2026-08-17 only an ``index`` record
-    could be an edge's source, so a fused manifest that discovered on a feed or
-    a native search and hydrated what it found formed no edge and then typed
-    every hydration `discovery_not_recorded` — a false alarm about the run's own
-    work that forced every discovery→hydration pair to be staged as two
-    dispatches. The rule is now the one the code comment always stated.
+    feed entry, a native search row. Were only an ``index`` record a source,
+    a manifest that discovered on a feed or a native search and hydrated what
+    it found would form no edge and type every hydration
+    `discovery_not_recorded` — a false alarm about the run's own work.
     """
 
     first_hit_at: Dict[str, str] = {}
@@ -242,8 +257,8 @@ def type_discovery_gaps(
     caller learns of the gap by counting edges, and a caller that does not count
     never learns of it at all. So the record that has the gap says so.
 
-    **Only a run that discovered may say it.** A ``staged`` hydration is its own
-    dispatch against a selection the caller froze from an artifact this one has
+    **Only a run that discovered may say it.** A hydration dispatched on its
+    own runs against a selection the caller froze from an artifact this one has
     never seen: it holds no discovery, so it established no lineage, so it
     missed nothing, and every record comes back untouched. Whether this run
     discovered is read off the records themselves — a record with no
@@ -285,6 +300,10 @@ def normalize_page(
     for offset, native in enumerate(page.records):
         list_index = list_index_start + offset
         published_at = native.published_at
+        basis = published_at_basis_for(page.access_class, page.representation_kind)
+        attributes = named_attributes(native.attributes)
+        if published_at and basis:
+            attributes += (("published_at_basis", basis),)
         records.append(
             schema.AcquisitionRecord(
                 record_id="{0}#{1}.{2}".format(step.step_id, page_index, list_index),
@@ -312,10 +331,10 @@ def normalize_page(
                 community=native.community,
                 published_at=published_at,
                 observed_at=page.observed_at,
-                time_confidence=time_confidence_for(page.access_class, published_at),
+                time_confidence=time_confidence_for(page.access_class, published_at, page.representation_kind),
                 usable_basis_time=published_at,
-                engagement=engagement_snapshots(native.engagement, page.observed_at),
-                attributes=named_attributes(native.attributes),
+                engagement=engagement_snapshots(native.engagement, page.observed_at, platform=page.platform),
+                attributes=attributes,
                 page_index=page_index,
                 list_index=list_index,
                 native_position=native.native_position,

@@ -40,7 +40,6 @@ class HostConfigTests(unittest.TestCase):
     def test_new_homes_and_repeat_have_no_backups_or_rewrites(self):
         first = self.apply()
         self.assertEqual(tomllib.loads(self.codex.read_text())["agents"], {"max_threads": 15})
-        self.assertEqual(tomllib.loads(self.codex.read_text())["agents"][host_config.CODEX_KEY], 15)
         self.assertEqual(json.loads(self.claude.read_text())["env"][host_config.CLAUDE_KEY], "15")
         for host in ("codex", "claude"):
             self.assertEqual(first[host]["status"], "created")
@@ -57,7 +56,7 @@ class HostConfigTests(unittest.TestCase):
         self.write(self.codex, codex)
         self.write(self.claude, claude)
         results = self.apply(21)
-        self.assertEqual(self.codex.read_bytes(), codex.replace("max_threads = 4", host_config.CODEX_KEY + " = 21").encode())
+        self.assertEqual(self.codex.read_bytes(), codex.replace("max_threads = 4", "max_threads = 21").encode())
         expected = json.loads(claude)
         expected["env"][host_config.CLAUDE_KEY] = "21"
         self.assertEqual(json.loads(self.claude.read_bytes()), expected)
@@ -75,44 +74,52 @@ class HostConfigTests(unittest.TestCase):
         self.assertEqual(results["claude"]["path"], str(self.root / ".claude/settings.json"))
         self.assertFalse((self.root / "library").exists())
 
-    def test_codex_layouts_preserve_unrelated_semantics_and_multiline_decoys(self):
-        examples = [
-            '# personal configuration\nmodel = "x"',
-            '[agents] # workers',
-            '["agents"]\n"max_concurrent_threads_per_session" = 4\nmax_depth = 2\n',
-            'agents.max_threads = 1_0 # legacy\nagents.max_depth = 2\n[tools]\nenabled = true\n',
-            'agents.max_depth = 2\n[tools]\nenabled = true\n',
-            '[agents.reviewer]\ndescription = "sample"\n',
-            'note = """\n[agents]\nmax_threads = 42\n"""\n[agents]\nmax_depth = 2\n',
-            '[agents]\nmax_threads = 4 # old alias\nmax_concurrent_threads_per_session = 4 # current key\n',
-        ]
-        for original in examples:
+    def test_plain_codex_layouts_are_edited_in_place(self):
+        for original in ('# personal configuration\nmodel = "x"', '[agents] # workers', '[agents.reviewer]\ndescription = "sample"\n',
+                         '[agents]\nmax_threads = 4\nmax_depth = 2\n[tools]\nenabled = true\n', '["agents"]\nmax_threads = 4\n',
+                         '[agents]\nmax_threads = true\n', '[agents]\nmax_threads = 15.0\n', '', '[agents] # workers\r\nmax_depth = 2\r\n', '[agents]\r\n'):
             with self.subTest(original=original):
                 expected = tomllib.loads(original)
-                expected.setdefault("agents", {}).pop("max_concurrent_threads_per_session", None)
-                expected["agents"][host_config.CODEX_KEY] = 15
+                expected.setdefault("agents", {})[host_config.CODEX_KEY] = 15
                 updated = host_config._codex(original, 15)
                 self.assertEqual(tomllib.loads(updated), expected)
+                self.assertIs(type(tomllib.loads(updated)["agents"][host_config.CODEX_KEY]), int)
+                self.assertNotIn("\r\r", updated)
                 self.assertEqual(host_config._codex(updated, 15), updated)
-                if 'note = """' in original:
-                    self.assertIn('note = """\n[agents]\nmax_threads = 42\n"""', updated)
+        self.assertEqual(tomllib.loads(host_config._codex('[agents]\nmax_threads = true\n', 1))["agents"], {"max_threads": 1})
 
-    def test_malformed_or_conflicting_files_fail_before_either_host_is_written(self):
+    def test_byte_order_marks_are_accepted(self):
+        self.codex.parent.mkdir(parents=True)
+        self.codex.write_bytes(b'\xef\xbb\xbfmodel = "x"\n')
+        self.claude.parent.mkdir(parents=True)
+        self.claude.write_bytes(b'\xef\xbb\xbf{"env":{}}\n')
+        results = self.apply(7)
+        self.assertEqual({host: value["status"] for host, value in results.items()}, {"codex": "updated", "claude": "updated"})
+        self.assertEqual(tomllib.loads(self.codex.read_text(encoding="utf-8"))["agents"]["max_threads"], 7)
+        self.assertEqual(json.loads(self.claude.read_text(encoding="utf-8"))["env"][host_config.CLAUDE_KEY], "7")
+
+    def test_equal_boolean_or_float_is_not_a_configured_integer_cap(self):
+        for value in ("true", "1.0"):
+            original = f"[other]\nmax_threads = 1\n[agents]\nmax_threads = {value}\n"
+            with self.subTest(value=value):
+                self.write(self.codex, original)
+                with self.assertRaisesRegex(ValueError, "preserved"):
+                    host_config.prepare_host_configs(1)
+                self.assertEqual(self.codex.read_bytes(), original.encode())
+                self.assertFalse(self.claude.exists())
+
+    def test_layouts_that_cannot_be_edited_safely_are_refused_unchanged(self):
+        for original in ('agents.max_threads = 1_0\nagents.max_depth = 2\n', 'agents.max_depth = 2\n[tools]\nenabled = true\n',
+                         'note = """\n[agents]\nmax_threads = 42\n"""\n[agents]\nmax_depth = 2\n',
+                         'agents = { max_threads = 4, max_depth = 2 }\n'):
+            with self.subTest(original=original), self.assertRaises(ValueError):
+                host_config._codex(original, 15)
+
+    def test_malformed_files_fail_before_either_host_is_written(self):
         cases = [
-            (self.codex, '[agents]\nmax_threads = 3\nmax_concurrent_threads_per_session = 4\n'),
-            (self.codex, '[agents]\nmax_threads = true\n'),
-            (self.codex, '[agents]\nmax_threads = 0\n'),
-            (self.codex, '[agents]\nmax_threads = 0x10\n'),
-            (self.codex, 'agents = "invalid"\n'),
-            (self.codex, '[agents]\nmax_threads = 4\nmax_threads = 5\n'),
-            (self.codex, 'model = [\n'),
-            (self.codex, 'agents = { max_threads = 4, max_depth = 2 }\n'),
-            (self.claude, ''), (self.claude, '  '), (self.claude, '{bad'),
-            (self.claude, '[]'), (self.claude, '{"env":null}'),
-            (self.claude, '{"env":{},"env":{"SECRET":"hidden"}}'),
-            (self.claude, '{"x":NaN}'),
-            (self.claude, '{"env":{"CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY":10}}'),
-            (self.claude, '{"env":{"CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY":"-1"}}'),
+            (self.codex, 'agents = "invalid"\n'), (self.codex, '[agents]\nmax_threads = 4\nmax_threads = 5\n'), (self.codex, 'model = [\n'),
+            (self.claude, '{bad'), (self.claude, '[]'), (self.claude, '{"env":null}'), (self.claude, '{"env":{},"env":{"SECRET":"hidden"}}'),
+            (self.claude, '{"custom":NaN}'), (self.claude, '{"custom":Infinity}'), (self.claude, '{"custom":-Infinity}'),
         ]
         for path, invalid in cases:
             with self.subTest(path=path, invalid=invalid):
@@ -141,7 +148,7 @@ class HostConfigTests(unittest.TestCase):
         self.assertEqual(results["claude"]["status"], "created")
         self.assertEqual(self.codex.read_text(), 'model = "editor changed this"\n')
 
-    def test_failed_atomic_replace_retains_original_and_backup_and_cleans_staging(self):
+    def test_failed_atomic_replace_retains_original_and_cleans_staging_and_backup(self):
         original = 'model = "keep"\n'
         self.write(self.codex, original)
         plans = host_config.prepare_host_configs()
@@ -150,10 +157,45 @@ class HostConfigTests(unittest.TestCase):
         self.assertEqual(results["codex"]["status"], "unavailable")
         self.assertIn("simulated write failure", issues[0])
         self.assertEqual(self.codex.read_text(), original)
-        backups = list(self.codex.parent.glob("*.bak"))
-        self.assertEqual(len(backups), 1)
-        self.assertEqual(backups[0].read_bytes(), original.encode())
-        self.assertEqual(set(self.codex.parent.iterdir()), {self.codex, backups[0]})
+        self.assertEqual(list(self.codex.parent.iterdir()), [self.codex])
+
+    def test_host_save_during_staging_is_preserved_for_new_and_existing_files(self):
+        for original in (None, 'model = "original"\n'):
+            with self.subTest(original=original):
+                self.codex.unlink(missing_ok=True)
+                if original is not None:
+                    self.write(self.codex, original)
+                plans = host_config.prepare_host_configs()
+                fsync = os.fsync
+                saved = 'model = "saved while setup was staging"\n'
+
+                def editor_save(descriptor):
+                    fsync(descriptor)
+                    self.write(self.codex, saved)
+
+                with patch.object(host_config.os, "fsync", side_effect=editor_save):
+                    results, issues = host_config.apply_host_configs(plans)
+                self.assertEqual(results["codex"]["status"], "unavailable")
+                self.assertIn("changed during setup", " ".join(issues))
+                self.assertEqual(self.codex.read_bytes(), saved.encode())
+                self.assertEqual(list(self.codex.parent.iterdir()), [self.codex])
+
+    def test_config_created_after_final_check_is_not_overwritten(self):
+        plans = host_config.prepare_host_configs()
+        link = os.link
+        saved = 'model = "concurrently created"\n'
+
+        def editor_create(source, destination):
+            if destination == self.codex:
+                self.write(destination, saved)
+            return link(source, destination)
+
+        with patch.object(host_config.os, "link", side_effect=editor_create):
+            results, issues = host_config.apply_host_configs(plans)
+        self.assertEqual(results["codex"]["status"], "unavailable")
+        self.assertTrue(issues)
+        self.assertEqual(self.codex.read_bytes(), saved.encode())
+        self.assertEqual(list(self.codex.parent.iterdir()), [self.codex])
 
     def test_existing_installer_lock_preserves_original(self):
         self.write(self.codex, 'model = "keep"\n')

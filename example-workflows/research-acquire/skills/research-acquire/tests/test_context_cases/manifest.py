@@ -5,18 +5,17 @@ from .support import *  # noqa: F403
 class ManifestSchemaTest(unittest.TestCase):
     """The schema seam: a manifest is validated before anything is fetched."""
 
-    def test_staged_manifest_parses_into_ordered_discovery_and_hydration_steps(self):
+    def test_manifest_parses_into_ordered_discovery_and_hydration_steps(self):
         manifest = schema.parse_manifest(TRACER_MANIFEST)
 
         self.assertEqual(manifest.manifest_id, "tracer-k4-reddit")
-        self.assertEqual(manifest.mode, "staged")
         self.assertEqual(manifest.as_of, "2026-08-10T00:00:00Z")
         self.assertEqual([step.step_id for step in manifest.steps], ["s1-discover", "s2-hydrate"])
 
         discovery, hydration = manifest.steps
         self.assertEqual(discovery.kind, "discovery")
-        self.assertEqual(discovery.adapter_id, "web_search")
-        self.assertEqual(discovery.query, "site:reddit.com best local model")
+        self.assertEqual(discovery.adapter_id, "fake")
+        self.assertEqual(discovery.query, "fixture:local-model-index")
         self.assertEqual(discovery.selected_hits, ())
 
         self.assertEqual(hydration.kind, "hydration")
@@ -30,20 +29,7 @@ class ManifestSchemaTest(unittest.TestCase):
             )
         )
 
-    def test_unknown_mode_is_refused(self):
-        payload = dict(TRACER_MANIFEST, mode="turbo")
-
-        with self.assertRaises(schema.ManifestError) as caught:
-            schema.parse_manifest(payload)
-
-        self.assertIn("turbo", str(caught.exception))
-
-    def test_an_as_of_the_ordering_cannot_parse_is_refused_at_the_manifest(self):
-        # `schema.py` says validation is total, and `as_of` was checked only for
-        # being a nonempty string. `ordering.instant_seconds` returns nothing
-        # for any other spelling, so `2026-08-10T09:00:00+00:00` left the
-        # horizon unset, made every snapshot eligible, and stopped the replay
-        # being frozen without saying anything.
+    def test_an_unparseable_as_of_is_refused_at_the_manifest(self):
         for spelling in (
             "2026-08-10T09:00:00+00:00",
             "2026-08-10 09:00:00Z",
@@ -57,7 +43,7 @@ class ManifestSchemaTest(unittest.TestCase):
                 self.assertIn(spelling, str(caught.exception))
 
         parsed = schema.parse_manifest(TRACER_MANIFEST)
-        self.assertIsNotNone(runner.instant_seconds(parsed.as_of))
+        self.assertIsNotNone(schema.instant_seconds(parsed.as_of))
 
     def test_unknown_step_field_is_refused(self):
         steps = [dict(TRACER_MANIFEST["steps"][0], follow_pagination=True)]

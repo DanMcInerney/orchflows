@@ -1,4 +1,4 @@
-from tests.test_adapters_cases.reddit_feed import *  # noqa: F401,F403
+from tests.test_adapters_cases.feed_page_routes import *  # noqa: F401,F403
 
 RSS_ATOM_FIXTURE_DIR = TEST_DIR / "fixtures" / "rss_atom"
 FEED_VIDEO_ID = "yt:video:dQw4w9WgXcQ"
@@ -35,21 +35,7 @@ def rss_atom_page(fixture, status=200, channel_id=FEED_CHANNEL_ID, module=None):
 
 
 class RssAtomReaderTest(unittest.TestCase):
-    """One parser over both syndication vocabularies, on one selected route.
-
-    The roster row's "generic" is the parser and not the route. The 2026-08-10 probes
-    measured one RSS/Atom document — `feeds/videos.xml?channel_id=`, 200, 39 KB,
-    0.35 s — and that is the one route this adapter declares. The RSS 2.0 half
-    of the row, enclosures and transcript links, is proven against a document of
-    that shape rather than against a route known to send one, which is a real
-    limit and is stated in `## Risks` rather than papered over.
-
-    The claim this half defends is that a generic reader stays generic. The
-    measured feed carries `media:statistics views=` in a vendor namespace, and
-    reading it would make this adapter quietly YouTube-aware — a second opinion
-    about a count `youtube_innertube` already reports, under a name this row
-    does not name. It is left where it is, and that is checked.
-    """
+    """RSS/Atom parsing and compatibility with the original YouTube feed route."""
 
     def test_an_atom_feed_yields_the_entries_it_listed(self):
         page, opener = rss_atom_page("youtube_channel_feed.xml")
@@ -148,23 +134,6 @@ class RssAtomReaderTest(unittest.TestCase):
         self.assertIn("field_omitted", undated.loss)
         self.assertNotEqual(undated.published_at, page.observed_at)
 
-    def test_a_vendor_extension_the_feed_carries_is_left_where_it_is(self):
-        # `media:statistics views="128455"` is in the measured document. A
-        # generic reader that mined it would be publishing a count under a name
-        # this roster row does not name, about a platform it does not know it
-        # is reading, beside an adapter that reports the same quantity from the
-        # platform's own API.
-        page, _ = rss_atom_page("youtube_channel_feed.xml")
-
-        for record in page.records:
-            with self.subTest(entry=record.native_item_id):
-                self.assertEqual(record.engagement, ())
-                self.assertEqual(
-                    [name for name, _ in record.attributes if "statistic" in name], []
-                )
-                self.assertNotIn("128455", repr(record))
-        self.assertEqual(rss_atom.DESCRIPTOR.comment_count_metric, "")
-        self.assertEqual(rss_atom.DESCRIPTOR.reply_count_metric, "")
 
     def test_a_syndication_identity_is_recorded_and_never_used_to_merge(self):
         # A `guid` is unique inside its own feed and nowhere else, and this
@@ -237,7 +206,7 @@ class RssAtomReaderTest(unittest.TestCase):
 
 
 class RssAtomDescriptorTest(unittest.TestCase):
-    """One route, its measured cost, and the seam a second feed would use."""
+    """Legacy pacing and the shared route for caller-supplied feeds."""
 
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
         budget = runner.route_budgets()[transport.YOUTUBE_CHANNEL_FEED_ROUTE]
@@ -256,8 +225,6 @@ class RssAtomDescriptorTest(unittest.TestCase):
 
         self.assertEqual(cheapest, transport.YOUTUBE_CHANNEL_FEED_ROUTE)
 
-    def test_it_declares_no_rotating_identifier_because_it_depends_on_none(self):
-        self.assertEqual(rss_atom.DESCRIPTOR.volatile_identifiers, ())
 
     def test_the_core_can_reach_it_by_both_of_its_literal_branches(self):
         clock = helpers.FakeClock()
@@ -279,13 +246,10 @@ class RssAtomDescriptorTest(unittest.TestCase):
         self.assertEqual(len(page.records), 2)
         self.assertEqual(len(opener.opened), 1)
 
-    def test_one_route_today_and_the_seam_a_second_feed_would_arrive_through(self):
-        # A second measured feed is a second route constant and a second
-        # descriptor under this same id, reachable through `surface_descriptors`
-        # — not a second adapter and not a caller-supplied address.
+    def test_supplied_feeds_share_the_existing_open_read_route(self):
         self.assertEqual(
             [descriptor.route_id for descriptor in runner.surface_descriptors("rss_atom")],
-            [transport.YOUTUBE_CHANNEL_FEED_ROUTE],
+            [transport.YOUTUBE_CHANNEL_FEED_ROUTE, transport.WEB_PAGE_OPEN_ROUTE],
         )
 
     def test_the_code_for_a_missing_credential_is_declared_and_never_produced(self):

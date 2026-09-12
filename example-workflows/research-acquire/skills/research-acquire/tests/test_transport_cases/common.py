@@ -24,7 +24,6 @@ import io
 import json
 import os
 import socket
-import tokenize
 import unittest
 import urllib.error
 import urllib.request
@@ -32,7 +31,7 @@ from pathlib import Path
 from unittest import mock
 
 from super_research import adapters, cache, pacing, runner, schema, transport
-from super_research.adapters import fake, reddit_archive, web_search, x_guest
+from super_research.adapters import fake, reddit_archive, rss_atom
 from tests import helpers
 
 
@@ -41,21 +40,14 @@ FIXTURE_DIR = TEST_DIR / "fixtures" / "transport"
 ITEM_DIR = TEST_DIR.parent
 PACKAGE_DIR = ITEM_DIR / "scripts" / "super_research"
 ADAPTER_DIR = PACKAGE_DIR / "adapters"
-EVIDENCE_DOC = ITEM_DIR / "references" / "evidence.md"
 FROZEN_OBSERVED_AT = "2026-08-10T09:00:00Z"
 
 # Only the transport seam may reach the network.
 NETWORK_MODULES = ("urllib.request", "http.client", "socket", "ssl")
 
-# The logical route table spans its facade and the two access-class catalogs.
 # `transport` deliberately is not an owner: it re-exports and reaches the
 # routes, but may not define an address or credential itself.
-ROUTE_OWNING_MODULES = (
-    "routes",
-    "_support/route_contracts",
-    "_support/route_catalog_k0",
-    "_support/route_catalog_k1_k4",
-)
+ROUTE_OWNING_MODULES = ("routes",)
 
 # Which modules hold the outbound read on everybody's behalf. A second
 # declaration and deliberately not the same list: owning a route's address is
@@ -68,9 +60,9 @@ PROTOCOL_OWNED_NAMES = ("carrier.fetch", "channel_verdict", "NETWORK_INTERCEPTED
 
 # Every adapter the package ships today. One request serves all three: each
 # reads only the fields its own route needs.
-SHIPPED_ADAPTERS = (web_search, reddit_archive, fake)
+SHIPPED_ADAPTERS = (rss_atom, reddit_archive, fake)
 PROBE_REQUEST = adapters.AdapterRequest(
-    step_id="s1-probe", query="probe", target_ids=("1abc234",)
+    step_id="s1-probe", query="https://8.8.8.8/feed.xml", target_ids=("https://8.8.8.8/feed.xml",)
 )
 
 
@@ -115,7 +107,7 @@ class RecordingOpener:
         outcome = self.responses[request.route_id]
         if isinstance(outcome, Exception):
             raise outcome
-        return outcome
+        return helpers.answered(request, outcome)
 
 
 def offline_transport(responses):
@@ -167,10 +159,10 @@ def fetched_verdicts():
     verdicts = {}
     for row in interception_cases():
         carrier, _ = offline_transport(
-            {transport.DDG_HTML_ROUTE: (row["status"], case_body(row), "text/html")}
+            {transport.WEB_PAGE_OPEN_ROUTE: (row["status"], case_body(row), "text/html")}
         )
         response = carrier.fetch(
-            transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "probe"})
+            transport.build_transport_request(transport.WEB_PAGE_OPEN_ROUTE, {"url": "https://8.8.8.8/feed.xml"})
         )
         verdicts[row["case_name"]] = response.channel_verdict
     return verdicts
@@ -268,13 +260,3 @@ class RecordingUrlopen:
             url=outbound.full_url,
             headers=self.headers,
         )
-
-
-def credential_strings():
-    """Every string that would identify this package's client to a vendor."""
-
-    secrets = []
-    for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values():
-        secrets.append((credential.credential_id + " value", credential.value))
-        secrets.append((credential.credential_id + " id", credential.credential_id))
-    return tuple(secrets)

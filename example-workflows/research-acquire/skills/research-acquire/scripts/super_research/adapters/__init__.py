@@ -11,11 +11,8 @@ manifest becomes an ``AdapterRequest`` and still sets no ``cursor``; the
 continuation is ``runner.run_step``'s, built from the page it has just read. A
 discovery step therefore reads the page its ``cursor_out`` names, and the page
 that one names, to ``runner.MAX_PAGES_PER_STEP``, with ``max_items`` bounding
-the whole step rather than one page of it. Six adapters read a cursor and five
-surface one, and neither half decides anything: an adapter that followed its own
-would be deciding how far a step goes, which is the core's to bound. There is no
-concurrency here either: no thread, task, coroutine, or process anywhere in the
-package.
+the whole step rather than one page of it. The runner owns continuation and
+concurrency; an adapter only reports the cursor an origin returned.
 
 It also never makes the call itself: :func:`fetch_one_page` does, so the
 channel verdict is read in one place for every adapter there will ever be.
@@ -43,19 +40,6 @@ DEFAULT_COOLDOWN_MS = 60000
 
 
 @dataclass(frozen=True)
-class VolatileIdentifier:
-    """A vendor identifier that rotates, and the documented way back to a current one.
-
-    Declaring one without its recovery would leave a scheduled outage with no
-    procedure attached, so both halves are required together or neither is
-    admitted.
-    """
-
-    name: str
-    recovery: str
-
-
-@dataclass(frozen=True)
 class AdapterDescriptor:
     """The static declaration a route's adapter makes about itself.
 
@@ -64,15 +48,9 @@ class AdapterDescriptor:
     the ceiling belongs to the origin, so two adapters reading one route must
     declare the same three numbers.
 
-    ``comment_count_metric`` and ``reply_count_metric`` name at most one exact
-    native metric each, for the two orders that rank by engagement. A name is
-    never inferred, aliased, summed, or compared across platforms — an adapter
-    that declares neither has no eligible metric, which is a stated absence
-    rather than a zero nobody reported.
-
     ``access_class`` is exactly one class off the ladder :mod:`schema` owns,
     and it is checked here because three separate rules read it and none of
-    them can tell an unnamed class from a wrong one: the router admits a step
+    them can tell an unnamed class from a wrong one: the runner admits a step
     on it, ``time_confidence_for`` decides on it how far a record's time is
     trusted, and the artifact publishes it to a caller. A descriptor declaring
     a class nothing names would carry that quietly past all three, so the
@@ -91,9 +69,6 @@ class AdapterDescriptor:
     min_interval_ms: int = DEFAULT_MIN_INTERVAL_MS
     burst: int = DEFAULT_BURST
     cooldown_ms: int = DEFAULT_COOLDOWN_MS
-    volatile_identifiers: Tuple[VolatileIdentifier, ...] = ()
-    comment_count_metric: str = ""
-    reply_count_metric: str = ""
     # How many rows one answer from this surface holds when the origin has
     # that many, as measured; zero when the surface answers a single item or
     # nobody measured. Declared so a caller can see that a cap below it buys
@@ -110,12 +85,6 @@ class AdapterDescriptor:
                     self.adapter_id, self.access_class, ", ".join(schema.ACCESS_CLASSES)
                 )
             )
-        for identifier in self.volatile_identifiers:
-            if not identifier.name or not identifier.recovery:
-                raise AdapterError(
-                    "adapter {0} declares a volatile identifier without both a name"
-                    " and a recovery procedure: {1!r}".format(self.adapter_id, identifier)
-                )
 
 
 @dataclass(frozen=True)
@@ -149,9 +118,7 @@ class NativeRecord:
     route's own order, and every value is the exact string as reported.
 
     Nothing here is inferred, aliased across platforms, or parsed further: a
-    name means what the route that emitted it means by it, which is the same
-    law ``comment_count_metric`` and ``reply_count_metric`` carry for the two
-    counted ones. A route that reports no such fact carries none.
+    name means what the route that emitted it means by it,  A route that reports no such fact carries none.
     """
 
     canonical_content_kind: str
@@ -194,6 +161,16 @@ class NativePage:
     warnings: Tuple[str, ...] = ()
     outcome: str = "ok"
     loss: Tuple[str, ...] = ()
+
+
+def open_read_descriptor(adapter_id: str, representation_kind: str, adapter_version: str = "1") -> AdapterDescriptor:
+    """Shared declaration for parsers using the same public-document HTTP route."""
+    return AdapterDescriptor(
+        adapter_id=adapter_id, adapter_version=adapter_version, access_class="K0",
+        route_id=transport.WEB_PAGE_OPEN_ROUTE, platform="web",
+        native_identity_namespace="", representation_kind=representation_kind,
+        operator_identity="open_web", min_interval_ms=2000, burst=1, page_size=1,
+    )
 
 
 def build_native_page(
@@ -245,7 +222,14 @@ def fetch_one_page(
     of its own.
     """
 
-    response = carrier.fetch(transport.build_transport_request(descriptor.route_id, params))
+    try:
+        response = carrier.fetch(transport.build_transport_request(descriptor.route_id, params))
+    except transport.TransportError as error:
+        # Keep the selected surface when an adapter's first descriptor names
+        # another route. Loss and origin accounting stay the transport's.
+        if not error.route_id:
+            error.route_id = descriptor.route_id
+        raise
     if response.channel_verdict == transport.NETWORK_INTERCEPTED:
         return build_native_page(
             descriptor,

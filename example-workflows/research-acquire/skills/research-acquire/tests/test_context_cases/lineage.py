@@ -1,5 +1,7 @@
 """Lineage, grouping, and never-merge law cases."""
 
+from dataclasses import replace
+
 from .support import *  # noqa: F403
 
 class K4HybridNeverMergesTest(unittest.TestCase):
@@ -15,23 +17,6 @@ class K4HybridNeverMergesTest(unittest.TestCase):
 
         assert_linked_never_merged(self, artifact, X_POST_LOCATOR, "x")
 
-    def test_a_root_relative_redirect_wrapper_still_yields_the_target_locator(self):
-        # The wrapper arrives in three shapes and `unwrap_result_url` unwrapped
-        # only the two that name a host, so `/l/?uddg=` was published unchanged
-        # as the canonical locator. `normalized_locator` keeps a host-less
-        # string host-less, `link_discovery_hydration` matches exactly, and the
-        # edge this criterion is about silently never forms — as an absence, so
-        # no merge test would have caught it, on the one route it protects.
-        rewritten = read_fixture("ddg_html_results.html").replace(
-            'href="//duckduckgo.com/l/?uddg=', 'href="/l/?uddg='
-        )
-        self.assertIn('href="/l/?uddg=', rewritten)
-        responses = dict(tracer_responses(), ddg_html=(200, rewritten, "text/html"))
-        carrier, _ = tracer_transport(responses)
-
-        artifact = runner.run_acquisition(schema.parse_manifest(TRACER_MANIFEST), carrier)
-
-        assert_linked_never_merged(self, artifact, REDDIT_THREAD_LOCATOR, "reddit")
 
     def test_hydration_happens_even_though_a_hit_already_names_that_locator(self):
         artifact, carrier, _ = run_tracer(TRACER_MANIFEST)
@@ -39,7 +24,7 @@ class K4HybridNeverMergesTest(unittest.TestCase):
         # wrong_merge_law rule 2: locator equality never authorizes reuse in
         # place of hydration, and the discovery edge is still emitted.
         self.assertEqual(
-            [call.route_id for call in carrier.calls], ["ddg_html", "arctic_shift_posts_ids"]
+            [call.route_id for call in carrier.calls], ["fake_offline", "arctic_shift_posts_ids"]
         )
         self.assertEqual(len(artifact.edges), 1)
 
@@ -188,7 +173,7 @@ class WrongMergeLawTest(unittest.TestCase):
         self.assertEqual(
             normalize.weak_group_key(grouped),
             (
-                "duckduckgo",
+                "fixture_index",
                 "index",
                 grouped.normalized_locator,
                 "web_hit",
@@ -237,14 +222,16 @@ class WrongMergeLawTest(unittest.TestCase):
     def test_rule_7_partitions_grouping_even_under_one_shared_strong_identity(self):
         # Built beside the tree: an index hit that wrongly claims the target's
         # own native identity. Rule 7 must still keep the two apart.
-        hit = sample_record(
+        hit = replace(
+            self.by_id["s1-discover#0.0"],
             record_id="hand#0.0",
             representation_kind="index",
             native_identity_namespace="reddit",
             native_item_id="t3_1abc234",
             canonical_content_kind="post",
         )
-        target = sample_record(
+        target = replace(
+            self.by_id["s1-discover#0.0"],
             record_id="hand#1.0",
             representation_kind="native",
             native_identity_namespace="reddit",

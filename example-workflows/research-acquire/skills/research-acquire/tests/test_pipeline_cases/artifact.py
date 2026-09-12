@@ -232,10 +232,9 @@ class FusedModeTest(unittest.TestCase):
     def test_the_two_modes_place_the_same_work_differently_and_only_that(self):
         fused = fused_run()
         first, second = staged_pair(self)
-        self.assertEqual(fused.artifact.mode, "fused")
         self.assertEqual(
             [operation.route_id for operation in runner.planned_operations(fused.ledger)],
-            [transport.DDG_HTML_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE],
+            [transport.FAKE_OFFLINE_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE],
         )
         self.assertEqual(
             runner.ledger_sums(fused.ledger),

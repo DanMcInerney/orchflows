@@ -28,9 +28,7 @@ from tests import helpers
 # not hold, which `hacker_news` reads as an ordinary empty answer.
 FIXTURE_PAGE = json.dumps({"platform": "fixture", "records": [], "cursor_out": ""})
 TWO_ORIGINS = {
-    "schema_version": 2,
     "manifest_id": "lanes-two-origins",
-    "mode": "fused",
     "as_of": "2026-08-17T12:00:00Z",
     "steps": [
         {"step_id": "s1-fixture", "kind": "discovery", "adapter_id": "fake", "query": "a", "max_items": 3},
@@ -40,13 +38,11 @@ TWO_ORIGINS = {
 # Two adapters on ONE origin: InnerTube and the channel feed both live on
 # www.youtube.com, and are declared as two routes with two budgets.
 ONE_ORIGIN = {
-    "schema_version": 2,
     "manifest_id": "lanes-one-origin",
-    "mode": "fused",
     "as_of": "2026-08-17T12:00:00Z",
     "steps": [
-        {"step_id": "s1-feed", "kind": "discovery", "adapter_id": "rss_atom", "query": "UCabc", "max_items": 3},
-        {"step_id": "s2-search", "kind": "discovery", "adapter_id": "youtube_innertube", "query": "search:x", "max_items": 3},
+        {"step_id": "s1-feed", "kind": "discovery", "adapter_id": "reddit_shreddit", "query": "search:x", "max_items": 3},
+        {"step_id": "s2-search", "kind": "discovery", "adapter_id": "reddit_shreddit", "query": "listing:x", "max_items": 3},
     ],
 }
 EMPTY_FEED = '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>t</title></feed>'
@@ -70,7 +66,7 @@ class IntervalOpener:
     def __call__(self, request):
         began = time.monotonic()
         self.hold(request)
-        answer = self.answers[request.route_id]
+        answer = helpers.answered(request, self.answers[request.route_id])
         ended = time.monotonic()
         with self.lock:
             self.intervals.append((request.route_id, transport.origin_key(request), began, ended))
@@ -124,8 +120,8 @@ class FusedLanesOverlapTest(unittest.TestCase):
 
         opener = IntervalOpener(
             {
-                transport.YOUTUBE_CHANNEL_FEED_ROUTE: (200, EMPTY_FEED, "application/atom+xml"),
-                transport.YOUTUBE_INNERTUBE_ROUTE: (200, EMPTY_SEARCH, "application/json"),
+                transport.REDDIT_SHREDDIT_SEARCH_ROUTE: (200, EMPTY_FEED, "application/atom+xml"),
+                transport.REDDIT_SHREDDIT_LISTING_ROUTE: (200, EMPTY_SEARCH, "application/json"),
             },
             hold,
         )
@@ -189,9 +185,7 @@ class LanesAreByAdapterTest(unittest.TestCase):
     def test_lanes_group_steps_by_adapter_in_declared_order(self):
         manifest = schema.parse_manifest(
             {
-                "schema_version": 2,
                 "manifest_id": "lanes-grouping",
-                "mode": "fused",
                 "as_of": "2026-08-17T12:00:00Z",
                 "steps": [
                     {"step_id": "a1", "kind": "discovery", "adapter_id": "fake", "query": "a", "max_items": 1},

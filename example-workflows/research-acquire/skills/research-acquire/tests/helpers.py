@@ -52,6 +52,39 @@ def probe_params(route_id):
     return {"q": "probe"}
 
 
+# One request each adapter answers with a single call, shaped the way its own
+# grammar requires: `open_page` takes an https address on an undeclared host,
+# `reddit_shreddit` a target its grammar names. Suites that walk
+# `runner.ADAPTER_IDS` use this instead of sending one universal string.
+ROSTER_WINDOW_START = "2026-08-01T00:00:00Z"
+ROSTER_QUERIES = {
+    "hacker_news": ("python", ROSTER_WINDOW_START),
+    "reddit_shreddit": ("listing:programming", ""),
+    "rss_atom": ("UC_x5XG1OV2P6uZZ5FSM9Ttw", ""),
+    "scholarly": ("crossref:machine learning", ""),
+    "x_fxtwitter": ("conversation:123", ""),
+}
+ROSTER_TARGETS = {
+    "github_rest": ("python/cpython", ""),
+    "open_page": ("https://www.iana.org/help/example-domains", ""),
+    "reddit_archive": ("z1c9z", ""),
+}
+
+
+def roster_request(adapter_id, step_id="s-roster"):
+    """The one bounded request this adapter answers, or a generic one for `fake`."""
+
+    from super_research.adapters import AdapterRequest
+
+    if adapter_id in ROSTER_QUERIES:
+        query, window_start = ROSTER_QUERIES[adapter_id]
+        return AdapterRequest(step_id=step_id, query=query, window_start=window_start)
+    if adapter_id in ROSTER_TARGETS:
+        target, window_start = ROSTER_TARGETS[adapter_id]
+        return AdapterRequest(step_id=step_id, target_ids=(target,), window_start=window_start)
+    return AdapterRequest(step_id=step_id, query="probe", target_ids=("1abc234",))
+
+
 # What one origin read costs when a route declares nothing better. Small enough
 # that it never dominates a pacing proof, nonzero so every operation has a
 # duration and every schedule has a makespan.
@@ -90,6 +123,19 @@ class FakeClock:
         return (self._start + timedelta(microseconds=self.microseconds)).strftime(STAMP_FORMAT)
 
 
+def answered(request, seed):
+    """One seed as the real opener's answer: status, body, content type, address, headers.
+
+    A seed spells the first three; the answering address is then the one asked
+    and the headers none, unless the seed spelled all five itself.
+    """
+
+    if len(seed) == 5:
+        return tuple(seed)
+    status, body, content_type = seed
+    return (status, body, content_type, request.url, ())
+
+
 class RecordingOpener:
     """Offline opener: canned answers per route, every attempt recorded.
 
@@ -97,7 +143,8 @@ class RecordingOpener:
     order, the last one standing for every later read — which is how a route
     that answers twice and then rate-limits is expressed. Each answer costs its
     route's declared latency on the clock, so an operation's duration is the
-    route's measured cost rather than an invention.
+    route's measured cost rather than an invention. Every answer has the shape
+    ``transport.urlopen_read`` answers in.
 
     Nothing here can reach a socket, so an unseeded route fails loudly rather
     than egressing.
@@ -120,7 +167,7 @@ class RecordingOpener:
             self.clock.advance(self.latencies.get(request.route_id, DEFAULT_LATENCY_SECONDS))
         if isinstance(outcome, Exception):
             raise outcome
-        return outcome
+        return answered(request, outcome)
 
 
 def offline_transport(clock, responses, latencies=None):

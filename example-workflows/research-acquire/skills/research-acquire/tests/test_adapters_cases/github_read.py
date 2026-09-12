@@ -342,15 +342,8 @@ class GithubDescriptorTest(unittest.TestCase):
                 self.assertEqual(descriptor.operator_identity, "github")
                 self.assertEqual(descriptor.representation_kind, "native")
                 self.assertEqual(descriptor.standing_loss, ())
-                self.assertEqual(descriptor.volatile_identifiers, ())
 
-    def test_it_declares_the_comment_count_an_issue_reports_and_no_reply_count(self):
-        # An issue reports an exact count of its comments and nothing here
-        # reports a count of replies, so one name is declared and one is not.
-        self.assertEqual(github_rest.DESCRIPTOR.comment_count_metric, "comments")
-        for descriptor in github_rest.SURFACE_DESCRIPTORS:
-            with self.subTest(route=descriptor.route_id):
-                self.assertEqual(descriptor.reply_count_metric, "")
+
 
     def test_the_core_reaches_it_by_both_literal_branches_and_sees_both_surfaces(self):
         self.assertIn("github_rest", runner.ADAPTER_IDS)

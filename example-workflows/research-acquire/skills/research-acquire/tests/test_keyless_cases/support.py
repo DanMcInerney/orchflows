@@ -47,78 +47,7 @@ CREDENTIAL_STORE_NAMES = (
 # The measured payloads every roster row was built against, by the route that
 # answered with them. Read rather than copied: "reaches its declared
 # capability" has to be proven on the bytes the origin actually sent.
-ROSTER_PAYLOADS = {
-    "xcancel_status": ("recent_routes/nitter_source_derived.html", "text/html"),
-    "arctic_shift_posts_search": ("tracer/arctic_shift_posts_ids.json", "application/json"),
-    "reddit_search_feed": ("reddit_feed/subreddit_new.xml", "application/atom+xml"),
-    # Source-derived Nitter fixture; no successful live xcancel capture exists.
-    "xcancel_search": ("recent_routes/nitter_source_derived.html", "text/html"),
-    "ddg_html": ("tracer/ddg_html_results.html", "text/html"),
-    "arctic_shift_posts_ids": ("tracer/arctic_shift_posts_ids.json", "application/json"),
-    "reddit_feed": ("reddit_feed/subreddit_new.xml", "application/atom+xml"),
-    "youtube_channel_feed": ("rss_atom/youtube_channel_feed.xml", "application/atom+xml"),
-    "public_page_article": ("public_page/article.html", "text/html"),
-    "public_page_control": ("public_page/control.html", "text/html"),
-    "x_syndication_timeline": ("x/syndication_timeline.html", "text/html"),
-    "x_guest_graphql": ("x/guest_tweet_result.json", "application/json"),
-    "linkedin_jobs_guest_search": ("linkedin/jobs_search_page.html", "text/html"),
-    "linkedin_public_profile": ("linkedin/profile_person.html", "text/html"),
-    # The transcript step below reads both YouTube routes in one go: the
-    # player answer names the caption track, and the core spends the
-    # continuation it publishes on the timed-text route.
-    "youtube_innertube": ("youtube/player_android_captions.json", "application/json"),
-    "youtube_timedtext": ("youtube/timedtext_json3.json", "application/json"),
-    "instagram_web_profile": ("instagram/web_profile_info.json", "application/json"),
-    "hn_algolia_search": ("hacker_news/algolia_search_by_date.json", "application/json"),
-    "hn_firebase_item": ("hacker_news/firebase_story.json", "application/json"),
-    "github_rest": ("github/repo.json", "application/json"),
-    "github_search": ("github/search_repositories.json", "application/json"),
-    "fake_offline": ("tracer/fake_x_native_page.json", "application/json"),
-    # The routes added 2026-08-17, each against the bytes its adapter was
-    # built on.
-    "bing_rss": ("web_search/bing_rss.xml", "text/xml"),
-    "bing_news_rss": ("web_search/bing_news_rss.xml", "application/xml"),
-    "google_news_rss": ("web_search/google_news_rss.xml", "application/xml"),
-    "web_page_open": ("open_page/article.html", "text/html"),
-    "hn_algolia_item": ("hacker_news/algolia_item_tree.json", "application/json"),
-    "reddit_shreddit_listing": ("reddit_shreddit/listing.html", "text/html"),
-    "reddit_shreddit_search": ("reddit_shreddit/search.html", "text/html"),
-    "reddit_shreddit_subreddit_search": ("reddit_shreddit/search.html", "text/html"),
-    "reddit_shreddit_comments": ("reddit_shreddit/comments.html", "text/html"),
-    "polymarket_gamma": (
-        "prediction_markets/polymarket_public_search.json", "application/json",
-    ),
-    "kalshi_markets": ("prediction_markets/kalshi_markets.json", "application/json"),
-    "manifold_markets": ("prediction_markets/manifold_search.json", "application/json"),
-    "stocktwits_symbol_stream": ("stocktwits/stream.json", "application/json"),
-    "stocktwits_symbol_search": ("stocktwits/symbols.json", "application/json"),
-    "bluesky_search_posts": ("bluesky/search_posts.json", "application/json"),
-    "bluesky_author_feed": ("bluesky/author_feed.json", "application/json"),
-    "fxtwitter_api": ("x_fxtwitter/search.json", "application/json"),
-    # The routes added 2026-09-01, each against the bytes its adapter was
-    # built on. GDELT's were captured over plain HTTP — port 443 to that
-    # origin timed out from the building host, evidence.md §"The route sweep
-    # of 2026-09-01" — and every other payload came off the declared https
-    # route itself.
-    "gdelt_doc": ("gdelt/doc_artlist.json", "application/json"),
-    "stackexchange_search_advanced": (
-        "stack_exchange/search_advanced.json", "application/json",
-    ),
-    "wikimedia_pageviews_per_article": (
-        "wikimedia_pageviews/per_article_daily.json", "application/json",
-    ),
-    "openalex_works": ("scholarly/openalex_works.json", "application/json"),
-    "crossref_works": ("scholarly/crossref_works.json", "application/json"),
-    "arxiv_query": ("scholarly/arxiv_query.xml", "application/atom+xml"),
-    "tiktok_video_page": ("tiktok_public/video_page.html", "text/html"),
-    "tiktok_profile_page": ("tiktok_public/profile_page.html", "text/html"),
-    "youtube_oembed": ("oembed/youtube_video.json", "application/json"),
-    "vimeo_oembed": ("oembed/vimeo_video.json", "application/json"),
-    "spotify_oembed": ("oembed/spotify_track.json", "application/json"),
-    "soundcloud_oembed": ("oembed/soundcloud_track.json", "application/json"),
-    "tiktok_oembed": ("oembed/tiktok_video.json", "application/json"),
-    "x_publish_oembed": ("oembed/x_status.json", "application/json"),
-}
+ROSTER_PAYLOADS = {'arctic_shift_posts_search': ('tracer/arctic_shift_posts_ids.json', 'application/json'), 'arctic_shift_posts_ids': ('tracer/arctic_shift_posts_ids.json', 'application/json'), 'youtube_channel_feed': ('rss_atom/youtube_channel_feed.xml', 'application/atom+xml'), 'hn_algolia_search': ('hacker_news/algolia_search_by_date.json', 'application/json'), 'hn_firebase_item': ('hacker_news/firebase_story.json', 'application/json'), 'github_rest': ('github/repo.json', 'application/json'), 'github_search': ('github/search_repositories.json', 'application/json'), 'fake_offline': ('tracer/fake_x_native_page.json', 'application/json'), 'web_page_open': ('open_page/article.html', 'text/html'), 'hn_algolia_item': ('hacker_news/algolia_item_tree.json', 'application/json'), 'reddit_shreddit_listing': ('reddit_shreddit/listing.html', 'text/html'), 'reddit_shreddit_search': ('reddit_shreddit/search.html', 'text/html'), 'reddit_shreddit_subreddit_search': ('reddit_shreddit/search.html', 'text/html'), 'reddit_shreddit_comments': ('reddit_shreddit/comments.html', 'text/html'), 'fxtwitter_api': ('x_fxtwitter/conversation.json', 'application/json'), 'crossref_works': ('scholarly/crossref_works.json', 'application/json'), 'arxiv_query': ('scholarly/arxiv_query.xml', 'application/atom+xml')}
 
 ARCHIVED_POST_ID = "1abc234"
 REDDIT_SUBREDDIT = "LocalLLaMA"
@@ -141,9 +70,8 @@ X_POST_ID = "1799990000000000001"
 SENTINEL = "SUPER_RESEARCH_T10_SENTINEL"
 
 
-# Three of the captures above say the index holds more than the page they
-# carry: DDG's own "Next" offset, Algolia's `page`/`nbPages` pair, and
-# InnerTube's continuation token. Each is the origin's claim and none of them is
+# Some captures carry another-page claims: Algolia's `page`/`nbPages` pair
+# and Reddit continuation links. Each is the origin's claim and none of them is
 # this double's — it answers every read of a route with the one canned page it
 # was seeded with, so a core that spends a cursor would be asking for a page
 # nothing here can serve. No page two of any of these routes has ever been
@@ -151,32 +79,9 @@ SENTINEL = "SUPER_RESEARCH_T10_SENTINEL"
 # can honestly stand for: a search whose one page is its last. The claim is what
 # moves; every count below is one page's, unchanged.
 NEXT_PAGE_CLAIMS = (
-    ('<input type="hidden" name="s" value="30" />', ""),
     ('"nbPages": 50', '"nbPages": 1'),
-    ('"continuationCommand": {"token": "EpcDEgxsb2NhbCBtb2RlbHMaggNTQlNDQVE"}',
-     '"continuationCommand": {}'),
-    # The claims the 2026-08-17 captures make, each in the origin's own words:
-    # Polymarket and Stocktwits say so in a field, Reddit's partials say so by
-    # naming the parameter their next page is asked with, and Kalshi hands back
-    # a cursor. Every one is turned off rather than deleted, so the fixture is
-    # still the shape the origin sent.
-    ('"hasMore": true', '"hasMore": false'),
-    ('"more": true', '"more": false'),
-    ("&after=", "&spent="),
-    ("&amp;after=", "&amp;spent="),
-    ("&cursor=", "&spent="),
-    # Kalshi's is a field naming the next page; emptied, it names none. The
-    # value is this capture's own, so it is matched by its two ends rather
-    # than transcribed: a base64 cursor is not a thing to copy by hand.
-    ('"cursor": "CgwIzvmF1AYQoNyW2wISFktYQlRDLTI2QVVHMTcxMS1CNzIyNTA"', '"cursor": ""'),
-    # Bluesky states its next page as a bare `cursor`, and FxTwitter as a
-    # `bottom` inside one. Emptied, each names none. The AT Protocol's cursor
-    # is an offset on search and a timestamp on a feed, so both spellings are
-    # turned off rather than one.
-    ('"cursor": "25"', '"cursor": ""'),
-    ('"cursor": "2026-06-08T21:10:01.53Z"', '"cursor": ""'),
-    ('"bottom":', '"spent":'),
-    ("&amp;cursor=", "&amp;spent="),
+    ("&after=", "&spent="), ("&amp;after=", "&amp;spent="),
+    ("&cursor=", "&spent="), ("&amp;cursor=", "&amp;spent="),
 )
 
 
@@ -202,18 +107,13 @@ def roster_seeds():
     }
 
 
-def discovery(step_id, adapter_id, query, max_items=200, max_pages=0):
-    # `max_pages` is reachable here because this caller builds steps in
-    # process, the same door the smoke uses: the seeded Stack Exchange page
-    # says `has_more` on every read, so its step declares one page as its own bound
-    # and finishes rather than being stopped by the core's backstop.
+def discovery(step_id, adapter_id, query, max_items=200):
     return schema.AcquisitionStep(
         step_id=step_id,
         kind="discovery",
         adapter_id=adapter_id,
         query=query,
         max_items=max_items,
-        max_pages=max_pages,
     )
 
 
@@ -233,60 +133,13 @@ def hydration(step_id, adapter_id, locator, target_id, max_items=200,
 
 
 def roster_manifest():
-    """One dispatch over every adapter in the roster and every route it reaches.
-
-    Fifty-two steps rather than twenty-seven: sixteen adapters read more than one
-    surface, and a keyless claim about an adapter that leaves one of its routes
-    unread is a keyless claim about half of it.
-    """
-
+    """One dispatch over every retained adapter and public route."""
     return schema.AcquisitionManifest(
-        manifest_id="m-keyless",
-        mode="staged",
-        # After every read this dispatch makes, so a frozen horizon never falls
-        # before its own observations.
-        as_of="2026-08-10T09:30:00Z",
+        manifest_id="m-keyless", as_of="2026-08-10T09:30:00Z",
         steps=(
             discovery("s49-archive-search", "reddit_archive", "search:subreddit=LocalLLaMA"),
-            discovery("s50-rss-search", "reddit_feed", "search:local models"),
-            discovery("s51-xcancel-search", "x_xcancel", "search:python"),
-            hydration("s52-xcancel-status", "x_xcancel", "https://x.com/alice/status/123", "status:alice/123"),
-            discovery("s01-web-search", "web_search", "site:reddit.com best local model"),
             hydration("s02-archive", "reddit_archive", REDDIT_PERMALINK, ARCHIVED_POST_ID),
-            discovery("s03-reddit-feed", "reddit_feed", REDDIT_SUBREDDIT),
             discovery("s04-channel-feed", "rss_atom", FEED_CHANNEL_ID),
-            hydration(
-                "s05-article",
-                "public_page",
-                "https://en.wikipedia.org/wiki/" + ARTICLE_TITLE,
-                "article:" + ARTICLE_TITLE,
-            ),
-            discovery("s06-control", "public_page", "control"),
-            hydration("s07-x-timeline", "x_syndication", "https://x.com/simonw", "simonw"),
-            hydration(
-                "s08-x-tweet",
-                "x_guest",
-                "https://x.com/simonw/status/" + X_POST_ID,
-                "tweet:" + X_POST_ID,
-            ),
-            discovery("s09-jobs", "linkedin_jobs", "reliability engineer"),
-            hydration(
-                "s10-profile",
-                "linkedin_public",
-                "https://www.linkedin.com/in/" + PROFILE_SLUG,
-                PROFILE_SLUG,
-            ),
-            # A transcript rather than a search: it is the one step that reads
-            # both of this adapter's routes, and a keyless claim about an
-            # adapter that leaves one of its routes unread is a claim about
-            # half of it. The search operation is proven in `test_adapters`.
-            discovery("s11-youtube", "youtube_innertube", "transcript:" + YOUTUBE_VIDEO_ID),
-            hydration(
-                "s12-instagram",
-                "instagram_public",
-                "https://www.instagram.com/" + INSTAGRAM_USERNAME + "/",
-                INSTAGRAM_USERNAME,
-            ),
             discovery("s13-hn-search", "hacker_news", "local models"),
             hydration(
                 "s14-hn-story",
@@ -302,10 +155,6 @@ def roster_manifest():
             ),
             discovery("s16-repo-search", "github_rest", "gpu benchmark"),
             hydration("s17-fixture", "fake", "https://x.com/simonw", X_POST_ID),
-            # The 2026-08-17 additions, one step per route they added.
-            discovery("s18-bing", "web_search", "bing:local models"),
-            discovery("s19-bing-news", "web_search", "bingnews:local models"),
-            discovery("s20-google-news", "web_search", "gnews:local models"),
             hydration(
                 "s21-open-page",
                 "open_page",
@@ -325,76 +174,9 @@ def roster_manifest():
                 "reddit_shreddit",
                 "comments:" + REDDIT_SUBREDDIT + "/" + ARCHIVED_POST_ID,
             ),
-            discovery("s27-polymarket", "prediction_markets", "polymarket:local models"),
-            discovery("s28-kalshi", "prediction_markets", "kalshi"),
-            discovery("s29-manifold", "prediction_markets", "manifold:local models"),
-            discovery("s30-stocktwits", "stocktwits", "stream:AAPL"),
-            discovery("s31-stocktwits-symbols", "stocktwits", "symbols:apple"),
-            discovery("s32-bluesky-search", "bluesky", "search:local models"),
-            discovery("s33-bluesky-author", "bluesky", "author:bsky.app"),
-            discovery("s34-fxtwitter", "x_fxtwitter", "search:local models"),
-            # The 2026-09-01 additions, one step per route they added.
-            discovery("s35-gdelt", "gdelt", "local models"),
-            discovery("s36-stack-exchange", "stack_exchange", "local models", max_pages=1),
-            hydration(
-                "s37-pageviews",
-                "wikimedia_pageviews",
-                "https://en.wikipedia.org/wiki/Python_(programming_language)",
-                "Python_(programming_language)",
-                window_start="2026-08-21T00:00:00Z",
-                window_end="2026-09-01T00:00:00Z",
-            ),
-            discovery("s38-openalex", "scholarly", "openalex:machine learning"),
+            hydration("s34-fxtwitter", "x_fxtwitter", "https://x.com/SpaceX/status/1956833185741639735", "1956833185741639735"),
             discovery("s39-crossref", "scholarly", "crossref:machine learning"),
             discovery("s40-arxiv", "scholarly", "arxiv:transformers"),
-            hydration(
-                "s41-tiktok-video",
-                "tiktok_public",
-                "https://www.tiktok.com/@nba/video/7606907506589207838",
-                "video:nba/7606907506589207838",
-            ),
-            hydration(
-                "s42-tiktok-profile",
-                "tiktok_public",
-                "https://www.tiktok.com/@nba",
-                "profile:nba",
-            ),
-            hydration(
-                "s43-oembed-youtube",
-                "oembed",
-                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                "youtube:https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            ),
-            hydration(
-                "s44-oembed-vimeo",
-                "oembed",
-                "https://vimeo.com/503166067",
-                "vimeo:https://vimeo.com/503166067",
-            ),
-            hydration(
-                "s45-oembed-spotify",
-                "oembed",
-                "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
-                "spotify:https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
-            ),
-            hydration(
-                "s46-oembed-soundcloud",
-                "oembed",
-                "https://soundcloud.com/forss/flickermood",
-                "soundcloud:https://soundcloud.com/forss/flickermood",
-            ),
-            hydration(
-                "s47-oembed-tiktok",
-                "oembed",
-                "https://www.tiktok.com/@nba/video/7606907506589207838",
-                "tiktok:https://www.tiktok.com/@nba/video/7606907506589207838",
-            ),
-            hydration(
-                "s48-oembed-x",
-                "oembed",
-                "https://x.com/jack/status/20",
-                "x:https://x.com/jack/status/20",
-            ),
         ),
     )
 
@@ -498,8 +280,8 @@ def assert_nothing_wanted_a_credential(case, artifact, expected_adapters):
         case.fail("the artifact reported " + AUTH_REQUIRED)
 
 
-FEED_STEP = discovery("s03-reddit-feed", "reddit_feed", REDDIT_SUBREDDIT)
-FEED_REQUEST = adapters.AdapterRequest(step_id=FEED_STEP.step_id, query=REDDIT_SUBREDDIT)
+FEED_STEP = discovery("s04-channel-feed", "rss_atom", FEED_CHANNEL_ID)
+FEED_REQUEST = adapters.AdapterRequest(step_id=FEED_STEP.step_id, query=FEED_CHANNEL_ID)
 
 
 def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):
@@ -520,7 +302,6 @@ def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):
     return schema.AcquisitionArtifact(
         artifact_id="artifact:m-wrong",
         manifest_id="m-wrong",
-        mode="staged",
         as_of="2026-08-10T09:30:00Z",
         records=records,
         steps=(

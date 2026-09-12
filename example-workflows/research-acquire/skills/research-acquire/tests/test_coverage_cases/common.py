@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from super_research import schema
-from super_research.adapters import youtube_innertube
 
 
 def record(
@@ -82,7 +81,7 @@ def step_result(step_id, adapter_id, kind="discovery", query="", outcome="ok", l
 
 def manifest(*steps):
     return schema.AcquisitionManifest(
-        manifest_id="m", mode="fused", as_of="2026-08-17T19:00:00Z", steps=tuple(steps)
+        manifest_id="m", as_of="2026-08-17T19:00:00Z", steps=tuple(steps)
     )
 
 
@@ -90,7 +89,6 @@ def artifact(steps=(), records=()):
     return schema.AcquisitionArtifact(
         artifact_id="a",
         manifest_id="m",
-        mode="fused",
         as_of="2026-08-17T19:00:00Z",
         records=tuple(records),
         steps=tuple(steps),
@@ -99,18 +97,6 @@ def artifact(steps=(), records=()):
         outcome="ok",
         loss=(),
     )
-
-
-# The representation kinds this adapter's own descriptors declare, read off the
-# source rather than spelled here. They are what a *record* carries, and the
-# fixtures below set them so a record looks like what it would look like in the
-# field. The review no longer reads them at all: deciding depth from the kind a
-# record arrived at is the inference this change deleted, and it is what marked
-# plain search rows as deepened. A literal here would let the fixtures drift
-# from the adapter; a sentence saying the review consults them would leave the
-# wrong mental model exactly where the next author opens the file.
-YOUTUBE_DISCOVERED_AS = youtube_innertube.DESCRIPTOR.representation_kind
-YOUTUBE_TRANSCRIPT_AS = youtube_innertube.TRANSCRIPT_DESCRIPTOR.representation_kind
 
 
 def codes(advisories):

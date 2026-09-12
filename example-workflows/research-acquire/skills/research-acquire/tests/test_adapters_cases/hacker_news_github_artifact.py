@@ -179,45 +179,29 @@ class HackerNewsGithubArtifactSeamTest(unittest.TestCase):
             ],
         )
 
-    def test_two_surfaces_rank_together_on_the_name_each_one_reported(self):
-        # The payoff of one descriptor per surface. Algolia calls a story's
-        # comment count `num_comments` and Firebase calls the same quantity
-        # `descendants`; each record is ranked by the name its own surface
-        # published, so a view over both is one ranking rather than a list with
-        # half of it unranked at the bottom.
+    def test_two_surfaces_preserve_the_counts_each_one_reported(self):
         stories = [
             record
             for record in self.artifact.records
             if record.canonical_content_kind == "story"
         ]
-        ranked = runner.order_records(stories, "most_commented", self.artifact.as_of)
         counts = []
-        for record in ranked:
+        for record in stories:
             named = {snapshot.metric_name: snapshot.value for snapshot in record.engagement}
             counts.append(named.get("num_comments", named.get("descendants")))
 
         self.assertEqual(len(stories), 4)
-        self.assertEqual(counts, [311, 233, 233, 12])
-        self.assertEqual(counts, sorted(counts, reverse=True))
+        self.assertEqual(sorted(counts), [12, 233, 233, 311])
 
-    def test_an_issue_list_ranks_on_the_count_github_reported(self):
+    def test_an_issue_list_preserves_reported_comment_counts_including_zero(self):
         issues = self.by_step["s5-issues"]
-        ranked = runner.order_records(issues, "most_commented", self.artifact.as_of)
         counts = [
-            runner.eligible_snapshot(record, "comments", self.artifact.as_of).value
-            for record in ranked
+            snapshot.value
+            for record in issues
+            for snapshot in record.engagement
+            if snapshot.metric_name == "comments"
         ]
-
-        self.assertEqual(counts, [31, 23, 0])
-        # And that is a different view from the newest one, so the ranking is
-        # the count's doing rather than the order they arrived in.
-        self.assertNotEqual(
-            [record.native_item_id for record in ranked],
-            [
-                record.native_item_id
-                for record in runner.order_records(issues, "newest", self.artifact.as_of)
-            ],
-        )
+        self.assertEqual(sorted(counts), [0, 23, 31])
 
     def test_every_row_is_the_platform_speaking_for_itself(self):
         # Neither of these is an archive: HN's own search of HN and GitHub's

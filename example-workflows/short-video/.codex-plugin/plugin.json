@@ -1,6 +1,6 @@
 {
   "name": "short-video",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Composable short-video making and independent export review.",
   "skills": "./skills/"
 }

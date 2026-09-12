@@ -13,8 +13,9 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, normalize, project, router, runner, schema, transport
-from super_research.adapters import fake, reddit_archive, web_search
+from tests import helpers
+from super_research import adapters, normalize, runner, schema, transport
+from super_research.adapters import fake, reddit_archive
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "tracer"
@@ -27,7 +28,7 @@ REDDIT_THREAD_LOCATOR = (
 X_POST_LOCATOR = "https://x.com/simonw/status/1799990000000000001"
 
 # Spelled here rather than imported, so the spelling is pinned from outside the
-# module that owns it — the same way `test_router` holds `third_party_archive`.
+# module that owns it.
 DISCOVERY_NOT_RECORDED = "discovery_not_recorded"
 
 
@@ -46,17 +47,19 @@ class RecordingOpener:
     """
 
     def __init__(self, responses):
-        self.responses = dict(responses)
+        self.responses = {route: list(answers) if isinstance(answers, list) else [answers]
+                          for route, answers in responses.items()}
         self.opened = []
 
     def __call__(self, request):
         self.opened.append(request)
         if request.route_id not in self.responses:
             raise transport.TransportError("no offline response seeded for " + request.route_id)
-        outcome = self.responses[request.route_id]
+        answers = self.responses[request.route_id]
+        outcome = answers.pop(0) if len(answers) > 1 else answers[0]
         if isinstance(outcome, Exception):
             raise outcome
-        return outcome
+        return helpers.answered(request, outcome)
 
 
 def tracer_transport(responses):
@@ -94,16 +97,14 @@ def forbid_io():
 
 
 TRACER_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "tracer-k4-reddit",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [
         {
             "step_id": "s1-discover",
             "kind": "discovery",
-            "adapter_id": "web_search",
-            "query": "site:reddit.com best local model",
+            "adapter_id": "fake",
+            "query": "fixture:local-model-index",
             "max_items": 6,
         },
         {
@@ -127,16 +128,14 @@ TRACER_MANIFEST = {
 
 
 TRACER_X_MANIFEST = {
-    "schema_version": 2,
     "manifest_id": "tracer-k4-x",
-    "mode": "staged",
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [
         {
             "step_id": "s1-discover",
             "kind": "discovery",
-            "adapter_id": "web_search",
-            "query": "site:x.com local model benchmark",
+            "adapter_id": "fake",
+            "query": "fixture:local-model-index",
             "max_items": 6,
         },
         {
@@ -155,10 +154,10 @@ TRACER_X_MANIFEST = {
 
 ADAPTER_CALLS = (
     (
-        web_search,
-        adapters.AdapterRequest(step_id="s1-discover", query="best local model"),
-        "ddg_html_results.html",
-        "text/html",
+        fake,
+        adapters.AdapterRequest(step_id="s1-discover", query="fixture:local-model-index"),
+        "index_results.json",
+        "application/json",
     ),
     (
         reddit_archive,
@@ -177,74 +176,28 @@ ADAPTER_CALLS = (
 
 def tracer_responses():
     return {
-        "ddg_html": (200, read_fixture("ddg_html_results.html"), "text/html"),
+        "fake_offline": (200, read_fixture("index_results.json"), "application/json"),
         "arctic_shift_posts_ids": (
             200,
             read_fixture("arctic_shift_posts_ids.json"),
             "application/json",
         ),
-        "fake_offline": (200, read_fixture("fake_x_native_page.json"), "application/json"),
     }
 
 
 def run_tracer(payload):
     """Run one tracer manifest end to end over the offline fixtures."""
 
-    carrier, opener = tracer_transport(tracer_responses())
+    responses = tracer_responses()
+    if any(step["kind"] == "hydration" and step["adapter_id"] == "fake"
+           for step in payload["steps"]):
+        responses["fake_offline"] = [
+            responses["fake_offline"],
+            (200, read_fixture("fake_x_native_page.json"), "application/json"),
+        ]
+    carrier, opener = tracer_transport(responses)
     artifact = runner.run_acquisition(schema.parse_manifest(payload), carrier)
     return artifact, carrier, opener
-
-
-def load_wrong_artifact(case_name):
-    """Build one deliberately wrong artifact from the fixture beside the tree.
-
-    Nothing in the package produces these. They exist so the K4 hybrid
-    oracle can be shown to fail when the claim it stands for is false.
-    """
-
-    fixture = json.loads(read_fixture("wrong_merged_artifacts.json"))
-    defaults = fixture["record_defaults"]
-    case = fixture["cases"][case_name]
-    records = []
-    for row in case["records"]:
-        fields = dict(defaults)
-        fields.update(row)
-        fields["engagement"] = tuple(
-            schema.EngagementSnapshot(name, value, observed_at)
-            for name, value, observed_at in fields["engagement"]
-        )
-        fields["loss"] = tuple(fields["loss"])
-        records.append(schema.AcquisitionRecord(**fields))
-    return schema.AcquisitionArtifact(
-        artifact_id="artifact:wrong",
-        manifest_id="wrong",
-        mode="staged",
-        as_of="2026-08-10T00:00:00Z",
-        records=tuple(records),
-        steps=(),
-        edges=tuple(schema.ProvenanceEdge(**edge) for edge in case["edges"]),
-        groups=tuple(
-            schema.RecordGroup(
-                key_kind=group["key_kind"],
-                key=tuple(group["key"]),
-                member_record_ids=tuple(group["member_record_ids"]),
-            )
-            for group in case["groups"]
-        ),
-    )
-
-
-def sample_record(**overrides):
-    """Build one record beside the tree, from the wrong-result fixture's defaults."""
-
-    fields = dict(json.loads(read_fixture("wrong_merged_artifacts.json"))["record_defaults"])
-    fields.update(overrides)
-    fields["engagement"] = tuple(
-        schema.EngagementSnapshot(name, value, observed_at)
-        for name, value, observed_at in fields["engagement"]
-    )
-    fields["loss"] = tuple(fields["loss"])
-    return schema.AcquisitionRecord(**fields)
 
 
 def assert_linked_never_merged(case, artifact, discovery_locator, native_platform):
@@ -304,6 +257,5 @@ def assert_linked_never_merged(case, artifact, discovery_locator, native_platfor
     )
     case.assertEqual(hit.time_confidence, "unknown", "the index hit was given a target time")
     case.assertTrue(target.usable_basis_time, "the native record lost its usable basis time")
-    case.assertNotEqual(
-        hit.access_class, target.access_class, "the pair collapsed onto one access class"
-    )
+    case.assertEqual(hit.access_class, "offline", "fixture discovery claims live provenance")
+    case.assertEqual(target.access_class, "K3" if native_platform == "reddit" else "offline")

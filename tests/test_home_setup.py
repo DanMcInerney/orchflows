@@ -7,17 +7,16 @@ import json
 import os
 from pathlib import Path
 import shutil
-import stat
 import subprocess
 import sys
 import tempfile
 import tomllib
-import types
 import unittest
 from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/orchflows.py"
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("orchflows", SCRIPT)
 orchflows = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(orchflows)
@@ -42,9 +41,8 @@ class HomeSetupTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="orchflows-home-test-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()
-        self.host_environment = {"CODEX_HOME": str(self.root / "codex"),
-                                 "CLAUDE_CONFIG_DIR": str(self.root / "claude")}
-        self.environment_patch = patch.dict(os.environ, self.host_environment)
+        self.environment_patch = patch.dict(os.environ, {"CODEX_HOME": str(self.root / "codex"),
+                                                         "CLAUDE_CONFIG_DIR": str(self.root / "claude")})
         self.environment_patch.start()
         self.addCleanup(self.environment_patch.stop)
         self.home = self.root / "home"
@@ -52,13 +50,12 @@ class HomeSetupTests(unittest.TestCase):
         package(self.source, "orchflows-light", "7.8.9")
         write(self.source / ".codex-plugin/plugin.json", json.dumps({"name": "orchflows-light", "version": "7.8.9+cache"}))
         write(self.source / ".claude-plugin/plugin.json", json.dumps({"name": "orchflows-light", "version": "7.8.9"}))
-        write(self.source / "standards/code.md", "Local coding standard.\n")
-        write(self.source / "docs/native-hosts.md", "Fixture host docs.\n")
+        write(self.source / "guidance/code.md", "Local coding guidance.\n")
+        write(self.source / "docs/hosts.md", "Fixture host docs.\n")
         write(self.source / "README.md", "Fixture core.\n")
         (self.source / "scripts").mkdir()
-        shutil.copy2(SCRIPT, self.source / "scripts/orchflows.py")
-        shutil.copy2(SCRIPT.with_name("host_config.py"), self.source / "scripts/host_config.py")
-        shutil.copy2(SCRIPT.with_name("native_logs.py"), self.source / "scripts/native_logs.py")
+        for name in ("orchflows.py", "host_config.py", "native_logs.py"):
+            shutil.copy2(SCRIPT.with_name(name), self.source / "scripts" / name)
         self.example = self.source / "example-workflows/social-search"
         package(self.example, "social-search")
         write(self.example / "README.md", "Example library.\n")
@@ -72,36 +69,25 @@ class HomeSetupTests(unittest.TestCase):
     def cli(self, script: Path, *arguments: str, python: str | None = None, env: dict | None = None) -> subprocess.CompletedProcess:
         unrelated = self.root / "unrelated-project"
         unrelated.mkdir(exist_ok=True)
-        return subprocess.run(
-            [python or sys.executable, "-B", str(script), *arguments], cwd=unrelated,
-            env=env, text=True, capture_output=True, timeout=45, check=False,
-        )
+        return subprocess.run([python or sys.executable, "-B", str(script), *arguments], cwd=unrelated,
+                              env=env, text=True, capture_output=True, timeout=45, check=False)
 
-    def test_first_setup_has_portable_identity_complete_core_and_runtime(self) -> None:
+    def test_first_setup_installs_complete_core_runtime_and_example(self) -> None:
         write(self.source / ".git/config", "never copy source git")
         write(self.source / "tests/large-output.json", "never copy root tests")
         write(self.source / "scripts/__pycache__/discard.pyc", "never copy cache")
-        write(self.source / "scripts/test-output/generated.json", "never copy generated output")
         result = self.install(example=True)
         core = Path(result["core"]["package_root"])
+        self.assertEqual(result["core"]["status"], "installed")
         self.assertTrue((core / ".codex-plugin/plugin.json").is_file())
         self.assertTrue((core / ".claude-plugin/plugin.json").is_file())
-        self.assertFalse((core / ".git").exists())
-        self.assertFalse((core / "tests").exists())
-        self.assertFalse((core / "example-workflows").exists())
-        self.assertFalse((core / "scripts/__pycache__").exists())
-        self.assertFalse((core / "scripts/test-output").exists())
+        for relative in (".git", "tests", "example-workflows", "scripts/__pycache__"):
+            self.assertFalse((core / relative).exists(), relative)
         self.assertEqual(snapshot(self.example), snapshot(self.home / "libraries/social-search"))
-        config_text = (self.home / "config.toml").read_text(encoding="utf-8")
-        config = tomllib.loads(config_text)
-        self.assertEqual(config["core"]["version"], "7.8.9")
-        self.assertEqual(len(config["core"]["content_sha256"]), 64)
-        self.assertNotIn(str(self.source), config_text)
-        local = tomllib.loads((self.home / ".local/config.toml").read_text(encoding="utf-8"))
-        self.assertEqual(local["source"], str(self.source))
-        self.assertEqual(local["runtime_python"], result["runtime_python"])
+        self.assertFalse((self.home / "config.toml").exists())
+        self.assertNotIn("config.toml", result["files"])
+        self.assertEqual(orchflows.doctor(self.home)["checks"]["core"]["version"], "7.8.9")
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
-        # Setup does not install pip or third-party dependencies.
         probe = subprocess.run([result["runtime_python"], "-I", "-c", "import importlib.util; print(importlib.util.find_spec('pip'))"], text=True, capture_output=True, check=True)
         self.assertEqual(probe.stdout.strip(), "None")
 
@@ -132,41 +118,31 @@ class HomeSetupTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
             self.assertFalse(self.home.exists())
 
-    def test_runpy_load_finds_its_own_host_helper(self) -> None:
-        import runpy
-
-        loaded = runpy.run_path(str(SCRIPT))
-        result = loaded["setup"](self.home, self.source)
-        self.assertEqual(result["host_config_status"], "configured")
-
-    def test_repeat_preserves_custom_config_library_and_venv(self) -> None:
+    def test_repeat_preserves_user_files_and_runtime_and_regenerates_owned_files(self) -> None:
         first = self.install(example=True)
         custom = self.home / "libraries/social-search/README.md"
         write(custom, "User's altered example.\n")
-        with (self.home / "config.toml").open("a", encoding="utf-8") as stream:
-            stream.write('\n[projects.my_project]\nnote = "portable user setting"\n')
         write(self.home / "README.md", "My user-owned README.\n")
+        write(self.home / ".gitignore", "my-user-pattern\n")
         runtime = self.home / ".local/runtime"
         marker = runtime / "user-marker.txt"
         write(marker, "Keep installed environment content.\n")
-        before = {path: path.read_bytes() for path in (custom, self.home / "config.toml", self.home / "README.md", marker, runtime / "pyvenv.cfg")}
+        write(self.home / "config.toml", "# hand edit\n[core]\nname = \"orchflows-light\"\nversion = \"0.0.0\"\n")
+        catalog = self.home / ".claude-plugin/marketplace.json"
+        write(catalog, '{"name":"my-own-catalog","plugins":[]}\n')
+        write(Path(first["core"]["package_root"]) / "guidance/code.md", "Local edit inside the managed core.\n")
+        before = {path: path.read_bytes() for path in (custom, self.home / "README.md", self.home / ".gitignore",
+                                                      self.home / "config.toml", marker, runtime / "pyvenv.cfg")}
         interpreter_mtime = Path(first["runtime_python"]).stat().st_mtime_ns
         second = self.install(example=True)
-        self.assertEqual(second["core"]["status"], "reused")
-        self.assertEqual(second["runtime"]["status"], "preserved")
+        self.assertEqual(second["core"]["status"], "updated")
+        self.assertEqual(second["runtime"], "preserved")
         self.assertEqual(second["example"]["status"], "preserved")
         self.assertEqual({path: path.read_bytes() for path in before}, before)
         self.assertEqual(Path(first["runtime_python"]).stat().st_mtime_ns, interpreter_mtime)
-
-    def test_malformed_configs_fail_before_mutation_and_stay_unchanged(self) -> None:
-        for relative in ("config.toml", ".local/config.toml"):
-            with self.subTest(relative=relative):
-                home = self.root / relative.replace("/", "-")
-                write(home / relative, "broken = [not valid TOML\n")
-                before = snapshot(home)
-                with self.assertRaisesRegex(ValueError, "Malformed configuration preserved"):
-                    orchflows.setup(home, self.source)
-                self.assertEqual(snapshot(home), before)
+        self.assertEqual(json.loads(catalog.read_text())["name"], "orchflows-home")
+        self.assertEqual((Path(first["core"]["package_root"]) / "guidance/code.md").read_text(), "Local coding guidance.\n")
+        self.assertEqual(list((self.home / ".local/packages").iterdir()), [Path(first["core"]["package_root"])])
 
     def test_incomplete_existing_runtime_is_not_repaired(self) -> None:
         marker = self.home / ".local/runtime/my-environment.txt"
@@ -174,109 +150,226 @@ class HomeSetupTests(unittest.TestCase):
         before = snapshot(marker.parent)
         result = orchflows.setup(self.home, self.source)
         self.assertEqual(result["status"], "partial")
-        self.assertEqual(result["runtime"]["status"], "unavailable")
+        self.assertEqual(result["runtime"], "unavailable")
         self.assertEqual(snapshot(marker.parent), before)
         self.assertIn("existing contents preserved", " ".join(result["issues"]))
 
+    def test_legacy_home_configuration_is_preserved_and_ignored(self) -> None:
+        legacy = "# User content; no longer setup's identity store.\nbroken = [\n"
+        write(self.home / "config.toml", legacy)
+        self.install()
+        self.assertEqual((self.home / "config.toml").read_text(), legacy)
+        report = orchflows.doctor(self.home)
+        self.assertEqual(report["status"], "ready", report)
+        self.assertEqual(report["checks"]["core"]["version"], "7.8.9")
+
     def test_changed_source_updates_core_and_preserves_user_content(self) -> None:
-        write(self.source / "standards/obsolete.md", "Old standard.\n")
+        write(self.source / "guidance/obsolete.md", "Old guidance.\n")
         first = self.install(example=True)
         core = Path(first["core"]["package_root"])
-        before = snapshot(core)
         write(self.home / "libraries/social-search/README.md", "My authored library.\n")
         write(self.home / "logs/saved.md", "My existing report.\n")
-        with (self.home / "config.toml").open("a", encoding="utf-8") as stream:
-            stream.write('\n# Keep my settings.\n[projects.mine]\nnote = "portable"\n')
-        config_before = (self.home / "config.toml").read_bytes()
         retained = [self.home / "libraries/social-search/README.md", self.home / "logs/saved.md",
                     self.home / ".local/runtime/pyvenv.cfg", Path(first["runtime_python"])]
         retained_bytes = {path: path.read_bytes() for path in retained}
-        (self.source / "standards/obsolete.md").unlink()
-        write(self.source / "standards/code.md", "A changed standard.\n")
+        (self.source / "guidance/obsolete.md").unlink()
+        write(self.source / "guidance/code.md", "A changed guidance.\n")
+        write(self.source / "plugin.json", json.dumps({"name": "orchflows-light", "version": "8.0.0"}))
         result = orchflows.setup(self.home, self.source)
         self.assertEqual(result["status"], "ready", result)
         self.assertEqual(result["core"]["status"], "updated")
-        self.assertEqual((core / "standards/code.md").read_text(), "A changed standard.\n")
-        self.assertFalse((core / "standards/obsolete.md").exists())
-        backup = Path(result["core"]["backup_path"])
-        self.assertEqual(snapshot(backup / "orchflows-light"), before)
-        self.assertEqual((backup / "config.toml").read_bytes(), config_before)
+        self.assertEqual((core / "guidance/code.md").read_text(), "A changed guidance.\n")
+        self.assertFalse((core / "guidance/obsolete.md").exists())
         self.assertEqual({path: path.read_bytes() for path in retained}, retained_bytes)
-        updated = (self.home / "config.toml").read_text()
-        self.assertIn('# Keep my settings.\n[projects.mine]\nnote = "portable"', updated)
-        self.assertEqual(tomllib.loads(updated)["core"], orchflows._identity(core))
+        self.assertEqual(orchflows.doctor(self.home)["checks"]["core"]["version"], "8.0.0")
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
-        backups = list(backup.parent.iterdir())
-        self.assertEqual(self.install()["core"]["status"], "reused")
-        self.assertEqual(list(backup.parent.iterdir()), backups)
 
-    def test_changed_managed_core_is_preserved_on_upgrade(self) -> None:
-        first = self.install()
-        core = Path(first["core"]["package_root"])
-        write(core / "standards/code.md", "Unmerged local change.\n")
-        write(self.source / "standards/code.md", "New upstream standard.\n")
-        before = snapshot(self.home)
-        result = orchflows.setup(self.home, self.source)
-        self.assertEqual(result["status"], "partial")
-        self.assertEqual(result["core"]["status"], "preserved")
-        self.assertIn("local changes", " ".join(result["issues"]))
-        self.assertEqual(snapshot(self.home), before)
-
-    def test_missing_recorded_identity_does_not_authorize_core_replacement(self) -> None:
-        self.install()
-        write(self.home / "config.toml", 'schema_version = 1\n[core]\nname = "orchflows-light"\n')
-        write(self.source / "standards/code.md", "Upstream change.\n")
-        before = snapshot(self.home)
-        result = orchflows.setup(self.home, self.source)
-        self.assertEqual(result["core"]["status"], "preserved")
-        self.assertEqual(snapshot(self.home), before)
-
-    def test_failed_upgrade_restores_previous_core_and_config(self) -> None:
+    def test_failed_swap_restores_previous_core(self) -> None:
         first = self.install()
         core = Path(first["core"]["package_root"])
         before = snapshot(core)
-        config = (self.home / "config.toml").read_bytes()
-        write(self.source / "standards/code.md", "Upstream change.\n")
-        replace = os.replace
+        write(self.source / "guidance/code.md", "Upstream change.\n")
+        replace, failed = os.replace, []
 
-        def fail_config_replace(source, destination):
-            if Path(destination) == self.home / "config.toml":
+        def fail_once(source, destination):
+            if Path(destination) == core and not failed:
+                failed.append(destination)
                 raise OSError("disk failure")
             return replace(source, destination)
 
-        with patch.object(os, "replace", side_effect=fail_config_replace):
+        with patch.object(os, "replace", side_effect=fail_once):
             with self.assertRaisesRegex(OSError, "disk failure"):
                 orchflows.setup(self.home, self.source)
         self.assertEqual(snapshot(core), before)
-        self.assertEqual((self.home / "config.toml").read_bytes(), config)
+        self.assertEqual(list(core.parent.iterdir()), [core])
+        self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
+
+    def test_failed_rename_of_previous_core_or_example_leaves_nothing_behind(self) -> None:
+        first = self.install()
+        core = Path(first["core"]["package_root"])
+        before = snapshot(core)
+        write(self.source / "guidance/code.md", "Upstream change.\n")
+        replace = os.replace
+
+        def fail_moving_aside(source, destination):
+            if "-previous-" in Path(destination).name:
+                raise OSError("disk failure")
+            return replace(source, destination)
+
+        with patch.object(os, "replace", side_effect=fail_moving_aside):
+            with self.assertRaisesRegex(OSError, "disk failure"):
+                orchflows.setup(self.home, self.source)
+        self.assertEqual(snapshot(core), before)
+        self.assertEqual(list(core.parent.iterdir()), [core])
+
+        def fail_example(source, destination):
+            if Path(destination) == self.home / "libraries/social-search":
+                raise OSError("disk failure")
+            return replace(source, destination)
+
+        with patch.object(os, "replace", side_effect=fail_example):
+            with self.assertRaisesRegex(OSError, "disk failure"):
+                orchflows.setup(self.home, self.source, "social-search")
+        self.assertEqual(list((self.home / "libraries").iterdir()), [])
+        self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
+
+    def test_failed_restoration_retains_recoverable_core_across_later_setup(self) -> None:
+        first = self.install()
+        core = Path(first["core"]["package_root"])
+        before = snapshot(core)
+        write(self.source / "guidance/code.md", "Upstream change.\n")
+        replace = os.replace
+
+        def fail_swap_and_restore(source, destination):
+            if Path(destination) == core:
+                raise OSError("disk failure")
+            return replace(source, destination)
+
+        with patch.object(os, "replace", side_effect=fail_swap_and_restore):
+            with self.assertRaisesRegex(OSError, "previous copy retained at") as failure:
+                orchflows.setup(self.home, self.source)
+        backups = list(core.parent.glob(".orchflows-light-previous-*"))
+        self.assertEqual(len(backups), 1)
+        self.assertIn(str(backups[0]), str(failure.exception))
+        self.assertEqual(snapshot(backups[0]), before)
+        self.assertFalse(core.exists())
+        self.install()
+        self.assertEqual(snapshot(backups[0]), before)
+        self.assertEqual((core / "guidance/code.md").read_text(), "Upstream change.\n")
+
+    def test_existing_setup_lock_prevents_upgrade(self) -> None:
+        first = self.install()
+        write(self.home / ".local/packages/.setup.lock", "")
+        write(self.source / "guidance/code.md", "Upstream change.\n")
+        before = snapshot(self.home)
+        for source in (self.source, Path(first["core"]["package_root"])):
+            with self.subTest(source=source), self.assertRaisesRegex(ValueError, "Setup lock exists"):
+                orchflows.setup(self.home, source)
+            self.assertEqual(snapshot(self.home), before)
+
+    def test_competing_cli_setups_are_locked_until_catalog_generation_finishes(self) -> None:
+        first = self.install()
+        core = Path(first["core"]["package_root"])
+        other = self.root / "other-source"
+        shutil.copytree(self.source, other)
+        write(other / "plugin.json", json.dumps({"name": "orchflows-light", "version": "99.0.0"}))
+        catalogs = orchflows._catalog_texts
+        attempts = []
+
+        def competing_setups(home, libraries):
+            before = snapshot(self.home)
+            for source in (core, other):
+                result = self.cli(core / "scripts/orchflows.py", "setup", "--home", str(home),
+                                  "--source", str(source), "--example", "social-search", "--skip-host-config")
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn("Setup lock exists", json.loads(result.stderr)["error"])
+                self.assertEqual(snapshot(self.home), before)
+                attempts.append(source)
+            return catalogs(home, libraries)
+
+        with patch.object(orchflows, "_catalog_texts", side_effect=competing_setups):
+            result = self.install(example=True)
+        self.assertEqual(attempts, [core, other])
+        self.assertEqual(result["core"]["version"], "7.8.9")
+        self.assertEqual(result["example"]["status"], "installed")
         self.assertFalse((core.parent / ".setup.lock").exists())
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
 
-    def test_source_change_during_staging_preserves_installation(self) -> None:
-        first = self.install()
+    def test_guidance_upgrade_refuses_live_core_references_without_changing_home(self) -> None:
+        first = self.install(example=True)
         core = Path(first["core"]["package_root"])
-        before = snapshot(self.home)
-        write(self.source / "standards/code.md", "Upstream change.\n")
-        copy = orchflows._copy_package
-
-        def changing_copy(source, destination, **options):
-            copy(source, destination, **options)
-            write(destination / "standards/code.md", "Changed during copy.\n")
-
-        with patch.object(orchflows, "_copy_package", side_effect=changing_copy):
-            with self.assertRaisesRegex(ValueError, "source changed while copying"):
-                orchflows.setup(self.home, self.source)
-        self.assertEqual(snapshot(self.home), before)
-        self.assertTrue(core.is_dir())
-
-    def test_existing_setup_lock_prevents_upgrade(self) -> None:
-        self.install()
-        write(self.home / ".local/packages/.setup.lock", "")
-        write(self.source / "standards/code.md", "Upstream change.\n")
-        before = snapshot(self.home)
-        with self.assertRaisesRegex(ValueError, "Core setup lock exists"):
+        (core / "guidance").rename(core / "standards")
+        library = self.home / "libraries/social-search"
+        references = library / "references/library-context.md"
+        text = "\n".join((
+            "resolve orchflows-light --resource standards/research.md",
+            "Extends: `orchflows-light:standards/code/api.md`.",
+            "Core parents are `standards/writing.md` and `standards/visual-design.md`.",
+            "Read `orchflows-light:standards/code.md` and `orchflows-light:standards/data-analysis.md`.",
+        ))
+        write(references, text)
+        before, host_before = snapshot(self.home), snapshot(self.root / "codex")
+        with self.assertRaisesRegex(ValueError, "Guidance migration requires updating libraries") as failure:
             orchflows.setup(self.home, self.source)
         self.assertEqual(snapshot(self.home), before)
+        self.assertEqual(snapshot(self.root / "codex"), host_before)
+        for number in range(1, 5):
+            self.assertIn(f"{references}:{number}:", str(failure.exception))
+        for name in ("code", "code/api", "data-analysis", "research", "visual-design", "writing"):
+            self.assertIn(f"standards/{name}.md -> guidance/{name.replace('/', '.')}.md", str(failure.exception))
+        write(references, text.replace("standards/", "guidance/").replace("code/api.md", "code.api.md"))
+        updated = self.install()
+        self.assertEqual(updated["core"]["status"], "updated")
+        self.assertFalse((core / "standards").exists())
+        self.assertTrue((core / "guidance/code.md").is_file())
+        self.assertEqual(references.read_text(), text.replace("standards/", "guidance/").replace("code/api.md", "code.api.md"))
+
+    def test_guidance_upgrade_requires_root_identity_for_old_native_only_library(self) -> None:
+        first = self.install(example=True)
+        core = Path(first["core"]["package_root"])
+        (core / "guidance").rename(core / "standards")
+        library = self.home / "libraries/social-search"
+        manifest = (library / "plugin.json").read_text()
+        (library / "plugin.json").unlink()
+        write(library / ".codex-plugin/plugin.json", manifest)
+        write(library / "README.md", "resolve orchflows-light --resource standards/research.md\n")
+        before = snapshot(self.home)
+        with self.assertRaisesRegex(ValueError, "Guidance migration requires updating libraries") as failure:
+            orchflows.setup(self.home, self.source)
+        self.assertIn(f"{library / 'plugin.json'}: missing", str(failure.exception))
+        self.assertIn("README.md:1: standards/research.md -> guidance/research.md", str(failure.exception))
+        self.assertEqual(snapshot(self.home), before)
+        write(library / "plugin.json", manifest)
+        write(library / "README.md", "resolve orchflows-light --resource guidance/research.md\n")
+        self.install()
+        self.assertEqual(orchflows.resolve(self.home, "social-search")["package_root"], str(library))
+        catalog = json.loads((self.home / ".agents/plugins/marketplace.json").read_text())
+        self.assertEqual([entry["name"] for entry in catalog["plugins"]], ["orchflows-light", "social-search"])
+
+    def test_guidance_upgrade_preserves_local_standards_and_ignores_historical_outputs(self) -> None:
+        first = self.install(example=True)
+        core = Path(first["core"]["package_root"])
+        (core / "guidance").rename(core / "standards")
+        library = self.home / "libraries/social-search"
+        write(library / "standards/research.md", "Library-owned research criteria.\n")
+        write(library / "skills/sample/SKILL.md", "Read [our standard](../../standards/research.md).\n")
+        write(library / "references/context.md", "Read `standards/research.md` and `other:standards/writing.md`.\n")
+        for directory in ("trials/run", "outputs", "artifacts", "logs", "skills/sample/tests"):
+            write(library / directory / "old.md", "Previously used `orchflows-light:standards/research.md`.\n")
+        before = snapshot(library)
+        self.install()
+        self.assertEqual(snapshot(library), before)
+        self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
+
+    def test_explicit_core_reference_is_not_hidden_by_same_named_library_standard(self) -> None:
+        first = self.install(example=True)
+        core = Path(first["core"]["package_root"])
+        (core / "guidance").rename(core / "standards")
+        library = self.home / "libraries/social-search"
+        write(library / "standards/research.md", "Local standard.\n")
+        write(library / "README.md", "resolve orchflows-light --resource standards/research.md\n")
+        with self.assertRaisesRegex(ValueError, "README.md:1: standards/research.md -> guidance/research.md"):
+            orchflows.setup(self.home, self.source)
 
     def test_installed_cli_repeats_setup_without_source_or_cwd_dependency(self) -> None:
         first = self.install()
@@ -286,10 +379,10 @@ class HomeSetupTests(unittest.TestCase):
         repeat = self.cli(core / "scripts/orchflows.py", "setup", python=first["runtime_python"], env=environment)
         self.assertEqual(repeat.returncode, 0, repeat.stderr + repeat.stdout)
         self.assertEqual(json.loads(repeat.stdout)["core"]["status"], "reused")
-        resolved = self.cli(core / "scripts/orchflows.py", "resolve", "orchflows-light", "--resource", "standards/code.md", python=first["runtime_python"], env=environment)
+        resolved = self.cli(core / "scripts/orchflows.py", "resolve", "orchflows-light", "--resource", "guidance/code.md", python=first["runtime_python"], env=environment)
         self.assertEqual(resolved.returncode, 0, resolved.stderr)
-        self.assertEqual(json.loads(resolved.stdout)["resource_path"], str(core / "standards/code.md"))
-        explicit = self.cli(core / "scripts/orchflows.py", "--home", str(self.home), "doctor", python=first["runtime_python"], env=dict(environment, ORCHFLOWS_HOME=str(self.root / "wrong")))
+        self.assertEqual(json.loads(resolved.stdout)["resource_path"], str(core / "guidance/code.md"))
+        explicit = self.cli(core / "scripts/orchflows.py", "doctor", "--home", str(self.home), python=first["runtime_python"], env=dict(environment, ORCHFLOWS_HOME=str(self.root / "wrong")))
         self.assertEqual(explicit.returncode, 0, explicit.stderr + explicit.stdout)
 
     def test_clone_restore_uses_supplied_bundle_and_preserves_portable_files(self) -> None:
@@ -312,13 +405,11 @@ class HomeSetupTests(unittest.TestCase):
         self.install(example=True)
         clone = self.root / "clone"
         shutil.copytree(self.home, clone, ignore=shutil.ignore_patterns(".local", ".git"))
-        original = (clone / "config.toml").read_bytes()
-        write(self.source / "standards/code.md", "A newer supplied version.\n")
+        write(self.source / "plugin.json", json.dumps({"name": "orchflows-light", "version": "9.0.0"}))
         result = orchflows.setup(clone, self.source)
         self.assertEqual(result["status"], "ready", result)
         self.assertEqual(result["core"]["status"], "installed")
-        self.assertEqual((Path(result["core"]["backup_path"]) / "config.toml").read_bytes(), original)
-        self.assertEqual(tomllib.loads((clone / "config.toml").read_text())["core"], orchflows._identity(self.source))
+        self.assertEqual(orchflows.doctor(clone)["checks"]["core"]["version"], "9.0.0")
         self.assertEqual(snapshot(clone / "libraries"), snapshot(self.home / "libraries"))
 
     def test_missing_example_in_installed_core_is_an_explicit_gap(self) -> None:
@@ -328,87 +419,48 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual(repeat["example"]["status"], "unavailable")
         self.assertFalse((self.home / "libraries/social-search").exists())
         self.assertIn("absent from this core source", " ".join(repeat["issues"]))
-        self.assertNotIn("needs registration for social-search", " ".join(repeat["issues"]))
 
     def test_cli_installs_any_named_example_and_catalogs_all_valid_libraries(self) -> None:
         example = self.source / "example-workflows/research-acquire"
         package(example, "research-acquire")
         package(self.home / "libraries/my-folder", "custom-research")
-        installed = self.cli(
-            SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source),
-            "--example", "research-acquire",
-        )
+        installed = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), "--example", "research-acquire")
         self.assertEqual(installed.returncode, 0, installed.stdout + installed.stderr)
         self.assertEqual(json.loads(installed.stdout)["example"]["status"], "installed")
         self.assertEqual(snapshot(example), snapshot(self.home / "libraries/research-acquire"))
-        expected = {
-            "orchflows-light": "./.local/packages/orchflows-light",
-            "custom-research": "./libraries/my-folder",
-            "research-acquire": "./libraries/research-acquire",
-        }
+        expected = {"orchflows-light": "./.local/packages/orchflows-light", "custom-research": "./libraries/my-folder",
+                    "research-acquire": "./libraries/research-acquire"}
         for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
-            catalog = json.loads((self.home / relative).read_text(encoding="utf-8"))
-            actual = {entry["name"]: entry["source"]["path"] if isinstance(entry["source"], dict)
-                      else entry["source"] for entry in catalog["plugins"]}
-            self.assertEqual(actual, expected)
+            text = (self.home / relative).read_text(encoding="utf-8")
+            catalog = json.loads(text)
+            self.assertEqual(catalog["name"], "orchflows-home")
+            self.assertEqual({entry["name"]: entry["source"]["path"] if isinstance(entry["source"], dict) else entry["source"]
+                              for entry in catalog["plugins"]}, expected)
+            self.assertNotIn(str(self.home), text)
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
 
-    def test_second_example_adds_catalog_entries_and_preserves_customizations(self) -> None:
+    def test_doctor_reports_stale_catalogs_and_setup_regenerates_them(self) -> None:
         self.install(example=True)
         package(self.source / "example-workflows/research-acquire", "research-acquire")
-        paths = [self.home / relative for relative in
-                 (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json")]
-        before = {}
-        for path in paths:
-            catalog = json.loads(path.read_text())
-            catalog["owner"] = {"name": "My custom owner"}
-            catalog["plugins"][0]["description"] = "Keep my entry metadata"
-            catalog["plugins"].append({"name": "external", "source": "./elsewhere"})
-            write(path, json.dumps(catalog))
-            before[path] = catalog
-        report = orchflows.setup(self.home, self.source, "research-acquire")
-        self.assertEqual(report["status"], "ready", report)
-        self.assertEqual(report["example"]["status"], "installed")
-        for path in paths:
-            updated = json.loads(path.read_text())
-            self.assertEqual(updated["plugins"][:-1], before[path]["plugins"])
-            self.assertEqual(updated["plugins"][-1]["name"], "research-acquire")
-            self.assertEqual(updated["owner"], before[path]["owner"])
+        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
+            write(self.home / relative, '{"name":"orchflows-home","plugins":[{"name":"external","source":"./elsewhere"}]}\n')
+        report = orchflows.doctor(self.home)
+        self.assertEqual(report["status"], "incomplete")
+        self.assertIn("rerun setup", " ".join(report["issues"]))
+        result = orchflows.setup(self.home, self.source, "research-acquire")
+        self.assertEqual(result["status"], "ready", result)
+        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
+            names = [entry["name"] for entry in json.loads((self.home / relative).read_text())["plugins"]]
+            self.assertEqual(names, ["orchflows-light", "research-acquire", "social-search"])
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
-        resolved = orchflows.resolve(self.home, "research-acquire", skill="sample")
-        self.assertEqual(Path(resolved["skill_path"]), self.home / "libraries/research-acquire/skills/sample/SKILL.md")
-
-    def test_catalog_conflicting_source_is_preserved(self) -> None:
-        self.install(example=True)
-        path = self.home / ".agents/plugins/marketplace.json"
-        catalog = json.loads(path.read_text())
-        catalog["plugins"][0]["source"]["path"] = "./my-core"
-        write(path, json.dumps(catalog))
-        before = path.read_bytes()
-        result = orchflows.setup(self.home, self.source)
-        self.assertEqual(result["status"], "partial")
-        self.assertIn("needs registration for orchflows-light", " ".join(result["issues"]))
-        self.assertEqual(path.read_bytes(), before)
-
-    def test_catalog_with_duplicate_keys_is_not_rewritten(self) -> None:
-        self.install()
-        path = self.home / ".agents/plugins/marketplace.json"
-        write(path, '{"name":"orchflows-home","plugins":[],"plugins":[]}\n')
-        before = path.read_bytes()
-        result = orchflows.setup(self.home, self.source)
-        self.assertEqual(result["status"], "partial")
-        self.assertIn("Duplicate JSON keys", " ".join(result["issues"]))
-        self.assertEqual(path.read_bytes(), before)
 
     def test_resolution_does_not_require_runtime_or_unrelated_core_files(self) -> None:
         first = self.install(example=True)
         core = Path(first["core"]["package_root"])
         (self.home / ".local/runtime").rename(self.home / ".local/runtime-away")
-        (core / "scripts/orchflows.py").unlink()
         with patch.object(subprocess, "run", side_effect=AssertionError("Resolution launched a process")):
-            resolved = orchflows.resolve(self.home, "orchflows-light", resource="standards/code.md")
-            self.assertEqual(Path(resolved["resource_path"]), core / "standards/code.md")
-            self.assertNotIn("content_sha256", resolved)
+            resolved = orchflows.resolve(self.home, "orchflows-light", resource="guidance/code.md")
+            self.assertEqual(Path(resolved["resource_path"]), core / "guidance/code.md")
             self.assertEqual(resolved["runtime_python"], first["runtime_python"])
             self.assertTrue(Path(orchflows.resolve(self.home, "social-search", skill="sample")["skill_path"]).is_file())
         self.assertEqual(orchflows.doctor(self.home)["status"], "incomplete")
@@ -450,7 +502,7 @@ class HomeSetupTests(unittest.TestCase):
 
     def test_resolve_rejects_traversal_absolute_paths_and_ambiguous_names(self) -> None:
         self.install(example=True)
-        for resource in ("../config.toml", "skills/../../config.toml", "..\\config.toml", "/etc/passwd", "C:\\Windows\\win.ini", "C:win.ini", "//server/share", "standards/file:stream", ""):
+        for resource in ("../config.toml", "skills/../../config.toml", "..\\config.toml", "/etc/passwd", "C:\\Windows\\win.ini", "C:win.ini", "//server/share", "guidance/file:stream", ""):
             with self.subTest(resource=resource), self.assertRaisesRegex(ValueError, "safe relative"):
                 orchflows.resolve(self.home, "orchflows-light", resource=resource)
         with self.assertRaisesRegex(ValueError, "Invalid skill"):
@@ -465,79 +517,75 @@ class HomeSetupTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Ambiguous library"):
             orchflows.resolve(self.home, "orchflows-light")
 
-    def test_nested_reparse_point_is_not_copied_without_isjunction_api(self) -> None:
-        nested = self.source / "skills/nested-link"
-        write(nested / "do-not-copy.md", "Keep this content outside the copied package.\n")
-        before = snapshot(self.source)
-        destination = self.root / "copied-core"
-        original_lstat = Path.lstat
-
-        def lstat(path, *args, **kwargs):
-            observed = original_lstat(path, *args, **kwargs)
-            if path == nested:
-                return types.SimpleNamespace(
-                    st_mode=observed.st_mode,
-                    st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT,
-                )
-            return observed
-
-        # Python 3.11 has no os.path.isjunction. Simulate reparse attributes on
-        # an ordinary directory so the regression needs no real junction.
-        legacy_os = types.SimpleNamespace(path=types.SimpleNamespace())
-        with patch.object(orchflows, "os", legacy_os), patch.object(Path, "lstat", lstat):
-            with self.assertRaisesRegex(ValueError, "does not follow links"):
-                orchflows._copy_package(self.source, destination, core=True)
-        self.assertFalse(destination.exists())
-        self.assertEqual(snapshot(self.source), before)
-
-    def test_symlink_escapes_are_rejected_without_touching_outside_content(self) -> None:
+    def test_links_are_never_copied_or_resolved_through(self) -> None:
         outside = self.root / "outside"
         outside.mkdir()
-        link = self.home / ".local"
-        self.home.mkdir()
+        linked = self.source / "skills/linked"
         try:
-            link.symlink_to(outside, target_is_directory=True)
+            linked.symlink_to(outside, target_is_directory=True)
         except OSError as exc:
             self.skipTest(f"Symlink creation unavailable: {exc}")
-        with self.assertRaisesRegex(ValueError, "escapes"):
+        with self.assertRaisesRegex(ValueError, "does not follow links"):
             orchflows.setup(self.home, self.source)
-        self.assertEqual(list(outside.iterdir()), [])
-        link.unlink()
+        self.assertFalse((self.home / ".local/packages/orchflows-light").exists())
+        linked.unlink()
         self.install()
-        escape = self.home / ".local/packages/orchflows-light/standards/escape"
+        escape = self.home / ".local/packages/orchflows-light/guidance/escape"
         escape.symlink_to(outside, target_is_directory=True)
-        with self.assertRaisesRegex(ValueError, "links|escapes"):
-            orchflows.resolve(self.home, "orchflows-light", resource="standards/escape")
+        with self.assertRaisesRegex(ValueError, "escapes"):
+            orchflows.resolve(self.home, "orchflows-light", resource="guidance/escape")
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_setup_never_writes_through_links_in_the_home(self) -> None:
+        outside = self.root / "outside"
+        outside.mkdir()
+        self.home.mkdir()
+        try:
+            (self.home / "README.md").symlink_to(outside / "missing-readme.md")
+            (self.home / "libraries").symlink_to(outside, target_is_directory=True)
+        except OSError as exc:
+            self.skipTest(f"Symlink creation unavailable: {exc}")
+        with self.assertRaisesRegex(ValueError, "does not write through links"):
+            orchflows.setup(self.home, self.source, "social-search")
+        self.assertEqual(list(outside.iterdir()), [])
+        (self.home / "libraries").unlink()
+        result = orchflows.setup(self.home, self.source)
+        self.assertEqual(result["files"]["README.md"], "preserved")
+        self.assertTrue((self.home / "README.md").is_symlink())
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_setup_rejects_links_at_every_generated_directory_ancestor(self) -> None:
+        outside = self.root / "outside"
+        outside.mkdir()
+        for number, relative in enumerate(("libraries", ".local", ".local/packages", ".local/runtime",
+                                           ".local/packages/orchflows-light", ".agents", ".agents/plugins", ".claude-plugin")):
+            with self.subTest(relative=relative):
+                home = self.root / f"linked-home-{number}"
+                linked = home / relative
+                linked.parent.mkdir(parents=True)
+                try:
+                    linked.symlink_to(outside, target_is_directory=True)
+                except OSError as exc:
+                    self.skipTest(f"Symlink creation unavailable: {exc}")
+                before = snapshot(home)
+                with self.assertRaisesRegex(ValueError, "Setup does not write through links"):
+                    orchflows.setup(home, self.source)
+                self.assertEqual(snapshot(home), before)
+                self.assertEqual(list(outside.iterdir()), [])
 
     def test_doctor_is_read_only_and_lists_invalid_libraries_and_runtime(self) -> None:
+        self.install()
         write(self.home / "config.toml", "broken = [\n")
         write(self.home / "libraries/broken/plugin.json", "{broken")
         before = snapshot(self.home)
         report = orchflows.doctor(self.home)
         self.assertEqual(report["status"], "incomplete")
-        self.assertIn("Malformed configuration", " ".join(report["issues"]))
+        self.assertNotIn("configuration", " ".join(report["issues"]))
         self.assertIn("Malformed package manifest", " ".join(report["issues"]))
         self.assertEqual(snapshot(self.home), before)
         missing = self.root / "does-not-exist"
         self.assertEqual(orchflows.doctor(missing)["status"], "incomplete")
         self.assertFalse(missing.exists())
-
-    def test_native_catalogs_are_portable_and_existing_catalogs_are_preserved(self) -> None:
-        self.install(example=True)
-        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
-            text = (self.home / relative).read_text(encoding="utf-8")
-            catalog = json.loads(text)
-            self.assertEqual(catalog["name"], "orchflows-home")
-            self.assertEqual({item["name"] for item in catalog["plugins"]}, {"orchflows-light", "social-search"})
-            self.assertNotIn(str(self.home), text)
-            self.assertNotIn(str(self.source), text)
-        codex = self.home / ".agents/plugins/marketplace.json"
-        write(codex, '{"name":"my-own-catalog","plugins":[]}\n')
-        before = codex.read_bytes()
-        report = orchflows.setup(self.home, self.source, "social-search")
-        self.assertEqual(report["status"], "partial")
-        self.assertEqual(codex.read_bytes(), before)
-        self.assertIn("needs registration for social-search", " ".join(report["issues"]))
 
     def test_home_git_ignores_runtime_and_artifacts_but_tracks_libraries(self) -> None:
         git = shutil.which("git")
@@ -547,35 +595,21 @@ class HomeSetupTests(unittest.TestCase):
         write(self.home / "artifacts/report.html", "Generated output")
         result = subprocess.run([git, "-C", str(self.home), "status", "--porcelain", "--untracked-files=all"], text=True, capture_output=True, check=True)
         status = result.stdout
-        self.assertIn("config.toml", status)
+        self.assertNotIn("config.toml", status)
         self.assertIn("libraries/social-search/README.md", status)
         self.assertNotIn(".local/", status)
         self.assertNotIn("artifacts/report.html", status)
-        self.assertFalse((self.home / "logs").exists())
-        self.assertFalse((self.home / ".gitattributes").exists())
         commits = subprocess.run([git, "-C", str(self.home), "rev-parse", "--verify", "HEAD"], text=True, capture_output=True, check=False)
         self.assertNotEqual(commits.returncode, 0)
 
     def test_setup_preserves_existing_logs_reports_and_git_attributes(self) -> None:
-        write(self.home / "logs/2026-09/old-run/run.json", '{"status":"complete"}\n')
         write(self.home / "logs/2026-09/old-run/summary.md", "Saved report.\n")
-        write(self.home / "logs/2026-09/old-run/artifacts/evidence.json", '{"source":"retained"}\n')
         write(self.home / ".gitattributes", "*.md text eol=crlf\n")
         before = snapshot(self.home)
         self.install()
         self.assertEqual({name: (self.home / name).read_bytes() for name in before}, before)
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
 
-    def test_existing_gitignore_is_preserved_and_missing_rules_are_reported(self) -> None:
-        if not shutil.which("git"):
-            self.skipTest("Git unavailable")
-        write(self.home / ".gitignore", "my-user-pattern\n")
-        before = (self.home / ".gitignore").read_bytes()
-        report = orchflows.setup(self.home, self.source)
-        self.assertEqual(report["status"], "partial")
-        self.assertEqual((self.home / ".gitignore").read_bytes(), before)
-        self.assertIn("Git does not ignore .local/config.toml", " ".join(report["issues"]))
-        self.assertEqual(orchflows.doctor(self.home)["status"], "incomplete")
 
 if __name__ == "__main__":
     unittest.main()

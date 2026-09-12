@@ -150,7 +150,7 @@ class AcquisitionPlanTests(unittest.TestCase):
         self.runtime["opener"] = concurrent
         self.run_plan()
         packet = json.loads((self.output / "packet.json").read_text())
-        self.assertEqual([step["step_id"] for step in packet["steps"]], ["archive", "index"])
+        self.assertEqual([step["step_id"] for step in packet["steps"]], ["archive", "feed"])
 
     def test_unsupported_cross_adapter_and_duplicate_target_selection_are_refused(self):
         self.run_plan()
@@ -175,7 +175,7 @@ class AcquisitionPlanTests(unittest.TestCase):
     def test_contradictory_dates_and_unknown_dates_remain_visible_without_keyword_filter(self):
         opener = self.runtime["opener"]
         def dated(request):
-            status, body, content_type = opener(request)
+            status, body, content_type, url, headers = opener(request)
             if request.route_id == "arctic_shift_posts_search":
                 payload = json.loads(body)
                 duplicate = dict(payload["data"][0])
@@ -183,7 +183,7 @@ class AcquisitionPlanTests(unittest.TestCase):
                 unknown = dict(duplicate, id="unknown", created_utc=None)
                 payload["data"].extend([duplicate, unknown])
                 body = json.dumps(payload)
-            return status, body, content_type
+            return status, body, content_type, url, headers
         self.runtime["opener"] = dated
         self.run_plan()
         batch = json.loads((self.output / "candidates.json").read_text())

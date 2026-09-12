@@ -1,164 +1,211 @@
-"""Ordered public facade for every route constant this package can reach.
+"""Declared public read routes, including their endpoint grammar and operator.
 
-The private support catalogs own endpoint declarations by access class, and
-the contract support module owns their immutable shapes and public client
-credentials. This facade restores the one auditable ordered allowlist callers
-have always imported. It imports no mechanism and reaches no network.
-
-:mod:`.transport` admits methods, opens sockets, attaches credentials, and
-re-exports every public name below under its established address. The suite,
-adapters, and CLI therefore continue to reach route data through transport
-without depending on the private catalog layout.
+Transport re-exports this table and owns HTTPS and host-budget enforcement.
+The open page/feed route takes a caller URL; all other origins are declared here.
 """
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Dict, Tuple
 
-from ._support.route_catalog_k0 import K0_ROUTE_CONSTANTS as _K0_ROUTE_CONSTANTS
-from ._support.route_catalog_k1_k4 import (
-    K1_K4_ROUTE_CONSTANTS as _K1_K4_ROUTE_CONSTANTS,
-    OFFLINE_ROUTE_CONSTANTS as _OFFLINE_ROUTE_CONSTANTS,
-)
-from ._support.route_contracts import (
-    ARCTIC_SHIFT_SEARCH_ROUTE,
-    REDDIT_SEARCH_FEED_ROUTE,
-    XCANCEL_SEARCH_ROUTE,
-    XCANCEL_STATUS_ROUTE,
-    X_SITE_ORIGIN,
-    ARCTIC_SHIFT_ORIGIN,
-    ARCTIC_SHIFT_POSTS_ROUTE,
-    ARXIV_QUERY_ROUTE,
-    BING_NEWS_RSS_ROUTE,
-    BING_RSS_ROUTE,
-    BLUESKY_AUTHOR_FEED_ROUTE,
-    BLUESKY_SEARCH_POSTS_ROUTE,
-    CREDENTIAL_PLACEMENTS,
-    CROSSREF_WORKS_ROUTE,
-    DDG_HTML_ROUTE,
-    FAKE_OFFLINE_ROUTE,
-    FXTWITTER_API_ROUTE,
-    GDELT_DOC_ROUTE,
-    GITHUB_REST_ROUTE,
-    GITHUB_SEARCH_ROUTE,
-    GOOGLE_NEWS_RSS_ROUTE,
-    HEADER_PLACEMENT,
-    HN_ALGOLIA_ITEM_ROUTE,
-    HN_ALGOLIA_SEARCH_ROUTE,
-    HN_FIREBASE_ITEM_ROUTE,
-    INSTAGRAM_WEB_APP_ID,
-    INSTAGRAM_WEB_PROFILE_ROUTE,
-    JSON_CONTENT_TYPE,
-    KALSHI_MARKETS_ROUTE,
-    LINKEDIN_JOBS_GUEST_SEARCH_ROUTE,
-    LINKEDIN_PUBLIC_PROFILE_ROUTE,
-    MANIFOLD_MARKETS_ROUTE,
-    OPEN_ORIGIN,
-    OPENALEX_WORKS_ROUTE,
-    POLYMARKET_GAMMA_ROUTE,
-    PUBLIC_CLIENT_CREDENTIALS,
-    PUBLIC_PAGE_ARTICLE_ROUTE,
-    PUBLIC_PAGE_CONTROL_ROUTE,
-    QUERY_PLACEMENT,
-    REDDIT_FEED_ROUTE,
-    REDDIT_SHREDDIT_COMMENTS_ROUTE,
-    REDDIT_SHREDDIT_LISTING_ROUTE,
-    REDDIT_SHREDDIT_SEARCH_ROUTE,
-    REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE,
-    REDDIT_SITE_ORIGIN,
-    SOUNDCLOUD_OEMBED_ROUTE,
-    SPOTIFY_OEMBED_ROUTE,
-    STACKEXCHANGE_SEARCH_ROUTE,
-    STOCKTWITS_STREAM_ROUTE,
-    STOCKTWITS_SYMBOL_SEARCH_ROUTE,
-    TIKTOK_OEMBED_ROUTE,
-    TIKTOK_PROFILE_PAGE_ROUTE,
-    TIKTOK_VIDEO_PAGE_ROUTE,
-    VIMEO_OEMBED_ROUTE,
-    WEB_PAGE_OPEN_ROUTE,
-    WIKIMEDIA_PAGEVIEWS_ROUTE,
-    X_GUEST_ACTIVATE_ROUTE,
-    X_GUEST_GRAPHQL_ROUTE,
-    X_GUEST_PUBLIC_BEARER,
-    X_PUBLISH_OEMBED_ROUTE,
-    X_SYNDICATION_TIMELINE_ROUTE,
-    YOUTUBE_CHANNEL_FEED_ROUTE,
-    YOUTUBE_INNERTUBE_ROUTE,
-    YOUTUBE_INNERTUBE_WEB_KEY,
-    YOUTUBE_OEMBED_ROUTE,
-    YOUTUBE_TIMEDTEXT_ROUTE,
-    PublicClientCredential,
-    RouteConstant,
-)
+ARCTIC_SHIFT_SEARCH_ROUTE = "arctic_shift_posts_search"
+X_SITE_ORIGIN = "https://x.com"
+WEB_PAGE_OPEN_ROUTE = "web_page_open"
+ARCTIC_SHIFT_POSTS_ROUTE = "arctic_shift_posts_ids"
+REDDIT_SHREDDIT_LISTING_ROUTE = "reddit_shreddit_listing"
+REDDIT_SHREDDIT_SEARCH_ROUTE = "reddit_shreddit_search"
+REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE = "reddit_shreddit_subreddit_search"
+REDDIT_SHREDDIT_COMMENTS_ROUTE = "reddit_shreddit_comments"
+HN_ALGOLIA_ITEM_ROUTE = "hn_algolia_item"
+FXTWITTER_API_ROUTE = "fxtwitter_api"
+HN_ALGOLIA_SEARCH_ROUTE = "hn_algolia_search"
+HN_FIREBASE_ITEM_ROUTE = "hn_firebase_item"
+GITHUB_REST_ROUTE = "github_rest"
+GITHUB_SEARCH_ROUTE = "github_search"
+YOUTUBE_CHANNEL_FEED_ROUTE = "youtube_channel_feed"
+CROSSREF_WORKS_ROUTE = "crossref_works"
+ARXIV_QUERY_ROUTE = "arxiv_query"
+FAKE_OFFLINE_ROUTE = "fake_offline"
+REDDIT_SITE_ORIGIN = "https://www.reddit.com"
+ARCTIC_SHIFT_ORIGIN = "https://arctic-shift.photon-reddit.com"
+OPEN_ORIGIN = ""
 
+@dataclass(frozen=True)
+class RouteConstant:
+    """One endpoint; path parameters and suffix are consumed before query encoding."""
+    route_id: str
+    access_class: str
+    method: str
+    origin: str
+    path: str
+    accept: str
+    operator_identity: str = ""
+    path_params: Tuple[str, ...] = ()
+    path_suffix: str = ""
 
-_ROUTE_CATALOG = {
-    **_K0_ROUTE_CONSTANTS,
-    **_K1_K4_ROUTE_CONSTANTS,
-    **_OFFLINE_ROUTE_CONSTANTS,
-}
-
-# Order is part of the public table: schedulers, smoke reports, and fixtures
-# traverse this mapping without sorting. Keep the historical sequence explicit
-# here even though declarations are grouped by access class in private support.
 ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
-    ARCTIC_SHIFT_SEARCH_ROUTE: _ROUTE_CATALOG[ARCTIC_SHIFT_SEARCH_ROUTE],
-    REDDIT_SEARCH_FEED_ROUTE: _ROUTE_CATALOG[REDDIT_SEARCH_FEED_ROUTE],
-    XCANCEL_SEARCH_ROUTE: _ROUTE_CATALOG[XCANCEL_SEARCH_ROUTE],
-    XCANCEL_STATUS_ROUTE: _ROUTE_CATALOG[XCANCEL_STATUS_ROUTE],
-    DDG_HTML_ROUTE: _ROUTE_CATALOG[DDG_HTML_ROUTE],
-    BING_RSS_ROUTE: _ROUTE_CATALOG[BING_RSS_ROUTE],
-    BING_NEWS_RSS_ROUTE: _ROUTE_CATALOG[BING_NEWS_RSS_ROUTE],
-    GOOGLE_NEWS_RSS_ROUTE: _ROUTE_CATALOG[GOOGLE_NEWS_RSS_ROUTE],
-    WEB_PAGE_OPEN_ROUTE: _ROUTE_CATALOG[WEB_PAGE_OPEN_ROUTE],
-    ARCTIC_SHIFT_POSTS_ROUTE: _ROUTE_CATALOG[ARCTIC_SHIFT_POSTS_ROUTE],
-    REDDIT_SHREDDIT_LISTING_ROUTE: _ROUTE_CATALOG[REDDIT_SHREDDIT_LISTING_ROUTE],
-    REDDIT_SHREDDIT_SEARCH_ROUTE: _ROUTE_CATALOG[REDDIT_SHREDDIT_SEARCH_ROUTE],
-    REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE: _ROUTE_CATALOG[
-        REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE
-    ],
-    REDDIT_SHREDDIT_COMMENTS_ROUTE: _ROUTE_CATALOG[REDDIT_SHREDDIT_COMMENTS_ROUTE],
-    YOUTUBE_TIMEDTEXT_ROUTE: _ROUTE_CATALOG[YOUTUBE_TIMEDTEXT_ROUTE],
-    HN_ALGOLIA_ITEM_ROUTE: _ROUTE_CATALOG[HN_ALGOLIA_ITEM_ROUTE],
-    POLYMARKET_GAMMA_ROUTE: _ROUTE_CATALOG[POLYMARKET_GAMMA_ROUTE],
-    KALSHI_MARKETS_ROUTE: _ROUTE_CATALOG[KALSHI_MARKETS_ROUTE],
-    MANIFOLD_MARKETS_ROUTE: _ROUTE_CATALOG[MANIFOLD_MARKETS_ROUTE],
-    STOCKTWITS_STREAM_ROUTE: _ROUTE_CATALOG[STOCKTWITS_STREAM_ROUTE],
-    STOCKTWITS_SYMBOL_SEARCH_ROUTE: _ROUTE_CATALOG[STOCKTWITS_SYMBOL_SEARCH_ROUTE],
-    BLUESKY_SEARCH_POSTS_ROUTE: _ROUTE_CATALOG[BLUESKY_SEARCH_POSTS_ROUTE],
-    BLUESKY_AUTHOR_FEED_ROUTE: _ROUTE_CATALOG[BLUESKY_AUTHOR_FEED_ROUTE],
-    FXTWITTER_API_ROUTE: _ROUTE_CATALOG[FXTWITTER_API_ROUTE],
-    X_GUEST_ACTIVATE_ROUTE: _ROUTE_CATALOG[X_GUEST_ACTIVATE_ROUTE],
-    X_SYNDICATION_TIMELINE_ROUTE: _ROUTE_CATALOG[X_SYNDICATION_TIMELINE_ROUTE],
-    X_GUEST_GRAPHQL_ROUTE: _ROUTE_CATALOG[X_GUEST_GRAPHQL_ROUTE],
-    LINKEDIN_JOBS_GUEST_SEARCH_ROUTE: _ROUTE_CATALOG[LINKEDIN_JOBS_GUEST_SEARCH_ROUTE],
-    LINKEDIN_PUBLIC_PROFILE_ROUTE: _ROUTE_CATALOG[LINKEDIN_PUBLIC_PROFILE_ROUTE],
-    YOUTUBE_INNERTUBE_ROUTE: _ROUTE_CATALOG[YOUTUBE_INNERTUBE_ROUTE],
-    INSTAGRAM_WEB_PROFILE_ROUTE: _ROUTE_CATALOG[INSTAGRAM_WEB_PROFILE_ROUTE],
-    HN_ALGOLIA_SEARCH_ROUTE: _ROUTE_CATALOG[HN_ALGOLIA_SEARCH_ROUTE],
-    HN_FIREBASE_ITEM_ROUTE: _ROUTE_CATALOG[HN_FIREBASE_ITEM_ROUTE],
-    GITHUB_REST_ROUTE: _ROUTE_CATALOG[GITHUB_REST_ROUTE],
-    GITHUB_SEARCH_ROUTE: _ROUTE_CATALOG[GITHUB_SEARCH_ROUTE],
-    REDDIT_FEED_ROUTE: _ROUTE_CATALOG[REDDIT_FEED_ROUTE],
-    YOUTUBE_CHANNEL_FEED_ROUTE: _ROUTE_CATALOG[YOUTUBE_CHANNEL_FEED_ROUTE],
-    PUBLIC_PAGE_ARTICLE_ROUTE: _ROUTE_CATALOG[PUBLIC_PAGE_ARTICLE_ROUTE],
-    PUBLIC_PAGE_CONTROL_ROUTE: _ROUTE_CATALOG[PUBLIC_PAGE_CONTROL_ROUTE],
-    GDELT_DOC_ROUTE: _ROUTE_CATALOG[GDELT_DOC_ROUTE],
-    STACKEXCHANGE_SEARCH_ROUTE: _ROUTE_CATALOG[STACKEXCHANGE_SEARCH_ROUTE],
-    WIKIMEDIA_PAGEVIEWS_ROUTE: _ROUTE_CATALOG[WIKIMEDIA_PAGEVIEWS_ROUTE],
-    OPENALEX_WORKS_ROUTE: _ROUTE_CATALOG[OPENALEX_WORKS_ROUTE],
-    CROSSREF_WORKS_ROUTE: _ROUTE_CATALOG[CROSSREF_WORKS_ROUTE],
-    ARXIV_QUERY_ROUTE: _ROUTE_CATALOG[ARXIV_QUERY_ROUTE],
-    TIKTOK_VIDEO_PAGE_ROUTE: _ROUTE_CATALOG[TIKTOK_VIDEO_PAGE_ROUTE],
-    TIKTOK_PROFILE_PAGE_ROUTE: _ROUTE_CATALOG[TIKTOK_PROFILE_PAGE_ROUTE],
-    YOUTUBE_OEMBED_ROUTE: _ROUTE_CATALOG[YOUTUBE_OEMBED_ROUTE],
-    VIMEO_OEMBED_ROUTE: _ROUTE_CATALOG[VIMEO_OEMBED_ROUTE],
-    SPOTIFY_OEMBED_ROUTE: _ROUTE_CATALOG[SPOTIFY_OEMBED_ROUTE],
-    SOUNDCLOUD_OEMBED_ROUTE: _ROUTE_CATALOG[SOUNDCLOUD_OEMBED_ROUTE],
-    TIKTOK_OEMBED_ROUTE: _ROUTE_CATALOG[TIKTOK_OEMBED_ROUTE],
-    X_PUBLISH_OEMBED_ROUTE: _ROUTE_CATALOG[X_PUBLISH_OEMBED_ROUTE],
-    FAKE_OFFLINE_ROUTE: _ROUTE_CATALOG[FAKE_OFFLINE_ROUTE],
+    ARCTIC_SHIFT_SEARCH_ROUTE: RouteConstant(
+        route_id=ARCTIC_SHIFT_SEARCH_ROUTE, access_class="K3", method="GET",
+        origin=ARCTIC_SHIFT_ORIGIN, path="/api/posts/search",
+        accept="application/json", operator_identity="arctic-shift",
+    ),
+    WEB_PAGE_OPEN_ROUTE: RouteConstant(
+        route_id=WEB_PAGE_OPEN_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin=OPEN_ORIGIN,
+        path="",
+        accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        operator_identity="open_web",
+    ),
+    ARCTIC_SHIFT_POSTS_ROUTE: RouteConstant(
+        route_id=ARCTIC_SHIFT_POSTS_ROUTE,
+        access_class="K3",
+        method="GET",
+        origin=ARCTIC_SHIFT_ORIGIN,
+        path="/api/posts/ids",
+        accept="application/json",
+        operator_identity="arctic-shift",
+    ),
+    REDDIT_SHREDDIT_LISTING_ROUTE: RouteConstant(
+        route_id=REDDIT_SHREDDIT_LISTING_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/svc/shreddit/community-more-posts",
+        accept="text/html",
+        operator_identity="reddit",
+        path_params=("sort",),
+        path_suffix="/",
+    ),
+    REDDIT_SHREDDIT_SEARCH_ROUTE: RouteConstant(
+        route_id=REDDIT_SHREDDIT_SEARCH_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/svc/shreddit/search",
+        accept="text/html",
+        operator_identity="reddit",
+    ),
+    REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE: RouteConstant(
+        route_id=REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/svc/shreddit/r",
+        accept="text/html",
+        operator_identity="reddit",
+        path_params=("subreddit",),
+        path_suffix="/search",
+    ),
+    REDDIT_SHREDDIT_COMMENTS_ROUTE: RouteConstant(
+        route_id=REDDIT_SHREDDIT_COMMENTS_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/svc/shreddit/comments/r",
+        accept="text/html",
+        operator_identity="reddit",
+        path_params=("subreddit", "post_fullname"),
+    ),
+    HN_ALGOLIA_ITEM_ROUTE: RouteConstant(
+        route_id=HN_ALGOLIA_ITEM_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://hn.algolia.com",
+        path="/api/v1/items",
+        accept="application/json",
+        operator_identity="algolia",
+        path_params=("item_id",),
+    ),
+    FXTWITTER_API_ROUTE: RouteConstant(
+        route_id=FXTWITTER_API_ROUTE,
+        access_class="K3",
+        method="GET",
+        origin="https://api.fxtwitter.com",
+        path="/2/conversation",
+        accept="application/json",
+        operator_identity="fxtwitter",
+        path_params=("subject",),
+    ),
+    HN_ALGOLIA_SEARCH_ROUTE: RouteConstant(
+        route_id=HN_ALGOLIA_SEARCH_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://hn.algolia.com",
+        path="/api/v1",
+        accept="application/json",
+        operator_identity="algolia",
+        path_params=("endpoint",),
+    ),
+    HN_FIREBASE_ITEM_ROUTE: RouteConstant(
+        route_id=HN_FIREBASE_ITEM_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://hacker-news.firebaseio.com",
+        path="/v0/item",
+        accept="application/json",
+        operator_identity="hacker-news",
+        path_params=("item_id",),
+        path_suffix=".json",
+    ),
+    GITHUB_REST_ROUTE: RouteConstant(
+        route_id=GITHUB_REST_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.github.com",
+        path="/repos",
+        # GitHub's own documented media type for its REST API.
+        accept="application/vnd.github+json",
+        operator_identity="github",
+        # `/repos/<owner>/<repo>` is the repository itself; the third segment is
+        # the collection under it, and a request that leaves it empty asks about
+        # the repository.
+        path_params=("owner", "repo", "resource"),
+    ),
+    GITHUB_SEARCH_ROUTE: RouteConstant(
+        route_id=GITHUB_SEARCH_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.github.com",
+        path="/search",
+        accept="application/vnd.github+json",
+        operator_identity="github",
+        path_params=("index",),
+    ),
+    YOUTUBE_CHANNEL_FEED_ROUTE: RouteConstant(
+        route_id=YOUTUBE_CHANNEL_FEED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://www.youtube.com",
+        path="/feeds/videos.xml",
+        accept="application/atom+xml",
+        operator_identity="youtube",
+    ),
+    CROSSREF_WORKS_ROUTE: RouteConstant(
+        route_id=CROSSREF_WORKS_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.crossref.org",
+        path="/works",
+        accept="application/json",
+        operator_identity="crossref",
+    ),
+    ARXIV_QUERY_ROUTE: RouteConstant(
+        route_id=ARXIV_QUERY_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://export.arxiv.org",
+        path="/api/query",
+        accept="application/atom+xml",
+        operator_identity="arxiv",
+    ),
+    FAKE_OFFLINE_ROUTE: RouteConstant(
+        route_id=FAKE_OFFLINE_ROUTE,
+        access_class="offline",
+        method="GET",
+        origin="fixture://fake",
+        path="/page",
+        accept="application/json",
+        operator_identity="super-research-fixture",
+    ),
 }
-
-del _ROUTE_CATALOG

@@ -4,8 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
-import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -14,37 +12,24 @@ import shutil
 import stat
 import subprocess
 import sys
-import tempfile
-import tomllib
 import uuid
 import venv
 
+import host_config
+import native_logs
+
 
 CORE_NAME = "orchflows-light"
-MANIFESTS = ("plugin.json", ".claude-plugin/plugin.json", ".codex-plugin/plugin.json")
-CORE_ENTRIES = (
-    "plugin.json", ".claude-plugin", ".codex-plugin", ".agents", "skills",
-    "standards", "docs", "scripts", "README.md", "AGENTS.md", "CLAUDE.md", "LICENSE", "LICENSE.md",
-)
-EXCLUDED = {
-    ".git", ".local", ".venv", "venv", "__pycache__", ".pytest_cache",
-    "node_modules", "test-results", "test-output",
-    "worktrees", ".worktrees", "logs", "outputs",
-}
+CORE_ENTRIES = ("plugin.json", ".claude-plugin", ".codex-plugin", "skills", "guidance", "docs", "scripts",
+                "README.md", "AGENTS.md", "CLAUDE.md", "LICENSE")
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
 HOME_README = """# orchflows home
 
-Docs under `.local/packages/orchflows-light/docs/`: `architecture.md` (how orchflows
-fits together, where anything belongs), `home.md` (this tree, the CLI, updating,
-another computer), `hosts.md` (plugin registration, isolation), `history.md` (agent
-transcripts). Edit `libraries/<name>/`; `.local/` and `artifacts/` are machine-specific
-and ignored.
+Docs: `.local/packages/orchflows-light/AGENTS.md`. Edit `libraries/<name>/`; `.local/` and `artifacts/` are ignored.
 """
-HOME_GITIGNORE = """# Machine-specific packages, runtime, caches and working files.
-/.local/
+HOME_GITIGNORE = """/.local/
 **/__pycache__/
 **/*.py[cod]
-# Optional generated artifacts.
 /artifacts/
 """
 
@@ -62,60 +47,39 @@ def _contained(root: Path, path: Path) -> Path:
 
 
 def _name(value: str, kind: str = "library") -> str:
-    if not NAME.fullmatch(value) or value in {".", ".."}:
+    if not NAME.fullmatch(value):
         raise ValueError(f"Invalid {kind} name: {value!r}")
     return value
 
 
-def _read_toml(path: Path, *, required: bool = False) -> dict:
-    if not path.exists():
-        if required:
-            raise ValueError(f"Missing configuration: {path}")
-        return {}
-    try:
-        with path.open("rb") as stream:
-            return tomllib.load(stream)
-    except tomllib.TOMLDecodeError as exc:
-        raise ValueError(f"Malformed configuration preserved at {path}: {exc}") from exc
-
-
 def _manifest(root: Path) -> dict:
-    found = []
-    for relative in MANIFESTS:
-        path = _contained(root, root / relative)
-        if not path.is_file():
-            continue
-        try:
-            manifest = json.loads(path.read_text(encoding="utf-8"))
-        except (UnicodeError, json.JSONDecodeError) as exc:
-            raise ValueError(f"Malformed package manifest {path}: {exc}") from exc
-        if not isinstance(manifest, dict) or not isinstance(manifest.get("name"), str):
-            raise ValueError(f"Package manifest needs a name: {path}")
-        _name(manifest["name"])
-        if not isinstance(manifest.get("version"), str) or not manifest["version"]:
-            raise ValueError(f"Package manifest needs a version: {path}")
-        found.append(manifest)
-    if not found:
-        raise ValueError(f"No package manifest found in {root}")
-    if len({entry["name"] for entry in found}) != 1:
-        raise ValueError(f"Ambiguous package names in {root}")
-    return {"name": found[0]["name"], "version": found[0]["version"]}
+    path = root / "plugin.json"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"No package manifest found in {root}") from exc
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Malformed package manifest {path}: {exc}") from exc
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("name"), str):
+        raise ValueError(f"Package manifest needs a name: {path}")
+    if not isinstance(manifest.get("version"), str) or not manifest["version"]:
+        raise ValueError(f"Package manifest needs a version: {path}")
+    return {"name": _name(manifest["name"]), "version": manifest["version"]}
 
 
 def _is_link(path: Path) -> bool:
-    # Windows junctions expose reparse attributes even on Python 3.11, which
-    # lacks os.path.isjunction. Reject them before walking or copying content.
-    return path.is_symlink() or bool(
-        getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT
-    )
+    try:
+        return path.is_symlink() or bool(getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    except FileNotFoundError:
+        return False
 
 
 def _files(root: Path, *, core: bool) -> list[Path]:
-    """Enumerate deployable bytes without following links or copying host state."""
+    """Enumerate deployable bytes without following links or copying caches."""
     paths = []
 
     def visit(path: Path) -> None:
-        if path.name in EXCLUDED or (core and path.name in {"tests", "example-workflows"}) or path.suffix in {".pyc", ".pyo"}:
+        if path.name in {".git", "__pycache__"} or (core and path.name in {"tests", "example-workflows"}):
             return
         if _is_link(path):
             raise ValueError(f"Package copy does not follow links: {path}")
@@ -125,114 +89,59 @@ def _files(root: Path, *, core: bool) -> list[Path]:
         elif path.is_file():
             paths.append(path)
 
-    entries = [root / entry for entry in CORE_ENTRIES] if core else sorted(root.iterdir())
-    for entry in entries:
-        if entry.exists() or entry.is_symlink():
+    for entry in ([root / entry for entry in CORE_ENTRIES] if core else sorted(root.iterdir())):
+        if entry.exists() or _is_link(entry):
             visit(entry)
     return sorted(paths, key=lambda path: path.relative_to(root).as_posix())
-
-
-def _identity(root: Path) -> dict:
-    manifest = _manifest(root)
-    digest = hashlib.sha256()
-    for path in _files(root, core=True):
-        relative = path.relative_to(root).as_posix().encode("utf-8")
-        contents = path.read_bytes()
-        digest.update(len(relative).to_bytes(8, "big"))
-        digest.update(relative)
-        digest.update(len(contents).to_bytes(8, "big"))
-        digest.update(contents)
-    return {**manifest, "content_sha256": digest.hexdigest()}
 
 
 def _validate_core(root: Path) -> dict:
     manifest = _manifest(root)
     if manifest["name"] != CORE_NAME:
         raise ValueError(f"Core source must identify as {CORE_NAME}: {root}")
-    for relative in ("skills", "standards", "docs", "scripts/orchflows.py"):
-        path = _contained(root, root / relative)
-        valid = path.is_file() if relative.endswith(".py") else path.is_dir()
-        if not valid:
+    for relative in ("skills", "guidance", "docs", "scripts/orchflows.py"):
+        path = root / relative
+        if not (path.is_file() if relative.endswith(".py") else path.is_dir()):
             raise ValueError(f"Incomplete core package; missing {relative}: {root}")
-    return _identity(root)
+    return manifest
 
 
-def _copy_package(source: Path, destination: Path, *, core: bool) -> None:
-    files = _files(source, core=core)
-    stage = destination.parent / f".{destination.name}-{uuid.uuid4().hex}"
-    stage.mkdir()
+def _install(source: Path, destination: Path, *, core: bool) -> bool:
+    """Stage and swap a package, retaining the previous copy if restoration fails."""
+    stage = destination.with_name(f".{destination.name}-{uuid.uuid4().hex}")
+    previous = None
     try:
-        for path in files:
+        for path in _files(source, core=core):
             target = stage / path.relative_to(source)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, target)
         if destination.exists():
-            raise ValueError(f"Package destination already exists: {destination}")
-        stage.rename(destination)
+            previous = destination.with_name(f".{destination.name}-previous-{uuid.uuid4().hex}")
+            os.replace(destination, previous)
+        try:
+            os.replace(stage, destination)
+        except OSError:
+            if previous:
+                try:
+                    os.replace(previous, destination)
+                except OSError as exc:
+                    raise OSError(f"Package swap and restoration failed; previous copy retained at {previous}") from exc
+            raise
+        if previous:
+            shutil.rmtree(previous, ignore_errors=True)
     finally:
-        if stage.exists():
-            shutil.rmtree(stage)
+        shutil.rmtree(stage, ignore_errors=True)
+    return previous is not None
 
 
-def _create_text(path: Path, contents: str) -> str:
-    try:
-        with path.open("x", encoding="utf-8", newline="\n") as stream:
-            stream.write(contents)
-        return "created"
-    except FileExistsError:
+def _seed_text(path: Path, contents: str) -> str:
+    if _is_link(path) or path.exists():
         return "preserved"
+    path.write_text(contents, encoding="utf-8", newline="\n")
+    return "created"
 
 
-def runtime_python(home: Path) -> Path:
-    relative = "Scripts/python.exe" if os.name == "nt" else "bin/python"
-    return home / ".local/runtime" / relative
-
-
-def _check_runtime(home: Path) -> dict:
-    runtime = _contained(home, home / ".local/runtime")
-    python = runtime_python(home)
-    if not (runtime / "pyvenv.cfg").is_file() or not python.is_file():
-        raise ValueError(f"Runtime is missing or incomplete; existing contents preserved: {runtime}")
-    probe = subprocess.run(
-        [str(python), "-I", "-B", "-c",
-         "import json,sys; print(json.dumps({'version':list(sys.version_info[:3]),'prefix':sys.prefix,'base_prefix':sys.base_prefix}))"],
-        capture_output=True, text=True, timeout=30, check=False,
-    )
-    if probe.returncode != 0:
-        raise ValueError(f"Runtime interpreter failed; existing contents preserved: {python}")
-    try:
-        result = json.loads(probe.stdout)
-        version = tuple(result["version"])
-        prefix = Path(result["prefix"]).resolve()
-        base_prefix = Path(result["base_prefix"]).resolve()
-    except (KeyError, TypeError, json.JSONDecodeError) as exc:
-        raise ValueError(f"Invalid runtime interpreter response: {python}") from exc
-    if prefix != runtime or base_prefix == runtime or version < (3, 11):
-        raise ValueError(f"Expected a Python 3.11+ venv at {runtime}; existing contents preserved")
-    return {"runtime_python": str(python), "version": ".".join(map(str, version))}
-
-
-def _toml_string(value: str) -> str:
-    # JSON basic strings are compatible with TOML for these text/path values.
-    return json.dumps(value, ensure_ascii=False)
-
-
-def _config_text(identity: dict) -> str:
-    lines = ["# Portable home identity; machine paths belong in .local/config.toml.", "schema_version = 1", "", "[core]"]
-    lines.extend(f"{key} = {_toml_string(value)}" for key, value in identity.items())
-    return "\n".join(lines) + "\n"
-
-
-def _check_config_identity(config: dict, identity: dict) -> list[str]:
-    expected = config.get("core", {})
-    if not isinstance(expected, dict):
-        return ["config.toml [core] must be a table; file preserved"]
-    return [f"Installed core {key} differs from config.toml; file preserved"
-            for key in ("name", "version", "content_sha256")
-            if key in expected and expected[key] != identity[key]]
-
-
-def _replace_text(path: Path, contents: str) -> None:
+def _replace_text(path: Path, contents: str) -> str:
     temporary = path.with_name(f".{path.name}-{uuid.uuid4().hex}.tmp")
     try:
         with temporary.open("x", encoding="utf-8", newline="") as stream:
@@ -240,295 +149,188 @@ def _replace_text(path: Path, contents: str) -> None:
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
+    return "written"
 
 
-def _updated_core_config(original: bytes | None, identity: dict) -> str:
-    if original is None:
-        return _config_text(identity)
-    text = original.decode("utf-8")
-    config = tomllib.loads(text)
-    previous = config.get("core", {})
-    if not isinstance(previous, dict):
-        raise ValueError("config.toml [core] must be a table; file preserved")
-    if all(previous.get(key) == value for key, value in identity.items()):
-        return text
-    expected = {**config, "core": {**previous, **identity}}
-    if "core" not in config:
-        text += "\n[core]\n" + "".join(f"{key} = {_toml_string(value)}\n" for key, value in identity.items())
-    else:
-        table = re.search(r"(?ms)^\[core\][ \t]*(?:#[^\r\n]*)?\r?\n(.*?)(?=^[ \t]*\[|\Z)", text)
-        if table is None:
-            raise ValueError("Use a [core] table in config.toml to update its identity; file preserved")
-        body = table[1]
-        for key, value in identity.items():
-            body, count = re.subn(rf"(?m)^([ \t]*{key}[ \t]*=[ \t]*)[^\r\n]*",
-                                 lambda match: match[1] + _toml_string(value), body)
-            if not count:
-                body = body.rstrip("\r\n") + f"\n{key} = {_toml_string(value)}\n"
-        text = text[:table.start(1)] + body + text[table.end(1):]
-    # Do not rewrite an unfamiliar TOML layout or alter user-owned values.
-    if tomllib.loads(text) != expected:
-        raise ValueError("Cannot update core identity without changing other configuration; file preserved")
-    return text
+def runtime_python(home: Path) -> Path:
+    return home / ".local/runtime" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
-def _setup_core(home: Path, source: Path, desired: dict, config: dict) -> tuple[dict, str, list[str]]:
-    core = home / ".local/packages" / CORE_NAME
-    config_path = home / "config.toml"
-    original = config_path.read_bytes() if config_path.exists() else None
-    previous = _validate_core(core) if core.exists() else None
-    result = {"package_root": str(core), **(previous or desired)}
-    if previous == desired:
-        status = _create_text(config_path, _config_text(previous))
-        return {**result, "status": "reused"}, status, _check_config_identity(config, previous)
-    if previous and (_check_config_identity(config, previous)
-                     or config.get("core", {}).get("content_sha256") != previous["content_sha256"]):
-        return {**result, "status": "preserved"}, "preserved", [
-            f"Managed core has local changes or no matching recorded identity; preserved {core}. "
-            "Reconcile those changes before rerunning setup."]
-    updated = _updated_core_config(original, desired)
-    config_changed = updated.encode("utf-8") != original
-    for path in (core, config_path):
-        if path.exists() and _is_link(path):
-            raise ValueError(f"Setup does not replace linked core/config paths: {path}")
-    lock = core.parent / ".setup.lock"
-    try:
-        lock.open("x").close()
-    except FileExistsError as exc:
-        raise ValueError(f"Core setup lock exists: {lock}; check for an active installer before removing it") from exc
-    backup = None
-    try:
-        with tempfile.TemporaryDirectory(prefix=".core-", dir=core.parent) as temporary:
-            staged = Path(temporary) / CORE_NAME
-            _copy_package(source, staged, core=True)
-            if _validate_core(staged) != desired:
-                raise ValueError("Core source changed while copying; rerun setup")
-            current_config = config_path.read_bytes() if config_path.exists() else None
-            current_core = _validate_core(core) if core.exists() else None
-            if current_config != original or current_core != previous:
-                raise ValueError("Installed core or configuration changed during setup; rerun setup")
-            if previous or (original is not None and config_changed):
-                backup = _contained(home, home / ".local/backups" / f"core-{uuid.uuid4().hex}")
-                backup.mkdir(parents=True)
-                if original is not None:
-                    shutil.copy2(config_path, backup / "config.toml")
-            if previous:
-                core.rename(backup / CORE_NAME)
-            try:
-                staged.rename(core)
-                if config_changed:
-                    _replace_text(config_path, updated)
-            except OSError:
-                if core.exists():
-                    core.rename(staged)
-                if previous:
-                    (backup / CORE_NAME).rename(core)
-                raise
-    finally:
-        lock.unlink()
-    config_status = "created" if original is None else "updated" if config_changed else "preserved"
-    return {"package_root": str(core), **desired, "status": "updated" if previous else "installed",
-            "backup_path": str(backup) if backup else None}, config_status, []
-
-
-def _catalogs(home: Path, libraries: list[dict], *, create: bool) -> tuple[dict, list[str]]:
-    def unique_object(pairs):
-        value = dict(pairs)
-        if len(value) != len(pairs):
-            raise ValueError("Duplicate JSON keys; catalog preserved")
-        return value
-
+def _catalog_texts(home: Path, libraries: list[dict]) -> dict[str, str]:
     sources = {CORE_NAME: f"./.local/packages/{CORE_NAME}"}
     names = [entry["name"] for entry in libraries]
     for entry in libraries:
         if entry["name"] != CORE_NAME and names.count(entry["name"]) == 1:
-            relative = Path(entry["package_root"]).relative_to(home).as_posix()
-            sources[entry["name"]] = f"./{relative}"
+            sources[entry["name"]] = "./" + Path(entry["package_root"]).relative_to(home).as_posix()
     catalogs = {
         ".agents/plugins/marketplace.json": {
             "name": "orchflows-home",
             "interface": {"displayName": "Orchflows Home"},
             "plugins": [{"name": name, "source": {"source": "local", "path": source},
                          "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
-                         "category": "Productivity"}
-                        for name, source in sources.items()],
+                         "category": "Productivity"} for name, source in sources.items()],
         },
         ".claude-plugin/marketplace.json": {
             "name": "orchflows-home", "owner": {"name": "orchflows-home"},
             "plugins": [{"name": name, "source": source} for name, source in sources.items()],
         },
     }
-    statuses, issues = {}, []
-    for relative, catalog in catalogs.items():
-        path = _contained(home, home / relative)
-        if create:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            statuses[relative] = _create_text(path, json.dumps(catalog, indent=2) + "\n")
-        try:
-            original = path.read_bytes()
-            data = json.loads(original, object_pairs_hook=unique_object)
-            plugins = data.get("plugins") if isinstance(data, dict) else None
-            if not isinstance(plugins, list) or not all(isinstance(item, dict) for item in plugins):
-                raise ValueError("plugins must be an array of objects")
-            additions = []
-            for name, source in sources.items():
-                matches = [item for item in plugins if item.get("name") == name]
-                if not matches and create and data.get("name") == "orchflows-home":
-                    additions.append(next(item for item in catalog["plugins"] if item["name"] == name))
+    return {relative: json.dumps(catalog, indent=2) + "\n" for relative, catalog in catalogs.items()}
+
+
+def _check_guidance_migration(home: Path) -> None:
+    """One-time check for the six core resources removed by the guidance migration."""
+    core = home / ".local/packages" / CORE_NAME
+    if not (core / "standards").is_dir():
+        return
+    removed = re.compile(r"(?<![\w.-])(?P<prefix>(?:[\w./\\:$<>{}~-]*[/\\:])?)standards/(?P<name>code/api|code|data-analysis|research|visual-design|writing)\.md\b")
+    findings = []
+    libraries, _ = _libraries(home)
+    roots = {Path(library["package_root"]) for library in libraries}
+    directory = home / "libraries"
+    for path in sorted(directory.iterdir()) if directory.is_dir() else []:
+        if not path.name.startswith(".") and path.is_dir() and not (path / "plugin.json").is_file() and any(
+            (path / relative).is_file() for relative in (".claude-plugin/plugin.json", ".codex-plugin/plugin.json")
+        ):
+            roots.add(_contained(home, path))
+            findings.append(f"{path / 'plugin.json'}: missing; add the library's name and version in this root manifest")
+    for root in sorted(roots):
+        for directory, children, files in os.walk(root):
+            children[:] = sorted(name for name in children
+                                  if not name.startswith(".") and name not in {"trials", "outputs", "artifacts", "logs", "tests", "scripts", "__pycache__"}
+                                  and (Path(directory) != root or name in {"skills", "references", "standards", "guidance", "docs"}))
+            for name in sorted(files):
+                if not name.endswith(".md"):
                     continue
-                registered = matches[0].get("source") if len(matches) == 1 else None
-                if isinstance(registered, dict):
-                    registered = registered.get("path") if registered.get("source") == "local" else None
-                if registered != source:
-                    issues.append(f"Catalog {relative} needs registration for {name} at {source}; existing entries preserved")
-            if data.get("name") != "orchflows-home":
-                issues.append(f"Catalog {relative} has a different marketplace name; existing file preserved")
-            if additions:
-                if path.read_bytes() != original:
-                    raise ValueError("Catalog changed during setup; rerun setup")
-                plugins.extend(additions)
-                _replace_text(path, json.dumps(data, indent=2) + "\n")
-                statuses[relative] = "updated"
-            statuses.setdefault(relative, "ok")
-        except (OSError, UnicodeError, ValueError) as exc:
-            statuses.setdefault(relative, "unavailable")
-            issues.append(f"Catalog {relative} is unreadable or malformed; existing file preserved: {exc}")
-    return statuses, issues
+                path = Path(directory) / name
+                for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                    for match in removed.finditer(line):
+                        prefix = match["prefix"].replace("\\", "/")
+                        explicit_core = prefix == f"{CORE_NAME}:" or f"{CORE_NAME}/" in prefix or bool(
+                            re.search(r"\bresolve\s+orchflows-light\b", line[:match.start()]))
+                        if ":" in prefix and not explicit_core:
+                            continue  # A different package or an external URL owns this reference.
+                        if not explicit_core and any(
+                            candidate.resolve().is_relative_to(root) and candidate.is_file()
+                            for candidate in (path.parent / match[0], root / match[0])
+                        ):
+                            continue  # Existing library-local standards keep their own meaning.
+                        old = f"standards/{match['name']}.md"
+                        new = f"guidance/{match['name'].replace('/', '.')}.md"
+                        findings.append(f"{path}:{number}: {old} -> {new}")
+    if findings:
+        raise ValueError("Guidance migration requires updating libraries before setup; home preserved:\n" + "\n".join(findings))
 
 
-def _gitignore_issues(home: Path) -> list[str]:
+def _install_runtime(home: Path) -> tuple[str, list[str]]:
+    runtime = home / ".local/runtime"
+    if not runtime.exists():
+        venv.EnvBuilder(with_pip=False).create(runtime)
+        return "created", []
+    if (runtime / "pyvenv.cfg").is_file() and runtime_python(home).is_file():
+        return "preserved", []
+    return "unavailable", [f"Runtime is missing or incomplete; existing contents preserved: {runtime}"]
+
+
+def _example_plan(home: Path, source: Path, example: str) -> str:
+    _name(example, "example")
+    destination, example_source = home / "libraries" / example, source / "example-workflows" / example
+    if _is_link(destination):
+        raise ValueError(f"Setup does not write through links: {destination}")
+    if destination.exists():
+        return "preserved"
+    if not example_source.is_dir():
+        return "unavailable"
+    if _manifest(example_source)["name"] != example:
+        raise ValueError(f"Example identity differs from its requested name: {example_source}")
+    return "installed"
+
+
+def _init_git(home: Path) -> tuple[str, list[str]]:
+    if (home / ".git").exists():
+        return "preserved", []
     git = shutil.which("git")
-    if not git or not (home / ".git").exists():
-        return []
-    paths = (".local/config.toml",)
-    result = subprocess.run(
-        [git, "-C", str(home), "check-ignore", "--no-index", "-z", "--stdin"],
-        input="\0".join(paths) + "\0", text=True, capture_output=True, check=False,
-    )
-    if result.returncode not in (0, 1):
-        return [f"Could not check the home's Git ignore rules: {result.stderr.strip()}"]
-    ignored = set(result.stdout.split("\0"))
-    return [f"Git does not ignore {path}; add an ignore rule after reviewing the preserved .gitignore"
-            for path in paths if path not in ignored]
+    if not git:
+        return "unavailable", []
+    result = subprocess.run([git, "-C", str(home), "init", "--quiet"], capture_output=True, text=True, check=False)
+    if result.returncode:
+        return "unavailable", [f"Git initialization failed: {result.stderr.strip()}"]
+    return "initialized", []
 
 
 def setup(home: Path, source: Path, example: str | None = None, *,
           concurrency: int = 15, skip_host_config: bool = False) -> dict:
-    # Load the sibling even when a caller uses runpy/importlib from another directory.
-    spec = importlib.util.spec_from_file_location("orchflows_host_config", Path(__file__).with_name("host_config.py"))
-    host_config = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(host_config)
-
     home, source = home.resolve(), source.resolve()
-    # Validate input and existing configuration before any filesystem mutation.
-    for relative in ("config.toml", "README.md", ".gitignore", ".git", "libraries", ".local",
-                     ".local/config.toml", ".local/runtime", ".local/packages", f".local/packages/{CORE_NAME}",
-                     ".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
-        _contained(home, home / relative)
-    config = _read_toml(home / "config.toml")
-    _read_toml(home / ".local/config.toml")
-    source_identity = _validate_core(source)
+    _validate_core(source)
+    for relative in ("libraries", ".local", ".local/packages", f".local/packages/{CORE_NAME}", ".local/runtime",
+                     ".agents", ".agents/plugins", ".claude-plugin", ".git"):
+        if _is_link(home / relative):
+            raise ValueError(f"Setup does not write through links: {home / relative}")
     if example is not None:
-        _name(example, "example")
-        destination = _contained(home, home / "libraries" / example)
-        example_source = _contained(source, source / "example-workflows" / example)
-        if not destination.exists() and example_source.is_dir():
-            if _manifest(example_source)["name"] != example:
-                raise ValueError(f"Example identity differs from its requested name: {example_source}")
+        _example_plan(home, source, example)
     host_plans = [] if skip_host_config else host_config.prepare_host_configs(concurrency)
-    home.mkdir(parents=True, exist_ok=True)
-    for relative in ("libraries", ".local/packages"):
-        (home / relative).mkdir(parents=True, exist_ok=True)
-
-    core = home / ".local/packages" / CORE_NAME
-    core_info, config_status, issues = _setup_core(home, source, source_identity, config)
-
-    files = {
-        "config.toml": config_status,
-        "README.md": _create_text(home / "README.md", HOME_README),
-        ".gitignore": _create_text(home / ".gitignore", HOME_GITIGNORE),
-    }
-    python = runtime_python(home)
-    local_text = ("# Machine-local paths; ignored by the home repository.\nschema_version = 1\n"
-                  f"source = {_toml_string(str(source))}\n"
-                  f"core = {_toml_string(str(core))}\n"
-                  f"runtime_python = {_toml_string(str(python))}\n")
-    files[".local/config.toml"] = _create_text(home / ".local/config.toml", local_text)
-
-    runtime = home / ".local/runtime"
-    runtime_status = "preserved" if runtime.exists() else "created"
+    core_path = home / ".local/packages" / CORE_NAME
+    core_path.parent.mkdir(parents=True, exist_ok=True)
+    lock = core_path.parent / ".setup.lock"
     try:
-        if not runtime.exists():
-            venv.EnvBuilder(with_pip=False).create(runtime)
-        runtime_info = _check_runtime(home)
-    except (OSError, ValueError, subprocess.SubprocessError) as exc:
-        runtime_status = "unavailable"
-        runtime_info = {"runtime_python": str(python)}
-        issues.append(str(exc))
-
-    example_info = None
-    if example is not None:
-        if destination.exists():
-            example_status = "preserved"
-        elif not example_source.is_dir():
-            example_status = "unavailable"
-            issues.append(f"Example {example} is absent from this core source; supply a checkout containing it")
-        else:
-            _copy_package(example_source, destination, core=False)
-            example_status = "installed"
-        example_info = {"name": example, "status": example_status, "package_root": str(destination)}
-
-    libraries, library_issues = _libraries(home)
-    catalogs, catalog_issues = _catalogs(home, libraries, create=True)
-    files.update(catalogs)
-    issues.extend(library_issues)
-    issues.extend(catalog_issues)
-
-    git_status = "preserved"
-    if not (home / ".git").exists():
-        git = shutil.which("git")
-        if git:
-            result = subprocess.run([git, "-C", str(home), "init", "--quiet"], capture_output=True, text=True, check=False)
-            git_status = "initialized" if result.returncode == 0 else "unavailable"
-            if result.returncode:
-                issues.append(f"Git initialization failed: {result.stderr.strip()}")
-        else:
-            git_status = "unavailable"
-    issues.extend(_gitignore_issues(home))
-    host_configs, host_issues = host_config.apply_host_configs(host_plans)
-    issues.extend(host_issues)
-    return {"status": "partial" if issues else "ready", "home": str(home), "files": files,
-            "runtime_python": str(python),
-            "core": core_info,
-            "runtime": {"status": runtime_status, **runtime_info}, "example": example_info,
-            "git": git_status, "host_configs": host_configs,
-            "host_config_status": "skipped" if skip_host_config else "partial" if host_issues else "configured",
-            "issues": issues}
+        lock.open("x").close()
+    except FileExistsError as exc:
+        raise ValueError(f"Setup lock exists: {lock}; check for an active installer before removing it") from exc
+    try:
+        manifest = _validate_core(source)
+        _check_guidance_migration(home)
+        plan = _example_plan(home, source, example) if example is not None else None
+        for relative in ("libraries", ".agents/plugins", ".claude-plugin"):
+            (home / relative).mkdir(parents=True, exist_ok=True)
+        status = "reused"
+        if source != core_path:
+            status = "updated" if _install(source, core_path, core=True) else "installed"
+        core = {"package_root": str(core_path), **manifest, "status": status}
+        files = {"README.md": _seed_text(home / "README.md", HOME_README),
+                 ".gitignore": _seed_text(home / ".gitignore", HOME_GITIGNORE)}
+        runtime, issues = _install_runtime(home)
+        example_info = None
+        if example is not None:
+            if plan == "installed":
+                _install(source / "example-workflows" / example, home / "libraries" / example, core=False)
+            elif plan == "unavailable":
+                issues.append(f"Example {example} is absent from this core source; supply a checkout containing it")
+            example_info = {"name": example, "status": plan, "package_root": str(home / "libraries" / example)}
+        libraries, library_issues = _libraries(home)
+        issues.extend(library_issues)
+        for relative, text in _catalog_texts(home, libraries).items():
+            files[relative] = _replace_text(home / relative, text)
+        git, git_issues = _init_git(home)
+        issues.extend(git_issues)
+        host_configs, host_issues = host_config.apply_host_configs(host_plans)
+        issues.extend(host_issues)
+        return {"status": "partial" if issues else "ready", "home": str(home), "files": files,
+                "runtime_python": str(runtime_python(home)), "core": core, "runtime": runtime, "example": example_info,
+                "git": git, "host_configs": host_configs,
+                "host_config_status": "skipped" if skip_host_config else "partial" if host_issues else "configured",
+                "issues": issues}
+    finally:
+        lock.unlink()
 
 
 def _libraries(home: Path) -> tuple[list[dict], list[str]]:
     entries, issues = [], []
-    directory = _contained(home, home / "libraries")
+    directory = home / "libraries"
     if not directory.is_dir():
         return entries, [f"Missing libraries directory: {directory}"]
     for path in sorted(directory.iterdir()):
-        if path.name.startswith("."):
+        if path.name.startswith(".") or not path.is_dir():
             continue
         try:
             root = _contained(home, path)
-            if not root.is_dir():
-                continue
             manifest = _manifest(root)
-            skills = _contained(root, root / "skills")
-            if not skills.is_dir():
+            if not (root / "skills").is_dir():
                 raise ValueError(f"Library lacks a skills directory: {root}")
             entries.append({**manifest, "package_root": str(root)})
         except (OSError, ValueError) as exc:
             issues.append(str(exc))
     names = [entry["name"] for entry in entries]
-    for name in sorted(set(names)):
-        if names.count(name) > 1 or name == CORE_NAME:
-            issues.append(f"Ambiguous library name: {name}")
+    issues.extend(f"Ambiguous library name: {name}" for name in sorted(set(names)) if names.count(name) > 1 or name == CORE_NAME)
     return entries, issues
 
 
@@ -538,17 +340,14 @@ def resolve(home: Path, library: str, skill: str | None = None, resource: str | 
     entries, issues = _libraries(home)
     matches = [entry for entry in entries if entry["name"] == library]
     if library == CORE_NAME:
-        root = _contained(home, home / ".local/packages" / CORE_NAME)
-        manifest = _manifest(root)
-        if manifest["name"] != CORE_NAME:
-            raise ValueError(f"Core package must identify as {CORE_NAME}: {root}")
-        matches.append({**manifest, "package_root": str(root)})
+        root = home / ".local/packages" / CORE_NAME
+        matches.append({**_validate_core(root), "package_root": str(root)})
     if len(matches) > 1:
         raise ValueError(f"Ambiguous library name: {library}")
     if not matches:
         detail = "; ".join(issues)
         raise ValueError(f"Library {library} is not installed" + (f": {detail}" if detail else ""))
-    result = matches[0].copy()
+    result = dict(matches[0])
     root = Path(result["package_root"])
     if skill is not None:
         _name(skill, "skill")
@@ -572,98 +371,68 @@ def resolve(home: Path, library: str, skill: str | None = None, resource: str | 
 def doctor(home: Path) -> dict:
     home = home.resolve()
     issues, checks = [], {}
-    config = {}
-    for relative in ("config.toml", ".local/config.toml"):
-        try:
-            parsed = _read_toml(_contained(home, home / relative), required=True)
-            if relative == "config.toml":
-                config = parsed
-            checks[relative] = "ok"
-        except (OSError, ValueError) as exc:
-            checks[relative] = "unavailable"
-            issues.append(str(exc))
+    core = home / ".local/packages" / CORE_NAME
     try:
-        core = _contained(home, home / ".local/packages" / CORE_NAME)
-        identity = _validate_core(core)
-        checks["core"] = {"package_root": str(core), **identity}
-        issues.extend(_check_config_identity(config, identity))
+        manifest = _validate_core(core)
+        checks["core"] = {"package_root": str(core), **manifest}
     except (OSError, ValueError) as exc:
         checks["core"] = "unavailable"
         issues.append(str(exc))
-    try:
-        checks["runtime"] = _check_runtime(home)
-    except (OSError, ValueError, subprocess.SubprocessError) as exc:
-        checks["runtime"] = "unavailable"
-        issues.append(str(exc))
-    entries = []
-    try:
-        entries, library_issues = _libraries(home)
-        checks["libraries"] = entries
-        issues.extend(library_issues)
-    except (OSError, ValueError) as exc:
-        checks["libraries"] = "unavailable"
-        issues.append(str(exc))
-    for relative in ("README.md", ".gitignore"):
-        try:
-            if not _contained(home, home / relative).exists():
-                issues.append(f"Missing home entry: {relative}")
-        except ValueError as exc:
-            issues.append(str(exc))
-    try:
-        checks["catalogs"], catalog_issues = _catalogs(home, entries, create=False)
-        issues.extend(catalog_issues)
-    except (OSError, ValueError) as exc:
-        issues.append(str(exc))
-    issues.extend(_gitignore_issues(home))
-    runtime = checks.get("runtime")
+    runtime, python = home / ".local/runtime", runtime_python(home)
+    checks["runtime"] = "ok" if (runtime / "pyvenv.cfg").is_file() and python.is_file() else "unavailable"
+    if checks["runtime"] == "unavailable":
+        issues.append(f"Runtime is missing or incomplete: {runtime}")
+    entries, library_issues = _libraries(home)
+    checks["libraries"] = entries
+    issues.extend(library_issues)
+    issues.extend(f"Missing home entry: {relative}" for relative in ("README.md", ".gitignore") if not (home / relative).exists())
+    checks["catalogs"] = {}
+    for relative, text in _catalog_texts(home, entries).items():
+        path = home / relative
+        stale = not path.is_file() or path.read_text(encoding="utf-8") != text
+        checks["catalogs"][relative] = "stale" if stale else "ok"
+        if stale:
+            issues.append(f"Catalog {relative} does not match the installed libraries; rerun setup")
     return {"status": "incomplete" if issues else "ready", "home": str(home), "checks": checks,
-            "runtime_python": runtime.get("runtime_python") if isinstance(runtime, dict) else None,
-            "issues": issues}
-
-
-def _add_home(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--home", default=argparse.SUPPRESS, help="Home directory (default: ORCHFLOWS_HOME or ~/.orchflows)")
+            "runtime_python": str(python) if checks["runtime"] == "ok" else None, "issues": issues}
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    _add_home(parser)
     commands = parser.add_subparsers(dest="command", required=True)
+    home_help = "Home directory (default: ORCHFLOWS_HOME or ~/.orchflows)"
     setup_parser = commands.add_parser("setup", help="Install or update the managed core and initialize a portable home")
-    _add_home(setup_parser)
+    setup_parser.add_argument("--home", help=home_help)
     setup_parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1])
-    setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the supplied source's example-workflows directory")
+    setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the source's example-workflows directory")
     host_options = setup_parser.add_mutually_exclusive_group()
     host_options.add_argument("--concurrency", type=int, default=15, metavar="N",
                               help="Set Codex's spawned-thread cap and Claude's shared tool/subagent cap (default: 15)")
-    host_options.add_argument("--skip-host-config", action="store_true", help="Preserve all native host settings")
+    host_options.add_argument("--skip-host-config", action="store_true", help="Leave both host settings untouched")
     doctor_parser = commands.add_parser("doctor", help="Check a home without changing it")
-    _add_home(doctor_parser)
+    doctor_parser.add_argument("--home", help=home_help)
     resolve_parser = commands.add_parser("resolve", help="Resolve a package, skill or resource")
-    _add_home(resolve_parser)
+    resolve_parser.add_argument("--home", help=home_help)
     resolve_parser.add_argument("library")
     request = resolve_parser.add_mutually_exclusive_group()
     request.add_argument("--skill")
     request.add_argument("--resource")
-    from native_logs import add_parser, run as read_native_history
-    add_parser(commands)
+    native_logs.add_parser(commands)
     args = parser.parse_args(argv)
     try:
-        home = home_path(getattr(args, "home", None))
         if args.command == "setup":
-            result = setup(home, args.source.expanduser().resolve(), args.example,
+            result = setup(home_path(args.home), args.source.expanduser(), args.example,
                            concurrency=args.concurrency, skip_host_config=args.skip_host_config)
         elif args.command == "doctor":
-            result = doctor(home)
+            result = doctor(home_path(args.home))
         elif args.command == "resolve":
-            result = resolve(home, args.library, args.skill, args.resource)
-        elif args.command == "history":
-            result = read_native_history(args)
-    except (OSError, ValueError, subprocess.SubprocessError, ImportError) as exc:
+            result = resolve(home_path(args.home), args.library, args.skill, args.resource)
+        else:
+            result = native_logs.run(args)
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
         print(json.dumps({"status": "error", "error": str(exc)}), file=sys.stderr)
         return 2
-    # Native logs can exceed the character repertoire of Windows pipe encodings.
-    print(json.dumps(result, separators=(",", ":"), ensure_ascii=args.command == "history"))
+    print(json.dumps(result, separators=(",", ":")))
     return 1 if args.command in {"setup", "doctor"} and result.get("issues") else 0
 
 

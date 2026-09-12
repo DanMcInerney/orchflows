@@ -1,28 +1,17 @@
-"""The opposite wrong result: an adapter that blames the network for everything.
-
-The same ``web_search`` stand-in, wrong in the other direction. It makes the
-call itself and types every failure status as a local block, so the
-platform's own 503 and its authwall stop being recordable as platform
-behavior at all — the evidence this run exists to collect. That is what the
-interception path must never widen into.
-
-Loaded by path, part of no package, and never imported by the tree under
-test. It exists so the interception oracle can be shown to fail in the
-direction criterion 3 guards.
-"""
+"""Synthetic incorrect channel classification, used only by offline oracles."""
 
 from super_research import transport
 from super_research.adapters import AdapterDescriptor, build_native_page
 
 DESCRIPTOR = AdapterDescriptor(
-    adapter_id="web_search",
+    adapter_id="rss_atom",
     adapter_version="1",
-    access_class="K4",
-    route_id=transport.DDG_HTML_ROUTE,
-    platform="duckduckgo",
+    access_class="K0",
+    route_id=transport.WEB_PAGE_OPEN_ROUTE,
+    platform="fixture",
     native_identity_namespace="",
-    representation_kind="index",
-    operator_identity="duckduckgo",
+    representation_kind="feed",
+    operator_identity="fixture",
 )
 
 
@@ -35,7 +24,7 @@ def parse_body(response):
 def fetch_native_page(carrier, request):
     response = carrier.fetch(
         transport.build_transport_request(
-            DESCRIPTOR.route_id, {"q": request.query, "s": request.cursor}
+            DESCRIPTOR.route_id, {"url": request.query}
         )
     )
     if response.status != 200:

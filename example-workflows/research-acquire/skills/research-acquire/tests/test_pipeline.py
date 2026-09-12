@@ -2,7 +2,6 @@
 
 from tests.test_pipeline_cases.common import GITHUB_REST_BUDGET, REDDIT_FEED_BUDGET
 from tests.test_pipeline_cases.acquisition import (
-    AStepMayDeclareItsOwnPageBoundTest,
     LanesOverlapAndTheCoreOwnsPagingTest,
     PagingIsTheCoresTest,
 )
@@ -12,16 +11,16 @@ from tests.test_pipeline_cases.artifact import (
     WorkLedgerTest,
 )
 from tests.test_pipeline_cases.failure import (
+    ARefusalTheCallerAdmitsNothingForTest,
     AStepThatGotNoAnswerIsTypedTest,
+    AStepWithNoCallIsEmptyTest,
     AdapterBranchTest,
     OracleCanFailTest,
 )
-from tests.test_pipeline_cases.ordering import OrderingContractTest
 from tests.test_pipeline_cases.scheduling import (
     BurstAndCooldownTest,
     FakeClockOnlyTest,
     OriginStatedCooldownTest,
     RateBudgetTest,
     TheDocumentedPathPacesAndRemembersTest,
-    VolatileIdentifierTest,
 )

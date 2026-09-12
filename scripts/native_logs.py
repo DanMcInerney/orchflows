@@ -51,46 +51,22 @@ def _catalog(host, home, identifier=None):
     if host == "codex":
         databases = sorted(home.glob("state_*.sqlite"), key=lambda p: int(p.stem.split("_")[-1])
                            if p.stem.split("_")[-1].isdigit() else -1, reverse=True)
-        if databases:
-            try:
-                with closing(sqlite3.connect(databases[0].as_uri() + "?mode=ro", uri=True)) as db:
-                    db.execute("BEGIN")
-                    columns = {row[1] for row in db.execute("PRAGMA table_info(threads)")}
-                    extra = [key for key in ("cwd", "title", "created_at", "updated_at") if key in columns]
-                    for row in db.execute("SELECT id, rollout_path" + "".join(", " + key for key in extra) + " FROM threads"):
-                        entries[row[0]] = {"id": row[0], "path": str(row[1]), "parent_id": None,
-                                           **dict(zip(extra, row[2:]))}
-                    for parent, child in db.execute("SELECT parent_thread_id, child_thread_id FROM thread_spawn_edges"):
-                        if child in entries:
-                            entries[child]["parent_id"] = parent
-                        else:
-                            gaps.append({"kind": "missing_child_record", "id": child, "parent_id": parent})
-                return entries, gaps
-            except sqlite3.Error as exc:
-                gaps.append({"kind": "index_unavailable", "detail": str(exc)})
-                entries.clear()
-        # Header-only fallback also supports copied rollouts without a native index.
-        for folder in (home / "sessions", home / "archived_sessions"):
-            for path in folder.rglob("*.jsonl"):
-                try:
-                    with path.open(encoding="utf-8") as stream:
-                        meta = json.loads(stream.readline())["payload"]
-                    identifier = meta.get("id") or meta["session_id"]
-                    entry = {"id": identifier, "path": str(path), "parent_id": meta.get("parent_thread_id")}
-                    source = meta.get("source")
-                    if not entry["parent_id"] and isinstance(source, dict):
-                        subagent = source.get("subagent")
-                        spawn = subagent.get("thread_spawn") if isinstance(subagent, dict) else None
-                        if isinstance(spawn, dict):
-                            entry["parent_id"] = spawn.get("parent_thread_id")
-                    if identifier in entries:
-                        raise ValueError(f"Duplicate native ID {identifier}")
-                    entries[identifier] = entry
-                except (OSError, ValueError, KeyError, TypeError) as exc:
-                    gaps.append({"kind": "header_unavailable", "path": str(path), "detail": str(exc)})
+        if not databases:
+            raise ValueError(f"Codex index not found under {home}")
+        try:
+            with closing(sqlite3.connect(databases[0].as_uri() + "?mode=ro", uri=True)) as db:
+                db.execute("BEGIN")
+                for row in db.execute("SELECT id, rollout_path, cwd, title, created_at, updated_at FROM threads"):
+                    entries[row[0]] = {"id": row[0], "path": str(row[1]), "parent_id": None, "cwd": row[2],
+                                       "title": row[3], "created_at": row[4], "updated_at": row[5]}
+                for parent, child in db.execute("SELECT parent_thread_id, child_thread_id FROM thread_spawn_edges"):
+                    if child in entries:
+                        entries[child]["parent_id"] = parent
+                    else:
+                        gaps.append({"kind": "missing_child_record", "id": child, "parent_id": parent})
+        except sqlite3.Error as exc:
+            raise ValueError(f"Codex index unreadable: {databases[0]}: {exc}") from exc
     else:
-        # Locate the requested session first; do not open every unrelated agent's
-        # metadata on each page of a read.
         parents = list((home / "projects").glob(f"*/{identifier or '*'}.jsonl"))
         if identifier and not parents:
             matches = list((home / "projects").glob(f"*/*/subagents/agent-{identifier}.jsonl"))
@@ -102,19 +78,17 @@ def _catalog(host, home, identifier=None):
         child_paths = (list((home / "projects").glob("*/*/subagents/agent-*.jsonl")) if identifier is None else
                        [child for parent in parents for child in parent.with_suffix("").joinpath("subagents").glob("agent-*.jsonl")])
         for path in child_paths:
-            identifier = path.stem.removeprefix("agent-")
-            entry = {"id": identifier, "path": str(path), "parent_id": path.parent.parent.name}
-            meta_path = path.with_suffix(".meta.json")
-            if meta_path.exists():
-                try:
-                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-                    entry["parent_id"] = meta.get("parentAgentId") or entry["parent_id"]
-                    entry["name"] = meta.get("name") or meta.get("description") or meta.get("agentType")
-                except (OSError, ValueError, AttributeError) as exc:
-                    entry["metadata_gap"] = str(exc)
-            if identifier in entries:
-                raise ValueError(f"Ambiguous native agent ID {identifier}")
-            entries[identifier] = entry
+            child = path.stem.removeprefix("agent-")
+            entry = {"id": child, "path": str(path), "parent_id": path.parent.parent.name}
+            try:
+                meta = json.loads(path.with_suffix(".meta.json").read_text(encoding="utf-8"))
+                entry["parent_id"] = meta.get("parentAgentId") or entry["parent_id"]
+                entry["name"] = meta.get("name") or meta.get("description") or meta.get("agentType")
+            except (OSError, ValueError, AttributeError) as exc:
+                gaps.append({"kind": "metadata_unavailable", "id": child, "detail": str(exc)})
+            if child in entries:
+                raise ValueError(f"Ambiguous native agent ID {child}")
+            entries[child] = entry
     return entries, gaps
 
 
@@ -167,13 +141,11 @@ def _window(since, until):
     return start, end
 
 
-def _file_metadata(path, host, project=None):
-    # Read the opening metadata and the last dated record, not every tool output.
-    metadata = {"metadata_source": "transcript_endpoints"}
+def _file_metadata(path, project=None):
+    metadata = {}
     for _, line, _, record in _records(path):
-        payload = record.get("payload") if host == "codex" and record.get("type") == "session_meta" else record
-        if isinstance(payload, dict) and payload.get("cwd"):
-            metadata["cwd"] = payload["cwd"]
+        if record.get("cwd"):
+            metadata["cwd"] = record["cwd"]
         if _timestamp(record.get("timestamp")):
             metadata.setdefault("created_at", record["timestamp"])
         if (metadata.get("cwd") and metadata.get("created_at")) or line >= 100:
@@ -221,13 +193,11 @@ def find(host, home, since=None, until=None, project=None, limit=30, after=None)
             continue
         scanned += 1
         entry = entry.copy()
-        if not all(entry.get(key) is not None for key in ("cwd", "created_at", "updated_at")):
+        if host == "claude":
             try:
-                entry.update(_file_metadata(Path(entry["path"]), host, project))
+                entry.update(_file_metadata(Path(entry["path"]), project))
             except OSError as exc:
                 entry["read_gap"] = str(exc)
-        else:
-            entry["metadata_source"] = "native_index"
         first, latest = _timestamp(entry.get("created_at")), _timestamp(entry.get("updated_at"))
         # These are candidate bounds. A long-lived session may have no events
         # inside the window; history read applies the exact timestamp filter.
@@ -250,9 +220,8 @@ def find(host, home, since=None, until=None, project=None, limit=30, after=None)
             "next_cursor": base64.urlsafe_b64encode(_json([scope, page[-1]["id"]]).encode()).decode()
             if len(matches) > limit else None,
             "discovery_gaps": gaps[:20], "discovery_gap_count": len(gaps),
-            "note": "Candidates include sessions and subagents. Dates overlap native index or transcript endpoint bounds; "
-                    "read with the same dates to select actual events. Project matches recorded cwd text, not repository identity. "
-                    "Missing metadata stays visible in scope_unknown. Discovery does not prove complete native retention."}
+            "note": "Candidates include sessions and subagents; their date bounds may hold no events in the window, so read "
+                    "with the same dates. Project matches recorded cwd text, not repository identity."}
 
 
 def _events(host, record):
@@ -311,7 +280,7 @@ def _events(host, record):
                 if item_kind == "CommandExecution":
                     result.append({"kind": "command", "native_id": item.get("id"), "status": item.get("status"),
                                    "exit_code": item.get("exit_code"), "data": {k: item.get(k) for k in ["command", "cwd", "duration"]},
-                                   "captured_output": item.get("stdout", item.get("aggregated_output", "")),
+                                   "captured_output": item.get("stdout", ""),
                                    "stderr": item.get("stderr", ""), "presented_output": item.get("formatted_output")})
                 elif item_kind not in {"AgentMessage", "UserMessage", "Reasoning"}:
                     item_result = item.get("result")
@@ -476,7 +445,6 @@ def read(host, identifier, home, limit=30, after=None, event_id=None, field="dat
                 raise ValueError()
         except ValueError as exc:
             raise ValueError("Event ID must be BYTE_OFFSET:INDEX from a previous read") from exc
-        # Locate its true line number; event IDs remain independent of pagination.
         with path.open("rb") as stream:
             while stream.tell() < start:
                 if not stream.readline():

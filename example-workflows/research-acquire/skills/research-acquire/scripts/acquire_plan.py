@@ -1,6 +1,6 @@
 """Closed two-stage research plan: validate bounds, present candidates, bind choices.
 
-No keyword floor, ranking, route inference, fallback, or semantic selection.
+No keyword floor, ranking, route inference, substitution, or semantic selection.
 The caller names discovery and depth routes; a model supplies record IDs and
 reasons after inspecting the complete capped candidate batch.
 """
@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 
-from super_research import coverage, normalize, runner, schema, transport
+from super_research import coverage, normalize, runner, schema
 
 
 class PlanError(ValueError):
@@ -95,8 +95,7 @@ def _validate(plan):
         if re.search(r"(?:since:|until:|after:|before:|after=|before=)\d{4}", raw["query"]):
             raise PlanError("put date bounds in window, not embedded query operators")
     try:
-        manifest = schema.parse_manifest(dict(schema_version=2, manifest_id=plan["plan_id"],
-                                             mode="fused", as_of=plan["as_of"], steps=steps))
+        manifest = schema.parse_manifest(dict(manifest_id=plan["plan_id"], as_of=plan["as_of"], steps=steps))
     except schema.ManifestError as error:
         raise PlanError(str(error)) from error
     ids = {step.step_id for step in manifest.steps}
@@ -137,16 +136,14 @@ def window_fields(plan):
 
 
 def depth_step(plan, route, record, step_id):
-    if route["adapter_id"] == "open_page":
-        try:
-            if transport.open_read_refusal(record.normalized_locator):
-                return None
-        except ValueError:
-            return None
     built = coverage.plan_depth((record,), route["adapter_id"], route["operation"],
                                 step_id, route["max_items"], limit=1)
-    if built.skipped or not built.steps or not (built.steps[0].selected_hits or built.steps[0].query):
+    if built.skipped or not built.steps[0].selected_hits:
         return None
+    if route["adapter_id"] == "open_page":
+        # Read the exact selected document even if it reveals an older date
+        # than discovery reported. Dropping it would discard that correction.
+        return built.steps[0]
     return replace(built.steps[0], **window_fields(plan))
 
 
@@ -164,12 +161,25 @@ def candidates(plan, records):
             if record.step_id in route["from_steps"] and depth_step(plan, route, record, "candidate"):
                 options.append(route["depth_id"])
         row = asdict(record)
+        qualification = ""
         try:
             instant(record.published_at)
-            date_eligibility = "dated" if plan["window"] is None else "in_window"
+            window = plan["window"]
+            date_eligibility = ("dated" if window is None else
+                                "in_window" if window["start"] <= record.published_at <= window["end"]
+                                else "outside_window")
+            if record.time_confidence == "reported":
+                date_eligibility = "reported_" + date_eligibility
+                basis = dict(record.attributes).get("published_at_basis", "third_party_reported")
+                qualification = {
+                    "index_reported": "Index-reported date only; original-source publication date requires verification.",
+                    "publisher_reported": "Publisher-reported feed date; check the original source for publication and revision meaning.",
+                    "third_party_reported": "Third-party-reported date; the original source has not verified this timestamp.",
+                }.get(basis, "Reported date; original-source publication date requires verification.")
         except PlanError:
             date_eligibility = "unknown"
-        row.update(options=options, duplicate_of=duplicate, date_eligibility=date_eligibility)
+        row.update(options=options, duplicate_of=duplicate, date_eligibility=date_eligibility,
+                   date_qualification=qualification)
         rows.append(row)
     return rows
 
@@ -194,9 +204,8 @@ def selections(plan, records, selection, candidate_id):
             raise PlanError("choice is outside the authorized candidate/depth set")
         step = depth_step(plan, route, record, "depth-" + str(index + 1))
         if step is None:
-            raise PlanError("choice is incompatible with the selected source route")
-        key = (route["adapter_id"], route["operation"],
-               step.selected_hits[0].target_id if step.selected_hits else step.query)
+            raise PlanError("choice names a record the selected depth route cannot address")
+        key = (route["adapter_id"], route["operation"], step.selected_hits[0].target_id)
         if key in targets:
             raise PlanError("duplicate hydration target; select one discovery provenance")
         targets.add(key)

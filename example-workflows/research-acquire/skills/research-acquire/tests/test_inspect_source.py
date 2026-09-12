@@ -1,237 +1,261 @@
-"""Observable transcript parity: retained captions, typed failures, bounded fallback."""
+"""The transcript reader runs yt-dlp once through an injected command; nothing here reaches the network."""
 
-from contextlib import redirect_stderr, redirect_stdout
-from datetime import datetime, timezone
+import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-import inspect_source as source
-import inspect_youtube as youtube
-from super_research import transport
+import inspect_source as reader
 
-FIXTURES = Path(__file__).parent / "fixtures" / "youtube"
-VIDEO = "7pQm3nXkT2a"
+JSON3 = json.dumps({"events": [
+    {"tStartMs": 1000, "dDurationMs": 2000, "segs": [{"utf8": "Hello"}, {"utf8": " & welcome", "tOffsetMs": 600}]},
+    {"tStartMs": 2500, "dDurationMs": 100, "aAppend": 1, "segs": [{"utf8": "\n"}]},
+    {"tStartMs": 4000, "dDurationMs": 2500, "segs": [{"utf8": "Second line"}]},
+    {"tStartMs": 7000, "dDurationMs": 10, "segs": [{"utf8": "  "}]}]})
+INFO = {"id": "dQw4w9WgXcQ", "title": "Sample", "channel": "Channel", "upload_date": "20260901", "timestamp": 1788264000,
+        "view_count": 12345, "like_count": 42, "comment_count": 0,
+        "subtitles": {}, "automatic_captions": {"en": [{"ext": "json3", "url": "https://www.youtube.com/api/timedtext?caps=asr"}]}}
 
 
-class TranscriptTests(unittest.TestCase):
-    def fake_download(self, status=0, timeout=False, track_metadata=None):
-        def run(args, **kwargs):
-            self.assertIn("--ignore-config", args)
-            self.assertIn("--no-cookies", args)
-            self.assertIn("--no-cookies-from-browser", args)
-            self.assertIn("--no-plugin-dirs", args)
-            self.assertIn("--no-playlist", args)
-            self.assertIn("--skip-download", args)
-            self.assertEqual(args[args.index("--extractor-args") + 1], "youtube:player_client=android")
-            for option in ("--retries", "--extractor-retries", "--fragment-retries", "--file-access-retries"):
-                self.assertEqual(args[args.index(option) + 1], "0")
-            directory = Path(args[args.index("-o") + 1]).parent
-            (directory / (VIDEO + ".en.vtt")).write_bytes((FIXTURES / "inspection.vtt").read_bytes())
-            (directory / (VIDEO + ".info.json")).write_text(json.dumps({
-                "id": VIDEO, "upload_date": "20260910", "title": "Fixture caption", "channel": "Fixture",
-                **(track_metadata or {})}))
-            if timeout:
-                raise subprocess.TimeoutExpired(args, kwargs["timeout"])
-            if status:
-                kwargs["stderr"].write(b"ERROR: HTTP Error 429: Too Many Requests")
-            return SimpleNamespace(returncode=status)
-        return run
+def fake_run(files=None, returncode=0, stderr=b"", timeout=False):
+    def run(args, **options):
+        directory = Path(args[args.index("-o") + 1]).parent
+        for name, content in (files or {}).items():
+            (directory / name).write_text(content, encoding="utf-8")
+        if timeout:
+            raise subprocess.TimeoutExpired(args, options["timeout"], stderr=stderr)
+        return subprocess.CompletedProcess(args, returncode, stdout=b"", stderr=stderr)
+    return run
 
-    def test_completed_caption_survives_later_failure_or_timeout(self):
-        for code, timeout, expected in ((0, False, "ok"), (1, False, "rate_limited"), (0, True, "timeout")):
-            with self.subTest(code=code, timeout=timeout), tempfile.TemporaryDirectory() as directory:
-                result = youtube.read_ytdlp(VIDEO, "en", directory, 10, command=["yt-dlp"],
-                                             run=self.fake_download(code, timeout))
-                self.assertEqual(result["status"], "ok")
-                self.assertEqual(result["process_status"], expected)
-                self.assertEqual(result["text"], "Hello & welcome.\nAnother thought.\nHello & welcome.")
-                self.assertEqual(result["metadata"]["upload_date"], "20260910")
-                self.assertIn("00:00:05.000", result["_raw_caption"])
 
-    def test_missing_executable_is_not_no_captions(self):
-        with tempfile.TemporaryDirectory() as directory:
-            self.assertEqual(youtube.read_ytdlp(VIDEO, "en", directory, 10, command=[])["status"],
-                             "dependency_missing")
+class TranscriptReaderTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="research-inspect-")
+        self.addCleanup(temporary.cleanup)
+        self.output = Path(temporary.name) / "evidence" / "caption.json"
+        self.command = lambda: ["fake-yt-dlp"]
 
-    def test_empty_successful_extractor_is_only_no_matching_captions(self):
-        with tempfile.TemporaryDirectory() as directory:
-            result = youtube.read_ytdlp(VIDEO, "en", directory, 10, command=["yt-dlp"],
-                                        run=lambda *a, **k: SimpleNamespace(returncode=0))
-            self.assertEqual(result["status"], "no_matching_captions")
+    def inspect(self, run, **options):
+        return reader.inspect("dQw4w9WgXcQ", run=run, command=self.command, **options)
 
-    def test_innertube_handoff_retains_track_metadata_in_public_packet(self):
+    def test_single_invocation_yields_text_track_metadata_and_publication(self):
         calls = []
-        def opener(request):
-            calls.append(request)
-            fixture = "player_with_caption_tracks.json" if len(calls) == 1 else "timedtext_json3.json"
-            return 200, (FIXTURES / fixture).read_text(), "application/json"
-        result = youtube.read_innertube(VIDEO, "en", opener=opener)
-        self.assertEqual(result["status"], "ok")
-        self.assertEqual(result["requests"], 2)
-        self.assertEqual(calls[0].route_id, transport.YOUTUBE_INNERTUBE_ROUTE)
-        self.assertEqual(calls[1].route_id, transport.YOUTUBE_TIMEDTEXT_ROUTE)
-        self.assertIn("SpaceX", result["text"])
-        self.assertEqual(result["metadata"]["published_at"], "2026-07-04")
-        packet = source.inspect(VIDEO, ytdlp_read=lambda *a: {"status": "dependency_missing"},
-                                run=lambda *a, **k: SimpleNamespace(returncode=0, stdout=json.dumps(result).encode()))
-        self.assertEqual(packet["caption_track"], {
-            "language": "en", "kind": "asr", "automatic": True, "cue_count": 3, "duration_ms": 1155720})
 
-    def test_ytdlp_public_track_status_requires_selected_url_match(self):
-        selected = {"url": "https://www.youtube.com/api/timedtext?v=" + VIDEO + "&lang=en", "ext": "vtt"}
-        cases = (
-            ({"requested_subtitles": {"en": selected}, "automatic_captions": {"en": [selected]}}, None, True),
-            ({"requested_subtitles": {"en": selected}, "subtitles": {"en": [selected]}}, None, False),
-            ({"requested_subtitles": {"en": selected}, "subtitles": {"en": [selected]},
-              "automatic_captions": {"en": [selected]}}, None, None),
-            ({"requested_subtitles": {"en": {"url": "https://example.invalid/other"}},
-              "automatic_captions": {"en": [selected]}}, None, None),
-            ({"automatic_captions": {"en": [selected]}}, None, None),
-        )
-        for metadata, kind, automatic in cases:
-            with self.subTest(metadata=metadata):
-                def read(*args):
-                    return youtube.read_ytdlp(*args, command=["yt-dlp"],
-                                              run=self.fake_download(track_metadata=metadata))
-                packet = source.inspect(VIDEO, ytdlp_read=read)
-                track = packet["caption_track"]
-                self.assertEqual(track["language"], "en")
-                self.assertEqual(track.get("kind"), kind)
-                self.assertIs(track["automatic"], automatic)
-                self.assertEqual(track["cue_count"], 3)
-                self.assertEqual(track["duration_ms"], 6000)
+        def run(args, **options):
+            calls.append(args)
+            return fake_run({"dQw4w9WgXcQ.en.json3": JSON3, "dQw4w9WgXcQ.info.json": json.dumps(INFO)})(args, **options)
 
-    def test_translation_of_manual_captions_does_not_become_asr(self):
-        language = "en-es"
-        selected = {"url": "https://www.youtube.com/api/timedtext?v=" + VIDEO + "&lang=es&tlang=en"}
-        metadata = {"requested_subtitles": {language: selected},
-                    "automatic_captions": {language: [selected]}}
-        def read(*args):
-            return youtube.read_ytdlp(*args, command=["yt-dlp"],
-                                      run=self.fake_download(track_metadata=metadata))
-        packet = source.inspect(VIDEO, language=language, ytdlp_read=read)
-        self.assertIs(packet["caption_track"]["automatic"], True)
-        self.assertNotIn("kind", packet["caption_track"])
+        packet, raw = self.inspect(run)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][:1], ["fake-yt-dlp"])
+        for flag in ("--no-playlist", "--no-cookies", "--ignore-config", "json3"):
+            self.assertIn(flag, calls[0])
+        self.assertEqual(packet["status"], "ok")
+        self.assertEqual(packet["text"], "Hello & welcome\nSecond line")
+        self.assertEqual(packet["caption_track"], {"language": "en", "automatic": True, "cue_count": 2, "duration_ms": 6500})
+        self.assertEqual(packet["metadata"]["title"], "Sample")
+        self.assertEqual({key: packet["metadata"][key] for key in ("view_count", "like_count", "comment_count")},
+                         {"view_count": 12345, "like_count": 42, "comment_count": 0})
+        self.assertEqual(packet["content_kind"], "transcript")
+        self.assertFalse(packet["audience_opinion"])
+        self.assertEqual(packet["publication"]["precision"], "instant")
+        self.assertEqual(packet["caption_format"], "json3")
+        self.assertEqual(len(packet["caption_sha256"]), 64)
+        self.assertEqual(raw, JSON3)
+        self.assertEqual(packet["bounds"]["invocations"], 1)
 
-    def test_public_track_omits_arbitrary_or_unbounded_attributes(self):
-        packet = source.inspect(VIDEO, ytdlp_read=lambda *a: {
-            "status": "ok", "text": "Caption", "attributes": {
-                "languageCode": "en" * 10000, "kind": "asr" * 10000,
-                "cue_count": True, "duration_ms": "9" * 16, "arbitrary": {"untrusted": "value"}}})
-        self.assertEqual(packet["caption_track"], {"automatic": None})
-        self.assertNotIn("attributes", packet)
+    def test_truncation_bounds_text_and_marks_it(self):
+        packet, _ = self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": JSON3}), max_chars=5)
+        self.assertEqual(packet["text"], "Hello")
+        self.assertTrue(packet["truncated"])
+        self.assertEqual(packet["publication"], {"precision": "unknown"})
+        self.assertEqual(packet["metadata"], {})
+        self.assertIsNone(packet["caption_track"]["automatic"])
 
-    def test_empty_http_200_caption_is_failure_not_video_text(self):
-        calls = []
-        def opener(request):
-            calls.append(request)
-            return 200, ((FIXTURES / "player_with_caption_tracks.json").read_text() if len(calls) == 1 else ""), "application/json"
-        result = youtube.read_innertube(VIDEO, "en", opener=opener)
-        self.assertEqual(result["status"], "unavailable")
-        self.assertNotIn("text", result)
-        self.assertIn("malformed_json", result["pages"][-1]["loss"])
+    def test_invalid_engagement_counts_are_omitted_without_losing_captions(self):
+        for invalid in (-1, True, False, None, "0", 0.0, 1.5, [], {}, float("nan"), float("inf")):
+            with self.subTest(invalid=invalid):
+                info = {**INFO, **dict.fromkeys(("view_count", "like_count", "comment_count"), invalid)}
+                packet, raw = self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": JSON3,
+                                                     "dQw4w9WgXcQ.info.json": json.dumps(info)}))
+                self.assertEqual(packet["status"], "ok")
+                self.assertEqual(raw, JSON3)
+                self.assertEqual(packet["metadata"]["title"], "Sample")
+                for key in ("view_count", "like_count", "comment_count"):
+                    self.assertNotIn(key, packet["metadata"])
 
-    def test_fallback_receives_only_remaining_wall_budget(self):
-        moment = [0.0]
-        def first(*args):
-            moment[0] = 30
-            return {"status": "rate_limited"}
-        def fallback(args, **kwargs):
-            self.assertEqual(kwargs["timeout"], 15)
-            moment[0] = 45
-            raise subprocess.TimeoutExpired(args, kwargs["timeout"])
-        result = source.inspect(VIDEO, timeout_seconds=45, clock=lambda: moment[0], ytdlp_read=first, run=fallback)
-        self.assertEqual([row["status"] for row in result["attempts"]], ["rate_limited", "timeout"])
-        self.assertEqual(result["elapsed_seconds"], 45)
-        self.assertFalse(result["audience_opinion"])
+    def test_missing_or_empty_track_is_no_matching_captions(self):
+        for files in ({}, {"dQw4w9WgXcQ.en.json3": '{"events": []}'}, {"dQw4w9WgXcQ.en.json3": '{"events": [{"tStartMs": 1, "dDurationMs": 1, "segs": [{"utf8": "\\n"}]}]}'}):
+            with self.subTest(files=list(files.values())):
+                packet, raw = self.inspect(fake_run(files))
+                self.assertEqual(packet["status"], "no_matching_captions")
+                self.assertEqual(packet["exit_code"], 0)
+                self.assertIsNone(raw)
+                self.assertNotIn("caption_sha256", packet)
 
-    def test_success_skips_fallback_and_marks_truncation(self):
-        def fallback(*args, **kwargs):
-            self.fail("a retained caption must not trigger more reads")
-        result = source.inspect(VIDEO, max_chars=4, ytdlp_read=lambda *a: {
-            "status": "ok", "text": "one two three", "metadata": {}}, run=fallback)
-        self.assertEqual(result["text"], "one ")
-        self.assertTrue(result["truncated"])
-        self.assertEqual(len(result["attempts"]), 1)
-        self.assertEqual(result["publication"]["precision"], "unknown")
+    def test_failures_are_reported_never_retried(self):
+        packet, _ = self.inspect(fake_run(returncode=1, stderr=b"ERROR: HTTP Error 429: Too Many Requests"))
+        self.assertEqual(packet["status"], "backend_error")
+        self.assertEqual(packet["exit_code"], 1)
+        self.assertIn("429", packet["stderr"])
+        self.assertEqual(packet["text"], "")
+        self.assertEqual(self.inspect(fake_run(timeout=True))[0]["status"], "timeout")
+        self.assertEqual(reader.inspect("dQw4w9WgXcQ", run=fake_run(), command=lambda: None)[0]["status"], "dependency_missing")
+        self.assertEqual(self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": "x" * (reader.MAX_BYTES + 1)}))[0]["status"], "caption_too_large")
+        packet, _ = self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": "not json"}))
+        self.assertEqual(packet["status"], "backend_error")
+        self.assertIn("unreadable", packet["error"])
 
-    def test_exhausted_deadline_never_starts_fallback(self):
-        moment = [0.0]
-        def first(*args):
-            moment[0] = 45
-            return {"status": "timeout"}
-        with patch.object(source.subprocess, "run") as fallback:
-            result = source.inspect(VIDEO, clock=lambda: moment[0], ytdlp_read=first, run=fallback)
-            fallback.assert_not_called()
-        self.assertEqual(result["fallback_skipped"], "deadline")
-        self.assertEqual(len(result["attempts"]), 1)
+    def test_completed_captions_survive_later_process_failure_without_retry(self):
+        for timeout in (False, True):
+            with self.subTest(timeout=timeout):
+                calls = []
+                def run(args, **options):
+                    calls.append(args)
+                    return fake_run({"dQw4w9WgXcQ.en.json3": JSON3}, returncode=1,
+                                    stderr=b"x" * 2200 + b"later failure", timeout=timeout)(args, **options)
+                packet, raw = self.inspect(run)
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(packet["status"], "ok")
+                self.assertEqual(packet["process_status"], "timeout" if timeout else "backend_error")
+                self.assertEqual(packet["text"], "Hello & welcome\nSecond line")
+                self.assertEqual(raw, JSON3)
+                self.assertEqual(packet["publication"], {"precision": "unknown"})
+                self.assertEqual(packet["metadata"], {})
+                self.assertEqual(len(packet["stderr"]), reader.STDERR_TAIL)
+                self.assertTrue(packet["stderr"].endswith("later failure"))
+                if timeout:
+                    self.assertNotIn("exit_code", packet)
+                else:
+                    self.assertEqual(packet["exit_code"], 1)
 
-    def test_missing_optional_dependency_can_use_public_fallback(self):
-        result = source.inspect(VIDEO, ytdlp_read=lambda *a: {"status": "dependency_missing"},
-                                run=lambda *a, **k: SimpleNamespace(returncode=0, stdout=json.dumps({
-                                    "status": "ok", "text": "Public caption", "metadata": {}}).encode()))
-        self.assertEqual(result["status"], "ok")
-        self.assertEqual(result["backend"], "youtube_innertube")
-        self.assertEqual(result["attempts"][0]["status"], "dependency_missing")
+    def test_incomplete_metadata_does_not_erase_a_valid_caption_track(self):
+        packet, raw = self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": JSON3,
+                                             "dQw4w9WgXcQ.info.json": "{broken"}))
+        self.assertEqual(packet["status"], "ok")
+        self.assertEqual(packet["process_status"], "ok")
+        self.assertEqual(raw, JSON3)
+        self.assertEqual(packet["publication"], {"precision": "unknown"})
+        self.assertIn("metadata unreadable", packet["error"])
 
-    def test_oversized_support_is_typed_and_not_retained(self):
-        with tempfile.TemporaryDirectory() as directory, patch.object(youtube, "MAX_BYTES", 10):
-            result = youtube.read_ytdlp(VIDEO, "en", directory, 10, command=["yt-dlp"], run=self.fake_download())
-            self.assertEqual(result["status"], "caption_too_large")
-            self.assertNotIn("_raw_caption", result)
+    def test_failed_process_does_not_salvage_an_incomplete_caption_file(self):
+        for timeout in (False, True):
+            with self.subTest(timeout=timeout):
+                packet, raw = self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": '{"events": ['},
+                                                     returncode=1, timeout=timeout))
+                self.assertEqual(packet["status"], "timeout" if timeout else "backend_error")
+                self.assertEqual(packet["text"], "")
+                self.assertIsNone(raw)
 
+    def test_track_provenance_comes_from_which_collection_lists_the_language(self):
+        self.assertIs(reader.track_automatic(INFO, "en"), True)
+        self.assertIs(reader.track_automatic({**INFO, "subtitles": {"en": [{"ext": "json3"}]}}, "en"), False)
+        self.assertIs(reader.track_automatic({"subtitles": {"fr": []}, "automatic_captions": {"fr": []}}, "en"), None)
+        self.assertIs(reader.track_automatic({}, "en"), None)
 
-class SourceContractTests(unittest.TestCase):
-    def test_single_video_url_normalization_removes_playlist_and_comment_arguments(self):
-        for url in (VIDEO, "https://youtu.be/" + VIDEO, "https://www.youtube.com/watch?v=" + VIDEO + "&list=abc&lc=comment",
-                    "https://youtube.com/shorts/" + VIDEO):
-            self.assertEqual(source.video_id(url), VIDEO)
-        for url in ("https://youtube.com.attacker.test/watch?v=" + VIDEO, "http://youtube.com/watch?v=" + VIDEO,
-                    "https://user@youtube.com/watch?v=" + VIDEO, "https://youtube.com/playlist?list=x", "--exec=anything"):
-            with self.assertRaises(ValueError):
-                source.video_id(url)
+    def test_video_ids_are_extracted_only_from_single_video_forms(self):
+        for value in ("dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PL1", "https://youtu.be/dQw4w9WgXcQ",
+                      "https://m.youtube.com/shorts/dQw4w9WgXcQ", "https://www.youtube.com/live/dQw4w9WgXcQ"):
+            self.assertEqual(reader.video_id(value), "dQw4w9WgXcQ", value)
+        for value in ("http://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/@channel", "https://www.youtube.com/playlist?list=PL1",
+                      "https://example.com/watch?v=dQw4w9WgXcQ", "https://user:pw@youtu.be/dQw4w9WgXcQ", "short"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                reader.video_id(value)
 
-    def test_day_precision_cannot_establish_inside_at_exact_cutoff(self):
-        start, end = source.instant("2026-08-12T14:56:12Z"), source.instant("2026-09-11T14:56:12Z")
-        cases = (("20260812", "boundary_uncertain"), ("20260911", "boundary_uncertain"),
-                 ("20260910", "inside"), ("20260912", "outside"), (None, "unknown"))
-        for day, relation in cases:
-            self.assertEqual(source.date_relation(source.publication({"upload_date": day}), start, end), relation)
-        exact_end = source.publication({"timestamp": end.timestamp()})
-        self.assertEqual(source.date_relation(exact_end, start, end), "outside")
-        native_day = source.publication({"published_at": "2026-08-13"})
-        self.assertEqual(native_day["timezone"], "unspecified")
-        self.assertEqual(source.date_relation(native_day, start, end), "boundary_uncertain")
+    def test_date_relation_covers_every_case(self):
+        start, end = reader.instant("2026-09-01T00:00:00Z"), reader.instant("2026-09-02T00:00:00Z")
+        instant_inside = reader.publication({"timestamp": 1788264000})
+        self.assertEqual(instant_inside["earliest"], "2026-09-01T12:00:00+00:00")
+        self.assertEqual(reader.date_relation(instant_inside, start, end), "inside")
+        self.assertEqual(reader.date_relation(reader.publication({"timestamp": 1756900000}), start, end), "outside")
+        day = reader.publication({"upload_date": "20260901"})
+        self.assertEqual(day["timezone"], "UTC")
+        self.assertEqual(reader.date_relation(day, start, end), "inside")
+        self.assertEqual(reader.date_relation(day, start, reader.instant("2026-09-01T12:00:00Z")), "boundary_uncertain")
+        self.assertEqual(reader.date_relation(reader.publication({}), start, end), "unknown")
+        self.assertEqual(reader.date_relation(instant_inside, None, None), "not_requested")
+        self.assertEqual(reader.publication({"upload_date": "yesterday", "timestamp": float("nan")}), {"precision": "unknown"})
 
-    def test_bad_arguments_fail_before_any_backend_runs(self):
-        for flags in (["--timeout-seconds", "0"], ["--timeout-seconds", "nan"], ["--max-chars", "0"],
-                      ["--language", "en,all"], ["--window-start", "2026-09-01"],
-                      ["--start-date", "2026-09-11", "--end-date", "2026-09-01"]):
-            with self.subTest(flags=flags), patch.object(source, "inspect") as call, redirect_stderr(io.StringIO()):
-                with self.assertRaises(SystemExit) as error:
-                    source.main(["youtube-transcript", "--url", VIDEO, "--output", "unused.json"] + flags)
-                self.assertEqual(error.exception.code, 2)
-                call.assert_not_called()
+    def test_cli_writes_receipt_and_sidecar_and_exits_by_status(self):
+        original = subprocess.run
+        subprocess.run = fake_run({"dQw4w9WgXcQ.en.json3": JSON3, "dQw4w9WgXcQ.info.json": json.dumps(INFO)})
+        self.addCleanup(setattr, subprocess, "run", original)
+        original_command = reader.find_command
+        reader.find_command = self.command
+        self.addCleanup(setattr, reader, "find_command", original_command)
+        with contextlib.redirect_stdout(io.StringIO()) as stdout:
+            code = reader.main(["youtube-transcript", "--url", "dQw4w9WgXcQ", "--output", str(self.output),
+                                "--start-date", "2026-09-01", "--end-date", "2026-09-01"])
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(stdout.getvalue())["status"], "ok")
+        packet = json.loads(self.output.read_text(encoding="utf-8"))
+        self.assertEqual(packet["date_relation"], "inside")
+        self.assertEqual(packet["window"], {"start": "2026-09-01T00:00:00+00:00", "end_exclusive": "2026-09-02T00:00:00+00:00"})
+        self.assertEqual(Path(packet["caption_support"]).read_text(encoding="utf-8"), JSON3)
+        self.assertTrue(packet["caption_support"].endswith(".json3"))
+        for timeout in (False, True):
+            subprocess.run = fake_run({"dQw4w9WgXcQ.en.json3": JSON3}, returncode=1, timeout=timeout)
+            with self.subTest(timeout=timeout), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(reader.main(["youtube-transcript", "--url", "dQw4w9WgXcQ", "--output", str(self.output)]), 0)
+            packet = json.loads(self.output.read_text(encoding="utf-8"))
+            self.assertEqual(packet["process_status"], "timeout" if timeout else "backend_error")
+            self.assertEqual(Path(packet["caption_support"]).read_text(encoding="utf-8"), JSON3)
+        subprocess.run = fake_run({})
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(reader.main(["youtube-transcript", "--url", "dQw4w9WgXcQ", "--output", str(self.output)]), 3)
+        self.assertEqual(json.loads(self.output.read_text(encoding="utf-8"))["status"], "no_matching_captions")
 
-    def test_cli_writes_inspectable_support_and_receipt_even_for_empty_window_match(self):
-        raw = (FIXTURES / "inspection.vtt").read_text()
-        fake = {"status": "ok", "backend": "yt-dlp", "text": "Fixture", "caption_format": "vtt",
-                "publication": source.publication({}), "_raw_caption": raw}
-        with tempfile.TemporaryDirectory() as directory, patch.object(source, "inspect", return_value=fake), redirect_stdout(io.StringIO()):
-            output = Path(directory) / "evidence.json"
-            code = source.main(["youtube-transcript", "--url", VIDEO, "--output", str(output),
-                                "--start-date", "2026-09-01", "--end-date", "2026-09-11"])
-            result = json.loads(output.read_text())
-            self.assertEqual(code, 0)
-            self.assertEqual(result["date_relation"], "unknown")
-            self.assertEqual(Path(result["caption_support"]).read_text(), raw)
-            self.assertNotIn("_raw_caption", result)
+    def test_usage_errors_write_nothing(self):
+        inside = reader.PACKAGE / "references" / "caption.json"
+        for arguments in (["--url", "https://www.youtube.com/@channel"], ["--language", "english"], ["--timeout-seconds", "0"],
+                          ["--timeout-seconds", "121"], ["--max-chars", "0"], ["--window-start", "2026-09-01T00:00:00Z"],
+                          ["--start-date", "2026-09-02", "--end-date", "2026-09-01"], ["--window-start", "2026-09-01T00:00:00", "--window-end", "2026-09-02T00:00:00Z"],
+                          ["--start-date", "2026-09-01", "--end-date", "2026-09-02", "--window-end", "2026-09-02T00:00:00Z"]):
+            with self.subTest(arguments=arguments), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+                reader.main(["youtube-transcript", "--url", "dQw4w9WgXcQ", "--output", str(self.output)] + arguments)
+            self.assertEqual(raised.exception.code, 2)
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+            reader.main(["youtube-transcript", "--url", "dQw4w9WgXcQ", "--output", str(inside)])
+        self.assertEqual(raised.exception.code, 2)
+        self.assertFalse(self.output.exists())
+        self.assertFalse(inside.exists())
+
+    def test_cli_writes_failure_receipt_for_malformed_caption_structures(self):
+        malformed = (None, [], {"events": None}, {"events": {}}, {"events": [{"segs": None}]},
+                     {"events": [{"tStartMs": 1, "segs": [{"utf8": None}]}]},
+                     {"events": [{"tStartMs": 1, "segs": [{"utf8": 7}]}]})
+        for payload in malformed:
+            with self.subTest(payload=payload), patch.object(reader, "find_command", self.command), \
+                    patch.object(subprocess, "run", side_effect=fake_run({"dQw4w9WgXcQ.en.json3": json.dumps(payload)})) as run, \
+                    contextlib.redirect_stdout(io.StringIO()) as stdout:
+                code = reader.main(["youtube-transcript", "--url", "dQw4w9WgXcQ", "--output", str(self.output)])
+                self.assertEqual(code, 3)
+                self.assertEqual(run.call_count, 1)
+                self.assertEqual(json.loads(stdout.getvalue())["status"], "backend_error")
+                packet = json.loads(self.output.read_text(encoding="utf-8"))
+                self.assertEqual(packet["status"], "backend_error")
+                self.assertEqual(packet["process_status"], "ok")
+                self.assertEqual(packet["exit_code"], 0)
+                self.assertEqual(packet["text"], "")
+                self.assertIn("unreadable", packet["error"])
+                self.assertNotIn("caption_support", packet)
+                self.assertFalse(self.output.with_name(self.output.name + ".json3").exists())
+
+    def test_unexpected_parser_failures_are_not_typed_as_bad_source_data(self):
+        with patch.object(reader, "parse_json3", side_effect=TypeError("implementation fault")), self.assertRaises(TypeError):
+            self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": JSON3}))
+
+    def test_reader_imports_nothing_from_the_acquisition_library(self):
+        probe = subprocess.run([sys.executable, "-c", "import sys, inspect_source; print(sorted(m for m in sys.modules if m.startswith(('super_research', 'acquire'))))"],
+                               capture_output=True, text=True, cwd=str(Path(reader.__file__).parent),
+                               env={**os.environ, "PYTHONPATH": str(Path(reader.__file__).parent)}, check=True)
+        self.assertEqual(probe.stdout.strip(), "[]")
 
 
 if __name__ == "__main__":

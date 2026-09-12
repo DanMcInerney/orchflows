@@ -10,71 +10,6 @@ def outbound_blob(outbound):
     )
 
 
-class GuestActivationRouteTest(unittest.TestCase):
-    """The two non-read operations, and the gate that keeps them two.
-
-    Minting an anonymous guest token needs a POST, and so does asking InnerTube
-    a question it only takes in a JSON body. Neither creates anything at an
-    origin: they are reads spelled in an awkward verb. What separates that from
-    a write-capable channel is not the verb but the enumeration — each is named
-    by route id in one of two closed sets, asserted below in both directions,
-    and no route anywhere reaches PUT, PATCH or DELETE.
-    """
-
-    def test_the_activation_route_carries_the_shape_the_evidence_measured(self):
-        route = transport.route_constant(transport.X_GUEST_ACTIVATE_ROUTE)
-
-        # The 2026-08-10 probes (X): POST api.twitter.com/1.1/guest/activate.json
-        # returned 200 with a guest token, keylessly.
-        self.assertEqual(route.access_class, "K1")
-        self.assertEqual(route.method, "POST")
-        self.assertEqual(route.origin, "https://api.twitter.com")
-        self.assertEqual(route.path, "/1.1/guest/activate.json")
-        self.assertEqual(route.credential_id, transport.X_GUEST_PUBLIC_BEARER)
-
-    def test_the_activation_route_needs_no_user_credential(self):
-        self.assertTrue(transport.route_admissions()[transport.X_GUEST_ACTIVATE_ROUTE])
-
-    def test_the_routes_declaring_a_non_read_method_are_exactly_the_declared_exceptions(self):
-        # Both directions. A route declaring a non-read method and named in
-        # neither set fails here; a route named in a set while declaring a read
-        # fails here too, because an exception nothing needs must not be held.
-        declared = sorted(transport.TOKEN_ACTIVATION_ROUTES + transport.QUERY_BODY_ROUTES)
-        non_read = sorted(
-            route_id
-            for route_id, route in transport.ROUTE_CONSTANTS.items()
-            if route.method not in transport.READ_METHODS
-        )
-
-        self.assertEqual(non_read, declared)
-        # Spelled as well as derived: an allowlist compared only against itself
-        # would admit a third member silently.
-        self.assertEqual(
-            declared, [transport.X_GUEST_ACTIVATE_ROUTE, transport.YOUTUBE_INNERTUBE_ROUTE]
-        )
-        # Two exceptions, one verb between them, and no route in both.
-        self.assertEqual(transport.TOKEN_ACTIVATION_METHODS, ("POST",))
-        self.assertEqual(transport.QUERY_BODY_METHODS, ("POST",))
-        self.assertEqual(
-            sorted(set(transport.TOKEN_ACTIVATION_ROUTES) & set(transport.QUERY_BODY_ROUTES)),
-            [],
-        )
-
-    def test_only_a_declared_exception_route_may_use_a_method_that_is_not_a_read(self):
-        declared = transport.TOKEN_ACTIVATION_ROUTES + transport.QUERY_BODY_ROUTES
-
-        for route_id in sorted(transport.ROUTE_CONSTANTS):
-            with self.subTest(route=route_id):
-                admitted = transport.admitted_methods(route_id)
-
-                if route_id in declared:
-                    self.assertEqual(admitted, transport.READ_METHODS + ("POST",))
-                else:
-                    self.assertEqual(admitted, transport.READ_METHODS)
-                # Unconditional, and true of the exceptions too: the widening
-                # is one more way to ask, never a way to change anything.
-                for method in ("PUT", "PATCH", "DELETE"):
-                    self.assertNotIn(method, admitted)
 
 
 class WriteVerbRefusalTest(unittest.TestCase):
@@ -87,7 +22,7 @@ class WriteVerbRefusalTest(unittest.TestCase):
 
         with forbid_io():
             with self.assertRaises(transport.TransportError) as caught:
-                transport.urlopen_response(request)
+                transport.urlopen_read(request)
 
         return str(caught.exception)
 
@@ -99,8 +34,8 @@ class WriteVerbRefusalTest(unittest.TestCase):
                         "refusing a write-capable method", self._refusal_for(route_id, method)
                     )
 
-    def test_post_is_refused_on_every_route_but_the_two_declared_exceptions(self):
-        declared = transport.TOKEN_ACTIVATION_ROUTES + transport.QUERY_BODY_ROUTES
+    def test_post_is_refused_on_every_route(self):
+        declared = ()
         refused = []
 
         for route_id in sorted(transport.ROUTE_CONSTANTS):
@@ -112,23 +47,24 @@ class WriteVerbRefusalTest(unittest.TestCase):
                 )
                 refused.append(route_id)
 
-        # The skip list is what a widening grows, so the loop states how much
-        # it still covers: every route but the two, and never zero.
+        # Every retained route is read-only.
         self.assertEqual(len(refused), len(transport.ROUTE_CONSTANTS) - len(declared))
         self.assertGreater(len(refused), 0)
 
     def test_a_non_https_url_is_still_refused_before_any_socket(self):
         request = transport.TransportRequest(
-            route_id=transport.X_GUEST_ACTIVATE_ROUTE,
+            route_id=transport.HN_ALGOLIA_SEARCH_ROUTE,
             method="POST",
-            url="http://api.twitter.com/1.1/guest/activate.json",
+            url="http://8.8.8.8/feed.xml",
         )
 
         with forbid_io():
             with self.assertRaises(transport.TransportError) as caught:
-                transport.urlopen_response(request)
+                transport.urlopen_read(request)
 
         self.assertIn("non-https", str(caught.exception))
+
+
 
 
 class RaisingUrlopen:
@@ -175,7 +111,7 @@ class TheOpenerReadsARealHTTPErrorTest(unittest.TestCase):
     def _read(self, status, body, content_type="text/html", route=None, headers=()):
         recorder = RaisingUrlopen(status, body, content_type, headers=headers)
         request = transport.build_transport_request(
-            transport.DDG_HTML_ROUTE if route is None else route, {"q": "local model"}
+            transport.HN_ALGOLIA_SEARCH_ROUTE if route is None else route, {"query": "probe"}
         )
         with mock.patch.object(urllib.request, "urlopen", recorder):
             return transport.urlopen_read(request), recorder.requests[0]
@@ -202,19 +138,6 @@ class TheOpenerReadsARealHTTPErrorTest(unittest.TestCase):
             transport.channel_verdict(refused[0], refused[1]), transport.ORIGIN_FAILURE
         )
 
-    def test_a_credential_placed_in_the_query_does_not_ride_out_on_the_error(self):
-        # T02, on the path that raises. `HTTPError.url` is the address the
-        # request actually went out on — credential and all — so this is the
-        # one branch where the answering address could carry one back out.
-        route = transport.YOUTUBE_INNERTUBE_ROUTE
-        (_, _, _, final_url, _), outbound = self._read(
-            401, "{}", "application/json", route=route
-        )
-
-        for _, value in credential_strings():
-            with self.subTest(secret=value):
-                self.assertNotIn(value, final_url)
-        self.assertTrue(outbound.full_url)
 
     def test_the_headers_arrive_on_the_branch_that_raises(self):
         # Where `Retry-After` actually lives. A 429 is a raise, so headers read
@@ -236,7 +159,7 @@ class TheOpenerReadsARealHTTPErrorTest(unittest.TestCase):
         def refuse(outbound, timeout=None):
             raise OSError("connection refused")
 
-        request = transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "x"})
+        request = transport.build_transport_request(transport.HN_ALGOLIA_SEARCH_ROUTE, {"query": "probe"})
         with mock.patch.object(urllib.request, "urlopen", refuse):
             with self.assertRaises(transport.TransportError):
                 transport.urlopen_read(request)
@@ -251,9 +174,9 @@ class TheAnswerCarriesWhatTheOriginSaidTest(unittest.TestCase):
     """
 
     def _fetched(self, answer):
-        carrier, _ = offline_transport({transport.DDG_HTML_ROUTE: answer})
+        carrier, _ = offline_transport({transport.HN_ALGOLIA_SEARCH_ROUTE: answer})
         return carrier.fetch(
-            transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "local model"})
+            transport.build_transport_request(transport.HN_ALGOLIA_SEARCH_ROUTE, {"query": "probe"})
         )
 
     def test_the_headers_an_opener_reports_reach_the_response(self):
@@ -310,47 +233,3 @@ class TheAnswerCarriesWhatTheOriginSaidTest(unittest.TestCase):
         self.assertEqual(
             transport.header_value(answered[4], "X-RateLimit-Remaining"), "59"
         )
-
-    def test_the_three_value_view_is_still_three_values(self):
-        recorder = RecordingUrlopen(200, "{}", "application/json")
-        request = transport.build_transport_request(
-            transport.GITHUB_REST_ROUTE, {"owner": "o"}
-        )
-
-        with mock.patch.object(urllib.request, "urlopen", recorder):
-            self.assertEqual(len(transport.urlopen_response(request)), 3)
-
-
-class OutboundRequestTest(unittest.TestCase):
-    """What the default opener would put on the wire, captured without a socket."""
-
-    def _sent(self, request, recorder):
-        with mock.patch.object(urllib.request, "urlopen", recorder):
-            result = transport.urlopen_response(request)
-        return result, recorder.requests[0]
-
-    def test_the_activation_post_carries_the_public_bearer_and_no_body(self):
-        recorder = RecordingUrlopen(200, '{"guest_token": "1234567890"}', "application/json")
-        request = transport.build_transport_request(transport.X_GUEST_ACTIVATE_ROUTE)
-
-        (status, body, content_type), outbound = self._sent(request, recorder)
-
-        bearer = transport.PUBLIC_CLIENT_CREDENTIALS[transport.X_GUEST_PUBLIC_BEARER].value
-        self.assertEqual(outbound.get_method(), "POST")
-        self.assertIsNone(outbound.data)
-        self.assertIn(bearer, outbound_blob(outbound))
-        self.assertEqual(status, 200)
-        self.assertIn("guest_token", body)
-        self.assertEqual(content_type, "application/json")
-
-    def test_a_keyless_route_sends_no_credential_at_all(self):
-        recorder = RecordingUrlopen(200, "<html></html>", "text/html")
-        request = transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "probe"})
-
-        _, outbound = self._sent(request, recorder)
-
-        blob = outbound_blob(outbound)
-        for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values():
-            self.assertNotIn(credential.value, blob)
-        self.assertEqual(outbound.get_method(), "GET")
-        self.assertIn(transport.USER_AGENT, blob)

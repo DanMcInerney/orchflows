@@ -65,6 +65,9 @@ class EnvironmentIsEmptyTest(unittest.TestCase):
             for path in package_sources()
             for name in CREDENTIAL_STORE_NAMES
             if name in path.read_text(encoding="utf-8")
+            # The transport's sole custom opener adds a public-redirect
+            # guard; test_public_feeds verifies its handlers carry no auth.
+            if not (path == PACKAGE_DIR / "transport.py" and name == "build_opener")
         )
 
         self.assertEqual(found, [])
@@ -109,7 +112,7 @@ class OracleCanFailTest(unittest.TestCase):
         # says so rather than reporting a keyless run.
         with self.assertRaisesRegex(AssertionError, "was refused: auth_required"):
             assert_nothing_wanted_a_credential(
-                self, artifact_from(self.wrong.environment_reading), ("reddit_feed",)
+                self, artifact_from(self.wrong.environment_reading), ("rss_atom",)
             )
 
     def test_the_same_adapter_answers_when_a_key_is_exported(self):
@@ -125,30 +128,30 @@ class OracleCanFailTest(unittest.TestCase):
 
             self.assertEqual(page.outcome, "ok")
             self.assertEqual(page.loss, ())
-            self.assertEqual(len(page.records), 3)
+            self.assertEqual(len(page.records), 2)
         finally:
             os.environ.pop(self.wrong.TOKEN_VARIABLE, None)
 
     def test_an_adapter_that_says_auth_required_outright_is_rejected(self):
         with self.assertRaisesRegex(AssertionError, "reported auth_required"):
             assert_nothing_wanted_a_credential(
-                self, artifact_from(self.wrong.always_auth_required), ("reddit_feed",)
+                self, artifact_from(self.wrong.always_auth_required), ("rss_atom",)
             )
 
     def test_an_adapter_that_comes_back_empty_and_calls_it_success_is_rejected(self):
         # No refusal, no loss code, no failed outcome — and no capability
         # either. "Nobody said auth_required" is satisfied perfectly here.
         with self.assertRaisesRegex(
-            AssertionError, "reddit_feed reached no part of its declared capability"
+            AssertionError, "rss_atom reached no part of its declared capability"
         ):
             assert_nothing_wanted_a_credential(
-                self, artifact_from(self.wrong.empty_success), ("reddit_feed",)
+                self, artifact_from(self.wrong.empty_success), ("rss_atom",)
             )
 
     def test_a_run_that_never_ran_an_adapter_at_all_is_rejected(self):
-        with self.assertRaisesRegex(AssertionError, "x_guest never ran"):
+        with self.assertRaisesRegex(AssertionError, "hacker_news never ran"):
             assert_nothing_wanted_a_credential(
-                self, artifact_from(self.wrong.correct), ("reddit_feed", "x_guest")
+                self, artifact_from(self.wrong.correct), ("rss_atom", "hacker_news")
             )
 
     def test_a_run_nobody_expected_anything_of_is_refused_rather_than_passed(self):
@@ -157,7 +160,7 @@ class OracleCanFailTest(unittest.TestCase):
 
     def test_the_same_oracle_accepts_the_fixtures_own_correct_adapter(self):
         assert_nothing_wanted_a_credential(
-            self, artifact_from(self.wrong.correct), ("reddit_feed",)
+            self, artifact_from(self.wrong.correct), ("rss_atom",)
         )
 
     def test_the_harness_that_builds_these_agrees_with_the_run_that_ships(self):

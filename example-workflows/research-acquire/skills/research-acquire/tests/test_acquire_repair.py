@@ -34,7 +34,7 @@ class AcquisitionRepairTests(unittest.TestCase):
     def opener(self, request):
         self.opened.append((request.route_id, self.clock.seconds))
         body = '{"total_count": 0, "items": []}' if request.route_id == transport.GITHUB_SEARCH_ROUTE else "[]"
-        return 200, body, "application/json"
+        return 200, body, "application/json", request.url, ()
 
     def searches(self, count, seconds=180):
         self.plan["discovery"] = [dict(step_id="s" + str(i), adapter_id="github_rest",
@@ -91,7 +91,7 @@ class AcquisitionRepairTests(unittest.TestCase):
         self.plan["discovery"][2]["query"] = "issues:octocat/Hello-World"
         def refuse(request):
             self.opener(request)
-            return 403, "Forbidden", "text/plain"
+            return 403, "Forbidden", "text/plain", request.url, ()
         self.runtime["opener"] = refuse
         def interrupt(step_id):
             raise KeyboardInterrupt()
@@ -101,6 +101,10 @@ class AcquisitionRepairTests(unittest.TestCase):
         self.assertEqual(len(self.opened), 1)
         self.assertEqual(result["requests_total"], 1)
 
+
+
+
+
     def test_second_observation_and_cross_source_selection_keep_exact_edges(self):
         for cross_source in (False, True):
             with self.subTest(cross_source=cross_source):
@@ -108,9 +112,9 @@ class AcquisitionRepairTests(unittest.TestCase):
                 runtime, opened = fixture_runtime()
                 original = runtime["opener"]
                 if cross_source:
-                    plan["depth"][0]["from_steps"].append("index")
+                    plan["depth"][0]["from_steps"].append("feed")
                 def duplicates(request):
-                    status, body, content_type = original(request)
+                    status, body, content_type, url, headers = original(request)
                     if not cross_source and request.route_id == transport.ARCTIC_SHIFT_SEARCH_ROUTE:
                         payload = json.loads(body)
                         second = copy.deepcopy(payload["data"][0])
@@ -118,16 +122,16 @@ class AcquisitionRepairTests(unittest.TestCase):
                                       created_utc=second["created_utc"] + 3600)
                         payload["data"].insert(1, second)
                         body = json.dumps(payload)
-                    elif cross_source and request.route_id == "bing_rss":
+                    elif cross_source and request.url == "https://feeds.example.net/research.xml":
                         body = body.replace("https://example.net/outlook",
                                             "https://www.reddit.com/r/BitcoinMarkets/comments/abc/daily/")
-                    return status, body, content_type
+                    return status, body, content_type, url, headers
                 runtime["opener"] = duplicates
                 output = self.output / str(cross_source)
                 acquire.execute(plan, output, **runtime)
                 batch = json.loads((output / "candidates.json").read_text())
                 selected = next(row for row in batch["candidates"] if (
-                    row["adapter_id"] == "web_search" if cross_source else row["title"] == "Second observation"))
+                    row["adapter_id"] == "rss_atom" if cross_source else row["title"] == "Second observation"))
                 selection = choose(output)
                 selection["choices"] = [dict(record_id=selected["record_id"], depth_id="comments",
                                               reason="Inspect this exact observation.")]
