@@ -1,5 +1,7 @@
 # Independent review of Orchflows authoring design
 
+Historical proposal, not current instructions. Current contracts: [architecture](../docs/architecture.md).
+
 Review this proposal independently for elegance, simplicity, clarity, and fast, high-quality delivery by agents that begin without our conversation history. Review only; do not edit files. Challenge the proposed structure and wording where a simpler or clearer alternative exists.
 
 ## Workspace and evidence

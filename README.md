@@ -6,7 +6,7 @@ Five core skills, plain-Markdown guidance and a portable home for Codex and Clau
 | --- | --- |
 | [orch-work](skills/orch-work/SKILL.md) | A fresh child makes a result under chosen guidance. |
 | [orch-review](skills/orch-review/SKILL.md) | A fresh child who did not make it reviews without fixing. |
-| [orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) | Deliver a request when the user names no workflow or skill, with concurrent makers and one final review. |
+| [orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) | Deliver requests with no more specific skill, using direct or delegated work and one final review. |
 | [orch-build-workflow](skills/orch-build-workflow/SKILL.md) | Author workflows or guidance, try them on representative work, simplify from observed use. |
 | [orch-self-improve](skills/orch-self-improve/SKILL.md) | Mine native history to fix the environment, a workflow or orchflows itself. |
 

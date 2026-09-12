@@ -3,7 +3,7 @@ name: make-short-video
 description: Make an original short video through an editable project and rendered exports using one maker.
 ---
 
-Reuse or establish [library context](../../references/library-context.md). Resolve the film's subject, audience, genre, intent, placements and caller constraints from the request. Carry supplied assets, sources and profile facts. Load [Remotion guidance](../../references/remotion.md) only when Remotion is chosen.
+Reuse or establish [library context](../../references/library-context.md). Resolve the film's subject, audience, genre, intent, placements and caller constraints from the request. Carry supplied assets, sources and context. Load [Remotion guidance](../../references/remotion.md) only when Remotion is chosen.
 
 For requested inspiration or research, pass the optional [short-form observations](../../references/short-form-reference.md). They add source context, not another stage or agent.
 

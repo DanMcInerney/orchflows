@@ -1,6 +1,6 @@
 {
   "name": "orchflows-light",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Composable native workflows, layered guidance and a portable user library.",
   "author": {
     "name": "orchflows-light"
@@ -13,6 +13,6 @@
     "developerName": "orchflows-light",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Use orch-dynamic-workflow for this task unless the user specifies another workflow or skill."
+    "defaultPrompt": "Use the requested workflow or skill; otherwise prefer a specific match and fall back to orch-dynamic-workflow."
   }
 }
