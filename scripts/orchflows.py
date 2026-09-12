@@ -15,6 +15,9 @@ import sys
 import uuid
 import venv
 
+if __name__ == "__main__":
+    sys.dont_write_bytecode = True
+
 import host_config
 import native_logs
 

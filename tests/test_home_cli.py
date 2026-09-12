@@ -16,6 +16,40 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InstalledCliTests(unittest.TestCase):
+    def test_history_read_without_bytecode_flags_leaves_files_unchanged(self):
+        with tempfile.TemporaryDirectory(prefix="orchflows-history-cli-") as temporary:
+            outside = Path(temporary).resolve()
+            scripts = outside / "scripts"
+            scripts.mkdir()
+            for source in (ROOT / "scripts").glob("*.py"):
+                (scripts / source.name).write_bytes(source.read_bytes())
+            project = outside / "unrelated-project"
+            project.mkdir()
+            environment = dict(os.environ, ORCHFLOWS_HOME=str(outside / "home"),
+                               CODEX_HOME=str(outside / "codex"), CLAUDE_CONFIG_DIR=str(outside / "claude"))
+            environment.pop("PYTHONDONTWRITEBYTECODE", None)
+            environment.pop("PYTHONPYCACHEPREFIX", None)
+            native_log = outside / "claude/projects/demo/native-session.jsonl"
+            native_log.parent.mkdir(parents=True)
+            native_log.write_text(json.dumps({"type": "assistant", "cwd": str(project), "timestamp": "2026-09-11T12:00:00Z", "message": {"content": [
+                {"type": "text", "text": "Read-only history λ"}
+            ]}}) + "\n", encoding="utf-8")
+
+            def files():
+                return {item.relative_to(outside).as_posix(): hashlib.sha256(item.read_bytes()).hexdigest()
+                        for item in outside.rglob("*") if item.is_file()}
+
+            before = files()
+            result = subprocess.run(
+                [sys.executable, str(scripts / "orchflows.py"), "history", "read", "claude", "native-session"],
+                cwd=project, env=environment, capture_output=True, text=True, timeout=60,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            page = json.loads(result.stdout)
+            self.assertEqual(page["id"], "native-session")
+            self.assertEqual([event["data"]["text"] for event in page["events"]], ["Read-only history λ"])
+            self.assertEqual(files(), before)
+
     def test_real_core_resolves_logs_and_keeps_its_documentation_reachable(self):
         with tempfile.TemporaryDirectory(prefix="orchflows-installed-cli-") as temporary:
             outside = Path(temporary).resolve()

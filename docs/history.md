@@ -1,6 +1,6 @@
 # History
 
-`history`, a subcommand of the [home CLI](home.md), reads Claude Code and Codex transcripts in place and writes nothing. `history <find|inspect|read> --help` lists flags. Native home: `CODEX_HOME` or `~/.codex`, `CLAUDE_CONFIG_DIR` or `~/.claude`, or `--native-home PATH`. Codex discovery reads the host's `state_*.sqlite` index and nothing else.
+`history`, a subcommand of the [home CLI](home.md), reads Claude Code and Codex transcripts in place without changing them. `history <find|inspect|read> --help` lists flags. Native home: `CODEX_HOME` or `~/.codex`, `CLAUDE_CONFIG_DIR` or `~/.claude`, or `--native-home PATH`. Codex discovery reads the host's `state_*.sqlite` index and nothing else.
 
 ## Scope
 

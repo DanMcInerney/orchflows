@@ -36,7 +36,7 @@ Select independent names, for example `writing`, `visual-design`, `short-video.m
 
 Missing implicit parents are fine. An explicitly selected name must exist in at least one selected package; report a missing selection as a gap and block work that requires it. For an unfamiliar site or genre, select applicable general guidance instead of inventing a missing specialization.
 
-Resolve these files and package dependencies once at the outer entrypoint, including a leaf invoked alone. Use available native skills or supplied package roots; a configured home also provides [CLI resolution](home.md). Pass concrete absolute paths and request context to composed skills and primitives. Reuse that context; extend it only for newly introduced dependencies.
+Resolve these files and package dependencies once at the outer entrypoint, including a leaf invoked alone. Use available native skills or supplied package roots; a configured home also provides [CLI resolution](home.md). Pass the resolved absolute paths unchanged, with request context, to composed skills and primitives. Reuse that context; extend it only for newly introduced dependencies.
 
 A selected library can supply removable model corrections under the same domain names. Selection is explicit and normal specificity still applies; model names do not belong in the domain hierarchy.
 
