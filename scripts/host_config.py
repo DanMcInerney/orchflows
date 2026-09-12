@@ -1,4 +1,4 @@
-"""Small, conservative updates to user-owned native host concurrency settings."""
+"""Set both hosts' user concurrency settings; unrelated content is untouched or the file is preserved."""
 
 from __future__ import annotations
 
@@ -12,102 +12,30 @@ import tomllib
 import uuid
 
 
-DEFAULT_CONCURRENCY = 15
-CODEX_KEY = "max_threads"  # Accepted by CLI 0.144.0 and retained as an alias in newer hosts.
-CODEX_RENAMED_KEY = "max_concurrent_threads_per_session"
+CODEX_KEY = "max_threads"
 CLAUDE_KEY = "CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"
-
-
-def _positive(value: int) -> None:
-    if type(value) is not int or value < 1:
-        raise ValueError("Concurrency must be a positive integer")
-
-
-def _statements(text: str):
-    """Find complete TOML statements without mistaking multiline values for keys."""
-    start, pending = 0, ""
-    for line in text.splitlines(keepends=True):
-        pending += line
-        try:
-            parsed = tomllib.loads(pending)
-        except tomllib.TOMLDecodeError:
-            continue
-        yield start, start + len(pending), pending, parsed
-        start += len(pending)
-        pending = ""
-    if pending:
-        raise ValueError("Unsupported TOML layout; move concurrency settings into a [agents] table")
+HEADER = r"(?m)^(\[agents\][ \t]*(?:#[^\r\n]*)?)(?=\r?\n|\Z)"
 
 
 def _codex(text: str, concurrency: int) -> str:
     data = tomllib.loads(text)
     agents = data.get("agents", {})
     if not isinstance(agents, dict):
-        raise ValueError("Codex agents must be a table")
-    keys = (CODEX_KEY, CODEX_RENAMED_KEY)
-    for key in keys:
-        if key in agents:
-            _positive(agents[key])
-    if all(key in agents for key in keys) and agents[keys[0]] != agents[keys[1]]:
-        raise ValueError("Conflicting Codex concurrency keys; reconcile " + CODEX_KEY + " and " + CODEX_RENAMED_KEY)
-    if agents.get(CODEX_KEY) == concurrency and CODEX_RENAMED_KEY not in agents:
+        raise ValueError("Codex [agents] must be a table")
+    if type(agents.get(CODEX_KEY)) is int and agents[CODEX_KEY] == concurrency:
         return text
-
     newline = "\r\n" if "\r\n" in text else "\n"
-    scope, edits, found = (), [], set()
-    insertion, dotted_insertion = None, None
-    for start, end, statement, parsed in _statements(text):
-        if statement.lstrip().startswith("["):
-            scope, branch = (), parsed
-            while isinstance(branch, dict) and len(branch) == 1:
-                name, branch = next(iter(branch.items()))
-                scope += (name,)
-            if isinstance(branch, list):
-                scope += ("[]",)
-            if scope == ("agents",):
-                insertion = end
-            continue
-        values = parsed if scope == ("agents",) else parsed.get("agents", {}) if scope == () else {}
-        if not isinstance(values, dict) or not values:
-            continue
-        if scope == ():
-            # Inline tables require a structural TOML editor; preserve rather than reserialize them.
-            if re.match(r"\s*(?:agents|\"agents\"|'agents')\s*=", statement):
-                raise ValueError("Unsupported inline agents table; move its settings into [agents] or use --skip-host-config")
-            dotted_insertion = start if dotted_insertion is None else dotted_insertion
-        for key in keys:
-            if key not in values:
-                continue
-            match = re.match(r"([^=\r\n]*=[ \t]*)([+-]?[0-9][0-9_]*)([ \t]*(?:#[^\r\n]*)?)(\r?\n)?\Z", statement)
-            if not match:
-                raise ValueError("Unsupported concurrency assignment; use a decimal integer in [agents]")
-            found.add(key)
-            prefix, _, suffix, ending = match.groups()
-            if key == CODEX_RENAMED_KEY and CODEX_KEY in agents:
-                comment = suffix[suffix.index("#"):] if "#" in suffix else ""
-                replacement = comment + (ending or "")
-            else:
-                replacement = prefix.replace(CODEX_RENAMED_KEY, CODEX_KEY) + str(concurrency) + suffix + (ending or "")
-            edits.append((start, end, replacement))
-    if found != {key for key in keys if key in agents}:
-        raise ValueError("Unsupported Codex concurrency layout; move settings into [agents]")
-    if not found:
-        assignment = f"{CODEX_KEY} = {concurrency}{newline}"
-        if insertion is not None:
-            separator = "" if text[:insertion].endswith("\n") else newline
-            edits.append((insertion, insertion, separator + assignment))
-        elif dotted_insertion is not None:
-            edits.append((dotted_insertion, dotted_insertion, "agents." + assignment))
-        else:
-            separator = "" if not text else newline if text.endswith("\n") else newline * 2
-            edits.append((len(text), len(text), separator + "[agents]" + newline + assignment))
-    for start, end, replacement in sorted(edits, reverse=True):
-        text = text[:start] + replacement + text[end:]
-    expected = dict(agents, **{CODEX_KEY: concurrency})
-    expected.pop(CODEX_RENAMED_KEY, None)
-    if tomllib.loads(text) != dict(data, agents=expected):
-        raise ValueError("Codex update would alter unrelated settings; file preserved")
-    return text
+    assignment = f"{CODEX_KEY} = {concurrency}"
+    if CODEX_KEY in agents:
+        updated = re.sub(rf"(?m)^([ \t]*{CODEX_KEY}[ \t]*=[ \t]*)[^ \t\r\n#]+", lambda m: m[1] + str(concurrency), text, count=1)
+    elif re.search(HEADER, text):
+        updated = re.sub(HEADER, lambda m: m[1] + newline + assignment, text, count=1)
+    else:
+        separator = "" if not text else newline if text.endswith("\n") else newline * 2
+        updated = text + separator + "[agents]" + newline + assignment + newline
+    if tomllib.loads(updated) != {**data, "agents": {**agents, CODEX_KEY: concurrency}}:
+        raise ValueError(f"unsupported layout; set [agents] {CODEX_KEY} yourself or pass --skip-host-config")
+    return updated
 
 
 def _unique_object(pairs: list) -> dict:
@@ -120,15 +48,10 @@ def _unique_object(pairs: list) -> dict:
 
 
 def _claude(text: str, concurrency: int) -> str:
-    def invalid_constant(value):
-        raise ValueError("Invalid JSON constant: " + value)
-
-    data = json.loads(text, object_pairs_hook=_unique_object, parse_constant=invalid_constant) if text else {}
-    if not isinstance(data, dict) or ("env" in data and not isinstance(data["env"], dict)):
+    data = json.loads(text, object_pairs_hook=_unique_object) if text.strip() else {}
+    if not isinstance(data, dict) or not isinstance(data.get("env", {}), dict):
         raise ValueError("Claude settings and env must be JSON objects")
     env = data.setdefault("env", {})
-    if CLAUDE_KEY in env and (not isinstance(env[CLAUDE_KEY], str) or not re.fullmatch(r"[0-9]+", env[CLAUDE_KEY]) or int(env[CLAUDE_KEY]) < 1):
-        raise ValueError("Claude concurrency must be a positive integer string")
     if env.get(CLAUDE_KEY) == str(concurrency):
         return text
     env[CLAUDE_KEY] = str(concurrency)
@@ -145,44 +68,42 @@ def _read(path: Path) -> bytes | None:
     return path.read_bytes()
 
 
-def prepare_host_configs(concurrency: int = DEFAULT_CONCURRENCY) -> list[dict]:
-    """Validate both files before setup mutates anything; never expose config bodies in reports."""
-    _positive(concurrency)
+def prepare_host_configs(concurrency: int = 15) -> list[dict]:
+    """Validate both files before setup mutates anything."""
+    if type(concurrency) is not int or concurrency < 1:
+        raise ValueError("Concurrency must be a positive integer")
     plans = []
     for host, variable, default, filename, transform, setting in (
         ("codex", "CODEX_HOME", ".codex", "config.toml", _codex, "agents." + CODEX_KEY),
         ("claude", "CLAUDE_CONFIG_DIR", ".claude", "settings.json", _claude, "env." + CLAUDE_KEY),
     ):
         configured = os.environ.get(variable)
-        directory = Path(configured).expanduser() if configured else Path.home() / default
-        path = directory.resolve() / filename
+        path = (Path(configured).expanduser() if configured else Path.home() / default).resolve() / filename
         original = _read(path)
         try:
-            text = original.decode("utf-8") if original is not None else ""
-            if host == "claude" and original is not None and not text.strip():
-                raise ValueError("Existing Claude settings are empty, not a JSON object")
-            updated = transform(text, concurrency).encode("utf-8")
+            updated = transform(original.decode("utf-8-sig") if original is not None else "", concurrency).encode("utf-8")
         except (UnicodeError, ValueError) as exc:
             raise ValueError(f"Host configuration preserved at {path}: {exc}") from exc
-        plans.append({"host": host, "path": path, "setting": setting, "value": concurrency,
-                      "original": original, "updated": updated})
+        plans.append({"host": host, "path": path, "setting": setting, "value": concurrency, "original": original, "updated": updated})
     return plans
 
 
 def _replace(plan: dict) -> str | None:
+    """Back up the original beside it, then replace atomically; a change since planning preserves the file."""
     path, original, updated = plan["path"], plan["original"], plan["updated"]
-    if _read(path) != original:
-        raise ValueError(f"Host configuration changed during setup; rerun after reviewing: {path}")
     if original == updated:
         return None
     path.parent.mkdir(parents=True, exist_ok=True)
     lock = path.with_name(path.name + ".orchflows.lock")
-    # Serialize other installer runs. Host editors do not share this lock; check bytes again before replacement.
+    if lock.is_symlink():
+        raise ValueError(f"Lock is a link; preserved: {lock}")
     with lock.open("x"):
         pass
-    stage, backup = None, None
+    stage = backup = None
     try:
-        handle, name = tempfile.mkstemp(prefix="." + path.name + ".orchflows-", dir=path.parent)
+        if _read(path) != original:
+            raise ValueError(f"Host configuration changed during setup; preserved: {path}")
+        handle, name = tempfile.mkstemp(prefix="." + path.name + ".", dir=path.parent)
         stage = Path(name)
         with os.fdopen(handle, "wb") as stream:
             stream.write(updated)
@@ -191,23 +112,14 @@ def _replace(plan: dict) -> str | None:
         if original is not None:
             mode = stat.S_IMODE(path.stat().st_mode)
             stage.chmod(mode)
-            backup = path.with_name(path.name + ".orchflows-" + uuid.uuid4().hex + ".bak")
-            descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-            with os.fdopen(descriptor, "wb") as stream:
-                stream.write(original)
-                stream.flush()
-                os.fsync(stream.fileno())
+            backup = path.with_name(f"{path.name}.orchflows-{uuid.uuid4().hex}.bak")
+            backup.write_bytes(original)
             backup.chmod(mode)
-        if _read(path) != original:
-            raise ValueError(f"Host configuration changed during setup; file preserved: {path}")
-        if original is None:
-            os.link(stage, path)  # Atomic creation that cannot overwrite a file another process just created.
-        else:
-            os.replace(stage, path)
+        os.replace(stage, path)
         return str(backup) if backup else None
-    except (OSError, ValueError) as exc:
-        if backup is not None and backup.exists():
-            raise ValueError(f"{exc}; original backup retained at {backup}") from exc
+    except BaseException:
+        if backup is not None:
+            backup.unlink(missing_ok=True)
         raise
     finally:
         if stage is not None and stage.exists():
@@ -219,8 +131,7 @@ def _replace(plan: dict) -> str | None:
 def apply_host_configs(plans: list[dict]) -> tuple[dict, list[str]]:
     results, issues = {}, []
     for plan in plans:
-        report = {key: plan[key] for key in ("setting", "value")}
-        report["path"] = str(plan["path"])
+        report = {"setting": plan["setting"], "value": plan["value"], "path": str(plan["path"])}
         try:
             report["backup"] = _replace(plan)
             report["status"] = "unchanged" if plan["original"] == plan["updated"] else "created" if plan["original"] is None else "updated"

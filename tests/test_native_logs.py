@@ -39,9 +39,21 @@ class NativeHistoryTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.home = Path(self.temporary.name).resolve()
 
-    def codex(self, identifier, records, parent=None):
+    def index(self):
+        db = sqlite3.connect(self.home / "state_5.sqlite")
+        db.execute("CREATE TABLE IF NOT EXISTS threads (id TEXT, rollout_path TEXT, cwd TEXT, title TEXT, created_at INTEGER, updated_at INTEGER)")
+        db.execute("CREATE TABLE IF NOT EXISTS thread_spawn_edges (parent_thread_id TEXT, child_thread_id TEXT)")
+        return db
+
+    def codex(self, identifier, records, parent=None, cwd="/tools/project", created="2026-08-01", updated="2026-09-12"):
         path = self.home / "sessions/2026/09/11" / (identifier + ".jsonl")
-        transcript(path, [{"type": "session_meta", "payload": {"id": identifier, "parent_thread_id": parent}}] + records)
+        transcript(path, [{"type": "session_meta", "payload": {"id": identifier}}] + records)
+        with closing(self.index()) as db:
+            db.execute("INSERT INTO threads VALUES (?,?,?,?,?,?)", (identifier, str(path), cwd, identifier,
+                       int(logs._timestamp(created).timestamp()), int(logs._timestamp(updated).timestamp())))
+            if parent:
+                db.execute("INSERT INTO thread_spawn_edges VALUES (?,?)", (parent, identifier))
+            db.commit()
         return path
 
     def claude_tree(self):
@@ -52,6 +64,7 @@ class NativeHistoryTests(unittest.TestCase):
         transcript(child, [claude("user", {"type": "text", "text": "Inspect the failure."}),
                            claude("assistant", {"type": "tool_use", "id": "bash", "name": "Bash", "input": {"command": "test"}}),
                            claude("user", {"type": "tool_result", "tool_use_id": "bash", "is_error": True, "content": "Exit code 1\nAssertion failed"})])
+        write(child.with_suffix(".meta.json"), json.dumps({"agentType": "general-purpose"}))
         grandchild = child.with_name("agent-grandchild.jsonl")
         transcript(grandchild, [claude("assistant", {"type": "tool_use", "id": "pending", "name": "Read", "input": {"file_path": "result.txt"}})])
         write(grandchild.with_suffix(".meta.json"), json.dumps({"parentAgentId": "child", "spawnDepth": 2}))
@@ -65,12 +78,19 @@ class NativeHistoryTests(unittest.TestCase):
         self.assertEqual(summary["agents"][1]["error_count"], 1)
         self.assertEqual(summary["agents"][2]["unmatched_count"], 1)
         self.assertEqual(summary["agents"][2]["calls_without_recorded_results"][0]["call_id"], "pending")
-        self.assertNotIn("status", summary["agents"][2])
+        self.assertEqual(summary["discovery_gaps"], [])
         first = logs.inspect("claude", "session", self.home, limit=1)
         second = logs.inspect("claude", "session", self.home, limit=2, after=first["next_cursor"])
         self.assertEqual([a["id"] for a in second["agents"]], ["child", "grandchild"])
         self.assertIsNone(second["next_cursor"])
         self.assertEqual(before, {p: hashlib.sha256(p.read_bytes()).digest() for p in self.home.rglob("*") if p.is_file()})
+
+    def test_claude_agent_without_metadata_is_a_visible_gap(self):
+        _, child, _ = self.claude_tree()
+        child.with_suffix(".meta.json").unlink()
+        summary = logs.inspect("claude", "session", self.home)
+        self.assertEqual([a["id"] for a in summary["agents"]], ["session", "child", "grandchild"])
+        self.assertEqual(summary["discovery_gaps"][0]["kind"], "metadata_unavailable")
 
     def test_codex_nested_message_encryption_is_not_plaintext(self):
         self.codex("root", [response("function_call", name="spawn_agent", call_id="spawn", arguments=json.dumps({"task_name": "maker", "message": "gAAAAencrypted"})),
@@ -85,20 +105,23 @@ class NativeHistoryTests(unittest.TestCase):
         self.assertEqual(json.loads(expanded["text"])["message"]["unavailable"], "encrypted")
         self.assertNotIn("gAAAAencrypted", json.dumps(events))
 
-    def test_codex_index_wal_and_missing_child_file(self):
+    def test_codex_index_is_the_only_discovery_path(self):
         root = self.codex("root", [])
-        db_path = self.home / "state_5.sqlite"
-        with closing(sqlite3.connect(db_path)) as db:
+        with closing(self.index()) as db:
             db.execute("PRAGMA journal_mode=WAL")
-            db.execute("CREATE TABLE threads (id TEXT, rollout_path TEXT)")
-            db.execute("CREATE TABLE thread_spawn_edges (parent_thread_id TEXT, child_thread_id TEXT)")
-            db.executemany("INSERT INTO threads VALUES (?,?)", [("root", str(root)), ("missing", str(root.with_name("missing.jsonl")))])
+            db.execute("INSERT INTO threads VALUES (?,?,?,?,?,?)", ("missing", str(root.with_name("missing.jsonl")), "/tools/project", "missing", 0, 0))
             db.execute("INSERT INTO thread_spawn_edges VALUES ('root','missing')")
             db.commit()
             result = logs.inspect("codex", "root", self.home)
             self.assertEqual(result["agent_count"], 2)
             self.assertIn("read_gap", result["agents"][1])
             self.assertEqual(db.execute("SELECT count(*) FROM threads").fetchone()[0], 2)
+        transcript(self.home / "sessions/2026/09/11/unindexed.jsonl", [{"type": "session_meta", "payload": {"id": "unindexed"}}])
+        with self.assertRaisesRegex(ValueError, "not found"):
+            logs.inspect("codex", "unindexed", self.home)
+        (self.home / "state_5.sqlite").unlink()
+        with self.assertRaisesRegex(ValueError, "index not found"):
+            logs.find("codex", self.home)
 
     def test_pagination_handles_multiple_blocks_unicode_and_append(self):
         root = self.home / "projects/project/session.jsonl"
@@ -182,11 +205,9 @@ class NativeHistoryTests(unittest.TestCase):
         self.assertEqual(result["events"][-1]["record_type"], "future_tool")
         self.assertNotIn("private", json.dumps(result))
 
-
     def test_find_claude_scopes_dates_projects_and_orphan_agents(self):
         def dated(path, cwd, *dates):
-            transcript(path, [{**claude("user", {"type": "text", "text": "request"}),
-                               "cwd": cwd, "timestamp": date} for date in dates])
+            transcript(path, [{**claude("user", {"type": "text", "text": "request"}), "cwd": cwd, "timestamp": date} for date in dates])
         base = self.home / "projects/project"
         dated(base / "a.jsonl", r"C:\tools\bench-stack", "2026-09-01T12:00:00Z", "2026-09-11T12:00:00Z")
         dated(base / "b.jsonl", r"C:\tools\another-project", "2026-09-11T12:00:00Z")
@@ -205,33 +226,26 @@ class NativeHistoryTests(unittest.TestCase):
         self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*.jsonl")})
 
     def test_find_codex_index_candidates_can_have_no_events_in_window(self):
-        root = self.codex("root", [response("function_call", name="test", call_id="a", arguments="{}")])
-        with closing(sqlite3.connect(self.home / "state_5.sqlite")) as db:
-            db.execute("CREATE TABLE threads (id TEXT, rollout_path TEXT, cwd TEXT, title TEXT, created_at INTEGER, updated_at INTEGER)")
-            db.execute("CREATE TABLE thread_spawn_edges (parent_thread_id TEXT, child_thread_id TEXT)")
-            db.execute("INSERT INTO threads VALUES (?,?,?,?,?,?)", ("root", str(root), "/tools/bench-stack", "trial",
-                       int(logs._timestamp("2026-08-01").timestamp()), int(logs._timestamp("2026-09-12").timestamp())))
-            db.commit()
+        self.codex("root", [response("function_call", name="test", call_id="a", arguments="{}")], cwd="/tools/bench-stack")
         found = logs.find("codex", self.home, since="2026-09-04", until="2026-09-05", project="bench-stack")
-        self.assertEqual(found["candidates"][0]["metadata_source"], "native_index")
+        self.assertEqual([c["id"] for c in found["candidates"]], ["root"])
         page = logs.read("codex", "root", self.home, since="2026-09-04", until="2026-09-05")
         self.assertFalse(any(e["kind"] == "tool_call" for e in page["events"]))
         self.assertIn("timestamp_unavailable", page["events"][0]["flags"])
 
-    def test_find_fallback_reads_large_endpoint_and_keeps_missing_metadata(self):
-        path = self.codex("root", [response("function_call_output", call_id="a", output="x" * 200000)])
+    def test_find_reads_large_claude_endpoints_and_keeps_missing_metadata(self):
+        path = self.home / "projects/project/session.jsonl"
+        transcript(path, [claude("user", {"type": "tool_result", "tool_use_id": "a", "content": "x" * 200000})])
         with path.open("a", encoding="utf-8") as stream:
             stream.write('{"incomplete":')
-        page = logs.find("codex", self.home, since="2026-09-04", project="bench-stack")
+        page = logs.find("claude", self.home, since="2026-09-04", project="bench-stack")
         self.assertEqual(page["candidates"][0]["updated_at"], "2026-09-11T12:00:00+00:00")
         self.assertEqual(page["candidates"][0]["scope_unknown"], ["project"])
-        self.assertEqual(page["candidates"][0]["metadata_source"], "transcript_endpoints")
 
     def test_read_window_boundaries_pagination_and_resumed_session(self):
         path = self.home / "projects/project/session.jsonl"
         dates = ["2026-08-01T00:00:00Z", "2026-09-04T04:00:00Z", "2026-09-06T12:00:00Z", "2026-09-11T04:00:00Z"]
-        transcript(path, [{**claude("user", {"type": "text", "text": str(i)}), "timestamp": date}
-                          for i, date in enumerate(dates)])
+        transcript(path, [{**claude("user", {"type": "text", "text": str(i)}), "timestamp": date} for i, date in enumerate(dates)])
         scope = {"since": "2026-09-04T00:00:00-04:00", "until": "2026-09-11T00:00:00-04:00"}
         first = logs.read("claude", "session", self.home, limit=1, **scope)
         self.assertEqual(first["events"][0]["data"]["text"], "1")
