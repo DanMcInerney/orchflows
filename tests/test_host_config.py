@@ -159,6 +159,44 @@ class HostConfigTests(unittest.TestCase):
         self.assertEqual(self.codex.read_text(), original)
         self.assertEqual(list(self.codex.parent.iterdir()), [self.codex])
 
+    def test_host_save_during_staging_is_preserved_for_new_and_existing_files(self):
+        for original in (None, 'model = "original"\n'):
+            with self.subTest(original=original):
+                self.codex.unlink(missing_ok=True)
+                if original is not None:
+                    self.write(self.codex, original)
+                plans = host_config.prepare_host_configs()
+                fsync = os.fsync
+                saved = 'model = "saved while setup was staging"\n'
+
+                def editor_save(descriptor):
+                    fsync(descriptor)
+                    self.write(self.codex, saved)
+
+                with patch.object(host_config.os, "fsync", side_effect=editor_save):
+                    results, issues = host_config.apply_host_configs(plans)
+                self.assertEqual(results["codex"]["status"], "unavailable")
+                self.assertIn("changed during setup", " ".join(issues))
+                self.assertEqual(self.codex.read_bytes(), saved.encode())
+                self.assertEqual(list(self.codex.parent.iterdir()), [self.codex])
+
+    def test_config_created_after_final_check_is_not_overwritten(self):
+        plans = host_config.prepare_host_configs()
+        link = os.link
+        saved = 'model = "concurrently created"\n'
+
+        def editor_create(source, destination):
+            if destination == self.codex:
+                self.write(destination, saved)
+            return link(source, destination)
+
+        with patch.object(host_config.os, "link", side_effect=editor_create):
+            results, issues = host_config.apply_host_configs(plans)
+        self.assertEqual(results["codex"]["status"], "unavailable")
+        self.assertTrue(issues)
+        self.assertEqual(self.codex.read_bytes(), saved.encode())
+        self.assertEqual(list(self.codex.parent.iterdir()), [self.codex])
+
     def test_existing_installer_lock_preserves_original(self):
         self.write(self.codex, 'model = "keep"\n')
         lock = self.codex.with_name("config.toml.orchflows.lock")

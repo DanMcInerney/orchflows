@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import inspect_source as reader
 
@@ -206,6 +207,31 @@ class TranscriptReaderTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, 2)
         self.assertFalse(self.output.exists())
         self.assertFalse(inside.exists())
+
+    def test_cli_writes_failure_receipt_for_malformed_caption_structures(self):
+        malformed = (None, [], {"events": None}, {"events": {}}, {"events": [{"segs": None}]},
+                     {"events": [{"tStartMs": 1, "segs": [{"utf8": None}]}]},
+                     {"events": [{"tStartMs": 1, "segs": [{"utf8": 7}]}]})
+        for payload in malformed:
+            with self.subTest(payload=payload), patch.object(reader, "find_command", self.command), \
+                    patch.object(subprocess, "run", side_effect=fake_run({"dQw4w9WgXcQ.en.json3": json.dumps(payload)})) as run, \
+                    contextlib.redirect_stdout(io.StringIO()) as stdout:
+                code = reader.main(["youtube-transcript", "--url", "dQw4w9WgXcQ", "--output", str(self.output)])
+                self.assertEqual(code, 3)
+                self.assertEqual(run.call_count, 1)
+                self.assertEqual(json.loads(stdout.getvalue())["status"], "backend_error")
+                packet = json.loads(self.output.read_text(encoding="utf-8"))
+                self.assertEqual(packet["status"], "backend_error")
+                self.assertEqual(packet["process_status"], "ok")
+                self.assertEqual(packet["exit_code"], 0)
+                self.assertEqual(packet["text"], "")
+                self.assertIn("unreadable", packet["error"])
+                self.assertNotIn("caption_support", packet)
+                self.assertFalse(self.output.with_name(self.output.name + ".json3").exists())
+
+    def test_unexpected_parser_failures_are_not_typed_as_bad_source_data(self):
+        with patch.object(reader, "parse_json3", side_effect=TypeError("implementation fault")), self.assertRaises(TypeError):
+            self.inspect(fake_run({"dQw4w9WgXcQ.en.json3": JSON3}))
 
     def test_reader_imports_nothing_from_the_acquisition_library(self):
         probe = subprocess.run([sys.executable, "-c", "import sys, inspect_source; print(sorted(m for m in sys.modules if m.startswith(('super_research', 'acquire'))))"],

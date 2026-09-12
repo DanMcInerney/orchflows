@@ -120,7 +120,12 @@ def _replace(plan: dict) -> str | None:
             backup = path.with_name(f"{path.name}.orchflows-{uuid.uuid4().hex}.bak")
             backup.write_bytes(original)
             backup.chmod(mode)
-        os.replace(stage, path)
+        if _read(path) != original:
+            raise ValueError(f"Host configuration changed during setup; preserved: {path}")
+        if original is None:
+            os.link(stage, path)  # Creating a new config must not replace a concurrent save.
+        else:
+            os.replace(stage, path)
         return str(backup) if backup else None
     except BaseException:
         if backup is not None:

@@ -84,11 +84,20 @@ def date_relation(published, start, end):
 
 def parse_json3(raw):
     """One cue per timed event; the newline-only events of a rolling window carry no text and are skipped."""
+    payload = json.loads(raw)
+    if not isinstance(payload, dict) or not isinstance(payload.get("events", []), list):
+        raise ValueError("caption document must be an object with an events array")
     cues = []
-    for event in json.loads(raw).get("events", []):
+    for event in payload.get("events", []):
         if not isinstance(event, dict):
             continue
-        text = " ".join("".join(seg.get("utf8", "") for seg in event.get("segs", []) if isinstance(seg, dict)).split())
+        segments = event.get("segs", [])
+        if not isinstance(segments, list):
+            raise ValueError("caption event segs must be an array")
+        parts = [seg.get("utf8", "") for seg in segments if isinstance(seg, dict)]
+        if any(not isinstance(part, str) for part in parts):
+            raise ValueError("caption segment utf8 must be a string")
+        text = " ".join("".join(parts).split())
         start, duration = event.get("tStartMs"), event.get("dDurationMs", 0)
         if text and type(start) is int and type(duration) is int and duration >= 0:
             cues.append({"start_ms": start, "end_ms": start + duration, "text": text})
@@ -150,7 +159,7 @@ def read(video, language, timeout_seconds, directory, *, run=None, command=None)
     info_path = directory / (video + ".info.json")
     try:
         cues = parse_json3(raw)
-    except (ValueError, AttributeError) as error:
+    except ValueError as error:
         return {"status": "backend_error", "error": f"yt-dlp output unreadable: {error}", **result}
     if not cues:
         return {"status": "no_matching_captions", **result}
