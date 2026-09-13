@@ -41,7 +41,7 @@ scripts/ + tests/   core CLI and checks
 example-workflows/  separately installed libraries
 ```
 
-Optional libraries: `social-search` collects and ranks evidence; `research-acquire` provides public-source readers; `short-video` makes and reviews films.
+Optional libraries: `social-search` collects and ranks evidence; `research-acquire` provides public-source readers; `short-video` makes and reviews films; `evolve` improves artifacts and their improvement harnesses through resumable search.
 
 Your editable libraries live in `~/.orchflows/libraries/`; `personal` is the default for new workflows. Setup maintains the core under `~/.orchflows/.local/`. Task outputs stay in the project workspace.
 
