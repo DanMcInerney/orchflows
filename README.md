@@ -35,14 +35,14 @@ Run the two commands for your host:
 ```sh
 # Codex
 codex plugin marketplace add ~/.orchflows
-codex plugin add orchflows-light@orchflows-home
+codex plugin add orchflows@orchflows-home
 
 # Claude Code
 claude plugin marketplace add ~/.orchflows
-claude plugin install orchflows-light@orchflows-home --scope user
+claude plugin install orchflows@orchflows-home --scope user
 ```
 
-Start a new session. The plugin identifier remains `orchflows-light` for compatibility. [Setup options](docs/home.md#setup) · [Host registration and invocation](docs/hosts.md#register-and-refresh).
+Start a new session. [Setup options](docs/home.md#setup) · [Host registration and invocation](docs/hosts.md#register-and-refresh).
 
 ## Usage
 

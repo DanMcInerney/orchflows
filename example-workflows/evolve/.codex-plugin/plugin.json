@@ -1,6 +1,18 @@
 {
   "name": "evolve",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Improve any artifact and its improvement process with inferred evaluation and resumable search.",
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "author": {
+    "name": "orchflows"
+  },
+  "interface": {
+    "displayName": "Evolve",
+    "shortDescription": "Improve artifacts and workflows through measured experiments.",
+    "longDescription": "Iterative artifact improvement with inferred evaluation, independent comparisons and resumable search.",
+    "defaultPrompt": "Improve the supplied artifact or brief through measured experiments and independent review.",
+    "developerName": "orchflows",
+    "category": "Productivity",
+    "capabilities": []
+  }
 }

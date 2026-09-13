@@ -10,4 +10,4 @@ Put code, `.blend`, assets, notes, tools and evidence in the caller's project wo
 
 Probe actual capabilities before making dependent promises: project install/build, rendered browser input and captures, Blender source/export, image inspection and optional audio playback. A successful version command alone is not a capability test. Follow the host's browser skill and supported tools; a test hook does not authorize bypassing restrictions on page evaluation. When arbitrary evaluation is unavailable, expose the same test operations as a development-only DOM panel and use visible controls. If a capability remains unavailable, continue independent work, record the missing check and stop at the affected checkpoint. Do not silently replace required Blender assets or actual play with mocks.
 
-This package supplies instructions and contracts, not legacy Orchflows ticket commands, a scheduler, bundled browser scripts or a game scaffold. Generated project-specific harnesses belong to that project.
+This package supplies instructions and contracts. Generated project-specific harnesses belong to that project.

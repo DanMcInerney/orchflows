@@ -14,7 +14,7 @@ Release 0.6.3 updates the architecture, host reference, both primitives, dynamic
 
 ## Migration audit
 
-The task's `origin` now points to `DanMcInerney/orchflows`; the private source remains an archive remote. The local directory and package identifiers retain `orchflows-light` for compatibility.
+The task's `origin` now points to `DanMcInerney/orchflows`; the private source remains an archive remote.
 
 An independent read-only comparison at public main `660b69cf57ff7fa8c52dbd9bf19a49614a601611` found all 1,061 tracked source paths present. Their blobs and modes match the source except the intentionally rewritten README. The only added paths were the original MIT license and banner, both identical to their original blobs. Both histories are ancestors of public main; 2,672 original paths were removed. No old runtime, installers, contracts, rules, standards, reader or host-adapter trees remain.
 

@@ -24,7 +24,7 @@ One game uses four children, excluding the caller: one game maker continued acro
 
 ## Install and use
 
-Requires orchflows-light 0.6.2+, native child delegation, a JavaScript runtime/package manager, a browser with rendering and input tools, and Blender with its Python API and glTF exporter. Projects declare their own Three.js, build and optional physics/test dependencies in a lockfile. No game engine, browser driver or Blender binary is bundled or installed by setup. Image generation is optional; authored reference boards and Blender studies can supply art direction.
+Requires orchflows 0.7.0+, native child delegation, a JavaScript runtime/package manager, a browser with rendering and input tools, and Blender with its Python API and glTF exporter. Projects declare their own Three.js, build and optional physics/test dependencies in a lockfile. No game engine, browser driver or Blender binary is bundled or installed by setup. Image generation is optional; authored reference boards and Blender studies can supply art direction.
 
 From a complete core checkout, run `python scripts/orchflows.py setup --example 3d-browser-game`. This copies the library once and preserves existing destinations. Follow core `docs/hosts.md` to register and install `3d-browser-game@orchflows-home`, then start a new session. Adding files to this checkout alone does not register the skills.
 

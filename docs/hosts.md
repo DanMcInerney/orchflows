@@ -12,7 +12,7 @@ Setup writes catalogs; register the home, install each library, then start a new
 | Install | `codex plugin add <lib>@orchflows-home` | `claude plugin install <lib>@orchflows-home --scope user` |
 | After editing a library | bump manifest versions; `codex plugin add <lib>@orchflows-home` | bump manifest versions; `claude plugin marketplace update orchflows-home`; `claude plugin update <lib>@orchflows-home` |
 | Invoke | `$<lib>:<skill>` or `/skills` | `/<lib>:<skill>` |
-| Core development | register the checkout's `orchflows-light-local` catalog; install `orchflows-light@orchflows-light-local` | same, or `claude --plugin-dir <checkout>` |
+| Core development | register the checkout's `orchflows-local` catalog; install `orchflows@orchflows-local` | same, or `claude --plugin-dir <checkout>` |
 | Concurrency key written by setup | `[agents] max_threads` in `$CODEX_HOME/config.toml` or `~/.codex/config.toml`: open spawned threads, primary excluded | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY` in `$CLAUDE_CONFIG_DIR/settings.json` or `~/.claude/settings.json`: parallel read-only tools and subagents |
 | Custom agent definitions | `.codex/agents/*.toml`, `~/.codex/agents/` | `.claude/agents/*.md`, `~/.claude/agents/` |
 

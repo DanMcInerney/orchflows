@@ -94,10 +94,10 @@ class InstalledCliTests(unittest.TestCase):
             self.assertEqual({skill.name for skill in (core / "skills").iterdir()},
                              {"orch-work", "orch-review", "orch-dynamic-workflow", "orch-self-improve", "orch-build-workflow"})
             for removed in ("orch-parallel", "orch-compare", "orch-make-and-review", "orch-setup", "orch-record-run"):
-                unavailable = cli(python, script, "resolve", "orchflows-light", "--skill", removed, expected=2)
+                unavailable = cli(python, script, "resolve", "orchflows", "--skill", removed, expected=2)
                 self.assertIn("error", unavailable)
             for skill in (ROOT / "skills").iterdir():
-                resolved_core = cli(python, script, "resolve", "orchflows-light", "--skill", skill.name)
+                resolved_core = cli(python, script, "resolve", "orchflows", "--skill", skill.name)
                 self.assertEqual(Path(resolved_core["skill_path"]), core / "skills" / skill.name / "SKILL.md")
 
             def files(path):

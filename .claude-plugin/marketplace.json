@@ -1,11 +1,11 @@
 {
-  "name": "orchflows-light-local",
+  "name": "orchflows-local",
   "owner": {
-    "name": "orchflows-light"
+    "name": "orchflows"
   },
   "plugins": [
     {
-      "name": "orchflows-light",
+      "name": "orchflows",
       "source": "./"
     }
   ]

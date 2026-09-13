@@ -23,8 +23,8 @@ Brand profiles call `short-video:short-video` with product references, guidance 
 
 ## Install and dependencies
 
-From a complete orchflows-light checkout, run `python scripts/orchflows.py setup --example short-video` (Python 3.11+). Setup preserves existing libraries and installs no media dependencies. Core `docs/hosts.md` covers host registration and refresh; `docs/home.md` covers home updates.
+From a complete orchflows checkout, run `python scripts/orchflows.py setup --example short-video` (Python 3.11+). Setup preserves existing libraries and installs no media dependencies. Core `docs/hosts.md` covers host registration and refresh; `docs/home.md` covers home updates.
 
 Invoke `short-video:short-video` with the subject, audience, intent, placements, constraints and output location.
 
-Requires orchflows-light 0.6.0+, native child delegation, an authoring/export toolchain and access to exports. Full audiovisual review requires motion viewing and listening; limited tools produce partial review. [Remotion](references/remotion.md) is optional. Generated projects carry their own dependencies in the caller's workspace.
+Requires orchflows 0.7.0+, native child delegation, an authoring/export toolchain and access to exports. Full audiovisual review requires motion viewing and listening; limited tools produce partial review. [Remotion](references/remotion.md) is optional. Generated projects carry their own dependencies in the caller's workspace.
