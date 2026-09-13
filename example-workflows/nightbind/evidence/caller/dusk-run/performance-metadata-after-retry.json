@@ -1,0 +1,174 @@
+{
+  "assets": {
+    "count": 22,
+    "manifestVersion": 1,
+    "models": [
+      {
+        "id": "thorn",
+        "primitives": 1,
+        "sha256": "46cc7037ff6df2e964ee2c091211deca61c100e142ba0cf988f9912350e82847",
+        "triangles": 168
+      },
+      {
+        "id": "ember",
+        "primitives": 2,
+        "sha256": "d034db2321447bad510ad94221fececda604a2bb2b3bb47641ca707223593fa7",
+        "triangles": 180
+      },
+      {
+        "id": "volt",
+        "primitives": 3,
+        "sha256": "cff4dd5489af46724db36ea43b14228df2847acfc4326bd491c3968db2fa4ff4",
+        "triangles": 120
+      },
+      {
+        "id": "mire",
+        "primitives": 1,
+        "sha256": "9ce85062a4652513c0d17d1a5cf8f7c910c8ead59aa7da81c264c3934a2f2f8b",
+        "triangles": 204
+      },
+      {
+        "id": "fang",
+        "primitives": 3,
+        "sha256": "f7672b748b99807640f645bbdc5a6e94dd0470916a4dadf65ded564ecd83d5dd",
+        "triangles": 310
+      },
+      {
+        "id": "moth",
+        "primitives": 3,
+        "sha256": "589ec5d91146a59bf2d716b6070f86b1208af35e7df255cad9beb6666f14773a",
+        "triangles": 200
+      },
+      {
+        "id": "pyre",
+        "primitives": 2,
+        "sha256": "2118463f1a51f0deb5fa8053f05f78d7d76cc250a87c7f0b435b2b3cc2af7cf2",
+        "triangles": 382
+      },
+      {
+        "id": "dusk",
+        "primitives": 3,
+        "sha256": "b602542ad7f3156c8c46b0ad4afc5924ff5994b8c99df887f9417e2738a74049",
+        "triangles": 286
+      },
+      {
+        "id": "storm",
+        "primitives": 2,
+        "sha256": "038598990464e660dbcf7804e33ef1531fc4e58b663aa9b35a0acd8a35d070c9",
+        "triangles": 292
+      },
+      {
+        "id": "solar",
+        "primitives": 4,
+        "sha256": "e22c99b5b35ed496a051a9d5950bd614ae86a555ffb09428c4a93e3d760e8299",
+        "triangles": 354
+      },
+      {
+        "id": "world",
+        "primitives": 3,
+        "sha256": "0f170baa7e8a0e87c711224b7d120f61b2ae25f275622371c3c4246a0027b927",
+        "triangles": 436
+      },
+      {
+        "id": "eclipse",
+        "primitives": 2,
+        "sha256": "39de09a03e3db8252906bfc120e9147a06f182f8bc72588a108bcc3b8d4fc7cb",
+        "triangles": 410
+      },
+      {
+        "id": "boss",
+        "primitives": 5,
+        "sha256": "833251547a0fed524a196cd1f3d258c0771f440465f7f703c4a27339f8e7e0fa",
+        "triangles": 626
+      },
+      {
+        "id": "keeper",
+        "primitives": 2,
+        "sha256": "a5888e79c677d3d1ba25508b22b9c4e013e6e0e9bfb57075f1b97e6543426eb3",
+        "triangles": 284
+      },
+      {
+        "id": "lantern",
+        "primitives": 2,
+        "sha256": "5fc8a0432ff1c4bfc1ab3b8249989ecf8ae402e7f262a611b072bc00ee9ffabb",
+        "triangles": 188
+      },
+      {
+        "id": "arena_floor",
+        "primitives": 1,
+        "sha256": "5d5bfd7dd8e96de7373892ec4660449b1db3091aef6a029f49dc9068ff096073",
+        "triangles": 702
+      },
+      {
+        "id": "rim_segment",
+        "primitives": 1,
+        "sha256": "b7b8b0625a95b68fc61a28b2377e6c17c6cc7d160c5d56562c9379b3f5cc37b8",
+        "triangles": 32
+      },
+      {
+        "id": "bell_arch",
+        "primitives": 1,
+        "sha256": "8559425d826591c4b80ed6837be0b0debd200b379bb83f1a1225f0797e000764",
+        "triangles": 296
+      },
+      {
+        "id": "hanging_bell",
+        "primitives": 1,
+        "sha256": "6b06c5a79682cbe545c38f86307812e963fc843d86318c50137d5a4e371033d8",
+        "triangles": 152
+      },
+      {
+        "id": "votive",
+        "primitives": 2,
+        "sha256": "182e8a52cb3027ea8f2e92a2ba6c3ff9328fd31067c747a1f6900085a62c318f",
+        "triangles": 108
+      },
+      {
+        "id": "shrine_plinth",
+        "primitives": 1,
+        "sha256": "0308c8afef83ebcfc97ace8ae83dac86a77850643fba800b192a87d1a3690112",
+        "triangles": 124
+      },
+      {
+        "id": "rubble_cluster",
+        "primitives": 1,
+        "sha256": "14e69e680883fb6369142bf1d5a91e2c4ff7dea031b09bd1e7d09b3a813cf210",
+        "triangles": 60
+      }
+    ]
+  },
+  "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "build": "release-c09f13cac8e9",
+  "fields": [
+    "run",
+    "time",
+    "wave",
+    "hostiles",
+    "rawFrameMs",
+    "calls",
+    "triangles"
+  ],
+  "hostiles": 1,
+  "loadDurationMs": 91,
+  "readyAtMs": 145.5,
+  "renderer": {
+    "calls": 16,
+    "frame": 71400,
+    "lines": 0,
+    "points": 0,
+    "triangles": 3330
+  },
+  "resources": {
+    "geometries": 58,
+    "textures": 1
+  },
+  "retainedFrameCount": 19399,
+  "run": 3,
+  "time": 0.26666666666666666,
+  "total": 19399,
+  "viewport": {
+    "dpr": 1,
+    "height": 720,
+    "width": 1280
+  }
+}

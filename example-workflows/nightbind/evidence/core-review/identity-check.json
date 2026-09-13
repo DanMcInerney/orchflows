@@ -1,0 +1,66 @@
+[
+  {
+    "path": "index.html",
+    "match": true
+  },
+  {
+    "path": "package-lock.json",
+    "match": true
+  },
+  {
+    "path": "package.json",
+    "match": true
+  },
+  {
+    "path": "scripts/build.mjs",
+    "match": true
+  },
+  {
+    "path": "src/content.js",
+    "match": true
+  },
+  {
+    "path": "src/diagnostics.js",
+    "match": true
+  },
+  {
+    "path": "src/main.js",
+    "match": true
+  },
+  {
+    "path": "src/simulation.js",
+    "match": true
+  },
+  {
+    "path": "src/style.css",
+    "match": true
+  },
+  {
+    "path": "src/ui.js",
+    "match": true
+  },
+  {
+    "path": "src/view.js",
+    "match": true
+  },
+  {
+    "path": "tests/rules.test.mjs",
+    "match": true
+  },
+  {
+    "path": "vite.config.js",
+    "match": true
+  },
+  {
+    "path": "dist/assets/index-DTTw6Dzp.css",
+    "match": true
+  },
+  {
+    "path": "dist/assets/index-DYhThlSP.js",
+    "match": true
+  },
+  {
+    "path": "dist/index.html",
+    "match": true
+  }
+]

@@ -1,0 +1,275 @@
+Browser tab: 2, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4193/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4193/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		71 container hud
+			72 container
+				73 text NIGHTBIND
+				169 text WAVE 09 / 12
+				170 text Before the dawn
+				76 button Field guide , ID: guide-button
+				77 button Pause, ID: pause-button
+				78 button Description: Sound and motion settings, ID: settings-button
+			79 container
+				80 text VITALITY
+				171 text 120 / 120
+				172 text 59 in the dark · 0 fallen
+			165 text Emberling joins your circle.
+			173 text The horde is closing in. Move through fresh ground until the tenth bell.
+			84 text Click ground to move · WASD / arrows · Space to bind
+			160 button An evolution is ready ↗, ID: evolve-button
+			85 container
+				86 text YOUR CIRCLE
+				174 text 6 / 6
+				88 container slots
+					168 text Voltwing CHAIN Mireling SLOW Mourning Moth MEND Pyre Warden INFERNO + WARD Mourning Moth MEND Emberling SPLASH
+				90 text Binding lantern
+				175 text 11s
+				92 button (disabled) Lantern is gathering light, ID: capture-button
+				93 text Choose one nearby foe · time pauses
+		176 container
+			177 text MAKE ROOM FOR THE NIGHT
+			178 heading Sound & motion, Value: 2
+				179 text Sound & motion
+			180 text Mute sound
+			181 checkbox (settable, integer) Description: Mute sound, Value: 0, ID: sound-muted
+			182 text Volume 
+			183 text 40%
+			184 slider (settable, integer) Volume , Value: 40, ID: sound-volume
+			185 text Reduce decorative motion
+			186 checkbox (settable, integer) Description: Reduce decorative motion, Value: 0, ID: reduced-motion
+			187 text Threat warnings and essential feedback remain visible. Preferences are saved on this browser; runs begin fresh.
+			188 text ORIGINAL BELL, GLASS AND LOW DRUM CUES.
+			189 button Return to the night, ID: settings-close
+		15 text qa-c09f13cac8e9
+	190 container
+		191 button (expanded) Development scenarios · assisted tests, Secondary Actions: Collapse
+			192 text Development scenarios · assisted tests
+		193 text Scenario
+		194 pop up button (collapsed, settable) Scenario, Value: late-pressure, ID: test-scenario, Secondary Actions: Expand
+			195 menu
+				196 fresh
+				197 pre-evolution
+				198 wrong-recipe
+				199 (selected) late-pressure
+				200 second-evolution
+				201 roles
+				202 boss
+				203 boss-danger
+		204 text Seed
+		205 stepper (settable, integer) Seed, Value: 12345, ID: test-seed
+		206 text Variant
+		207 pop up button (collapsed, settable) Variant, Value: default, ID: test-variant, Secondary Actions: Expand
+			208 menu
+				209 (selected) default
+				210 slow-charge
+				211 weak-evolution
+				212 late-baseline
+				213 storm-route
+				214 dusk-route
+		215 button Reset scenario, ID: test-reset
+		216 text Clock
+		217 pop up button (collapsed, settable) Clock, Value: manual, ID: test-mode, Secondary Actions: Expand
+			218 menu
+				219 live
+				220 (selected) manual
+		221 button Release input, ID: test-release
+		222 button Start scenario, ID: test-start
+		223 container
+			224 text Move x
+			225 stepper (settable, integer) Move x, Value: 12, ID: test-x
+		226 container
+			227 text z
+			228 stepper (settable, integer) z, Value: 0, ID: test-z
+		229 button Move, ID: test-move
+		230 container
+			231 text Capture type
+			232 pop up button (collapsed, settable) Capture type, Value: ember, ID: test-capture-type, Secondary Actions: Expand
+				233 menu
+					234 (selected) ember
+					235 thorn
+					236 volt
+					237 mire
+					238 fang
+					239 moth
+		240 button Capture nearest of type, ID: test-capture
+		241 text Ticks
+		242 stepper (settable, integer) Ticks, Value: 60, ID: test-ticks
+		243 button Step ticks, ID: test-step
+		244 button Refresh state, ID: test-observe
+		245 text {
+  "version": 1,
+  "seed": 12345,
+  "scenario": "late-pressure",
+  "tick": 0,
+  "time": 176,
+  "wave": 9,
+  "phase": "playing",
+  "paused": true,
+  "mode": "manual",
+  "hp": 120,
+  "charge": 0,
+  "player": {
+    "x": 0,
+    "z": 0
+  },
+  "target": null,
+  "keys": {
+    "x": 0,
+    "z": 0
+  },
+  "squad": [
+    {
+      "id": 1,
+      "type": "volt"
+    },
+    {
+      "id": 2,
+      "type": "mire"
+    },
+    {
+      "id": 3,
+      "type": "moth"
+    },
+    {
+      "id": 4,
+      "type": "pyre"
+    },
+    {
+      "id": 6,
+      "type": "moth"
+    },
+    {
+      "id": 67,
+      "type": "ember"
+    }
+  ],
+  "hostiles": 59,
+  "nearby": 0,
+  "enemies": [
+    {
+      "id": 7,
+      "type": "ember",
+      "x": 6.21,
+      "z": 0.65,
+      "hp": 32,
+      "wind": 0
+    },
+    {
+      "id": 8,
+      "type": "thorn",
+      "x": 11.5,
+      "z": -7.3,
+      "hp": 71.4,
+      "wind": 0
+    },
+    {
+      "id": 9,
+      "type": "volt",
+      "x": -11.4,
+      "z": -3.57,
+      "hp": 30.1,
+      "wind": 0
+    },
+    {
+      "id": 10,
+      "type": "mire",
+      "x": 14.92,
+      "z": 3.82,
+      "hp": 43.2,
+      "wind": 0
+    },
+    {
+      "id": 11,
+      "type": "fang",
+      "x": 15.74,
+      "z": 7.85,
+      "hp": 45.1,
+      "wind": 0
+    },
+    {
+      "id": 12,
+      "type": "moth",
+      "x": -9.17,
+      "z": 6.98,
+      "hp": 35.7,
+      "wind": 0
+    },
+    {
+      "id": 13,
+      "type": "ember",
+      "x": 10.4,
+      "z": -3.18,
+      "hp": 32,
+      "wind": 0
+    },
+    {
+      "id": 14,
+      "type": "thorn",
+      "x": -12.36,
+      "z": 6.5,
+      "hp": 71.4,
+      "wind": 0
+    }
+  ],
+  "available": [
+    "storm"
+  ],
+  "candidates": [
+    {
+      "type": "ember",
+      "count": 6,
+      "id": 7
+    },
+    {
+      "type": "thorn",
+      "count": 5,
+      "id": 50
+    },
+    {
+      "type": "volt",
+      "count": 7,
+      "id": 63
+    },
+    {
+      "type": "mire",
+      "count": 6,
+      "id": 46
+    },
+    {
+      "type": "fang",
+      "count": 6,
+      "id": 17
+    },
+    {
+      "type": "moth",
+      "count": 6,
+      "id": 60
+    }
+  ],
+  "boss": null,
+  "kills": 0,
+  "stats": {
+    "captures": 1,
+    "evolutions": [],
+    "damageTaken": 0,
+    "damageBy": {}
+  },
+  "events": [
+    {
+      "tick": 0,
+      "type": "dismiss",
+      "text": "A companion was released."
+    },
+    {
+      "tick": 0,
+      "type": "capture",
+      "text": "Emberling joins your circle.",
+      "creature": "ember"
+    }
+  ],
+  "build": "qa-c09f13cac8e9",
+  "ready": true
+}
+
+The focused UI element is 243 button Step ticks, ID: test-step

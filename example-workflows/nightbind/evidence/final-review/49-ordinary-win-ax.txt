@@ -1,0 +1,39 @@
+Browser tab: 1, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4191/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4191/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		16 container hud
+			17 container
+				18 text NIGHTBIND
+				64 text WAVE 12 / 12
+				65 text The Bellkeeper
+				21 button Field guide , ID: guide-button
+				22 button Pause, ID: pause-button
+				23 button Description: Sound and motion settings, ID: settings-button
+			24 container
+				25 text VITALITY
+				66 text 117 / 120
+				67 text 5 in the dark · 1670 fallen
+			68 text The Bellkeeper falls.
+			69 text Watch the Bellkeeper. Leave its large warning circle; move across the volley.
+			29 text Click ground to move · WASD / arrows · Space to bind
+			53 button An evolution is ready ↗, ID: evolve-button
+			30 container
+				31 text YOUR CIRCLE
+				70 text 4 / 6
+				33 container slots
+					63 text Mireling SLOW Fangling HUNT Mourning Moth MEND Solar Seraph DAWN ERUPTION · ·
+				35 text Binding lantern
+				71 text READY
+				37 button Bind a creature, ID: capture-button
+				38 text Choose one nearby foe · time pauses
+		72 container
+			73 text THE TWELFTH BELL FALLS SILENT
+			74 heading You brought the dawn., Value: 2
+				75 text You brought the dawn.
+			76 text What hunted you became your greatest strength. The Bellkeeper has fallen. 12 WAVES REACHED 1670 FOES FALLEN 2 EVOLUTIONS Pyre Warden → Solar Seraph
+			77 button Light another lantern, ID: retry
+			78 button Study the recipes, ID: outcome-guide
+		15 text release-c09f13cac8e9
+
+The focused UI element is 77 button Light another lantern, ID: retry

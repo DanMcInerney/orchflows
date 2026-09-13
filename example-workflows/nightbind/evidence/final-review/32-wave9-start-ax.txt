@@ -1,0 +1,39 @@
+Browser tab: 1, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4191/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4191/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		16 container hud
+			17 container
+				18 text NIGHTBIND
+				62 text WAVE 09 / 12
+				63 text Before the dawn
+				21 button Field guide , ID: guide-button
+				22 button Pause, ID: pause-button
+				23 button Description: Sound and motion settings, ID: settings-button
+			24 container
+				25 text VITALITY
+				64 text 120 / 120
+				65 text 105 in the dark · 720 fallen
+			66 text Wave 9: Before the dawn
+			67 text The horde is closing in. Move through fresh ground until the tenth bell.
+			29 text Click ground to move · WASD / arrows · Space to bind
+			53 button An evolution is ready ↗, ID: evolve-button
+			30 container
+				31 text YOUR CIRCLE
+				68 text 6 / 6
+				33 container slots
+					61 text Voltwing CHAIN Mireling SLOW Fangling HUNT Mourning Moth MEND Pyre Warden INFERNO + WARD Mourning Moth MEND
+				35 text Binding lantern
+				69 text READY
+				37 button Bind a creature, ID: capture-button
+				38 text Choose one nearby foe · time pauses
+		70 container
+			71 text THE NIGHT CAN WAIT
+			72 heading Take a breath., Value: 2
+				73 text Take a breath.
+			74 text Your lantern, enemies and wave timer are paused.
+			75 button Return to the night, ID: resume
+			76 button Start a new run, ID: restart
+		15 text release-c09f13cac8e9
+
+The focused UI element is 75 button Return to the night, ID: resume

@@ -1,0 +1,72 @@
+{
+  "id": "core-220cfa39951c",
+  "created": "2026-09-13T05:23:27.614Z",
+  "source": [
+    {
+      "path": "index.html",
+      "sha256": "38486ad1b96277b913694a7d80e2b3f724242b421f88c13c9a863e3efc42e3bd"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "4ee6d7ed49fd96b7a361c3e4e0f7241c75581aff53f33cc04b7434920e6c33db"
+    },
+    {
+      "path": "package.json",
+      "sha256": "7592d1ff45cb20d14a1747a160b72420acd95eee4ec6167408d9b9632fc8906e"
+    },
+    {
+      "path": "scripts/build.mjs",
+      "sha256": "76b96f6cf3b1b83264e0e082c4255fa0fe60d95e63fe6289ca347efa595b3fad"
+    },
+    {
+      "path": "src/content.js",
+      "sha256": "ef4856ddc07834b90fc380153ea15d3734fea925a6dc8eea45ebbe04aa002253"
+    },
+    {
+      "path": "src/diagnostics.js",
+      "sha256": "691fe2cfc6ec6e1ba6f96b7f17a30c639cd73d57f4e9865df07ec39efa7c4813"
+    },
+    {
+      "path": "src/main.js",
+      "sha256": "a39ac8a8094fc2d8ad561985c9848cca4a3d0f0f2cbd880c99fde36e17eb9767"
+    },
+    {
+      "path": "src/simulation.js",
+      "sha256": "9ba95257fbfebaed6d7bff91a20708e96420de147aa179fc3a9665da100382a7"
+    },
+    {
+      "path": "src/style.css",
+      "sha256": "04396dfc8383a7388cab20d7c5792b23f67c07dfebc7aa7b8f099b7774123b78"
+    },
+    {
+      "path": "src/ui.js",
+      "sha256": "82b10cd049420a570de639f43f1ba9f12a5e3be3df967bf8d092fd13966a0e6f"
+    },
+    {
+      "path": "src/view.js",
+      "sha256": "efaf960da128061b351835a3645599a0589b6a36055877eabc65a52d895decea"
+    },
+    {
+      "path": "tests/rules.test.mjs",
+      "sha256": "d8892272051b88a9bda4a51d7478c37c8bc67c26459284a29d55de0e8dcdff5d"
+    },
+    {
+      "path": "vite.config.js",
+      "sha256": "777f5ef8c8e308e52c24fea2c3b5947eaf754367cd34337f3fd3aa1ec7c88bba"
+    }
+  ],
+  "built": [
+    {
+      "path": "dist/assets/index-DTTw6Dzp.css",
+      "sha256": "54c06903b9f630565195df5f5645dd66f6698b967db887168415e40b824046c2"
+    },
+    {
+      "path": "dist/assets/index-DYhThlSP.js",
+      "sha256": "2e6262774032d10de7086e7e3b574bf25d3cf5104949283095103b8f09f93b77"
+    },
+    {
+      "path": "dist/index.html",
+      "sha256": "f125ac5bab9ae2a2498ae88bc2dfe1fcec6d362e0d980d9339b417a1a82b868a"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "build": "release-c09f13cac8e9",
+  "checkedAt": "2026-09-13T06:59:43.355Z",
+  "sourceFiles": 97,
+  "builtFiles": 41,
+  "mismatches": [],
+  "assetManifestSha256": "b943f7fca7efc58f225fdf6f7add960a1bf71218943df84274434e6628e00f66",
+  "glbBytes": 485472,
+  "releaseAudit": {
+    "adapterPresent": false,
+    "fixturesPresent": false
+  }
+}

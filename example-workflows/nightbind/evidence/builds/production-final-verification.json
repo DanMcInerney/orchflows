@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-09-13T07:30:37.071805+00:00",
+  "method": "Read-only file hashing, path-set comparison and compiled diagnostics audit; no rebuild or replay",
+  "commonSource": "source-c09f13cac8e9",
+  "sameSourceAcrossBuilds": true,
+  "builds": [
+    {
+      "build": "release-c09f13cac8e9",
+      "sourceFiles": 97,
+      "outputFiles": 41,
+      "hashMismatches": [],
+      "sourcePathDifference": [],
+      "outputPathDifference": [],
+      "diagnosticAudit": {
+        "adapterPresent": false,
+        "fixturesPresent": false
+      },
+      "manifest": "evidence/builds/release-c09f13cac8e9.json",
+      "manifestSha256": "31fab5477c42e1a045faecd36dcbcd02abf0863a1f030275bd4aadfab594e9cb"
+    },
+    {
+      "build": "qa-c09f13cac8e9",
+      "sourceFiles": 97,
+      "outputFiles": 43,
+      "hashMismatches": [],
+      "sourcePathDifference": [],
+      "outputPathDifference": [],
+      "diagnosticAudit": {
+        "adapterPresent": true,
+        "fixturesPresent": true
+      },
+      "manifest": "evidence/builds/qa-c09f13cac8e9.json",
+      "manifestSha256": "393d780eafa6eef350b6e5db145f97a85b1f85952764306e448b0cc1cea5faba"
+    }
+  ],
+  "assetManifestSha256": "b943f7fca7efc58f225fdf6f7add960a1bf71218943df84274434e6628e00f66",
+  "archivedCore": {
+    "build": "core-220cfa39951c",
+    "filesChecked": 3,
+    "mismatches": []
+  },
+  "result": "PASS"
+}

@@ -1,0 +1,692 @@
+{
+  "assets": {
+    "loaded": 22
+  },
+  "audio": {
+    "available": true,
+    "cuesPlayed": 26,
+    "error": null,
+    "muted": false,
+    "state": "running",
+    "voices": 2,
+    "volume": 0.4
+  },
+  "available": [
+    "storm"
+  ],
+  "boss": null,
+  "build": "qa-c09f13cac8e9",
+  "candidates": [
+    {
+      "count": 5,
+      "id": 49,
+      "type": "ember"
+    },
+    {
+      "count": 8,
+      "id": 50,
+      "type": "thorn"
+    },
+    {
+      "count": 7,
+      "id": 63,
+      "type": "volt"
+    },
+    {
+      "count": 6,
+      "id": 64,
+      "type": "mire"
+    },
+    {
+      "count": 7,
+      "id": 17,
+      "type": "fang"
+    },
+    {
+      "count": 7,
+      "id": 60,
+      "type": "moth"
+    }
+  ],
+  "charge": 0.091,
+  "enemies": [
+    {
+      "hp": 71.4,
+      "id": 8,
+      "type": "thorn",
+      "wind": 0,
+      "x": 10.11,
+      "z": -6.41
+    },
+    {
+      "hp": 30.1,
+      "id": 9,
+      "type": "volt",
+      "wind": 0,
+      "x": -9.54,
+      "z": -3.38
+    },
+    {
+      "hp": 43.2,
+      "id": 10,
+      "type": "mire",
+      "wind": 0,
+      "x": 13.27,
+      "z": 3.4
+    },
+    {
+      "hp": 45.1,
+      "id": 11,
+      "type": "fang",
+      "wind": 0,
+      "x": 13.14,
+      "z": 6.56
+    },
+    {
+      "hp": 35.7,
+      "id": 12,
+      "type": "moth",
+      "wind": 0,
+      "x": -7.26,
+      "z": 5.52
+    },
+    {
+      "hp": 32,
+      "id": 13,
+      "type": "ember",
+      "wind": 0,
+      "x": 8.29,
+      "z": -2.54
+    },
+    {
+      "hp": 71.4,
+      "id": 14,
+      "type": "thorn",
+      "wind": 0,
+      "x": -10.9,
+      "z": 5.74
+    },
+    {
+      "hp": 30.1,
+      "id": 15,
+      "type": "volt",
+      "wind": 0,
+      "x": -6.8,
+      "z": 2.81
+    },
+    {
+      "hp": 43.2,
+      "id": 16,
+      "type": "mire",
+      "wind": 0,
+      "x": 6.67,
+      "z": 4.16
+    },
+    {
+      "hp": 45.1,
+      "id": 17,
+      "type": "fang",
+      "wind": 0.6333333333333331,
+      "x": 7.03,
+      "z": 0.31
+    },
+    {
+      "hp": 71.4,
+      "id": 20,
+      "type": "thorn",
+      "wind": 0,
+      "x": 7.88,
+      "z": -2.29
+    },
+    {
+      "hp": 30.1,
+      "id": 21,
+      "type": "volt",
+      "wind": 0,
+      "x": -7.09,
+      "z": -9.65
+    },
+    {
+      "hp": 43.2,
+      "id": 22,
+      "type": "mire",
+      "wind": 0,
+      "x": 7.16,
+      "z": -3.42
+    },
+    {
+      "hp": 35.7,
+      "id": 24,
+      "type": "moth",
+      "wind": 0,
+      "x": -10.79,
+      "z": -5.59
+    },
+    {
+      "hp": 32,
+      "id": 25,
+      "type": "ember",
+      "wind": 0,
+      "x": 2.49,
+      "z": 8.77
+    },
+    {
+      "hp": 71.4,
+      "id": 26,
+      "type": "thorn",
+      "wind": 0,
+      "x": -12.3,
+      "z": -1.63
+    },
+    {
+      "hp": 30.1,
+      "id": 27,
+      "type": "volt",
+      "wind": 0,
+      "x": 6.25,
+      "z": -3.5
+    },
+    {
+      "hp": 45.1,
+      "id": 29,
+      "type": "fang",
+      "wind": 0,
+      "x": 1.98,
+      "z": -7.13
+    },
+    {
+      "hp": 35.7,
+      "id": 30,
+      "type": "moth",
+      "wind": 0,
+      "x": 5.95,
+      "z": 5.52
+    },
+    {
+      "hp": 32,
+      "id": 31,
+      "type": "ember",
+      "wind": 0,
+      "x": -2.37,
+      "z": -14.1
+    },
+    {
+      "hp": 71.4,
+      "id": 32,
+      "type": "thorn",
+      "wind": 0,
+      "x": -5.7,
+      "z": 4.6
+    },
+    {
+      "hp": 30.1,
+      "id": 33,
+      "type": "volt",
+      "wind": 0,
+      "x": -9.91,
+      "z": 9.8
+    },
+    {
+      "hp": 43.2,
+      "id": 34,
+      "type": "mire",
+      "wind": 0,
+      "x": -12.41,
+      "z": -2.23
+    },
+    {
+      "hp": 45.1,
+      "id": 35,
+      "type": "fang",
+      "wind": 0.6166666666666664,
+      "x": 9.58,
+      "z": -5.24
+    },
+    {
+      "hp": 35.7,
+      "id": 36,
+      "type": "moth",
+      "wind": 0,
+      "x": 5.92,
+      "z": -11.57
+    },
+    {
+      "hp": 32,
+      "id": 37,
+      "type": "ember",
+      "wind": 0,
+      "x": -8.59,
+      "z": -7.2
+    },
+    {
+      "hp": 71.4,
+      "id": 38,
+      "type": "thorn",
+      "wind": 0,
+      "x": 8.66,
+      "z": -7.25
+    },
+    {
+      "hp": 43.2,
+      "id": 40,
+      "type": "mire",
+      "wind": 0,
+      "x": 4.26,
+      "z": 9.03
+    },
+    {
+      "hp": 45.1,
+      "id": 41,
+      "type": "fang",
+      "wind": 0,
+      "x": -10.64,
+      "z": 8.58
+    },
+    {
+      "hp": 35.7,
+      "id": 42,
+      "type": "moth",
+      "wind": 0,
+      "x": 10.29,
+      "z": 6.58
+    },
+    {
+      "hp": 32,
+      "id": 43,
+      "type": "ember",
+      "wind": 0,
+      "x": -12.95,
+      "z": -5.07
+    },
+    {
+      "hp": 71.4,
+      "id": 44,
+      "type": "thorn",
+      "wind": 0,
+      "x": -12.29,
+      "z": 8.93
+    },
+    {
+      "hp": 30.1,
+      "id": 45,
+      "type": "volt",
+      "wind": 0,
+      "x": 4.4,
+      "z": -9.6
+    },
+    {
+      "hp": 45.1,
+      "id": 47,
+      "type": "fang",
+      "wind": 0,
+      "x": 5.66,
+      "z": 4.64
+    },
+    {
+      "hp": 35.7,
+      "id": 48,
+      "type": "moth",
+      "wind": 0,
+      "x": 14.49,
+      "z": -1.29
+    },
+    {
+      "hp": 32,
+      "id": 49,
+      "type": "ember",
+      "wind": 0,
+      "x": 7.13,
+      "z": -3.35
+    },
+    {
+      "hp": 5.4,
+      "id": 50,
+      "type": "thorn",
+      "wind": 0,
+      "x": -1.11,
+      "z": -6.91
+    },
+    {
+      "hp": 30.1,
+      "id": 51,
+      "type": "volt",
+      "wind": 0,
+      "x": -5,
+      "z": 7.79
+    },
+    {
+      "hp": 43.2,
+      "id": 52,
+      "type": "mire",
+      "wind": 0,
+      "x": -7.55,
+      "z": -11.25
+    },
+    {
+      "hp": 45.1,
+      "id": 53,
+      "type": "fang",
+      "wind": 0.4499999999999994,
+      "x": -9.56,
+      "z": 0.61
+    },
+    {
+      "hp": 35.7,
+      "id": 54,
+      "type": "moth",
+      "wind": 0,
+      "x": 8.41,
+      "z": -3.13
+    },
+    {
+      "hp": 71.4,
+      "id": 56,
+      "type": "thorn",
+      "wind": 0,
+      "x": 5.74,
+      "z": -7.86
+    },
+    {
+      "hp": 43.2,
+      "id": 58,
+      "type": "mire",
+      "wind": 0,
+      "x": -11.41,
+      "z": 3.57
+    },
+    {
+      "hp": 45.1,
+      "id": 59,
+      "type": "fang",
+      "wind": 0,
+      "x": -6.41,
+      "z": 7.68
+    },
+    {
+      "hp": 35.7,
+      "id": 60,
+      "type": "moth",
+      "wind": 0,
+      "x": -2.74,
+      "z": 6.95
+    },
+    {
+      "hp": 32,
+      "id": 61,
+      "type": "ember",
+      "wind": 0,
+      "x": 10.74,
+      "z": 0.08
+    },
+    {
+      "hp": 71.4,
+      "id": 62,
+      "type": "thorn",
+      "wind": 0,
+      "x": 0.11,
+      "z": 14.83
+    },
+    {
+      "hp": 22.1,
+      "id": 63,
+      "type": "volt",
+      "wind": 0,
+      "x": -2.66,
+      "z": 4.29
+    },
+    {
+      "hp": 12.2,
+      "id": 64,
+      "type": "mire",
+      "wind": 0,
+      "x": 1.62,
+      "z": 6.82
+    },
+    {
+      "hp": 45.1,
+      "id": 65,
+      "type": "fang",
+      "wind": 0,
+      "x": 2.2,
+      "z": 12.15
+    },
+    {
+      "hp": 45.1,
+      "id": 68,
+      "type": "fang",
+      "wind": 0,
+      "x": -2.58,
+      "z": -16.9
+    },
+    {
+      "hp": 43.2,
+      "id": 69,
+      "type": "mire",
+      "wind": 0,
+      "x": -7.79,
+      "z": 16.65
+    },
+    {
+      "hp": 45.1,
+      "id": 70,
+      "type": "fang",
+      "wind": 0,
+      "x": -0.68,
+      "z": -17.38
+    },
+    {
+      "hp": 43.2,
+      "id": 71,
+      "type": "mire",
+      "wind": 0,
+      "x": 18.52,
+      "z": -1.15
+    },
+    {
+      "hp": 71.4,
+      "id": 72,
+      "type": "thorn",
+      "wind": 0,
+      "x": -14.07,
+      "z": 12.33
+    },
+    {
+      "hp": 35.7,
+      "id": 73,
+      "type": "moth",
+      "wind": 0,
+      "x": -15.73,
+      "z": 9.23
+    },
+    {
+      "hp": 30.1,
+      "id": 74,
+      "type": "volt",
+      "wind": 0,
+      "x": 3.95,
+      "z": 17.93
+    },
+    {
+      "hp": 45.1,
+      "id": 75,
+      "type": "fang",
+      "wind": 0,
+      "x": -1.8,
+      "z": -18.12
+    },
+    {
+      "hp": 71.4,
+      "id": 76,
+      "type": "thorn",
+      "wind": 0,
+      "x": -16.68,
+      "z": 9.22
+    },
+    {
+      "hp": 35.7,
+      "id": 77,
+      "type": "moth",
+      "wind": 0,
+      "x": 11.11,
+      "z": 15.12
+    },
+    {
+      "hp": 35.7,
+      "id": 78,
+      "type": "moth",
+      "wind": 0,
+      "x": -2.95,
+      "z": -18.69
+    },
+    {
+      "hp": 71.4,
+      "id": 79,
+      "type": "thorn",
+      "wind": 0,
+      "x": -7.64,
+      "z": -17.77
+    },
+    {
+      "hp": 35.7,
+      "id": 80,
+      "type": "moth",
+      "wind": 0,
+      "x": -19,
+      "z": -2.43
+    },
+    {
+      "hp": 43.2,
+      "id": 81,
+      "type": "mire",
+      "wind": 0,
+      "x": -0.48,
+      "z": -19.51
+    },
+    {
+      "hp": 35.7,
+      "id": 82,
+      "type": "moth",
+      "wind": 0,
+      "x": -18.9,
+      "z": 4.54
+    },
+    {
+      "hp": 32,
+      "id": 83,
+      "type": "ember",
+      "wind": 0,
+      "x": -8.5,
+      "z": -17.66
+    },
+    {
+      "hp": 35.7,
+      "id": 84,
+      "type": "moth",
+      "wind": 0,
+      "x": 15.15,
+      "z": 12.63
+    },
+    {
+      "hp": 35.7,
+      "id": 85,
+      "type": "moth",
+      "wind": 0,
+      "x": 8.22,
+      "z": 18.06
+    },
+    {
+      "hp": 45.1,
+      "id": 86,
+      "type": "fang",
+      "wind": 0,
+      "x": 16.23,
+      "z": -11.6
+    }
+  ],
+  "events": [
+    {
+      "text": "A companion was released.",
+      "tick": 0,
+      "type": "dismiss"
+    },
+    {
+      "creature": "ember",
+      "text": "Emberling joins your circle.",
+      "tick": 0,
+      "type": "capture"
+    }
+  ],
+  "hostiles": 69,
+  "hp": 120,
+  "keys": {
+    "x": 0,
+    "z": 0
+  },
+  "kills": 9,
+  "mode": "manual",
+  "nearby": 1,
+  "paused": false,
+  "phase": "playing",
+  "player": {
+    "x": 0,
+    "z": 0
+  },
+  "presentation": {
+    "captureViewportWidth": 0,
+    "highlightedCaptureId": null,
+    "modal": null
+  },
+  "ready": true,
+  "run": 6,
+  "scenario": "late-pressure",
+  "seed": 12345,
+  "settings": {
+    "muted": false,
+    "reducedMotion": true,
+    "volume": 0.4
+  },
+  "squad": [
+    {
+      "id": 1,
+      "type": "volt"
+    },
+    {
+      "id": 2,
+      "type": "mire"
+    },
+    {
+      "id": 3,
+      "type": "moth"
+    },
+    {
+      "id": 4,
+      "type": "pyre"
+    },
+    {
+      "id": 6,
+      "type": "moth"
+    },
+    {
+      "id": 67,
+      "type": "ember"
+    }
+  ],
+  "stats": {
+    "captures": 1,
+    "damageBy": {
+      "ember": 25.959999999999997,
+      "keeper": 24,
+      "mire": 36,
+      "moth": 14,
+      "pyre": 299.15999999999997,
+      "volt": 33
+    },
+    "damageTaken": 0,
+    "evolutions": []
+  },
+  "target": null,
+  "tick": 60,
+  "time": 177,
+  "version": 1,
+  "wave": 9
+}

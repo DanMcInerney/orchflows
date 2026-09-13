@@ -1,0 +1,280 @@
+{
+  "failedComposition": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "wrong-recipe",
+    "tick": 528,
+    "time": 86.8,
+    "wave": 4,
+    "phase": "lost",
+    "paused": false,
+    "mode": "manual",
+    "hp": 0,
+    "charge": 0.95,
+    "player": {
+      "x": 0,
+      "z": 0
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 1,
+        "type": "ember"
+      },
+      {
+        "id": 2,
+        "type": "mire"
+      },
+      {
+        "id": 3,
+        "type": "moth"
+      }
+    ],
+    "hostiles": 79,
+    "nearby": 14,
+    "enemies": [
+      {
+        "id": 5,
+        "type": "thorn",
+        "x": 1.35,
+        "z": -0.86,
+        "hp": 6.5,
+        "wind": 0
+      },
+      {
+        "id": 7,
+        "type": "mire",
+        "x": 9.68,
+        "z": 2.48,
+        "hp": 30.6,
+        "wind": 0
+      },
+      {
+        "id": 9,
+        "type": "moth",
+        "x": -7.13,
+        "z": 5.43,
+        "hp": 25.3,
+        "wind": 0
+      },
+      {
+        "id": 13,
+        "type": "mire",
+        "x": 6.67,
+        "z": 4.16,
+        "hp": 30.6,
+        "wind": 0
+      },
+      {
+        "id": 15,
+        "type": "moth",
+        "x": -8.05,
+        "z": -3.98,
+        "hp": 25.3,
+        "wind": 0
+      },
+      {
+        "id": 19,
+        "type": "mire",
+        "x": 7.16,
+        "z": -3.42,
+        "hp": 30.6,
+        "wind": 0
+      },
+      {
+        "id": 21,
+        "type": "moth",
+        "x": -7.98,
+        "z": -4.14,
+        "hp": 25.3,
+        "wind": 0
+      },
+      {
+        "id": 23,
+        "type": "thorn",
+        "x": -0.31,
+        "z": -0.04,
+        "hp": 7.5,
+        "wind": 0
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 6,
+        "id": 70
+      },
+      {
+        "type": "thorn",
+        "count": 14,
+        "id": 23
+      },
+      {
+        "type": "volt",
+        "count": 4,
+        "id": 98
+      },
+      {
+        "type": "mire",
+        "count": 17,
+        "id": 61
+      },
+      {
+        "type": "fang",
+        "count": 6,
+        "id": 103
+      },
+      {
+        "type": "moth",
+        "count": 18,
+        "id": 57
+      }
+    ],
+    "boss": null,
+    "kills": 52,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 142,
+      "damageBy": {
+        "keeper": 116.29000000000002,
+        "ember": 1008.9599999999998,
+        "mire": 721.0799999999999,
+        "moth": 15.200000000000003
+      }
+    },
+    "events": [
+      {
+        "tick": 96,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 132,
+        "type": "damage",
+        "text": "Lost 13 vitality."
+      },
+      {
+        "tick": 168,
+        "type": "damage",
+        "text": "Lost 13 vitality."
+      },
+      {
+        "tick": 204,
+        "type": "damage",
+        "text": "Lost 13 vitality."
+      },
+      {
+        "tick": 240,
+        "type": "damage",
+        "text": "Lost 13 vitality."
+      },
+      {
+        "tick": 276,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 312,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 348,
+        "type": "damage",
+        "text": "Lost 12 vitality."
+      },
+      {
+        "tick": 384,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 420,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 456,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 492,
+        "type": "damage",
+        "text": "Lost 12 vitality."
+      },
+      {
+        "tick": 528,
+        "type": "damage",
+        "text": "Lost 12 vitality."
+      },
+      {
+        "tick": 528,
+        "type": "outcome",
+        "text": "The lantern goes dark."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "retryObserved": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "fresh",
+    "tick": 17,
+    "time": 0.283,
+    "wave": 1,
+    "phase": "playing",
+    "paused": true,
+    "mode": "live",
+    "hp": 120,
+    "charge": 1,
+    "player": {
+      "x": 0,
+      "z": 0
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [],
+    "hostiles": 1,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 1,
+        "type": "ember",
+        "x": 19.27,
+        "z": 2.01,
+        "hp": 17,
+        "wind": 0
+      }
+    ],
+    "available": [],
+    "candidates": [],
+    "boss": null,
+    "kills": 0,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 0,
+      "damageBy": {}
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "start",
+        "text": "The lantern is lit."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  }
+}

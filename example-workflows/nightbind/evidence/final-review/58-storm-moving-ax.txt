@@ -1,0 +1,35 @@
+Browser tab: 2, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4193/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4193/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		71 container hud
+			72 container
+				73 text NIGHTBIND
+				107 text WAVE 05 / 12
+				108 text First awakening
+				76 button Field guide , ID: guide-button
+				77 button Pause, ID: pause-button
+				78 button Description: Sound and motion settings, ID: settings-button
+			79 container
+				80 text VITALITY
+				109 text 102 / 120
+				110 text 63 in the dark · 43 fallen
+			98 container toast
+				99 text FIRST AWAKENING
+				100 text Storm Serpent awakens.
+			111 text Awaken a pair in the Field guide. New space means time to rebuild your circle.
+			84 text Click ground to move · WASD / arrows · Space to bind
+			85 container
+				86 text YOUR CIRCLE
+				112 text 1 / 6
+				88 container slots
+					103 text Storm Serpent CHAIN + SLOW · · · · ·
+				90 text Binding lantern
+				113 text READY
+				92 button Bind a creature, ID: capture-button
+				93 text Choose one nearby foe · time pauses
+		15 text qa-c09f13cac8e9
+	105 button (collapsed) Development scenarios · assisted tests, Secondary Actions: Expand
+		106 text Development scenarios · assisted tests
+
+The focused UI element is 105 button (collapsed) Development scenarios · assisted tests, Secondary Actions: Expand

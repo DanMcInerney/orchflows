@@ -1,0 +1,87 @@
+Browser tab: 1, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4191/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4191/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		16 container hud
+			17 container
+				18 text NIGHTBIND
+				62 text WAVE 10 / 12
+				63 text The great ascension
+				21 button Field guide , ID: guide-button
+				22 button Pause, ID: pause-button
+				23 button Description: Sound and motion settings, ID: settings-button
+			24 container
+				25 text VITALITY
+				64 text 120 / 120
+				65 text 177 in the dark · 955 fallen
+			66 text Wave 10: The great ascension
+			67 text Ascend in the Field guide. Your earned power can open the whole arena.
+			29 text Click ground to move · WASD / arrows · Space to bind
+			53 button An evolution is ready ↗, ID: evolve-button
+			30 container
+				31 text YOUR CIRCLE
+				68 text 6 / 6
+				33 container slots
+					61 text Voltwing CHAIN Mireling SLOW Fangling HUNT Mourning Moth MEND Pyre Warden INFERNO + WARD Mourning Moth MEND
+				35 text Binding lantern
+				69 text READY
+				37 button Bind a creature, ID: capture-button
+				38 text Choose one nearby foe · time pauses
+		70 container
+			71 text THE FIELD GUIDE
+			72 heading Choose who you become., Value: 2
+				73 text Choose who you become.
+			74 button Return to the night, ID: close-modal
+			75 text Ascend in the Field guide. Your earned power can open the whole arena. Captures become allies immediately. An evolution consumes its ingredients, frees space and restores 25 vitality. You may awaken more than one pair. Green names are already in your circle.
+			76 text WAVE 5 · FIRST AWAKENING
+			77 heading Pyre Warden, Value: 3
+				78 text Pyre Warden
+			79 container
+				80 text Emberling  +  Thornback
+			81 text Sweeping fire, reinforced protection.
+			82 button (disabled) Gather the pair
+			83 text WAVE 10 · ASCENSION
+			84 heading Solar Seraph, Value: 3
+				85 text Solar Seraph
+			86 container
+				87 text Pyre Warden  +  Voltwing  +  Mourning Moth
+			88 text The whole ring burns. You recover.
+			89 button Ascend
+			90 text WAVE 5 · FIRST AWAKENING
+			91 heading Storm Serpent, Value: 3
+				92 text Storm Serpent
+			93 container
+				94 text Voltwing  +  Mireling
+			95 text Wide lightning web holds the horde.
+			96 button Awaken Storm Serpent
+			97 text WAVE 10 · ASCENSION
+			98 heading Worldcoil, Value: 3
+				99 text Worldcoil
+			100 container
+				101 text Storm Serpent  +  Thornback  +  Fangling
+			102 text Storm chains sweep and pin entire packs.
+			103 button (disabled) Gather the companions
+			104 text WAVE 5 · FIRST AWAKENING
+			105 heading Dusk Reaper, Value: 3
+				106 text Dusk Reaper
+			107 container
+				108 text Fangling  +  Mourning Moth
+			109 text Hunts elites and heals the keeper.
+			110 button Awaken Dusk Reaper
+			111 text WAVE 10 · ASCENSION
+			112 heading Eclipse Sovereign, Value: 3
+				113 text Eclipse Sovereign
+			114 container
+				115 text Dusk Reaper  +  Emberling  +  Mireling
+			116 text Devours dangerous foes and their shadows.
+			117 button (disabled) Gather the companions
+			118 text Thornbacks blunt incoming damage. Mirelings slow crowds. Moths restore vitality. Fanglings target the strongest foe. Emberlings punish groups; Voltwings catch scattered enemies. RELEASE A COMPANION TO MAKE ROOM
+			119 button Release Voltwing
+			120 button Release Mireling
+			121 button Release Fangling
+			122 button Release Mourning Moth
+			123 button Release Pyre Warden
+			124 button Release Mourning Moth
+		15 text release-c09f13cac8e9
+
+The focused UI element is 74 button Return to the night, ID: close-modal
