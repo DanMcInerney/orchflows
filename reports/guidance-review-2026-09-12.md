@@ -8,7 +8,7 @@ These are evidence-informed recommendations, not demonstrated improvements to Or
 
 **What I reviewed**
 
-All five default domains and the API specialization: `code`, `research`, `writing`, `visual-design`, `data-analysis`, and `code.api`. I read the renamed guidance at commit `657fddb` on `codex/simplify-ownership`; its six guidance files match `claude/simplify-guidance-and-core`. This worktree remains at `6f12494`, with the older `standards` layout. The principles assessment uses the local, uncommitted draft from our preceding work. The library comparisons use pinned revisions linked below. [Reviewed guidance tree](https://github.com/DanMcInerney/orchflows-light/tree/657fddb8134744581037b69714d639af0bbb65ce/guidance)
+All five default domains and the API specialization: `code`, `research`, `writing`, `visual-design`, `data-analysis`, and `code.api`. I read the renamed guidance at commit `657fddb` on `codex/simplify-ownership`; its six guidance files match `claude/simplify-guidance-and-core`. This worktree remains at `6f12494`, with the older `standards` layout. The principles assessment uses the local, uncommitted draft from our preceding work. The library comparisons use pinned revisions linked below. [Reviewed guidance tree](https://github.com/DanMcInerney/orchflows/tree/657fddb8134744581037b69714d639af0bbb65ce/guidance)
 
 Four investigators covered the named libraries, expert/model advice and empirical studies; I audited our files and combined the evidence. The research distinguishes provider observations, controlled studies, practitioner experience and my recommendations. The report does not change the guidance or principles.
 

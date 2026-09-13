@@ -24,6 +24,19 @@ Registration references: [Codex plugins](https://developers.openai.com/plugins/b
 
 Resolve links from the containing file, scripts from the loaded skill's directory, and inputs/outputs from the assignment workspace. Copying only skill folders breaks package-relative links such as `../../guidance/`. `${CLAUDE_SKILL_DIR}` is Claude-only; `context: fork` launches a child context without filesystem isolation. Orchflows built-ins use the current context. [Codex skills](https://developers.openai.com/codex/skills), [Claude skills](https://code.claude.com/docs/en/skills).
 
+## Model and effort
+
+Apply the [resolved assignment choices](architecture.md#model-and-effort) through the controls exposed by the current host. Unset controls use native defaults, which may differ from the coordinator's settings. Writing a model name in a child's prompt does not select it.
+
+| Host | Native controls |
+| --- | --- |
+| Codex | Use the spawn tool's model and reasoning-effort fields when exposed, such as `model` and `reasoning_effort`. If full-history forks disallow overrides, use a fresh or partial context fork. |
+| Claude Code | The Agent tool supports a model override. Effort is configured in an agent definition's `effort` field; use a definition that supplies the requested setting when the invocation has no effort field. Unset effort inherits the session's setting. |
+
+Check native configuration when it can override a launch choice. Codex custom agent files can override explicit spawn values; absent explicit values, subagent defaults precede parent settings. Selecting a different model without effort can select that model's default effort. Claude precedence can also depend on environment overrides and host version. Use only supported model/effort combinations and report an unhonored request before dependent work. Do not create standing host configuration as an implicit fallback.
+
+Reuse a worker only if the host can honor the repair assignment's settings. If the continuation tool cannot change them, launch a fresh worker with the joined result and repair context. [Codex agent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents), [Claude agent configuration](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields).
+
 ## Isolation
 
 When a child needs isolation, use a worktree at the intended revision. Claude supports `isolation: worktree`; confirm the starting commit, since the default may use the remote default branch. If Codex's child tool has no workspace argument, create a worktree and direct every child operation there:

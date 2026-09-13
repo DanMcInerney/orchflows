@@ -15,7 +15,7 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 
 | Concept | Owner / location |
 | --- | --- |
-| Request and defaults: question, dates, sources, bounds, model, effort, output location | Caller prompt |
+| Request and defaults: question, dates, sources, bounds, model, effort, output location | Caller prompt; [model and effort](#model-and-effort) covers saved preferences |
 | Coordination: composition, control flow, agent count | Composing workflow's `SKILL.md` |
 | Quality criteria, including source-specific preferences | `guidance/<domain>.md` |
 | Shared contracts and operational knowledge | Library `references/`; skill-local `references/` for one consumer |
@@ -28,6 +28,14 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 | Setup, updates and home paths | [home.md](home.md) |
 | Transcript access and interpretation | [history.md](history.md) |
 | Run outputs and evidence | Caller workspace, never a package |
+
+## Model and effort
+
+Model and effort are optional choices for work, review or a named assignment. Resolve each setting separately: current caller instructions override saved workflow preferences; within either source, the named assignment overrides the operation default. Leave unspecified controls unset for the host to resolve. Keep the caller's choices and their scope with request context through composed workflows.
+
+Record saved preferences beside the relevant assignments only when the user asks the generated workflow to use them. The authoring session's settings do not become workflow defaults. Plain language is sufficient; no model file or role registry is required. Behavioral corrections remain in guidance.
+
+Apply these choices to every assignment, including repairs. Direct coordinator work or reuse of an existing worker is valid only when it honors that assignment's settings; otherwise use a fresh worker. The primitives apply choices through [native host controls](hosts.md#model-and-effort); report an unsupported setting as a gap instead of substituting another value.
 
 ## Guidance selection
 

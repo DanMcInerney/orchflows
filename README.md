@@ -109,6 +109,12 @@ flowchart LR
 
 [Register the saved library with your host](docs/hosts.md#register-and-refresh) to invoke its workflows by name.
 
+**Models and effort.** Give Work and Review optional defaults, then override any named assignment—even the final fixer:
+
+> Work: gpt-5.6-sol at medium. Review: gpt-6-astra at high. Worker B: high. Final fixer: gpt-6-astra at xhigh.
+
+Use models and effort levels supported by your host. This works for dynamic and saved workflows. To save these preferences, ask `/orch-build-workflow` to keep them beside the assignments in `SKILL.md`. Your current request overrides saved preferences field by field; settings absent from both use native defaults. A worker with different settings runs separately when the host cannot change an existing agent. [Resolution and host controls](docs/architecture.md#model-and-effort).
+
 ## Design
 
 ### Start with work and independent judgment
@@ -230,7 +236,7 @@ The default is three rounds with one challenger per round. A continuous request 
 
 | Concept | Owner |
 | --- | --- |
-| Desired result, constraints, sources, dates and budgets | Your prompt |
+| Desired result, constraints, sources, dates, budgets, model and effort | Your prompt; explicit saved model/effort preferences sit beside workflow assignments |
 | Coordination, dependencies, agent count and loops | Workflow `SKILL.md` |
 | Quality preferences and domain extensions | `guidance/` |
 | Package dependencies and required guidance | `references/library-context.md` |
