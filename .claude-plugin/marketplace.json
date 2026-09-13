@@ -1,0 +1,12 @@
+{
+  "name": "orchflows-light-local",
+  "owner": {
+    "name": "orchflows-light"
+  },
+  "plugins": [
+    {
+      "name": "orchflows-light",
+      "source": "./"
+    }
+  ]
+}

@@ -1,1 +1,0 @@
-{"name":"ownership-b","mutation":"create:scripts/b.py","edge":{"from":{"operation":"create","path":"scripts/b.py"},"requires":[{"operation":"change","path":"ARCHITECTURE.md"}],"reason":"declared script ownership"}}

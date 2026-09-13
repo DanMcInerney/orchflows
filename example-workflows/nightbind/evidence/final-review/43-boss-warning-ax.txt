@@ -1,0 +1,41 @@
+Browser tab: 1, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4191/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4191/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		16 container hud
+			17 container
+				18 text NIGHTBIND
+				71 text WAVE 12 / 12
+				72 text The Bellkeeper
+				21 button Field guide , ID: guide-button
+				22 button Pause, ID: pause-button
+				23 button Description: Sound and motion settings, ID: settings-button
+			24 container
+				25 text VITALITY
+				73 text 120 / 120
+				74 text 12 in the dark · 1561 fallen
+			68 container bossbar
+				69 text THE BELLKEEPER
+			70 text The Bellkeeper has arrived.
+			75 text Watch the Bellkeeper. Leave its large warning circle; move across the volley.
+			29 text Click ground to move · WASD / arrows · Space to bind
+			53 button An evolution is ready ↗, ID: evolve-button
+			30 container
+				31 text YOUR CIRCLE
+				76 text 4 / 6
+				33 container slots
+					63 text Mireling SLOW Fangling HUNT Mourning Moth MEND Solar Seraph DAWN ERUPTION · ·
+				35 text Binding lantern
+				77 text READY
+				37 button Bind a creature, ID: capture-button
+				38 text Choose one nearby foe · time pauses
+		78 container
+			79 text THE NIGHT CAN WAIT
+			80 heading Take a breath., Value: 2
+				81 text Take a breath.
+			82 text Your lantern, enemies and wave timer are paused.
+			83 button Return to the night, ID: resume
+			84 button Start a new run, ID: restart
+		15 text release-c09f13cac8e9
+
+The focused UI element is 83 button Return to the night, ID: resume

@@ -1,0 +1,39 @@
+Browser tab: 2, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4193/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4193/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		71 container hud
+			72 container
+				73 text NIGHTBIND
+				155 text WAVE 04 / 12
+				156 text Hold the circle
+				76 button Field guide , ID: guide-button
+				77 button Pause, ID: pause-button
+				78 button Description: Sound and motion settings, ID: settings-button
+			79 container
+				80 text VITALITY
+				157 text 0 / 120
+				158 text 79 in the dark · 52 fallen
+			159 text Hold your ingredients. The first awakening opens at wave 5.
+			84 text Click ground to move · WASD / arrows · Space to bind
+			85 container
+				86 text YOUR CIRCLE
+				160 text 3 / 6
+				88 container slots
+					89 text Emberling SPLASH Mireling SLOW Mourning Moth MEND · · ·
+				90 text Binding lantern
+				161 text 1s
+				92 button (disabled) Lantern is gathering light, ID: capture-button
+				93 text Choose one nearby foe · time pauses
+		162 container
+			163 text THE CIRCLE IS BROKEN
+			164 heading The lantern goes dark., Value: 2
+				165 text The lantern goes dark.
+			166 text The night closes in. A different capture can change everything. 4 WAVES REACHED 52 FOES FALLEN 0 EVOLUTIONS Try Emberling + Thornback for a protective first awakening.
+			167 button Light another lantern, ID: retry
+			168 button Study the recipes, ID: outcome-guide
+		15 text qa-c09f13cac8e9
+	153 button (collapsed) Development scenarios · assisted tests, Secondary Actions: Expand
+		154 text Development scenarios · assisted tests
+
+The focused UI element is 167 button Light another lantern, ID: retry

@@ -1,1 +1,0 @@
-self.addEventListener(`message`,e=>{let t=Object.fromEntries(e.data.nodes.map((e,t)=>[e.id,{x:t*252,y:0}]));setTimeout(()=>self.postMessage({requestId:e.data.requestId,positions:t}),150)});

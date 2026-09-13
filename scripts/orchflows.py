@@ -1,395 +1,443 @@
 #!/usr/bin/env python3
-"""The ring commands, and the one question a returning driver asks.
-
-Eight ring verbs over ``scripts/rings.py``'s one resolution order, plus
-``resume``:
-
-    orchflows sync [--project]         make a ring whole, render its adapters,
-                                       settle every item's declared dependencies
-    orchflows add <git-url>@<pin>      pin one external bundle
-    orchflows new {skill|standard|standard|workflow} <name>
-    orchflows new bundle [<name>]      the manifest of the ring at hand
-    orchflows list [--kind K]          every item resolvable from here
-    orchflows check [<ring-dir>]       grade a ring's items, exit 1 on a refusal
-    orchflows env <kind> <name>        the interpreter an item's scripts run through
-    orchflows trust [--once] <bundle>  allow one project ring's content
-    orchflows untrust <bundle>         withdraw both halves of that grant
-    orchflows resume [--now <iso>]     this project's open workflow frames
-
-``list`` reports through the resolver runtime resolution uses, so an item
-that appears here is an item that runs. ``resume`` reads the state sink and
-nothing else. Output is plain text: orchflows has no interactive surface.
-"""
+"""Set up and resolve a portable orchflows home (Python 3.11+, no dependencies)."""
 
 from __future__ import annotations
 
 import argparse
+import json
+import os
+from pathlib import Path, PurePosixPath, PureWindowsPath
+import re
+import shutil
+import stat
+import subprocess
 import sys
-from pathlib import Path
+import uuid
+import venv
 
-if __package__:
-    from . import (
-        console, orchflows_adapters, orchflows_check, orchflows_envs,
-        orchflows_home, orchflows_node, orchflows_scaffold, orchflows_tools,
-        rings, rings_trust, state_root,
-    )
-else:  # pragma: no cover - direct/installed flat script path
-    import console
-    import orchflows_adapters
-    import orchflows_check
-    import orchflows_envs
-    import orchflows_home
-    import orchflows_node
-    import orchflows_scaffold
-    import orchflows_tools
-    import rings
-    import rings_trust
-    import state_root
+if __name__ == "__main__":
+    sys.dont_write_bytecode = True
+
+import host_config
+import native_logs
 
 
-# `new`'s one non-item target: a bundle is the ring itself, not something
-# in it, so it is refused everywhere a ring kind is resolved.
-BUNDLE_KIND = "bundle"
-COLUMNS = ("kind", "name", "ring", "trust", "path")
-RESUME_COLUMNS = ("frame", "run", "age", "journal", "children", "leases", "goal")
+CORE_NAME = "orchflows-light"
+CORE_ENTRIES = ("plugin.json", ".claude-plugin", ".codex-plugin", "skills", "guidance", "docs", "scripts",
+                "README.md", "AGENTS.md", "CLAUDE.md", "LICENSE")
+NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
+HOME_README = """# orchflows home
+
+Docs: `.local/packages/orchflows-light/AGENTS.md`. Edit `libraries/<name>/`; `.local/` and `artifacts/` are ignored.
+"""
+HOME_GITIGNORE = """/.local/
+**/__pycache__/
+**/*.py[cod]
+/artifacts/
+"""
 
 
-def _table(columns, rows) -> str:
-    widths = [
-        max(len(str(row[index])) for row in ([columns] + list(rows)))
-        for index in range(len(columns))
-    ]
-    lines = []
-    for row in [columns] + list(rows):
-        cells = [str(value).ljust(widths[index]) for index, value in enumerate(row)]
-        lines.append("  ".join(cells).rstrip())
-    return "\n".join(lines)
+def home_path(value: str | Path | None = None) -> Path:
+    selected = value if value is not None else os.environ.get("ORCHFLOWS_HOME")
+    return Path(selected).expanduser().resolve() if selected else (Path.home() / ".orchflows").resolve()
 
 
-def cmd_list(args) -> int:
-    kinds = (args.kind,) if args.kind else rings.KINDS
-    records = rings.inventory(kinds)
-    if not records:
-        print("no skills, standards or workflows resolve from here")
-        return 0
-    rows = [
-        (
-            record["kind"],
-            record["name"],
-            "refused" if record.get("reserved") else record["ring"],
-            record["trust"],
-            record["path"],
-        )
-        for record in records
-    ]
-    print(_table(COLUMNS, rows))
-    notices = [
-        notice
-        for record in records
-        for notice in list(record.get("notices") or [])
-        + ([record["refusal"]] if record.get("reserved") else [])
-    ]
-    for notice in notices:
-        print(notice)
-    return 0
+def _contained(root: Path, path: Path) -> Path:
+    resolved = path.resolve()
+    if not resolved.is_relative_to(root.resolve()):
+        raise ValueError(f"Path escapes {root}: {path}")
+    return resolved
 
 
-def cmd_check(args) -> int:
-    """Grade one ring with the library compiler's own item checks."""
-
-    ring = orchflows_check.ring_at(args.ring)
-    if not ring.is_dir():
-        print(
-            f"error: no ring at {ring}; run orchflows sync to make one",
-            file=sys.stderr,
-        )
-        return 1
-    diag, counted = orchflows_check.check(ring)
-    print(f"ring: {ring}")
-    print(", ".join(f"{kind} {counted[kind]}" for kind in rings.KINDS))
-    for line in diag.lines():
-        print(line)
-    return 1 if diag.has_errors else 0
+def _name(value: str, kind: str = "library") -> str:
+    if not NAME.fullmatch(value):
+        raise ValueError(f"Invalid {kind} name: {value!r}")
+    return value
 
 
-def cmd_resume(args) -> int:
-    """Every open frame of this project, newest first, as one table."""
-
-    if __package__:
-        from . import tickets_frame
-    else:  # pragma: no cover - direct/installed flat script path
-        import tickets_frame
-
-    now = tickets_frame.resume_now(args.now)
-    if now is None and args.now is not None:
-        print(f"error: unreadable --now: {args.now}", file=sys.stderr)
-        return 1
-    frames = tickets_frame.open_frames(now)
-    if not frames:
-        print("no open frames for this project")
-        return 0
-    rows = [
-        (
-            frame["id"], frame["run"], frame["age"],
-            "yes" if frame["journal"] else "no",
-            frame["children"], frame["leases"], frame["goal"],
-        )
-        for frame in frames
-    ]
-    print(_table(RESUME_COLUMNS, rows))
-    return 0
-
-
-def cmd_sync(args) -> int:
-    if args.project:
-        return _sync_project()
-    layout = orchflows_home.ensure()
-    print(f"home ring: {layout['home']}")
-    for path in layout["created"]:
-        print(f"created {path}")
-    print(f"wrote {layout['lib_version']}")
-    print(f"wrote {layout['gitignore']}")
-    for record in orchflows_home.restore():
-        detail = f" ({record['detail']})" if record.get("detail") else ""
-        print(f"import {record['name']} @ {record['pin']}: {record['action']}{detail}")
-    _report(orchflows_adapters.write("home"))
-    _report_dependencies()
-    return 0
-
-
-def _sync_project() -> int:
-    """Render the project ring's committed adapters into the project."""
-
-    bundle = rings.project_ring()
-    if bundle is None:
-        print("error: no project ring here; run orchflows new first", file=sys.stderr)
-        return 1
-    project = bundle.parent
-    print(f"project ring: {bundle}")
-    _report(orchflows_adapters.write("project", project=project, start=project))
-    print(f"wrote {orchflows_home.ensure_project_ignores(project)}")
-    _report_dependencies()
-    return 0
-
-
-def _report(result: dict) -> None:
-    for path in result["written"]:
-        print(f"adapter {path}")
-    for path in result["removed"]:
-        print(f"removed {path}")
-
-
-def _report_dependencies() -> None:
-    """Settle every declared dependency resolvable from here, and say so."""
-
-    records = rings.inventory()
-    for outcome in orchflows_envs.sync(records):
-        if outcome["action"] == "skipped":
-            print(f"env {outcome['kind']} '{outcome['name']}': skipped; {outcome['detail']}")
-        else:
-            print(
-                f"env {outcome['kind']} '{outcome['name']}': "
-                f"{outcome['action']} {outcome['interpreter']}"
-            )
-    for outcome in orchflows_envs.prune(records):
-        print(f"env {outcome['kind']} '{outcome['name']}': pruned {outcome['env']}")
-    for report in orchflows_tools.check_inventory(records):
-        where = (
-            "" if report["line"] is None
-            else f" ({orchflows_tools.TOOLS_NAME} line {report['line']})"
-        )
-        print(f"tools {report['kind']} '{report['name']}': {report['detail']}{where}")
-    for outcome in orchflows_node.sync(records):
-        if outcome["action"] == "skipped":
-            print(f"node {outcome['kind']} '{outcome['name']}': skipped; {outcome['detail']}")
-        else:
-            print(
-                f"node {outcome['kind']} '{outcome['name']}': "
-                f"{outcome['action']} {outcome['modules']}"
-            )
-
-
-def cmd_env(args) -> int:
-    record = orchflows_envs.resolve_interpreter(args.kind, args.name)
-    print(record["interpreter"])
-    return 0
-
-
-def cmd_add(args) -> int:
-    record = orchflows_home.add(args.reference)
-    print(f"imported {record['name']} @ {record['pin']} from {record['url']}")
-    print(f"cloned to {record['path']}")
-    for required in record["required"]:
-        print(
-            f"required {required['name']} @ {required['pin']} "
-            f"from {required['url']}"
-        )
-    print(f"pinned in {record['lock']}")
-    return 0
-
-
-def _new_ring():
-    """``(ring, bundle directory)`` a new item or manifest is written into:
-    the project ring when you stand in a project, else the home ring."""
-
-    bundle = rings.project_ring()
-    if bundle is not None:
-        return "project", bundle
-    repo = state_root.find_repo_root(Path.cwd())
-    if repo is not None:
-        return "project", repo / rings.BUNDLE_DIR
-    return "home", rings.home_ring()
-
-
-def _new_target(kind: str):
-    """``(ring, directory)`` for a new item of ``kind``."""
-
-    ring, bundle = _new_ring()
-    return ring, bundle / rings.RING_DIRS[kind]
-
-
-def _bundle_name(directory: Path) -> str:
-    """The name a manifest takes when the author names none."""
-
+def _manifest(root: Path) -> dict:
+    path = root / "plugin.json"
     try:
-        return rings.item_name(Path(directory).resolve().parent.name)
-    except rings.RingError:
-        raise rings.RingError(
-            "bundle-unnamed",
-            f"{directory} gives a bundle no name to take: run "
-            "orchflows new bundle <name>.",
-        )
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"No package manifest found in {root}") from exc
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Malformed package manifest {path}: {exc}") from exc
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("name"), str):
+        raise ValueError(f"Package manifest needs a name: {path}")
+    if not isinstance(manifest.get("version"), str) or not manifest["version"]:
+        raise ValueError(f"Package manifest needs a version: {path}")
+    return {"name": _name(manifest["name"]), "version": manifest["version"]}
 
 
-def cmd_new_bundle(args) -> int:
-    """Scaffold the manifest of the ring at hand (contracts/bundle.md)."""
-
-    ring, directory = _new_ring()
-    name = rings.item_name(args.name) if args.name else _bundle_name(directory)
-    path = orchflows_scaffold.write_bundle(directory, name)
-    print(f"new bundle '{name}' in the {ring} ring")
-    print(f"wrote {path}")
-    return 0
-
-
-def cmd_new(args) -> int:
-    if args.kind == BUNDLE_KIND:
-        return cmd_new_bundle(args)
-    if not args.name:
-        print(f"error: orchflows new {args.kind} needs a name", file=sys.stderr)
-        return 1
-    kind = rings.kind_of(args.kind)
-    name = rings.item_name(args.name)
-    if name.startswith(rings.RESERVED_PREFIX):
-        raise rings.RingError(
-            "reserved-name",
-            f"'{name}' takes the reserved '{rings.RESERVED_PREFIX}' prefix, "
-            "which is the library's mechanical floor. No ring item may carry "
-            "it; choose another name.",
-        )
-    ring, directory = _new_target(kind)
-    existing = rings.locate(kind, name)
-    if any(hit["ring"] == ring for hit in existing):
-        print(f"error: {kind} '{name}' is already in the {ring} ring", file=sys.stderr)
-        return 1
-    written = orchflows_scaffold.write(directory, kind, name)
-    print(f"new {kind} '{name}' in the {ring} ring")
-    for path in written:
-        print(f"wrote {path}")
-    if ring == "project":
-        print(
-            f"trust it before it resolves: orchflows trust "
-            f"{directory.parent}"
-        )
-    for hit in existing:
-        print(f"note: {kind} '{name}' also resolves from the {hit['ring']} ring at {hit['path']}")
-    return 0
-
-
-def cmd_trust(args) -> int:
-    record = rings_trust.grant(args.bundle, once=args.once)
-    kept = "for this one use" if args.once else "until its ring content changes"
-    print(f"trusted {record['bundle']} {kept}")
-    print(f"digest {record['digest']}")
-    print(f"recorded in {record['ledger']}")
-    return 0
-
-
-def cmd_untrust(args) -> int:
-    record = rings_trust.revoke(args.bundle)
-    print(f"withdrew {record['removed']} grant(s) for {record['bundle']}")
-    print(f"recorded in {record['ledger']}")
-    return 0
-
-
-def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="orchflows.py", description=__doc__, allow_abbrev=False,
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True)
-    listed = subparsers.add_parser("list", help="every resolvable item", allow_abbrev=False)
-    listed.add_argument("--kind", choices=rings.KINDS)
-    listed.set_defaults(handler=cmd_list)
-    synced = subparsers.add_parser("sync", help="make the home ring whole", allow_abbrev=False)
-    synced.add_argument(
-        "--project", action="store_true",
-        help="render this project ring's committed adapters instead",
-    )
-    synced.set_defaults(handler=cmd_sync)
-    added = subparsers.add_parser("add", help="pin one external bundle", allow_abbrev=False)
-    added.add_argument("reference", metavar="<git-url>@<pin>")
-    added.set_defaults(handler=cmd_add)
-    created = subparsers.add_parser(
-        "new", help="scaffold one item, or this ring's bundle manifest",
-        allow_abbrev=False,
-    )
-    created.add_argument("kind", choices=(*rings.KINDS, BUNDLE_KIND))
-    created.add_argument("name", nargs="?", help="required for every kind but bundle")
-    created.set_defaults(handler=cmd_new)
-    checked = subparsers.add_parser(
-        "check", help="grade a ring's items", allow_abbrev=False,
-    )
-    checked.add_argument(
-        "ring", nargs="?", metavar="<ring-dir>",
-        help="the ring to grade; default this project's, else the home ring",
-    )
-    checked.set_defaults(handler=cmd_check)
-    environment = subparsers.add_parser(
-        "env", help="the interpreter an item's scripts run through", allow_abbrev=False,
-    )
-    environment.add_argument("kind", choices=rings.KINDS)
-    environment.add_argument("name")
-    environment.set_defaults(handler=cmd_env)
-    trusted = subparsers.add_parser("trust", help="allow one project bundle", allow_abbrev=False)
-    trusted.add_argument("--once", action="store_true", help="allow one use, record nothing standing")
-    trusted.add_argument("bundle")
-    trusted.set_defaults(handler=cmd_trust)
-    untrusted = subparsers.add_parser("untrust", help="withdraw a grant", allow_abbrev=False)
-    untrusted.add_argument("bundle")
-    untrusted.set_defaults(handler=cmd_untrust)
-    resumed = subparsers.add_parser(
-        "resume", help="this project's open workflow frames", allow_abbrev=False,
-    )
-    resumed.add_argument(
-        "--now", metavar="<absolute-iso>",
-        help="read ages against this instant instead of the clock",
-    )
-    resumed.set_defaults(handler=cmd_resume)
-    return parser
-
-
-def main(argv=None) -> int:
-    console.harden()
-    args = _parser().parse_args(argv)
+def _is_link(path: Path) -> bool:
     try:
-        return args.handler(args)
-    except rings.RingError as error:
-        print(f"error: {error.detail}", file=sys.stderr)
-        return 1
-    except (OSError, ValueError) as error:
-        print(f"error: {error}", file=sys.stderr)
-        return 1
+        return path.is_symlink() or bool(getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    except FileNotFoundError:
+        return False
+
+
+def _files(root: Path, *, core: bool) -> list[Path]:
+    """Enumerate deployable bytes without following links or copying caches."""
+    paths = []
+
+    def visit(path: Path) -> None:
+        if path.name in {".git", "__pycache__"} or (core and path.name in {"tests", "example-workflows"}):
+            return
+        if _is_link(path):
+            raise ValueError(f"Package copy does not follow links: {path}")
+        if path.is_dir():
+            for child in sorted(path.iterdir()):
+                visit(child)
+        elif path.is_file():
+            paths.append(path)
+
+    for entry in ([root / entry for entry in CORE_ENTRIES] if core else sorted(root.iterdir())):
+        if entry.exists() or _is_link(entry):
+            visit(entry)
+    return sorted(paths, key=lambda path: path.relative_to(root).as_posix())
+
+
+def _validate_core(root: Path) -> dict:
+    manifest = _manifest(root)
+    if manifest["name"] != CORE_NAME:
+        raise ValueError(f"Core source must identify as {CORE_NAME}: {root}")
+    for relative in ("skills", "guidance", "docs", "scripts/orchflows.py"):
+        path = root / relative
+        if not (path.is_file() if relative.endswith(".py") else path.is_dir()):
+            raise ValueError(f"Incomplete core package; missing {relative}: {root}")
+    return manifest
+
+
+def _install(source: Path, destination: Path, *, core: bool) -> bool:
+    """Stage and swap a package, retaining the previous copy if restoration fails."""
+    stage = destination.with_name(f".{destination.name}-{uuid.uuid4().hex}")
+    previous = None
+    try:
+        for path in _files(source, core=core):
+            target = stage / path.relative_to(source)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+        if destination.exists():
+            previous = destination.with_name(f".{destination.name}-previous-{uuid.uuid4().hex}")
+            os.replace(destination, previous)
+        try:
+            os.replace(stage, destination)
+        except OSError:
+            if previous:
+                try:
+                    os.replace(previous, destination)
+                except OSError as exc:
+                    raise OSError(f"Package swap and restoration failed; previous copy retained at {previous}") from exc
+            raise
+        if previous:
+            shutil.rmtree(previous, ignore_errors=True)
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
+    return previous is not None
+
+
+def _seed_text(path: Path, contents: str) -> str:
+    if _is_link(path) or path.exists():
+        return "preserved"
+    path.write_text(contents, encoding="utf-8", newline="\n")
+    return "created"
+
+
+def _replace_text(path: Path, contents: str) -> str:
+    temporary = path.with_name(f".{path.name}-{uuid.uuid4().hex}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8", newline="") as stream:
+            stream.write(contents)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return "written"
+
+
+def runtime_python(home: Path) -> Path:
+    return home / ".local/runtime" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+
+def _catalog_texts(home: Path, libraries: list[dict]) -> dict[str, str]:
+    sources = {CORE_NAME: f"./.local/packages/{CORE_NAME}"}
+    names = [entry["name"] for entry in libraries]
+    for entry in libraries:
+        if entry["name"] != CORE_NAME and names.count(entry["name"]) == 1:
+            sources[entry["name"]] = "./" + Path(entry["package_root"]).relative_to(home).as_posix()
+    catalogs = {
+        ".agents/plugins/marketplace.json": {
+            "name": "orchflows-home",
+            "interface": {"displayName": "Orchflows Home"},
+            "plugins": [{"name": name, "source": {"source": "local", "path": source},
+                         "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+                         "category": "Productivity"} for name, source in sources.items()],
+        },
+        ".claude-plugin/marketplace.json": {
+            "name": "orchflows-home", "owner": {"name": "orchflows-home"},
+            "plugins": [{"name": name, "source": source} for name, source in sources.items()],
+        },
+    }
+    return {relative: json.dumps(catalog, indent=2) + "\n" for relative, catalog in catalogs.items()}
+
+
+def _check_guidance_migration(home: Path) -> None:
+    """One-time check for the six core resources removed by the guidance migration."""
+    core = home / ".local/packages" / CORE_NAME
+    if not (core / "standards").is_dir():
+        return
+    removed = re.compile(r"(?<![\w.-])(?P<prefix>(?:[\w./\\:$<>{}~-]*[/\\:])?)standards/(?P<name>code/api|code|data-analysis|research|visual-design|writing)\.md\b")
+    findings = []
+    libraries, _ = _libraries(home)
+    roots = {Path(library["package_root"]) for library in libraries}
+    directory = home / "libraries"
+    for path in sorted(directory.iterdir()) if directory.is_dir() else []:
+        if not path.name.startswith(".") and path.is_dir() and not (path / "plugin.json").is_file() and any(
+            (path / relative).is_file() for relative in (".claude-plugin/plugin.json", ".codex-plugin/plugin.json")
+        ):
+            roots.add(_contained(home, path))
+            findings.append(f"{path / 'plugin.json'}: missing; add the library's name and version in this root manifest")
+    for root in sorted(roots):
+        for directory, children, files in os.walk(root):
+            children[:] = sorted(name for name in children
+                                  if not name.startswith(".") and name not in {"trials", "outputs", "artifacts", "logs", "tests", "scripts", "__pycache__"}
+                                  and (Path(directory) != root or name in {"skills", "references", "standards", "guidance", "docs"}))
+            for name in sorted(files):
+                if not name.endswith(".md"):
+                    continue
+                path = Path(directory) / name
+                for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                    for match in removed.finditer(line):
+                        prefix = match["prefix"].replace("\\", "/")
+                        explicit_core = prefix == f"{CORE_NAME}:" or f"{CORE_NAME}/" in prefix or bool(
+                            re.search(r"\bresolve\s+orchflows-light\b", line[:match.start()]))
+                        if ":" in prefix and not explicit_core:
+                            continue  # A different package or an external URL owns this reference.
+                        if not explicit_core and any(
+                            candidate.resolve().is_relative_to(root) and candidate.is_file()
+                            for candidate in (path.parent / match[0], root / match[0])
+                        ):
+                            continue  # Existing library-local standards keep their own meaning.
+                        old = f"standards/{match['name']}.md"
+                        new = f"guidance/{match['name'].replace('/', '.')}.md"
+                        findings.append(f"{path}:{number}: {old} -> {new}")
+    if findings:
+        raise ValueError("Guidance migration requires updating libraries before setup; home preserved:\n" + "\n".join(findings))
+
+
+def _install_runtime(home: Path) -> tuple[str, list[str]]:
+    runtime = home / ".local/runtime"
+    if not runtime.exists():
+        venv.EnvBuilder(with_pip=False).create(runtime)
+        return "created", []
+    if (runtime / "pyvenv.cfg").is_file() and runtime_python(home).is_file():
+        return "preserved", []
+    return "unavailable", [f"Runtime is missing or incomplete; existing contents preserved: {runtime}"]
+
+
+def _example_plan(home: Path, source: Path, example: str) -> str:
+    _name(example, "example")
+    destination, example_source = home / "libraries" / example, source / "example-workflows" / example
+    if _is_link(destination):
+        raise ValueError(f"Setup does not write through links: {destination}")
+    if destination.exists():
+        return "preserved"
+    if not example_source.is_dir():
+        return "unavailable"
+    if _manifest(example_source)["name"] != example:
+        raise ValueError(f"Example identity differs from its requested name: {example_source}")
+    return "installed"
+
+
+def _init_git(home: Path) -> tuple[str, list[str]]:
+    if (home / ".git").exists():
+        return "preserved", []
+    git = shutil.which("git")
+    if not git:
+        return "unavailable", []
+    result = subprocess.run([git, "-C", str(home), "init", "--quiet"], capture_output=True, text=True, check=False)
+    if result.returncode:
+        return "unavailable", [f"Git initialization failed: {result.stderr.strip()}"]
+    return "initialized", []
+
+
+def setup(home: Path, source: Path, example: str | None = None, *,
+          concurrency: int = 15, skip_host_config: bool = False) -> dict:
+    home, source = home.resolve(), source.resolve()
+    _validate_core(source)
+    for relative in ("libraries", ".local", ".local/packages", f".local/packages/{CORE_NAME}", ".local/runtime",
+                     ".agents", ".agents/plugins", ".claude-plugin", ".git"):
+        if _is_link(home / relative):
+            raise ValueError(f"Setup does not write through links: {home / relative}")
+    if example is not None:
+        _example_plan(home, source, example)
+    host_plans = [] if skip_host_config else host_config.prepare_host_configs(concurrency)
+    core_path = home / ".local/packages" / CORE_NAME
+    core_path.parent.mkdir(parents=True, exist_ok=True)
+    lock = core_path.parent / ".setup.lock"
+    try:
+        lock.open("x").close()
+    except FileExistsError as exc:
+        raise ValueError(f"Setup lock exists: {lock}; check for an active installer before removing it") from exc
+    try:
+        manifest = _validate_core(source)
+        _check_guidance_migration(home)
+        plan = _example_plan(home, source, example) if example is not None else None
+        for relative in ("libraries", ".agents/plugins", ".claude-plugin"):
+            (home / relative).mkdir(parents=True, exist_ok=True)
+        status = "reused"
+        if source != core_path:
+            status = "updated" if _install(source, core_path, core=True) else "installed"
+        core = {"package_root": str(core_path), **manifest, "status": status}
+        files = {"README.md": _seed_text(home / "README.md", HOME_README),
+                 ".gitignore": _seed_text(home / ".gitignore", HOME_GITIGNORE)}
+        runtime, issues = _install_runtime(home)
+        example_info = None
+        if example is not None:
+            if plan == "installed":
+                _install(source / "example-workflows" / example, home / "libraries" / example, core=False)
+            elif plan == "unavailable":
+                issues.append(f"Example {example} is absent from this core source; supply a checkout containing it")
+            example_info = {"name": example, "status": plan, "package_root": str(home / "libraries" / example)}
+        libraries, library_issues = _libraries(home)
+        issues.extend(library_issues)
+        for relative, text in _catalog_texts(home, libraries).items():
+            files[relative] = _replace_text(home / relative, text)
+        git, git_issues = _init_git(home)
+        issues.extend(git_issues)
+        host_configs, host_issues = host_config.apply_host_configs(host_plans)
+        issues.extend(host_issues)
+        return {"status": "partial" if issues else "ready", "home": str(home), "files": files,
+                "runtime_python": str(runtime_python(home)), "core": core, "runtime": runtime, "example": example_info,
+                "git": git, "host_configs": host_configs,
+                "host_config_status": "skipped" if skip_host_config else "partial" if host_issues else "configured",
+                "issues": issues}
+    finally:
+        lock.unlink()
+
+
+def _libraries(home: Path) -> tuple[list[dict], list[str]]:
+    entries, issues = [], []
+    directory = home / "libraries"
+    if not directory.is_dir():
+        return entries, [f"Missing libraries directory: {directory}"]
+    for path in sorted(directory.iterdir()):
+        if path.name.startswith(".") or not path.is_dir():
+            continue
+        try:
+            root = _contained(home, path)
+            manifest = _manifest(root)
+            if not (root / "skills").is_dir():
+                raise ValueError(f"Library lacks a skills directory: {root}")
+            entries.append({**manifest, "package_root": str(root)})
+        except (OSError, ValueError) as exc:
+            issues.append(str(exc))
+    names = [entry["name"] for entry in entries]
+    issues.extend(f"Ambiguous library name: {name}" for name in sorted(set(names)) if names.count(name) > 1 or name == CORE_NAME)
+    return entries, issues
+
+
+def resolve(home: Path, library: str, skill: str | None = None, resource: str | None = None) -> dict:
+    home = home.resolve()
+    _name(library)
+    entries, issues = _libraries(home)
+    matches = [entry for entry in entries if entry["name"] == library]
+    if library == CORE_NAME:
+        root = home / ".local/packages" / CORE_NAME
+        matches.append({**_validate_core(root), "package_root": str(root)})
+    if len(matches) > 1:
+        raise ValueError(f"Ambiguous library name: {library}")
+    if not matches:
+        detail = "; ".join(issues)
+        raise ValueError(f"Library {library} is not installed" + (f": {detail}" if detail else ""))
+    result = dict(matches[0])
+    root = Path(result["package_root"])
+    if skill is not None:
+        _name(skill, "skill")
+        path = _contained(root, root / "skills" / skill / "SKILL.md")
+        if not path.is_file():
+            raise ValueError(f"Skill {library}:{skill} is not installed")
+        result["skill_path"] = str(path)
+    if resource is not None:
+        windows = PureWindowsPath(resource)
+        parts = PurePosixPath(resource.replace("\\", "/")).parts
+        if not resource or windows.drive or windows.root or not parts or ".." in parts or any(":" in part for part in parts):
+            raise ValueError(f"Resource must be a safe relative package path: {resource!r}")
+        path = _contained(root, root.joinpath(*parts))
+        if not path.exists():
+            raise ValueError(f"Resource does not exist: {path}")
+        result["resource_path"] = str(path)
+    result["runtime_python"] = str(runtime_python(home))
+    return result
+
+
+def doctor(home: Path) -> dict:
+    home = home.resolve()
+    issues, checks = [], {}
+    core = home / ".local/packages" / CORE_NAME
+    try:
+        manifest = _validate_core(core)
+        checks["core"] = {"package_root": str(core), **manifest}
+    except (OSError, ValueError) as exc:
+        checks["core"] = "unavailable"
+        issues.append(str(exc))
+    runtime, python = home / ".local/runtime", runtime_python(home)
+    checks["runtime"] = "ok" if (runtime / "pyvenv.cfg").is_file() and python.is_file() else "unavailable"
+    if checks["runtime"] == "unavailable":
+        issues.append(f"Runtime is missing or incomplete: {runtime}")
+    entries, library_issues = _libraries(home)
+    checks["libraries"] = entries
+    issues.extend(library_issues)
+    issues.extend(f"Missing home entry: {relative}" for relative in ("README.md", ".gitignore") if not (home / relative).exists())
+    checks["catalogs"] = {}
+    for relative, text in _catalog_texts(home, entries).items():
+        path = home / relative
+        stale = not path.is_file() or path.read_text(encoding="utf-8") != text
+        checks["catalogs"][relative] = "stale" if stale else "ok"
+        if stale:
+            issues.append(f"Catalog {relative} does not match the installed libraries; rerun setup")
+    return {"status": "incomplete" if issues else "ready", "home": str(home), "checks": checks,
+            "runtime_python": str(python) if checks["runtime"] == "ok" else None, "issues": issues}
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    home_help = "Home directory (default: ORCHFLOWS_HOME or ~/.orchflows)"
+    setup_parser = commands.add_parser("setup", help="Install or update the managed core and initialize a portable home")
+    setup_parser.add_argument("--home", help=home_help)
+    setup_parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1])
+    setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the source's example-workflows directory")
+    host_options = setup_parser.add_mutually_exclusive_group()
+    host_options.add_argument("--concurrency", type=int, default=15, metavar="N",
+                              help="Set Codex's spawned-thread cap and Claude's shared tool/subagent cap (default: 15)")
+    host_options.add_argument("--skip-host-config", action="store_true", help="Leave both host settings untouched")
+    doctor_parser = commands.add_parser("doctor", help="Check a home without changing it")
+    doctor_parser.add_argument("--home", help=home_help)
+    resolve_parser = commands.add_parser("resolve", help="Resolve a package, skill or resource")
+    resolve_parser.add_argument("--home", help=home_help)
+    resolve_parser.add_argument("library")
+    request = resolve_parser.add_mutually_exclusive_group()
+    request.add_argument("--skill")
+    request.add_argument("--resource")
+    native_logs.add_parser(commands)
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "setup":
+            result = setup(home_path(args.home), args.source.expanduser(), args.example,
+                           concurrency=args.concurrency, skip_host_config=args.skip_host_config)
+        elif args.command == "doctor":
+            result = doctor(home_path(args.home))
+        elif args.command == "resolve":
+            result = resolve(home_path(args.home), args.library, args.skill, args.resource)
+        else:
+            result = native_logs.run(args)
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        print(json.dumps({"status": "error", "error": str(exc)}), file=sys.stderr)
+        return 2
+    print(json.dumps(result, separators=(",", ":")))
+    return 1 if args.command in {"setup", "doctor"} and result.get("issues") else 0
 
 
 if __name__ == "__main__":
-    sys.exit(console.run(main))
+    raise SystemExit(main())

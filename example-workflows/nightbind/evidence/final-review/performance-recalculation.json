@@ -1,0 +1,51 @@
+{
+  "reviewerWave9": {
+    "samples": 1322,
+    "activeSeconds": 22.0332000000005,
+    "median": 16.7,
+    "p95": 16.8,
+    "p99": 16.978999999999996,
+    "max": 18.1,
+    "stalls50": 0,
+    "maxHostiles": 188,
+    "maxCalls": 39,
+    "maxTriangles": 51994
+  },
+  "callerWave9": {
+    "samples": 1321,
+    "activeSeconds": 22.016700000000476,
+    "median": 16.7,
+    "p95": 16.9,
+    "p99": 17.379999999999995,
+    "max": 18.9,
+    "stalls50": 0,
+    "maxHostiles": 240,
+    "maxCalls": 40,
+    "maxTriangles": 74736
+  },
+  "reviewerFullSavedSummary": {
+    "activeSeconds": 267.3499000000454,
+    "max": 18.1,
+    "maxCalls": 47,
+    "maxHostiles": 188,
+    "maxTriangles": 51994,
+    "median": 16.7,
+    "p95": 16.8,
+    "p99": 17.1,
+    "samples": 16041,
+    "stalls50": 0
+  },
+  "reviewerBusySavedSummary": {
+    "activeSeconds": 6.9336,
+    "max": 18.1,
+    "maxCalls": 39,
+    "maxHostiles": 188,
+    "maxTriangles": 51994,
+    "median": 16.7,
+    "p95": 16.9,
+    "p99": 17.085000000000004,
+    "samples": 416,
+    "stalls50": 0
+  },
+  "method": "Recomputed from complete parsed raw wave-nine slices, linear interpolation quantiles. Full/busy summaries were separately derived read-only from the browser DOM at export and are not independently recomputed here."
+}

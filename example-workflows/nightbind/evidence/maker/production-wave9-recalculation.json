@@ -1,0 +1,105 @@
+{
+  "build": "release-c09f13cac8e9",
+  "source": "evidence\\caller\\dusk-run\\attempt2-wave9-frames.json",
+  "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "viewport": {
+    "dpr": 1,
+    "height": 720,
+    "width": 1280
+  },
+  "load": {
+    "readyAtMs": 145.5,
+    "assetLoadDurationMs": 91,
+    "meaning": "Asset/portrait readiness in application clock, excludes first-frame shader compilation; browser-observed title boot also required."
+  },
+  "frameColumns": [
+    "run",
+    "time",
+    "wave",
+    "hostiles",
+    "rawFrameMs",
+    "calls",
+    "triangles"
+  ],
+  "runs": {
+    "2": {
+      "allLive": {
+        "samples": 1321,
+        "rawWallSeconds": 22.017,
+        "simulatedInterval": [
+          176,
+          197.983
+        ],
+        "medianMs": 16.7,
+        "p95Ms": 16.9,
+        "p99Ms": 17.38,
+        "worstMs": 18.9,
+        "over50ms": 0,
+        "over100ms": 0,
+        "over200ms": 0,
+        "hostilesMax": 240,
+        "callsMax": 40,
+        "trianglesMax": 74736
+      },
+      "byWave": {
+        "9": {
+          "samples": 1321,
+          "rawWallSeconds": 22.017,
+          "simulatedInterval": [
+            176,
+            197.983
+          ],
+          "medianMs": 16.7,
+          "p95Ms": 16.9,
+          "p99Ms": 17.38,
+          "worstMs": 18.9,
+          "over50ms": 0,
+          "over100ms": 0,
+          "over200ms": 0,
+          "hostilesMax": 240,
+          "callsMax": 40,
+          "trianglesMax": 74736
+        }
+      },
+      "firstPressure": {
+        "samples": 0
+      },
+      "latePressure": {
+        "samples": 840,
+        "rawWallSeconds": 14.0,
+        "simulatedInterval": [
+          184,
+          197.983
+        ],
+        "medianMs": 16.7,
+        "p95Ms": 16.9,
+        "p99Ms": 17.461,
+        "worstMs": 18.9,
+        "over50ms": 0,
+        "over100ms": 0,
+        "over200ms": 0,
+        "hostilesMax": 240,
+        "callsMax": 40,
+        "trianglesMax": 74736
+      },
+      "busyAtLeast60": {
+        "samples": 1321,
+        "rawWallSeconds": 22.017,
+        "simulatedInterval": [
+          176,
+          197.983
+        ],
+        "medianMs": 16.7,
+        "p95Ms": 16.9,
+        "p99Ms": 17.38,
+        "worstMs": 18.9,
+        "over50ms": 0,
+        "over100ms": 0,
+        "over200ms": 0,
+        "hostilesMax": 240,
+        "callsMax": 40,
+        "trianglesMax": 74736
+      }
+    }
+  }
+}

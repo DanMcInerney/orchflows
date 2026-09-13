@@ -1,0 +1,86 @@
+[
+  {
+    "assets": {
+      "loaded": 22
+    },
+    "audio": {
+      "available": true,
+      "cuesPlayed": 1219,
+      "error": null,
+      "muted": false,
+      "state": "running",
+      "voices": 0,
+      "volume": 0.49
+    },
+    "hp": 120,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "phase": "playing",
+    "resources": {
+      "geometries": 58,
+      "textures": 1
+    },
+    "run": 4,
+    "squad": [],
+    "target": null,
+    "time": 0.3
+  },
+  {
+    "assets": {
+      "loaded": 22
+    },
+    "audio": {
+      "available": true,
+      "cuesPlayed": 1219,
+      "error": null,
+      "muted": false,
+      "state": "running",
+      "voices": 0,
+      "volume": 0.49
+    },
+    "hp": 120,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "phase": "playing",
+    "resources": {
+      "geometries": 58,
+      "textures": 1
+    },
+    "run": 5,
+    "squad": [],
+    "target": null,
+    "time": 0.3
+  },
+  {
+    "assets": {
+      "loaded": 22
+    },
+    "audio": {
+      "available": true,
+      "cuesPlayed": 1219,
+      "error": null,
+      "muted": false,
+      "state": "running",
+      "voices": 0,
+      "volume": 0.49
+    },
+    "hp": 120,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "phase": "playing",
+    "resources": {
+      "geometries": 58,
+      "textures": 1
+    },
+    "run": 6,
+    "squad": [],
+    "target": null,
+    "time": 0.3
+  }
+]

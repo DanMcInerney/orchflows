@@ -1,9 +1,0 @@
-{
-  "aggregation": "all-required-pass",
-  "required": [
-    "pc-1",
-    "pc-2",
-    "pc-3",
-    "pc-4"
-  ]
-}

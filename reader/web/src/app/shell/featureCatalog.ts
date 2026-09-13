@@ -1,1 +1,0 @@
-export { featureCatalog } from "../catalog";

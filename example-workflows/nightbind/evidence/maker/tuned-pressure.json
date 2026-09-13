@@ -1,0 +1,1616 @@
+{
+  "late6": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "late-pressure",
+    "tick": 360,
+    "time": 182,
+    "wave": 9,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 96.68,
+    "charge": 1,
+    "player": {
+      "x": 9.93004836008387,
+      "z": 7.944038688067095
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 1,
+        "type": "volt"
+      },
+      {
+        "id": 2,
+        "type": "mire"
+      },
+      {
+        "id": 3,
+        "type": "moth"
+      },
+      {
+        "id": 4,
+        "type": "pyre"
+      },
+      {
+        "id": 5,
+        "type": "fang"
+      },
+      {
+        "id": 6,
+        "type": "moth"
+      }
+    ],
+    "hostiles": 128,
+    "nearby": 7,
+    "enemies": [
+      {
+        "id": 8,
+        "type": "thorn",
+        "x": 10.02,
+        "z": 2.13,
+        "hp": 51.4,
+        "wind": 0
+      },
+      {
+        "id": 9,
+        "type": "volt",
+        "x": 2.87,
+        "z": 4.05,
+        "hp": 30.1,
+        "wind": 0
+      },
+      {
+        "id": 10,
+        "type": "mire",
+        "x": 14.75,
+        "z": 2.86,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 14,
+        "type": "thorn",
+        "x": -2.56,
+        "z": 6.73,
+        "hp": 71.4,
+        "wind": 0
+      },
+      {
+        "id": 18,
+        "type": "moth",
+        "x": 2.48,
+        "z": 2.93,
+        "hp": 35.7,
+        "wind": 0
+      },
+      {
+        "id": 21,
+        "type": "volt",
+        "x": 3.05,
+        "z": 0.06,
+        "hp": 30.1,
+        "wind": 0
+      },
+      {
+        "id": 22,
+        "type": "mire",
+        "x": 7.53,
+        "z": -1.76,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 23,
+        "type": "fang",
+        "x": 8.33,
+        "z": 5.52,
+        "hp": 18.1,
+        "wind": -5.065392549852277e-16
+      }
+    ],
+    "available": [
+      "storm",
+      "dusk"
+    ],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 8,
+        "id": 151
+      },
+      {
+        "type": "thorn",
+        "count": 10,
+        "id": 8
+      },
+      {
+        "type": "volt",
+        "count": 7,
+        "id": 33
+      },
+      {
+        "type": "mire",
+        "count": 10,
+        "id": 10
+      },
+      {
+        "type": "fang",
+        "count": 6,
+        "id": 23
+      },
+      {
+        "type": "moth",
+        "count": 11,
+        "id": 36
+      }
+    ],
+    "boss": null,
+    "kills": 41,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 38.85999999999999,
+      "damageBy": {
+        "keeper": 104,
+        "volt": 192.95999999999998,
+        "mire": 35.08,
+        "moth": 42,
+        "pyre": 1213.6799999999998,
+        "fang": 150.44
+      }
+    },
+    "events": [
+      {
+        "tick": 58,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 168,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 204,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 240,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 276,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 312,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 348,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "late12": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "late-pressure",
+    "tick": 720,
+    "time": 188,
+    "wave": 9,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 111.96,
+    "charge": 1,
+    "player": {
+      "x": -9.930048360083854,
+      "z": -7.944038688067082
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 1,
+        "type": "volt"
+      },
+      {
+        "id": 2,
+        "type": "mire"
+      },
+      {
+        "id": 3,
+        "type": "moth"
+      },
+      {
+        "id": 4,
+        "type": "pyre"
+      },
+      {
+        "id": 5,
+        "type": "fang"
+      },
+      {
+        "id": 6,
+        "type": "moth"
+      }
+    ],
+    "hostiles": 155,
+    "nearby": 10,
+    "enemies": [
+      {
+        "id": 10,
+        "type": "mire",
+        "x": 6.73,
+        "z": -0.03,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 44,
+        "type": "thorn",
+        "x": -4.45,
+        "z": 0.96,
+        "hp": 67.4,
+        "wind": 0
+      },
+      {
+        "id": 48,
+        "type": "moth",
+        "x": 1.68,
+        "z": -2.88,
+        "hp": 35.7,
+        "wind": 0
+      },
+      {
+        "id": 58,
+        "type": "mire",
+        "x": -5.47,
+        "z": 1.01,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 72,
+        "type": "moth",
+        "x": 1.51,
+        "z": -3.02,
+        "hp": 35.7,
+        "wind": 0
+      },
+      {
+        "id": 73,
+        "type": "mire",
+        "x": -6.64,
+        "z": 1.68,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 75,
+        "type": "moth",
+        "x": -3.1,
+        "z": 1.76,
+        "hp": 35.7,
+        "wind": 0
+      },
+      {
+        "id": 77,
+        "type": "mire",
+        "x": 7.38,
+        "z": -0.89,
+        "hp": 43.2,
+        "wind": 0
+      }
+    ],
+    "available": [
+      "storm",
+      "dusk"
+    ],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 6,
+        "id": 99
+      },
+      {
+        "type": "thorn",
+        "count": 12,
+        "id": 242
+      },
+      {
+        "type": "volt",
+        "count": 10,
+        "id": 98
+      },
+      {
+        "type": "mire",
+        "count": 10,
+        "id": 117
+      },
+      {
+        "type": "fang",
+        "count": 8,
+        "id": 161
+      },
+      {
+        "type": "moth",
+        "count": 18,
+        "id": 148
+      }
+    ],
+    "boss": null,
+    "kills": 122,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 44.07999999999999,
+      "damageBy": {
+        "keeper": 192.32,
+        "volt": 368.71999999999997,
+        "mire": 130.51999999999998,
+        "moth": 65.52,
+        "pyre": 4372.039999999995,
+        "fang": 273.32
+      }
+    },
+    "events": [
+      {
+        "tick": 58,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 168,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 204,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 240,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 276,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 312,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 348,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 384,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "late18": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "late-pressure",
+    "tick": 1080,
+    "time": 194,
+    "wave": 9,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 115.8,
+    "charge": 1,
+    "player": {
+      "x": 9.93004836008387,
+      "z": 7.944038688067095
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 1,
+        "type": "volt"
+      },
+      {
+        "id": 2,
+        "type": "mire"
+      },
+      {
+        "id": 3,
+        "type": "moth"
+      },
+      {
+        "id": 4,
+        "type": "pyre"
+      },
+      {
+        "id": 5,
+        "type": "fang"
+      },
+      {
+        "id": 6,
+        "type": "moth"
+      }
+    ],
+    "hostiles": 174,
+    "nearby": 9,
+    "enemies": [
+      {
+        "id": 58,
+        "type": "mire",
+        "x": -0.54,
+        "z": 4.24,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 73,
+        "type": "mire",
+        "x": -1.19,
+        "z": 4.34,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 115,
+        "type": "mire",
+        "x": -3.41,
+        "z": 3.58,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 117,
+        "type": "mire",
+        "x": -3.93,
+        "z": 3.02,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 127,
+        "type": "moth",
+        "x": 0.95,
+        "z": 4.07,
+        "hp": 35.7,
+        "wind": 0
+      },
+      {
+        "id": 131,
+        "type": "mire",
+        "x": -2.84,
+        "z": 3.68,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 135,
+        "type": "moth",
+        "x": 1.64,
+        "z": 4.5,
+        "hp": 35.7,
+        "wind": 0
+      },
+      {
+        "id": 136,
+        "type": "thorn",
+        "x": 2.31,
+        "z": -2.46,
+        "hp": 13.4,
+        "wind": 0
+      }
+    ],
+    "available": [
+      "storm",
+      "dusk"
+    ],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 10,
+        "id": 216
+      },
+      {
+        "type": "thorn",
+        "count": 17,
+        "id": 352
+      },
+      {
+        "type": "volt",
+        "count": 8,
+        "id": 234
+      },
+      {
+        "type": "mire",
+        "count": 18,
+        "id": 282
+      },
+      {
+        "type": "fang",
+        "count": 11,
+        "id": 278
+      },
+      {
+        "type": "moth",
+        "count": 15,
+        "id": 254
+      }
+    ],
+    "boss": null,
+    "kills": 211,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 67.27999999999999,
+      "damageBy": {
+        "keeper": 291.2,
+        "volt": 555.5999999999999,
+        "mire": 229.51999999999998,
+        "moth": 104.39999999999999,
+        "pyre": 8026.799999999991,
+        "fang": 418.76
+      }
+    },
+    "events": [
+      {
+        "tick": 58,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 168,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 204,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 240,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 276,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 312,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 348,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 384,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 727,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 763,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 799,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 931,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "late22": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "late-pressure",
+    "tick": 1320,
+    "time": 198,
+    "wave": 10,
+    "phase": "playing",
+    "paused": true,
+    "mode": "manual",
+    "hp": 108.64,
+    "charge": 1,
+    "player": {
+      "x": -9.930048360083854,
+      "z": -7.944038688067082
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 1,
+        "type": "volt"
+      },
+      {
+        "id": 2,
+        "type": "mire"
+      },
+      {
+        "id": 3,
+        "type": "moth"
+      },
+      {
+        "id": 4,
+        "type": "pyre"
+      },
+      {
+        "id": 5,
+        "type": "fang"
+      },
+      {
+        "id": 6,
+        "type": "moth"
+      }
+    ],
+    "hostiles": 144,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 115,
+        "type": "mire",
+        "x": -4.48,
+        "z": 3.11,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 117,
+        "type": "mire",
+        "x": -4.83,
+        "z": 2.77,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 139,
+        "type": "mire",
+        "x": -2.14,
+        "z": 5.04,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 194,
+        "type": "mire",
+        "x": -4.63,
+        "z": 3.29,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 200,
+        "type": "thorn",
+        "x": 3.54,
+        "z": -0.11,
+        "hp": 13.4,
+        "wind": 0
+      },
+      {
+        "id": 203,
+        "type": "mire",
+        "x": -4.05,
+        "z": 4.02,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 208,
+        "type": "mire",
+        "x": 1.27,
+        "z": -6.66,
+        "hp": 42.2,
+        "wind": 0
+      },
+      {
+        "id": 209,
+        "type": "thorn",
+        "x": -2.15,
+        "z": 2.55,
+        "hp": 5.4,
+        "wind": 0
+      }
+    ],
+    "available": [
+      "storm",
+      "dusk",
+      "solar"
+    ],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 6,
+        "id": 397
+      },
+      {
+        "type": "thorn",
+        "count": 10,
+        "id": 379
+      },
+      {
+        "type": "volt",
+        "count": 5,
+        "id": 446
+      },
+      {
+        "type": "mire",
+        "count": 11,
+        "id": 365
+      },
+      {
+        "type": "fang",
+        "count": 4,
+        "id": 406
+      },
+      {
+        "type": "moth",
+        "count": 2,
+        "id": 462
+      }
+    ],
+    "boss": null,
+    "kills": 313,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 97.43999999999998,
+      "damageBy": {
+        "keeper": 347.52,
+        "volt": 649.04,
+        "mire": 303.4,
+        "moth": 129.27999999999997,
+        "pyre": 12502.399999999976,
+        "fang": 480.2
+      }
+    },
+    "events": [
+      {
+        "tick": 240,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 276,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 312,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 348,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 384,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 727,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 763,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 799,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 931,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1082,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1118,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 1154,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1212,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1289,
+        "type": "damage",
+        "text": "Lost 7 vitality."
+      },
+      {
+        "tick": 1320,
+        "type": "wave",
+        "text": "Wave 10: The great ascension"
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "repeatedGate": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "late-pressure",
+    "tick": 1320,
+    "time": 198,
+    "wave": 10,
+    "phase": "playing",
+    "paused": true,
+    "mode": "manual",
+    "hp": 108.64,
+    "charge": 1,
+    "player": {
+      "x": -9.930048360083854,
+      "z": -7.944038688067082
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 1,
+        "type": "volt"
+      },
+      {
+        "id": 2,
+        "type": "mire"
+      },
+      {
+        "id": 3,
+        "type": "moth"
+      },
+      {
+        "id": 4,
+        "type": "pyre"
+      },
+      {
+        "id": 5,
+        "type": "fang"
+      },
+      {
+        "id": 6,
+        "type": "moth"
+      }
+    ],
+    "hostiles": 144,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 115,
+        "type": "mire",
+        "x": -4.48,
+        "z": 3.11,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 117,
+        "type": "mire",
+        "x": -4.83,
+        "z": 2.77,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 139,
+        "type": "mire",
+        "x": -2.14,
+        "z": 5.04,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 194,
+        "type": "mire",
+        "x": -4.63,
+        "z": 3.29,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 200,
+        "type": "thorn",
+        "x": 3.54,
+        "z": -0.11,
+        "hp": 13.4,
+        "wind": 0
+      },
+      {
+        "id": 203,
+        "type": "mire",
+        "x": -4.05,
+        "z": 4.02,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 208,
+        "type": "mire",
+        "x": 1.27,
+        "z": -6.66,
+        "hp": 42.2,
+        "wind": 0
+      },
+      {
+        "id": 209,
+        "type": "thorn",
+        "x": -2.15,
+        "z": 2.55,
+        "hp": 5.4,
+        "wind": 0
+      }
+    ],
+    "available": [
+      "storm",
+      "dusk",
+      "solar"
+    ],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 6,
+        "id": 397
+      },
+      {
+        "type": "thorn",
+        "count": 10,
+        "id": 379
+      },
+      {
+        "type": "volt",
+        "count": 5,
+        "id": 446
+      },
+      {
+        "type": "mire",
+        "count": 11,
+        "id": 365
+      },
+      {
+        "type": "fang",
+        "count": 4,
+        "id": 406
+      },
+      {
+        "type": "moth",
+        "count": 2,
+        "id": 462
+      }
+    ],
+    "boss": null,
+    "kills": 313,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 97.43999999999998,
+      "damageBy": {
+        "keeper": 347.52,
+        "volt": 649.04,
+        "mire": 303.4,
+        "moth": 129.27999999999997,
+        "pyre": 12502.399999999976,
+        "fang": 480.2
+      }
+    },
+    "events": [
+      {
+        "tick": 240,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 276,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 312,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 348,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 384,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 727,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 763,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 799,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 931,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1082,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1118,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 1154,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1212,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1289,
+        "type": "damage",
+        "text": "Lost 7 vitality."
+      },
+      {
+        "tick": 1320,
+        "type": "wave",
+        "text": "Wave 10: The great ascension"
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "noAscend": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "late-pressure",
+    "tick": 1680,
+    "time": 204,
+    "wave": 10,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 109.76,
+    "charge": 1,
+    "player": {
+      "x": 9.93004836008387,
+      "z": 7.944038688067095
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 1,
+        "type": "volt"
+      },
+      {
+        "id": 2,
+        "type": "mire"
+      },
+      {
+        "id": 3,
+        "type": "moth"
+      },
+      {
+        "id": 4,
+        "type": "pyre"
+      },
+      {
+        "id": 5,
+        "type": "fang"
+      },
+      {
+        "id": 6,
+        "type": "moth"
+      }
+    ],
+    "hostiles": 106,
+    "nearby": 3,
+    "enemies": [
+      {
+        "id": 208,
+        "type": "mire",
+        "x": 4.54,
+        "z": -1.81,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 235,
+        "type": "mire",
+        "x": 6.04,
+        "z": -1.26,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 252,
+        "type": "mire",
+        "x": 6.25,
+        "z": -1.34,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 308,
+        "type": "mire",
+        "x": 4.76,
+        "z": -1.76,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 320,
+        "type": "thorn",
+        "x": 2.18,
+        "z": 5.91,
+        "hp": 21.4,
+        "wind": 0
+      },
+      {
+        "id": 324,
+        "type": "mire",
+        "x": 8.18,
+        "z": -1.87,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 334,
+        "type": "mire",
+        "x": 3.77,
+        "z": -3.21,
+        "hp": 43.2,
+        "wind": 0
+      },
+      {
+        "id": 339,
+        "type": "thorn",
+        "x": 1.8,
+        "z": -2.33,
+        "hp": 71.4,
+        "wind": 0
+      }
+    ],
+    "available": [
+      "storm",
+      "dusk",
+      "solar"
+    ],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 6,
+        "id": 499
+      },
+      {
+        "type": "thorn",
+        "count": 9,
+        "id": 488
+      },
+      {
+        "type": "volt",
+        "count": 6,
+        "id": 411
+      },
+      {
+        "type": "mire",
+        "count": 19,
+        "id": 478
+      },
+      {
+        "type": "fang",
+        "count": 5,
+        "id": 443
+      },
+      {
+        "type": "moth",
+        "count": 11,
+        "id": 459
+      }
+    ],
+    "boss": null,
+    "kills": 399,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 118.31999999999998,
+      "damageBy": {
+        "keeper": 438.71999999999997,
+        "volt": 818.2400000000002,
+        "mire": 454.71999999999997,
+        "moth": 157.27999999999997,
+        "pyre": 15565.31999999997,
+        "fang": 590.6999999999999
+      }
+    },
+    "events": [
+      {
+        "tick": 384,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 727,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 763,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 799,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 931,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1082,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1118,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 1154,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1212,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1289,
+        "type": "damage",
+        "text": "Lost 7 vitality."
+      },
+      {
+        "tick": 1320,
+        "type": "wave",
+        "text": "Wave 10: The great ascension"
+      },
+      {
+        "tick": 1339,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1375,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1411,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1447,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "yesAscend": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "late-pressure",
+    "tick": 1680,
+    "time": 204,
+    "wave": 10,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 120,
+    "charge": 1,
+    "player": {
+      "x": 9.93004836008387,
+      "z": 7.944038688067095
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 2,
+        "type": "mire"
+      },
+      {
+        "id": 5,
+        "type": "fang"
+      },
+      {
+        "id": 6,
+        "type": "moth"
+      },
+      {
+        "id": 464,
+        "type": "solar"
+      }
+    ],
+    "hostiles": 23,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 476,
+        "type": "mire",
+        "x": -1.49,
+        "z": -12.52,
+        "hp": 45.8,
+        "wind": 0
+      },
+      {
+        "id": 477,
+        "type": "thorn",
+        "x": 6.67,
+        "z": -11.85,
+        "hp": 75.6,
+        "wind": 0
+      },
+      {
+        "id": 482,
+        "type": "mire",
+        "x": -6.46,
+        "z": 13.31,
+        "hp": 45.8,
+        "wind": 0
+      },
+      {
+        "id": 483,
+        "type": "thorn",
+        "x": -8.91,
+        "z": 12.02,
+        "hp": 75.6,
+        "wind": 0
+      },
+      {
+        "id": 484,
+        "type": "thorn",
+        "x": -10.84,
+        "z": -9.17,
+        "hp": 75.6,
+        "wind": 0
+      },
+      {
+        "id": 485,
+        "type": "mire",
+        "x": -13.05,
+        "z": -5.78,
+        "hp": 45.8,
+        "wind": 0
+      },
+      {
+        "id": 488,
+        "type": "fang",
+        "x": -8.38,
+        "z": 9.53,
+        "hp": 47.8,
+        "wind": 0
+      },
+      {
+        "id": 490,
+        "type": "thorn",
+        "x": 12.19,
+        "z": -10.87,
+        "hp": 75.6,
+        "wind": 0
+      }
+    ],
+    "available": [
+      "dusk"
+    ],
+    "candidates": [
+      {
+        "type": "thorn",
+        "count": 1,
+        "id": 508
+      },
+      {
+        "type": "mire",
+        "count": 1,
+        "id": 512
+      }
+    ],
+    "boss": null,
+    "kills": 482,
+    "stats": {
+      "captures": 0,
+      "evolutions": [
+        {
+          "wave": 10,
+          "time": 198.0000000000175,
+          "result": "solar"
+        }
+      ],
+      "damageTaken": 118.31999999999998,
+      "damageBy": {
+        "keeper": 387.52,
+        "volt": 649.04,
+        "mire": 348.4,
+        "moth": 143.27999999999997,
+        "pyre": 12502.399999999976,
+        "fang": 513.64,
+        "solar": 6923.04
+      }
+    },
+    "events": [
+      {
+        "tick": 727,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 763,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 799,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 931,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1082,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1118,
+        "type": "damage",
+        "text": "Lost 8 vitality."
+      },
+      {
+        "tick": 1154,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1212,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1289,
+        "type": "damage",
+        "text": "Lost 7 vitality."
+      },
+      {
+        "tick": 1320,
+        "type": "wave",
+        "text": "Wave 10: The great ascension"
+      },
+      {
+        "tick": 1320,
+        "type": "evolve",
+        "text": "Solar Seraph awakens.",
+        "result": "solar"
+      },
+      {
+        "tick": 1339,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1375,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1411,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      },
+      {
+        "tick": 1447,
+        "type": "damage",
+        "text": "Lost 5 vitality."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  }
+}

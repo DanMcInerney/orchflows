@@ -1,0 +1,38 @@
+Browser tab: 1, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4191/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4191/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		16 container hud
+			17 container
+				18 text NIGHTBIND
+				39 text WAVE 03 / 12
+				40 text The mire wakes
+				21 button Field guide , ID: guide-button
+				22 button Pause, ID: pause-button
+				23 button Description: Sound and motion settings, ID: settings-button
+			24 container
+				25 text VITALITY
+				41 text 113 / 120
+				42 text 18 in the dark · 53 fallen
+			43 text Wave 3: The mire wakes
+			44 text Leave fresh ground ahead. Mire poison punishes retracing your path.
+			29 text Click ground to move · WASD / arrows · Space to bind
+			30 container
+				31 text YOUR CIRCLE
+				45 text 3 / 6
+				33 container slots
+					46 text Emberling SPLASH Thornback WARD Voltwing CHAIN · · ·
+				35 text Binding lantern
+				47 text 6s
+				37 button (disabled) Lantern is gathering light, ID: capture-button
+				38 text Choose one nearby foe · time pauses
+		48 container
+			49 text THE NIGHT CAN WAIT
+			50 heading Take a breath., Value: 2
+				51 text Take a breath.
+			52 text Your lantern, enemies and wave timer are paused.
+			53 button Return to the night, ID: resume
+			54 button Start a new run, ID: restart
+		15 text release-c09f13cac8e9
+
+The focused UI element is 53 button Return to the night, ID: resume

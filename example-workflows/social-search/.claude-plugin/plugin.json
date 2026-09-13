@@ -1,0 +1,10 @@
+{
+  "name": "social-search",
+  "version": "0.7.1",
+  "description": "Composable web, feed and community research with one final evidence reviewer.",
+  "author": {
+    "name": "Dan McInerney"
+  },
+  "license": "MIT",
+  "skills": "./skills/"
+}

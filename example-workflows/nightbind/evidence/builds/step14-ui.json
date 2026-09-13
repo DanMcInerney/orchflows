@@ -1,0 +1,187 @@
+{
+  "id": "step14-ui-df36d6bac38a",
+  "purpose": "Isolated compiled camera/capture UI check; not final asset integration or approved core. Later preview-only bell correction is absent.",
+  "directory": "evidence/stage14-build",
+  "built": [
+    {
+      "path": "asset-preview.html",
+      "sha256": "25d8228cd684ebceaa1d965ec4cef53d7c0a3f0da48cb67f6e866f4c6e2cb0c8"
+    },
+    {
+      "path": "assets/game-BADbx1Ta.js",
+      "sha256": "2a1ffa454ec9272c830937d0765cd05090d559f7f3900ed140f3855127b97f8a"
+    },
+    {
+      "path": "assets/game-CeFGRUyF.css",
+      "sha256": "01306c9035a1b8db40f68a93779fca769248b013d1660e485581118f35b6a212"
+    },
+    {
+      "path": "assets/preview-BUfjIrXo.js",
+      "sha256": "ee0bb64b0ecfe6506b59e36cfa170ed6d376be2cf20909a30f896364d6203faa"
+    },
+    {
+      "path": "assets/preview-BX4C-biL.css",
+      "sha256": "5e942a486367e1a85663edd83a42af4b0797e13293cb5d56fd66fea48331cb55"
+    },
+    {
+      "path": "assets/render-settings-CaUhR0j8.js",
+      "sha256": "fd14a2aed85a35da1b42bea5e6401efb475c81174893e5028dab7abde3cc3699"
+    },
+    {
+      "path": "index.html",
+      "sha256": "c224c53d695944f76c1358ef737c33c1ceb1908d44fc20ec81906cbf6a7f343d"
+    },
+    {
+      "path": "models/arena_floor.glb",
+      "sha256": "5d5bfd7dd8e96de7373892ec4660449b1db3091aef6a029f49dc9068ff096073"
+    },
+    {
+      "path": "models/bell_arch.glb",
+      "sha256": "8559425d826591c4b80ed6837be0b0debd200b379bb83f1a1225f0797e000764"
+    },
+    {
+      "path": "models/boss.glb",
+      "sha256": "ed73d07dd0d225587f5598ed9ff15a19065b986c3d155bd97c8a67122ef6b088"
+    },
+    {
+      "path": "models/dusk.glb",
+      "sha256": "b602542ad7f3156c8c46b0ad4afc5924ff5994b8c99df887f9417e2738a74049"
+    },
+    {
+      "path": "models/eclipse.glb",
+      "sha256": "d6dad52e859b74e5b1a5591a7e912b328213d4119dd25d4e79fa2c359a018d7e"
+    },
+    {
+      "path": "models/ember.glb",
+      "sha256": "03f372b003bfc8c8270eccbf164e64ae90792bb9921bbc246532283aa696c222"
+    },
+    {
+      "path": "models/fang.glb",
+      "sha256": "f7672b748b99807640f645bbdc5a6e94dd0470916a4dadf65ded564ecd83d5dd"
+    },
+    {
+      "path": "models/hanging_bell.glb",
+      "sha256": "6b06c5a79682cbe545c38f86307812e963fc843d86318c50137d5a4e371033d8"
+    },
+    {
+      "path": "models/keeper.glb",
+      "sha256": "a5888e79c677d3d1ba25508b22b9c4e013e6e0e9bfb57075f1b97e6543426eb3"
+    },
+    {
+      "path": "models/lantern.glb",
+      "sha256": "02a685d350ad9b4181578c5a4e3cedff6ef1c1019d53cd6f2d87be907d1436d3"
+    },
+    {
+      "path": "models/manifest.json",
+      "sha256": "75b542645bcfcfe38f4c300d9e343923a4689a5ab04054ae5c6a767c7a0dc615"
+    },
+    {
+      "path": "models/mire.glb",
+      "sha256": "9ce85062a4652513c0d17d1a5cf8f7c910c8ead59aa7da81c264c3934a2f2f8b"
+    },
+    {
+      "path": "models/moth.glb",
+      "sha256": "589ec5d91146a59bf2d716b6070f86b1208af35e7df255cad9beb6666f14773a"
+    },
+    {
+      "path": "models/portraits/boss.png",
+      "sha256": "78f61bef76e65d107fcf8671539fd5a6c3e627d73ce0218cb8a89a2e4d603909"
+    },
+    {
+      "path": "models/portraits/dusk.png",
+      "sha256": "19e4e41e751715a6d578c71155baa474c87465236f58d68a64d49ab4b8c3f585"
+    },
+    {
+      "path": "models/portraits/eclipse.png",
+      "sha256": "a3fe489d51c15d1f14b813825f0c607402c2dab4918b6ad05130453dc558d3e3"
+    },
+    {
+      "path": "models/portraits/ember.png",
+      "sha256": "074424004256e9191acc91076ef4248815a278e64e87e3433060c7f1805c77e2"
+    },
+    {
+      "path": "models/portraits/fang.png",
+      "sha256": "a65c988696a1733aedd5014cc2f9de6f67bc5db5d40c57e9f89fcb7ac7b41b55"
+    },
+    {
+      "path": "models/portraits/keeper.png",
+      "sha256": "39bb2e9a15cb38f17e2f6d5c5ea78bdd2f9a3242d59a3b5540368e5edaf5bb68"
+    },
+    {
+      "path": "models/portraits/lantern.png",
+      "sha256": "4ee9d2e86217379e245511c0240b6fa82a03ea1aed598c1c9ef5ce657170a668"
+    },
+    {
+      "path": "models/portraits/mire.png",
+      "sha256": "0409f2f703a86f04a4ca185ae2f12ec1288d71614ed9bba8df21b8d910b36223"
+    },
+    {
+      "path": "models/portraits/moth.png",
+      "sha256": "b2455ce88f1e37467b51bdfeab2e3d4a828e9706236060a7eb17a417fbd0784b"
+    },
+    {
+      "path": "models/portraits/pyre.png",
+      "sha256": "91eec1ac8816dfd59775b75d040b2f184f39d52a491870ec76c9e17ed5dce327"
+    },
+    {
+      "path": "models/portraits/solar.png",
+      "sha256": "30db3512ab0c9d403005169f76112617236fa8c1da60dcd064c91f7dd7244b84"
+    },
+    {
+      "path": "models/portraits/storm.png",
+      "sha256": "7c262d1ee1118c49ff0037576686812e8e08f9bb5fd75b92309dfb0fdc012895"
+    },
+    {
+      "path": "models/portraits/thorn.png",
+      "sha256": "246a17ede3011b4df2b3c22006ff76665e519ff28d222e58d7760dcd4c356756"
+    },
+    {
+      "path": "models/portraits/volt.png",
+      "sha256": "c0cddcc4c4abfe8ca4ce38498d7196c54e09387393fb032f83f8e650e88f2f1b"
+    },
+    {
+      "path": "models/portraits/world.png",
+      "sha256": "06b7dcc77b795a8bc99d77edcc968f2d7db1812fb5a7f05b8291999e658dc662"
+    },
+    {
+      "path": "models/pyre.glb",
+      "sha256": "d57c09646351dcf85f7ff16df5f1aa21a4ba4c822829e9998710754341ba2405"
+    },
+    {
+      "path": "models/rim_segment.glb",
+      "sha256": "b7b8b0625a95b68fc61a28b2377e6c17c6cc7d160c5d56562c9379b3f5cc37b8"
+    },
+    {
+      "path": "models/rubble_cluster.glb",
+      "sha256": "14e69e680883fb6369142bf1d5a91e2c4ff7dea031b09bd1e7d09b3a813cf210"
+    },
+    {
+      "path": "models/shrine_plinth.glb",
+      "sha256": "0308c8afef83ebcfc97ace8ae83dac86a77850643fba800b192a87d1a3690112"
+    },
+    {
+      "path": "models/solar.glb",
+      "sha256": "a5e8df069b0867aeecbccdb71089494923ee1b2800fa2e80b597618244b44a60"
+    },
+    {
+      "path": "models/storm.glb",
+      "sha256": "401c8a01b976058aa9f5e9988b1479d9b057273734a6f072a6958f26b3984e26"
+    },
+    {
+      "path": "models/thorn.glb",
+      "sha256": "46cc7037ff6df2e964ee2c091211deca61c100e142ba0cf988f9912350e82847"
+    },
+    {
+      "path": "models/volt.glb",
+      "sha256": "cff4dd5489af46724db36ea43b14228df2847acfc4326bd491c3968db2fa4ff4"
+    },
+    {
+      "path": "models/votive.glb",
+      "sha256": "7e6db84ddc411aeae1aedb03addc0b686313cd964002b287172722f790d9e998"
+    },
+    {
+      "path": "models/world.glb",
+      "sha256": "c6ae0b3605d5bc13a84c51bf65da5f36295f9b8753d4fce603d2ac34ead18b01"
+    }
+  ]
+}

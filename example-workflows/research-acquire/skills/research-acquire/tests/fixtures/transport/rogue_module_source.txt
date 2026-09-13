@@ -1,0 +1,5 @@
+# Synthetic incorrect placement used by the route ownership test.
+SEARCH_ENDPOINT = "https://hn.algolia.com/api/v1/search_by_date"
+
+def fetch(query):
+    return SEARCH_ENDPOINT + "?q=" + query

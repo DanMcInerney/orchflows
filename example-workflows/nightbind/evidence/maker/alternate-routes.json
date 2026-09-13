@@ -1,0 +1,676 @@
+{
+  "stormObserved": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "pre-evolution",
+    "tick": 300,
+    "time": 93,
+    "wave": 5,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 72.5,
+    "charge": 1,
+    "player": {
+      "x": 9.93004836008387,
+      "z": 7.944038688067095
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 88,
+        "type": "storm"
+      }
+    ],
+    "hostiles": 63,
+    "nearby": 1,
+    "enemies": [
+      {
+        "id": 4,
+        "type": "thorn",
+        "x": 10.07,
+        "z": -0.59,
+        "hp": 11.7,
+        "wind": 0
+      },
+      {
+        "id": 5,
+        "type": "volt",
+        "x": 1.22,
+        "z": 3.38,
+        "hp": 23,
+        "wind": 0
+      },
+      {
+        "id": 8,
+        "type": "moth",
+        "x": 1.03,
+        "z": 6.86,
+        "hp": 27.4,
+        "wind": 0
+      },
+      {
+        "id": 10,
+        "type": "thorn",
+        "x": -4.21,
+        "z": 6.57,
+        "hp": 54.7,
+        "wind": 0
+      },
+      {
+        "id": 14,
+        "type": "moth",
+        "x": 1.55,
+        "z": 2.31,
+        "hp": 27.4,
+        "wind": 0
+      },
+      {
+        "id": 17,
+        "type": "volt",
+        "x": 1.91,
+        "z": -1.33,
+        "hp": 23,
+        "wind": 0
+      },
+      {
+        "id": 18,
+        "type": "mire",
+        "x": 7.53,
+        "z": -1.76,
+        "hp": 33.1,
+        "wind": 0
+      },
+      {
+        "id": 19,
+        "type": "fang",
+        "x": 5.71,
+        "z": 1.56,
+        "hp": 34.6,
+        "wind": -5.065392549852277e-16
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 1,
+        "id": 75
+      },
+      {
+        "type": "thorn",
+        "count": 7,
+        "id": 70
+      },
+      {
+        "type": "volt",
+        "count": 8,
+        "id": 35
+      },
+      {
+        "type": "mire",
+        "count": 6,
+        "id": 84
+      },
+      {
+        "type": "fang",
+        "count": 7,
+        "id": 85
+      },
+      {
+        "type": "moth",
+        "count": 7,
+        "id": 74
+      }
+    ],
+    "boss": null,
+    "kills": 43,
+    "stats": {
+      "captures": 0,
+      "evolutions": [
+        {
+          "wave": 5,
+          "time": 88,
+          "result": "storm"
+        }
+      ],
+      "damageTaken": 49,
+      "damageBy": {
+        "keeper": 88,
+        "storm": 1401.1199999999997
+      }
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "evolve",
+        "text": "Storm Serpent awakens.",
+        "result": "storm"
+      },
+      {
+        "tick": 58,
+        "type": "damage",
+        "text": "Lost 13 vitality."
+      },
+      {
+        "tick": 168,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 204,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 240,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 276,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "duskObserved": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "pre-evolution",
+    "tick": 300,
+    "time": 93,
+    "wave": 5,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 77,
+    "charge": 1,
+    "player": {
+      "x": 9.93004836008387,
+      "z": 7.944038688067095
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 88,
+        "type": "dusk"
+      }
+    ],
+    "hostiles": 80,
+    "nearby": 26,
+    "enemies": [
+      {
+        "id": 3,
+        "type": "ember",
+        "x": 9.94,
+        "z": 7.95,
+        "hp": 16.5,
+        "wind": 0
+      },
+      {
+        "id": 5,
+        "type": "volt",
+        "x": 1.22,
+        "z": 3.38,
+        "hp": 23,
+        "wind": 0
+      },
+      {
+        "id": 6,
+        "type": "mire",
+        "x": 14.75,
+        "z": 2.86,
+        "hp": 33.1,
+        "wind": 0
+      },
+      {
+        "id": 7,
+        "type": "fang",
+        "x": 9.9,
+        "z": 7.93,
+        "hp": 34.6,
+        "wind": -5.065392549852277e-16
+      },
+      {
+        "id": 8,
+        "type": "moth",
+        "x": 1.03,
+        "z": 6.86,
+        "hp": 27.4,
+        "wind": 0
+      },
+      {
+        "id": 10,
+        "type": "thorn",
+        "x": -4.21,
+        "z": 6.57,
+        "hp": 54.7,
+        "wind": 0
+      },
+      {
+        "id": 11,
+        "type": "volt",
+        "x": 5.56,
+        "z": 7.05,
+        "hp": 23,
+        "wind": 0
+      },
+      {
+        "id": 13,
+        "type": "fang",
+        "x": 9.93,
+        "z": 7.94,
+        "hp": 26.6,
+        "wind": -5.065392549852277e-16
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 7,
+        "id": 81
+      },
+      {
+        "type": "thorn",
+        "count": 5,
+        "id": 28
+      },
+      {
+        "type": "volt",
+        "count": 12,
+        "id": 83
+      },
+      {
+        "type": "mire",
+        "count": 9,
+        "id": 6
+      },
+      {
+        "type": "fang",
+        "count": 16,
+        "id": 13
+      },
+      {
+        "type": "moth",
+        "count": 8,
+        "id": 38
+      }
+    ],
+    "boss": null,
+    "kills": 26,
+    "stats": {
+      "captures": 0,
+      "evolutions": [
+        {
+          "wave": 5,
+          "time": 88,
+          "result": "dusk"
+        }
+      ],
+      "damageTaken": 58,
+      "damageBy": {
+        "keeper": 80.48,
+        "dusk": 1132
+      }
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "evolve",
+        "text": "Dusk Reaper awakens.",
+        "result": "dusk"
+      },
+      {
+        "tick": 58,
+        "type": "damage",
+        "text": "Lost 13 vitality."
+      },
+      {
+        "tick": 130,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 166,
+        "type": "damage",
+        "text": "Lost 7 vitality."
+      },
+      {
+        "tick": 202,
+        "type": "damage",
+        "text": "Lost 7 vitality."
+      },
+      {
+        "tick": 238,
+        "type": "damage",
+        "text": "Lost 13 vitality."
+      },
+      {
+        "tick": 274,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "eclipseObserved": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "second-evolution",
+    "tick": 300,
+    "time": 203,
+    "wave": 10,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 96.5,
+    "charge": 1,
+    "player": {
+      "x": 9.93004836008387,
+      "z": 7.944038688067095
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 89,
+        "type": "eclipse"
+      }
+    ],
+    "hostiles": 35,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 28,
+        "type": "ember",
+        "x": 2.04,
+        "z": -6.41,
+        "hp": 33.8,
+        "wind": 0
+      },
+      {
+        "id": 33,
+        "type": "moth",
+        "x": 8.01,
+        "z": -1.95,
+        "hp": 37.8,
+        "wind": 0
+      },
+      {
+        "id": 40,
+        "type": "ember",
+        "x": -5.32,
+        "z": -0.67,
+        "hp": 33.8,
+        "wind": 0
+      },
+      {
+        "id": 42,
+        "type": "volt",
+        "x": 8.6,
+        "z": 0.37,
+        "hp": 23.8,
+        "wind": 0
+      },
+      {
+        "id": 64,
+        "type": "ember",
+        "x": 2.84,
+        "z": -4.24,
+        "hp": 33.8,
+        "wind": 0
+      },
+      {
+        "id": 80,
+        "type": "fang",
+        "x": 3.57,
+        "z": -1.98,
+        "hp": 47.8,
+        "wind": 0
+      },
+      {
+        "id": 90,
+        "type": "volt",
+        "x": 8.85,
+        "z": -5.14,
+        "hp": 31.8,
+        "wind": 0
+      },
+      {
+        "id": 93,
+        "type": "ember",
+        "x": -9.24,
+        "z": 5.74,
+        "hp": 33.8,
+        "wind": 0
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 1,
+        "id": 118
+      },
+      {
+        "type": "thorn",
+        "count": 1,
+        "id": 121
+      },
+      {
+        "type": "volt",
+        "count": 1,
+        "id": 42
+      },
+      {
+        "type": "fang",
+        "count": 2,
+        "id": 128
+      },
+      {
+        "type": "moth",
+        "count": 2,
+        "id": 129
+      }
+    ],
+    "boss": null,
+    "kills": 90,
+    "stats": {
+      "captures": 0,
+      "evolutions": [
+        {
+          "wave": 10,
+          "time": 198,
+          "result": "eclipse"
+        }
+      ],
+      "damageTaken": 36,
+      "damageBy": {
+        "keeper": 88,
+        "eclipse": 4079.14
+      }
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "evolve",
+        "text": "Eclipse Sovereign awakens.",
+        "result": "eclipse"
+      },
+      {
+        "tick": 130,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 166,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 202,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      },
+      {
+        "tick": 270,
+        "type": "damage",
+        "text": "Lost 9 vitality."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "worldObserved": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "second-evolution",
+    "tick": 300,
+    "time": 203,
+    "wave": 10,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 120,
+    "charge": 1,
+    "player": {
+      "x": 9.93004836008387,
+      "z": 7.944038688067095
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [
+      {
+        "id": 89,
+        "type": "world"
+      }
+    ],
+    "hostiles": 19,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 97,
+        "type": "volt",
+        "x": -7.78,
+        "z": -3.56,
+        "hp": 31.8,
+        "wind": 0
+      },
+      {
+        "id": 99,
+        "type": "mire",
+        "x": -9.86,
+        "z": -9.08,
+        "hp": 45.8,
+        "wind": 0
+      },
+      {
+        "id": 100,
+        "type": "mire",
+        "x": -7.24,
+        "z": -11.61,
+        "hp": 45.8,
+        "wind": 0
+      },
+      {
+        "id": 101,
+        "type": "ember",
+        "x": -11.82,
+        "z": -2.72,
+        "hp": 33.8,
+        "wind": 0
+      },
+      {
+        "id": 102,
+        "type": "ember",
+        "x": -3.81,
+        "z": -11.91,
+        "hp": 33.8,
+        "wind": 0
+      },
+      {
+        "id": 104,
+        "type": "ember",
+        "x": 4.58,
+        "z": -12.88,
+        "hp": 33.8,
+        "wind": 0
+      },
+      {
+        "id": 105,
+        "type": "mire",
+        "x": 6.5,
+        "z": -13.91,
+        "hp": 45.8,
+        "wind": 0
+      },
+      {
+        "id": 106,
+        "type": "ember",
+        "x": 5.54,
+        "z": -13.09,
+        "hp": 33.8,
+        "wind": 0
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 1,
+        "id": 123
+      },
+      {
+        "type": "fang",
+        "count": 2,
+        "id": 127
+      }
+    ],
+    "boss": null,
+    "kills": 106,
+    "stats": {
+      "captures": 0,
+      "evolutions": [
+        {
+          "wave": 10,
+          "time": 198,
+          "result": "world"
+        }
+      ],
+      "damageTaken": 0,
+      "damageBy": {
+        "keeper": 48,
+        "world": 4855.44
+      }
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "evolve",
+        "text": "Worldcoil awakens.",
+        "result": "world"
+      }
+    ],
+    "build": "development",
+    "ready": true
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "build": "core-220cfa39951c",
+  "archived": "2026-09-13T06:31:09.422Z",
+  "files": [
+    {
+      "path": "dist/assets/index-DTTw6Dzp.css",
+      "sha256": "54c06903b9f630565195df5f5645dd66f6698b967db887168415e40b824046c2"
+    },
+    {
+      "path": "dist/assets/index-DYhThlSP.js",
+      "sha256": "2e6262774032d10de7086e7e3b574bf25d3cf5104949283095103b8f09f93b77"
+    },
+    {
+      "path": "dist/index.html",
+      "sha256": "f125ac5bab9ae2a2498ae88bc2dfe1fcec6d362e0d980d9339b417a1a82b868a"
+    }
+  ]
+}

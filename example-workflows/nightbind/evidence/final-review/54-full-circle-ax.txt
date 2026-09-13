@@ -1,0 +1,68 @@
+Browser tab: 2, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4193/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4193/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		71 container hud
+			72 container
+				73 text NIGHTBIND
+				155 text WAVE 09 / 12
+				156 text Before the dawn
+				76 button Field guide , ID: guide-button
+				77 button Pause, ID: pause-button
+				78 button Description: Sound and motion settings, ID: settings-button
+			79 container
+				80 text VITALITY
+				157 text 120 / 120
+				158 text 60 in the dark · 0 fallen
+			159 text The horde is closing in. Move through fresh ground until the tenth bell.
+			84 text Click ground to move · WASD / arrows · Space to bind
+			160 button An evolution is ready ↗, ID: evolve-button
+			85 container
+				86 text YOUR CIRCLE
+				161 text 6 / 6
+				88 container slots
+					162 text Voltwing CHAIN Mireling SLOW Mourning Moth MEND Pyre Warden INFERNO + WARD Fangling HUNT Mourning Moth MEND
+				90 text Binding lantern
+				163 text READY
+				92 button Bind a creature, ID: capture-button
+				93 text Choose one nearby foe · time pauses
+		164 container modal
+			165 container
+				166 text LANTERN VIEW Your keeper is centered. The gold circle marks your reach.
+			167 container
+				168 text THE LANTERN IS OPEN · TIME IS STILL
+				169 heading Who will fight beside you?, Value: 2
+					170 text Who will fight beside you?
+				171 button Cancel, ID: close-modal
+				172 text Bind one living creature within lantern reach. Your next charge takes 11 seconds. Your circle is full. Release a companion in the Field guide first.
+				173 button (disabled) ◆ SPLASH · 7 IN REACH Emberling Burns clustered foes
+					174 text ◆ SPLASH · 7 IN REACH
+					175 text Emberling
+					176 text Burns clustered foes
+				177 button (disabled) ✦ WARD · 5 IN REACH Thornback Shields you; shoves crowds
+					178 text ✦ WARD · 5 IN REACH
+					179 text Thornback
+					180 text Shields you; shoves crowds
+				181 button (disabled) Ϟ CHAIN · 7 IN REACH Voltwing Lightning jumps between foes
+					182 text Ϟ CHAIN · 7 IN REACH
+					183 text Voltwing
+					184 text Lightning jumps between foes
+				185 button (disabled) ♧ SLOW · 6 IN REACH Mireling Poisons and slows an area
+					186 text ♧ SLOW · 6 IN REACH
+					187 text Mireling
+					188 text Poisons and slows an area
+				189 button (disabled) ⟐ HUNT · 6 IN REACH Fangling Pounces on strong targets
+					190 text ⟐ HUNT · 6 IN REACH
+					191 text Fangling
+					192 text Pounces on strong targets
+				193 button (disabled) ✧ MEND · 6 IN REACH Mourning Moth Restores health while fighting
+					194 text ✧ MEND · 6 IN REACH
+					195 text Mourning Moth
+					196 text Restores health while fighting
+				197 button Consult the recipes, ID: capture-guide
+				198 text 6 / 6 COMPANIONS
+		15 text qa-c09f13cac8e9
+	153 button (collapsed) Development scenarios · assisted tests, Secondary Actions: Expand
+		154 text Development scenarios · assisted tests
+
+The focused UI element is 171 button Cancel, ID: close-modal

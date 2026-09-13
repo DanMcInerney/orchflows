@@ -1,0 +1,20 @@
+{
+  "name": "nightbind",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4190 --strictPort",
+    "build": "node scripts/build.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 4191 --strictPort",
+    "test": "node --test tests/*.test.mjs",
+    "build:test": "node scripts/build.mjs --test",
+    "preview:test": "vite preview --outDir test-dist --host 127.0.0.1 --port 4193 --strictPort"
+  },
+  "dependencies": {
+    "three": "0.186.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.0"
+  }
+}
