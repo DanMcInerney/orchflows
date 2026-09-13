@@ -196,10 +196,16 @@ N collection assignments use N workers and one reviewer. Shared original sources
 
 ```mermaid
 flowchart LR
-    B[Brief and selected guidance] --> M["orch-work: make film"]
+    B([Brief and selected guidance]) --> M["orch-work<br/>Make film"]
     M --> E[Editable project and exports]
-    E --> R["orch-review: inspect exports"]
-    R --> D[Deliver film, source and findings]
+    E --> R["orch-review<br/>Inspect exports"]
+    R --> D([Deliver film, source and findings])
+    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95,stroke-width:2px;
+    classDef result fill:#f8fafc,stroke:#94a3b8,color:#0f172a;
+    class M work;
+    class R review;
+    class B,E,D result;
 ```
 
 One film uses one maker and one reviewer, including its placement versions. Additional films can run in parallel. The composition ends after review; a repair round is a separate requested step.
@@ -212,18 +218,26 @@ One film uses one maker and one reviewer, including its placement versions. Addi
 
 ```mermaid
 flowchart TD
-    S[Artifact or creation brief] --> E[Establish evaluation and current best]
+    S([Artifact or creation brief]) --> E["Establish evaluation<br/>and current best"]
     E --> C[Choose experiment]
-    C -->|Artifact| M["orch-work: make challenger"]
-    M --> R["orch-review: compare artifacts"]
-    R --> K[Retain best and checkpoint]
-    C -->|Harness| H["orch-work: propose harness change"]
-    H --> T["orch-work: separate makers test each harness"]
-    T --> J["orch-review: compare outputs"]
+    C -->|Artifact| M["orch-work<br/>Make challenger"]
+    M --> R["orch-review<br/>Compare artifacts"]
+    R --> K["Retain best<br/>and checkpoint"]
+    C -->|Harness| H["orch-work<br/>Propose harness change"]
+    H --> T["orch-work<br/>Separate makers test each harness"]
+    T --> J["orch-review<br/>Compare outputs"]
     J --> K
     K --> B{Continue?}
     B -->|Yes| C
-    B -->|No| O[Best artifact, evidence and resume path]
+    B -->|No| O(["Best artifact, evidence<br/>and resume path"])
+    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95,stroke-width:2px;
+    classDef coordinate fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;
+    classDef result fill:#f8fafc,stroke:#94a3b8,color:#0f172a;
+    class M,H,T work;
+    class R,J review;
+    class E,C,K,B coordinate;
+    class S,O result;
 ```
 
 The working **harness** is the maker instructions, tools and search strategy used by the run. Evolve can test a change to that harness against its predecessor, then use the verified revision in later rounds. Its coordinating evaluation and promotion rules stay fixed during that comparison. Harness experiments use one proposer and two fresh makers per test case, with independent review of their outputs. A subjective winner requires confirmation from a second fresh reviewer.
