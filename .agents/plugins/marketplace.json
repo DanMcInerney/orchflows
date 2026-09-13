@@ -1,11 +1,11 @@
 {
-  "name": "orchflows-light-local",
+  "name": "orchflows-local",
   "interface": {
-    "displayName": "Orchflows Light"
+    "displayName": "Orchflows"
   },
   "plugins": [
     {
-      "name": "orchflows-light",
+      "name": "orchflows",
       "source": {
         "source": "local",
         "path": "./"

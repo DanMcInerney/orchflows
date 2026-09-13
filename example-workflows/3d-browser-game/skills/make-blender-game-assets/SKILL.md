@@ -5,7 +5,7 @@ description: Create original Blender game assets with editable sources, GLB expo
 
 Reuse or establish [library context](../../references/library-context.md). Declare one maker and no reviewer. Resolve the art brief, gameplay camera, asset scope, runtime preview/loader, budgets and owned output directory using the [asset contract](../../references/blender.md). For a standalone asset request, supply a small project-local Three.js preview if the game is unavailable; identify final integration as unverified.
 
-Invoke `orchflows-light:orch-work` once with resolved Make guidance, the asset contract, actual game baseline and relevant source assets. Give the child this staged assignment, working without children:
+Invoke `orchflows:orch-work` once with resolved Make guidance, the asset contract, actual game baseline and relevant source assets. Give the child this staged assignment, working without children:
 
 1. Inspect Blender/export capabilities and the brief. Plan the asset family, shape language, modular relationships and budget allocation. Resolve unspecified art choices; report a gap if an essential gameplay contract is absent.
 2. Create silhouette/proportion blockouts for the key asset and a representative environment piece when in scope. Inspect orthographic/three-quarter and gameplay-camera renders. Choose and refine the forms before fine detail.

@@ -1,6 +1,18 @@
 {
   "name": "short-video",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Composable short-video making and independent export review.",
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "author": {
+    "name": "orchflows"
+  },
+  "interface": {
+    "displayName": "Short Video",
+    "shortDescription": "Make original short films and independently review exports.",
+    "longDescription": "Composable film production and independent review with editable source and rendered exports.",
+    "defaultPrompt": "Make an original short film with editable source, rendered exports and independent review.",
+    "developerName": "orchflows",
+    "category": "Productivity",
+    "capabilities": []
+  }
 }

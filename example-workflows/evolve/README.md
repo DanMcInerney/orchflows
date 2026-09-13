@@ -29,8 +29,8 @@ Without a duration or continuation request, a run defaults to three rounds. An e
 
 ## Install and dependencies
 
-From a complete orchflows-light checkout, run `python scripts/orchflows.py setup --example evolve` with Python 3.11+. Setup preserves an existing library. Register and install `evolve` from the resulting home catalog using core `docs/hosts.md`; setup alone does not make a skill available by name.
+From a complete orchflows checkout, run `python scripts/orchflows.py setup --example evolve` with Python 3.11+. Setup preserves an existing library. Register and install `evolve` from the resulting home catalog using core `docs/hosts.md`; setup alone does not make a skill available by name.
 
-Requires orchflows-light 0.6.2+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
+Requires orchflows 0.7.0+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
 
 This is a fresh successor to the original `orch-evolve`; `orch-` remains reserved for core skills. It supports experiments on improving an improvement harness. An RSI Level 1 claim would additionally require evidence of sustained gains over a strong human baseline on unseen tasks at matched cost; shipping this workflow does not establish that result.

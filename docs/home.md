@@ -9,12 +9,12 @@
 ├── artifacts/                       optional scratch                  ignored
 └── .local/                          machine-specific                  ignored
     ├── runtime/                     Python 3.11+ venv, no packages    created once, contents yours
-    └── packages/orchflows-light/    managed core                      replaced by setup
+    └── packages/orchflows/          managed core                      replaced by setup
 ```
 
-Home selection: `--home PATH` → `ORCHFLOWS_HOME` → `~/.orchflows`; never the current directory. Legacy home `config.toml` is preserved and ignored. Package contracts: [architecture.md](architecture.md).
+Home selection: `--home PATH` → `ORCHFLOWS_HOME` → `~/.orchflows`; never the current directory. Package contracts: [architecture.md](architecture.md).
 
-CLI: `python <core>/scripts/orchflows.py COMMAND`, using any Python 3.11+; no dependencies. `<core>` is a checkout or `<home>/.local/packages/orchflows-light`. The home interpreter is `.local/runtime/Scripts/python.exe` on Windows, `.local/runtime/bin/python` elsewhere.
+CLI: `python <core>/scripts/orchflows.py COMMAND`, using any Python 3.11+; no dependencies. `<core>` is a checkout or `<home>/.local/packages/orchflows`. The home interpreter is `.local/runtime/Scripts/python.exe` on Windows, `.local/runtime/bin/python` elsewhere.
 
 Commands return one JSON line on stdout. Exit 0: success; 1: `setup`/`doctor` has `issues`; 2: command error (JSON on stderr) or argument error. Use `COMMAND --help` for flags.
 
@@ -30,17 +30,6 @@ Commands return one JSON line on stdout. Exit 0: success; 1: `setup`/`doctor` ha
 
 Result: `status`, `home`, `files`, `runtime_python`, `core` (`status`, `package_root`, `name`, `version`), `runtime`, `example`, `git`, `host_configs`, `host_config_status`, `issues`.
 
-### Standards migration
-
-When the installed core has `standards/`, setup blocks replacement until libraries stop referencing the six removed core resources. Errors report file, line and replacement; update the libraries, then rerun:
-
-- `standards/code/api.md` → `guidance/code.api.md`.
-- `standards/code.md`, `data-analysis.md`, `research.md`, `visual-design.md`, `writing.md` → the same filenames under `guidance/`.
-
-This preflight also reports libraries with only native host manifests: add root `plugin.json` with name and version. Move custom catalog entries to a separate user-owned marketplace before setup regenerates the home catalogs.
-
-Scanned: root Markdown and `skills/`, `references/`, `standards/`, `guidance/`, `docs/`. Excluded: trials, outputs, artifacts, logs, tests, scripts. Existing library-local standards and other-package references retain their meaning. Setup does not rewrite libraries or create aliases.
-
 ## doctor
 
 `doctor [--home PATH]`
@@ -51,13 +40,13 @@ Read-only checks: core manifest and required files, runtime files, library manif
 
 `resolve <library> [--home PATH] [--skill NAME | --resource RELATIVE/PATH]`
 
-Returns `name`, `version`, `package_root`, optional `skill_path`/`resource_path`, and unverified `runtime_python`; launches nothing. `orchflows-light` selects the managed core; other names match root `plugin.json` under `libraries/`. Rejects duplicate names and absolute or escaping resources.
+Returns `name`, `version`, `package_root`, optional `skill_path`/`resource_path`, and unverified `runtime_python`; launches nothing. `orchflows` selects the managed core; other names match root `plugin.json` under `libraries/`. Rejects duplicate names and absolute or escaping resources.
 
 No home or runtime: use available native skills and report the gap. No native delegation: block the workflow.
 
 ## Libraries
 
-Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique across the home and cannot be `orchflows-light`. After adding a library, rerun setup to regenerate catalogs, then [register/install](hosts.md).
+Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique across the home and cannot be `orchflows`. After adding a library, rerun setup to regenerate catalogs, then [register/install](hosts.md).
 
 ## Another computer
 

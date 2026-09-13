@@ -1,9 +1,9 @@
 {
-  "name": "orchflows-light",
-  "version": "0.6.3",
+  "name": "orchflows",
+  "version": "0.7.0",
   "description": "Composable native workflows, layered guidance and a portable user library.",
   "author": {
-    "name": "orchflows-light"
+    "name": "orchflows"
   },
   "skills": "./skills/"
 }

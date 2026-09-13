@@ -24,8 +24,8 @@ N collection assignments use N workers and one reviewer. Each assignment covers 
 
 ## Install
 
-From a complete orchflows-light checkout, run `python scripts/orchflows.py setup --example social-search` (Python 3.11+). Setup preserves existing libraries. Core `docs/hosts.md` covers host registration and refresh. Invoke `social-search:<skill>`.
+From a complete orchflows checkout, run `python scripts/orchflows.py setup --example social-search` (Python 3.11+). Setup preserves existing libraries. Core `docs/hosts.md` covers host registration and refresh. Invoke `social-search:<skill>`.
 
-Requires orchflows-light 0.6.0+, native child delegation and public search/read tools. Optional `setup --example research-acquire` adds acquisition and a YouTube transcript reader; that package owns its dependencies and routes. Its generic feed support requires version 0.4.0+.
+Requires orchflows 0.7.0+, native child delegation and public search/read tools. Optional `setup --example research-acquire` adds acquisition and a YouTube transcript reader; that package owns its dependencies and routes. Its generic feed support requires version 0.4.0+.
 
 Adapted from [orchflows recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under the retained [MIT license](LICENSE).

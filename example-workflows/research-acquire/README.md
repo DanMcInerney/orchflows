@@ -19,7 +19,7 @@ discovery → worker selects candidates → selected depth → evidence + receip
 
 ## Install and dependencies
 
-From a complete orchflows-light checkout, run `python scripts/orchflows.py setup --example research-acquire` (Python 3.11+). Core `docs/hosts.md` covers host registration and refresh. Invoke `research-acquire:research-acquire`.
+From a complete orchflows checkout, run `python scripts/orchflows.py setup --example research-acquire` (Python 3.11+). Core `docs/hosts.md` covers host registration and refresh. Invoke `research-acquire:research-acquire`.
 
 The acquisition tools require Python 3.9+ and use the standard library. The optional [YouTube transcript reader](skills/research-acquire/references/source-inspection.md) requires `yt-dlp` in the same interpreter (`python -m pip install yt-dlp`). Setup installs no library dependencies.
 

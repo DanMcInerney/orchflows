@@ -7,7 +7,7 @@ Reuse or establish [library context](../../references/library-context.md). Resol
 
 For requested inspiration or research, pass the optional [short-form observations](../../references/short-form-reference.md). They add source context, not another stage or agent.
 
-Invoke `orchflows-light:orch-work` once with the complete brief, output workspace and resolved guidance paths. Keep this delegation entrypoint in the caller; give the child the production assignment:
+Invoke `orchflows:orch-work` once with the complete brief, output workspace and resolved guidance paths. Keep this delegation entrypoint in the caller; give the child the production assignment:
 
 > Create the film from original concept through an editable project and actual rendered exports. Use the available authoring tools, check your result and deliver the requested placements. Return export paths and SHA-256 identities, editable source and assets, how to reopen and render, and any unresolved constraints or capability gaps. Work without child agents.
 

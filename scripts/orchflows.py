@@ -22,13 +22,13 @@ import host_config
 import native_logs
 
 
-CORE_NAME = "orchflows-light"
+CORE_NAME = "orchflows"
 CORE_ENTRIES = ("plugin.json", ".claude-plugin", ".codex-plugin", "skills", "guidance", "docs", "scripts",
                 "README.md", "AGENTS.md", "CLAUDE.md", "LICENSE")
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
 HOME_README = """# orchflows home
 
-Docs: `.local/packages/orchflows-light/AGENTS.md`. Edit `libraries/<name>/`; `.local/` and `artifacts/` are ignored.
+Docs: `.local/packages/orchflows/AGENTS.md`. Edit `libraries/<name>/`; `.local/` and `artifacts/` are ignored.
 """
 HOME_GITIGNORE = """/.local/
 **/__pycache__/
@@ -181,50 +181,6 @@ def _catalog_texts(home: Path, libraries: list[dict]) -> dict[str, str]:
     return {relative: json.dumps(catalog, indent=2) + "\n" for relative, catalog in catalogs.items()}
 
 
-def _check_guidance_migration(home: Path) -> None:
-    """One-time check for the six core resources removed by the guidance migration."""
-    core = home / ".local/packages" / CORE_NAME
-    if not (core / "standards").is_dir():
-        return
-    removed = re.compile(r"(?<![\w.-])(?P<prefix>(?:[\w./\\:$<>{}~-]*[/\\:])?)standards/(?P<name>code/api|code|data-analysis|research|visual-design|writing)\.md\b")
-    findings = []
-    libraries, _ = _libraries(home)
-    roots = {Path(library["package_root"]) for library in libraries}
-    directory = home / "libraries"
-    for path in sorted(directory.iterdir()) if directory.is_dir() else []:
-        if not path.name.startswith(".") and path.is_dir() and not (path / "plugin.json").is_file() and any(
-            (path / relative).is_file() for relative in (".claude-plugin/plugin.json", ".codex-plugin/plugin.json")
-        ):
-            roots.add(_contained(home, path))
-            findings.append(f"{path / 'plugin.json'}: missing; add the library's name and version in this root manifest")
-    for root in sorted(roots):
-        for directory, children, files in os.walk(root):
-            children[:] = sorted(name for name in children
-                                  if not name.startswith(".") and name not in {"trials", "outputs", "artifacts", "logs", "tests", "scripts", "__pycache__"}
-                                  and (Path(directory) != root or name in {"skills", "references", "standards", "guidance", "docs"}))
-            for name in sorted(files):
-                if not name.endswith(".md"):
-                    continue
-                path = Path(directory) / name
-                for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-                    for match in removed.finditer(line):
-                        prefix = match["prefix"].replace("\\", "/")
-                        explicit_core = prefix == f"{CORE_NAME}:" or f"{CORE_NAME}/" in prefix or bool(
-                            re.search(r"\bresolve\s+orchflows-light\b", line[:match.start()]))
-                        if ":" in prefix and not explicit_core:
-                            continue  # A different package or an external URL owns this reference.
-                        if not explicit_core and any(
-                            candidate.resolve().is_relative_to(root) and candidate.is_file()
-                            for candidate in (path.parent / match[0], root / match[0])
-                        ):
-                            continue  # Existing library-local standards keep their own meaning.
-                        old = f"standards/{match['name']}.md"
-                        new = f"guidance/{match['name'].replace('/', '.')}.md"
-                        findings.append(f"{path}:{number}: {old} -> {new}")
-    if findings:
-        raise ValueError("Guidance migration requires updating libraries before setup; home preserved:\n" + "\n".join(findings))
-
-
 def _install_runtime(home: Path) -> tuple[str, list[str]]:
     runtime = home / ".local/runtime"
     if not runtime.exists():
@@ -281,7 +237,6 @@ def setup(home: Path, source: Path, example: str | None = None, *,
         raise ValueError(f"Setup lock exists: {lock}; check for an active installer before removing it") from exc
     try:
         manifest = _validate_core(source)
-        _check_guidance_migration(home)
         plan = _example_plan(home, source, example) if example is not None else None
         for relative in ("libraries", ".agents/plugins", ".claude-plugin"):
             (home / relative).mkdir(parents=True, exist_ok=True)
