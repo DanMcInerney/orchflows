@@ -41,7 +41,7 @@ scripts/ + tests/   core CLI and checks
 example-workflows/  separately installed libraries and runnable examples
 ```
 
-Optional libraries: `social-search` collects and ranks evidence; `research-acquire` provides public-source readers; `short-video` makes and reviews films; `3d-browser-game` develops Three.js games through mechanics experiments, Blender assets and independent playtests.
+Optional libraries: `social-search` collects and ranks evidence; `research-acquire` provides public-source readers; `short-video` makes and reviews films; `evolve` improves artifacts and their improvement harnesses through resumable search; `3d-browser-game` develops Three.js games through mechanics experiments, Blender assets and independent playtests.
 
 The complete Nightbind game built with the 3D workflow lives beside it at `example-workflows/nightbind/`, with editable Blender sources and local run instructions. It is a runnable project, not an installable workflow library.
 
