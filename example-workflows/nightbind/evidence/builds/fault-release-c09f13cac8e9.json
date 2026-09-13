@@ -1,0 +1,8 @@
+{
+  "kind": "intentional asset-load fault copy",
+  "baseBuild": "release-c09f13cac8e9",
+  "directory": "evidence/fault-release-c09f13cac8e9",
+  "omitted": "models/keeper.glb",
+  "restorationSource": "dist/models/keeper.glb",
+  "purpose": "Observe visible missing-asset error and real reload recovery; never use for ordinary play/performance."
+}

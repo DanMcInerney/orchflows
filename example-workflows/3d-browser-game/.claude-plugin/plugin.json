@@ -1,0 +1,9 @@
+{
+  "name": "3d-browser-game",
+  "version": "0.1.0",
+  "description": "Develop substantial Three.js games through mechanics experiments, Blender production and independent browser playtests.",
+  "author": {
+    "name": "orchflows-light"
+  },
+  "skills": "./skills/"
+}

@@ -1,0 +1,331 @@
+{
+  "publicIntent": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "fresh",
+    "tick": 0,
+    "time": 0,
+    "wave": 1,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 120,
+    "charge": 1,
+    "player": {
+      "x": 0,
+      "z": 0
+    },
+    "target": {
+      "x": 8,
+      "z": 6.33430791721743
+    },
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [],
+    "hostiles": 0,
+    "nearby": 0,
+    "enemies": [],
+    "available": [],
+    "candidates": [],
+    "boss": null,
+    "kills": 0,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 0,
+      "damageBy": {}
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "start",
+        "text": "The lantern is lit."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "publicMove": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "fresh",
+    "tick": 60,
+    "time": 1,
+    "wave": 1,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 120,
+    "charge": 1,
+    "player": {
+      "x": 5.487995392795924,
+      "z": 4.345331583280003
+    },
+    "target": {
+      "x": 8,
+      "z": 6.33430791721743
+    },
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [],
+    "hostiles": 2,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 1,
+        "type": "ember",
+        "x": 17.7,
+        "z": 2.12,
+        "hp": 17,
+        "wind": 0
+      },
+      {
+        "id": 2,
+        "type": "ember",
+        "x": 16.56,
+        "z": -10.32,
+        "hp": 17,
+        "wind": 0
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 1,
+        "id": 1
+      }
+    ],
+    "boss": null,
+    "kills": 0,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 0,
+      "damageBy": {}
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "start",
+        "text": "The lantern is lit."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "still": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "fresh",
+    "tick": 60,
+    "time": 1,
+    "wave": 1,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 120,
+    "charge": 1,
+    "player": {
+      "x": 5.487995392795924,
+      "z": 4.345331583280003
+    },
+    "target": {
+      "x": 8,
+      "z": 6.33430791721743
+    },
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [],
+    "hostiles": 2,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 1,
+        "type": "ember",
+        "x": 17.7,
+        "z": 2.12,
+        "hp": 17,
+        "wind": 0
+      },
+      {
+        "id": 2,
+        "type": "ember",
+        "x": 16.56,
+        "z": -10.32,
+        "hp": 17,
+        "wind": 0
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 1,
+        "id": 1
+      }
+    ],
+    "boss": null,
+    "kills": 0,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 0,
+      "damageBy": {}
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "start",
+        "text": "The lantern is lit."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "diagnosticMove": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "fresh",
+    "tick": 60,
+    "time": 1,
+    "wave": 1,
+    "phase": "playing",
+    "paused": false,
+    "mode": "manual",
+    "hp": 120,
+    "charge": 1,
+    "player": {
+      "x": 5.487995392795924,
+      "z": 4.345331583280003
+    },
+    "target": {
+      "x": 8,
+      "z": 6.33430791721743
+    },
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [],
+    "hostiles": 2,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 1,
+        "type": "ember",
+        "x": 17.7,
+        "z": 2.12,
+        "hp": 17,
+        "wind": 0
+      },
+      {
+        "id": 2,
+        "type": "ember",
+        "x": 16.56,
+        "z": -10.32,
+        "hp": 17,
+        "wind": 0
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 1,
+        "id": 1
+      }
+    ],
+    "boss": null,
+    "kills": 0,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 0,
+      "damageBy": {}
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "start",
+        "text": "The lantern is lit."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  },
+  "pausedIntent": {
+    "version": 1,
+    "seed": 12345,
+    "scenario": "fresh",
+    "tick": 60,
+    "time": 1,
+    "wave": 1,
+    "phase": "playing",
+    "paused": true,
+    "mode": "manual",
+    "hp": 120,
+    "charge": 1,
+    "player": {
+      "x": 5.487995392795924,
+      "z": 4.345331583280003
+    },
+    "target": null,
+    "keys": {
+      "x": 0,
+      "z": 0
+    },
+    "squad": [],
+    "hostiles": 2,
+    "nearby": 0,
+    "enemies": [
+      {
+        "id": 1,
+        "type": "ember",
+        "x": 17.7,
+        "z": 2.12,
+        "hp": 17,
+        "wind": 0
+      },
+      {
+        "id": 2,
+        "type": "ember",
+        "x": 16.56,
+        "z": -10.32,
+        "hp": 17,
+        "wind": 0
+      }
+    ],
+    "available": [],
+    "candidates": [
+      {
+        "type": "ember",
+        "count": 1,
+        "id": 1
+      }
+    ],
+    "boss": null,
+    "kills": 0,
+    "stats": {
+      "captures": 0,
+      "evolutions": [],
+      "damageTaken": 0,
+      "damageBy": {}
+    },
+    "events": [
+      {
+        "tick": 0,
+        "type": "start",
+        "text": "The lantern is lit."
+      }
+    ],
+    "build": "development",
+    "ready": true
+  }
+}

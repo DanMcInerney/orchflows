@@ -1,0 +1,148 @@
+{
+  "status": "READY for final independent review; maker/caller QA complete",
+  "frozenAt": "2026-09-13T07:30:37.071805+00:00",
+  "release": {
+    "id": "release-c09f13cac8e9",
+    "url": "http://127.0.0.1:4191/",
+    "manifest": "evidence/builds/release-c09f13cac8e9.json",
+    "manifestSha256": "31fab5477c42e1a045faecd36dcbcd02abf0863a1f030275bd4aadfab594e9cb"
+  },
+  "assistedTest": {
+    "id": "qa-c09f13cac8e9",
+    "url": "http://127.0.0.1:4193/",
+    "manifest": "evidence/builds/qa-c09f13cac8e9.json",
+    "manifestSha256": "393d780eafa6eef350b6e5db145f97a85b1f85952764306e448b0cc1cea5faba"
+  },
+  "sourceIdentity": "source-c09f13cac8e9",
+  "assets": {
+    "manifest": "public/models/manifest.json",
+    "sha256": "b943f7fca7efc58f225fdf6f7add960a1bf71218943df84274434e6628e00f66",
+    "glbCount": 22,
+    "glbBytes": 485472,
+    "editableBlenderCount": 24,
+    "report": "notes/assets.md"
+  },
+  "verification": "evidence/builds/production-final-verification.json",
+  "handoffDocuments": [
+    {
+      "path": "README.md",
+      "sha256": "69804c440d2800272bbcf79575360ed4bab230206f78418098d817e65ff8b4cf"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "7b84442eb51223fd3c3997a1fda0662c395412919ea50298fbcc0b7bfa74ada0"
+    },
+    {
+      "path": "notes/production-qa.md",
+      "sha256": "6593f69990bd89e190cb7f17df63e951e63749d6748462d558318921e2d1146d"
+    },
+    {
+      "path": "notes/performance.md",
+      "sha256": "c77e91917f602a067524af485d07bd8a08ff233137c59e706aae3d6d750d9dbb"
+    },
+    {
+      "path": "notes/production-qa-plan.md",
+      "sha256": "3bb0813af04f1c920f59e8bc9b0ec148c30982840f3d595a7a977ab9bdcde8ae"
+    },
+    {
+      "path": "notes/production-step14.md",
+      "sha256": "c6e5ce8757b3e61821a4532332c01c39fddd913c04f30708ad294feb693eadcc"
+    },
+    {
+      "path": "notes/core-baseline.md",
+      "sha256": "e334ec2341095558398ff9007024a64aa1e01e21cf61a783180101f498e4b83b"
+    },
+    {
+      "path": "notes/core-review.md",
+      "sha256": "e33530b17c01211a5616f2ce54f22b6182ffa2317c7fd0cfb20074d4439b595d"
+    },
+    {
+      "path": "notes/core-playtest.md",
+      "sha256": "7b24277a5d409effa14e133efa717ee5394c4f3cf02cf7afbeb35bfa6bbe94cb"
+    },
+    {
+      "path": "notes/asset-brief.md",
+      "sha256": "90fb58fd08befb821596d1b901a266b57eb63e3e03c0577febd6a14ad8511876"
+    },
+    {
+      "path": "notes/art-direction.md",
+      "sha256": "e9c775c6d327192e1b64629c5c1527b004a56c63331eea25b295beec6ed0957b"
+    },
+    {
+      "path": "notes/assets.md",
+      "sha256": "d1139eb7abd0ad84d77c0b625f60fb177c1afdda34a2773b5b6f639f9fb24e70"
+    },
+    {
+      "path": "notes/caller-production-play.md",
+      "sha256": "1ee33a1062dee5200fd541455b13439f6a80f49d88da074ddab31785b35c6eea"
+    },
+    {
+      "path": "notes/caller-step14.md",
+      "sha256": "ac1a4a3f7cbf60d2b1d4ffa39e22f55d3c1ae43bead53f924fa5e90d1cc900f1"
+    },
+    {
+      "path": "notes/request.md",
+      "sha256": "e7baf54c6b4e9c4d001ede2cb619ff0b366786c335f24ecc3a3ccf246723e529"
+    },
+    {
+      "path": "notes/acceptance.md",
+      "sha256": "36e57d039aa38e62ce00e292ee603a7b715351ad6ac60529d62d821b9e092935"
+    },
+    {
+      "path": "notes/capabilities.md",
+      "sha256": "2caeeab442bad2060ceb33a60a6e50ee0daf89e70df92a5478139b9833828360"
+    },
+    {
+      "path": "evidence/assets/delivery-inventory.json",
+      "sha256": "c00c424f06917824b767c11f79617fc411979209bd8fb6dab7960d990c355dc0"
+    },
+    {
+      "path": "evidence/maker/production-wave9-recalculation.json",
+      "sha256": "714ac2b85f99a96ab9829be8efcc199a78aaebe9fea776b954a4d72b90e912bb"
+    },
+    {
+      "path": "evidence/maker/analyze-production-performance.py",
+      "sha256": "0399c27aad5d32353097b624415df9eb3244242ae066ac1d2a72c5af33d6ed4b"
+    },
+    {
+      "path": "evidence/maker/verify-production-candidate.py",
+      "sha256": "f594d6fb99e7e664284dd9d388b89f0a4a59b6b8f88c001231ecadcaa9eb0e19"
+    },
+    {
+      "path": "evidence/caller/dusk-run/attempt2-performance-summary.json",
+      "sha256": "919a7b45e72cc7430d3a31c6e4474fc13a2ff36dcaeed867dd37a17abc271c15"
+    },
+    {
+      "path": "evidence/caller/dusk-run/attempt2-wave9-frames.json",
+      "sha256": "277049b0a9e1e5669c047f3dc7103e46ababf7accf31372a7dbff46bdc5cd29d"
+    },
+    {
+      "path": "evidence/caller/dusk-run/performance-metadata-after-retry.json",
+      "sha256": "233efdbb80459a0a92dc0abb6d90f99d875c77c5883579573456f61b6c7c6b75"
+    },
+    {
+      "path": "evidence/caller/dusk-run/repeated-retries.json",
+      "sha256": "a499b428807991c384806e0d81e5bf60db3952603dfd3ae45d8f552ab72e0bde"
+    },
+    {
+      "path": "evidence/caller/fresh-origin-load.json",
+      "sha256": "df1df161952fb52ce8cc2a73b8ee55a7c4428cf0b5b220be34938354059f82cd"
+    },
+    {
+      "path": "evidence/caller/integrated-load-recovery.json",
+      "sha256": "59c03c077f19078ba5c492398309da18cc2996e830b08a959efefcc441bc6dc4"
+    },
+    {
+      "path": "evidence/builds/production-final-verification.json",
+      "sha256": "653c094ad5b4c8cdbe78ccb94ed229ccc1bc2d15f448baaa785da4c8fa920702"
+    }
+  ],
+  "evidenceScope": "Source/build manifests enumerate every current production source, asset and compiled file. Handoff document hashes snapshot this checkpoint. Historical screenshots/state are linked in the reports; this is not an assertion that every past evidence file belongs to the final build.",
+  "limits": [
+    "1280x720 DPR1 Intel/D3D11 observed; other viewport/device matrix unverified",
+    "Ordinary Dusk/Eclipse final run uses public pauses; Solar/Worldcoil final forms observed assisted",
+    "Audible quality, deliberate blur and graphics context loss unverified",
+    "Startup is local warm/fresh-origin readiness, not clean-profile/network/GPU-cold timing",
+    "Final independent review pending; game/assets remain frozen"
+  ]
+}

@@ -1,0 +1,3173 @@
+{
+  "schemaVersion": 1,
+  "blenderVersion": "5.2.1 LTS",
+  "basis": {
+    "sourceUp": "Z",
+    "sourceForward": "-Y",
+    "runtimeUp": "Y",
+    "runtimeForward": "+Z",
+    "units": "game-unit"
+  },
+  "assets": [
+    {
+      "id": "keeper",
+      "file": "/models/keeper.glb",
+      "source": "assets/source/keeper.blend",
+      "root": "keeper",
+      "bounds": {
+        "min": [
+          -0.67,
+          0.0,
+          -0.32
+        ],
+        "max": [
+          0.73977,
+          2.1,
+          0.50875
+        ]
+      },
+      "triangles": 284,
+      "vertices": 528,
+      "meshParts": [
+        {
+          "name": "arm_r",
+          "parent": "keeper",
+          "translation": [
+            0.5,
+            1.3799999952316284,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 56,
+          "vertices": 120,
+          "intendedMotion": "subtle hand gesture"
+        },
+        {
+          "name": "body",
+          "parent": "keeper",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 228,
+          "vertices": 408,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 23036,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "keeper",
+          "translation": [
+            0,
+            1.3200000524520874,
+            0.47999998927116394
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "socket_capture",
+          "parent": "keeper",
+          "translation": [
+            0.7599999904632568,
+            0.8100000023841858,
+            0.44999998807907104
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "socket_lantern",
+          "parent": "keeper",
+          "translation": [
+            0.7599999904632568,
+            0.36000001430511475,
+            0.44999998807907104
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "keeper"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "keeper"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        }
+      ],
+      "sha256": "a5888e79c677d3d1ba25508b22b9c4e013e6e0e9bfb57075f1b97e6543426eb3",
+      "portrait": "/models/portraits/keeper.png"
+    },
+    {
+      "id": "lantern",
+      "file": "/models/lantern.glb",
+      "source": "assets/source/lantern.blend",
+      "root": "lantern",
+      "bounds": {
+        "min": [
+          -0.325,
+          0.02,
+          -0.285
+        ],
+        "max": [
+          0.325,
+          0.945,
+          0.285
+        ]
+      },
+      "triangles": 188,
+      "vertices": 376,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "lantern",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 188,
+          "vertices": 376,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Bound light",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.6157356693789673,
+            0.43677225561189204,
+            0.15625957133498236
+          ]
+        }
+      ],
+      "bytes": 16900,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_core",
+          "parent": "lantern",
+          "translation": [
+            0,
+            0.41999998688697815,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "lantern"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "lantern"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        }
+      ],
+      "sha256": "5fc8a0432ff1c4bfc1ab3b8249989ecf8ae402e7f262a611b072bc00ee9ffabb",
+      "portrait": "/models/portraits/lantern.png"
+    },
+    {
+      "id": "rim_segment",
+      "file": "/models/rim_segment.glb",
+      "source": "assets/source/rim_segment.blend",
+      "root": "rim_segment",
+      "bounds": {
+        "min": [
+          0.0,
+          0.0,
+          -21.1
+        ],
+        "max": [
+          5.46108,
+          0.23,
+          -19.02874
+        ]
+      },
+      "triangles": 32,
+      "vertices": 60,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "rim_segment",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 32,
+          "vertices": 60,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 3676,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_end",
+          "parent": "rim_segment",
+          "translation": [
+            5.279908657073975,
+            0,
+            -19.70488739013672
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "socket_start",
+          "parent": "rim_segment",
+          "translation": [
+            0,
+            0,
+            -20.399999618530273
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [],
+      "sha256": "b7b8b0625a95b68fc61a28b2377e6c17c6cc7d160c5d56562c9379b3f5cc37b8"
+    },
+    {
+      "id": "bell_arch",
+      "file": "/models/bell_arch.glb",
+      "source": "assets/source/bell_arch.blend",
+      "root": "bell_arch",
+      "bounds": {
+        "min": [
+          -3.1,
+          0.0,
+          -0.8
+        ],
+        "max": [
+          3.1,
+          5.8,
+          0.8
+        ]
+      },
+      "triangles": 296,
+      "vertices": 516,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "bell_arch",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 296,
+          "vertices": 516,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 21616,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_bell",
+          "parent": "bell_arch",
+          "translation": [
+            0,
+            5.019999980926514,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [],
+      "sha256": "8559425d826591c4b80ed6837be0b0debd200b379bb83f1a1225f0797e000764"
+    },
+    {
+      "id": "hanging_bell",
+      "file": "/models/hanging_bell.glb",
+      "source": "assets/source/hanging_bell.blend",
+      "root": "hanging_bell",
+      "bounds": {
+        "min": [
+          -0.8,
+          -1.68,
+          -0.71519
+        ],
+        "max": [
+          0.8,
+          -0.1,
+          0.71519
+        ]
+      },
+      "triangles": 152,
+      "vertices": 300,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "hanging_bell",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 152,
+          "vertices": 300,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 12936,
+      "textures": [],
+      "animations": [],
+      "sockets": [],
+      "motions": [],
+      "sha256": "6b06c5a79682cbe545c38f86307812e963fc843d86318c50137d5a4e371033d8"
+    },
+    {
+      "id": "ember",
+      "file": "/models/ember.glb",
+      "source": "assets/source/ember.blend",
+      "root": "ember",
+      "bounds": {
+        "min": [
+          -0.525,
+          0.0,
+          -0.475
+        ],
+        "max": [
+          0.525,
+          1.35,
+          0.475
+        ]
+      },
+      "triangles": 180,
+      "vertices": 346,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "ember",
+          "translation": [
+            0,
+            0,
+            -0.05157144367694855
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 180,
+          "vertices": 346,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Bound light",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.6157356693789673,
+            0.43677225561189204,
+            0.15625957133498236
+          ]
+        }
+      ],
+      "bytes": 15800,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "ember",
+          "translation": [
+            0,
+            0.6499999761581421,
+            0.4804285764694214
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "ember"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "ember"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        }
+      ],
+      "sha256": "d034db2321447bad510ad94221fececda604a2bb2b3bb47641ca707223593fa7",
+      "portrait": "/models/portraits/ember.png"
+    },
+    {
+      "id": "thorn",
+      "file": "/models/thorn.glb",
+      "source": "assets/source/thorn.blend",
+      "root": "thorn",
+      "bounds": {
+        "min": [
+          -0.7,
+          0.0,
+          -0.65
+        ],
+        "max": [
+          0.7,
+          1.25,
+          0.65
+        ]
+      },
+      "triangles": 168,
+      "vertices": 318,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "thorn",
+          "translation": [
+            0,
+            0,
+            -0.04625466838479042
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 168,
+          "vertices": 318,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 13764,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "thorn",
+          "translation": [
+            0,
+            0.46000000834465027,
+            0.6646068096160889
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "thorn"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "thorn"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        }
+      ],
+      "sha256": "46cc7037ff6df2e964ee2c091211deca61c100e142ba0cf988f9912350e82847",
+      "portrait": "/models/portraits/thorn.png"
+    },
+    {
+      "id": "volt",
+      "file": "/models/volt.glb",
+      "source": "assets/source/volt.blend",
+      "root": "volt",
+      "bounds": {
+        "min": [
+          -0.9,
+          0.12,
+          -0.575
+        ],
+        "max": [
+          0.9,
+          1.22,
+          0.575
+        ]
+      },
+      "triangles": 120,
+      "vertices": 240,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "volt",
+          "translation": [
+            0,
+            -0.0032492915634065866,
+            0.02544245310127735
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 48,
+          "vertices": 108,
+          "intendedMotion": "rigid body"
+        },
+        {
+          "name": "wing_l",
+          "parent": "volt",
+          "translation": [
+            -0.10000000149011612,
+            1.1059943437576294,
+            0.10685838013887405
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 36,
+          "vertices": 66,
+          "intendedMotion": "hinged flap"
+        },
+        {
+          "name": "wing_r",
+          "parent": "volt",
+          "translation": [
+            0.10000000149011612,
+            1.1059943437576294,
+            0.10685838013887405
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 36,
+          "vertices": 66,
+          "intendedMotion": "hinged flap"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 12456,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "volt",
+          "translation": [
+            0,
+            0.8440896272659302,
+            0.5851770043373108
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "volt"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "volt"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        },
+        {
+          "state": "idle",
+          "nodes": [
+            "wing_l"
+          ],
+          "axis": "Z",
+          "range": [
+            -0.314,
+            0.314
+          ],
+          "phase": "opposed wings; Volt 11rad/s, Moth 6rad/s"
+        },
+        {
+          "state": "idle",
+          "nodes": [
+            "wing_r"
+          ],
+          "axis": "Z",
+          "range": [
+            -0.314,
+            0.314
+          ],
+          "phase": "opposed wings; Volt 11rad/s, Moth 6rad/s"
+        }
+      ],
+      "sha256": "cff4dd5489af46724db36ea43b14228df2847acfc4326bd491c3968db2fa4ff4",
+      "portrait": "/models/portraits/volt.png"
+    },
+    {
+      "id": "mire",
+      "file": "/models/mire.glb",
+      "source": "assets/source/mire.blend",
+      "root": "mire",
+      "bounds": {
+        "min": [
+          -0.675,
+          0.0,
+          -0.7
+        ],
+        "max": [
+          0.675,
+          1.1,
+          0.7
+        ]
+      },
+      "triangles": 204,
+      "vertices": 358,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "mire",
+          "translation": [
+            0.020769242197275162,
+            -0.04150943085551262,
+            0.05645162612199783
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 204,
+          "vertices": 358,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 15508,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "mire",
+          "translation": [
+            -0.10384614020586014,
+            1.110377311706543,
+            0.07903227210044861
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "mire"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "mire"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        }
+      ],
+      "sha256": "9ce85062a4652513c0d17d1a5cf8f7c910c8ead59aa7da81c264c3934a2f2f8b",
+      "portrait": "/models/portraits/mire.png"
+    },
+    {
+      "id": "fang",
+      "file": "/models/fang.glb",
+      "source": "assets/source/fang.blend",
+      "root": "fang",
+      "bounds": {
+        "min": [
+          -0.525,
+          0.0,
+          -0.775
+        ],
+        "max": [
+          0.525,
+          1.2,
+          0.775
+        ]
+      },
+      "triangles": 310,
+      "vertices": 630,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "fang",
+          "translation": [
+            -0.008615816943347454,
+            0.002406428102403879,
+            -0.007326115854084492
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 182,
+          "vertices": 380,
+          "intendedMotion": "rigid body"
+        },
+        {
+          "name": "head",
+          "parent": "fang",
+          "translation": [
+            -0.008615816943347454,
+            0.7629220485687256,
+            0.16947075724601746
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 64,
+          "vertices": 126,
+          "intendedMotion": "anticipation lean and recoil"
+        },
+        {
+          "name": "jaw",
+          "parent": "fang",
+          "translation": [
+            -0.008615816943347454,
+            0.6842479705810547,
+            0.2932285666465759
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 64,
+          "vertices": 124,
+          "intendedMotion": "hinged bite"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 27692,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "fang",
+          "translation": [
+            -0.008615816943347454,
+            0.7804051637649536,
+            0.8059394955635071
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "fang"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "fang"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "head"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        },
+        {
+          "state": "windup",
+          "nodes": [
+            "head"
+          ],
+          "axis": "X",
+          "range": [
+            0,
+            0.2
+          ],
+          "phase": "existing anticipation timer only; recoil at damage tick"
+        },
+        {
+          "state": "windup",
+          "nodes": [
+            "jaw"
+          ],
+          "axis": "X",
+          "range": [
+            0,
+            0.2
+          ],
+          "phase": "existing anticipation timer only; recoil at damage tick"
+        }
+      ],
+      "sha256": "f7672b748b99807640f645bbdc5a6e94dd0470916a4dadf65ded564ecd83d5dd",
+      "portrait": "/models/portraits/fang.png"
+    },
+    {
+      "id": "moth",
+      "file": "/models/moth.glb",
+      "source": "assets/source/moth.blend",
+      "root": "moth",
+      "bounds": {
+        "min": [
+          -0.85,
+          0.12,
+          -0.575
+        ],
+        "max": [
+          0.85,
+          1.32,
+          0.575
+        ]
+      },
+      "triangles": 200,
+      "vertices": 396,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "moth",
+          "translation": [
+            0,
+            -1.5221052169799805,
+            0.05794573575258255
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 48,
+          "vertices": 120,
+          "intendedMotion": "rigid body"
+        },
+        {
+          "name": "wing_l",
+          "parent": "moth",
+          "translation": [
+            -0.10000000149011612,
+            0.846315860748291,
+            0.05794573575258255
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 76,
+          "vertices": 138,
+          "intendedMotion": "hinged flap"
+        },
+        {
+          "name": "wing_r",
+          "parent": "moth",
+          "translation": [
+            0.10000000149011612,
+            0.846315860748291,
+            0.05794573575258255
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 76,
+          "vertices": 138,
+          "intendedMotion": "hinged flap"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 18532,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "moth",
+          "translation": [
+            0,
+            0.9726316928863525,
+            0.4234496057033539
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "moth"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "moth"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        },
+        {
+          "state": "idle",
+          "nodes": [
+            "wing_l"
+          ],
+          "axis": "Z",
+          "range": [
+            -0.314,
+            0.314
+          ],
+          "phase": "opposed wings; Volt 11rad/s, Moth 6rad/s"
+        },
+        {
+          "state": "idle",
+          "nodes": [
+            "wing_r"
+          ],
+          "axis": "Z",
+          "range": [
+            -0.314,
+            0.314
+          ],
+          "phase": "opposed wings; Volt 11rad/s, Moth 6rad/s"
+        }
+      ],
+      "sha256": "589ec5d91146a59bf2d716b6070f86b1208af35e7df255cad9beb6666f14773a",
+      "portrait": "/models/portraits/moth.png"
+    },
+    {
+      "id": "pyre",
+      "file": "/models/pyre.glb",
+      "source": "assets/source/pyre.blend",
+      "root": "pyre",
+      "bounds": {
+        "min": [
+          -1.05,
+          0.0,
+          -0.825
+        ],
+        "max": [
+          1.05,
+          2.35,
+          0.825
+        ]
+      },
+      "triangles": 382,
+      "vertices": 688,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "pyre",
+          "translation": [
+            0,
+            0,
+            0.06525018066167831
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 382,
+          "vertices": 688,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Bound light",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.6157356693789673,
+            0.43677225561189204,
+            0.15625957133498236
+          ]
+        }
+      ],
+      "bytes": 29408,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "pyre",
+          "translation": [
+            0,
+            1.1699999570846558,
+            0.7875286936759949
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "pyre",
+          "translation": [
+            0,
+            1.149999976158142,
+            0.06525018066167831
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "pyre"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "pyre"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        }
+      ],
+      "sha256": "2118463f1a51f0deb5fa8053f05f78d7d76cc250a87c7f0b435b2b3cc2af7cf2",
+      "portrait": "/models/portraits/pyre.png"
+    },
+    {
+      "id": "storm",
+      "file": "/models/storm.glb",
+      "source": "assets/source/storm.blend",
+      "root": "storm",
+      "bounds": {
+        "min": [
+          -1.325,
+          0.0,
+          -1.0
+        ],
+        "max": [
+          1.325,
+          1.7,
+          1.0
+        ]
+      },
+      "triangles": 292,
+      "vertices": 528,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "storm",
+          "translation": [
+            0.14265261590480804,
+            -0.2705566883087158,
+            0.04409318417310715
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 252,
+          "vertices": 450,
+          "intendedMotion": "rigid body"
+        },
+        {
+          "name": "head",
+          "parent": "storm",
+          "translation": [
+            -0.19281083345413208,
+            1.100265383720398,
+            -0.744314432144165
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 40,
+          "vertices": 78,
+          "intendedMotion": "anticipation lean and recoil"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 23020,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "storm",
+          "translation": [
+            -0.18232761323451996,
+            1.1431035995483398,
+            -0.19849377870559692
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "storm"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "storm"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "head"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        },
+        {
+          "state": "windup",
+          "nodes": [
+            "head"
+          ],
+          "axis": "X",
+          "range": [
+            0,
+            0.2
+          ],
+          "phase": "existing anticipation timer only; recoil at damage tick"
+        }
+      ],
+      "sha256": "038598990464e660dbcf7804e33ef1531fc4e58b663aa9b35a0acd8a35d070c9",
+      "portrait": "/models/portraits/storm.png"
+    },
+    {
+      "id": "dusk",
+      "file": "/models/dusk.glb",
+      "source": "assets/source/dusk.blend",
+      "root": "dusk",
+      "bounds": {
+        "min": [
+          -1.175,
+          0.0,
+          -0.95
+        ],
+        "max": [
+          1.175,
+          2.35,
+          0.95
+        ]
+      },
+      "triangles": 286,
+      "vertices": 542,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "dusk",
+          "translation": [
+            0,
+            0.08073318004608154,
+            -0.02200131118297577
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 206,
+          "vertices": 398,
+          "intendedMotion": "rigid body"
+        },
+        {
+          "name": "wing_l",
+          "parent": "dusk",
+          "translation": [
+            -0.2127155214548111,
+            1.515995979309082,
+            -0.02200131118297577
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 40,
+          "vertices": 72,
+          "intendedMotion": "hinged flap"
+        },
+        {
+          "name": "wing_r",
+          "parent": "dusk",
+          "translation": [
+            0.2127155214548111,
+            1.515995979309082,
+            -0.02200131118297577
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 40,
+          "vertices": 72,
+          "intendedMotion": "hinged flap"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 24328,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "dusk",
+          "translation": [
+            0,
+            1.6420663595199585,
+            1.0256001949310303
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "dusk"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "dusk"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        },
+        {
+          "state": "idle",
+          "nodes": [
+            "wing_l"
+          ],
+          "axis": "Z",
+          "range": [
+            -0.314,
+            0.314
+          ],
+          "phase": "opposed wings; Volt 11rad/s, Moth 6rad/s"
+        },
+        {
+          "state": "idle",
+          "nodes": [
+            "wing_r"
+          ],
+          "axis": "Z",
+          "range": [
+            -0.314,
+            0.314
+          ],
+          "phase": "opposed wings; Volt 11rad/s, Moth 6rad/s"
+        }
+      ],
+      "sha256": "b602542ad7f3156c8c46b0ad4afc5924ff5994b8c99df887f9417e2738a74049",
+      "portrait": "/models/portraits/dusk.png"
+    },
+    {
+      "id": "solar",
+      "file": "/models/solar.glb",
+      "source": "assets/source/solar.blend",
+      "root": "solar",
+      "bounds": {
+        "min": [
+          -1.625,
+          0.12,
+          -1.125
+        ],
+        "max": [
+          1.625,
+          2.82,
+          1.125
+        ]
+      },
+      "triangles": 354,
+      "vertices": 702,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "solar",
+          "translation": [
+            0,
+            0.008165592327713966,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 322,
+          "vertices": 642,
+          "intendedMotion": "rigid body"
+        },
+        {
+          "name": "wing_l",
+          "parent": "solar",
+          "translation": [
+            -0.3046875,
+            1.8454437255859375,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 16,
+          "vertices": 30,
+          "intendedMotion": "hinged flap"
+        },
+        {
+          "name": "wing_r",
+          "parent": "solar",
+          "translation": [
+            0.3046875,
+            1.8454437255859375,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 16,
+          "vertices": 30,
+          "intendedMotion": "hinged flap"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Bound light",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.6157356693789673,
+            0.43677225561189204,
+            0.15625957133498236
+          ]
+        }
+      ],
+      "bytes": 31396,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "solar",
+          "translation": [
+            0,
+            2.4205915927886963,
+            0.3083127737045288
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "solar",
+          "translation": [
+            0,
+            2.4205915927886963,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "solar"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "solar"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        },
+        {
+          "state": "idle",
+          "nodes": [
+            "wing_l"
+          ],
+          "axis": "Z",
+          "range": [
+            -0.314,
+            0.314
+          ],
+          "phase": "opposed wings; Volt 11rad/s, Moth 6rad/s"
+        },
+        {
+          "state": "idle",
+          "nodes": [
+            "wing_r"
+          ],
+          "axis": "Z",
+          "range": [
+            -0.314,
+            0.314
+          ],
+          "phase": "opposed wings; Volt 11rad/s, Moth 6rad/s"
+        }
+      ],
+      "sha256": "e22c99b5b35ed496a051a9d5950bd614ae86a555ffb09428c4a93e3d760e8299",
+      "portrait": "/models/portraits/solar.png"
+    },
+    {
+      "id": "world",
+      "file": "/models/world.glb",
+      "source": "assets/source/world.blend",
+      "root": "world",
+      "bounds": {
+        "min": [
+          -1.575,
+          0.0,
+          -1.35
+        ],
+        "max": [
+          1.575,
+          2.3,
+          1.35
+        ]
+      },
+      "triangles": 436,
+      "vertices": 830,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "world",
+          "translation": [
+            0.008298780769109726,
+            -0.7602510452270508,
+            -0.10515434294939041
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 316,
+          "vertices": 608,
+          "intendedMotion": "rigid body"
+        },
+        {
+          "name": "head",
+          "parent": "world",
+          "translation": [
+            0.6355502605438232,
+            0.7602510452270508,
+            0.41296878457069397
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 52,
+          "vertices": 102,
+          "intendedMotion": "anticipation lean and recoil"
+        },
+        {
+          "name": "jaw",
+          "parent": "world",
+          "translation": [
+            0.6241457462310791,
+            0.27907952666282654,
+            0.5562794804573059
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 68,
+          "vertices": 120,
+          "intendedMotion": "hinged bite"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 35740,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "world",
+          "translation": [
+            0.6469548344612122,
+            0.7794979214668274,
+            1.350000023841858
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "world",
+          "translation": [
+            0.008298780769109726,
+            1.4916316270828247,
+            -0.10515434294939041
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "world"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "world"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "head"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        },
+        {
+          "state": "windup",
+          "nodes": [
+            "head"
+          ],
+          "axis": "X",
+          "range": [
+            0,
+            0.2
+          ],
+          "phase": "existing anticipation timer only; recoil at damage tick"
+        },
+        {
+          "state": "windup",
+          "nodes": [
+            "jaw"
+          ],
+          "axis": "X",
+          "range": [
+            0,
+            0.2
+          ],
+          "phase": "existing anticipation timer only; recoil at damage tick"
+        }
+      ],
+      "sha256": "0f170baa7e8a0e87c711224b7d120f61b2ae25f275622371c3c4246a0027b927",
+      "portrait": "/models/portraits/world.png"
+    },
+    {
+      "id": "eclipse",
+      "file": "/models/eclipse.glb",
+      "source": "assets/source/eclipse.blend",
+      "root": "eclipse",
+      "bounds": {
+        "min": [
+          -1.5,
+          0.0,
+          -1.275
+        ],
+        "max": [
+          1.5,
+          2.7,
+          1.275
+        ]
+      },
+      "triangles": 410,
+      "vertices": 748,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "eclipse",
+          "translation": [
+            0.15894505381584167,
+            0.04796435683965683,
+            0.06586954742670059
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 410,
+          "vertices": 748,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Bound light",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.6157356693789673,
+            0.43677225561189204,
+            0.15625957133498236
+          ]
+        }
+      ],
+      "bytes": 31824,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "eclipse",
+          "translation": [
+            0.6882404088973999,
+            1.486356496810913,
+            1.3000165224075317
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "eclipse",
+          "translation": [
+            0.06689368933439255,
+            1.411440372467041,
+            0.44111689925193787
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "eclipse"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "eclipse"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        }
+      ],
+      "sha256": "39de09a03e3db8252906bfc120e9147a06f182f8bc72588a108bcc3b8d4fc7cb",
+      "portrait": "/models/portraits/eclipse.png"
+    },
+    {
+      "id": "boss",
+      "file": "/models/boss.glb",
+      "source": "assets/source/boss.blend",
+      "root": "boss",
+      "bounds": {
+        "min": [
+          -2.1,
+          0.0,
+          -1.7
+        ],
+        "max": [
+          2.1,
+          4.6,
+          1.57965
+        ]
+      },
+      "triangles": 626,
+      "vertices": 1158,
+      "meshParts": [
+        {
+          "name": "arm_l",
+          "parent": "boss",
+          "translation": [
+            -0.9876484274864197,
+            2.8343658447265625,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 122,
+          "vertices": 214,
+          "intendedMotion": "warning gesture"
+        },
+        {
+          "name": "arm_r",
+          "parent": "boss",
+          "translation": [
+            0.9876484274864197,
+            2.8343658447265625,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 122,
+          "vertices": 214,
+          "intendedMotion": "subtle hand gesture"
+        },
+        {
+          "name": "body",
+          "parent": "boss",
+          "translation": [
+            0,
+            0.07969100028276443,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 310,
+          "vertices": 576,
+          "intendedMotion": "rigid body"
+        },
+        {
+          "name": "clapper",
+          "parent": "boss",
+          "translation": [
+            0,
+            3.546781539916992,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 72,
+          "vertices": 154,
+          "intendedMotion": "warning swing"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Bound light",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.6157356693789673,
+            0.43677225561189204,
+            0.15625957133498236
+          ]
+        }
+      ],
+      "bytes": 50368,
+      "textures": [],
+      "animations": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "boss",
+          "translation": [
+            0,
+            1.760992407798767,
+            1.8727847337722778
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "boss",
+          "translation": [
+            0,
+            1.6945003271102905,
+            0.21170608699321747
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "motions": [
+        {
+          "state": "idle",
+          "nodes": [
+            "boss"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.018,
+            0.018
+          ],
+          "phase": "sin(entityTime*3 + entityId)"
+        },
+        {
+          "state": "travel",
+          "nodes": [
+            "boss"
+          ],
+          "axis": "Y",
+          "range": [
+            -0.035,
+            0.035
+          ],
+          "phase": "sin(entityTime*8 + entityId)"
+        },
+        {
+          "state": "attack",
+          "nodes": [
+            "body"
+          ],
+          "axis": "X",
+          "range": [
+            -0.12,
+            0
+          ],
+          "phase": "0.16s recoil starting on authoritative damage tick; no action delay"
+        },
+        {
+          "state": "windup",
+          "nodes": [
+            "clapper"
+          ],
+          "axis": "X",
+          "range": [
+            -0.24,
+            0.24
+          ],
+          "phase": "existing boss warning; no delayed damage"
+        }
+      ],
+      "sha256": "833251547a0fed524a196cd1f3d258c0771f440465f7f703c4a27339f8e7e0fa",
+      "portrait": "/models/portraits/boss.png"
+    },
+    {
+      "id": "arena_floor",
+      "file": "/models/arena_floor.glb",
+      "source": "assets/source/arena_floor.blend",
+      "root": "arena_floor",
+      "bounds": {
+        "min": [
+          -20.2,
+          -0.6,
+          -20.2
+        ],
+        "max": [
+          20.2,
+          0.006,
+          20.2
+        ]
+      },
+      "triangles": 702,
+      "vertices": 1281,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "arena_floor",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 702,
+          "vertices": 1281,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 51564,
+      "textures": [],
+      "animations": [],
+      "sockets": [],
+      "motions": [],
+      "sha256": "5d5bfd7dd8e96de7373892ec4660449b1db3091aef6a029f49dc9068ff096073"
+    },
+    {
+      "id": "shrine_plinth",
+      "file": "/models/shrine_plinth.glb",
+      "source": "assets/source/shrine_plinth.blend",
+      "root": "shrine_plinth",
+      "bounds": {
+        "min": [
+          -1.2,
+          0.0,
+          -0.9
+        ],
+        "max": [
+          1.2,
+          1.25,
+          0.9
+        ]
+      },
+      "triangles": 124,
+      "vertices": 216,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "shrine_plinth",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 124,
+          "vertices": 216,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 9712,
+      "textures": [],
+      "animations": [],
+      "sockets": [],
+      "motions": [],
+      "sha256": "0308c8afef83ebcfc97ace8ae83dac86a77850643fba800b192a87d1a3690112"
+    },
+    {
+      "id": "votive",
+      "file": "/models/votive.glb",
+      "source": "assets/source/votive.blend",
+      "root": "votive",
+      "bounds": {
+        "min": [
+          -0.35,
+          0.0,
+          -0.35
+        ],
+        "max": [
+          0.35,
+          1.65,
+          0.35
+        ]
+      },
+      "triangles": 108,
+      "vertices": 222,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "votive",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 108,
+          "vertices": 222,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Bound light",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.6157356693789673,
+            0.43677225561189204,
+            0.15625957133498236
+          ]
+        }
+      ],
+      "bytes": 10776,
+      "textures": [],
+      "animations": [],
+      "sockets": [],
+      "motions": [],
+      "sha256": "182e8a52cb3027ea8f2e92a2ba6c3ff9328fd31067c747a1f6900085a62c318f"
+    },
+    {
+      "id": "rubble_cluster",
+      "file": "/models/rubble_cluster.glb",
+      "source": "assets/source/rubble_cluster.blend",
+      "root": "rubble_cluster",
+      "bounds": {
+        "min": [
+          -1.0,
+          0.0,
+          -0.48
+        ],
+        "max": [
+          1.0,
+          0.35,
+          0.55
+        ]
+      },
+      "triangles": 60,
+      "vertices": 108,
+      "meshParts": [
+        {
+          "name": "body",
+          "parent": "rubble_cluster",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "triangles": 60,
+          "vertices": 108,
+          "intendedMotion": "rigid body"
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "alphaMode": "OPAQUE",
+          "roughness": 0.8600000143051147,
+          "metallic": 0.07999999821186066,
+          "doubleSided": true,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "bytes": 5420,
+      "textures": [],
+      "animations": [],
+      "sockets": [],
+      "motions": [],
+      "sha256": "14e69e680883fb6369142bf1d5a91e2c4ff7dea031b09bd1e7d09b3a813cf210"
+    }
+  ]
+}

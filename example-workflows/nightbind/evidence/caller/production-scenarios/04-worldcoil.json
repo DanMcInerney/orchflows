@@ -1,0 +1,411 @@
+{
+  "assets": {
+    "loaded": 22
+  },
+  "audio": {
+    "available": true,
+    "cuesPlayed": 22,
+    "error": null,
+    "muted": false,
+    "state": "running",
+    "voices": 5,
+    "volume": 0.4
+  },
+  "available": [],
+  "boss": null,
+  "build": "qa-c09f13cac8e9",
+  "candidates": [
+    {
+      "count": 2,
+      "id": 88,
+      "type": "ember"
+    },
+    {
+      "count": 3,
+      "id": 11,
+      "type": "thorn"
+    },
+    {
+      "count": 3,
+      "id": 42,
+      "type": "volt"
+    },
+    {
+      "count": 5,
+      "id": 31,
+      "type": "mire"
+    },
+    {
+      "count": 2,
+      "id": 62,
+      "type": "fang"
+    },
+    {
+      "count": 4,
+      "id": 21,
+      "type": "moth"
+    }
+  ],
+  "charge": 1,
+  "enemies": [
+    {
+      "hp": 45.8,
+      "id": 7,
+      "type": "mire",
+      "wind": 0,
+      "x": 12.45,
+      "z": 3.18
+    },
+    {
+      "hp": 47.8,
+      "id": 8,
+      "type": "fang",
+      "wind": 0,
+      "x": 11.85,
+      "z": 5.91
+    },
+    {
+      "hp": 75.6,
+      "id": 11,
+      "type": "thorn",
+      "wind": 0,
+      "x": -10.17,
+      "z": 5.35
+    },
+    {
+      "hp": 37.8,
+      "id": 21,
+      "type": "moth",
+      "wind": 0,
+      "x": -9.73,
+      "z": -5.04
+    },
+    {
+      "hp": 75.6,
+      "id": 23,
+      "type": "thorn",
+      "wind": 0,
+      "x": -11.49,
+      "z": -1.53
+    },
+    {
+      "hp": 33.8,
+      "id": 28,
+      "type": "ember",
+      "wind": 0,
+      "x": -2.19,
+      "z": -13.01
+    },
+    {
+      "hp": 31.8,
+      "id": 30,
+      "type": "volt",
+      "wind": 0,
+      "x": -7.15,
+      "z": 8.68
+    },
+    {
+      "hp": 45.8,
+      "id": 31,
+      "type": "mire",
+      "wind": 0,
+      "x": -11.57,
+      "z": -2.08
+    },
+    {
+      "hp": 37.8,
+      "id": 33,
+      "type": "moth",
+      "wind": 0,
+      "x": 5.38,
+      "z": -10.5
+    },
+    {
+      "hp": 47.8,
+      "id": 38,
+      "type": "fang",
+      "wind": 0,
+      "x": -9.52,
+      "z": 7.67
+    },
+    {
+      "hp": 37.8,
+      "id": 39,
+      "type": "moth",
+      "wind": 0,
+      "x": 9.28,
+      "z": 5.93
+    },
+    {
+      "hp": 33.8,
+      "id": 40,
+      "type": "ember",
+      "wind": 0,
+      "x": -11.93,
+      "z": -4.67
+    },
+    {
+      "hp": 75.6,
+      "id": 41,
+      "type": "thorn",
+      "wind": 0,
+      "x": -11.62,
+      "z": 8.44
+    },
+    {
+      "hp": 31.8,
+      "id": 42,
+      "type": "volt",
+      "wind": 0,
+      "x": 5.35,
+      "z": -9.5
+    },
+    {
+      "hp": 37.8,
+      "id": 45,
+      "type": "moth",
+      "wind": 0,
+      "x": 13.3,
+      "z": -1.18
+    },
+    {
+      "hp": 45.8,
+      "id": 49,
+      "type": "mire",
+      "wind": 0,
+      "x": -7.07,
+      "z": -10.54
+    },
+    {
+      "hp": 75.6,
+      "id": 59,
+      "type": "thorn",
+      "wind": 0,
+      "x": 0.1,
+      "z": 14.01
+    },
+    {
+      "hp": 47.8,
+      "id": 62,
+      "type": "fang",
+      "wind": 0.6833333333333332,
+      "x": 1.95,
+      "z": 10.77
+    },
+    {
+      "hp": 45.8,
+      "id": 67,
+      "type": "mire",
+      "wind": 0,
+      "x": -1.39,
+      "z": 12.62
+    },
+    {
+      "hp": 37.8,
+      "id": 69,
+      "type": "moth",
+      "wind": 0,
+      "x": 7.86,
+      "z": 8.16
+    },
+    {
+      "hp": 33.8,
+      "id": 70,
+      "type": "ember",
+      "wind": 0,
+      "x": 12.13,
+      "z": 8.09
+    },
+    {
+      "hp": 75.6,
+      "id": 77,
+      "type": "thorn",
+      "wind": 0,
+      "x": -3.44,
+      "z": 11.73
+    },
+    {
+      "hp": 31.8,
+      "id": 84,
+      "type": "volt",
+      "wind": 0,
+      "x": 4.58,
+      "z": 10.53
+    },
+    {
+      "hp": 45.8,
+      "id": 85,
+      "type": "mire",
+      "wind": 0,
+      "x": 10.2,
+      "z": -7.29
+    },
+    {
+      "hp": 33.8,
+      "id": 88,
+      "type": "ember",
+      "wind": 0,
+      "x": -9.79,
+      "z": -5.04
+    },
+    {
+      "hp": 31.8,
+      "id": 90,
+      "type": "volt",
+      "wind": 0,
+      "x": 6.91,
+      "z": -14.53
+    },
+    {
+      "hp": 31.8,
+      "id": 91,
+      "type": "volt",
+      "wind": 0,
+      "x": 15.41,
+      "z": 4.57
+    },
+    {
+      "hp": 31.8,
+      "id": 92,
+      "type": "volt",
+      "wind": 0,
+      "x": -8.4,
+      "z": 13.42
+    },
+    {
+      "hp": 47.8,
+      "id": 93,
+      "type": "fang",
+      "wind": 0,
+      "x": 10.21,
+      "z": -13.23
+    },
+    {
+      "hp": 31.8,
+      "id": 94,
+      "type": "volt",
+      "wind": 0,
+      "x": -9.41,
+      "z": 15.61
+    },
+    {
+      "hp": 75.6,
+      "id": 95,
+      "type": "thorn",
+      "wind": 0,
+      "x": 14.33,
+      "z": -11.77
+    },
+    {
+      "hp": 33.8,
+      "id": 96,
+      "type": "ember",
+      "wind": 0,
+      "x": 8.96,
+      "z": -16.01
+    },
+    {
+      "hp": 31.8,
+      "id": 97,
+      "type": "volt",
+      "wind": 0,
+      "x": -16.1,
+      "z": -8.55
+    },
+    {
+      "hp": 47.8,
+      "id": 98,
+      "type": "fang",
+      "wind": 0,
+      "x": -17.62,
+      "z": 5.81
+    },
+    {
+      "hp": 45.8,
+      "id": 99,
+      "type": "mire",
+      "wind": 0,
+      "x": -14.38,
+      "z": -12.95
+    },
+    {
+      "hp": 45.8,
+      "id": 100,
+      "type": "mire",
+      "wind": 0,
+      "x": -11.2,
+      "z": -16.05
+    },
+    {
+      "hp": 33.8,
+      "id": 101,
+      "type": "ember",
+      "wind": 0,
+      "x": -18.73,
+      "z": -6.14
+    }
+  ],
+  "events": [
+    {
+      "result": "world",
+      "text": "Worldcoil awakens.",
+      "tick": 0,
+      "type": "evolve"
+    }
+  ],
+  "hostiles": 37,
+  "hp": 120,
+  "keys": {
+    "x": 0,
+    "z": 0
+  },
+  "kills": 60,
+  "mode": "manual",
+  "nearby": 0,
+  "paused": false,
+  "phase": "playing",
+  "player": {
+    "x": 0,
+    "z": 0
+  },
+  "presentation": {
+    "captureViewportWidth": 0,
+    "highlightedCaptureId": null,
+    "modal": null
+  },
+  "ready": true,
+  "run": 5,
+  "scenario": "second-evolution",
+  "seed": 12345,
+  "settings": {
+    "muted": false,
+    "reducedMotion": false,
+    "volume": 0.4
+  },
+  "squad": [
+    {
+      "id": 89,
+      "type": "world"
+    }
+  ],
+  "stats": {
+    "captures": 0,
+    "damageBy": {
+      "keeper": 24,
+      "world": 2656.529999999999
+    },
+    "damageTaken": 0,
+    "evolutions": [
+      {
+        "result": "world",
+        "time": 198,
+        "wave": 10
+      }
+    ]
+  },
+  "target": null,
+  "tick": 90,
+  "time": 199.5,
+  "version": 1,
+  "wave": 10
+}

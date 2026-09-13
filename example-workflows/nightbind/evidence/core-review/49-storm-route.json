@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "seed": 12345,
+  "scenario": "pre-evolution",
+  "tick": 300,
+  "time": 93,
+  "wave": 5,
+  "phase": "playing",
+  "paused": false,
+  "mode": "manual",
+  "hp": 72.5,
+  "charge": 1,
+  "player": {
+    "x": 9.93004836008387,
+    "z": 7.944038688067095
+  },
+  "target": null,
+  "keys": {
+    "x": 0,
+    "z": 0
+  },
+  "squad": [
+    {
+      "id": 88,
+      "type": "storm"
+    }
+  ],
+  "hostiles": 63,
+  "nearby": 1,
+  "enemies": [
+    {
+      "id": 4,
+      "type": "thorn",
+      "x": 10.07,
+      "z": -0.59,
+      "hp": 11.7,
+      "wind": 0
+    },
+    {
+      "id": 5,
+      "type": "volt",
+      "x": 1.22,
+      "z": 3.38,
+      "hp": 23,
+      "wind": 0
+    },
+    {
+      "id": 8,
+      "type": "moth",
+      "x": 1.03,
+      "z": 6.86,
+      "hp": 27.4,
+      "wind": 0
+    },
+    {
+      "id": 10,
+      "type": "thorn",
+      "x": -4.21,
+      "z": 6.57,
+      "hp": 54.7,
+      "wind": 0
+    },
+    {
+      "id": 14,
+      "type": "moth",
+      "x": 1.55,
+      "z": 2.31,
+      "hp": 27.4,
+      "wind": 0
+    },
+    {
+      "id": 17,
+      "type": "volt",
+      "x": 1.91,
+      "z": -1.33,
+      "hp": 23,
+      "wind": 0
+    },
+    {
+      "id": 18,
+      "type": "mire",
+      "x": 7.53,
+      "z": -1.76,
+      "hp": 33.1,
+      "wind": 0
+    },
+    {
+      "id": 19,
+      "type": "fang",
+      "x": 5.71,
+      "z": 1.56,
+      "hp": 34.6,
+      "wind": -5.065392549852277e-16
+    }
+  ],
+  "available": [],
+  "candidates": [
+    {
+      "type": "ember",
+      "count": 1,
+      "id": 75
+    },
+    {
+      "type": "thorn",
+      "count": 7,
+      "id": 70
+    },
+    {
+      "type": "volt",
+      "count": 8,
+      "id": 35
+    },
+    {
+      "type": "mire",
+      "count": 6,
+      "id": 84
+    },
+    {
+      "type": "fang",
+      "count": 7,
+      "id": 85
+    },
+    {
+      "type": "moth",
+      "count": 7,
+      "id": 74
+    }
+  ],
+  "boss": null,
+  "kills": 43,
+  "stats": {
+    "captures": 0,
+    "evolutions": [
+      {
+        "wave": 5,
+        "time": 88,
+        "result": "storm"
+      }
+    ],
+    "damageTaken": 49,
+    "damageBy": {
+      "keeper": 88,
+      "storm": 1401.1199999999997
+    }
+  },
+  "events": [
+    {
+      "tick": 0,
+      "type": "evolve",
+      "text": "Storm Serpent awakens.",
+      "result": "storm"
+    },
+    {
+      "tick": 58,
+      "type": "damage",
+      "text": "Lost 13 vitality."
+    },
+    {
+      "tick": 168,
+      "type": "damage",
+      "text": "Lost 9 vitality."
+    },
+    {
+      "tick": 204,
+      "type": "damage",
+      "text": "Lost 9 vitality."
+    },
+    {
+      "tick": 240,
+      "type": "damage",
+      "text": "Lost 9 vitality."
+    },
+    {
+      "tick": 276,
+      "type": "damage",
+      "text": "Lost 9 vitality."
+    }
+  ],
+  "build": "development",
+  "ready": true
+}

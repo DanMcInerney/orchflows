@@ -1,0 +1,18 @@
+{
+  "name": "3d-browser-game",
+  "version": "0.1.0",
+  "description": "Develop substantial Three.js games through mechanics experiments, Blender production and independent browser playtests.",
+  "author": {
+    "name": "orchflows-light"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "3D Browser Game",
+    "shortDescription": "Build and playtest substantial Three.js games.",
+    "longDescription": "A staged game production workflow covering mechanics experiments, Blender assets, Three.js implementation, QA and independent browser playtests.",
+    "developerName": "orchflows-light",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Build a 3D browser game through mechanics experiments, Blender assets and independent playtesting."
+  }
+}

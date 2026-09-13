@@ -1,0 +1,4178 @@
+[
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "keeper",
+      "file": "/models/keeper.glb",
+      "bytes": 23036,
+      "triangles": 284,
+      "vertices": 528,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.6700000166893005,
+          0,
+          -0.3199999928474426
+        ],
+        "max": [
+          0.7397709488868713,
+          2.0999999046325684,
+          0.5087500214576721
+        ],
+        "size": [
+          1.4097709655761719,
+          2.0999999046325684,
+          0.8287500143051147
+        ]
+      },
+      "meshes": [
+        {
+          "name": "arm_r",
+          "parent": "keeper",
+          "triangles": 56,
+          "vertices": 120,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.5,
+              1.3799999952316284,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "body",
+          "parent": "keeper",
+          "triangles": 228,
+          "vertices": 408,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "keeper",
+          "local": {
+            "translation": [
+              0,
+              1.3200000524520874,
+              0.47999998927116394
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            1.3200000524520874,
+            0.47999998927116394
+          ]
+        },
+        {
+          "name": "socket_capture",
+          "parent": "keeper",
+          "local": {
+            "translation": [
+              0.7599999904632568,
+              0.8100000023841858,
+              0.44999998807907104
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0.7599999904632568,
+            0.8100000023841858,
+            0.44999998807907104
+          ]
+        },
+        {
+          "name": "socket_lantern",
+          "parent": "keeper",
+          "local": {
+            "translation": [
+              0.7599999904632568,
+              0.36000001430511475,
+              0.44999998807907104
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0.7599999904632568,
+            0.36000001430511475,
+            0.44999998807907104
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "a5888e79c677d3d1ba25508b22b9c4e013e6e0e9bfb57075f1b97e6543426eb3",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.6700000166893005,
+        0,
+        -0.3199999928474426
+      ],
+      "max": [
+        1.0849999785423279,
+        2.0999999046325684,
+        0.7349999845027924
+      ]
+    },
+    "mode": "game",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 1784,
+      "calls": 12,
+      "triangles": 1176,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 10,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "ember",
+      "file": "/models/ember.glb",
+      "bytes": 15800,
+      "triangles": 180,
+      "vertices": 346,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.5249999761581421,
+          0,
+          -0.4750000089406967
+        ],
+        "max": [
+          0.5249999761581421,
+          1.350000023841858,
+          0.4750000089406967
+        ],
+        "size": [
+          1.0499999523162842,
+          1.350000023841858,
+          0.9500000178813934
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body_mesh005",
+          "parent": "body",
+          "triangles": 164,
+          "vertices": 316,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "body_mesh005_1",
+          "parent": "body",
+          "triangles": 16,
+          "vertices": 30,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        },
+        {
+          "name": "Bound light",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "ember",
+          "local": {
+            "translation": [
+              0,
+              0.6499999761581421,
+              0.4804285764694214
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            0.6499999761581421,
+            0.4804285764694214
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "d034db2321447bad510ad94221fececda604a2bb2b3bb47641ca707223593fa7",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.4750000089406967,
+        0,
+        -0.5249999761581422
+      ],
+      "max": [
+        0.4750000089406968,
+        1.350000023841858,
+        0.5249999761581422
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 1834,
+      "calls": 10,
+      "triangles": 884,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 12,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "thorn",
+      "file": "/models/thorn.glb",
+      "bytes": 13764,
+      "triangles": 168,
+      "vertices": 318,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.699999988079071,
+          0,
+          -0.6500000096857548
+        ],
+        "max": [
+          0.699999988079071,
+          1.25,
+          0.6500000022351742
+        ],
+        "size": [
+          1.399999976158142,
+          1.25,
+          1.300000011920929
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "thorn",
+          "triangles": 168,
+          "vertices": 318,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              -0.04625466838479042
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "thorn",
+          "local": {
+            "translation": [
+              0,
+              0.46000000834465027,
+              0.6646068096160889
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            0.46000000834465027,
+            0.6646068096160889
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "46cc7037ff6df2e964ee2c091211deca61c100e142ba0cf988f9912350e82847",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.6500000022351743,
+        0,
+        -0.6999999880790712
+      ],
+      "max": [
+        0.6500000096857549,
+        1.25,
+        0.6999999880790712
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 4267,
+      "calls": 9,
+      "triangles": 872,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 13,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "volt",
+      "file": "/models/volt.glb",
+      "bytes": 12456,
+      "triangles": 120,
+      "vertices": 240,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.8999999538064003,
+          0.12000000081025064,
+          -0.5750000160187483
+        ],
+        "max": [
+          0.8999999538064003,
+          1.2199999392032623,
+          0.5750000197440386
+        ],
+        "size": [
+          1.7999999076128006,
+          1.0999999383930117,
+          1.1500000357627869
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "volt",
+          "triangles": 48,
+          "vertices": 108,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              -0.0032492915634065866,
+              0.02544245310127735
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "wing_l",
+          "parent": "volt",
+          "triangles": 36,
+          "vertices": 66,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.10000000149011612,
+              1.1059943437576294,
+              0.10685838013887405
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "wing_r",
+          "parent": "volt",
+          "triangles": 36,
+          "vertices": 66,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.10000000149011612,
+              1.1059943437576294,
+              0.10685838013887405
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "volt",
+          "local": {
+            "translation": [
+              0,
+              0.8440896272659302,
+              0.5851770043373108
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            0.8440896272659302,
+            0.5851770043373108
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "cff4dd5489af46724db36ea43b14228df2847acfc4326bd491c3968db2fa4ff4",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.5750000197440387,
+        0.12000000081025064,
+        -0.8999999538064004
+      ],
+      "max": [
+        0.5750000160187484,
+        1.2199999392032623,
+        0.8999999538064003
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 4317,
+      "calls": 11,
+      "triangles": 824,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 16,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "mire",
+      "file": "/models/mire.glb",
+      "bytes": 15508,
+      "triangles": 204,
+      "vertices": 358,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.6750000081956387,
+          0,
+          -0.6999999806284904
+        ],
+        "max": [
+          0.6750000156462193,
+          1.0999999828636646,
+          0.6999999955296516
+        ],
+        "size": [
+          1.350000023841858,
+          1.0999999828636646,
+          1.399999976158142
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "mire",
+          "triangles": 204,
+          "vertices": 358,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.020769242197275162,
+              -0.04150943085551262,
+              0.05645162612199783
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "mire",
+          "local": {
+            "translation": [
+              -0.10384614020586014,
+              1.110377311706543,
+              0.07903227210044861
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            -0.10384614020586014,
+            1.110377311706543,
+            0.07903227210044861
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "9ce85062a4652513c0d17d1a5cf8f7c910c8ead59aa7da81c264c3934a2f2f8b",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.6999999955296518,
+        0,
+        -0.6750000081956388
+      ],
+      "max": [
+        0.6999999806284906,
+        1.0999999828636646,
+        0.6750000156462195
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 4366,
+      "calls": 9,
+      "triangles": 908,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 17,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "fang",
+      "file": "/models/fang.glb",
+      "bytes": 27692,
+      "triangles": 310,
+      "vertices": 630,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.5250000013038516,
+          0,
+          -0.7750000255182385
+        ],
+        "max": [
+          0.5250000106170774,
+          1.199999988079071,
+          0.7750000059604645
+        ],
+        "size": [
+          1.050000011920929,
+          1.199999988079071,
+          1.550000031478703
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "fang",
+          "triangles": 182,
+          "vertices": 380,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.008615816943347454,
+              0.002406428102403879,
+              -0.007326115854084492
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "head",
+          "parent": "fang",
+          "triangles": 64,
+          "vertices": 126,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.008615816943347454,
+              0.7629220485687256,
+              0.16947075724601746
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "jaw",
+          "parent": "fang",
+          "triangles": 64,
+          "vertices": 124,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.008615816943347454,
+              0.6842479705810547,
+              0.2932285666465759
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "fang",
+          "local": {
+            "translation": [
+              -0.008615816943347454,
+              0.7804051637649536,
+              0.8059394955635071
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            -0.008615816943347454,
+            0.7804051637649536,
+            0.8059394955635071
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "f7672b748b99807640f645bbdc5a6e94dd0470916a4dadf65ded564ecd83d5dd",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.7750000059604646,
+        0,
+        -0.5250000013038517
+      ],
+      "max": [
+        0.7750000255182387,
+        1.199999988079071,
+        0.5250000106170776
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 4415,
+      "calls": 11,
+      "triangles": 1014,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 20,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "moth",
+      "file": "/models/moth.glb",
+      "bytes": 18532,
+      "triangles": 200,
+      "vertices": 396,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.8500000014901161,
+          0.12000000476837158,
+          -0.5749999806284904
+        ],
+        "max": [
+          0.8500000014901161,
+          1.3199999332427979,
+          0.5749999955296516
+        ],
+        "size": [
+          1.7000000029802322,
+          1.1999999284744263,
+          1.149999976158142
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "moth",
+          "triangles": 48,
+          "vertices": 120,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              -1.5221052169799805,
+              0.05794573575258255
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "wing_l",
+          "parent": "moth",
+          "triangles": 76,
+          "vertices": 138,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.10000000149011612,
+              0.846315860748291,
+              0.05794573575258255
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "wing_r",
+          "parent": "moth",
+          "triangles": 76,
+          "vertices": 138,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.10000000149011612,
+              0.846315860748291,
+              0.05794573575258255
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "moth",
+          "local": {
+            "translation": [
+              0,
+              0.9726316928863525,
+              0.4234496057033539
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            0.9726316928863525,
+            0.4234496057033539
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "589ec5d91146a59bf2d716b6070f86b1208af35e7df255cad9beb6666f14773a",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.5749999955296519,
+        0.12000000476837158,
+        -0.8500000014901162
+      ],
+      "max": [
+        0.5749999806284907,
+        1.3199999332427979,
+        0.8500000014901162
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 4464,
+      "calls": 11,
+      "triangles": 904,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 23,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "pyre",
+      "file": "/models/pyre.glb",
+      "bytes": 29408,
+      "triangles": 382,
+      "vertices": 688,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -1.0499999523162842,
+          0,
+          -0.825000025331974
+        ],
+        "max": [
+          1.0499999523162842,
+          2.3499999046325684,
+          0.8250000104308128
+        ],
+        "size": [
+          2.0999999046325684,
+          2.3499999046325684,
+          1.6500000357627869
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body_mesh011",
+          "parent": "body",
+          "triangles": 354,
+          "vertices": 618,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "body_mesh011_1",
+          "parent": "body",
+          "triangles": 28,
+          "vertices": 70,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        },
+        {
+          "name": "Bound light",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "pyre",
+          "local": {
+            "translation": [
+              0,
+              1.1699999570846558,
+              0.7875286936759949
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            1.1699999570846558,
+            0.7875286936759949
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "pyre",
+          "local": {
+            "translation": [
+              0,
+              1.149999976158142,
+              0.06525018066167831
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            1.149999976158142,
+            0.06525018066167831
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "2118463f1a51f0deb5fa8053f05f78d7d76cc250a87c7f0b435b2b3cc2af7cf2",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "pyre"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.8250000104308131,
+        0,
+        -1.0499999523162844
+      ],
+      "max": [
+        0.8250000253319743,
+        2.3499999046325684,
+        1.0499999523162844
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 1882,
+      "calls": 10,
+      "triangles": 1086,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 14,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "storm",
+      "file": "/models/storm.glb",
+      "bytes": 23020,
+      "triangles": 292,
+      "vertices": 528,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -1.3249999433755875,
+          0,
+          -0.9999999478459358
+        ],
+        "max": [
+          1.3250000327825546,
+          1.7000000476837158,
+          0.9999999925494194
+        ],
+        "size": [
+          2.649999976158142,
+          1.7000000476837158,
+          1.9999999403953552
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "storm",
+          "triangles": 252,
+          "vertices": 450,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.14265261590480804,
+              -0.2705566883087158,
+              0.04409318417310715
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "head",
+          "parent": "storm",
+          "triangles": 40,
+          "vertices": 78,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.19281083345413208,
+              1.100265383720398,
+              -0.744314432144165
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "storm",
+          "local": {
+            "translation": [
+              -0.18232761323451996,
+              1.1431035995483398,
+              -0.19849377870559692
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            -0.18232761323451996,
+            1.1431035995483398,
+            -0.19849377870559692
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "038598990464e660dbcf7804e33ef1531fc4e58b663aa9b35a0acd8a35d070c9",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.9999999925494196,
+        0,
+        -1.3249999433755877
+      ],
+      "max": [
+        0.999999947845936,
+        1.7000000476837158,
+        1.3250000327825548
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 4561,
+      "calls": 10,
+      "triangles": 996,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 27,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "dusk",
+      "file": "/models/dusk.glb",
+      "bytes": 24328,
+      "triangles": 286,
+      "vertices": 542,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -1.1750000268220901,
+          0,
+          -0.9499999731779099
+        ],
+        "max": [
+          1.1750000268220901,
+          2.349999964237213,
+          0.9500000029802322
+        ],
+        "size": [
+          2.3500000536441803,
+          2.349999964237213,
+          1.899999976158142
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "dusk",
+          "triangles": 206,
+          "vertices": 398,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0.08073318004608154,
+              -0.02200131118297577
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "wing_l",
+          "parent": "dusk",
+          "triangles": 40,
+          "vertices": 72,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.2127155214548111,
+              1.515995979309082,
+              -0.02200131118297577
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "wing_r",
+          "parent": "dusk",
+          "triangles": 40,
+          "vertices": 72,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.2127155214548111,
+              1.515995979309082,
+              -0.02200131118297577
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "dusk",
+          "local": {
+            "translation": [
+              0,
+              1.6420663595199585,
+              1.0256001949310303
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            1.6420663595199585,
+            1.0256001949310303
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "b602542ad7f3156c8c46b0ad4afc5924ff5994b8c99df887f9417e2738a74049",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm",
+      "dusk"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.9500000029802323,
+        0,
+        -1.1750000268220901
+      ],
+      "max": [
+        0.94999997317791,
+        2.349999964237213,
+        1.1750000268220901
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 4611,
+      "calls": 11,
+      "triangles": 990,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 30,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "solar",
+      "file": "/models/solar.glb",
+      "bytes": 31396,
+      "triangles": 354,
+      "vertices": 702,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -1.625,
+          0.12000000476837158,
+          -1.125
+        ],
+        "max": [
+          1.625,
+          2.8199999276548624,
+          1.125
+        ],
+        "size": [
+          3.25,
+          2.699999922886491,
+          2.25
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body_mesh014",
+          "parent": "body",
+          "triangles": 274,
+          "vertices": 530,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "body_mesh014_1",
+          "parent": "body",
+          "triangles": 48,
+          "vertices": 112,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "wing_l",
+          "parent": "solar",
+          "triangles": 16,
+          "vertices": 30,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.3046875,
+              1.8454437255859375,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "wing_r",
+          "parent": "solar",
+          "triangles": 16,
+          "vertices": 30,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.3046875,
+              1.8454437255859375,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        },
+        {
+          "name": "Bound light",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "solar",
+          "local": {
+            "translation": [
+              0,
+              2.4205915927886963,
+              0.3083127737045288
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            2.4205915927886963,
+            0.3083127737045288
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "solar",
+          "local": {
+            "translation": [
+              0,
+              2.4205915927886963,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            2.4205915927886963,
+            0
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "e22c99b5b35ed496a051a9d5950bd614ae86a555ffb09428c4a93e3d760e8299",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "pyre",
+      "solar"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -1.1250000000000004,
+        0.12000000476837158,
+        -1.6250000000000002
+      ],
+      "max": [
+        1.1250000000000004,
+        2.8199999276548624,
+        1.6250000000000002
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 1931,
+      "calls": 12,
+      "triangles": 1058,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 18,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "world",
+      "file": "/models/world.glb",
+      "bytes": 35740,
+      "triangles": 436,
+      "vertices": 830,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -1.5750000216066837,
+          0,
+          -1.3499999716877937
+        ],
+        "max": [
+          1.5749999545514584,
+          2.299999952316284,
+          1.3499999940395355
+        ],
+        "size": [
+          3.149999976158142,
+          2.299999952316284,
+          2.6999999657273293
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "world",
+          "triangles": 316,
+          "vertices": 608,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.008298780769109726,
+              -0.7602510452270508,
+              -0.10515434294939041
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "head",
+          "parent": "world",
+          "triangles": 52,
+          "vertices": 102,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.6355502605438232,
+              0.7602510452270508,
+              0.41296878457069397
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "jaw",
+          "parent": "world",
+          "triangles": 68,
+          "vertices": 120,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.6241457462310791,
+              0.27907952666282654,
+              0.5562794804573059
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "world",
+          "local": {
+            "translation": [
+              0.6469548344612122,
+              0.7794979214668274,
+              1.350000023841858
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0.6469548344612122,
+            0.7794979214668274,
+            1.350000023841858
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "world",
+          "local": {
+            "translation": [
+              0.008298780769109726,
+              1.4916316270828247,
+              -0.10515434294939041
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0.008298780769109726,
+            1.4916316270828247,
+            -0.10515434294939041
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "0f170baa7e8a0e87c711224b7d120f61b2ae25f275622371c3c4246a0027b927",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm",
+      "dusk",
+      "solar",
+      "world"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -1.3499999940395357,
+        0,
+        -1.575000021606684
+      ],
+      "max": [
+        1.3499999716877942,
+        2.299999952316284,
+        1.5749999545514586
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 4707,
+      "calls": 11,
+      "triangles": 1140,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 37,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "eclipse",
+      "file": "/models/eclipse.glb",
+      "bytes": 31824,
+      "triangles": 410,
+      "vertices": 748,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -1.5000000298023224,
+          0,
+          -1.2749999985098839
+        ],
+        "max": [
+          1.4999999701976776,
+          2.7000000700354576,
+          1.2749999538064003
+        ],
+        "size": [
+          3,
+          2.7000000700354576,
+          2.549999952316284
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body_mesh016",
+          "parent": "body",
+          "triangles": 386,
+          "vertices": 700,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "body_mesh016_1",
+          "parent": "body",
+          "triangles": 24,
+          "vertices": 48,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        },
+        {
+          "name": "Bound light",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "eclipse",
+          "local": {
+            "translation": [
+              0.6882404088973999,
+              1.486356496810913,
+              1.3000165224075317
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0.6882404088973999,
+            1.486356496810913,
+            1.3000165224075317
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "eclipse",
+          "local": {
+            "translation": [
+              0.06689368933439255,
+              1.411440372467041,
+              0.44111689925193787
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0.06689368933439255,
+            1.411440372467041,
+            0.44111689925193787
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "39de09a03e3db8252906bfc120e9147a06f182f8bc72588a108bcc3b8d4fc7cb",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "pyre",
+      "solar",
+      "eclipse"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -1.2749999538064005,
+        0,
+        -1.5000000298023226
+      ],
+      "max": [
+        1.2749999985098843,
+        2.7000000700354576,
+        1.4999999701976778
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 1980,
+      "calls": 10,
+      "triangles": 1114,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 20,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "boss",
+      "file": "/models/boss.glb",
+      "bytes": 50368,
+      "triangles": 626,
+      "vertices": 1158,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -2.099999964237213,
+          0,
+          -1.7000000476837158
+        ],
+        "max": [
+          2.099999964237213,
+          4.599999971687794,
+          1.579653263092041
+        ],
+        "size": [
+          4.199999928474426,
+          4.599999971687794,
+          3.279653310775757
+        ]
+      },
+      "meshes": [
+        {
+          "name": "arm_l",
+          "parent": "boss",
+          "triangles": 122,
+          "vertices": 214,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              -0.9876484274864197,
+              2.8343658447265625,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "arm_r",
+          "parent": "boss",
+          "triangles": 122,
+          "vertices": 214,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0.9876484274864197,
+              2.8343658447265625,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "body",
+          "parent": "boss",
+          "triangles": 310,
+          "vertices": 576,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0.07969100028276443,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "clapper_mesh",
+          "parent": "clapper",
+          "triangles": 24,
+          "vertices": 42,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "clapper_mesh_1",
+          "parent": "clapper",
+          "triangles": 48,
+          "vertices": 112,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        },
+        {
+          "name": "Bound light",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_attack",
+          "parent": "boss",
+          "local": {
+            "translation": [
+              0,
+              1.760992407798767,
+              1.8727847337722778
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            1.760992407798767,
+            1.8727847337722778
+          ]
+        },
+        {
+          "name": "socket_core",
+          "parent": "boss",
+          "local": {
+            "translation": [
+              0,
+              1.6945003271102905,
+              0.21170608699321747
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            1.6945003271102905,
+            0.21170608699321747
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "833251547a0fed524a196cd1f3d258c0771f440465f7f703c4a27339f8e7e0fa",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "pyre",
+      "solar",
+      "eclipse",
+      "boss"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -1.5796532630920415,
+        0,
+        -2.0999999642372136
+      ],
+      "max": [
+        1.7000000476837163,
+        4.599999971687794,
+        2.099999964237213
+      ]
+    },
+    "mode": "game",
+    "facing": 270,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36,
+        28
+      ],
+      "halfHeight": 18
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 2030,
+      "calls": 13,
+      "triangles": 1330,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 25,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "lantern",
+      "file": "/models/lantern.glb",
+      "bytes": 16900,
+      "triangles": 188,
+      "vertices": 376,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.32499998807907104,
+          0.019999999552965164,
+          -0.2849999964237213
+        ],
+        "max": [
+          0.32499998807907104,
+          0.9449999928474426,
+          0.2849999964237213
+        ],
+        "size": [
+          0.6499999761581421,
+          0.9249999932944775,
+          0.5699999928474426
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body_mesh001",
+          "parent": "body",
+          "triangles": 140,
+          "vertices": 264,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "body_mesh001_1",
+          "parent": "body",
+          "triangles": 48,
+          "vertices": 112,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        },
+        {
+          "name": "Bound light",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_core",
+          "parent": "lantern",
+          "local": {
+            "translation": [
+              0,
+              0.41999998688697815,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            0.41999998688697815,
+            0
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "5fc8a0432ff1c4bfc1ab3b8249989ecf8ae402e7f262a611b072bc00ee9ffabb",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "pyre",
+      "solar",
+      "eclipse",
+      "boss"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.32499998807907104,
+        0.019999999552965164,
+        -0.2849999964237213
+      ],
+      "max": [
+        0.32499998807907104,
+        0.9449999928474426,
+        0.2849999964237213
+      ]
+    },
+    "mode": "detail",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36.482499996200204,
+        28
+      ],
+      "halfHeight": 0.9
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 2082,
+      "calls": 7,
+      "triangles": 700,
+      "points": 0,
+      "lines": 85
+    },
+    "resources": {
+      "geometries": 25,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "rim_segment",
+      "file": "/models/rim_segment.glb",
+      "bytes": 3676,
+      "triangles": 32,
+      "vertices": 60,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          0,
+          0,
+          -21.100000381469727
+        ],
+        "max": [
+          5.4610819816589355,
+          0.23000000417232513,
+          -19.028738021850586
+        ],
+        "size": [
+          5.4610819816589355,
+          0.23000000417232513,
+          2.0712623596191406
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "rim_segment",
+          "triangles": 32,
+          "vertices": 60,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_end",
+          "parent": "rim_segment",
+          "local": {
+            "translation": [
+              5.279908657073975,
+              0,
+              -19.70488739013672
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            5.279908657073975,
+            0,
+            -19.70488739013672
+          ]
+        },
+        {
+          "name": "socket_start",
+          "parent": "rim_segment",
+          "local": {
+            "translation": [
+              0,
+              0,
+              -20.399999618530273
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            0,
+            -20.399999618530273
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "b7b8b0625a95b68fc61a28b2377e6c17c6cc7d160c5d56562c9379b3f5cc37b8",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm",
+      "dusk",
+      "solar",
+      "world",
+      "eclipse",
+      "boss",
+      "rim_segment"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        0,
+        0,
+        -21.100000381469727
+      ],
+      "max": [
+        5.4610819816589355,
+        0.23000000417232513,
+        -19.028738021850586
+      ]
+    },
+    "mode": "detail",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        2.7305409908294678,
+        36.11500000208616,
+        7.935630798339844
+      ],
+      "halfHeight": 3.2766491889953615
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 8752,
+      "calls": 3,
+      "triangles": 352,
+      "points": 0,
+      "lines": 82
+    },
+    "resources": {
+      "geometries": 45,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "bell_arch",
+      "file": "/models/bell_arch.glb",
+      "bytes": 21616,
+      "triangles": 296,
+      "vertices": 516,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -3.0999999046325684,
+          0,
+          -0.800000011920929
+        ],
+        "max": [
+          3.0999999046325684,
+          5.800000190734863,
+          0.800000011920929
+        ],
+        "size": [
+          6.199999809265137,
+          5.800000190734863,
+          1.600000023841858
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "bell_arch",
+          "triangles": 296,
+          "vertices": 516,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [
+        {
+          "name": "socket_bell",
+          "parent": "bell_arch",
+          "local": {
+            "translation": [
+              0,
+              5.019999980926514,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "world": [
+            0,
+            5.019999980926514,
+            0
+          ]
+        }
+      ],
+      "animations": [],
+      "sha256": "8559425d826591c4b80ed6837be0b0debd200b379bb83f1a1225f0797e000764",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm",
+      "dusk",
+      "solar",
+      "world",
+      "eclipse",
+      "boss",
+      "rim_segment",
+      "bell_arch"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -3.0999999046325684,
+        0,
+        -0.800000011920929
+      ],
+      "max": [
+        3.0999999046325684,
+        5.800000190734863,
+        0.800000011920929
+      ]
+    },
+    "mode": "detail",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        38.90000009536743,
+        28
+      ],
+      "halfHeight": 4.6400001525878904
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 8765,
+      "calls": 9,
+      "triangles": 1000,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 46,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "hanging_bell",
+      "file": "/models/hanging_bell.glb",
+      "bytes": 12936,
+      "triangles": 152,
+      "vertices": 300,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.800000011920929,
+          -1.6799999475479126,
+          -0.7151945233345032
+        ],
+        "max": [
+          0.800000011920929,
+          -0.10000000149011612,
+          0.7151945233345032
+        ],
+        "size": [
+          1.600000023841858,
+          1.5799999460577965,
+          1.4303890466690063
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "hanging_bell",
+          "triangles": 152,
+          "vertices": 300,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [],
+      "animations": [],
+      "sha256": "6b06c5a79682cbe545c38f86307812e963fc843d86318c50137d5a4e371033d8",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm",
+      "dusk",
+      "solar",
+      "world",
+      "eclipse",
+      "boss",
+      "rim_segment",
+      "bell_arch",
+      "hanging_bell"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.800000011920929,
+        -1.6799999475479126,
+        -0.7151945233345032
+      ],
+      "max": [
+        0.800000011920929,
+        -0.10000000149011612,
+        0.7151945233345032
+      ]
+    },
+    "mode": "detail",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        35.110000025480986,
+        28
+      ],
+      "halfHeight": 1.2639999568462372
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 8784,
+      "calls": 9,
+      "triangles": 856,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 47,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "arena_floor",
+      "file": "/models/arena_floor.glb",
+      "bytes": 51564,
+      "triangles": 702,
+      "vertices": 1281,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -20.200000762939453,
+          -0.6000000238418579,
+          -20.200000762939453
+        ],
+        "max": [
+          20.200000762939453,
+          0.006000000052154064,
+          20.200000762939453
+        ],
+        "size": [
+          40.400001525878906,
+          0.606000023894012,
+          40.400001525878906
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "arena_floor",
+          "triangles": 702,
+          "vertices": 1281,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [],
+      "animations": [],
+      "sha256": "5d5bfd7dd8e96de7373892ec4660449b1db3091aef6a029f49dc9068ff096073",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm",
+      "dusk",
+      "solar",
+      "world",
+      "eclipse",
+      "boss",
+      "rim_segment",
+      "bell_arch",
+      "hanging_bell",
+      "arena_floor"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -20.200000762939453,
+        -0.6000000238418579,
+        -20.200000762939453
+      ],
+      "max": [
+        20.200000762939453,
+        0.006000000052154064,
+        20.200000762939453
+      ]
+    },
+    "mode": "detail",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        35.70299998810515,
+        28
+      ],
+      "halfHeight": 25.856000976562502
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 8791,
+      "calls": 8,
+      "triangles": 1086,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 48,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "shrine_plinth",
+      "file": "/models/shrine_plinth.glb",
+      "bytes": 9712,
+      "triangles": 124,
+      "vertices": 216,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -1.2000000476837158,
+          0,
+          -0.8999999761581421
+        ],
+        "max": [
+          1.2000000476837158,
+          1.25,
+          0.8999999761581421
+        ],
+        "size": [
+          2.4000000953674316,
+          1.25,
+          1.7999999523162842
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "shrine_plinth",
+          "triangles": 124,
+          "vertices": 216,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [],
+      "animations": [],
+      "sha256": "0308c8afef83ebcfc97ace8ae83dac86a77850643fba800b192a87d1a3690112",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm",
+      "dusk",
+      "solar",
+      "world",
+      "eclipse",
+      "boss",
+      "rim_segment",
+      "bell_arch",
+      "hanging_bell",
+      "arena_floor",
+      "shrine_plinth"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -1.2000000476837158,
+        0,
+        -0.8999999761581421
+      ],
+      "max": [
+        1.2000000476837158,
+        1.25,
+        0.8999999761581421
+      ]
+    },
+    "mode": "detail",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36.625,
+        28
+      ],
+      "halfHeight": 1.440000057220459
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 8805,
+      "calls": 9,
+      "triangles": 828,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 49,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "votive",
+      "file": "/models/votive.glb",
+      "bytes": 10776,
+      "triangles": 108,
+      "vertices": 222,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -0.3499999940395355,
+          0,
+          -0.3499999940395355
+        ],
+        "max": [
+          0.3499999940395355,
+          1.649999976158142,
+          0.3499999940395355
+        ],
+        "size": [
+          0.699999988079071,
+          1.649999976158142,
+          0.699999988079071
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body_mesh020",
+          "parent": "body",
+          "triangles": 84,
+          "vertices": 162,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "name": "body_mesh020_1",
+          "parent": "body",
+          "triangles": 24,
+          "vertices": 60,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        },
+        {
+          "name": "Bound light",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [],
+      "animations": [],
+      "sha256": "182e8a52cb3027ea8f2e92a2ba6c3ff9328fd31067c747a1f6900085a62c318f",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "pyre",
+      "solar",
+      "eclipse",
+      "boss",
+      "votive"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -0.3499999940395355,
+        0,
+        -0.3499999940395355
+      ],
+      "max": [
+        0.3499999940395355,
+        1.649999976158142,
+        0.3499999940395355
+      ]
+    },
+    "mode": "detail",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36.82499998807907,
+        28
+      ],
+      "halfHeight": 1.3199999809265137
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 2096,
+      "calls": 10,
+      "triangles": 812,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 27,
+      "textures": 1
+    },
+    "motion": false
+  },
+  {
+    "version": 1,
+    "kind": "asset inspection",
+    "status": "ready",
+    "asset": {
+      "id": "rubble_cluster",
+      "file": "/models/rubble_cluster.glb",
+      "bytes": 5420,
+      "triangles": 60,
+      "vertices": 108,
+      "skinnedMeshes": 0,
+      "bounds": {
+        "min": [
+          -1,
+          0,
+          -0.47999998927116394
+        ],
+        "max": [
+          1,
+          0.3499999940395355,
+          0.550000011920929
+        ],
+        "size": [
+          2,
+          0.3499999940395355,
+          1.030000001192093
+        ]
+      },
+      "meshes": [
+        {
+          "name": "body",
+          "parent": "rubble_cluster",
+          "triangles": 60,
+          "vertices": 108,
+          "vertexColors": true,
+          "local": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "quaternion": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "materials": [
+        {
+          "name": "Painted reliquary",
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "roughness": 0.8600000143051147,
+          "metalness": 0.07999999821186066,
+          "transparent": false,
+          "opacity": 1,
+          "vertexColors": true
+        }
+      ],
+      "textures": [],
+      "sockets": [],
+      "animations": [],
+      "sha256": "14e69e680883fb6369142bf1d5a91e2c4ff7dea031b09bd1e7d09b3a813cf210",
+      "warnings": []
+    },
+    "manifestVersion": 1,
+    "instances": 1,
+    "loadedIds": [
+      "keeper",
+      "lantern",
+      "ember",
+      "thorn",
+      "volt",
+      "mire",
+      "fang",
+      "moth",
+      "pyre",
+      "storm",
+      "dusk",
+      "solar",
+      "world",
+      "eclipse",
+      "boss",
+      "rim_segment",
+      "bell_arch",
+      "hanging_bell",
+      "arena_floor",
+      "shrine_plinth",
+      "votive",
+      "rubble_cluster"
+    ],
+    "boundsIncludingAssembly": {
+      "min": [
+        -1,
+        0,
+        -0.47999998927116394
+      ],
+      "max": [
+        1,
+        0.3499999940395355,
+        0.550000011920929
+      ]
+    },
+    "mode": "detail",
+    "facing": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        36.17499999701977,
+        28.035000011324883
+      ],
+      "halfHeight": 1.2000000000000002
+    },
+    "backend": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "renderer": {
+      "frame": 8832,
+      "calls": 9,
+      "triangles": 764,
+      "points": 0,
+      "lines": 421
+    },
+    "resources": {
+      "geometries": 52,
+      "textures": 1
+    },
+    "motion": false
+  }
+]

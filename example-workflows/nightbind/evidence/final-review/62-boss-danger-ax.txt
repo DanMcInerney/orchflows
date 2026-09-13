@@ -1,0 +1,216 @@
+Browser tab: 2, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4193/".
+0 AXWebArea Nightbind — a lantern against the dark, URL: 127.0.0.1:4193/
+	1 container app
+		2 image Nightbind arena. Click the ground to move.
+		71 container hud
+			72 container
+				73 text NIGHTBIND
+				94 text WAVE 12 / 12
+				95 text The Bellkeeper
+				76 button Field guide , ID: guide-button
+				77 button Pause, ID: pause-button
+				78 button Description: Sound and motion settings, ID: settings-button
+			79 container
+				80 text VITALITY
+				96 text 24 / 120
+				97 text 11 in the dark · 85 fallen
+			98 container bossbar
+				99 text THE BELLKEEPER
+			100 text The Bellkeeper has arrived.
+			101 text Watch the Bellkeeper. Leave its large warning circle; move across the volley.
+			84 text Click ground to move · WASD / arrows · Space to bind
+			85 container
+				86 text YOUR CIRCLE
+				102 text 3 / 6
+				88 container slots
+					103 text Solar Seraph DAWN ERUPTION Storm Serpent CHAIN + SLOW Fangling HUNT · · ·
+				90 text Binding lantern
+				104 text READY
+				92 button Bind a creature, ID: capture-button
+				93 text Choose one nearby foe · time pauses
+		15 text qa-c09f13cac8e9
+	105 container
+		106 button (expanded) Development scenarios · assisted tests, Secondary Actions: Collapse
+			107 text Development scenarios · assisted tests
+		108 text Scenario
+		109 pop up button (collapsed, settable) Scenario, Value: boss-danger, ID: test-scenario, Secondary Actions: Expand
+			110 menu
+				111 fresh
+				112 pre-evolution
+				113 wrong-recipe
+				114 late-pressure
+				115 second-evolution
+				116 roles
+				117 boss
+				118 (selected) boss-danger
+		119 text Seed
+		120 stepper (settable, integer) Seed, Value: 12345, ID: test-seed
+		121 text Variant
+		122 pop up button (collapsed, settable) Variant, Value: default, ID: test-variant, Secondary Actions: Expand
+			123 menu
+				124 (selected) default
+				125 slow-charge
+				126 weak-evolution
+				127 late-baseline
+				128 storm-route
+				129 dusk-route
+		130 button Reset scenario, ID: test-reset
+		131 text Clock
+		132 pop up button (collapsed, settable) Clock, Value: manual, ID: test-mode, Secondary Actions: Expand
+			133 menu
+				134 live
+				135 (selected) manual
+		136 button Release input, ID: test-release
+		137 button Start scenario, ID: test-start
+		138 container
+			139 text Move x
+			140 stepper (settable, integer) Move x, Value: 10, ID: test-x
+		141 container
+			142 text z
+			143 stepper (settable, integer) z, Value: 0, ID: test-z
+		144 button Move, ID: test-move
+		145 container
+			146 text Capture type
+			147 pop up button (collapsed, settable) Capture type, Value: ember, ID: test-capture-type, Secondary Actions: Expand
+				148 menu
+					149 (selected) ember
+					150 thorn
+					151 volt
+					152 mire
+					153 fang
+					154 moth
+		155 button Capture nearest of type, ID: test-capture
+		156 text Ticks
+		157 stepper (settable, integer) Ticks, Value: 120, ID: test-ticks
+		158 button Step ticks, ID: test-step
+		159 button Refresh state, ID: test-observe
+		160 text {
+  "version": 1,
+  "seed": 12345,
+  "scenario": "boss-danger",
+  "tick": 120,
+  "time": 244,
+  "wave": 12,
+  "phase": "playing",
+  "paused": false,
+  "mode": "manual",
+  "hp": 24,
+  "charge": 1,
+  "player": {
+    "x": 0,
+    "z": 0
+  },
+  "target": null,
+  "keys": {
+    "x": 0,
+    "z": 0
+  },
+  "squad": [
+    {
+      "id": 1,
+      "type": "solar"
+    },
+    {
+      "id": 2,
+      "type": "storm"
+    },
+    {
+      "id": 3,
+      "type": "fang"
+    }
+  ],
+  "hostiles": 11,
+  "nearby": 0,
+  "enemies": [
+    {
+      "id": 89,
+      "type": "boss",
+      "x": 0,
+      "z": -11.16,
+      "hp": 3698,
+      "wind": 0
+    },
+    {
+      "id": 90,
+      "type": "thorn",
+      "x": -2.57,
+      "z": -16.5,
+      "hp": 84,
+      "wind": 0
+    },
+    {
+      "id": 91,
+      "type": "mire",
+      "x": -16.83,
+      "z": 1.92,
+      "hp": 50.8,
+      "wind": 0
+    },
+    {
+      "id": 92,
+      "type": "mire",
+      "x": 10.62,
+      "z": -13.63,
+      "hp": 50.8,
+      "wind": 0
+    },
+    {
+      "id": 93,
+      "type": "mire",
+      "x": -17.61,
+      "z": -0.5,
+      "hp": 50.8,
+      "wind": 0
+    },
+    {
+      "id": 94,
+      "type": "fang",
+      "x": -5.69,
+      "z": 15.51,
+      "hp": 53,
+      "wind": 0
+    },
+    {
+      "id": 95,
+      "type": "volt",
+      "x": -12.42,
+      "z": 12.02,
+      "hp": 35.4,
+      "wind": 0
+    },
+    {
+      "id": 96,
+      "type": "ember",
+      "x": -17.35,
+      "z": -5.64,
+      "hp": 37.6,
+      "wind": 0
+    }
+  ],
+  "available": [],
+  "candidates": [],
+  "boss": 3698,
+  "kills": 85,
+  "stats": {
+    "captures": 0,
+    "evolutions": [],
+    "damageTaken": 0,
+    "damageBy": {
+      "keeper": 8,
+      "solar": 4547.780000000002,
+      "storm": 166.57,
+      "fang": 56
+    }
+  },
+  "events": [
+    {
+      "tick": 1,
+      "type": "boss",
+      "text": "The Bellkeeper has arrived."
+    }
+  ],
+  "build": "qa-c09f13cac8e9",
+  "ready": true
+}
+
+The focused UI element is 158 button Step ticks, ID: test-step
