@@ -42,7 +42,72 @@ claude plugin marketplace add ~/.orchflows
 claude plugin install orchflows-light@orchflows-home --scope user
 ```
 
-Start a new session and ask for `orch-dynamic-workflow`. The plugin identifier remains `orchflows-light` for compatibility. [Setup options](docs/home.md#setup) · [Host registration and invocation](docs/hosts.md#register-and-refresh).
+Start a new session. The plugin identifier remains `orchflows-light` for compatibility. [Setup options](docs/home.md#setup) · [Host registration and invocation](docs/hosts.md#register-and-refresh).
+
+## Usage
+
+Describe the task. If you do not supply a workflow, Orchflows prefers a specific match when one fits; otherwise [/orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) composes the smallest useful workflow for the task.
+
+**Simple task.** The coordinator makes and verifies an already-clear change directly. One independent child reviews it. This is the smallest dynamic workflow, shown with no repairs needed:
+
+```mermaid
+flowchart LR
+    W["Coordinator<br/>Make and verify"] --> R["orch-review<br/>Independent review"]
+    R --> D([Deliver])
+    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95,stroke-width:2px;
+    classDef result fill:#f8fafc,stroke:#94a3b8,color:#0f172a;
+    class W work;
+    class R review;
+    class D result;
+```
+
+**Larger task.** Independent workers run in parallel, their results join, and one reviewer assesses the combined work. When fixes are needed, an existing or new worker can implement them:
+
+```mermaid
+flowchart TD
+    T([Task]) --> A["orch-work<br/>Worker A"]
+    T --> B["orch-work<br/>Worker B"]
+    T --> C["orch-work<br/>Worker C"]
+    A --> J[Join and verify]
+    B --> J
+    C --> J
+    J --> R["orch-review<br/>Review joined result"]
+    R -->|Fixes needed| F["Worker<br/>Implement fixes"]
+    R -->|No fixes| D([Verify and deliver])
+    F --> D
+    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95,stroke-width:2px;
+    classDef coordinate fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;
+    classDef result fill:#f8fafc,stroke:#94a3b8,color:#0f172a;
+    class A,B,C,F work;
+    class R review;
+    class J coordinate;
+    class T,D result;
+```
+
+There is one repair pass with verification, without another review. The coordinator can also make clear fixes directly. Calling `orch-work` alone creates just one worker; the dynamic workflow includes independent review.
+
+**Custom workflows.** Use [/orch-build-workflow](skills/orch-build-workflow/SKILL.md) to turn a recurring task into a reusable workflow. It drafts the composition, tries it on real work, and refines it before independent review:
+
+```mermaid
+flowchart LR
+    A([Recurring task]) --> W[Draft workflow]
+    W --> T[Run a real trial]
+    T -->|Refine| W
+    T -->|Ready| R[Independent review]
+    R --> D([Fix, verify and save])
+    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95,stroke-width:2px;
+    classDef coordinate fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;
+    classDef result fill:#f8fafc,stroke:#94a3b8,color:#0f172a;
+    class W work;
+    class R review;
+    class T coordinate;
+    class A,D result;
+```
+
+[Register the saved library with your host](docs/hosts.md#register-and-refresh) to invoke its workflows by name.
 
 ## Design
 
@@ -87,22 +152,35 @@ These three libraries show parallel collection, creative production and iterativ
 
 > Research how developers are using coding agents. Search GitHub, Hacker News and Reddit, then rank the strongest evidence.
 
-[Social search](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/social-search) divides the question into distinct collection assignments and runs them in parallel. One independent reviewer ranks the combined evidence. Shared original sources have one owner; missing or failed collection remains visible as a gap.
+[Social search](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/social-search) tackles the same kind of research as [last30days](https://github.com/mvanhorn/last30days-skill), which bundles source integrations, parallel search and engagement scoring into a dedicated research engine. Social search builds collection and independent assessment from smaller, reusable workflows. Your prompt sets the sources, dates and bounds.
+
+**Each source search is itself a workflow.** The reusable `search-site` workflow composes `orch-work`, source guidance and an evidence handoff. It can run alone or become one branch of `social-search`. The current library supplies guidance for **Reddit, Hacker News, GitHub, X, YouTube, Lemmy, web search, and RSS/Atom feeds**; other accessible sources use general guidance. These are instances of the same workflow with different guidance.
+
+`social-search` composes the selected searches in parallel, gathers their evidence and gaps, then calls the separate `rank-evidence` workflow, which composes `orch-review`:
 
 ```mermaid
 flowchart TD
-    Q[Question and source scope] --> A[Assign distinct evidence]
-    A --> G["orch-work: GitHub"]
-    A --> H["orch-work: Hacker News"]
-    A --> R["orch-work: Reddit"]
+    Q(["social-search<br/>Question and source scope"]) --> G["search-site<br/>GitHub"]
+    Q --> H["search-site<br/>Hacker News"]
+    Q --> R["search-site<br/>Reddit"]
+    Q --> S["search-site<br/>Other selected sources"]
     G --> E[Gather evidence and gaps]
     H --> E
     R --> E
-    E --> J["orch-review: rank evidence"]
-    J --> O[Ranked, cited assessment]
+    S --> E
+    E --> J["rank-evidence<br/>orch-review"]
+    J --> O([Ranked, cited assessment])
+    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95,stroke-width:2px;
+    classDef coordinate fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;
+    classDef result fill:#f8fafc,stroke:#94a3b8,color:#0f172a;
+    class G,H,R,S work;
+    class J review;
+    class E coordinate;
+    class Q,O result;
 ```
 
-N collection assignments use N workers and one reviewer. Source-specific guidance shapes collection; shared research and writing guidance shapes the final assessment.
+N collection assignments use N workers and one reviewer. Shared original sources have one owner; missing or failed collection stays visible as a gap. Source-specific guidance shapes collection; shared research and writing guidance shapes the final assessment.
 
 ### Short video
 
