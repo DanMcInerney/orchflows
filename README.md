@@ -152,7 +152,7 @@ The outer workflow resolves guidance once, from general to specific. At each lev
 
 ## Example workflows
 
-These three libraries show parallel collection, creative production and iterative improvement using the same two skills. Add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies.
+These examples show parallel collection, creative production and improvement using the same two skills. Social search, Short video and Evolve are optional libraries: add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies. Self-improve is included in the core installation.
 
 ### Social search
 
@@ -229,6 +229,31 @@ flowchart TD
 The working **harness** is the maker instructions, tools and search strategy used by the run. Evolve can test a change to that harness against its predecessor, then use the verified revision in later rounds. Its coordinating evaluation and promotion rules stay fixed during that comparison. Harness experiments use one proposer and two fresh makers per test case, with independent review of their outputs. A subjective winner requires confirmation from a second fresh reviewer.
 
 The default is three rounds with one challenger per round. A continuous request removes the round cap; the host must keep executing or resume the checkpoint. A plateau changes the search strategy. It does not prove the artifact cannot improve.
+
+### Self-improve
+
+> /orch-self-improve Review this session and improve the workflows and guidance behind the problems you find.
+
+[orch-self-improve](skills/orch-self-improve/SKILL.md) learns from native agent history. Scope it to a session, period or project; by default it uses the current session. It checks whether an observed problem still exists in the current source or environment, then makes the smallest useful correction to local setup, custom workflows, guidance or Orchflows itself.
+
+```mermaid
+flowchart TD
+    H[Inspect selected agent history] --> C[Check current source and environment]
+    C --> W["orch-work<br/>Make a focused correction"]
+    W --> T[Try it on bounded real work]
+    T --> R["orch-review<br/>Independent review"]
+    R --> D([Changes, checks and evidence])
+    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95,stroke-width:2px;
+    classDef coordinate fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;
+    classDef result fill:#f8fafc,stroke:#94a3b8,color:#0f172a;
+    class W work;
+    class R review;
+    class H,C,T coordinate;
+    class D result;
+```
+
+Ask for a report only to stop after inspecting history. An improvement pass includes a bounded trial and independent review, with findings tied to agent and event references. Missing history stays visible as a gap. Corrections go into the owning checkout or user library.
 
 ## Structure
 
