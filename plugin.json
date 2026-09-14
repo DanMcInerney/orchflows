@@ -13,6 +13,6 @@
     "developerName": "orchflows",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Use the requested workflow or skill; otherwise prefer a specific match and fall back to orch-dynamic-workflow."
+    "defaultPrompt": "Run orch-dynamic-workflow for this task."
   }
 }

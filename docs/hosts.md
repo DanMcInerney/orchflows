@@ -20,6 +20,19 @@ Concurrency takes effect in new sessions; higher-precedence settings may overrid
 
 Registration references: [Codex plugins](https://developers.openai.com/plugins/build/plugins), [Claude plugins](https://code.claude.com/docs/en/plugins).
 
+## Invocation policy
+
+Apply the [manual-only default](architecture.md#invocation) per skill; a library manifest does not set it for its skills.
+
+| Host | Manual-only setting | Explicit invocation |
+| --- | --- | --- |
+| Codex | `policy.allow_implicit_invocation: false` in `skills/<skill>/agents/openai.yaml` | `$<library>:<skill>` or the skill picker |
+| Claude Code | `disable-model-invocation: true` in `SKILL.md` frontmatter | `/<library>:<skill>` |
+
+Keep skills enabled and user-invocable. Include `interface.display_name` and `interface.short_description` in Codex metadata. Opting a skill into automatic selection requires changing both host settings. Refresh the installed plugin after changing these files.
+
+These settings control native skill invocation. Claude also blocks model calls and subagent preloading for manual-only skills; if a composed step requires a blocked native call, the user must invoke it. Do not bypass a host rejection. [Codex invocation policy](https://learn.chatgpt.com/docs/build-skills#optional-metadata), [Claude invocation control](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill).
+
 ## Loading
 
 Resolve links from the containing file, scripts from the loaded skill's directory, and inputs/outputs from the assignment workspace. Copying only skill folders breaks package-relative links such as `../../guidance/`. `${CLAUDE_SKILL_DIR}` is Claude-only; `context: fork` launches a child context without filesystem isolation. Orchflows built-ins use the current context. [Codex skills](https://developers.openai.com/codex/skills), [Claude skills](https://code.claude.com/docs/en/skills).

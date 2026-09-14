@@ -1,0 +1,6 @@
+interface:
+  display_name: "Playtest 3D Browser Game"
+  short_description: "Independently play and assess an exact Three.js game build,..."
+
+policy:
+  allow_implicit_invocation: false

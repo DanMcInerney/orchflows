@@ -1,6 +1,7 @@
 ---
 name: playtest-3d-browser-game
 description: Independently play and assess an exact Three.js game build, covering usability, mechanics, QA and rendered assets using one fresh reviewer without repairs.
+disable-model-invocation: true
 ---
 
 Reuse or establish [library context](../../references/library-context.md). Declare one fresh reviewer who did not make the candidate. Resolve `core` or `final` scope from the caller; a standalone request reviews the supplied game's current scope. Require the brief, source/build identity and runnable location/commands. Read the [test interface](../../references/test-interface.md) and [evidence contract](../../references/evidence.md).

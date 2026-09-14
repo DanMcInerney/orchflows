@@ -1,0 +1,6 @@
+interface:
+  display_name: "Test Increment"
+  short_description: "Independently test exact baseline and candidate states..."
+
+policy:
+  allow_implicit_invocation: false

@@ -1,6 +1,7 @@
 ---
 name: short-video
 description: Create short videos for any genre or placement, then independently review the actual exports.
+disable-model-invocation: true
 ---
 
 Reuse or establish [library context](../../references/library-context.md). For N requested films, declare N makers and N fresh reviewers, 2N agents total. Placement versions of one film share its pair. Run this coordination in the current context.

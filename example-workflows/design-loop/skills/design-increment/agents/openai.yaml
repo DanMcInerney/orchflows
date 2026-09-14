@@ -1,0 +1,6 @@
+interface:
+  display_name: "Design Increment"
+  short_description: "Turn a project goal, options and research into one scoped..."
+
+policy:
+  allow_implicit_invocation: false

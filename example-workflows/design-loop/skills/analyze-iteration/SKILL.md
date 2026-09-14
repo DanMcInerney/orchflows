@@ -1,6 +1,7 @@
 ---
 name: analyze-iteration
 description: Analyze one project increment's design and comparison evidence, recommend adopt or retain, and inform the next brainstorm.
+disable-model-invocation: true
 ---
 
 Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, baseline and any candidate identities, cycle design, research, implementation and test evidence, and prior observations. Explicitly partial evidence is valid input. Uses 1 fresh child.

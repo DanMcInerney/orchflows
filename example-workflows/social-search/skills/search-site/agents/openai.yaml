@@ -1,0 +1,6 @@
+interface:
+  display_name: "Search Site"
+  short_description: "Delegate bounded source collection and return locally ranked..."
+
+policy:
+  allow_implicit_invocation: false

@@ -1,6 +1,7 @@
 ---
 name: rank-evidence
 description: Delegate one independent review of supplied evidence into a globally ranked, cited assessment.
+disable-model-invocation: true
 ---
 
 Reuse or establish [library context](../../references/library-context.md). Accept a question and inspectable evidence from any caller under the [evidence contract](../../references/evidence.md).

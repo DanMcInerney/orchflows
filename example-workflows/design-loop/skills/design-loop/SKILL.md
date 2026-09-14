@@ -1,6 +1,7 @@
 ---
 name: design-loop
 description: Develop a project endgoal through N bounded cycles of brainstorm and research, design, implementation, comparison testing and analysis.
+disable-model-invocation: true
 ---
 
 Use the request and [shared handoff contract](../../references/design-loop-contract.md). Inputs are an endgoal, starting workspace or artifacts, output directory and optional N, criteria, constraints, domains and scoped model/effort choices. Resolve context once. This skill coordinates in the caller through the component workflows below.

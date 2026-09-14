@@ -1,0 +1,6 @@
+interface:
+  display_name: "Orch Dynamic Workflow"
+  short_description: "Coordinate a task and one independent review"
+
+policy:
+  allow_implicit_invocation: false

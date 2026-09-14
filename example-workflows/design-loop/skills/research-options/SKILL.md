@@ -1,6 +1,7 @@
 ---
 name: research-options
 description: Investigate bounded uncertainties in proposed project increments and return evidence for choosing a design.
+disable-model-invocation: true
 ---
 
 Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, baseline and proposed options with questions; caller-supplied options work without brainstorm-options. Uses 1 fresh child.

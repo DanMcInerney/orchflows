@@ -1,6 +1,7 @@
 ---
 name: test-increment
 description: Independently test exact baseline and candidate states against a supplied comparison plan without repairing either state.
+disable-model-invocation: true
 ---
 
 Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, design/evaluation plan, immutable baseline and candidate identities, reproduction instructions and relevant implementation handoff. Uses 1 fresh child who did not implement the candidate.

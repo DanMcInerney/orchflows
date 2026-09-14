@@ -1,6 +1,7 @@
 ---
 name: evolve
 description: Iteratively improve any artifact and its improvement harness, inventing evaluation when needed; supports bounded runs, tournaments and continuous resumable search.
+disable-model-invocation: true
 ---
 
 Apply [library context](../../references/library-context.md). The caller owns the purpose and constraints; infer missing quality criteria instead of requiring a score, oracle or done threshold. Accept existing artifacts, multiple seeds or a creation brief. If only a brief exists, make a seed through `orch-work`. Clarify only missing information that prevents meaningful creation or assessment.

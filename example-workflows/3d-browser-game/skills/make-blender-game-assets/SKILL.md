@@ -1,6 +1,7 @@
 ---
 name: make-blender-game-assets
 description: Create original Blender game assets with editable sources, GLB exports and inspection through a game's Three.js loader using one maker.
+disable-model-invocation: true
 ---
 
 Reuse or establish [library context](../../references/library-context.md). Declare one maker and no reviewer. Resolve the art brief, gameplay camera, asset scope, runtime preview/loader, budgets and owned output directory using the [asset contract](../../references/blender.md). For a standalone asset request, supply a small project-local Three.js preview if the game is unavailable; identify final integration as unverified.

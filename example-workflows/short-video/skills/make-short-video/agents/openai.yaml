@@ -1,0 +1,6 @@
+interface:
+  display_name: "Make Short Video"
+  short_description: "Make an original short video through an editable project and..."
+
+policy:
+  allow_implicit_invocation: false
