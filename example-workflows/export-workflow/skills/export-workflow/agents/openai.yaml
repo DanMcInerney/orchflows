@@ -1,0 +1,6 @@
+interface:
+  display_name: "Export Workflow"
+  short_description: "Export a workflow as a standalone native skill"
+
+policy:
+  allow_implicit_invocation: false

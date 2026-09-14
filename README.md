@@ -111,6 +111,12 @@ flowchart LR
 
 [Register the saved library with your host](docs/hosts.md#register-and-refresh) to invoke its workflows by name.
 
+**Standalone skills.** The optional [/export-workflow](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/export-workflow) example exports an existing workflow as a native skill folder that runs without Orchflows installed:
+
+> Use export-workflow:export-workflow to export social-search:social-search for Codex into exports/social-search, retaining all supported source scopes.
+
+The exporter bundles selected guidance, helper workflows, scripts and assets, replaces the two primitives with native delegation, and runs a bounded trial of the primary capability. It delivers the folder and a separate portability report; installation is a separate step. Parallel work, independent review and loops can remain when the target host supports them. Guidance becomes a snapshot that needs re-exporting for shared updates. A single-file or single-agent version can lose capabilities; the [export contract](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/export-workflow/skills/export-workflow/references/export-contract.md) explains the tradeoffs.
+
 **Models and effort.** Give Work and Review optional defaults, then override any named assignment—even the final fixer:
 
 > Work: gpt-5.6-sol at medium. Review: gpt-6-astra at high. Worker B: high. Final fixer: gpt-6-astra at xhigh.

@@ -110,15 +110,24 @@ class InstalledCliTests(unittest.TestCase):
             self.assertEqual(resolved["runtime_python"], python)
             self.assertEqual(Path(resolved["skill_path"]), home / "libraries/social-search/skills/social-search/SKILL.md")
 
-            for document in core.rglob("*.md"):
-                for target in re.findall(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)', document.read_text(encoding="utf-8")):
-                    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target):
-                        continue
-                    relative = unquote(target.partition("#")[0])
-                    linked = (document.parent / relative).resolve() if relative else document
-                    with self.subTest(document=document.relative_to(core), target=target):
-                        self.assertTrue(linked.is_relative_to(core), "Link escapes the installed package")
-                        self.assertTrue(linked.exists(), "Link target is absent from the installed package")
+            cli(python, script, "setup", "--source", ROOT, "--example", "export-workflow")
+            export_library = home / "libraries/export-workflow"
+            self.assertEqual(files(ROOT / "example-workflows/export-workflow"), files(export_library))
+            exported = cli(python, script, "resolve", "export-workflow", "--skill", "export-workflow")
+            self.assertEqual(Path(exported["skill_path"]), export_library / "skills/export-workflow/SKILL.md")
+            self.assertFalse((core / "skills/export-workflow").exists())
+            self.assertFalse((core / "skills/orch-export-workflow").exists())
+
+            for package in (core, export_library):
+                for document in package.rglob("*.md"):
+                    for target in re.findall(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)', document.read_text(encoding="utf-8")):
+                        if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target):
+                            continue
+                        relative = unquote(target.partition("#")[0])
+                        linked = (document.parent / relative).resolve() if relative else document
+                        with self.subTest(package=package.name, document=document.relative_to(package), target=target):
+                            self.assertTrue(linked.is_relative_to(package), "Link escapes the installed package")
+                            self.assertTrue(linked.exists(), "Link target is absent from the installed package")
 
 
 if __name__ == "__main__":
