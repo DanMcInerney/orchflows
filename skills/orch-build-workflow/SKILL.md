@@ -1,9 +1,12 @@
 ---
 name: orch-build-workflow
 description: Create or improve workflows, domain guidance and specializations; try them on representative work and refine from observed use.
+disable-model-invocation: true
 ---
 
 Name the recurring request and useful result. Follow [architecture](../../docs/architecture.md) for placement and dependencies. Use [orch-dynamic-workflow](../orch-dynamic-workflow/SKILL.md) with `orchflows` and `writing` guidance.
+
+Create example and custom personal workflows with the [manual-only invocation defaults](../../docs/architecture.md#invocation); verify both host settings before delivery.
 
 Preserve [model and effort preferences](../../docs/architecture.md#model-and-effort) beside assignments when the user asks the resulting workflow to use them; otherwise leave them unspecified.
 

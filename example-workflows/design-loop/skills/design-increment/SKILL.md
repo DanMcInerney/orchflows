@@ -1,6 +1,7 @@
 ---
 name: design-increment
 description: Turn a project goal, options and research into one scoped implementable increment and an old-versus-new evaluation plan.
+disable-model-invocation: true
 ---
 
 Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, baseline, options and research evidence, plus any prior observations; equivalent caller-supplied material is sufficient. Uses 1 fresh child.

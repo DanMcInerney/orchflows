@@ -1,6 +1,7 @@
 ---
 name: implement-increment
 description: Implement one approved-scope design in an isolated candidate and return its exact reproducible state.
+disable-model-invocation: true
 ---
 
 Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, identified immutable baseline, design and evaluation plan, and an isolated writable candidate derived from that baseline. A caller invoking this leaf alone supplies or establishes those states before delegation. Uses 1 fresh child.

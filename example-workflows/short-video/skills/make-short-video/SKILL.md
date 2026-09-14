@@ -1,6 +1,7 @@
 ---
 name: make-short-video
 description: Make an original short video through an editable project and rendered exports using one maker.
+disable-model-invocation: true
 ---
 
 Reuse or establish [library context](../../references/library-context.md). Resolve the film's subject, audience, genre, intent, placements and caller constraints from the request. Carry supplied assets, sources and context. Load [Remotion guidance](../../references/remotion.md) only when Remotion is chosen.

@@ -1,6 +1,7 @@
 ---
 name: brainstorm-options
 description: Propose a few scoped next increments from an endgoal, current state and prior observations.
+disable-model-invocation: true
 ---
 
 Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, the identified baseline and any prior decisions, test results or analysis. For a standalone call, omitted history means this is the first increment. Uses 1 fresh child.

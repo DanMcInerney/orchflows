@@ -1,6 +1,7 @@
 ---
 name: brainstorm-research
 description: Generate project improvement options, then research their decision-relevant uncertainties for design.
+disable-model-invocation: true
 ---
 
 Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are the request context, baseline and any prior observations or decisions; first-use baseline may be an empty workspace. This composing skill adds no agent of its own and uses 2 fresh children.

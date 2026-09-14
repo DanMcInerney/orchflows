@@ -1,0 +1,6 @@
+interface:
+  display_name: "Orch Work"
+  short_description: "Delegate a requested result to a fresh native child agent..."
+
+policy:
+  allow_implicit_invocation: false

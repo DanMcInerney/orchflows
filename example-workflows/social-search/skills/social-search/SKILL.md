@@ -1,6 +1,7 @@
 ---
 name: social-search
 description: Research bounded public source scopes, then return one independent ranked assessment.
+disable-model-invocation: true
 ---
 
 Stay in the caller's context. Reuse or establish [library context](../../references/library-context.md).

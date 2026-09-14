@@ -1,6 +1,7 @@
 ---
 name: review-short-video
 description: Independently examine the exact exported short video with one fresh reviewer and no repairs.
+disable-model-invocation: true
 ---
 
 Reuse or establish [library context](../../references/library-context.md). Accept an existing film's exports, editable project and original brief; prior use of make-short-video is unnecessary. Identify exports by absolute path and SHA-256 and keep them stable for review.

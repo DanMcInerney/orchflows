@@ -29,6 +29,10 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 | Transcript access and interpretation | [history.md](history.md) |
 | Run outputs and evidence | Caller workspace, never a package |
 
+## Invocation
+
+Core workflows, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default. Start a workflow when the caller explicitly requests it; enable automatic selection only for a skill the caller asks to opt in. When creating or copying a workflow, write and verify both [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; omitting either setting leaves that host's automatic default in effect. An explicitly requested workflow still supplies its own composition and guidance.
+
 ## Model and effort
 
 Model and effort are optional choices for work, review or a named assignment. Resolve each setting separately: current caller instructions override saved workflow preferences; within either source, the named assignment overrides the operation default. Leave unspecified controls unset for the host to resolve. Keep the caller's choices and their scope with request context through composed workflows.
@@ -73,7 +77,8 @@ Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tes
 ├── README.md                       composition, agent count, install, dependencies
 ├── references/                     shared context and contracts
 ├── guidance/<domain>.md            domain or dotted specialization
-├── skills/<skill>/SKILL.md          frontmatter name + description; instructions
+├── skills/<skill>/SKILL.md          frontmatter, invocation policy; instructions
+├── skills/<skill>/agents/openai.yaml Codex invocation policy and UI metadata
 ├── skills/<skill>/references/       knowledge used by this skill only
 ├── skills/<skill>/scripts/          mechanics; sibling tests/
 └── trials/                         request.md, expected-behavior.md

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Make Blender Game Assets"
+  short_description: "Create original Blender game assets with editable sources,..."
+
+policy:
+  allow_implicit_invocation: false

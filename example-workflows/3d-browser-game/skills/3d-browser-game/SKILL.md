@@ -1,6 +1,7 @@
 ---
 name: 3d-browser-game
 description: Build substantial Three.js browser games from mechanics brainstorming through playable experiments, Blender assets, progression, QA and independent agent playtests. Use for a complete game or an explicitly bounded production phase.
+disable-model-invocation: true
 ---
 
 Run this coordination in the caller. Establish [library context](../../references/library-context.md). The outcome is a complete game at the caller's scope with evidence of player decisions, usable controls, coherent art and tested outcomes. Choose depth and finish over feature count. Preserve an existing game's intent and architecture when extending it.

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Orch Self Improve"
+  short_description: "Review selected native agent history to improve the local..."
+
+policy:
+  allow_implicit_invocation: false

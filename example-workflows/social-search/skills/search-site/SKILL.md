@@ -1,6 +1,7 @@
 ---
 name: search-site
 description: Delegate bounded source collection and return locally ranked inspectable evidence, or a worker handle for composition.
+disable-model-invocation: true
 ---
 
 Reuse or establish [library context](../../references/library-context.md). One assignment covers a named site, web scope, feed set or related sources, with the caller's question, dates, bounds and output location.
