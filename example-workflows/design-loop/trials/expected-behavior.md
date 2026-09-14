@@ -1,0 +1,9 @@
+# Observable acceptance
+
+- An unrelated project can invoke design-loop from its declared package context without video or media dependencies. The trial brief supplies the goal, tools and N; the workflow supplies the stages.
+- N resolves to 2 attempts including the initial PoC. A full run uses 12 fresh children: 2 brainstorm, 2 research, 2 design, 2 implement, 2 independent test and 2 analyze. Composers add no children, and no hidden repair/review loop appears. Any skipped stage or reduced count has an explicit gap and reason.
+- The first design scopes a useful minimum working PoC; the second brainstorm consumes cycle-one evidence and decision. Research performs bounded relevant inspection with identified sources and clearly separates findings from assumptions.
+- Each design defines scope and comparison criteria before implementation. Each implementation edits an isolated candidate, preserving the exact baseline, and produces a reproducible state. After adoption, that accepted state is the next baseline.
+- Independent testing identifies both states and runs comparable checks. An empty first baseline is recorded truthfully; it is not awarded invented scores. The second comparison covers required existing behavior and the planned increment. Analysis supports adopt/retain with evidence and the root records each decision.
+- The checkpoint links stage handoffs, source and test evidence, identities, attempts and decisions. The delivered final accepted project can be used as documented, and its results support the acceptance claims.
+- Record observed delegation, executed checks and exact outputs in the caller's trial report. Validate only paths actually exercised. Default N, failed attempts, interrupted resumption, preserved dirty work, unavailable sources, resource stops and retain decisions remain untested unless separately exercised; valid frontmatter is not evidence of behavior.

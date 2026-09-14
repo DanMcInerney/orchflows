@@ -152,7 +152,7 @@ The outer workflow resolves guidance once, from general to specific. At each lev
 
 ## Example workflows
 
-These examples show parallel collection, creative production and improvement using the same two skills. Social search, Short video and Evolve are optional libraries: add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies. Self-improve is included in the core installation.
+These examples show parallel collection, creative production and improvement using the same two skills. Social search, Short video, Evolve and Design loop are optional libraries: add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies. Self-improve is included in the core installation.
 
 ### Social search
 
@@ -243,6 +243,14 @@ flowchart TD
 The working **harness** is the maker instructions, tools and search strategy used by the run. Evolve can test a change to that harness against its predecessor, then use the verified revision in later rounds. Its coordinating evaluation and promotion rules stay fixed during that comparison. Harness experiments use one proposer and two fresh makers per test case, with independent review of their outputs. A subjective winner requires confirmation from a second fresh reviewer.
 
 The default is three rounds with one challenger per round. A continuous request removes the round cap; the host must keep executing or resume the checkpoint. A plateau changes the search strategy. It does not prove the artifact cannot improve.
+
+### Design loop (experimental)
+
+> Build a local shopping-list CLI. Run two design cycles, beginning with the smallest working proof of concept.
+
+[Design loop](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/design-loop) composes eight reusable workflows around a project endgoal: brainstorm and research, design one increment, implement it, independently compare it with the accepted baseline, then analyze the evidence for the next cycle. Its README includes a detailed flowchart and the component contracts.
+
+**Experimental — this packaged example is untested so far.** A full cycle uses six fresh children, with at most 6N calls for N attempted cycles. Trial specifications are included for future validation.
 
 ### Self-improve
 

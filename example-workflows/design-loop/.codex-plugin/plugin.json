@@ -1,0 +1,18 @@
+{
+  "name": "design-loop",
+  "version": "0.1.0",
+  "description": "Experimental project design cycles composed from reusable brainstorm, research, design, implementation, test and analysis workflows.",
+  "skills": "./skills/",
+  "author": {
+    "name": "orchflows"
+  },
+  "interface": {
+    "displayName": "Design loop (experimental)",
+    "shortDescription": "Experimental project design cycles from reusable workflows.",
+    "longDescription": "Untested standalone example for bounded brainstorming, research, design, implementation, independent comparison and analysis.",
+    "defaultPrompt": "Use design-loop to develop the supplied project endgoal through bounded design cycles, starting with a small working proof of concept.",
+    "developerName": "orchflows",
+    "category": "Productivity",
+    "capabilities": []
+  }
+}
