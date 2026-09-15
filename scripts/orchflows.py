@@ -365,8 +365,8 @@ def main(argv: list[str] | None = None) -> int:
     setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the source's example-workflows directory")
     host_options = setup_parser.add_mutually_exclusive_group()
     host_options.add_argument("--concurrency", type=int, default=15, metavar="N",
-                              help="Set Codex's spawned-thread cap and Claude's shared tool/subagent cap (default: 15)")
-    host_options.add_argument("--skip-host-config", action="store_true", help="Leave both host settings untouched")
+                              help="Set Codex's spawned-thread cap, Claude's shared tool/subagent cap and ZCode's parallel tool cap (default: 15)")
+    host_options.add_argument("--skip-host-config", action="store_true", help="Leave host settings untouched")
     doctor_parser = commands.add_parser("doctor", help="Check a home without changing it")
     doctor_parser.add_argument("--home", help=home_help)
     resolve_parser = commands.add_parser("resolve", help="Resolve a package, skill or resource")

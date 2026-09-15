@@ -1,4 +1,4 @@
-"""Set both hosts' user concurrency settings; unrelated content is untouched or the file is preserved."""
+"""Set each host's user concurrency settings; unrelated content is untouched or the file is preserved."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import uuid
 
 CODEX_KEY = "max_threads"
 CLAUDE_KEY = "CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"
+ZCODE_KEY = "maxConcurrency"
 HEADER = r"(?m)^(\[agents\][ \t]*(?:#[^\r\n]*)?)(?=\r?\n|\Z)"
 
 
@@ -63,6 +64,20 @@ def _claude(text: str, concurrency: int) -> str:
     return json.dumps(data, ensure_ascii=False, indent=2) + "\n"
 
 
+def _zcode(text: str, concurrency: int) -> str:
+    def invalid_constant(value: str):
+        raise ValueError(f"Invalid JSON constant: {value}")
+
+    data = json.loads(text, object_pairs_hook=_unique_object, parse_constant=invalid_constant) if text.strip() else {}
+    if not isinstance(data, dict) or not isinstance(data.get("toolConcurrency", {}), dict):
+        raise ValueError("ZCode settings and toolConcurrency must be JSON objects")
+    limits = data.setdefault("toolConcurrency", {})
+    if type(limits.get(ZCODE_KEY)) is int and limits[ZCODE_KEY] == concurrency:
+        return text
+    limits[ZCODE_KEY] = concurrency
+    return json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+
+
 def _read(path: Path) -> bytes | None:
     try:
         info = path.lstat()
@@ -81,8 +96,9 @@ def prepare_host_configs(concurrency: int = 15) -> list[dict]:
     for host, variable, default, filename, transform, setting in (
         ("codex", "CODEX_HOME", ".codex", "config.toml", _codex, "agents." + CODEX_KEY),
         ("claude", "CLAUDE_CONFIG_DIR", ".claude", "settings.json", _claude, "env." + CLAUDE_KEY),
+        ("zcode", None, ".zcode/cli", "config.json", _zcode, "toolConcurrency." + ZCODE_KEY),
     ):
-        configured = os.environ.get(variable)
+        configured = os.environ.get(variable) if variable else None
         path = (Path(configured).expanduser() if configured else Path.home() / default).resolve() / filename
         original = _read(path)
         try:

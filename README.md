@@ -22,7 +22,7 @@ When a new model no longer needs a correction, delete it from the guidance or ex
 
 ## Install
 
-Requires Python 3.11+ and Codex or Claude Code with native subagents.
+Requires Python 3.11+ and Codex, Claude Code or ZCode with native subagents.
 
 ```sh
 git clone https://github.com/DanMcInerney/orchflows.git
@@ -42,7 +42,9 @@ claude plugin marketplace add ~/.orchflows
 claude plugin install orchflows@orchflows-home --scope user
 ```
 
-Workflows are manual-only by default, including built-ins and skills in your personal libraries. Invoke a workflow explicitly from the skill picker or by name. [Invocation settings](docs/hosts.md#invocation-policy).
+ZCode has no plugin CLI: in the Desktop client, add `~/.orchflows` as a local-directory marketplace (Settings → Plugin Management → Discover → `+`), then install `orchflows`. [Registration and refresh](docs/hosts.md#register-and-refresh).
+
+Workflows are manual-only by default, including built-ins and skills in your personal libraries. Invoke a workflow explicitly from the skill picker or by name. Exception: ZCode ignores `disable-model-invocation`, so skills stay model-invocable there. [Invocation settings](docs/hosts.md#invocation-policy).
 
 Start a new session. [Setup options](docs/home.md#setup) · [Host registration and invocation](docs/hosts.md#register-and-refresh).
 
@@ -142,7 +144,7 @@ A workflow is a `SKILL.md` that connects these operations: what can run in paral
 
 The package includes two ready-made compositions: [dynamic work](skills/orch-dynamic-workflow/SKILL.md) and [workflow building](skills/orch-build-workflow/SKILL.md). They compose the two primitives and show how to write your own. A workflow declares its agent count and any repetition; loops are part of the requested workflow.
 
-Codex or Claude Code runs the agents. Orchflows adds no agent runtime, scheduler or workflow language. Loading a workflow applies its instructions in the current context; calling a primitive launches a child.
+Codex, Claude Code or ZCode runs the agents. Orchflows adds no agent runtime, scheduler or workflow language. Loading a workflow applies its instructions in the current context; calling a primitive launches a child.
 
 ### Supply guidance separately
 
@@ -299,7 +301,7 @@ Ask for a report only to stop after inspecting history. An improvement pass incl
 | Deterministic mechanics | The owning skill's `scripts/`, with sibling `tests/` |
 | Package identity | Root `plugin.json` |
 | Skill discovery | Native host manifests and catalogs |
-| Agent execution and isolation | Codex or Claude Code |
+| Agent execution and isolation | Codex, Claude Code or ZCode |
 | Results, checkpoints and run evidence | Your project workspace |
 
 The repository follows those boundaries:

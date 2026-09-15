@@ -1,24 +1,24 @@
 # Hosts
 
-CLI commands checked 2026-09-12: Codex 0.144.0, Claude Code 2.1.233. Host behavior is version-dependent.
+CLI commands checked 2026-09-12: Codex 0.144.0, Claude Code 2.1.233. ZCode registration, invocation and concurrency checked 2026-09-16: ZCode Desktop 3.11.2 (engine 0.16.5). Host behavior is version-dependent.
 
 ## Register and refresh
 
 Setup writes catalogs; register the home, install each library, then start a new session. Keep one enabled core installation. If edits are missing, check the installed cache and restart. Following an unregistered `SKILL.md` by absolute path does not register it.
 
-| | Codex | Claude Code |
-| --- | --- | --- |
-| Register home | `codex plugin marketplace add <home>` | `claude plugin marketplace add <home>` |
-| Install | `codex plugin add <lib>@orchflows-home` | `claude plugin install <lib>@orchflows-home --scope user` |
-| After editing a library | bump manifest versions; `codex plugin add <lib>@orchflows-home` | bump manifest versions; `claude plugin marketplace update orchflows-home`; `claude plugin update <lib>@orchflows-home` |
-| Invoke | `$<lib>:<skill>` or `/skills` | `/<lib>:<skill>` |
-| Core development | register the checkout's `orchflows-local` catalog; install `orchflows@orchflows-local` | same, or `claude --plugin-dir <checkout>` |
-| Concurrency key written by setup | `[agents] max_threads` in `$CODEX_HOME/config.toml` or `~/.codex/config.toml`: open spawned threads, primary excluded | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY` in `$CLAUDE_CONFIG_DIR/settings.json` or `~/.claude/settings.json`: parallel read-only tools and subagents |
-| Custom agent definitions | `.codex/agents/*.toml`, `~/.codex/agents/` | `.claude/agents/*.md`, `~/.claude/agents/` |
+| | Codex | Claude Code | ZCode |
+| --- | --- | --- | --- |
+| Register home | `codex plugin marketplace add <home>` | `claude plugin marketplace add <home>` | Desktop client: Settings → Plugin Management → Discover → `+` → add `<home>` as a local-directory marketplace; there is no plugin CLI |
+| Install | `codex plugin add <lib>@orchflows-home` | `claude plugin install <lib>@orchflows-home --scope user` | Discover tab → install `<lib>`; installs are versioned cache copies under `~/.zcode/cli/plugins/` |
+| After editing a library | bump manifest versions; `codex plugin add <lib>@orchflows-home` | bump manifest versions; `claude plugin marketplace update orchflows-home`; `claude plugin update <lib>@orchflows-home` | bump manifest versions; refresh the marketplace and update or reinstall `<lib>` in the client; the engine CLI (`zcode plugins list\|enable\|disable\|uninstall`) cannot update |
+| Invoke | `$<lib>:<skill>` or `/skills` | `/<lib>:<skill>` | `/<lib>:<skill>` from the `/` menu |
+| Core development | register the checkout's `orchflows-local` catalog; install `orchflows@orchflows-local` | same, or `claude --plugin-dir <checkout>` | register the checkout directory as another local-directory marketplace; install `orchflows@orchflows-local` |
+| Concurrency key written by setup | `[agents] max_threads` in `$CODEX_HOME/config.toml` or `~/.codex/config.toml`: open spawned threads, primary excluded | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY` in `$CLAUDE_CONFIG_DIR/settings.json` or `~/.claude/settings.json`: parallel read-only tools and subagents | `toolConcurrency.maxConcurrency` in `~/.zcode/cli/config.json`: parallel tool batches including subagents |
+| Custom agent definitions | `.codex/agents/*.toml`, `~/.codex/agents/` | `.claude/agents/*.md`, `~/.claude/agents/` | managed in the client; no documented filesystem convention |
 
-Concurrency takes effect in new sessions; higher-precedence settings may override it. Current Codex documentation names `max_concurrent_threads_per_session`; setup's `max_threads` remains a supported alias. [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings), [Claude concurrency](https://code.claude.com/docs/en/env-vars).
+Concurrency takes effect in new sessions; higher-precedence settings may override it. Current Codex documentation names `max_concurrent_threads_per_session`; setup's `max_threads` remains a supported alias. ZCode defaults `maxConcurrency` to 10 and also accepts a `MAX_TOOL_CONCURRENCY` environment override. [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings), [Claude concurrency](https://code.claude.com/docs/en/env-vars).
 
-Registration references: [Codex plugins](https://developers.openai.com/plugins/build/plugins), [Claude plugins](https://code.claude.com/docs/en/plugins).
+Registration references: [Codex plugins](https://developers.openai.com/plugins/build/plugins), [Claude plugins](https://code.claude.com/docs/en/plugins). ZCode reads the same `.claude-plugin/` manifests and `marketplace.json` catalogs the other hosts use.
 
 ## Invocation policy
 
@@ -28,6 +28,7 @@ Apply the [manual-only default](architecture.md#invocation) per skill; a library
 | --- | --- | --- |
 | Codex | `policy.allow_implicit_invocation: false` in `skills/<skill>/agents/openai.yaml` | `$<library>:<skill>` or the skill picker |
 | Claude Code | `disable-model-invocation: true` in `SKILL.md` frontmatter | `/<library>:<skill>` |
+| ZCode | none; the skill loader recognizes only `name`, `description`, `when_to_use`, `license` and `metadata` frontmatter, so `disable-model-invocation` is ignored and skills stay model-invocable | `/<library>:<skill>` or the `/` menu |
 
 Keep skills enabled and user-invocable. Include `interface.display_name` and `interface.short_description` in Codex metadata. Opting a skill into automatic selection requires changing both host settings. Refresh the installed plugin after changing these files.
 
@@ -45,6 +46,7 @@ Apply the [resolved assignment choices](architecture.md#model-and-effort) throug
 | --- | --- |
 | Codex | Use the spawn tool's model and reasoning-effort fields when exposed, such as `model` and `reasoning_effort`. If full-history forks disallow overrides, use a fresh or partial context fork. |
 | Claude Code | The Agent tool supports a model override. Effort is configured in an agent definition's `effort` field; use a definition that supplies the requested setting when the invocation has no effort field. Unset effort inherits the session's setting. |
+| ZCode | The spawn tool exposes no model or effort fields; assignments run at native defaults. Do not claim an applied override the host cannot honor. |
 
 Check native configuration when it can override a launch choice. Codex custom agent files can override explicit spawn values; absent explicit values, subagent defaults precede parent settings. Selecting a different model without effort can select that model's default effort. Claude precedence can also depend on environment overrides and host version. Use only supported model/effort combinations and report an unhonored request before dependent work. Do not create standing host configuration as an implicit fallback.
 
@@ -52,7 +54,7 @@ Reuse a worker only if the host can honor the repair assignment's settings. If t
 
 ## Isolation
 
-When a child needs isolation, use a worktree at the intended revision. Claude supports `isolation: worktree`; confirm the starting commit, since the default may use the remote default branch. If Codex's child tool has no workspace argument, create a worktree and direct every child operation there:
+When a child needs isolation, use a worktree at the intended revision. Claude supports `isolation: worktree`; confirm the starting commit, since the default may use the remote default branch. If Codex's or ZCode's child tool has no workspace argument, create a worktree and direct every child operation there:
 
 ```sh
 git worktree add -b codex/task-candidate ../task-candidate <commit>

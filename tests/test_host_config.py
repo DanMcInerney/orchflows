@@ -27,6 +27,11 @@ class HostConfigTests(unittest.TestCase):
         })
         environment.start()
         self.addCleanup(environment.stop)
+        # ZCode has no environment override; its default path is anchored at the home directory.
+        home = patch.object(Path, "home", return_value=self.root / "home")
+        home.start()
+        self.addCleanup(home.stop)
+        self.zcode = self.root / "home/.zcode/cli/config.json"
 
     def write(self, path, content):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -41,10 +46,11 @@ class HostConfigTests(unittest.TestCase):
         first = self.apply()
         self.assertEqual(tomllib.loads(self.codex.read_text())["agents"], {"max_threads": 15})
         self.assertEqual(json.loads(self.claude.read_text())["env"][host_config.CLAUDE_KEY], "15")
-        for host in ("codex", "claude"):
+        self.assertEqual(json.loads(self.zcode.read_text())["toolConcurrency"][host_config.ZCODE_KEY], 15)
+        for host in ("codex", "claude", "zcode"):
             self.assertEqual(first[host]["status"], "created")
             self.assertIsNone(first[host]["backup"])
-        before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in (self.codex, self.claude)}
+        before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in (self.codex, self.claude, self.zcode)}
         second = self.apply()
         self.assertEqual({path: (path.read_bytes(), path.stat().st_mtime_ns) for path in before}, before)
         self.assertTrue(all(value["status"] == "unchanged" for value in second.values()))
@@ -53,25 +59,31 @@ class HostConfigTests(unittest.TestCase):
     def test_settings_and_original_backup_bytes_survive_override_and_repeat(self):
         codex = '# Keep comments\r\nmodel = "personal-model"\r\n[agents] # workers\r\nmax_threads = 4 # old cap\r\nmax_depth = 2\r\n[projects."C:/work"]\r\ntrust_level = "trusted"\r\n'
         claude = '{"permissions":{"allow":["Read"]},"enabledPlugins":{"sample":true},"env":{"KEEP":"café","CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY":"6"}}\r\n'
+        zcode = '{"logging":{"level":"debug"},"toolConcurrency":{"maxConcurrency":4}}\n'
         self.write(self.codex, codex)
         self.write(self.claude, claude)
+        self.write(self.zcode, zcode)
         results = self.apply(21)
         self.assertEqual(self.codex.read_bytes(), codex.replace("max_threads = 4", "max_threads = 21").encode())
         expected = json.loads(claude)
         expected["env"][host_config.CLAUDE_KEY] = "21"
         self.assertEqual(json.loads(self.claude.read_bytes()), expected)
-        for host, original in (("codex", codex), ("claude", claude)):
+        expected = json.loads(zcode)
+        expected["toolConcurrency"][host_config.ZCODE_KEY] = 21
+        self.assertEqual(json.loads(self.zcode.read_bytes()), expected)
+        for host, original in (("codex", codex), ("claude", claude), ("zcode", zcode)):
             self.assertEqual(Path(results[host]["backup"]).read_bytes(), original.encode())
         before = {path: path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
         self.apply(21)
         self.assertEqual({path: path.read_bytes() for path in before}, before)
-        self.assertEqual(len(list(self.root.rglob("*.bak"))), 2)
+        self.assertEqual(len(list(self.root.rglob("*.bak"))), 3)
 
     def test_default_paths_and_environment_overrides_are_independent_of_orchflows_home(self):
         with patch.dict(os.environ, {"CODEX_HOME": "", "CLAUDE_CONFIG_DIR": "", "ORCHFLOWS_HOME": str(self.root / "library")}), patch.object(Path, "home", return_value=self.root):
             results = self.apply()
         self.assertEqual(results["codex"]["path"], str(self.root / ".codex/config.toml"))
         self.assertEqual(results["claude"]["path"], str(self.root / ".claude/settings.json"))
+        self.assertEqual(results["zcode"]["path"], str(self.root / ".zcode/cli/config.json"))
         self.assertFalse((self.root / "library").exists())
 
     def test_plain_codex_layouts_are_edited_in_place(self):
@@ -93,10 +105,14 @@ class HostConfigTests(unittest.TestCase):
         self.codex.write_bytes(b'\xef\xbb\xbfmodel = "x"\n')
         self.claude.parent.mkdir(parents=True)
         self.claude.write_bytes(b'\xef\xbb\xbf{"env":{}}\n')
+        self.zcode.parent.mkdir(parents=True)
+        self.zcode.write_bytes(b'\xef\xbb\xbf{"logging":{"level":"info"}}\n')
         results = self.apply(7)
-        self.assertEqual({host: value["status"] for host, value in results.items()}, {"codex": "updated", "claude": "updated"})
+        self.assertEqual({host: value["status"] for host, value in results.items()},
+                         {"codex": "updated", "claude": "updated", "zcode": "updated"})
         self.assertEqual(tomllib.loads(self.codex.read_text(encoding="utf-8"))["agents"]["max_threads"], 7)
         self.assertEqual(json.loads(self.claude.read_text(encoding="utf-8"))["env"][host_config.CLAUDE_KEY], "7")
+        self.assertEqual(json.loads(self.zcode.read_text(encoding="utf-8"))["toolConcurrency"][host_config.ZCODE_KEY], 7)
 
     def test_equal_boolean_or_float_is_not_a_configured_integer_cap(self):
         for value in ("true", "1.0"):
@@ -108,6 +124,15 @@ class HostConfigTests(unittest.TestCase):
                 self.assertEqual(self.codex.read_bytes(), original.encode())
                 self.assertFalse(self.claude.exists())
 
+    def test_zcode_boolean_cap_is_replaced_by_the_integer(self):
+        original = '{"toolConcurrency":{"maxConcurrency":true}}\n'
+        self.write(self.zcode, original)
+        results = self.apply(1)
+        self.assertEqual(results["zcode"]["status"], "updated")
+        updated = json.loads(self.zcode.read_text())["toolConcurrency"][host_config.ZCODE_KEY]
+        self.assertIs(type(updated), int)
+        self.assertEqual(updated, 1)
+
     def test_layouts_that_cannot_be_edited_safely_are_refused_unchanged(self):
         for original in ('agents.max_threads = 1_0\nagents.max_depth = 2\n', 'agents.max_depth = 2\n[tools]\nenabled = true\n',
                          'note = """\n[agents]\nmax_threads = 42\n"""\n[agents]\nmax_depth = 2\n',
@@ -115,18 +140,20 @@ class HostConfigTests(unittest.TestCase):
             with self.subTest(original=original), self.assertRaises(ValueError):
                 host_config._codex(original, 15)
 
-    def test_malformed_files_fail_before_either_host_is_written(self):
+    def test_malformed_files_fail_before_any_host_is_written(self):
         cases = [
             (self.codex, 'agents = "invalid"\n'), (self.codex, '[agents]\nmax_threads = 4\nmax_threads = 5\n'), (self.codex, 'model = [\n'),
             (self.claude, '{bad'), (self.claude, '[]'), (self.claude, '{"env":null}'), (self.claude, '{"env":{},"env":{"SECRET":"hidden"}}'),
             (self.claude, '{"custom":NaN}'), (self.claude, '{"custom":Infinity}'), (self.claude, '{"custom":-Infinity}'),
+            (self.zcode, '{"toolConcurrency":null}'), (self.zcode, '{"toolConcurrency":{"maxConcurrency":4,"maxConcurrency":5}}'),
         ]
         for path, invalid in cases:
             with self.subTest(path=path, invalid=invalid):
                 self.write(self.codex, 'model = "safe"\n')
                 self.write(self.claude, '{}\n')
+                self.write(self.zcode, '{}\n')
                 self.write(path, invalid)
-                before = {p: p.read_bytes() for p in (self.codex, self.claude)}
+                before = {p: p.read_bytes() for p in (self.codex, self.claude, self.zcode)}
                 with self.assertRaisesRegex(ValueError, "preserved"):
                     host_config.prepare_host_configs()
                 self.assertEqual({p: p.read_bytes() for p in before}, before)
@@ -146,6 +173,7 @@ class HostConfigTests(unittest.TestCase):
         self.assertIn("changed during setup", issues[0])
         self.assertEqual(results["codex"]["status"], "unavailable")
         self.assertEqual(results["claude"]["status"], "created")
+        self.assertEqual(results["zcode"]["status"], "created")
         self.assertEqual(self.codex.read_text(), 'model = "editor changed this"\n')
 
     def test_failed_atomic_replace_retains_original_and_cleans_staging_and_backup(self):
