@@ -44,7 +44,7 @@ claude plugin install orchflows@orchflows-home --scope user
 
 ZCode has no plugin CLI: in the Desktop client, add `~/.orchflows` as a local-directory marketplace (Settings → Plugin Management → Discover → `+`), then install `orchflows`. [Registration and refresh](docs/hosts.md#register-and-refresh).
 
-Workflows are manual-only by default, including built-ins and skills in your personal libraries. Invoke a workflow explicitly from the skill picker or by name. [Invocation settings](docs/hosts.md#invocation-policy).
+Workflows are manual-only by default, including built-ins and skills in your personal libraries. Invoke a workflow explicitly from the skill picker or by name. Exception: ZCode ignores `disable-model-invocation`, so skills stay model-invocable there. [Invocation settings](docs/hosts.md#invocation-policy).
 
 Start a new session. [Setup options](docs/home.md#setup) · [Host registration and invocation](docs/hosts.md#register-and-refresh).
 
