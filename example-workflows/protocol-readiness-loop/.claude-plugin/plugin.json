@@ -1,0 +1,10 @@
+{
+  "name": "protocol-readiness-loop",
+  "version": "0.1.0",
+  "description": "Bounded experiment-protocol stress, revision and conformance review with explicit convergence stops.",
+  "author": {
+    "name": "orchflows"
+  },
+  "license": "MIT",
+  "skills": "./skills/"
+}

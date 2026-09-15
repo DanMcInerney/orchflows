@@ -160,7 +160,13 @@ The outer workflow resolves guidance once, from general to specific. At each lev
 
 ## Example workflows
 
-These examples show parallel collection, creative production and improvement using the same two skills. Social search, Short video, Evolve and Design loop are optional libraries: add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies. Self-improve is included in the core installation.
+These examples show parallel collection, creative production and improvement using the same two skills. Protocol readiness, Social search, Short video, Evolve and Design loop are optional libraries: add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies. Self-improve is included in the core installation.
+
+### Protocol readiness
+
+> Take this experiment protocol through bounded stress testing, adjudication, revision and conformance review without building or running the experiment.
+
+[Protocol readiness](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/protocol-readiness-loop) preserves immutable protocol versions while fresh roles review, update and verify them. It stops when exact executable semantics need a separately authorized mechanism probe, when one failure class survives two revisions, or when the conformance-repair allowance is exhausted. A JSON Lines convergence ledger records timing, finding flow and the terminal disposition without adding new top-level status values.
 
 ### Social search
 

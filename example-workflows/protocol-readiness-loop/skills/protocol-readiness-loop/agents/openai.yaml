@@ -1,0 +1,6 @@
+interface:
+  display_name: "Protocol Readiness Loop"
+  short_description: "Stress, revise and verify an experiment protocol to a bounded stop."
+
+policy:
+  allow_implicit_invocation: false
