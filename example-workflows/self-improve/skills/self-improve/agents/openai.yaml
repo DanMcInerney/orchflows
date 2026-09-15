@@ -1,0 +1,6 @@
+interface:
+  display_name: "Self Improve"
+  short_description: "Improve workflows and setup from native agent history."
+
+policy:
+  allow_implicit_invocation: false

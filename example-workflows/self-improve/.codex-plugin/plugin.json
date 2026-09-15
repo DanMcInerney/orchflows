@@ -1,0 +1,19 @@
+{
+  "name": "self-improve",
+  "version": "0.1.0",
+  "description": "Review native agent history to improve local setup, custom workflows and Orchflows.",
+  "author": {
+    "name": "orchflows"
+  },
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Self Improve",
+    "shortDescription": "Improve workflows and setup from native agent history.",
+    "longDescription": "Inspect selected history, check current conditions and make focused corrections with a bounded trial and independent review.",
+    "developerName": "orchflows",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Review this session and improve the workflows and guidance behind the problems you find."
+  }
+}
