@@ -31,7 +31,7 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 
 ## Invocation
 
-Core workflows, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default. Start a workflow when the caller explicitly requests it; enable automatic selection only for a skill the caller asks to opt in. When creating or copying a workflow, write and verify both [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; omitting either setting leaves that host's automatic default in effect. An explicitly requested workflow still supplies its own composition and guidance.
+Core workflows, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default. Start a workflow when the caller explicitly requests it; enable automatic selection only for a skill the caller asks to opt in. Exception: ZCode ignores `disable-model-invocation` and has no manual-only setting, so skills stay eligible for automatic selection there. When creating or copying a workflow, write and verify both [host invocation settings](hosts.md#invocation-policy) (Codex and Claude; ZCode offers none) for every skill, including helpers; omitting either setting leaves that host's automatic default in effect. An explicitly requested workflow still supplies its own composition and guidance.
 
 ## Model and effort
 

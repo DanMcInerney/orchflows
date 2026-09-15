@@ -41,8 +41,9 @@ class HomeSetupTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="orchflows-home-test-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()
-        # HOME anchors the ZCode default path; subprocesses cannot see a Path.home patch.
+        # HOME and USERPROFILE anchor the ZCode default path; subprocesses cannot see a Path.home patch.
         self.environment_patch = patch.dict(os.environ, {"HOME": str(self.root / "userhome"),
+                                                         "USERPROFILE": str(self.root / "userhome"),
                                                          "CODEX_HOME": str(self.root / "codex"),
                                                          "CLAUDE_CONFIG_DIR": str(self.root / "claude")})
         self.environment_patch.start()
