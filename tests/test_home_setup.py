@@ -41,7 +41,9 @@ class HomeSetupTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="orchflows-home-test-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()
-        self.environment_patch = patch.dict(os.environ, {"CODEX_HOME": str(self.root / "codex"),
+        # HOME anchors the ZCode default path; subprocesses cannot see a Path.home patch.
+        self.environment_patch = patch.dict(os.environ, {"HOME": str(self.root / "userhome"),
+                                                         "CODEX_HOME": str(self.root / "codex"),
                                                          "CLAUDE_CONFIG_DIR": str(self.root / "claude")})
         self.environment_patch.start()
         self.addCleanup(self.environment_patch.stop)
@@ -117,6 +119,7 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual(report["host_configs"]["codex"]["value"], 22)
         self.assertEqual(tomllib.loads((self.root / "codex/config.toml").read_text())["agents"]["max_threads"], 22)
         self.assertEqual(json.loads((self.root / "claude/settings.json").read_text())["env"]["CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"], "22")
+        self.assertEqual(json.loads((self.root / "userhome/.zcode/cli/config.json").read_text())["toolConcurrency"]["maxConcurrency"], 22)
 
     def test_host_preflight_and_invalid_concurrency_do_not_create_home(self) -> None:
         write(self.root / "claude/settings.json", '{"env":null}')
