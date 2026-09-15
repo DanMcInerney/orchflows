@@ -1,0 +1,10 @@
+{
+  "name": "self-improve",
+  "version": "0.1.0",
+  "description": "Review native agent history to improve local setup, custom workflows and Orchflows.",
+  "author": {
+    "name": "orchflows"
+  },
+  "license": "MIT",
+  "skills": "./skills/"
+}

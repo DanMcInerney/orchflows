@@ -92,8 +92,9 @@ class InstalledCliTests(unittest.TestCase):
             expanded = cli(python, script, "history", "read", "claude", "native-session", "--event", page["events"][0]["event_id"])
             self.assertEqual(json.loads(expanded["text"])["file_path"], "evidence-λ.txt")
             self.assertEqual({skill.name for skill in (core / "skills").iterdir()},
-                             {"orch-work", "orch-review", "orch-dynamic-workflow", "orch-self-improve", "orch-build-workflow"})
-            for removed in ("orch-parallel", "orch-compare", "orch-make-and-review", "orch-setup", "orch-record-run"):
+                             {"orch-work", "orch-review", "orch-dynamic-workflow", "orch-build-workflow"})
+            for removed in ("orch-parallel", "orch-compare", "orch-make-and-review", "orch-setup", "orch-record-run",
+                            "orch-self-improve", "self-improve"):
                 unavailable = cli(python, script, "resolve", "orchflows", "--skill", removed, expected=2)
                 self.assertIn("error", unavailable)
             for skill in (ROOT / "skills").iterdir():
@@ -110,15 +111,18 @@ class InstalledCliTests(unittest.TestCase):
             self.assertEqual(resolved["runtime_python"], python)
             self.assertEqual(Path(resolved["skill_path"]), home / "libraries/social-search/skills/social-search/SKILL.md")
 
-            cli(python, script, "setup", "--source", ROOT, "--example", "export-workflow")
-            export_library = home / "libraries/export-workflow"
-            self.assertEqual(files(ROOT / "example-workflows/export-workflow"), files(export_library))
-            exported = cli(python, script, "resolve", "export-workflow", "--skill", "export-workflow")
-            self.assertEqual(Path(exported["skill_path"]), export_library / "skills/export-workflow/SKILL.md")
-            self.assertFalse((core / "skills/export-workflow").exists())
-            self.assertFalse((core / "skills/orch-export-workflow").exists())
+            example_libraries = []
+            for name in ("export-workflow", "self-improve"):
+                cli(python, script, "setup", "--source", ROOT, "--example", name)
+                library = home / "libraries" / name
+                example_libraries.append(library)
+                self.assertEqual(files(ROOT / "example-workflows" / name), files(library))
+                resolved_example = cli(python, script, "resolve", name, "--skill", name)
+                self.assertEqual(Path(resolved_example["skill_path"]), library / "skills" / name / "SKILL.md")
+                self.assertFalse((core / "skills" / name).exists())
+                self.assertFalse((core / "skills" / f"orch-{name}").exists())
 
-            for package in (core, export_library):
+            for package in (core, *example_libraries):
                 for document in package.rglob("*.md"):
                     for target in re.findall(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)', document.read_text(encoding="utf-8")):
                         if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target):

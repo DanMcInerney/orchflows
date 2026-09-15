@@ -140,7 +140,7 @@ A reviewer can inspect code, judge a film, rank evidence or compare competing de
 
 A workflow is a `SKILL.md` that connects these operations: what can run in parallel, what depends on what, what gets reviewed, and whether the result feeds another round. It supplies assignments, context and outputs. The same primitives support a single review, a research team, a production pipeline or an improvement loop.
 
-The package includes three ready-made compositions: [dynamic work](skills/orch-dynamic-workflow/SKILL.md), [workflow building](skills/orch-build-workflow/SKILL.md) and [self-improvement from agent history](skills/orch-self-improve/SKILL.md). They compose the two primitives and show how to write your own. A workflow declares its agent count and any repetition; loops are part of the requested workflow.
+The package includes two ready-made compositions: [dynamic work](skills/orch-dynamic-workflow/SKILL.md) and [workflow building](skills/orch-build-workflow/SKILL.md). They compose the two primitives and show how to write your own. A workflow declares its agent count and any repetition; loops are part of the requested workflow.
 
 Codex or Claude Code runs the agents. Orchflows adds no agent runtime, scheduler or workflow language. Loading a workflow applies its instructions in the current context; calling a primitive launches a child.
 
@@ -160,7 +160,7 @@ The outer workflow resolves guidance once, from general to specific. At each lev
 
 ## Example workflows
 
-These examples show parallel collection, creative production and improvement using the same two skills. Social search, Short video, Evolve and Design loop are optional libraries: add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies. Self-improve is included in the core installation.
+These examples show parallel collection, creative production and improvement using the same two skills. They are optional libraries: add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies.
 
 ### Social search
 
@@ -262,9 +262,9 @@ The default is three rounds with one challenger per round. A continuous request 
 
 ### Self-improve
 
-> /orch-self-improve Review this session and improve the workflows and guidance behind the problems you find.
+> /self-improve Review this session and improve the workflows and guidance behind the problems you find.
 
-[orch-self-improve](skills/orch-self-improve/SKILL.md) learns from native agent history. Scope it to a session, period or project; by default it uses the current session. It checks whether an observed problem still exists in the current source or environment, then makes the smallest useful correction to local setup, custom workflows, guidance or Orchflows itself.
+[Self-improve](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/self-improve) learns from native agent history. Install the optional library with `python scripts/orchflows.py setup --example self-improve`. Scope it to a session, period or project; by default it uses the current session. It checks whether an observed problem still exists in the current source or environment, then makes the smallest useful correction to local setup, custom workflows, guidance or Orchflows itself.
 
 ```mermaid
 flowchart TD
