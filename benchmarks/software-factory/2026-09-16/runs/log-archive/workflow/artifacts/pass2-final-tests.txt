@@ -1,0 +1,22 @@
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+test_argument_errors_and_pathlikes (test_contract.ArchiveContract.test_argument_errors_and_pathlikes) ... ok
+test_ascii_whole_tokens_and_literal_punctuation (test_contract.ArchiveContract.test_ascii_whole_tokens_and_literal_punctuation) ... ok
+test_completed_append_truncate_rewrite_and_replacement (test_contract.ArchiveContract.test_completed_append_truncate_rewrite_and_replacement) ... ok
+test_deterministic_varied_queries_match_reference (test_contract.ArchiveContract.test_deterministic_varied_queries_match_reference) ... ok
+test_invalid_lines_dates_fields_and_complete_extras (test_contract.ArchiveContract.test_invalid_lines_dates_fields_and_complete_extras) ... ok
+test_results_own_every_nested_object (test_contract.ArchiveContract.test_results_own_every_nested_object) ... ok
+test_separate_paths_and_cache_eviction_keep_correct_answers (test_contract.ArchiveContract.test_separate_paths_and_cache_eviction_keep_correct_answers) ... ok
+test_stable_order_duplicates_bounds_filters_and_pagination (test_contract.ArchiveContract.test_stable_order_duplicates_bounds_filters_and_pagination) ... ok
+test_deep_api_results_preserve_mutable_leaves_and_ownership (test_deep_results.DeepResultTests.test_deep_api_results_preserve_mutable_leaves_and_ownership) ... ok
+test_deep_cli_returns_complete_json (test_deep_results.DeepResultTests.test_deep_cli_returns_complete_json) ... ok
+test_append_and_validation (test_public.PublicContract.test_append_and_validation) ... ok
+test_tokens_filters_order_and_pagination (test_public.PublicContract.test_tokens_filters_order_and_pagination) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 1.574s
+
+OK

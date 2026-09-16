@@ -1,0 +1,20 @@
+{
+  "candidate_path": "<BUNDLE_ROOT>/runs/webhook-inbox/workflow/project",
+  "git_head": "30d2cde4c11a1912b47ca5256f6dd2a19419371e",
+  "tree_sha256": "93f5ad441ff2ef764f6aaf75f813402a969add20488e74de1e8902b900e67807",
+  "files": {
+    ".gitignore": "9a46ab3f9c12ffc2972574a8c705b904d59eddf4892a1b64f73c439bfb6e471a",
+    "AGENTS.md": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+    "README.md": "898ab7177d1482524618a55733cb8be8876c7ab7fba531c461af093b312a4290",
+    "RELEASE_HANDOFF.md": "d4c539874143c0f6541a8b636cf41ea20f96373aeab2d4f72814cd6e9d48e5fc",
+    "RUN_CONTEXT.md": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+    "TASK.md": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+    "caller-note.txt": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+    "config.example.json": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+    "inbox.py": "c2c4992b6d61a7c105e87e07e8e251db26944a679df7562d485ce808a230ae0c",
+    "inbox_store.py": "292ff6212e1ff1ef9354b4c74cd7539adfb70f260314cd255a87f132070fa891",
+    "test_inbox.py": "58c270d70156bcfabb38c719fde50005d628b1dbf7592c0a2238b457eadba173",
+    "test_smoke.py": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74"
+  },
+  "snapshots": []
+}

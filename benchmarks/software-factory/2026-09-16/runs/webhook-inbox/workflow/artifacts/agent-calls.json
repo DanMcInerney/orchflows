@@ -1,0 +1,60 @@
+{
+  "workflow": "software-factory:software-factory",
+  "pass_bound": 3,
+  "child_call_bound": 19,
+  "model_override": null,
+  "effort_override": null,
+  "deadline_utc": "2026-09-16T02:40:07.258925+00:00",
+  "calls": [
+    {
+      "allocation": 1,
+      "pass": 1,
+      "primitive": "orch-work",
+      "assignment": "builder",
+      "task_name": "/root/webhook_workflow/builder_pass1",
+      "state": "completed",
+      "input_identity": "30d2cde4c11a1912b47ca5256f6dd2a19419371e + preserved caller-note.txt",
+      "result": "passed checks"
+    },
+    {
+      "allocation": 2,
+      "pass": 1,
+      "primitive": "orch-review",
+      "assignment": "correctness",
+      "task_name": "/root/webhook_workflow/review_correctness_p1",
+      "state": "completed",
+      "input_identity": "93f5ad441ff2ef764f6aaf75f813402a969add20488e74de1e8902b900e67807",
+      "result": "no actionable high-impact findings"
+    },
+    {
+      "allocation": 3,
+      "pass": 1,
+      "primitive": "orch-review",
+      "assignment": "data",
+      "task_name": "/root/webhook_workflow/review_data_p1",
+      "state": "completed",
+      "input_identity": "93f5ad441ff2ef764f6aaf75f813402a969add20488e74de1e8902b900e67807",
+      "result": "no actionable high-impact findings"
+    },
+    {
+      "allocation": 4,
+      "pass": 1,
+      "primitive": "orch-review",
+      "assignment": "security",
+      "task_name": "/root/webhook_workflow/review_security_p1",
+      "state": "completed",
+      "input_identity": "93f5ad441ff2ef764f6aaf75f813402a969add20488e74de1e8902b900e67807",
+      "result": "no actionable high-impact findings"
+    },
+    {
+      "allocation": 5,
+      "pass": 1,
+      "primitive": "orch-review",
+      "assignment": "infrastructure",
+      "task_name": "/root/webhook_workflow/review_infrastructure_p1",
+      "state": "completed",
+      "input_identity": "93f5ad441ff2ef764f6aaf75f813402a969add20488e74de1e8902b900e67807",
+      "result": "no actionable high-impact findings"
+    }
+  ]
+}

@@ -1,0 +1,2502 @@
+Traceback (most recent call last):
+  File "<BUNDLE_ROOT>/runs/log-archive/single/project/log_archive.py", line 202, in <module>
+    main()
+    ~~~~^^
+  File "<BUNDLE_ROOT>/runs/log-archive/single/project/log_archive.py", line 194, in main
+    result = search_logs(**args)
+  File "<BUNDLE_ROOT>/runs/log-archive/single/project/log_archive.py", line 180, in search_logs
+    return {"total": total, "items": [deepcopy(snapshot.records[i]) for i in positions]}
+                                      ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 202, in _deepcopy_dict
+    y[deepcopy(key, memo)] = deepcopy(value, memo)
+                             ~~~~~~~~^^^^^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 177, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ~~~~~~~~^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/copy.py", line 131, in deepcopy
+    y = copier(x, memo)
+RecursionError: maximum recursion depth exceeded

@@ -1,0 +1,4537 @@
+{
+  "schema": 1,
+  "source_archive": "software-factory-comparison-20260916-01",
+  "publication_date": "2026-09-16",
+  "workflow_source": {
+    "commit": "1a04d85254455012b9f73e2bced43218f9f755f5",
+    "url": "https://github.com/DanMcInerney/orchflows/tree/1a04d85254455012b9f73e2bced43218f9f755f5"
+  },
+  "scope": "Historical experimental evidence. README.md is new publication context. Scores, assertions, and application behavior have not been repaired or revised.",
+  "preserved_exactly": [
+    "Every included Python file",
+    "Every included .patch and .diff, including known defective/incomplete exports",
+    "Exact case prompt.md and candidate/starter TASK.md"
+  ],
+  "path_placeholders": {
+    "<BUNDLE_ROOT>": "this directory",
+    "<WORKFLOW_SOURCE@1a04d85254455012b9f73e2bced43218f9f755f5>": "immutable GitHub source revision above",
+    "<PYTHON_RUNTIME>": "original Python 3.14 installation",
+    "<TEMP>": "original temporary directory",
+    "<CODEX_HOME>": "original Codex runtime/configuration directory",
+    "<ORCHFLOWS_HOME>": "original Orchflows user directory",
+    "<USER_HOME>": "original user home directory",
+    "<WINDOWS>": "original Windows installation",
+    "<HOST_DRIVE_X>": "original drive X"
+  },
+  "transformations": [
+    "Only document/log/JSON path strings and Markdown links are normalized; changed JSON is serialized as UTF-8/LF.",
+    "Included local Markdown targets become relative links; excluded targets are labeled omitted with clickable formatting removed; workflow source links point to the pinned GitHub revision.",
+    "Historical hash and byte-count assertions remain original evidence, even when their referenced documents have been normalized. Compare original_sha256 against those historical hashes; published_sha256 validates this export.",
+    "Historical reports retain statements about original local Git commits and resources, which are not new claims that those resources are published.",
+    "Unchanged archived Python and patch bytes can contain original absolute paths; their fidelity takes precedence over path normalization."
+  ],
+  "execution": "Run the two primary evaluation/<case>/evaluate.py programs directly against runs/<case>/<arm>/project. tools/ and Python scripts below artifacts/ are original archival source and may require the original layout, Git checkouts, host paths, or mutable run state; no claim is made that those orchestration/audit scripts run unchanged after relocation. Never run them against the archived result files.",
+  "credential_scope": "Webhook authentication strings in fixture configuration and test/probe code are synthetic examples. No native transcripts or message history are included; usage-summary.json retains aggregate/per-agent counters only.",
+  "exclusion_categories": [
+    {
+      "reason": "Git internals or temporary Git index",
+      "files": 373,
+      "bytes": 400872
+    },
+    {
+      "reason": "duplicate candidate or reviewer checkout",
+      "files": 137,
+      "bytes": 566800
+    },
+    {
+      "reason": "duplicate patch reconstruction tree",
+      "files": 64,
+      "bytes": 280397
+    },
+    {
+      "reason": "duplicate starter archive",
+      "files": 1,
+      "bytes": 8058
+    },
+    {
+      "reason": "generated benchmark dataset; generator and measured outputs retained",
+      "files": 3,
+      "bytes": 16668636
+    },
+    {
+      "reason": "native history export; aggregate and per-agent usage metadata retained",
+      "files": 3,
+      "bytes": 153612
+    },
+    {
+      "reason": "native-history collector or report-generation helper",
+      "files": 2,
+      "bytes": 14052
+    },
+    {
+      "reason": "report-generation or prior publication intermediate",
+      "files": 2,
+      "bytes": 5115
+    },
+    {
+      "reason": "runtime cache",
+      "files": 21,
+      "bytes": 279562
+    },
+    {
+      "reason": "temporary SQLite database",
+      "files": 5,
+      "bytes": 176128
+    },
+    {
+      "reason": "workflow source repository referenced by immutable GitHub revision",
+      "files": 1138,
+      "bytes": 38552105
+    }
+  ],
+  "manifest_scope": "files lists every copied original artifact. Newly authored root README.md, PUBLICATION.json, .gitattributes, and .gitignore have no original artifact hash and are excluded from this source-to-publication manifest. Files under publication-verification/ are new publication checks, not copied original artifacts, and are also outside this original-to-published manifest.",
+  "files": [
+    {
+      "path": "cases/log-archive/baseline_reference.py",
+      "original_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "published_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "original_bytes": 3799,
+      "published_bytes": 3799,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "cases/log-archive/log_archive.py",
+      "original_sha256": "cafc8cb00cbae48f0b392e961203162062f742f7a6a9532e234775001b14602c",
+      "published_sha256": "cafc8cb00cbae48f0b392e961203162062f742f7a6a9532e234775001b14602c",
+      "original_bytes": 168,
+      "published_bytes": 168,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "cases/log-archive/prompt.md",
+      "original_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "published_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "original_bytes": 2644,
+      "published_bytes": 2644,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "cases/log-archive/README.md",
+      "original_sha256": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926",
+      "published_sha256": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926",
+      "original_bytes": 5684,
+      "published_bytes": 5684,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "cases/log-archive/sample.ndjson",
+      "original_sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "published_sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "original_bytes": 412,
+      "published_bytes": 412,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "cases/log-archive/tests/test_public.py",
+      "original_sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7",
+      "published_sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7",
+      "original_bytes": 1496,
+      "published_bytes": 1496,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "cases/webhook-inbox/AGENTS.md",
+      "original_sha256": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+      "published_sha256": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+      "original_bytes": 547,
+      "published_bytes": 547,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "cases/webhook-inbox/config.example.json",
+      "original_sha256": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+      "published_sha256": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+      "original_bytes": 221,
+      "published_bytes": 221,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "cases/webhook-inbox/inbox.py",
+      "original_sha256": "0d713dbbd8473caf1d92fcc57f8731a512196729441cb4afcd94d7d990f33015",
+      "published_sha256": "0d713dbbd8473caf1d92fcc57f8731a512196729441cb4afcd94d7d990f33015",
+      "original_bytes": 2248,
+      "published_bytes": 2248,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "cases/webhook-inbox/prompt.md",
+      "original_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+      "published_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+      "original_bytes": 6009,
+      "published_bytes": 6009,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "cases/webhook-inbox/README.md",
+      "original_sha256": "5e90a6a727eead2c8648f9245b56d13121b161038ddebd9621896751030649fe",
+      "published_sha256": "5e90a6a727eead2c8648f9245b56d13121b161038ddebd9621896751030649fe",
+      "original_bytes": 847,
+      "published_bytes": 847,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "cases/webhook-inbox/test_smoke.py",
+      "original_sha256": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74",
+      "published_sha256": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74",
+      "original_bytes": 2207,
+      "published_bytes": 2207,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/benchmark.py",
+      "original_sha256": "9c54cf319d645887ed3bc45d468517cd87701150630d6d185492127af76d6c53",
+      "published_sha256": "9c54cf319d645887ed3bc45d468517cd87701150630d6d185492127af76d6c53",
+      "original_bytes": 2250,
+      "published_bytes": 2250,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/calibrate.py",
+      "original_sha256": "f34bedc1a9ae9d16b9500d288c4c4bd0d55a2a9d6df0e506bbccdbee5f4fb972",
+      "published_sha256": "f34bedc1a9ae9d16b9500d288c4c4bd0d55a2a9d6df0e506bbccdbee5f4fb972",
+      "original_bytes": 1806,
+      "published_bytes": 1806,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/calibration/NOTES.md",
+      "original_sha256": "66832ae1add8694cc0d97cd32db9519a89df55e23f824831a10788077d15bd51",
+      "published_sha256": "66832ae1add8694cc0d97cd32db9519a89df55e23f824831a10788077d15bd51",
+      "original_bytes": 2406,
+      "published_bytes": 2406,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/calibration/positive-control.json",
+      "original_sha256": "aa6fd4e6e1567afa1d137cdde0651da6057c7129845960b92f8afc88beaa86f6",
+      "published_sha256": "86c4754f09f01a9e3975c0af912291a166e874cdef4ca634615287140d29ed76",
+      "original_bytes": 3834,
+      "published_bytes": 3633,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/calibration/pre-fix-observed-output.txt",
+      "original_sha256": "68f0174bb3e115a0d1a8d4fe108eb4dabf55b8d8bb6fde2f87a6d028192132f2",
+      "published_sha256": "8980a2d92dcd7a7e3f9fe75db0ee3dc0d4ee49250cc219e3d594392a0164c0a3",
+      "original_bytes": 2154,
+      "published_bytes": 2054,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/calibration/starter.json",
+      "original_sha256": "000091ddcf15faa79f368516276534bcf7ecddc95b5adaceb3e994fa7b9e8a37",
+      "published_sha256": "9c2bf3681acd25418875bc667fb7e19ecd395cf5145b05f405fdd9a8f9b3cdff",
+      "original_bytes": 3856,
+      "published_bytes": 3619,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/calibration_candidate.py",
+      "original_sha256": "11cc0acf7cabc9054001611dd79f0d790f0511238998f61e2e2bcc803dc94352",
+      "published_sha256": "11cc0acf7cabc9054001611dd79f0d790f0511238998f61e2e2bcc803dc94352",
+      "original_bytes": 4225,
+      "published_bytes": 4225,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/checks.py",
+      "original_sha256": "9a102c08f0533c54b08ef73591feafc8e21f00e6af8d78a1bbb31f3397ed482a",
+      "published_sha256": "9a102c08f0533c54b08ef73591feafc8e21f00e6af8d78a1bbb31f3397ed482a",
+      "original_bytes": 10487,
+      "published_bytes": 10487,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/evaluate.py",
+      "original_sha256": "dc70fc1a56dcf253b983aca20cafdcd09030f2e7699cbee60b1d589123e9a98c",
+      "published_sha256": "dc70fc1a56dcf253b983aca20cafdcd09030f2e7699cbee60b1d589123e9a98c",
+      "original_bytes": 3833,
+      "published_bytes": 3833,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/frozen_baseline.py",
+      "original_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "published_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "original_bytes": 3799,
+      "published_bytes": 3799,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/oracle.py",
+      "original_sha256": "6c06f84926302779c7bba72618ab9ef838d5ff1a6d31a07ebbf69527df1f9558",
+      "published_sha256": "6c06f84926302779c7bba72618ab9ef838d5ff1a6d31a07ebbf69527df1f9558",
+      "original_bytes": 4902,
+      "published_bytes": 4902,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/README.md",
+      "original_sha256": "3cfa2fcb80f157cba114b11007f461e066c29699da9f0e94427a7f5d3e608425",
+      "published_sha256": "3cfa2fcb80f157cba114b11007f461e066c29699da9f0e94427a7f5d3e608425",
+      "original_bytes": 2383,
+      "published_bytes": 2383,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "evaluation/log-archive/SHA256SUMS.json",
+      "original_sha256": "40b86afda63806f1d434f2385a6d24d83c0f73a382fa1138c62fa48dd72f8f5b",
+      "published_sha256": "8c80a1bcbb499d7e3dc2196edaac675f041f2f9b703f30552ada8a58c94f0a44",
+      "original_bytes": 3558,
+      "published_bytes": 3388,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/calibration-signing.txt",
+      "original_sha256": "99e1e5be9cdfb41baa3ca74c3ed691fd86de2715e8fd2edfc5129f62e6c1f9bb",
+      "published_sha256": "99e1e5be9cdfb41baa3ca74c3ed691fd86de2715e8fd2edfc5129f62e6c1f9bb",
+      "original_bytes": 455,
+      "published_bytes": 455,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/calibration-starter.json",
+      "original_sha256": "2eec1edde5736f81deda6cbe4459ec6ddfca7ad657b0969aea1196c0b0af94c2",
+      "published_sha256": "abf0edcaca1cbce7895b4e8630f05ed2066faf2973f63fa9deadcf46248be283",
+      "original_bytes": 8931,
+      "published_bytes": 8639,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/checks_core.py",
+      "original_sha256": "3a61502bf8c06c0eec27d73560f4aa38971aa0b392b072de96b1813dce7e6032",
+      "published_sha256": "3a61502bf8c06c0eec27d73560f4aa38971aa0b392b072de96b1813dce7e6032",
+      "original_bytes": 9216,
+      "published_bytes": 9216,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/checks_security.py",
+      "original_sha256": "32da2a3c6a21f9b65ad68927828165c55caf3f4fd8a581321a06c4dfc4e33adc",
+      "published_sha256": "32da2a3c6a21f9b65ad68927828165c55caf3f4fd8a581321a06c4dfc4e33adc",
+      "original_bytes": 7979,
+      "published_bytes": 7979,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/evaluate.py",
+      "original_sha256": "1e1d83c850dc5755dd2d4f61a98dd0a5d044c2ee6d2ab46aebdc3981a9a087e9",
+      "published_sha256": "1e1d83c850dc5755dd2d4f61a98dd0a5d044c2ee6d2ab46aebdc3981a9a087e9",
+      "original_bytes": 3470,
+      "published_bytes": 3470,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/harness.py",
+      "original_sha256": "8982b95a792feb79ed07801df04fa1cc5dcf6a220ddb787141c5788593575b80",
+      "published_sha256": "8982b95a792feb79ed07801df04fa1cc5dcf6a220ddb787141c5788593575b80",
+      "original_bytes": 6242,
+      "published_bytes": 6242,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/manifest.json",
+      "original_sha256": "2844ac563b9b66581b5a9d461622b7486634a8408e63bce7b5acf3d2c7da4f60",
+      "published_sha256": "2844ac563b9b66581b5a9d461622b7486634a8408e63bce7b5acf3d2c7da4f60",
+      "original_bytes": 3668,
+      "published_bytes": 3668,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/README.md",
+      "original_sha256": "dcb8335af7430b04ed2267e1112e1ff841fdad4c10fe625477c19259e9084e8f",
+      "published_sha256": "dcb8335af7430b04ed2267e1112e1ff841fdad4c10fe625477c19259e9084e8f",
+      "original_bytes": 3124,
+      "published_bytes": 3124,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/server_runner.py",
+      "original_sha256": "b0167b98be5e2c8cc6a4cd2ba5471e123bdae2836ced30d944fa98b124aaca81",
+      "published_sha256": "b0167b98be5e2c8cc6a4cd2ba5471e123bdae2836ced30d944fa98b124aaca81",
+      "original_bytes": 1155,
+      "published_bytes": 1155,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "evaluation/webhook-inbox/test_harness.py",
+      "original_sha256": "98b5125ec21c39cab77b0fc22ca5bed03de42ac6412045c962a934601f67625f",
+      "published_sha256": "98b5125ec21c39cab77b0fc22ca5bed03de42ac6412045c962a934601f67625f",
+      "original_bytes": 1535,
+      "published_bytes": 1535,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "PLAN.md",
+      "original_sha256": "dd1eb98d490fdbbede4b2623dddc5b16c316ef511e28ad9bb2ac8349ab22dd93",
+      "published_sha256": "dd1eb98d490fdbbede4b2623dddc5b16c316ef511e28ad9bb2ac8349ab22dd93",
+      "original_bytes": 3732,
+      "published_bytes": 3732,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "records/artifact-inspection.md",
+      "original_sha256": "44a23edeec84313fa850e06c7278a2d7108642a8c1ec434808a6e059e6618d45",
+      "published_sha256": "44a23edeec84313fa850e06c7278a2d7108642a8c1ec434808a6e059e6618d45",
+      "original_bytes": 7753,
+      "published_bytes": 7753,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "records/control-preflight.json",
+      "original_sha256": "034d929e6e49b80a9f8ae22d31509f06403236979e172694a6e5bc1961b35600",
+      "published_sha256": "034d929e6e49b80a9f8ae22d31509f06403236979e172694a6e5bc1961b35600",
+      "original_bytes": 422,
+      "published_bytes": 422,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "records/evaluator-correction-1/checks_core.before.py",
+      "original_sha256": "b5b0c29e5318720550db3aa686915b22ec8a5c97a164d0d351ec4653acd7e074",
+      "published_sha256": "b5b0c29e5318720550db3aa686915b22ec8a5c97a164d0d351ec4653acd7e074",
+      "original_bytes": 9176,
+      "published_bytes": 9176,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "records/evaluator-correction-1/correction.diff",
+      "original_sha256": "3dd81ca8c0fe372bcb76d63909f4f13a590804b400d8f5569996501c88dc5800",
+      "published_sha256": "3dd81ca8c0fe372bcb76d63909f4f13a590804b400d8f5569996501c88dc5800",
+      "original_bytes": 690,
+      "published_bytes": 690,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "records/evaluator-correction-1/record.json",
+      "original_sha256": "87eb9b0db9830ad8d4d7c15acc6870b34cc7d0099468752f06e898b8b64c8287",
+      "published_sha256": "87eb9b0db9830ad8d4d7c15acc6870b34cc7d0099468752f06e898b8b64c8287",
+      "original_bytes": 1231,
+      "published_bytes": 1231,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "records/final-integrity-audit.json",
+      "original_sha256": "54740299964494b3f03e63991a66ad23781304d38707dc1fe18bab3861df6205",
+      "published_sha256": "54740299964494b3f03e63991a66ad23781304d38707dc1fe18bab3861df6205",
+      "original_bytes": 2220,
+      "published_bytes": 2220,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "records/log-archive-inputs.json",
+      "original_sha256": "2d90f4f0980d59146b954df23ee16764ea9c670b2aca7b8012f5b8b893f4bbea",
+      "published_sha256": "bd453113d8141ebcce733f2a3d560c3cd4132d294f088662067a1a6f6d9661a7",
+      "original_bytes": 2519,
+      "published_bytes": 1918,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "records/log-single-readme-diff.txt",
+      "original_sha256": "1a926fba7e93a94ec684d2fe70547e6b5ae8936fef0d35d540cf89d8f4b6f7e5",
+      "published_sha256": "1a926fba7e93a94ec684d2fe70547e6b5ae8936fef0d35d540cf89d8f4b6f7e5",
+      "original_bytes": 5895,
+      "published_bytes": 5895,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "records/pre-build-freeze.json",
+      "original_sha256": "9e56e98b63e857130ed9ff080eab06c9bfa3545a948fbb080a825d0e7fda2887",
+      "published_sha256": "9e56e98b63e857130ed9ff080eab06c9bfa3545a948fbb080a825d0e7fda2887",
+      "original_bytes": 4717,
+      "published_bytes": 4717,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "records/supplemental-deep-json-plan.json",
+      "original_sha256": "5613e971c9d0e90b4b366735cbe20cd45cdec2517fe0cfc602f038ec071b75e2",
+      "published_sha256": "5613e971c9d0e90b4b366735cbe20cd45cdec2517fe0cfc602f038ec071b75e2",
+      "original_bytes": 481,
+      "published_bytes": 481,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "records/usage-summary.json",
+      "original_sha256": "851501b1bb60265068019c3fd3e09613f923c1469ffe6f32275c04887561b532",
+      "published_sha256": "9475ec7ce061ae7538f1b225ce689f0134cbc16a50c6e111bc5ce5df7d66c08e",
+      "original_bytes": 14875,
+      "published_bytes": 14312,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "records/webhook-inbox-inputs.json",
+      "original_sha256": "01d30bd3e74a229750a1055886ee1379e73399b79d1b7f6dd4653d563dbafc9e",
+      "published_sha256": "3f2e07b8d769f9231a1ec6a3b78b5d17102c0dd5582f3437373a6558c2299776",
+      "original_bytes": 2522,
+      "published_bytes": 1921,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "REPORT.md",
+      "original_sha256": "f36f94c96bf270b253d779a54715383bcef73669dcbcc69f68fc66f15f292d57",
+      "published_sha256": "17235af5d048c09704fff7e861ac7d1c2544c1c88d63a6394fab8d6199ac5781",
+      "original_bytes": 14697,
+      "published_bytes": 13101,
+      "transformations": [
+        "converted included local link to relative path"
+      ]
+    },
+    {
+      "path": "results/comparison.json",
+      "original_sha256": "739754e5744cc97816e992088b3dc2c2bd0c23326183156295a23dcb9c4dc4a4",
+      "published_sha256": "b44491eb1d8bbba389ed646d180dccc01f0110fcc893eddc6e1f1292b3b86715",
+      "original_bytes": 8758,
+      "published_bytes": 8222,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/log-archive/single/collected.json",
+      "original_sha256": "b9dde68f46c25b68793a62c8ff2098e6038cb9c59eba14a8722b6107cc2f4011",
+      "published_sha256": "6c3cbef8278ca3d55c625a1fdde13ade5eeb7f8acfb961c655ec4d641e144073",
+      "original_bytes": 11813,
+      "published_bytes": 11060,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/log-archive/single/evaluator-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/log-archive/single/evaluator-stdout.txt",
+      "original_sha256": "b68eaf94de265de7b809d0ada5737f04529c9dcbe8b274f45592f0173facad2d",
+      "published_sha256": "b68eaf94de265de7b809d0ada5737f04529c9dcbe8b274f45592f0173facad2d",
+      "original_bytes": 180,
+      "published_bytes": 180,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/log-archive/single/external.json",
+      "original_sha256": "34ca557db2357b12a54404c33ab629373bdbaeddf2d6d44137381c65d09ab0ac",
+      "published_sha256": "dfb079f1dbf664f6280f8d4ea6a3771cf1517fee43a80b3ef9b894f7292d54f3",
+      "original_bytes": 3876,
+      "published_bytes": 3637,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/log-archive/single/patch-audit/result.json",
+      "original_sha256": "b84972ef7bdde3f0a175acf24f31e0ed7e26bd9a37bba6b7b4f2ac51e3ff10cd",
+      "published_sha256": "120983e8921823a6eea1843c0d5bcf1d4b11bf21672ead9dd2a2e2d007971393",
+      "original_bytes": 1489,
+      "published_bytes": 1149,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/log-archive/workflow/collected.json",
+      "original_sha256": "63d4c960766424885100c66ec8be313a1799b1aa83e9132a32ff7c670f9e84fc",
+      "published_sha256": "dad52c11bc0c9e20fed25e729e58c3bf280a97638443671e6d555256fac40ed1",
+      "original_bytes": 12116,
+      "published_bytes": 11350,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/log-archive/workflow/evaluator-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/log-archive/workflow/evaluator-stdout.txt",
+      "original_sha256": "866ea179b90d8e8f564d6f4f092e6bff17a1f4de0dbe20f008c2f4433c7b31be",
+      "published_sha256": "866ea179b90d8e8f564d6f4f092e6bff17a1f4de0dbe20f008c2f4433c7b31be",
+      "original_bytes": 180,
+      "published_bytes": 180,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/log-archive/workflow/external.json",
+      "original_sha256": "56eff4d3c464689c5df2f009a2604e1f2bf6538d7f9804ce9b3f3175d284cbe7",
+      "published_sha256": "11094fb04f638bad6f466fb6786248b1b4e6fbf4aade3b68d83a8aa6edc4d89f",
+      "original_bytes": 3881,
+      "published_bytes": 3642,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/log-archive/workflow/patch-audit/diagnostic-lf.patch",
+      "original_sha256": "ae0cb84fe00a6f328b33c79a30d555151aef0c86e8d935118b15d44ae84a0f91",
+      "published_sha256": "ae0cb84fe00a6f328b33c79a30d555151aef0c86e8d935118b15d44ae84a0f91",
+      "original_bytes": 41755,
+      "published_bytes": 41755,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "results/log-archive/workflow/patch-audit/line-ending-diagnosis.json",
+      "original_sha256": "692755495e9341d773b3f5a5d03fa2fb09d4c46433d51f113011f4d94fdd5a51",
+      "published_sha256": "62b5921a376d73890cfc7903bb8116e0cce408c96709bb05ce9bd5cf420c9da3",
+      "original_bytes": 1093,
+      "published_bytes": 919,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/log-archive/workflow/patch-audit/result.json",
+      "original_sha256": "55338b72bb9a588b9851a861df5c950b49c48cfc3ebd5a0eecb3385fc359b96d",
+      "published_sha256": "0d0a708fd2c2d4431d75c9f5721800bbcc2f69b820a0820d0f92b2a5da3989a9",
+      "original_bytes": 1599,
+      "published_bytes": 1328,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/input.ndjson",
+      "original_sha256": "199fc24f7f2c66aa89c5df857aecb15c3c9ffdc93fb8bdc876890098c9f264c3",
+      "published_sha256": "199fc24f7f2c66aa89c5df857aecb15c3c9ffdc93fb8bdc876890098c9f264c3",
+      "original_bytes": 1234,
+      "published_bytes": 1234,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/reference-api-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/reference-api-stdout.txt",
+      "original_sha256": "797219371dddc94b1d97b70b13a409b0b5988d190a9a7b82e7cf52aa0a7e8da5",
+      "published_sha256": "797219371dddc94b1d97b70b13a409b0b5988d190a9a7b82e7cf52aa0a7e8da5",
+      "original_bytes": 77,
+      "published_bytes": 77,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/reference-cli-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/reference-cli-stdout.txt",
+      "original_sha256": "9dd80932e4ea7e4e3a1392d7ed534ee98193c71c727a1dea6b01c4730754154b",
+      "published_sha256": "9dd80932e4ea7e4e3a1392d7ed534ee98193c71c727a1dea6b01c4730754154b",
+      "original_bytes": 1271,
+      "published_bytes": 1271,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/result.json",
+      "original_sha256": "5b4c51c3cdc66c2afc99aebf04b6103fa453cb86e6cc0490307408349c772d98",
+      "published_sha256": "761b15a14cc096535c608bc4d1e04c2cb105bdd7f512608b8857704566d1c44b",
+      "original_bytes": 1369,
+      "published_bytes": 1116,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/single-api-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/single-api-stdout.txt",
+      "original_sha256": "60ff5518923510d9e1434456eb879df97f65a9a475b7a5446e0e0e535d6f138b",
+      "published_sha256": "60ff5518923510d9e1434456eb879df97f65a9a475b7a5446e0e0e535d6f138b",
+      "original_bytes": 80,
+      "published_bytes": 80,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/single-cli-stderr.txt",
+      "original_sha256": "b30fae4cb3cdd5fb239c9093fd912aa4993c1202cf21dd518b647537138bea4c",
+      "published_sha256": "5c9d95dd08d3259f17b6bbde8763bb4166ed2ca3cd89fbfb5180e00d3330bd63",
+      "original_bytes": 146354,
+      "published_bytes": 108282,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/single-cli-stdout.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/workflow-api-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/workflow-api-stdout.txt",
+      "original_sha256": "797219371dddc94b1d97b70b13a409b0b5988d190a9a7b82e7cf52aa0a7e8da5",
+      "published_sha256": "797219371dddc94b1d97b70b13a409b0b5988d190a9a7b82e7cf52aa0a7e8da5",
+      "original_bytes": 77,
+      "published_bytes": 77,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/workflow-cli-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-deep-json/workflow-cli-stdout.txt",
+      "original_sha256": "9dd80932e4ea7e4e3a1392d7ed534ee98193c71c727a1dea6b01c4730754154b",
+      "published_sha256": "9dd80932e4ea7e4e3a1392d7ed534ee98193c71c727a1dea6b01c4730754154b",
+      "original_bytes": 1271,
+      "published_bytes": 1271,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-webhook-nesting/input.json",
+      "original_sha256": "afa3b3eeb7634e3a5956f418b856f918ef43b619a9f45aca133dc25c213d5887",
+      "published_sha256": "afa3b3eeb7634e3a5956f418b856f918ef43b619a9f45aca133dc25c213d5887",
+      "original_bytes": 2410,
+      "published_bytes": 2410,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/supplemental-webhook-nesting/result.json",
+      "original_sha256": "f4aeae64b1bac647ca72c01dc455e23bb964a5fd7c155fb59f5fac6a5491df8c",
+      "published_sha256": "4cda6c510bc12714e7af9d6713a2a04f7da6d4ff2617d5b9c710af1b49abbdfc",
+      "original_bytes": 1172,
+      "published_bytes": 996,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/single/collected.json",
+      "original_sha256": "03d7309bc2756fb1afab18f64d71bc4f1073653db96a10d22cd9d8b44b002b1f",
+      "published_sha256": "948a085710fcd75d14cbb5e05ae84bd8ed7a2866c98c2bc561f99e31a6c42f3d",
+      "original_bytes": 10597,
+      "published_bytes": 9962,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/single/evaluator-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/single/evaluator-stdout.txt",
+      "original_sha256": "4ce5b0a7df09b33289f127aae256e636172ee354dd379c7b363c66fd2456735e",
+      "published_sha256": "f23927eefb3a825021835f5d8df622069f8e31504d609ff58736f525773aa242",
+      "original_bytes": 1562,
+      "published_bytes": 1491,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/single/external.json",
+      "original_sha256": "518f8389cbe9e168e8fbc8e0a66e567f984b1a58100e5b659ddc2826eb7581fb",
+      "published_sha256": "8e6e92d018f03bb9a4cd2fb5884ff15c98628d71a4be7040b9dc13c08cb1dac0",
+      "original_bytes": 6417,
+      "published_bytes": 6123,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/single/patch-audit/result.json",
+      "original_sha256": "c26906cdc6a30e36db2c45ecc8875e236341f6e2602d76d90c647795f2d85ea8",
+      "published_sha256": "3c72ee4ac5720138185da8d52effd18138a5bdf85c5b6eeb4d5624a4bbde2cb8",
+      "original_bytes": 1309,
+      "published_bytes": 977,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/attempt-1-harness-error/collected.json",
+      "original_sha256": "428b7cafe961114cf361afabf3cc2956d646e4800064618c1214f501546fb6ec",
+      "published_sha256": "02e33e6eb48a0c671085bee11295d0a8c13501c331f4d9b4776e25364923ab17",
+      "original_bytes": 11332,
+      "published_bytes": 10635,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/attempt-1-harness-error/evaluator-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/attempt-1-harness-error/evaluator-stdout.txt",
+      "original_sha256": "ff6abbe9fe24949669c26c369f50131ed5bc64cb4d7e6fa471791f7a3efadc17",
+      "published_sha256": "09eb2fc2ad6d9ca60d44ba94f202bfa12864e62e00565d4209fcc07efd3c9563",
+      "original_bytes": 1764,
+      "published_bytes": 1659,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/attempt-1-harness-error/external.json",
+      "original_sha256": "3ac7d5cc7bc502736b7425e6a79030c4ec3572f95e687d1cb30f553ca43bd34a",
+      "published_sha256": "a550575fc00edd117ee6653f1ed5abdefde4338de10ee892f7fd8ec617766370",
+      "original_bytes": 6634,
+      "published_bytes": 6292,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/collected.json",
+      "original_sha256": "76f9c71705ff8d374e6dd00b496f864be0b3d111ffe89c1deebca9b91ebf346d",
+      "published_sha256": "944c7c1081c4ed4b2b0f339937e3cc9cc31ea308f718ce04fd9c97f822cfeedf",
+      "original_bytes": 11117,
+      "published_bytes": 10468,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/evaluator-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/evaluator-stdout.txt",
+      "original_sha256": "66690093eb3fbeb1a512ab854b67cc9965334eb4a7ee372ea8767364001a302f",
+      "published_sha256": "5228ebe17b72b73887504b2f6b8cf1c50fb6b6d74b6670eeb0012d7cef64a487",
+      "original_bytes": 1564,
+      "published_bytes": 1493,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/external.json",
+      "original_sha256": "302ec92a059e0f720e803cb780a97342ed8dec4836447d72a7257451f439e962",
+      "published_sha256": "2b4d254777b9fff6783f2c80716394f187d5d9fb3febf8a427c2ccc26549b8ef",
+      "original_bytes": 6419,
+      "published_bytes": 6125,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "results/webhook-inbox/workflow/patch-audit/result.json",
+      "original_sha256": "228b49e043a2155c4fc3ac3c2594f34ec5096a306b71f3c78982f290a6ce4457",
+      "published_sha256": "7049fe90d2a90392cc67db2fa09f272fe8ca228768492b2e7e11afde5750219a",
+      "original_bytes": 1488,
+      "published_bytes": 1147,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/benchmark-attempt-1.json",
+      "original_sha256": "ca8038ce44d5d75400cc577f6a25f47debf2d8a4b866c3b9ec06c29a67808f96",
+      "published_sha256": "ca8038ce44d5d75400cc577f6a25f47debf2d8a4b866c3b9ec06c29a67808f96",
+      "original_bytes": 2837,
+      "published_bytes": 2837,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/benchmark-attempt-1.txt",
+      "original_sha256": "ca8038ce44d5d75400cc577f6a25f47debf2d8a4b866c3b9ec06c29a67808f96",
+      "published_sha256": "ca8038ce44d5d75400cc577f6a25f47debf2d8a4b866c3b9ec06c29a67808f96",
+      "original_bytes": 2837,
+      "published_bytes": 2837,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/benchmark.json",
+      "original_sha256": "20b6074c544853b0075c633314938a8fac442ba8daad3da1ad61eb44b093f9b8",
+      "published_sha256": "20b6074c544853b0075c633314938a8fac442ba8daad3da1ad61eb44b093f9b8",
+      "original_bytes": 2840,
+      "published_bytes": 2840,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/benchmark.txt",
+      "original_sha256": "20b6074c544853b0075c633314938a8fac442ba8daad3da1ad61eb44b093f9b8",
+      "published_sha256": "20b6074c544853b0075c633314938a8fac442ba8daad3da1ad61eb44b093f9b8",
+      "original_bytes": 2840,
+      "published_bytes": 2840,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/cache-benchmark-diagnostic.txt",
+      "original_sha256": "9561f6dcd37bea993e79b27895903416ff07f436dce905eedfafe937b79d84c5",
+      "published_sha256": "9561f6dcd37bea993e79b27895903416ff07f436dce905eedfafe937b79d84c5",
+      "original_bytes": 5677,
+      "published_bytes": 5677,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/cache-diagnostic.txt",
+      "original_sha256": "eb0a65ab5f4f52abc7fb3da1c44602882eb2cee4870d868a1958d6c998ab5da4",
+      "published_sha256": "eb0a65ab5f4f52abc7fb3da1c44602882eb2cee4870d868a1958d6c998ab5da4",
+      "original_bytes": 408,
+      "published_bytes": 408,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/candidate-identity.json",
+      "original_sha256": "9c7f9fcddb0c00d0f0144f604bf2631a6b335e59de2dc7f264f51e839e3bd702",
+      "published_sha256": "36e4e1c3af8b690df5a444b4275474fefbad14feee42e0fe7430206cb54e8823",
+      "original_bytes": 1361,
+      "published_bytes": 1271,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/candidate-tracked.patch",
+      "original_sha256": "3110aa814f7bc74f29cd3db51003b492f78910ce3291dd49a4a0a7cab0e3b813",
+      "published_sha256": "3110aa814f7bc74f29cd3db51003b492f78910ce3291dd49a4a0a7cab0e3b813",
+      "original_bytes": 14482,
+      "published_bytes": 14482,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/concurrency-stress.txt",
+      "original_sha256": "0cc40bb6e59bbcfb5bc6d1fa17ddbb99c87a39749904839b0f69034c2156992e",
+      "published_sha256": "0cc40bb6e59bbcfb5bc6d1fa17ddbb99c87a39749904839b0f69034c2156992e",
+      "original_bytes": 3804,
+      "published_bytes": 3804,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/dispatch.json",
+      "original_sha256": "ef6043d2552d0531192c5aad3ecfd33d8c4d283ccee096113db8e39d80e4640c",
+      "published_sha256": "ef6043d2552d0531192c5aad3ecfd33d8c4d283ccee096113db8e39d80e4640c",
+      "original_bytes": 293,
+      "published_bytes": 293,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/HANDOFF.md",
+      "original_sha256": "f48ab5502f6d0cf9b7771f71ab1a34923e9978f101d75de9d808ebec494c7ebf",
+      "published_sha256": "b3c9a00b27f5542d83bc2bbca5c1b9f5429ea9ca894de761a9fbbfbf9c50417c",
+      "original_bytes": 9218,
+      "published_bytes": 9032,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/integrity-and-freeze.txt",
+      "original_sha256": "ac8ad6308f33ebffa666ddcce760b528cf196c7cf396d23acae7362a509c1e6a",
+      "published_sha256": "ac8ad6308f33ebffa666ddcce760b528cf196c7cf396d23acae7362a509c1e6a",
+      "original_bytes": 980,
+      "published_bytes": 980,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/launch.txt",
+      "original_sha256": "ff6ee941bbf7d1f4afe5d9fc80025488769d4eab72df055d47546ca1f43407be",
+      "published_sha256": "b96887c824f4c45e22b29e3dd49cbf34398f688ddaa93ef7bacadb193346f4d2",
+      "original_bytes": 1556,
+      "published_bytes": 1370,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/post-rollout-verification.txt",
+      "original_sha256": "84f45e97eec333e1fc4d5c01959ed29188b566f3c467632cb67d66413756ca2f",
+      "published_sha256": "84f45e97eec333e1fc4d5c01959ed29188b566f3c467632cb67d66413756ca2f",
+      "original_bytes": 337,
+      "published_bytes": 337,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-02-deploy-10.json",
+      "original_sha256": "c708e2b9739c672824801f15637f7d8b670406a23b953e422516710a731ca925",
+      "published_sha256": "c12610ccbb5f7f95890d7d23fc0982d2b7802b6cd546798d3610bc93ab83d2e4",
+      "original_bytes": 566,
+      "published_bytes": 480,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-06-deploy-50.json",
+      "original_sha256": "157c1d73d37c38680c8b1d8ae77ad0102b084dc2cefdb41fb91ba4ceaedf22e7",
+      "published_sha256": "673fe20f250a03b7a10f64a100040733e299293676254e39df2c6b4f3b48ad15",
+      "original_bytes": 566,
+      "published_bytes": 480,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-07-observe-50.json",
+      "original_sha256": "b668756d934700600c84f2a88ae1879d5ade41c2bcbc3b4ac7826fab1512afb8",
+      "published_sha256": "b668756d934700600c84f2a88ae1879d5ade41c2bcbc3b4ac7826fab1512afb8",
+      "original_bytes": 696,
+      "published_bytes": 696,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-08-rollback.json",
+      "original_sha256": "146b1d245f08381e755b99a0aec8ff514d6cf7723e52ec1efbbe2dc1979d3e63",
+      "published_sha256": "146b1d245f08381e755b99a0aec8ff514d6cf7723e52ec1efbbe2dc1979d3e63",
+      "original_bytes": 416,
+      "published_bytes": 416,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-09-recovery.json",
+      "original_sha256": "81a4d3e8d91f33b82f9106ea4724d160dfaad26723416adde728494d3e749cc8",
+      "published_sha256": "81a4d3e8d91f33b82f9106ea4724d160dfaad26723416adde728494d3e749cc8",
+      "original_bytes": 760,
+      "published_bytes": 760,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-3-observe-10.json",
+      "original_sha256": "42ed7c358f854d183ed1f3127fb3909b199237c1cff7a8f234e606d9174f11a7",
+      "published_sha256": "42ed7c358f854d183ed1f3127fb3909b199237c1cff7a8f234e606d9174f11a7",
+      "original_bytes": 695,
+      "published_bytes": 695,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-4-observe-10.json",
+      "original_sha256": "fca99a05b5aad69de277b567cb694f695fd928c864aa157091985c747fd8d272",
+      "published_sha256": "fca99a05b5aad69de277b567cb694f695fd928c864aa157091985c747fd8d272",
+      "original_bytes": 695,
+      "published_bytes": 695,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-5-observe-10.json",
+      "original_sha256": "1b238fc02c1d77d7e94e722f6c38dfbe49b727c0bb63deb74e9b76240815db50",
+      "published_sha256": "1b238fc02c1d77d7e94e722f6c38dfbe49b727c0bb63deb74e9b76240815db50",
+      "original_bytes": 695,
+      "published_bytes": 695,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-before.json",
+      "original_sha256": "d85c2aad754fbff9f8932649e796b438336d012f73e500a76a000710cf12fb0e",
+      "published_sha256": "f3b15d606f9ee7842366a33c02289396171049bf71837985c9dde878218a256a",
+      "original_bytes": 1479,
+      "published_bytes": 1378,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-checks.txt",
+      "original_sha256": "731521d8f5d1e51272a54f0098e60e54cdbadbeb0bb06cd9bad0606b24f08c9d",
+      "published_sha256": "731521d8f5d1e51272a54f0098e60e54cdbadbeb0bb06cd9bad0606b24f08c9d",
+      "original_bytes": 9838,
+      "published_bytes": 9838,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-final.json",
+      "original_sha256": "dabbbb83f47c1886e4c3312ecb4cf85f9f3b043df2106855b214f55919c13955",
+      "published_sha256": "72ac447fca0736737dadd51651cdb87890644f9ccc3bc92fe8abd4be91b23b01",
+      "original_bytes": 6237,
+      "published_bytes": 5803,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/release-state.json",
+      "original_sha256": "dabbbb83f47c1886e4c3312ecb4cf85f9f3b043df2106855b214f55919c13955",
+      "published_sha256": "72ac447fca0736737dadd51651cdb87890644f9ccc3bc92fe8abd4be91b23b01",
+      "original_bytes": 6237,
+      "published_bytes": 5803,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/RESULT.json",
+      "original_sha256": "49ce44a8527fdb8a3ce00cbf2552df504c611db490637f13285ff743e228bb50",
+      "published_sha256": "e92f123744005c933debf54195eed21f9e706436a8f979380de340d121329259",
+      "original_bytes": 1962,
+      "published_bytes": 1876,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/review-and-release-readiness.md",
+      "original_sha256": "f051c9519ed2bb29d685b924a23eb00aae4d345ce7380b5bbef81307a4675efa",
+      "published_sha256": "ddc2198852905c7ebe9f1bbfe161823097fe69e7a30c0004071d7b74996b2b7d",
+      "original_bytes": 5524,
+      "published_bytes": 5462,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/tests-attempt-1.txt",
+      "original_sha256": "c5fa5844d959cab95820d6a6d9d3b7d0e0e28299b68365d8c70f8250575e8455",
+      "published_sha256": "5b3c4479bb4459d4f79f7c72c98734bcf338612d6007dfa4d0243ae1ab3177ea",
+      "original_bytes": 5806,
+      "published_bytes": 5096,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/tests-attempt-2.txt",
+      "original_sha256": "fce52e3af5ee53ed2d50479e0499847de3be668eae548e361658e42bb769bab9",
+      "published_sha256": "fce52e3af5ee53ed2d50479e0499847de3be668eae548e361658e42bb769bab9",
+      "original_bytes": 1906,
+      "published_bytes": 1906,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/tests-attempt-3.txt",
+      "original_sha256": "9c8c439694f3a4ed0642eb2e057be47cd60b33d18493fe3de023916d2f1fff26",
+      "published_sha256": "9c8c439694f3a4ed0642eb2e057be47cd60b33d18493fe3de023916d2f1fff26",
+      "original_bytes": 2040,
+      "published_bytes": 2040,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/artifacts/tests-final.txt",
+      "original_sha256": "02e34d7aa82395369333f7ee4c9a4ab8943355d0d030ff69565c59f6bf07d485",
+      "published_sha256": "02e34d7aa82395369333f7ee4c9a4ab8943355d0d030ff69565c59f6bf07d485",
+      "original_bytes": 2040,
+      "published_bytes": 2040,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/.gitignore",
+      "original_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "published_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "original_bytes": 23,
+      "published_bytes": 23,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/baseline_reference.py",
+      "original_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "published_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "original_bytes": 3799,
+      "published_bytes": 3799,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/benchmark.py",
+      "original_sha256": "cbd0cb666e09e774427b2e760330058555fa0a472b78cdfacf11c6b95d5a4c5d",
+      "published_sha256": "cbd0cb666e09e774427b2e760330058555fa0a472b78cdfacf11c6b95d5a4c5d",
+      "original_bytes": 5099,
+      "published_bytes": 5099,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/caller-note.txt",
+      "original_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "published_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "original_bytes": 57,
+      "published_bytes": 57,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/log_archive.py",
+      "original_sha256": "e56193adb8780427df6d1149d8f95364e25ed6e27038f9abf286b84907346296",
+      "published_sha256": "e56193adb8780427df6d1149d8f95364e25ed6e27038f9abf286b84907346296",
+      "original_bytes": 8184,
+      "published_bytes": 8184,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/README.md",
+      "original_sha256": "354d8b3471a340f8529b202379ea66a5825a3e1a98556b095637fecc0d348c74",
+      "published_sha256": "354d8b3471a340f8529b202379ea66a5825a3e1a98556b095637fecc0d348c74",
+      "original_bytes": 9554,
+      "published_bytes": 9554,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/RUN_CONTEXT.md",
+      "original_sha256": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "published_sha256": "3e705cc5f05fc0111b8d6b248fb54c34cea26c4ab89477d1d5eab83168200442",
+      "original_bytes": 2836,
+      "published_bytes": 2712,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/sample.ndjson",
+      "original_sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "published_sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "original_bytes": 412,
+      "published_bytes": 412,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/TASK.md",
+      "original_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "published_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "original_bytes": 2644,
+      "published_bytes": 2644,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/tests/test_contract.py",
+      "original_sha256": "288c782bc87b7e74aa86d1a671dd208305186ff19a4cffd19455f2b3893fc6af",
+      "published_sha256": "288c782bc87b7e74aa86d1a671dd208305186ff19a4cffd19455f2b3893fc6af",
+      "original_bytes": 15005,
+      "published_bytes": 15005,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/single/project/tests/test_public.py",
+      "original_sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7",
+      "published_sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7",
+      "original_bytes": 1496,
+      "published_bytes": 1496,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/agent-calls.json",
+      "original_sha256": "7fd37f97caf86122784d7baa2b57504a77652930f165f940731412d35c5c6b37",
+      "published_sha256": "7fd37f97caf86122784d7baa2b57504a77652930f165f940731412d35c5c6b37",
+      "original_bytes": 2741,
+      "published_bytes": 2741,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/baseline-public-tests.txt",
+      "original_sha256": "2b99ffb64a43ba365e3f4ae918786bef07d304d13b0a41d2c66dfacdbaa5a4ab",
+      "published_sha256": "2b99ffb64a43ba365e3f4ae918786bef07d304d13b0a41d2c66dfacdbaa5a4ab",
+      "original_bytes": 313,
+      "published_bytes": 313,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/brief.md",
+      "original_sha256": "c537e4ea9a5f8bbcb60b25c64192d92d8f809c1d39d792847dd3d16ddfe26c87",
+      "published_sha256": "b5d84239f918d5d5005be73b7ef8a701507a68f24e873a31981a30d295de7111",
+      "original_bytes": 4129,
+      "published_bytes": 3910,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/builder-pass1.md",
+      "original_sha256": "ba6596e294cae7f055cffa1dede3442942792324cd6401c63cc73ac7948f4898",
+      "published_sha256": "a304b8f13f165017b25fadb165903ef269cfcab92b7eaa22ce8695b2093c167a",
+      "original_bytes": 9494,
+      "published_bytes": 9370,
+      "transformations": [
+        "converted included local link to relative path",
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/builder-pass2.md",
+      "original_sha256": "50aa170a27e7baadab03ba9cf36d35ae2335fef73e177bbb44ae16ff6976084b",
+      "published_sha256": "9b1075ac03f8b36ffc890f1052117e4422a7d7a6e5946b25765146e19b32c813",
+      "original_bytes": 9546,
+      "published_bytes": 9422,
+      "transformations": [
+        "converted included local link to relative path",
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/checkpoint-history.md",
+      "original_sha256": "655cdc1a3ea7ed3f6464bd174cbfc2e5e8876b5318ffb4426ad6cbb98ce75c8c",
+      "published_sha256": "bb432f334557d26f6f8ab9bd86f6b807019ec60cd339158b2f3117e0273271c4",
+      "original_bytes": 7192,
+      "published_bytes": 7130,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/checkpoint.md",
+      "original_sha256": "8f61f40e482073bc21beaa6b5cf36e09aa79a1e0cc7954850160439033d2e998",
+      "published_sha256": "719763f35d87d98ae6ba1ae1bc4612839acfe2db55574d3ac7d9863023b1429f",
+      "original_bytes": 1744,
+      "published_bytes": 1682,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/dispatch.json",
+      "original_sha256": "d12509254864c091c92f034845af623a2c355c0b3e6aad9a8e115ae09645378e",
+      "published_sha256": "d12509254864c091c92f034845af623a2c355c0b3e6aad9a8e115ae09645378e",
+      "original_bytes": 317,
+      "published_bytes": 317,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/final-candidate-identity.json",
+      "original_sha256": "48a6eebfdd863af4a8a04c9717e6d03a88738dde6d391f86b83ffba78d07899d",
+      "published_sha256": "c8b570bc76774d1489cd29217b4d80fe9ed0fbf49eecba09b7d77ac6aa52d5f9",
+      "original_bytes": 1742,
+      "published_bytes": 1646,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/HANDOFF.md",
+      "original_sha256": "7579096289c405208dc06df957b16c0238597fc754690176378ade21e155404c",
+      "published_sha256": "3842b576fab4c14104a6c9da70538b965d13632de423aa757c539a78f55f40dd",
+      "original_bytes": 8893,
+      "published_bytes": 8831,
+      "transformations": [
+        "converted included local link to relative path",
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/joined-pass1.md",
+      "original_sha256": "5fe289f8058bf6f1f79753228d93fd35716dddac08d542b620fd049eab5d837c",
+      "published_sha256": "5fe289f8058bf6f1f79753228d93fd35716dddac08d542b620fd049eab5d837c",
+      "original_bytes": 2759,
+      "published_bytes": 2759,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/joined-pass2.md",
+      "original_sha256": "752d85a57a9b0eedc4a977d02b0f588943e2a13cc9c27a569d1e8bd80cfff7c2",
+      "published_sha256": "97338221ed7a9069e86592a46a83f894908c1d1f518f3a69fe0be168a340d826",
+      "original_bytes": 5282,
+      "published_bytes": 5220,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-before-lf-benchmark-stdout.json",
+      "original_sha256": "59fbfbfd6ccaffe6f464b9214fc59ab3a495930cce0d570255006f3bb1a1d78b",
+      "published_sha256": "be5888134eb3d399b28b67b552fccd15406fa621ec65ff145c49402cc3fb8207",
+      "original_bytes": 12811,
+      "published_bytes": 12204,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-before-lf-benchmark.json",
+      "original_sha256": "59fbfbfd6ccaffe6f464b9214fc59ab3a495930cce0d570255006f3bb1a1d78b",
+      "published_sha256": "be5888134eb3d399b28b67b552fccd15406fa621ec65ff145c49402cc3fb8207",
+      "original_bytes": 12811,
+      "published_bytes": 12204,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-before-lf-tests.txt",
+      "original_sha256": "48776beb217beaba9a61ad953bd2bda7b53669d3449bcff1bffdaf9b824b3915",
+      "published_sha256": "48776beb217beaba9a61ad953bd2bda7b53669d3449bcff1bffdaf9b824b3915",
+      "original_bytes": 2120,
+      "published_bytes": 2120,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-candidate-manifest.json",
+      "original_sha256": "77a0435994b39f10eb5740f8e93f83b218c1d7fd472229da8760b9eb4b15d49f",
+      "published_sha256": "323933b8d702927494a96f0f2313a98a3e188af6fea4cd0b6a0d2293fd02ab34",
+      "original_bytes": 1564,
+      "published_bytes": 1472,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-candidate.patch",
+      "original_sha256": "34b0388fc94b256182638fbe6c427440136756c9c9062abe1c73d80c4df028f0",
+      "published_sha256": "34b0388fc94b256182638fbe6c427440136756c9c9062abe1c73d80c4df028f0",
+      "original_bytes": 36970,
+      "published_bytes": 36970,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-check-evidence.json",
+      "original_sha256": "893345ca99427ecd195a73f93d6c1382ae078b894b1a74646f35ab1ffcdf34f4",
+      "published_sha256": "893345ca99427ecd195a73f93d6c1382ae078b894b1a74646f35ab1ffcdf34f4",
+      "original_bytes": 1756,
+      "published_bytes": 1756,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-commit.txt",
+      "original_sha256": "50a188ab704736b8dc7e4f04cdce4c5906d406f435ba4341e4fda78efd6bfecd",
+      "published_sha256": "50a188ab704736b8dc7e4f04cdce4c5906d406f435ba4341e4fda78efd6bfecd",
+      "original_bytes": 304,
+      "published_bytes": 304,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-concurrency-repeats.txt",
+      "original_sha256": "1e916cb92eaaa65e4f976b14ca39be2dca4f1deee226df0fcbc79e9374182f44",
+      "published_sha256": "1e916cb92eaaa65e4f976b14ca39be2dca4f1deee226df0fcbc79e9374182f44",
+      "original_bytes": 8171,
+      "published_bytes": 8171,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-contract-tests-after-sharing-fix.txt",
+      "original_sha256": "2329ab6e2a4ff32d24542376a86dc10c93ac14bb0453aaed756211c20469c11b",
+      "published_sha256": "2329ab6e2a4ff32d24542376a86dc10c93ac14bb0453aaed756211c20469c11b",
+      "original_bytes": 2120,
+      "published_bytes": 2120,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-contract-tests.txt",
+      "original_sha256": "44005e2a457f47e3d42b6f45208b0946c619f3d8d692a8ec8e944ce77560d7e3",
+      "published_sha256": "0e7af814e6316bfb146c548de6230529971ee59e73563d892da7a7709847609f",
+      "original_bytes": 4331,
+      "published_bytes": 3835,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-coordinator-identity.json",
+      "original_sha256": "3bf03e4d715903fc4db73d26eed1959d476c0148ef2a1d7688ecdac821e17e0f",
+      "published_sha256": "7db53926435071cfc025a9a1c412e482402765d3352254a63e239ccbf399bd48",
+      "original_bytes": 1637,
+      "published_bytes": 1542,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-diff-check.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-final-benchmark-stdout.json",
+      "original_sha256": "8834fd34c91548988d19424c8ff5847a90894d149253a2748665cf9af039df27",
+      "published_sha256": "dbc18e46d47e3539a4f74ab6b790fa9a12431e5e479c4ea5dec5c72dfe1a5752",
+      "original_bytes": 12816,
+      "published_bytes": 12209,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-final-benchmark.json",
+      "original_sha256": "8834fd34c91548988d19424c8ff5847a90894d149253a2748665cf9af039df27",
+      "published_sha256": "dbc18e46d47e3539a4f74ab6b790fa9a12431e5e479c4ea5dec5c72dfe1a5752",
+      "original_bytes": 12816,
+      "published_bytes": 12209,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-final-concurrency-repeats.txt",
+      "original_sha256": "92663ca190803971e0afbb5127bb25139cd771c83ca4678732f0e5fbdf6f8835",
+      "published_sha256": "92663ca190803971e0afbb5127bb25139cd771c83ca4678732f0e5fbdf6f8835",
+      "original_bytes": 8171,
+      "published_bytes": 8171,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-final-git-status.txt",
+      "original_sha256": "c2a554d91aa184c884b99af66a7b6246cd2ca6e00f327816dd07ff827e59135b",
+      "published_sha256": "c2a554d91aa184c884b99af66a7b6246cd2ca6e00f327816dd07ff827e59135b",
+      "original_bytes": 19,
+      "published_bytes": 19,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-final-tests.txt",
+      "original_sha256": "a55639a3ac5ce4bb60e8b2c6a4c24f484030ac7c55cb1e46370ea9cbe0005775",
+      "published_sha256": "a55639a3ac5ce4bb60e8b2c6a4c24f484030ac7c55cb1e46370ea9cbe0005775",
+      "original_bytes": 2120,
+      "published_bytes": 2120,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-initial-benchmark-failed.json",
+      "original_sha256": "8d1a9346e82920a7a7fd532fc78ce6c33b1e3816b0494e0becf3b924b2bec924",
+      "published_sha256": "cedae699d1a344599a04349a771281862d958e8999a4728ad9edfb17ae2fc501",
+      "original_bytes": 12519,
+      "published_bytes": 11912,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-initial-benchmark-stdout-failed.json",
+      "original_sha256": "8d1a9346e82920a7a7fd532fc78ce6c33b1e3816b0494e0becf3b924b2bec924",
+      "published_sha256": "cedae699d1a344599a04349a771281862d958e8999a4728ad9edfb17ae2fc501",
+      "original_bytes": 12519,
+      "published_bytes": 11912,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-initial-public-tests.txt",
+      "original_sha256": "ac78558aa0c34854afb4841692d2b80708d116398fe2e4aee45679910aa34ba6",
+      "published_sha256": "ac78558aa0c34854afb4841692d2b80708d116398fe2e4aee45679910aa34ba6",
+      "original_bytes": 313,
+      "published_bytes": 313,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-intermediate-benchmark-stdout.json",
+      "original_sha256": "d1e43927a6b49278a16def2894ce111903154f82d184312b21b2231684c80e49",
+      "published_sha256": "c33aef26f9fbf42b0a32b8dc8bc45b18e15df8e1eaf09af71a619c9cbf1faf16",
+      "original_bytes": 12817,
+      "published_bytes": 12210,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-intermediate-benchmark.json",
+      "original_sha256": "d1e43927a6b49278a16def2894ce111903154f82d184312b21b2231684c80e49",
+      "published_sha256": "c33aef26f9fbf42b0a32b8dc8bc45b18e15df8e1eaf09af71a619c9cbf1faf16",
+      "original_bytes": 12817,
+      "published_bytes": 12210,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-post-review-identity.json",
+      "original_sha256": "3bf03e4d715903fc4db73d26eed1959d476c0148ef2a1d7688ecdac821e17e0f",
+      "published_sha256": "7db53926435071cfc025a9a1c412e482402765d3352254a63e239ccbf399bd48",
+      "original_bytes": 1637,
+      "published_bytes": 1542,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-preservation-check.json",
+      "original_sha256": "ebe7e168b7f0634c4b3f519c80a5d834edaaca3be68767c8fd23ffea284c391d",
+      "published_sha256": "8d9c3cd57d238c2271beb5c37d7f1a277c1d99c1cffa88a461df3af9c79ea4ca",
+      "original_bytes": 2210,
+      "published_bytes": 1739,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-release-status.json",
+      "original_sha256": "b5ce5de482b4336e65f5e24aba4c8b2f887f1edd6901523a5d70ed80a192272b",
+      "published_sha256": "a6e6ef9b1f5d375def6e4e3e5df3e9371bf48c5ebfce668da904e1a7d4efecdc",
+      "original_bytes": 1479,
+      "published_bytes": 1378,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass1-review-isolation.json",
+      "original_sha256": "25e84033864e9351610595e07088a89e897c35b62fdc328762a2f83adfd412cf",
+      "published_sha256": "043fef32ba9f46de03ef53c19100e37aefaea7333c604056a7eaa80ef0a86402",
+      "original_bytes": 873,
+      "published_bytes": 640,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-candidate-manifest.json",
+      "original_sha256": "b8da5bc98b51873c66dd0ebe42928ba5bd031c558437a70c95cd24595ad2f6dc",
+      "published_sha256": "10f314f901e5b88e64cab37523fdee17d708463ccfa7b4e0d29a9847bf05e188",
+      "original_bytes": 1667,
+      "published_bytes": 1574,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-candidate.patch",
+      "original_sha256": "70fc96ecb59979fb9a2f569af472adec78b63029fe132f0c1576c1251dfec3f9",
+      "published_sha256": "70fc96ecb59979fb9a2f569af472adec78b63029fe132f0c1576c1251dfec3f9",
+      "original_bytes": 42623,
+      "published_bytes": 42623,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-check-evidence.json",
+      "original_sha256": "7dc465dec0257f24455faa57a1a49bd4ef0e99bcd08f56d185bdaf4cd07f07e3",
+      "published_sha256": "205fd044dc167e480ae366dcf1c944579019ed4bb63e4043910686cdc262f030",
+      "original_bytes": 9808,
+      "published_bytes": 8151,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-command-exits.json",
+      "original_sha256": "fc802e39ad4ba365a0bbffcc5e1280a6bc700915651bfffe0437bc4662ec544a",
+      "published_sha256": "8cbf168ab528813e3daf9a6b20c36643afbf7d3dc288737ba7e57fe12128d251",
+      "original_bytes": 6620,
+      "published_bytes": 4999,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-commit-id.txt",
+      "original_sha256": "29da8b0c0f01b63de4ad8547cf2099e7d3abe3a80d196a5158237e9b8a0b40a8",
+      "published_sha256": "29da8b0c0f01b63de4ad8547cf2099e7d3abe3a80d196a5158237e9b8a0b40a8",
+      "original_bytes": 42,
+      "published_bytes": 42,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-commit.txt",
+      "original_sha256": "db1b8943e5d5ddc37b4beb1c02ce5783831c55829d90a7ab0a31d2e7cd8ce5dd",
+      "published_sha256": "db1b8943e5d5ddc37b4beb1c02ce5783831c55829d90a7ab0a31d2e7cd8ce5dd",
+      "original_bytes": 185,
+      "published_bytes": 185,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-coordinator-identity.json",
+      "original_sha256": "48a6eebfdd863af4a8a04c9717e6d03a88738dde6d391f86b83ffba78d07899d",
+      "published_sha256": "c8b570bc76774d1489cd29217b4d80fe9ed0fbf49eecba09b7d77ac6aa52d5f9",
+      "original_bytes": 1742,
+      "published_bytes": 1646,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-diff-check.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-evidence-export-recovery.txt",
+      "original_sha256": "e6afafc82e1e38a3a09832a5cfb67c6a9b945c5a5f1c364faa690701dc117446",
+      "published_sha256": "e6afafc82e1e38a3a09832a5cfb67c6a9b945c5a5f1c364faa690701dc117446",
+      "original_bytes": 445,
+      "published_bytes": 445,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-final-benchmark-stdout.json",
+      "original_sha256": "bd8bed8e2361181ba0db3ba2a72dabbbeb7d69d1964a58dcc5eacdb4af5ba6d3",
+      "published_sha256": "ef8699f8af7cb800030ae9ac2cca7e010a9b7fe191b4950cd6379387a02dd755",
+      "original_bytes": 12812,
+      "published_bytes": 12205,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-final-benchmark.json",
+      "original_sha256": "bd8bed8e2361181ba0db3ba2a72dabbbeb7d69d1964a58dcc5eacdb4af5ba6d3",
+      "published_sha256": "ef8699f8af7cb800030ae9ac2cca7e010a9b7fe191b4950cd6379387a02dd755",
+      "original_bytes": 12812,
+      "published_bytes": 12205,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-final-git-status.txt",
+      "original_sha256": "8aeed721d09be9105fd51962a568da2a64d1fb854972af505987c33537c116eb",
+      "published_sha256": "8aeed721d09be9105fd51962a568da2a64d1fb854972af505987c33537c116eb",
+      "original_bytes": 20,
+      "published_bytes": 20,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-final-tests.txt",
+      "original_sha256": "4d80430921d42782bd40125a80726e76285cc8155a95c8d55353a9f5fada32f9",
+      "published_sha256": "4d80430921d42782bd40125a80726e76285cc8155a95c8d55353a9f5fada32f9",
+      "original_bytes": 2400,
+      "published_bytes": 2400,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-freeze-evidence.py",
+      "original_sha256": "20ffc31f9d69c33459b117a477ad9ddc3bae408aa2aa9f7d5e9b0ca9c049c02b",
+      "published_sha256": "20ffc31f9d69c33459b117a477ad9ddc3bae408aa2aa9f7d5e9b0ca9c049c02b",
+      "original_bytes": 3911,
+      "published_bytes": 3911,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-freeze.py",
+      "original_sha256": "b6c9df9ed520e85796e563d23746fec51a360eb6c2dfd5e7e14f62a55ce54ac4",
+      "published_sha256": "b6c9df9ed520e85796e563d23746fec51a360eb6c2dfd5e7e14f62a55ce54ac4",
+      "original_bytes": 4104,
+      "published_bytes": 4104,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-git-add.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-nested-cli-repro.json",
+      "original_sha256": "dc6ec6f933e034d245a0c557ac253b75500e7644a42b99a83985043b32891194",
+      "published_sha256": "dc6ec6f933e034d245a0c557ac253b75500e7644a42b99a83985043b32891194",
+      "original_bytes": 1333,
+      "published_bytes": 1333,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-nested-repro.txt",
+      "original_sha256": "7b739cde9882340b8af63ac6aee3d900d7a5172d09ff6c53a3207949ce8b3681",
+      "published_sha256": "7b739cde9882340b8af63ac6aee3d900d7a5172d09ff6c53a3207949ce8b3681",
+      "original_bytes": 370,
+      "published_bytes": 370,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-post-review-identity.json",
+      "original_sha256": "48a6eebfdd863af4a8a04c9717e6d03a88738dde6d391f86b83ffba78d07899d",
+      "published_sha256": "c8b570bc76774d1489cd29217b4d80fe9ed0fbf49eecba09b7d77ac6aa52d5f9",
+      "original_bytes": 1742,
+      "published_bytes": 1646,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-preservation-check.json",
+      "original_sha256": "50725287759c9908b130ec8e1f4d9d421a987c2fd790dc219fedec4c17b78459",
+      "published_sha256": "92a615c5599dbdfe72992037fb8c032afba1aeeaa1adac1d9d0eeac0401f70ee",
+      "original_bytes": 1721,
+      "published_bytes": 1253,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-release-status.json",
+      "original_sha256": "b5ce5de482b4336e65f5e24aba4c8b2f887f1edd6901523a5d70ed80a192272b",
+      "published_sha256": "a6e6ef9b1f5d375def6e4e3e5df3e9371bf48c5ebfce668da904e1a7d4efecdc",
+      "original_bytes": 1479,
+      "published_bytes": 1378,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-repair.patch",
+      "original_sha256": "e79e6438db2634edf1f4ed2185b4728eaec5825ca1bf6a060f71d7ca82cf2fa1",
+      "published_sha256": "e79e6438db2634edf1f4ed2185b4728eaec5825ca1bf6a060f71d7ca82cf2fa1",
+      "original_bytes": 5979,
+      "published_bytes": 5979,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-review-isolation.json",
+      "original_sha256": "f5aaae7215ee568e0567bff5866e14a8cea6c0bd0580d50d931c44e18c3f017e",
+      "published_sha256": "1cee83de9864300675795f95317d40c86ccb4ad6242167caa14736390f1d940e",
+      "original_bytes": 882,
+      "published_bytes": 649,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-run-checks.py",
+      "original_sha256": "6cd409251d03d09820f9a5df1550fe7a0c858abcb3082dee0a34f4bb2cac9fce",
+      "published_sha256": "6cd409251d03d09820f9a5df1550fe7a0c858abcb3082dee0a34f4bb2cac9fce",
+      "original_bytes": 2108,
+      "published_bytes": 2108,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-staged-diff-check.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/pass2-worktree-registration.txt",
+      "original_sha256": "497d2f5652229ca8790829d51ce6a844782e44bd014792dbce5445abf39e2688",
+      "published_sha256": "bd0eba56b9cc666abe42664787dc80851704f609b6bca9e184c61efb21703986",
+      "original_bytes": 1336,
+      "published_bytes": 902,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/preserved-baseline-hashes.json",
+      "original_sha256": "255f566fe7eaa4107f434d7663084dfdfd1160de52b1ae7a98af4c721d180f23",
+      "published_sha256": "b4da3d347440f49cc0c878d747ca8f5cbf4392fcc0afb818757bbdbbb816d6b0",
+      "original_bytes": 1628,
+      "published_bytes": 1163,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/00-baseline-status.result.json",
+      "original_sha256": "55d78c7f2437af63e6264d21f15e11e67e57744deb7d212af7e593b9bc56afa3",
+      "published_sha256": "f6878ac05fa1dcc2866b7df8cf5b280b9492b813d28d06fed53f22c75de726f3",
+      "original_bytes": 2068,
+      "published_bytes": 1812,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/00-baseline-status.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/00-baseline-status.stdout.json",
+      "original_sha256": "b5ce5de482b4336e65f5e24aba4c8b2f887f1edd6901523a5d70ed80a192272b",
+      "published_sha256": "a6e6ef9b1f5d375def6e4e3e5df3e9371bf48c5ebfce668da904e1a7d4efecdc",
+      "original_bytes": 1479,
+      "published_bytes": 1378,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/01-deploy-10.result.json",
+      "original_sha256": "d081f58d7c004d4d1179304320d63742fe4df8a4b8021838b1b00260680eff4a",
+      "published_sha256": "40bcf04890c01bfeffe554160c5ad7daaeee39c40c16636633d3b66ad52a32df",
+      "original_bytes": 1103,
+      "published_bytes": 862,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/01-deploy-10.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/01-deploy-10.stdout.json",
+      "original_sha256": "5cbb9fc7d50df376772cd257ab1b44accd654b732142d1ea8d99ca16d8ac3a1d",
+      "published_sha256": "3811c02ef142c24e6911a7681601715f513d13e8c3f8e1bfc8ffb02900a50326",
+      "original_bytes": 571,
+      "published_bytes": 485,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/02-observe-10-1.result.json",
+      "original_sha256": "1701b25a818f531917684e314b11d4b72d8b5d4852bfbbfcf481cb36c1b8f119",
+      "published_sha256": "4ce1ecfdfecbd0a531dae3877a31b21256891b20105cc651b72dacc74ec60cf9",
+      "original_bytes": 1266,
+      "published_bytes": 1082,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/02-observe-10-1.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/02-observe-10-1.stdout.json",
+      "original_sha256": "537328e9af7026c86f0af0b54787516f3a270367ae7953f9ebf64bff1d43d8e6",
+      "published_sha256": "537328e9af7026c86f0af0b54787516f3a270367ae7953f9ebf64bff1d43d8e6",
+      "original_bytes": 695,
+      "published_bytes": 695,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/03-observe-10-2.result.json",
+      "original_sha256": "183f8dd95deccb014ce649411173e9cd1462cb8e251659d59a74b61333a08a72",
+      "published_sha256": "5f87b8da09864cbbdaae6ab30c5060ed46e6e7675e67a10d7251792224df7862",
+      "original_bytes": 1266,
+      "published_bytes": 1082,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/03-observe-10-2.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/03-observe-10-2.stdout.json",
+      "original_sha256": "87be99c012c75e2957ed5be7d361e8deb53d5a366dc0a4e47998bcb56918b66e",
+      "published_sha256": "87be99c012c75e2957ed5be7d361e8deb53d5a366dc0a4e47998bcb56918b66e",
+      "original_bytes": 695,
+      "published_bytes": 695,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/04-observe-10-3.result.json",
+      "original_sha256": "50a4021653b66ba3d3b03bb82e51988b3f47dbce83d00d4c8cbc92d8ba624d56",
+      "published_sha256": "691ff79a49b5d5fcc14c1909e6385a83288f240741404d260101e73d06d34ac3",
+      "original_bytes": 1266,
+      "published_bytes": 1082,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/04-observe-10-3.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/04-observe-10-3.stdout.json",
+      "original_sha256": "0ad94ead889618c2243fa4919ce92f600643a417aac79da73f6a8003c1cf925d",
+      "published_sha256": "0ad94ead889618c2243fa4919ce92f600643a417aac79da73f6a8003c1cf925d",
+      "original_bytes": 695,
+      "published_bytes": 695,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/05-deploy-50.result.json",
+      "original_sha256": "8955ff31b38f43b22e4e6cd89e954fffe6e0270b95f9a7dae487e7287d090aa9",
+      "published_sha256": "190686a52f21f2f49934414767bd33ebbaa9149f0d4a225c111166f421ad3162",
+      "original_bytes": 1103,
+      "published_bytes": 862,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/05-deploy-50.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/05-deploy-50.stdout.json",
+      "original_sha256": "a967dd793d9b222e582f39f4aadb4dec9784496665fc6d9e7e60b6c02349bf52",
+      "published_sha256": "5674817ba89d2d95822a639c9f81055dd6c106e7b8f9cc6982163655d537d423",
+      "original_bytes": 571,
+      "published_bytes": 485,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/06-observe-50-1.result.json",
+      "original_sha256": "fb97484538546f044213e85772e5b1788ffc008d346deeb6bd1a5bb634f82e07",
+      "published_sha256": "3050c8116e74df77e7bd981b346c9bf1b87e1acd22815c204ab7c823af258f73",
+      "original_bytes": 1267,
+      "published_bytes": 1083,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/06-observe-50-1.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/06-observe-50-1.stdout.json",
+      "original_sha256": "d8881635b3539373f448cbcd5b7cad1d02ea316ba5d42435c38dd4629f7988de",
+      "published_sha256": "d8881635b3539373f448cbcd5b7cad1d02ea316ba5d42435c38dd4629f7988de",
+      "original_bytes": 696,
+      "published_bytes": 696,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/07-rollback.result.json",
+      "original_sha256": "1cb44985d6116bca4c44f3757bee74bf03130718fe092b48957c3a3456a22add",
+      "published_sha256": "e225bb8caf4336f7cc9e6c6aaaf0782af77ab79c4ab4046e9270cbbc8bd5983d",
+      "original_bytes": 952,
+      "published_bytes": 786,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/07-rollback.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/07-rollback.stdout.json",
+      "original_sha256": "68a02b5475ff0ad9fdca4a0c1334b9fa2c06a999896d7b4e77f5fa26eb2c277d",
+      "published_sha256": "68a02b5475ff0ad9fdca4a0c1334b9fa2c06a999896d7b4e77f5fa26eb2c277d",
+      "original_bytes": 429,
+      "published_bytes": 429,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/08-recovery.result.json",
+      "original_sha256": "f8526bdce4b0e9d98d918e8d4b714b4c5291d453c853d207f65a57fe94b113ea",
+      "published_sha256": "e4090d5ff39f7cb128a2f43746f7cd42c05f7bf804f565249c9d184484b6f88c",
+      "original_bytes": 1323,
+      "published_bytes": 1137,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/08-recovery.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/08-recovery.stdout.json",
+      "original_sha256": "f7060c554e7ac749bf6cef556f979de58e67204e069deef788be03d1535eddaa",
+      "published_sha256": "f7060c554e7ac749bf6cef556f979de58e67204e069deef788be03d1535eddaa",
+      "original_bytes": 760,
+      "published_bytes": 760,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/09-final-status.result.json",
+      "original_sha256": "249eabf95d3705cadf19a769a2b9754a5aff9448f980c9106c22fc6d6bd6496f",
+      "published_sha256": "50d61be1d769d8bf85a10ae6bd34d388fe4131e960f1806bb010979c4292fe20",
+      "original_bytes": 7389,
+      "published_bytes": 6797,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/09-final-status.stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/09-final-status.stdout.json",
+      "original_sha256": "775d9f5f69e6a3fbc9dc1631af84e0e8813088b73d3f7f51560c306463f40d8e",
+      "published_sha256": "3ccb802ee1ab4e463f2cc4d4625f4b4a3ec19c13da914aac86365e4610866443",
+      "original_bytes": 6567,
+      "published_bytes": 6130,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/driver.py",
+      "original_sha256": "bde0bdf1f5b5314638c4b9892bc2c8f0a670024de062b7dc6e7d57bc9ef3f1e9",
+      "published_sha256": "bde0bdf1f5b5314638c4b9892bc2c8f0a670024de062b7dc6e7d57bc9ef3f1e9",
+      "original_bytes": 5702,
+      "published_bytes": 5702,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/finalize.py",
+      "original_sha256": "563ead1f528aa07d15b127ab59dd48bebb36c3caa3deed596cf9d06fb1a59e9e",
+      "published_sha256": "563ead1f528aa07d15b127ab59dd48bebb36c3caa3deed596cf9d06fb1a59e9e",
+      "original_bytes": 8576,
+      "published_bytes": 8576,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/operations.jsonl",
+      "original_sha256": "5caa47291cb7f3b5590aa53ab5ed9dbcc3f46fbb9388e18ec400950304e31bcf",
+      "published_sha256": "b5afb74b8a2b4eb4d0563e010b0fc6d5e8c2ca5acbdf00bf1a976a15d62837bd",
+      "original_bytes": 49885,
+      "published_bytes": 36038,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/postflight.json",
+      "original_sha256": "e09c61e64d74983de8ba969451b53aadc6fb144b422f4241dd62b195cd382533",
+      "published_sha256": "4f7c202025ff62f912147c5096e9e5068daf9cb6b6e3fe3639d943b02f5e5f3d",
+      "original_bytes": 1980,
+      "published_bytes": 1877,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/preflight.json",
+      "original_sha256": "754c0a78ffd227fa4424bf568fa165ea8ac72f03d388b6251ae17f5cf10e1073",
+      "published_sha256": "75db9abe2fc97befed695d977d03a9cdb9ba7543910c8e708d0c1b0270175b8c",
+      "original_bytes": 6572,
+      "published_bytes": 5434,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/REPORT.md",
+      "original_sha256": "acd311f06348b95c605ac4425434a2ff9ecc6e12e443f32832e6330a03ebf812",
+      "published_sha256": "4210e274f13b9d533325563e4c8413e7b934c253cce40e851670d51714084a8f",
+      "original_bytes": 5453,
+      "published_bytes": 5391,
+      "transformations": [
+        "converted included local link to relative path",
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release/summary.json",
+      "original_sha256": "254a2c95d503fb0f9f45c77ee79155fa14ae9dc47ad856ad5f7deb6a764f21cc",
+      "published_sha256": "70b3bcf10bf76b944050021d3c6da43163b91195c43d4d973202e5c7a07d157f",
+      "original_bytes": 4580,
+      "published_bytes": 4095,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release-preparation.md",
+      "original_sha256": "8d0f301a1281bb218729a5a6eab8561283fe6bd9407df08f923f31bdc5a56d94",
+      "published_sha256": "4d889cd9f72400b7049425b53dbb2600abb30e08e39b684e86ad7d0e8ddb58d3",
+      "original_bytes": 2593,
+      "published_bytes": 2531,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/release-state.json",
+      "original_sha256": "775d9f5f69e6a3fbc9dc1631af84e0e8813088b73d3f7f51560c306463f40d8e",
+      "published_sha256": "3ccb802ee1ab4e463f2cc4d4625f4b4a3ec19c13da914aac86365e4610866443",
+      "original_bytes": 6567,
+      "published_bytes": 6130,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/RESULT.json",
+      "original_sha256": "4ce4f6791f2a28c69173723c1a962d3bdaf8beac1369f0b5eec17e7dd5ab1786",
+      "published_sha256": "0752e92468e6c095b67821a34a7cc901f72dfd58006970937652fdffabbef803",
+      "original_bytes": 1924,
+      "published_bytes": 1828,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness/independent_checks.json",
+      "original_sha256": "38b80e4f9246fda4011fb5766cc7a9f46afd67bc0d2b05c7b6f3bed191837154",
+      "published_sha256": "38b80e4f9246fda4011fb5766cc7a9f46afd67bc0d2b05c7b6f3bed191837154",
+      "original_bytes": 696,
+      "published_bytes": 696,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness/independent_checks.py",
+      "original_sha256": "ee0143d0e65924d5e18070a89c7af91cf714f3747e91a7c1f255c3f22716fddb",
+      "published_sha256": "ee0143d0e65924d5e18070a89c7af91cf714f3747e91a7c1f255c3f22716fddb",
+      "original_bytes": 6097,
+      "published_bytes": 6097,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness/nested_cli_repro.json",
+      "original_sha256": "65180200fe1a4cf9d2048a6bb36b21b2e3c689f6e2002f99e0b272dde07af9e6",
+      "published_sha256": "eae565042522a09fabcc48edf18fc75f26328afd0e744c919a362a37da4cc91c",
+      "original_bytes": 156405,
+      "published_bytes": 110322,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness/nested_cli_repro.py",
+      "original_sha256": "2a3996872817a06380c199c7355e017e339154ebfc93ddc79ccee1632984708d",
+      "published_sha256": "2a3996872817a06380c199c7355e017e339154ebfc93ddc79ccee1632984708d",
+      "original_bytes": 584,
+      "published_bytes": 584,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness/nested_repro.py",
+      "original_sha256": "00f188059e0d330798437543564000620e826e33207770d4c6795f0416afa18b",
+      "published_sha256": "00f188059e0d330798437543564000620e826e33207770d4c6795f0416afa18b",
+      "original_bytes": 807,
+      "published_bytes": 807,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness/nested_repro.txt",
+      "original_sha256": "8537231f6467d48ffeaac57e8cdba6f6ca766c6cc041aa6ba416b06beff96879",
+      "published_sha256": "8537231f6467d48ffeaac57e8cdba6f6ca766c6cc041aa6ba416b06beff96879",
+      "original_bytes": 517,
+      "published_bytes": 517,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness/public-tests.txt",
+      "original_sha256": "8c5db39389e33d62f3971761adce521397e6f14816ecf6b0a549a30d3464ecd5",
+      "published_sha256": "8c5db39389e33d62f3971761adce521397e6f14816ecf6b0a549a30d3464ecd5",
+      "original_bytes": 2120,
+      "published_bytes": 2120,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness/REPORT.md",
+      "original_sha256": "2a94ea034a824ab66784f3beaf1ac8a05ea4977f6f04c536cfeeaacc21af8e22",
+      "published_sha256": "681cc7e19221e2333bafbf7ce99cb1a269db1f1f2738877743f2060f181eb2c0",
+      "original_bytes": 7094,
+      "published_bytes": 7032,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/final_integrity.json",
+      "original_sha256": "a12a21db21db4e31a50f59d52593a4e5de8692a1556f7b905faaaae18695db0b",
+      "published_sha256": "a12a21db21db4e31a50f59d52593a4e5de8692a1556f7b905faaaae18695db0b",
+      "original_bytes": 462,
+      "published_bytes": 462,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/final_integrity.py",
+      "original_sha256": "94df2f6e34c167dc64cf154d3a1bbeb8cc2c0d530686b4469367367f02a9cac3",
+      "published_sha256": "94df2f6e34c167dc64cf154d3a1bbeb8cc2c0d530686b4469367367f02a9cac3",
+      "original_bytes": 2041,
+      "published_bytes": 2041,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/independent_checks.json",
+      "original_sha256": "a5d7ca778e9a89977b06e6cdcd3e406267c9ce45acd601c97d2a6e2014031684",
+      "published_sha256": "a5d7ca778e9a89977b06e6cdcd3e406267c9ce45acd601c97d2a6e2014031684",
+      "original_bytes": 700,
+      "published_bytes": 700,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/independent_checks.py",
+      "original_sha256": "6242aee0972bb96d8c80194628ad9f4990f64dc71f29a5f3a7c4435eb13c253d",
+      "published_sha256": "6242aee0972bb96d8c80194628ad9f4990f64dc71f29a5f3a7c4435eb13c253d",
+      "original_bytes": 6099,
+      "published_bytes": 6099,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/nested_cli_repro.json",
+      "original_sha256": "dc6ec6f933e034d245a0c557ac253b75500e7644a42b99a83985043b32891194",
+      "published_sha256": "dc6ec6f933e034d245a0c557ac253b75500e7644a42b99a83985043b32891194",
+      "original_bytes": 1333,
+      "published_bytes": 1333,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/nested_repro.txt",
+      "original_sha256": "7b739cde9882340b8af63ac6aee3d900d7a5172d09ff6c53a3207949ce8b3681",
+      "published_sha256": "7b739cde9882340b8af63ac6aee3d900d7a5172d09ff6c53a3207949ce8b3681",
+      "original_bytes": 370,
+      "published_bytes": 370,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/ownership_checks.json",
+      "original_sha256": "75085331189466fe52b8ae137ec6ee2902318ac4d905ae42ddb8853e4d73923a",
+      "published_sha256": "75085331189466fe52b8ae137ec6ee2902318ac4d905ae42ddb8853e4d73923a",
+      "original_bytes": 1761,
+      "published_bytes": 1761,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/ownership_checks.py",
+      "original_sha256": "9df70d630ccfc7e0ab922876d46c95d06ec42421e44087f7a934b265e40d3a64",
+      "published_sha256": "9df70d630ccfc7e0ab922876d46c95d06ec42421e44087f7a934b265e40d3a64",
+      "original_bytes": 3906,
+      "published_bytes": 3906,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/public-tests.txt",
+      "original_sha256": "4d0f71c45fc5820224113ff985887f01d62592db1add5f5e2d412b4985679a02",
+      "published_sha256": "4d0f71c45fc5820224113ff985887f01d62592db1add5f5e2d412b4985679a02",
+      "original_bytes": 2400,
+      "published_bytes": 2400,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-correctness-p2/REPORT.md",
+      "original_sha256": "dba6461b8f1d39572b7fe1719c9eb78a8db819061347e771af408ebed890ebed",
+      "published_sha256": "7d90f105f1cd47d63f1d45d465610df73bcb5876762f147ca486d02ed83e6564",
+      "original_bytes": 8185,
+      "published_bytes": 8123,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data/data-checks-raw.txt",
+      "original_sha256": "6c6b4940a7bd87744e4e2d690622e1fd164df265f95f08a80d21129f45f51af9",
+      "published_sha256": "036d4eb78354bf8037f991a2ea753a0d603a83adbce3abc0e7e1344bf8992bab",
+      "original_bytes": 2193,
+      "published_bytes": 2122,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data/data-checks.json",
+      "original_sha256": "6c6b4940a7bd87744e4e2d690622e1fd164df265f95f08a80d21129f45f51af9",
+      "published_sha256": "f8d98aef1ee53aefa2de3f19f88d371c52923c1188d341bf00cf57ed9c7db022",
+      "original_bytes": 2193,
+      "published_bytes": 2054,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data/data_checks.py",
+      "original_sha256": "ef4f71ca2ee328f991b31704f58aa32c51c3c32a37e97864999917bc05c8f168",
+      "published_sha256": "ef4f71ca2ee328f991b31704f58aa32c51c3c32a37e97864999917bc05c8f168",
+      "original_bytes": 10432,
+      "published_bytes": 10432,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data/REPORT.md",
+      "original_sha256": "5411fa305d7bc787eeb36656a61b43e347d8022d69f8bffd01df91ffcd5be5b5",
+      "published_sha256": "d9e9646958c3e60e5e6fe527951994aae1a0a646f95b92458ff65c709cee4824",
+      "original_bytes": 5930,
+      "published_bytes": 5806,
+      "transformations": [
+        "converted included local link to relative path",
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data/supplied-evidence-verification.json",
+      "original_sha256": "786bddc97d82ac7915b99af7dfa0e2457b19f7a2188e41dd452dac1616c3fab0",
+      "published_sha256": "786bddc97d82ac7915b99af7dfa0e2457b19f7a2188e41dd452dac1616c3fab0",
+      "original_bytes": 507,
+      "published_bytes": 507,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/data-checks-raw.txt",
+      "original_sha256": "f62939203be2af5a877ec48cf67dbaaee5bca6106fec6e6791333f3aab5bc325",
+      "published_sha256": "6e1933978bdb7f7a49a550f16372fb4d8d847a6010def2554f7a5da87481ebab",
+      "original_bytes": 2197,
+      "published_bytes": 2126,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/data-checks.json",
+      "original_sha256": "f62939203be2af5a877ec48cf67dbaaee5bca6106fec6e6791333f3aab5bc325",
+      "published_sha256": "98cfd71e8805091c93d021fdfad786fb2d9e2f48e2367cdcc6e5148fd183003d",
+      "original_bytes": 2197,
+      "published_bytes": 2058,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/data_checks.py",
+      "original_sha256": "1d0d08b76fc9b0f8fc751d8335839ea1e265f5f698ffc5755eaeaa0c8778fbd2",
+      "published_sha256": "1d0d08b76fc9b0f8fc751d8335839ea1e265f5f698ffc5755eaeaa0c8778fbd2",
+      "original_bytes": 10443,
+      "published_bytes": 10443,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/deep-broad-checks.json",
+      "original_sha256": "d4c1feb8e4b003b34dfa46c54aa3e748526cec6487e904d4f417a15963620cd9",
+      "published_sha256": "d4c1feb8e4b003b34dfa46c54aa3e748526cec6487e904d4f417a15963620cd9",
+      "original_bytes": 2371,
+      "published_bytes": 2371,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/deep-broad-raw.txt",
+      "original_sha256": "d4c1feb8e4b003b34dfa46c54aa3e748526cec6487e904d4f417a15963620cd9",
+      "published_sha256": "d4c1feb8e4b003b34dfa46c54aa3e748526cec6487e904d4f417a15963620cd9",
+      "original_bytes": 2371,
+      "published_bytes": 2371,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/deep_broad_checks.py",
+      "original_sha256": "1f7ab7ea391d574a1fdce3d6a0d0b4d40061e88e71fa56ad47c40ab5161f6c89",
+      "published_sha256": "1f7ab7ea391d574a1fdce3d6a0d0b4d40061e88e71fa56ad47c40ab5161f6c89",
+      "original_bytes": 5671,
+      "published_bytes": 5671,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/final-identity.json",
+      "original_sha256": "9fc5ade204d992d20f64743d83aae0bc367a2a93793b661cb6777ffc21b7e3a9",
+      "published_sha256": "f14aa2a7fd0b6eddef31a0f3d340db56ba8dc50d7d4bb044302e9c5ac97ee750",
+      "original_bytes": 541,
+      "published_bytes": 388,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/public-tests.txt",
+      "original_sha256": "cb75f20fe17c2565277b5a21cfbd5554f438273145b31e7376db1ce11b1a80b4",
+      "published_sha256": "cb75f20fe17c2565277b5a21cfbd5554f438273145b31e7376db1ce11b1a80b4",
+      "original_bytes": 2400,
+      "published_bytes": 2400,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-data-p2/REPORT.md",
+      "original_sha256": "dab6e64dc36b035b6d61364524639ca8b0c73fd1115193ae90c581ec82a622de",
+      "published_sha256": "3135716d4382bb4450ba148ade891f6d824623c9d2677a793004e6b0c6b89f6c",
+      "original_bytes": 7931,
+      "published_bytes": 7807,
+      "transformations": [
+        "converted included local link to relative path",
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-dispatch-plan.md",
+      "original_sha256": "a1f346c4fbe8111c27a31cf02140bf26c42a143240c339492e4d8fa181a67fdc",
+      "published_sha256": "a1f346c4fbe8111c27a31cf02140bf26c42a143240c339492e4d8fa181a67fdc",
+      "original_bytes": 2821,
+      "published_bytes": 2821,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/cli-sample.txt",
+      "original_sha256": "6d87f3d261bfb97c83f797ee348a419e036b3f741400cfaa9645038fcef88703",
+      "published_sha256": "fc0b8d8d67be0b94647d6af2335511c4ac605b777ec5b74dc011ffd0b30fef4b",
+      "original_bytes": 377,
+      "published_bytes": 339,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/identity-and-evidence.json",
+      "original_sha256": "b798223c3eab7cdb31a1069debc5cc2eb0dc37bf7a41af24639ac6563e2d711f",
+      "published_sha256": "b798223c3eab7cdb31a1069debc5cc2eb0dc37bf7a41af24639ac6563e2d711f",
+      "original_bytes": 2241,
+      "published_bytes": 2241,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/initial-failure-summary.json",
+      "original_sha256": "62eec4dcd0e817378e98cd4cfb21fed93b7b897ac6861a68543c88a749d6ce07",
+      "published_sha256": "62eec4dcd0e817378e98cd4cfb21fed93b7b897ac6861a68543c88a749d6ce07",
+      "original_bytes": 108,
+      "published_bytes": 108,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/REPORT.md",
+      "original_sha256": "b2d0f0a7baff85a8921f3aee15c0d77894c7d5f5097f53cbec4015fd9e4cf716",
+      "published_sha256": "4b5e1b2c6bb5003ad0e6468fd746eb51b2b5640ed04e8a73577d689f44dc169c",
+      "original_bytes": 7623,
+      "published_bytes": 7561,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/runtime-diagnostic.json",
+      "original_sha256": "f93ead28b05ea75d022bf0fd6422ac7729a9457a6c85574283ea291616b30450",
+      "published_sha256": "f93ead28b05ea75d022bf0fd6422ac7729a9457a6c85574283ea291616b30450",
+      "original_bytes": 609,
+      "published_bytes": 609,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/runtime-diagnostic.py",
+      "original_sha256": "510ef79f36e581b477b87cff2d476260249195510663e1ea3c893118fd444172",
+      "published_sha256": "510ef79f36e581b477b87cff2d476260249195510663e1ea3c893118fd444172",
+      "original_bytes": 1936,
+      "published_bytes": 1936,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/simulator-status.txt",
+      "original_sha256": "2197e9bd61495d83090997e8c236d9ff26f404be7812fc8505471150fb6341b5",
+      "published_sha256": "c130b13852f69ad7d78d714a88307ac6e35384e221a72772c6964dbfbec6c602",
+      "original_bytes": 1838,
+      "published_bytes": 1607,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/tests.txt",
+      "original_sha256": "d34c8988d2c64431454d6041280fb554a7282645fdab1805bb8468e9d6aac0ba",
+      "published_sha256": "21e5d82c787b2cd9bcb4c2f2c9d2bff0276e31802641054679fc1b177eb5fc8d",
+      "original_bytes": 2263,
+      "published_bytes": 2225,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure/verify.py",
+      "original_sha256": "3db9d6e4ec37e45fac723f3c3359599e5fb8d6cc0b645938102abd5ddbd8f219",
+      "published_sha256": "3db9d6e4ec37e45fac723f3c3359599e5fb8d6cc0b645938102abd5ddbd8f219",
+      "original_bytes": 4957,
+      "published_bytes": 4957,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure-p2/cli-sample.txt",
+      "original_sha256": "6d87f3d261bfb97c83f797ee348a419e036b3f741400cfaa9645038fcef88703",
+      "published_sha256": "fc0b8d8d67be0b94647d6af2335511c4ac605b777ec5b74dc011ffd0b30fef4b",
+      "original_bytes": 377,
+      "published_bytes": 339,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure-p2/identity-and-evidence.json",
+      "original_sha256": "03ea19b8e5521f5fe08261eaf340e89c335d7fb811e45700b0c44c3e48a9419b",
+      "published_sha256": "03ea19b8e5521f5fe08261eaf340e89c335d7fb811e45700b0c44c3e48a9419b",
+      "original_bytes": 2964,
+      "published_bytes": 2964,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure-p2/REPORT.md",
+      "original_sha256": "464d7ddda56db76ff84b529d365ff7509862d52ac70009fdd66ade794f7123ff",
+      "published_sha256": "41213e9b3d79792cd8d63c02c1220694409f5cd3374d705e6027187e008339bc",
+      "original_bytes": 8400,
+      "published_bytes": 8338,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure-p2/simulator-status.txt",
+      "original_sha256": "2197e9bd61495d83090997e8c236d9ff26f404be7812fc8505471150fb6341b5",
+      "published_sha256": "c130b13852f69ad7d78d714a88307ac6e35384e221a72772c6964dbfbec6c602",
+      "original_bytes": 1838,
+      "published_bytes": 1607,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure-p2/tests.txt",
+      "original_sha256": "9cb361bcb30e0ad8daac531c9154ac175969ad6e4d3bd0dca403f30f11ee25c5",
+      "published_sha256": "aeb13fca33d2800fb1eaf0fd20a4ddca8171e08ef3d8526b28d838bd049cf06d",
+      "original_bytes": 2543,
+      "published_bytes": 2505,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/review-infrastructure-p2/verify.py",
+      "original_sha256": "f8103f95fe287743a7b81e42792ea9e1866768820c4ad0ecf6bebfb2a83148cc",
+      "published_sha256": "f8103f95fe287743a7b81e42792ea9e1866768820c4ad0ecf6bebfb2a83148cc",
+      "original_bytes": 6689,
+      "published_bytes": 6689,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/starting-status.txt",
+      "original_sha256": "8aeed721d09be9105fd51962a568da2a64d1fb854972af505987c33537c116eb",
+      "published_sha256": "8aeed721d09be9105fd51962a568da2a64d1fb854972af505987c33537c116eb",
+      "original_bytes": 20,
+      "published_bytes": 20,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/artifacts/verify-candidate.py",
+      "original_sha256": "f7c48526a38ae5957d61ce520db62cbf0102f54916621bd9f3a9d995bfcbf018",
+      "published_sha256": "f7c48526a38ae5957d61ce520db62cbf0102f54916621bd9f3a9d995bfcbf018",
+      "original_bytes": 1655,
+      "published_bytes": 1655,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/.gitignore",
+      "original_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "published_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "original_bytes": 23,
+      "published_bytes": 23,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/baseline_reference.py",
+      "original_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "published_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "original_bytes": 3799,
+      "published_bytes": 3799,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/benchmark.py",
+      "original_sha256": "8a322d74746aabd0f98330a7baa3fdb20c917ecb74fb8a27e696ec0f1cb47de3",
+      "published_sha256": "8a322d74746aabd0f98330a7baa3fdb20c917ecb74fb8a27e696ec0f1cb47de3",
+      "original_bytes": 6255,
+      "published_bytes": 6255,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/caller-note.txt",
+      "original_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "published_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "original_bytes": 57,
+      "published_bytes": 57,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/log_archive.py",
+      "original_sha256": "616d69bb4492f74304dc17c3e655dbf4ff79ea02a3a665b8a62d01f9a3f28cc9",
+      "published_sha256": "616d69bb4492f74304dc17c3e655dbf4ff79ea02a3a665b8a62d01f9a3f28cc9",
+      "original_bytes": 8838,
+      "published_bytes": 8838,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/OPERATIONS.md",
+      "original_sha256": "e40cf5fcb30f650e2a2f8109606218c6a39f557c8da93442c08d07905e33c5c1",
+      "published_sha256": "e40cf5fcb30f650e2a2f8109606218c6a39f557c8da93442c08d07905e33c5c1",
+      "original_bytes": 4469,
+      "published_bytes": 4469,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/README.md",
+      "original_sha256": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926",
+      "published_sha256": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926",
+      "original_bytes": 5684,
+      "published_bytes": 5684,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/RUN_CONTEXT.md",
+      "original_sha256": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "published_sha256": "3e705cc5f05fc0111b8d6b248fb54c34cea26c4ab89477d1d5eab83168200442",
+      "original_bytes": 2836,
+      "published_bytes": 2712,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/sample.ndjson",
+      "original_sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "published_sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "original_bytes": 412,
+      "published_bytes": 412,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/TASK.md",
+      "original_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "published_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "original_bytes": 2644,
+      "published_bytes": 2644,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/tests/test_concurrency_cli.py",
+      "original_sha256": "9b86a054539c9a73788b94ee185e45a6bb85538db4b39bb24061027cc622115d",
+      "published_sha256": "9b86a054539c9a73788b94ee185e45a6bb85538db4b39bb24061027cc622115d",
+      "original_bytes": 6068,
+      "published_bytes": 6068,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/tests/test_contract.py",
+      "original_sha256": "cc28a3adba74a3565bbcbd1fdb560efeb461f96991f25b701aeacb88f4e0f92a",
+      "published_sha256": "cc28a3adba74a3565bbcbd1fdb560efeb461f96991f25b701aeacb88f4e0f92a",
+      "original_bytes": 10320,
+      "published_bytes": 10320,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/tests/test_deep_results.py",
+      "original_sha256": "670d424f26414ad8a5b00aab419bea132124d6222ce937e7f4eee595ebb5fded",
+      "published_sha256": "670d424f26414ad8a5b00aab419bea132124d6222ce937e7f4eee595ebb5fded",
+      "original_bytes": 3917,
+      "published_bytes": 3917,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/log-archive/workflow/project/tests/test_public.py",
+      "original_sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7",
+      "published_sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7",
+      "original_bytes": 1496,
+      "published_bytes": 1496,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/baseline-smoke.txt",
+      "original_sha256": "91c56761fb33edbf775922d3fe499e0a4ea6724809e003c73c6744fabd3b7310",
+      "published_sha256": "52e18b67b6bb8d32f4384f36d801d1a4323a0074ab7a9b46cc3105e765b3146d",
+      "original_bytes": 828,
+      "published_bytes": 766,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/candidate.patch",
+      "original_sha256": "46c3c3b1590baa5830c9af6c3e6c5268caf193bc73734d59baf555a92e5d1023",
+      "published_sha256": "46c3c3b1590baa5830c9af6c3e6c5268caf193bc73734d59baf555a92e5d1023",
+      "original_bytes": 53938,
+      "published_bytes": 53938,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/checks-first-full.txt",
+      "original_sha256": "cc4ec2146defc267a5c601f458cf9bf46b1ff5cf02077f428a704ea3a480c097",
+      "published_sha256": "a9b8905c1e3674ef1e975bf197e15caf86c0d443eff4db129694ba3ea90de36a",
+      "original_bytes": 4109,
+      "published_bytes": 3985,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/checks-second-full.txt",
+      "original_sha256": "7137e76c9c1a9efeb6899530910385a26e4038ba5d3af3687003cc17cb8c1a1c",
+      "published_sha256": "7137e76c9c1a9efeb6899530910385a26e4038ba5d3af3687003cc17cb8c1a1c",
+      "original_bytes": 3103,
+      "published_bytes": 3103,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/cli-help.txt",
+      "original_sha256": "0fa871cd1a3e0013bb6043494af1555abba7d961860686593a7b8bca172b8360",
+      "published_sha256": "0fa871cd1a3e0013bb6043494af1555abba7d961860686593a7b8bca172b8360",
+      "original_bytes": 294,
+      "published_bytes": 294,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/compile.txt",
+      "original_sha256": "78e1eefdd5b61c51d0683723752d200301095922e4bb612ea6dd3ea448d410bf",
+      "published_sha256": "78e1eefdd5b61c51d0683723752d200301095922e4bb612ea6dd3ea448d410bf",
+      "original_bytes": 14,
+      "published_bytes": 14,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/dispatch.json",
+      "original_sha256": "a5d98f9ef8bc0c8d12c1ca1c50cb49b658615468858985a34a43e6f4d19b51f7",
+      "published_sha256": "a5d98f9ef8bc0c8d12c1ca1c50cb49b658615468858985a34a43e6f4d19b51f7",
+      "original_bytes": 299,
+      "published_bytes": 299,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/edit-tool-failure.txt",
+      "original_sha256": "72b89c9eb1adfd01348fd8764ae05c77afded176129805a0b19d814e326be787",
+      "published_sha256": "9705fe4d52a65681d969f2f9aeb128b2d6a000b988c0df45e946da998bd7afa0",
+      "original_bytes": 291,
+      "published_bytes": 229,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/final-integrity-and-docs.txt",
+      "original_sha256": "367e2ea1a7461ac71c28eb3f6d5c37c7cb1e1defcaf1378093e48de98b03db94",
+      "published_sha256": "57097588dd7e8747fc9aa32c18edf58b72b96e98ead56df86e5a7911bea653a0",
+      "original_bytes": 1239,
+      "published_bytes": 1177,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/HANDOFF.md",
+      "original_sha256": "c3f11d1b7ac63cf0747475a41b47fd680deae72e45dc6199767f8314e489d628",
+      "published_sha256": "6afd129c4032e3afe23decf66f08f32f55cea8196e48025556bea1fbc8d465b5",
+      "original_bytes": 10014,
+      "published_bytes": 9828,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/implemented-smoke.txt",
+      "original_sha256": "78def628431fadd14db1546e9de6c4321c2d7018b074ffa8f7d42a94f81b113a",
+      "published_sha256": "78def628431fadd14db1546e9de6c4321c2d7018b074ffa8f7d42a94f81b113a",
+      "original_bytes": 255,
+      "published_bytes": 255,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/launch.txt",
+      "original_sha256": "7ff5498a37500e91fdcd2e02308c5a9d7f1131ec17252c5982bc28be5226b1d9",
+      "published_sha256": "7bcc5501e9a3c7178a96e0a19a7c97d23509423b3e5bcbf69c976ddfb8aabb7c",
+      "original_bytes": 1562,
+      "published_bytes": 1376,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/patch-baseline-check.txt",
+      "original_sha256": "78e1eefdd5b61c51d0683723752d200301095922e4bb612ea6dd3ea448d410bf",
+      "published_sha256": "78e1eefdd5b61c51d0683723752d200301095922e4bb612ea6dd3ea448d410bf",
+      "original_bytes": 14,
+      "published_bytes": 14,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/patch-baseline-setup.txt",
+      "original_sha256": "d656071f5053519a5eb22c174f03e204d157af9cc2cd8a1b1e351158485be93c",
+      "published_sha256": "d656071f5053519a5eb22c174f03e204d157af9cc2cd8a1b1e351158485be93c",
+      "original_bytes": 97,
+      "published_bytes": 97,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/patch-reverse-check.txt",
+      "original_sha256": "78e1eefdd5b61c51d0683723752d200301095922e4bb612ea6dd3ea448d410bf",
+      "published_sha256": "78e1eefdd5b61c51d0683723752d200301095922e4bb612ea6dd3ea448d410bf",
+      "original_bytes": 14,
+      "published_bytes": 14,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/patch-whitespace.txt",
+      "original_sha256": "78e1eefdd5b61c51d0683723752d200301095922e4bb612ea6dd3ea448d410bf",
+      "published_sha256": "78e1eefdd5b61c51d0683723752d200301095922e4bb612ea6dd3ea448d410bf",
+      "original_bytes": 14,
+      "published_bytes": 14,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/release-state.json",
+      "original_sha256": "4052aa331d3b132b4baf195678599f341c5e5a6e23bfa91b84e5739980169dbf",
+      "published_sha256": "74b51f7b2c2755908b333349ef571f59e5fd537aca98abbef7655d59311f8328",
+      "original_bytes": 1464,
+      "published_bytes": 1363,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/release-status.txt",
+      "original_sha256": "4052aa331d3b132b4baf195678599f341c5e5a6e23bfa91b84e5739980169dbf",
+      "published_sha256": "c7f9b5afca21eb8437784b595afb16d29ebee18e93dbed92b81a1c609db755d6",
+      "original_bytes": 1464,
+      "published_bytes": 1395,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/RESULT.json",
+      "original_sha256": "765360eada79e791d58088e6ca239b7741fb3620212167c59de9fc9aef50857d",
+      "published_sha256": "7493a2aec572b65e6f5374cd0a2c4c45f5f67bb3a253e3a100d3dfeb64ca29fe",
+      "original_bytes": 1682,
+      "published_bytes": 1526,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/artifacts/source-manifest.json",
+      "original_sha256": "08fcf6441acbcf295c352d28025bdbb6c8f7d9a2cb71d02f5a126007e48f8d56",
+      "published_sha256": "d6f88fc6a7af939f0277c06e65dcb973bf3266a656012171ec04738a2e1287c3",
+      "original_bytes": 1266,
+      "published_bytes": 1177,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/.gitignore",
+      "original_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "published_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "original_bytes": 23,
+      "published_bytes": 23,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/AGENTS.md",
+      "original_sha256": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+      "published_sha256": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+      "original_bytes": 547,
+      "published_bytes": 547,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/caller-note.txt",
+      "original_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "published_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "original_bytes": 57,
+      "published_bytes": 57,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/config.example.json",
+      "original_sha256": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+      "published_sha256": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+      "original_bytes": 221,
+      "published_bytes": 221,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/inbox.py",
+      "original_sha256": "4856c049d31526043b83844fb9d7f2c1c22a650a950f596bb5948a740e198d91",
+      "published_sha256": "4856c049d31526043b83844fb9d7f2c1c22a650a950f596bb5948a740e198d91",
+      "original_bytes": 16124,
+      "published_bytes": 16124,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/README.md",
+      "original_sha256": "674a7dfb74586565726c8c0a4a8dce2d1d706e99f888bd868dbc7ba9e471bb36",
+      "published_sha256": "674a7dfb74586565726c8c0a4a8dce2d1d706e99f888bd868dbc7ba9e471bb36",
+      "original_bytes": 10827,
+      "published_bytes": 10827,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/RUN_CONTEXT.md",
+      "original_sha256": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "published_sha256": "3e705cc5f05fc0111b8d6b248fb54c34cea26c4ab89477d1d5eab83168200442",
+      "original_bytes": 2836,
+      "published_bytes": 2712,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/TASK.md",
+      "original_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+      "published_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+      "original_bytes": 6009,
+      "published_bytes": 6009,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/test_inbox.py",
+      "original_sha256": "9c50edd3b6d9ea498be64f9a68207729240ad0642e7dbb2cc0a749ecf8a0a8d6",
+      "published_sha256": "9c50edd3b6d9ea498be64f9a68207729240ad0642e7dbb2cc0a749ecf8a0a8d6",
+      "original_bytes": 24682,
+      "published_bytes": 24682,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/single/project/test_smoke.py",
+      "original_sha256": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74",
+      "published_sha256": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74",
+      "original_bytes": 2207,
+      "published_bytes": 2207,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/agent-calls.json",
+      "original_sha256": "75bb320770393388dd91b1f424d2ebe9b3a68ddb7b114c823884666c07e53224",
+      "published_sha256": "75bb320770393388dd91b1f424d2ebe9b3a68ddb7b114c823884666c07e53224",
+      "original_bytes": 2048,
+      "published_bytes": 2048,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/baseline-git-status.txt",
+      "original_sha256": "8aeed721d09be9105fd51962a568da2a64d1fb854972af505987c33537c116eb",
+      "published_sha256": "8aeed721d09be9105fd51962a568da2a64d1fb854972af505987c33537c116eb",
+      "original_bytes": 20,
+      "published_bytes": 20,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/baseline-smoke.txt",
+      "original_sha256": "cde2c2b4ebcd9d1b7b69eaff503f6f064b5b8e6ac9a5e298bdd7b975c4ba82d8",
+      "published_sha256": "e6c661b20cc793e7a87d590951f4337d6da3a06a368a2006da66d13d08a788e2",
+      "original_bytes": 843,
+      "published_bytes": 781,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/brief.md",
+      "original_sha256": "aa23d8b5ebc0e79331ae0c0a5acf246cc00f27fcbaf05ede959d8ae9e74e9186",
+      "published_sha256": "24e1f7efe632e2513c4489ee4251fb4f4cd3284be520fb8c1f926f22b27780e3",
+      "original_bytes": 4230,
+      "published_bytes": 3974,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/capture_candidate.py",
+      "original_sha256": "44bb018e1357cf5156a7f9192e274efbb4491379b9396de70c2162bd6bf06433",
+      "published_sha256": "44bb018e1357cf5156a7f9192e274efbb4491379b9396de70c2162bd6bf06433",
+      "original_bytes": 2240,
+      "published_bytes": 2240,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/check_patch.py",
+      "original_sha256": "2403e4053c6dbcf81abbe7b34f7b6fd09121a4da345f804a4927df364bc8dfb6",
+      "published_sha256": "2403e4053c6dbcf81abbe7b34f7b6fd09121a4da345f804a4927df364bc8dfb6",
+      "original_bytes": 3847,
+      "published_bytes": 3847,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/checkpoint.md",
+      "original_sha256": "68425947dc87bce875298e71bde69a727c80c343ece20d3451800138847a8d6e",
+      "published_sha256": "68425947dc87bce875298e71bde69a727c80c343ece20d3451800138847a8d6e",
+      "original_bytes": 3977,
+      "published_bytes": 3977,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/dispatch.json",
+      "original_sha256": "e4a965ebcfa4787d19ee5a02d45cbd987724c77a2bda408358d089f5f3c524b7",
+      "published_sha256": "e4a965ebcfa4787d19ee5a02d45cbd987724c77a2bda408358d089f5f3c524b7",
+      "original_bytes": 323,
+      "published_bytes": 323,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/final-audit.json",
+      "original_sha256": "7125c07a6769d7c4ffef21a2cdeb3a6f114378c33b9e8702bd307e37f717e6e1",
+      "published_sha256": "7125c07a6769d7c4ffef21a2cdeb3a6f114378c33b9e8702bd307e37f717e6e1",
+      "original_bytes": 572,
+      "published_bytes": 572,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/final-candidate-manifest.json",
+      "original_sha256": "b985e9aab40fd3e116f81f0db10b8e2f60782feb43bd305238f432717c242c30",
+      "published_sha256": "6f8baa9095392041bbac8045a790d45c3825c4cb2ad5fba0fc51a482153ccc9b",
+      "original_bytes": 1407,
+      "published_bytes": 1316,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/final-diff-stat.txt",
+      "original_sha256": "5a7571fc39c1e18bbf90e61802a1d17d01c775e314b10cd49a907b79d941ef20",
+      "published_sha256": "5a7571fc39c1e18bbf90e61802a1d17d01c775e314b10cd49a907b79d941ef20",
+      "original_bytes": 357,
+      "published_bytes": 357,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/final-git-status.txt",
+      "original_sha256": "6e02094e22eeb0e6feb9889c99f366b44b831c5277e23a6b3ae5e3750c69b5dd",
+      "published_sha256": "6e02094e22eeb0e6feb9889c99f366b44b831c5277e23a6b3ae5e3750c69b5dd",
+      "original_bytes": 122,
+      "published_bytes": 122,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/finalize_run.py",
+      "original_sha256": "580026cef0340574cb9a102fb226591897abb34953c40b4d67c31a5e7c87b18a",
+      "published_sha256": "580026cef0340574cb9a102fb226591897abb34953c40b4d67c31a5e7c87b18a",
+      "original_bytes": 5531,
+      "published_bytes": 5531,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/HANDOFF.md",
+      "original_sha256": "132e0b3163f04082d2e436ef0562c6a94171e835982ce394a9b3428f931d648e",
+      "published_sha256": "1fa1ff8be81d5f6ce1418181696d448013448d5abbd0f293b5b8f675a28e0a3e",
+      "original_bytes": 9475,
+      "published_bytes": 9413,
+      "transformations": [
+        "converted included local link to relative path",
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/initial-protected-manifest.json",
+      "original_sha256": "f78b71bc0d49e7b15ec88a9862eb41ef486a3982c4edb4c55f3c4349c1c98e1f",
+      "published_sha256": "c6bd011772fa80bb3b22b390d3e1eaa20c27bb807e143c546de4c83b2f9dfb71",
+      "original_bytes": 1131,
+      "published_bytes": 1043,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/initial-release-state-hash.txt",
+      "original_sha256": "fb4d2ed5d32900718ed6cc851df0c6ac76ca017480f77a086cd6c4f792fce3f7",
+      "published_sha256": "e7653b703f294bbd88787ca07de50f6aa945ad322608cd183d2112b39925b0e5",
+      "original_bytes": 248,
+      "published_bytes": 186,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/joined-review.md",
+      "original_sha256": "27d48516fc9c63eb8ebdb861e9f2e10ea4959967380a409d720ceddadf9c6840",
+      "published_sha256": "27d48516fc9c63eb8ebdb861e9f2e10ea4959967380a409d720ceddadf9c6840",
+      "original_bytes": 3301,
+      "published_bytes": 3301,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/builder-return.md",
+      "original_sha256": "1ce5632b9ef1dcca7c417c6d06a163b598512de53a50e72ec426632d5d95e445",
+      "published_sha256": "5422a825c360887eee5800864d8e3214235a4a49f045fe9248d58d0cd38a7e28",
+      "original_bytes": 3931,
+      "published_bytes": 3869,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/candidate-manifest.json",
+      "original_sha256": "95f21563f289dab2835f8de424b94723b528935e477291ff3b925426c232febf",
+      "published_sha256": "78c0dd90ec0fb773dad3ac34e616db9ddf0897eabea2dbdebdbd4084d25cd7c6",
+      "original_bytes": 1392,
+      "published_bytes": 1302,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/candidate.patch",
+      "original_sha256": "643f7d0d31bc93e9c5ad9191e343f48e625fc18c4d38aa5f49024823bf772c5c",
+      "published_sha256": "643f7d0d31bc93e9c5ad9191e343f48e625fc18c4d38aa5f49024823bf772c5c",
+      "original_bytes": 46808,
+      "published_bytes": 46808,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/checks.json",
+      "original_sha256": "92da9dc22039df166fb533e23144ccea3cbeb53ab8f5bbd4b0b4502ae43182a2",
+      "published_sha256": "864b27b4358ec87d764ad9000ea314d9c68d190f084f495bf8cf33207558ea2d",
+      "original_bytes": 1851,
+      "published_bytes": 1703,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/cli-help.txt",
+      "original_sha256": "e013385141813e89005657fc16dc742ef2fb82fc14d9c5721d7a382cbd6ff1d2",
+      "published_sha256": "e013385141813e89005657fc16dc742ef2fb82fc14d9c5721d7a382cbd6ff1d2",
+      "original_bytes": 280,
+      "published_bytes": 280,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/compile.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/coordinator-manifest.json",
+      "original_sha256": "96fb2047df10645de75b6b3096178ff1d5cca1fafe453b4303688f27b80b399d",
+      "published_sha256": "18c271c53f5562a2f79c304ad0418b169850e20399f889398631aa86a3698dbd",
+      "original_bytes": 2035,
+      "published_bytes": 1651,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/coordinator-patch/checked.patch",
+      "original_sha256": "c24931f41141389900e1d8f55e6b2910d96aa8ed6534ed04fb9676631cdcc3a1",
+      "published_sha256": "c24931f41141389900e1d8f55e6b2910d96aa8ed6534ed04fb9676631cdcc3a1",
+      "original_bytes": 47204,
+      "published_bytes": 47204,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/coordinator-patch-verified/checked.patch",
+      "original_sha256": "c24931f41141389900e1d8f55e6b2910d96aa8ed6534ed04fb9676631cdcc3a1",
+      "published_sha256": "c24931f41141389900e1d8f55e6b2910d96aa8ed6534ed04fb9676631cdcc3a1",
+      "original_bytes": 47204,
+      "published_bytes": 47204,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/coordinator-patch-verified/patch-verification.json",
+      "original_sha256": "a3914076ac19dab2f393299af96b87c61e7c5f3e2aa7715def39d867b0419890",
+      "published_sha256": "851ec1a9a769e306ea4a0e15237c58feb6165e0ca905f8641689eab892669a6c",
+      "original_bytes": 671,
+      "published_bytes": 580,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/diff-check.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/patch-check.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/post-patch-manifest.json",
+      "original_sha256": "b985e9aab40fd3e116f81f0db10b8e2f60782feb43bd305238f432717c242c30",
+      "published_sha256": "6f8baa9095392041bbac8045a790d45c3825c4cb2ad5fba0fc51a482153ccc9b",
+      "original_bytes": 1407,
+      "published_bytes": 1316,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/run_checks.py",
+      "original_sha256": "2375dfc31a69dd45e83c862ebaeee6532a2ed47c1e862b6d2739739386132ee4",
+      "published_sha256": "2375dfc31a69dd45e83c862ebaeee6532a2ed47c1e862b6d2739739386132ee4",
+      "original_bytes": 3157,
+      "published_bytes": 3157,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/smoke.txt",
+      "original_sha256": "595aee04573dc1fc20bc08a4359127862c0c610b270878fa350a088cb3764671",
+      "published_sha256": "595aee04573dc1fc20bc08a4359127862c0c610b270878fa350a088cb3764671",
+      "original_bytes": 255,
+      "published_bytes": 255,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/pass-1/unittest.txt",
+      "original_sha256": "73d492c3ea05de1c5eeefe704619084e1ae3445e08566097d95ad1b966056877",
+      "published_sha256": "73d492c3ea05de1c5eeefe704619084e1ae3445e08566097d95ad1b966056877",
+      "original_bytes": 2586,
+      "published_bytes": 2586,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/python-version.txt",
+      "original_sha256": "2b095b05c4093ebca54b87bd2c6a6f557935e6b3f8f506a0c2e5e294a763f4ad",
+      "published_sha256": "2b095b05c4093ebca54b87bd2c6a6f557935e6b3f8f506a0c2e5e294a763f4ad",
+      "original_bytes": 15,
+      "published_bytes": 15,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/release-state.json",
+      "original_sha256": "be96e08f297eddbdbacddc8cb2e07b30ec721fca8d0724c6a0673bb3502bb6fc",
+      "published_sha256": "f22e4473db170a0e0c681dbb43eeeb376f1e6437597b1d49113dfed17d5c3dd5",
+      "original_bytes": 1464,
+      "published_bytes": 1363,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/release-status-final.txt",
+      "original_sha256": "be96e08f297eddbdbacddc8cb2e07b30ec721fca8d0724c6a0673bb3502bb6fc",
+      "published_sha256": "e8bd58916668940c276887a9b79cc1893fd8b85e2697ab7cf0d4ac2506676c8f",
+      "original_bytes": 1464,
+      "published_bytes": 1395,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/release-status-initial.txt",
+      "original_sha256": "be96e08f297eddbdbacddc8cb2e07b30ec721fca8d0724c6a0673bb3502bb6fc",
+      "published_sha256": "e8bd58916668940c276887a9b79cc1893fd8b85e2697ab7cf0d4ac2506676c8f",
+      "original_bytes": 1464,
+      "published_bytes": 1395,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/RESULT.json",
+      "original_sha256": "ec72c2bd2ffc9864c7c1eb947a4a29aa45c561b29605d540ab2b399e0d7e84c8",
+      "published_sha256": "fc8ce0d5f9753fc6940f525c425e26ae0cf42c6887f6a6b87ee082a0da44c9a5",
+      "original_bytes": 2002,
+      "published_bytes": 1834,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/review-plan.md",
+      "original_sha256": "4bc62bf4e01d37ea666056a8c8d47b86f2d2209ff94a6031bf6f1ab0a4efb05f",
+      "published_sha256": "4bc62bf4e01d37ea666056a8c8d47b86f2d2209ff94a6031bf6f1ab0a4efb05f",
+      "original_bytes": 2106,
+      "published_bytes": 2106,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/correctness/probes-initial-harness-cleanup-error.txt",
+      "original_sha256": "aef79b5cfaf3f2223f18b9e42b9d3af2d677263937f2b645119bf59345bd1356",
+      "published_sha256": "c6ed64e36945a35b2f21c04740cc8fcc1b73c8f9fa7c7d7065908f7112c90c67",
+      "original_bytes": 5077,
+      "published_bytes": 4597,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/correctness/probes.py",
+      "original_sha256": "29b4b26d4ea3500aea67f916ac6f5ef4a2e2ea30b3a0146ad082f12fb35c306e",
+      "published_sha256": "29b4b26d4ea3500aea67f916ac6f5ef4a2e2ea30b3a0146ad082f12fb35c306e",
+      "original_bytes": 4525,
+      "published_bytes": 4525,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/correctness/probes.txt",
+      "original_sha256": "db350c3a4a346d0ec152894be733ec0552d06771effad0cead5101d724679b77",
+      "published_sha256": "db350c3a4a346d0ec152894be733ec0552d06771effad0cead5101d724679b77",
+      "original_bytes": 2814,
+      "published_bytes": 2814,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/correctness/report.md",
+      "original_sha256": "46f69b9d934d48214a2bf14a52b0e0f500abe47a5120cd5652ecc19e2982bc5a",
+      "published_sha256": "46f69b9d934d48214a2bf14a52b0e0f500abe47a5120cd5652ecc19e2982bc5a",
+      "original_bytes": 4928,
+      "published_bytes": 4928,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/correctness/unittest-review.txt",
+      "original_sha256": "2d760bedad800fd5bb876321d0c3b3df801a7ae87ac872fdd62e4495e511bd98",
+      "published_sha256": "2d760bedad800fd5bb876321d0c3b3df801a7ae87ac872fdd62e4495e511bd98",
+      "original_bytes": 2586,
+      "published_bytes": 2586,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/data/config.json",
+      "original_sha256": "29732049bda2acbbf2200f21a9b90c85439336ff1cc3b8278d9da9fd10fa245b",
+      "published_sha256": "29732049bda2acbbf2200f21a9b90c85439336ff1cc3b8278d9da9fd10fa245b",
+      "original_bytes": 128,
+      "published_bytes": 128,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/data/crash-stderr.txt",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "original_bytes": 0,
+      "published_bytes": 0,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/data/probe-raw.txt",
+      "original_sha256": "14655964eb43eb3cb781b509ea7c594836548b8a41b898ea2f4640358cea0a0c",
+      "published_sha256": "14655964eb43eb3cb781b509ea7c594836548b8a41b898ea2f4640358cea0a0c",
+      "original_bytes": 720,
+      "published_bytes": 720,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/data/probe.py",
+      "original_sha256": "60b5e11a4eeb45918c496d169b14e86ff4f56f9c19fc381572e6e73c5e1a3421",
+      "published_sha256": "60b5e11a4eeb45918c496d169b14e86ff4f56f9c19fc381572e6e73c5e1a3421",
+      "original_bytes": 6486,
+      "published_bytes": 6486,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/data/report.md",
+      "original_sha256": "2f70e5f0e28974092fd80e2d7719e76bf3e55899b514af35cc2e944b04783e0e",
+      "published_sha256": "2f70e5f0e28974092fd80e2d7719e76bf3e55899b514af35cc2e944b04783e0e",
+      "original_bytes": 5858,
+      "published_bytes": 5858,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/data/snapshot-verification.json",
+      "original_sha256": "922c48d47e72a8678a80ef2ade75bf849fe827d2f5828fa465c7966e14aca52c",
+      "published_sha256": "922c48d47e72a8678a80ef2ade75bf849fe827d2f5828fa465c7966e14aca52c",
+      "original_bytes": 1236,
+      "published_bytes": 1236,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/infrastructure/output.txt",
+      "original_sha256": "8f2f44af269fd645758aaa4ab536024da9743b29a3ed62de8d138a9b63b5cbe1",
+      "published_sha256": "8f2f44af269fd645758aaa4ab536024da9743b29a3ed62de8d138a9b63b5cbe1",
+      "original_bytes": 799,
+      "published_bytes": 799,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/infrastructure/probe.py",
+      "original_sha256": "f31d1571a4ac5099660811800186cae7fb575a599118c88061c60b4a0502bd8a",
+      "published_sha256": "f31d1571a4ac5099660811800186cae7fb575a599118c88061c60b4a0502bd8a",
+      "original_bytes": 6996,
+      "published_bytes": 6996,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/infrastructure/report.md",
+      "original_sha256": "80a4655c10c8ac73215bd5bc03fcf12c6a7d5d2a3b341de4a6f51d6b891a05d5",
+      "published_sha256": "80a4655c10c8ac73215bd5bc03fcf12c6a7d5d2a3b341de4a6f51d6b891a05d5",
+      "original_bytes": 6716,
+      "published_bytes": 6716,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/probe-output-final.txt",
+      "original_sha256": "865a98085841eac3ad3fd5000a8301c2b3cc0b776b819c13be99bcd0c6475b8b",
+      "published_sha256": "91f651bf51263f3bcb7cb23a9d07f0cc4fb1d63618b22b1e85ac9daac75907bc",
+      "original_bytes": 2244,
+      "published_bytes": 1764,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/probe-output-passing.txt",
+      "original_sha256": "b6a8d3472aeabb9594474307a5629c2a199e1bcae4b11a9c55722b305fef4710",
+      "published_sha256": "b6a8d3472aeabb9594474307a5629c2a199e1bcae4b11a9c55722b305fef4710",
+      "original_bytes": 64,
+      "published_bytes": 64,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/probe-output.txt",
+      "original_sha256": "583e9b378d5fccd7fa028b2af1cd3f6f0d9773939e33108d8a2b2515a9ed1867",
+      "published_sha256": "9c6c43fc793872f0c01acabd92f519c7376048089bdbeba10631311baefc6949",
+      "original_bytes": 675,
+      "published_bytes": 551,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/probe-results.json",
+      "original_sha256": "0639d32be60ac5594cf0743f04b47224e73e0884a63b00509c07edff3feab499",
+      "published_sha256": "0639d32be60ac5594cf0743f04b47224e73e0884a63b00509c07edff3feab499",
+      "original_bytes": 3948,
+      "published_bytes": 3948,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/probes.py",
+      "original_sha256": "96b0cd4ca383f986ba72a64decc515ae9d8553c34c4f24ae9f2399a13e49eda6",
+      "published_sha256": "96b0cd4ca383f986ba72a64decc515ae9d8553c34c4f24ae9f2399a13e49eda6",
+      "original_bytes": 6685,
+      "published_bytes": 6685,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/report.md",
+      "original_sha256": "bb8ec33fd8993b21789d051b2a5683ea2e461cf7c38d3ef6d8c1a4bf438396a3",
+      "published_sha256": "f17ac60cd245284cdd2d038f665112947ac42e3a562ce489442be315c19767dd",
+      "original_bytes": 6205,
+      "published_bytes": 6143,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/.gitignore",
+      "original_sha256": "9a46ab3f9c12ffc2972574a8c705b904d59eddf4892a1b64f73c439bfb6e471a",
+      "published_sha256": "9a46ab3f9c12ffc2972574a8c705b904d59eddf4892a1b64f73c439bfb6e471a",
+      "original_bytes": 57,
+      "published_bytes": 57,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/AGENTS.md",
+      "original_sha256": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+      "published_sha256": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+      "original_bytes": 547,
+      "published_bytes": 547,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/caller-note.txt",
+      "original_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "published_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "original_bytes": 57,
+      "published_bytes": 57,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/config.example.json",
+      "original_sha256": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+      "published_sha256": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+      "original_bytes": 221,
+      "published_bytes": 221,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/inbox.py",
+      "original_sha256": "c2c4992b6d61a7c105e87e07e8e251db26944a679df7562d485ce808a230ae0c",
+      "published_sha256": "c2c4992b6d61a7c105e87e07e8e251db26944a679df7562d485ce808a230ae0c",
+      "original_bytes": 11291,
+      "published_bytes": 11291,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/inbox_store.py",
+      "original_sha256": "292ff6212e1ff1ef9354b4c74cd7539adfb70f260314cd255a87f132070fa891",
+      "published_sha256": "292ff6212e1ff1ef9354b4c74cd7539adfb70f260314cd255a87f132070fa891",
+      "original_bytes": 2291,
+      "published_bytes": 2291,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/README.md",
+      "original_sha256": "898ab7177d1482524618a55733cb8be8876c7ab7fba531c461af093b312a4290",
+      "published_sha256": "898ab7177d1482524618a55733cb8be8876c7ab7fba531c461af093b312a4290",
+      "original_bytes": 8558,
+      "published_bytes": 8558,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/RELEASE_HANDOFF.md",
+      "original_sha256": "d4c539874143c0f6541a8b636cf41ea20f96373aeab2d4f72814cd6e9d48e5fc",
+      "published_sha256": "d4c539874143c0f6541a8b636cf41ea20f96373aeab2d4f72814cd6e9d48e5fc",
+      "original_bytes": 3893,
+      "published_bytes": 3893,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/RUN_CONTEXT.md",
+      "original_sha256": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "published_sha256": "3e705cc5f05fc0111b8d6b248fb54c34cea26c4ab89477d1d5eab83168200442",
+      "original_bytes": 2836,
+      "published_bytes": 2712,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/TASK.md",
+      "original_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+      "published_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+      "original_bytes": 6009,
+      "published_bytes": 6009,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/test_inbox.py",
+      "original_sha256": "58c270d70156bcfabb38c719fde50005d628b1dbf7592c0a2238b457eadba173",
+      "published_sha256": "58c270d70156bcfabb38c719fde50005d628b1dbf7592c0a2238b457eadba173",
+      "original_bytes": 18154,
+      "published_bytes": 18154,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "runs/webhook-inbox/workflow/project/test_smoke.py",
+      "original_sha256": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74",
+      "published_sha256": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74",
+      "original_bytes": 2207,
+      "published_bytes": 2207,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "starters/log-archive/.gitignore",
+      "original_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "published_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "original_bytes": 23,
+      "published_bytes": 23,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/log-archive/baseline_reference.py",
+      "original_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "published_sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "original_bytes": 3799,
+      "published_bytes": 3799,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "starters/log-archive/caller-note.txt",
+      "original_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "published_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "original_bytes": 57,
+      "published_bytes": 57,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/log-archive/log_archive.py",
+      "original_sha256": "cafc8cb00cbae48f0b392e961203162062f742f7a6a9532e234775001b14602c",
+      "published_sha256": "cafc8cb00cbae48f0b392e961203162062f742f7a6a9532e234775001b14602c",
+      "original_bytes": 168,
+      "published_bytes": 168,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "starters/log-archive/README.md",
+      "original_sha256": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926",
+      "published_sha256": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926",
+      "original_bytes": 5684,
+      "published_bytes": 5684,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/log-archive/RUN_CONTEXT.md",
+      "original_sha256": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "published_sha256": "3e705cc5f05fc0111b8d6b248fb54c34cea26c4ab89477d1d5eab83168200442",
+      "original_bytes": 2836,
+      "published_bytes": 2712,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "starters/log-archive/sample.ndjson",
+      "original_sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "published_sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "original_bytes": 412,
+      "published_bytes": 412,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/log-archive/TASK.md",
+      "original_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "published_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "original_bytes": 2644,
+      "published_bytes": 2644,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "starters/log-archive/tests/test_public.py",
+      "original_sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7",
+      "published_sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7",
+      "original_bytes": 1496,
+      "published_bytes": 1496,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/.gitignore",
+      "original_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "published_sha256": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "original_bytes": 23,
+      "published_bytes": 23,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/AGENTS.md",
+      "original_sha256": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+      "published_sha256": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+      "original_bytes": 547,
+      "published_bytes": 547,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/caller-note.txt",
+      "original_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "published_sha256": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "original_bytes": 57,
+      "published_bytes": 57,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/config.example.json",
+      "original_sha256": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+      "published_sha256": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+      "original_bytes": 221,
+      "published_bytes": 221,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/inbox.py",
+      "original_sha256": "0d713dbbd8473caf1d92fcc57f8731a512196729441cb4afcd94d7d990f33015",
+      "published_sha256": "0d713dbbd8473caf1d92fcc57f8731a512196729441cb4afcd94d7d990f33015",
+      "original_bytes": 2248,
+      "published_bytes": 2248,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/README.md",
+      "original_sha256": "5e90a6a727eead2c8648f9245b56d13121b161038ddebd9621896751030649fe",
+      "published_sha256": "5e90a6a727eead2c8648f9245b56d13121b161038ddebd9621896751030649fe",
+      "original_bytes": 847,
+      "published_bytes": 847,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/RUN_CONTEXT.md",
+      "original_sha256": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "published_sha256": "3e705cc5f05fc0111b8d6b248fb54c34cea26c4ab89477d1d5eab83168200442",
+      "original_bytes": 2836,
+      "published_bytes": 2712,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/TASK.md",
+      "original_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+      "published_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+      "original_bytes": 6009,
+      "published_bytes": 6009,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "starters/webhook-inbox/test_smoke.py",
+      "original_sha256": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74",
+      "published_sha256": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74",
+      "original_bytes": 2207,
+      "published_bytes": 2207,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "tools/audit_patch.py",
+      "original_sha256": "9264aa1214df0e4148b1586d5a43d55826952307407d309aba61c4efb57fa398",
+      "published_sha256": "9264aa1214df0e4148b1586d5a43d55826952307407d309aba61c4efb57fa398",
+      "original_bytes": 3312,
+      "published_bytes": 3312,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "tools/calibration.json",
+      "original_sha256": "0e03fa475c539fa167a04bceda1ae1013000878f1b0c5e8e4fbc0be286b0da8c",
+      "published_sha256": "d5f04ca291a294d6f9b33d5ad03d940f8106d9ad2b33679ebde4abd1976520f5",
+      "original_bytes": 14248,
+      "published_bytes": 13475,
+      "transformations": [
+        "normalized machine paths in JSON strings and keys",
+        "serialized changed JSON as UTF-8 with LF; original numbers, booleans, nulls and hashes retained"
+      ]
+    },
+    {
+      "path": "tools/collect_result.py",
+      "original_sha256": "63389b3c2b1ebb37f5d4bdb2da04f1a9be125b6ef39c9164eafea6c961378c41",
+      "published_sha256": "63389b3c2b1ebb37f5d4bdb2da04f1a9be125b6ef39c9164eafea6c961378c41",
+      "original_bytes": 5132,
+      "published_bytes": 5132,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "tools/comparison_summary.py",
+      "original_sha256": "215e0715d8620e8aa903b5ac9adf2becc680f0124b002415018b3feaf8adbf60",
+      "published_sha256": "215e0715d8620e8aa903b5ac9adf2becc680f0124b002415018b3feaf8adbf60",
+      "original_bytes": 2703,
+      "published_bytes": 2703,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "tools/prepare_runs.py",
+      "original_sha256": "6a2f562ee3167602fe298d4f3988f19db5c6bf2d7fb7cc9bd8a8518370e900d2",
+      "published_sha256": "6a2f562ee3167602fe298d4f3988f19db5c6bf2d7fb7cc9bd8a8518370e900d2",
+      "original_bytes": 3697,
+      "published_bytes": 3697,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "tools/probe_deep_json.py",
+      "original_sha256": "e4be71257f89fa34300214357196746342f5cf7beeae90fe7ce1d8519e7e282f",
+      "published_sha256": "e4be71257f89fa34300214357196746342f5cf7beeae90fe7ce1d8519e7e282f",
+      "original_bytes": 4123,
+      "published_bytes": 4123,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "tools/probe_webhook_nesting.py",
+      "original_sha256": "c867d30c36fee50b438c7573ad1ffced4da354bd4fa8951032742327fea36da2",
+      "published_sha256": "c867d30c36fee50b438c7573ad1ffced4da354bd4fa8951032742327fea36da2",
+      "original_bytes": 2667,
+      "published_bytes": 2667,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "tools/RELEASE_POLICY.md",
+      "original_sha256": "d2dbece8a2da0ec92f722be54fa68ddab0257a8c2c0545b8bc1aa03c6f243162",
+      "published_sha256": "d2dbece8a2da0ec92f722be54fa68ddab0257a8c2c0545b8bc1aa03c6f243162",
+      "original_bytes": 2094,
+      "published_bytes": 2094,
+      "transformations": [
+        "unchanged"
+      ]
+    },
+    {
+      "path": "tools/release_simulator.py",
+      "original_sha256": "0990488d6eea0d42e730b4dca3acfa4596864cad0bf39a2a80cab6f46fbbb97a",
+      "published_sha256": "0990488d6eea0d42e730b4dca3acfa4596864cad0bf39a2a80cab6f46fbbb97a",
+      "original_bytes": 7078,
+      "published_bytes": 7078,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    },
+    {
+      "path": "tools/RUN_CONTEXT.template.md",
+      "original_sha256": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "published_sha256": "3e705cc5f05fc0111b8d6b248fb54c34cea26c4ab89477d1d5eab83168200442",
+      "original_bytes": 2836,
+      "published_bytes": 2712,
+      "transformations": [
+        "normalized machine-specific paths to documented placeholders"
+      ]
+    },
+    {
+      "path": "tools/start_control.py",
+      "original_sha256": "d919bb0b2cfdb7e600677c1c66c6992f5d7e82336636a6d057e4ef23889a9ca7",
+      "published_sha256": "d919bb0b2cfdb7e600677c1c66c6992f5d7e82336636a6d057e4ef23889a9ca7",
+      "original_bytes": 2985,
+      "published_bytes": 2985,
+      "transformations": [
+        "byte-for-byte archival source, patch, or exact product prompt"
+      ]
+    }
+  ]
+}

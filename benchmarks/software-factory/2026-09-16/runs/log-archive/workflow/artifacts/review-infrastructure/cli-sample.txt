@@ -1,0 +1,6 @@
+command: <PYTHON_RUNTIME>/python.exe log_archive.py --file sample.ndjson --query "gateway timeout" --limit 10
+exit_code: 0
+stdout:
+{"total": 1, "items": [{"id": "r2", "timestamp": "2026-07-01T09:01:00.000Z", "service": "gateway", "level": "ERROR", "message": "Gateway timeout for request 42", "extra": {"region": "east"}}]}
+
+stderr:

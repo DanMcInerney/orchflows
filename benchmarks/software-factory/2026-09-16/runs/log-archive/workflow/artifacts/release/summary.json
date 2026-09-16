@@ -1,0 +1,124 @@
+{
+  "status": "rolled_back_recovery_verified",
+  "release_exercise_completed": true,
+  "fully_released": false,
+  "environment": "simulated-staging",
+  "candidate_path": "<BUNDLE_ROOT>/runs/log-archive/workflow/project",
+  "candidate_commit": "a685f46be6b9b755f8fe806556626bf34530d4b9",
+  "source_sha256": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf",
+  "source_unchanged": true,
+  "baseline_sha256": "1b62d83a0698b1ccd7a1595e44092a137ecd5cef1cc8efa5fd29e119425b5710",
+  "intended_exposures": [
+    10,
+    50,
+    100
+  ],
+  "actual_deployments": [
+    {
+      "operation_id": 2,
+      "time": "2026-09-16T02:34:31.868523+00:00",
+      "operation": "deploy",
+      "exposure": 10,
+      "artifact": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf",
+      "evidence": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/pass2-final-tests.txt",
+      "evidence_sha256": "4d80430921d42782bd40125a80726e76285cc8155a95c8d55353a9f5fada32f9"
+    },
+    {
+      "operation_id": 6,
+      "time": "2026-09-16T02:34:57.698503+00:00",
+      "operation": "deploy",
+      "exposure": 50,
+      "artifact": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf",
+      "evidence": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/pass2-final-tests.txt",
+      "evidence_sha256": "4d80430921d42782bd40125a80726e76285cc8155a95c8d55353a9f5fada32f9"
+    }
+  ],
+  "actual_observations": [
+    {
+      "operation_id": 3,
+      "time": "2026-09-16T02:34:38.112088+00:00",
+      "operation": "observe",
+      "exposure": 10,
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    {
+      "operation_id": 4,
+      "time": "2026-09-16T02:34:42.970016+00:00",
+      "operation": "observe",
+      "exposure": 10,
+      "sample": 2,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    {
+      "operation_id": 5,
+      "time": "2026-09-16T02:34:47.506045+00:00",
+      "operation": "observe",
+      "exposure": 10,
+      "sample": 3,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    {
+      "operation_id": 7,
+      "time": "2026-09-16T02:35:02.845968+00:00",
+      "operation": "observe",
+      "exposure": 50,
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.04,
+      "p95_ms": 340,
+      "healthy": false,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    {
+      "operation_id": 9,
+      "time": "2026-09-16T02:35:22.024128+00:00",
+      "operation": "observe",
+      "exposure": 0,
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic",
+      "recovery_verified": true
+    }
+  ],
+  "rollback": {
+    "operation_id": 8,
+    "time": "2026-09-16T02:35:12.590266+00:00",
+    "operation": "rollback",
+    "restored": "1b62d83a0698b1ccd7a1595e44092a137ecd5cef1cc8efa5fd29e119425b5710",
+    "reason": "At 50% exposure operation 7 sample 1 observed error_rate=0.04 > 0.01 and p95_ms=340 > 200; stop advancement and restore stored baseline."
+  },
+  "final_phase": "rolled-back",
+  "final_exposure": 0,
+  "recovery_verified": true,
+  "remaining_watch_window": null,
+  "remaining_decisions": [],
+  "not_attempted_exposures": [
+    100
+  ],
+  "journal": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/release/operations.jsonl",
+  "raw_final_status": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/release/09-final-status.stdout.json",
+  "baseline_measured_sample": null,
+  "signals_are_synthetic": true,
+  "child_agents_spawned": 0
+}

@@ -1,0 +1,337 @@
+{
+  "case": "log-archive",
+  "mode": "workflow",
+  "collected_at": "2026-09-16T02:57:42.501246+00:00",
+  "declared": {
+    "candidate_path": "<BUNDLE_ROOT>/runs/log-archive/workflow/project",
+    "status": "validated_rolled_back_recovery_verified",
+    "summary": "Implemented indexed archive search; all 17 tests and all 96 paired benchmark answers pass, measured warmed throughput 262.47x. Two candidate passes and all fresh applicable reviews completed. Local simulator breached at 50%, rolled back, and verified recovery at 0% exposure. Frozen final commit a685f46be6b9b755f8fe806556626bf34530d4b9.",
+    "check_commands": [
+      "python -m unittest discover -s tests -v",
+      "python -B ../artifacts/review-correctness/nested_repro.py",
+      "python -B ../artifacts/review-correctness/nested_cli_repro.py",
+      "python benchmark.py --archive ../artifacts/pass2-final-benchmark.ndjson --output ../artifacts/pass2-final-benchmark.json",
+      "python -B ../artifacts/review-correctness-p2/independent_checks.py",
+      "python -B ../artifacts/review-correctness-p2/ownership_checks.py",
+      "python -B ../artifacts/review-data-p2/data_checks.py",
+      "python -B ../artifacts/review-data-p2/deep_broad_checks.py",
+      "python -B ../artifacts/review-infrastructure-p2/verify.py",
+      "python -B ../artifacts/verify-candidate.py",
+      "Exact staged simulator commands and exits: ../artifacts/release/operations.jsonl"
+    ],
+    "known_gaps": [
+      "Python 3.11 and POSIX were not executed; runtime evidence is Windows/Python 3.14.6 with static compatibility review.",
+      "Full-file indexes consume memory for up to eight archives; cold loads serialize, fresh CLI processes are cold, and large result pages cost copying time.",
+      "Release observations are local synthetic signals only. Final simulator state is rolled-back at 0% exposure; no live production deployment or background monitoring occurred."
+    ],
+    "elapsed_minutes": 41.874,
+    "agent_calls": 9
+  },
+  "candidate": {
+    "project": "<BUNDLE_ROOT>/runs/log-archive/workflow/project",
+    "sha256": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf",
+    "files": {
+      ".gitignore": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "baseline_reference.py": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "benchmark.py": "8a322d74746aabd0f98330a7baa3fdb20c917ecb74fb8a27e696ec0f1cb47de3",
+      "caller-note.txt": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "log_archive.py": "616d69bb4492f74304dc17c3e655dbf4ff79ea02a3a665b8a62d01f9a3f28cc9",
+      "OPERATIONS.md": "e40cf5fcb30f650e2a2f8109606218c6a39f557c8da93442c08d07905e33c5c1",
+      "README.md": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926",
+      "RUN_CONTEXT.md": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "sample.ndjson": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "TASK.md": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "tests/test_concurrency_cli.py": "9b86a054539c9a73788b94ee185e45a6bb85538db4b39bb24061027cc622115d",
+      "tests/test_contract.py": "cc28a3adba74a3565bbcbd1fdb560efeb461f96991f25b701aeacb88f4e0f92a",
+      "tests/test_deep_results.py": "670d424f26414ad8a5b00aab419bea132124d6222ce937e7f4eee595ebb5fded",
+      "tests/test_public.py": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7"
+    }
+  },
+  "immutable_inputs": {
+    "TASK.md": true,
+    "RUN_CONTEXT.md": true,
+    "caller-note.txt": true,
+    "baseline_reference.py": true
+  },
+  "release_checks": {
+    "stages_10_then_50": true,
+    "observed_three_healthy_at_10": true,
+    "detected_breach_at_50": true,
+    "no_advancement_after_breach": true,
+    "restored_baseline": true,
+    "verified_recovery": true,
+    "final_exposure_zero": true,
+    "released_source_still_matches": true
+  },
+  "release_events": [
+    {
+      "operation_id": 1,
+      "time": "2026-09-16T01:57:27.127190+00:00",
+      "operation": "init",
+      "baseline": "1b62d83a0698b1ccd7a1595e44092a137ecd5cef1cc8efa5fd29e119425b5710"
+    },
+    {
+      "operation_id": 2,
+      "time": "2026-09-16T02:34:31.868523+00:00",
+      "operation": "deploy",
+      "exposure": 10,
+      "artifact": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf",
+      "evidence": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/pass2-final-tests.txt",
+      "evidence_sha256": "4d80430921d42782bd40125a80726e76285cc8155a95c8d55353a9f5fada32f9"
+    },
+    {
+      "operation_id": 3,
+      "time": "2026-09-16T02:34:38.112088+00:00",
+      "operation": "observe",
+      "exposure": 10,
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    {
+      "operation_id": 4,
+      "time": "2026-09-16T02:34:42.970016+00:00",
+      "operation": "observe",
+      "exposure": 10,
+      "sample": 2,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    {
+      "operation_id": 5,
+      "time": "2026-09-16T02:34:47.506045+00:00",
+      "operation": "observe",
+      "exposure": 10,
+      "sample": 3,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    {
+      "operation_id": 6,
+      "time": "2026-09-16T02:34:57.698503+00:00",
+      "operation": "deploy",
+      "exposure": 50,
+      "artifact": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf",
+      "evidence": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/pass2-final-tests.txt",
+      "evidence_sha256": "4d80430921d42782bd40125a80726e76285cc8155a95c8d55353a9f5fada32f9"
+    },
+    {
+      "operation_id": 7,
+      "time": "2026-09-16T02:35:02.845968+00:00",
+      "operation": "observe",
+      "exposure": 50,
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.04,
+      "p95_ms": 340,
+      "healthy": false,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    {
+      "operation_id": 8,
+      "time": "2026-09-16T02:35:12.590266+00:00",
+      "operation": "rollback",
+      "restored": "1b62d83a0698b1ccd7a1595e44092a137ecd5cef1cc8efa5fd29e119425b5710",
+      "reason": "At 50% exposure operation 7 sample 1 observed error_rate=0.04 > 0.01 and p95_ms=340 > 200; stop advancement and restore stored baseline."
+    },
+    {
+      "operation_id": 9,
+      "time": "2026-09-16T02:35:22.024128+00:00",
+      "operation": "observe",
+      "exposure": 0,
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic",
+      "recovery_verified": true
+    }
+  ],
+  "handoff_path": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/HANDOFF.md",
+  "handoff_present": true,
+  "evaluator_exit_code": 0,
+  "source_unchanged_by_evaluation": true,
+  "external": {
+    "contract_id": "log-archive",
+    "project": "<BUNDLE_ROOT>/runs/log-archive/workflow/project",
+    "assertions": [
+      {
+        "name": "frozen_baseline_preserved",
+        "passed": true
+      },
+      {
+        "name": "tokens_and_case",
+        "passed": true
+      },
+      {
+        "name": "tokens_whole_words",
+        "passed": true
+      },
+      {
+        "name": "tokens_punctuation_repeat_empty",
+        "passed": true
+      },
+      {
+        "name": "tokens_ascii_unicode_boundaries",
+        "passed": true
+      },
+      {
+        "name": "service_filter_exact",
+        "passed": true
+      },
+      {
+        "name": "level_filter_exact",
+        "passed": true
+      },
+      {
+        "name": "bounds_half_open_and_combined",
+        "passed": true
+      },
+      {
+        "name": "chronological_source_order_ties_duplicates",
+        "passed": true
+      },
+      {
+        "name": "pagination_total_and_edges",
+        "passed": true
+      },
+      {
+        "name": "malformed_lines_skipped_extras_preserved",
+        "passed": true
+      },
+      {
+        "name": "errors_query_and_filter_types",
+        "passed": true
+      },
+      {
+        "name": "errors_timestamp_types",
+        "passed": true
+      },
+      {
+        "name": "errors_timestamp_values",
+        "passed": true
+      },
+      {
+        "name": "errors_pagination_types",
+        "passed": true
+      },
+      {
+        "name": "errors_pagination_negative",
+        "passed": true
+      },
+      {
+        "name": "errors_path_types",
+        "passed": true
+      },
+      {
+        "name": "errors_missing_archive",
+        "passed": true
+      },
+      {
+        "name": "returned_objects_owned_by_caller",
+        "passed": true
+      },
+      {
+        "name": "freshness_append",
+        "passed": true
+      },
+      {
+        "name": "freshness_truncate_and_empty",
+        "passed": true
+      },
+      {
+        "name": "freshness_same_size_rotation_preserved_mtime",
+        "passed": true
+      },
+      {
+        "name": "archives_and_pathlike_isolation",
+        "passed": true
+      },
+      {
+        "name": "concurrent_cold_reads_and_reloads",
+        "passed": true
+      },
+      {
+        "name": "concurrent_atomic_rotation_snapshot_consistency",
+        "passed": true
+      },
+      {
+        "name": "cli_search_parity",
+        "passed": true
+      },
+      {
+        "name": "cli_help_and_useful_errors",
+        "passed": true
+      },
+      {
+        "name": "benchmark_round_1_baseline_answers",
+        "passed": true
+      },
+      {
+        "name": "benchmark_round_1_candidate_answers",
+        "passed": true
+      },
+      {
+        "name": "benchmark_round_2_baseline_answers",
+        "passed": true
+      },
+      {
+        "name": "benchmark_round_2_candidate_answers",
+        "passed": true
+      }
+    ],
+    "performance": {
+      "records": 30000,
+      "queries_per_round": 16,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "baseline": 4.081849300000613,
+          "candidate": 0.012994000000617234
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "candidate": 0.011754700000892626,
+          "baseline": 5.191438500000004
+        }
+      ],
+      "baseline_seconds": 9.273287800000617,
+      "candidate_seconds": 0.02474870000150986,
+      "baseline_queries_per_second": 3.4507717963846516,
+      "candidate_queries_per_second": 1292.9972078552714,
+      "throughput_ratio": 374.69797603247343,
+      "required_ratio": 5.0,
+      "answers_correct": true,
+      "passed": true,
+      "timing_scope": "query loops only; one initial search per implementation untimed"
+    },
+    "correctness_passed": true,
+    "assertions_passed": 31,
+    "assertions_total": 31,
+    "acceptance_passed": true,
+    "elapsed_seconds": 11.938151836395264
+  }
+}

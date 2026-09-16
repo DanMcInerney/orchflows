@@ -1,0 +1,11 @@
+{
+  "operation": {
+    "operation_id": 8,
+    "time": "2026-09-16T02:35:12.590266+00:00",
+    "operation": "rollback",
+    "restored": "1b62d83a0698b1ccd7a1595e44092a137ecd5cef1cc8efa5fd29e119425b5710",
+    "reason": "At 50% exposure operation 7 sample 1 observed error_rate=0.04 > 0.01 and p95_ms=340 > 200; stop advancement and restore stored baseline."
+  },
+  "phase": "rolled-back",
+  "next": "observe recovery"
+}

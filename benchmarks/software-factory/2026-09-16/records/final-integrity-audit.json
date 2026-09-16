@@ -1,0 +1,56 @@
+{
+  "time_utc": "2026-09-16T03:03:37.668540+00:00",
+  "frozen_inputs_checked": 40,
+  "only_frozen_change_is_documented_evaluator_correction": true,
+  "changes": {
+    "evaluation/webhook-inbox/checks_core.py": {
+      "before": "b5b0c29e5318720550db3aa686915b22ec8a5c97a164d0d351ec4653acd7e074",
+      "after": "3a61502bf8c06c0eec27d73560f4aa38971aa0b392b072de96b1813dce7e6032"
+    }
+  },
+  "subjects": {
+    "webhook-inbox/workflow": {
+      "TASK.md": true,
+      "RUN_CONTEXT.md": true,
+      "caller-note.txt": true,
+      "AGENTS.md": true,
+      "test_smoke.py": true,
+      "config.example.json": true,
+      "source_unchanged_since_primary_evaluation": true,
+      "caller_note_untracked": true
+    },
+    "webhook-inbox/single": {
+      "TASK.md": true,
+      "RUN_CONTEXT.md": true,
+      "caller-note.txt": true,
+      "AGENTS.md": true,
+      "test_smoke.py": true,
+      "config.example.json": true,
+      "source_unchanged_since_primary_evaluation": true,
+      "caller_note_untracked": true
+    },
+    "log-archive/workflow": {
+      "TASK.md": true,
+      "RUN_CONTEXT.md": true,
+      "caller-note.txt": true,
+      "baseline_reference.py": true,
+      "tests/test_public.py": true,
+      "sample.ndjson": true,
+      "public_README_contract_sections_retained": true,
+      "source_unchanged_since_primary_evaluation": true,
+      "caller_note_untracked": true
+    },
+    "log-archive/single": {
+      "TASK.md": true,
+      "RUN_CONTEXT.md": true,
+      "caller-note.txt": true,
+      "baseline_reference.py": true,
+      "tests/test_public.py": true,
+      "sample.ndjson": true,
+      "public_README_contract_sections_retained": true,
+      "source_unchanged_since_primary_evaluation": true,
+      "caller_note_untracked": true
+    }
+  },
+  "inspection_note": "An initial reporting audit compared the whole log README and rejected the single-agent version. Direct diff showed only the starter title/introduction changed plus new operating sections, all authorized. The actual Python API, CLI and acceptance sections are retained verbatim (newline-normalized). The audit checks those contract sections; no candidate or evaluator was changed."
+}

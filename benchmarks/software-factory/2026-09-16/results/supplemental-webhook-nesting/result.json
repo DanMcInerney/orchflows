@@ -1,0 +1,34 @@
+{
+  "kind": "exploratory after final source inspection; excluded from primary score",
+  "time_utc": "2026-09-16T03:00:17.033766+00:00",
+  "depth": 1200,
+  "body_bytes": 2410,
+  "published_body_limit": 65536,
+  "criterion": "Accept a valid UTF-8 JSON object within the published size bound; task does not publish a depth cap.",
+  "subjects": {
+    "workflow": {
+      "project": "<BUNDLE_ROOT>/runs/webhook-inbox/workflow/project",
+      "post_status": 201,
+      "post_response": {
+        "event_id": "valid-depth-1200",
+        "duplicate": false
+      },
+      "roundtrip": true,
+      "retry_status": 200,
+      "retry_duplicate": true,
+      "passed": true
+    },
+    "single": {
+      "project": "<BUNDLE_ROOT>/runs/webhook-inbox/single/project",
+      "post_status": 201,
+      "post_response": {
+        "event_id": "valid-depth-1200",
+        "duplicate": false
+      },
+      "roundtrip": true,
+      "retry_status": 200,
+      "retry_duplicate": true,
+      "passed": true
+    }
+  }
+}

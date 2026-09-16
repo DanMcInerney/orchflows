@@ -1,0 +1,40 @@
+{
+  "event": "result",
+  "time": "2026-09-16T02:35:22.033811+00:00",
+  "label": "08-recovery",
+  "exit_code": 0,
+  "actual_operation_id": 9,
+  "stdout": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/release/08-recovery.stdout.json",
+  "stderr": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/release/08-recovery.stderr.txt",
+  "result": {
+    "operation": {
+      "operation_id": 9,
+      "time": "2026-09-16T02:35:22.024128+00:00",
+      "operation": "observe",
+      "exposure": 0,
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic",
+      "recovery_verified": true
+    },
+    "sample": {
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.001,
+      "p95_ms": 80,
+      "healthy": true,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic",
+      "recovery_verified": true
+    },
+    "thresholds": {
+      "error_rate_max": 0.01,
+      "p95_ms_max": 200
+    },
+    "phase": "rolled-back"
+  }
+}

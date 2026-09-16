@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-09-16T02:39:31.257401+00:00",
+  "controls": {
+    "webhook-inbox": {
+      "all_files_equal": true,
+      "files": 9,
+      "task_sha256": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47"
+    },
+    "log-archive": {
+      "all_files_equal": true,
+      "files": 9,
+      "task_sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c"
+    }
+  }
+}

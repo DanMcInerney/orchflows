@@ -1,0 +1,7 @@
+ .gitignore         |   8 +-
+ README.md          | 158 ++++++++++++++++++++++--
+ RELEASE_HANDOFF.md |  62 ++++++++++
+ inbox.py           | 244 +++++++++++++++++++++++++++++++++++--
+ inbox_store.py     |  57 +++++++++
+ test_inbox.py      | 346 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 852 insertions(+), 23 deletions(-)

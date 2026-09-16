@@ -58,10 +58,45 @@ Observation and incident investigation are explicit invocations. Observation is 
 
 We tested version 0.1.0 at commit `1a04d85254455012b9f73e2bced43218f9f755f5` against a fresh single agent on two tasks. Each pair received identical source and product prompts, the same model/effort (`gpt-6-astra`, `xhigh`), tools and a 45-minute limit. Workflow agents could delegate; controls could not use Orchflows or delegate. Independent acceptance suites were prepared before the builds. Candidates were frozen before external grading.
 
-| Task | Workflow | Single agent | Observed quality difference |
-| --- | --- | --- | --- |
-| Authenticated webhook inbox: tenant isolation, SQLite persistence, idempotency, concurrency and pagination | 28/28 external checks; 25.6 minutes | 28/28; 17.2 minutes | Both returned usable complete patches and stopped for human security review |
-| Fast log search: preserve API/CLI behavior, freshness and concurrency; simulated staged release | 31/31; 42.4 minutes | 31/31; 16.4 minutes | Workflow review found and repaired a valid nested-JSON crash that remained in the single-agent result |
+The [published comparison](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16) includes **all four implementations**, their tests and documentation, exact task prompts, independent evaluators, saved scores, reviewer reports, handoffs, original patches and simulated release evidence. The applications and evidence live outside the installable library.
+
+### Authenticated webhook inbox
+
+Tenant isolation, SQLite persistence, idempotency, concurrency and pagination.
+
+| Measure | Software factory | Single agent |
+| --- | ---: | ---: |
+| Independent acceptance checks | 28/28 | 28/28 |
+| Build + handoff time | 25.6 min | 17.2 min |
+| Agent contexts, including coordinator | 6 | 1 |
+| Output tokens | 76,085 | 31,283 |
+| Uncached input tokens | 362,300 | 102,156 |
+| Cached input tokens | 5,376,640 | 772,992 |
+| Delivered patch | Complete; applies | Complete; applies |
+| Release outcome | Human security review required | Human security review required |
+| Implementation | [Code and tests](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/webhook-inbox/workflow/project) | [Code and tests](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/webhook-inbox/single/project) |
+| Run evidence | [Handoff and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/webhook-inbox/workflow/artifacts) | [Handoff and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/webhook-inbox/single/artifacts) |
+
+### Fast log archive
+
+Preserve the search API/CLI, freshness and concurrency; exceed a 5× warm-search target and handle a failing staged-release simulation.
+
+| Measure | Software factory | Single agent |
+| --- | ---: | ---: |
+| Independent acceptance checks | 31/31 | 31/31 |
+| Build + handoff time | 42.4 min | 16.4 min |
+| Agent contexts, including coordinator | 10 | 1 |
+| Output tokens | 118,011 | 27,110 |
+| Uncached input tokens | 762,299 | 117,821 |
+| Cached input tokens | 13,387,264 | 1,337,856 |
+| Warm-search speedup over reference | 374.7× | 620.8× |
+| Exploratory nested-JSON probe | Pass after review-driven repair | API and CLI crash |
+| Original delivered patch | Fails on LF baseline | Tracked files only |
+| Simulated release checks | 8/8; rollback and recovery verified | 8/8; rollback and recovery verified |
+| Implementation | [Code and tests](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/log-archive/workflow/project) | [Code and tests](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/log-archive/single/project) |
+| Run evidence | [Handoff, reviews and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/log-archive/workflow/artifacts) | [Handoff and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/log-archive/single/artifacts) |
+
+Times include coordination and handoff. Output tokens include reasoning; cached input can be reused across many calls. Counts are recorded usage, not dollar costs. The [full report](https://github.com/DanMcInerney/orchflows/blob/main/benchmarks/software-factory/2026-09-16/REPORT.md) links the underlying scores and measurements.
 
 The nested-JSON probe is **separate from the fixed acceptance score**. It was chosen after workflow review found the problem, before inspecting the control's final result, then applied identically to the frozen reference and both candidates. The reference and workflow passed; the control raised `RecursionError` in its API and CLI. This is evidence for that specific review benefit, not a general quality ranking.
 
@@ -71,7 +106,7 @@ Handoff quality had a separate defect: the workflow log patch failed to apply to
 
 A targeted trial of the revised guidance packaged the same log candidate without changing its source. The new saved patch reconstructed the exact candidate tree with both LF and CRLF checkouts, reversed to the baseline, and passed all 17 application tests in the candidate and reconstructed checkouts. The old patch's failure was reproduced on the LF baseline; it does apply to a CRLF checkout. This validates the exercised handoff, not a rerun of the full delivery comparison.
 
-The workflow used 2.4× and 4.4× the output tokens, respectively. There was one run per approach per task, not equal compute or a statistical experiment. A Windows SQLite cleanup bug in the webhook evaluator was corrected without changing assertions and the same corrected evaluator graded both arms. These results do not establish visual polish, game appeal, virality, live deployment reliability or overall maintainability. Raw run evidence is retained in the experiment workspace, outside this reusable library.
+The workflow used 2.4× and 4.4× the output tokens, respectively. There was one run per approach per task, not equal compute or a statistical experiment. A Windows SQLite cleanup bug in the webhook evaluator was corrected without changing assertions and the same corrected evaluator graded both arms. These results do not establish visual polish, game appeal, virality, live deployment reliability or overall maintainability. Published evidence preserves the original scores and source; machine-specific paths in supporting documents are made portable, with changes recorded in the archive manifest. Private host transcripts, duplicate worktrees and generated bulk data are excluded.
 
 ## Install and use
 

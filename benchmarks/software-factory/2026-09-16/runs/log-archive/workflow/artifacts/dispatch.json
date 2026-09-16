@@ -1,0 +1,10 @@
+{
+  "case": "log-archive",
+  "mode": "workflow",
+  "task": "/root/log_workflow",
+  "started_utc": "2026-09-16T01:57:27.670666+00:00",
+  "deadline_utc": "2026-09-16T02:42:27.670666+00:00",
+  "model_override": null,
+  "effort_override": null,
+  "workflow_commit": "1a04d85254455012b9f73e2bced43218f9f755f5"
+}

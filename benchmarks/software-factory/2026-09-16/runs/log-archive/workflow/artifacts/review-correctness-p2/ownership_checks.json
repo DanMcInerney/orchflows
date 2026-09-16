@@ -1,0 +1,87 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "depth": 100,
+      "style": "dict",
+      "containers_checked": 1012,
+      "cli": "passed"
+    },
+    {
+      "depth": 100,
+      "style": "array",
+      "containers_checked": 1412,
+      "cli": "passed"
+    },
+    {
+      "depth": 100,
+      "style": "mixed",
+      "containers_checked": 1212,
+      "cli": "passed"
+    },
+    {
+      "depth": 550,
+      "style": "dict",
+      "containers_checked": 5512,
+      "cli": "passed"
+    },
+    {
+      "depth": 550,
+      "style": "array",
+      "containers_checked": 7712,
+      "cli": "passed"
+    },
+    {
+      "depth": 550,
+      "style": "mixed",
+      "containers_checked": 6612,
+      "cli": "passed"
+    },
+    {
+      "depth": 800,
+      "style": "dict",
+      "containers_checked": 8012,
+      "cli": "passed"
+    },
+    {
+      "depth": 800,
+      "style": "array",
+      "containers_checked": 11212,
+      "cli": "passed"
+    },
+    {
+      "depth": 800,
+      "style": "mixed",
+      "containers_checked": 9612,
+      "cli": "passed"
+    },
+    {
+      "depth": 950,
+      "style": "dict",
+      "containers_checked": 9512,
+      "cli": "passed"
+    },
+    {
+      "depth": 950,
+      "style": "array",
+      "containers_checked": 13312,
+      "cli": "passed"
+    },
+    {
+      "depth": 950,
+      "style": "mixed",
+      "containers_checked": 11412,
+      "cli": "passed"
+    },
+    {
+      "depth": 0,
+      "style": "broad",
+      "containers_checked": 16806,
+      "cli": "passed"
+    }
+  ],
+  "concurrent_owned_calls": 24,
+  "total_containers_checked": 103350,
+  "all_complete_trees_equal_baseline": true,
+  "all_containers_mutated_without_leakage": true
+}

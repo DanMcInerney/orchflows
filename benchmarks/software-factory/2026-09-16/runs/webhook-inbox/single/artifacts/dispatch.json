@@ -1,0 +1,10 @@
+{
+  "case": "webhook-inbox",
+  "mode": "single",
+  "task": "/root/webhook_single",
+  "started_utc": "2026-09-16T02:39:58.837110+00:00",
+  "deadline_utc": "2026-09-16T03:24:58.837110+00:00",
+  "model_override": null,
+  "effort_override": null,
+  "starter_matches_all_frozen_inputs": true
+}

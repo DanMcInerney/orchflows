@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "verified_evidence": [
+    "pass1-final-tests.txt",
+    "pass1-final-benchmark.json",
+    "pass1-final-benchmark-stdout.json",
+    "pass1-preservation-check.json",
+    "pass1-final-git-status.txt",
+    "pass1-candidate.patch",
+    "pass1-release-status.json"
+  ],
+  "benchmark_source_hashes_match": true,
+  "records": 30000,
+  "timed_candidate_answers": 96,
+  "all_timed_answers_equal": true,
+  "throughput_ratio": 663.5457290570691,
+  "benchmark_rerun": false
+}

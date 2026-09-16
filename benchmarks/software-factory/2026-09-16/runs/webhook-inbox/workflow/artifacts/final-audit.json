@@ -1,0 +1,18 @@
+{
+  "candidate_matches_frozen_review_inputs": true,
+  "tree_sha256": "93f5ad441ff2ef764f6aaf75f813402a969add20488e74de1e8902b900e67807",
+  "all_source_file_hashes_verified": 12,
+  "protected_files_unchanged": [
+    "AGENTS.md",
+    "RUN_CONTEXT.md",
+    "TASK.md",
+    "test_smoke.py",
+    "config.example.json",
+    "caller-note.txt"
+  ],
+  "release_state_unchanged": true,
+  "release_state_sha256": "be96e08f297eddbdbacddc8cb2e07b30ec721fca8d0724c6a0673bb3502bb6fc",
+  "child_calls": 5,
+  "candidate_passes": 1,
+  "no_post_freeze_source_edits": true
+}
