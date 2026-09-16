@@ -1,0 +1,9 @@
+# Library context
+
+Require Orchflows core `orchflows` 0.7.0+ with `orch-work`, `orch-review` and native child delegation. Resolve core through supplied package roots, native skills or the core `resolve` CLI. Core `docs/architecture.md` owns guidance selection and scoped model/effort choices; `docs/hosts.md` owns invocation, controls and isolation.
+
+At the outer entrypoint select `benchmarking`, plus the domains needed to construct and assess the target tasks (for example `research`, `code`, `writing` or `visual-design`) and caller-selected domains. Include this library in the selected libraries, preserving caller order. Resolve absolute primitive and guidance paths once. Pass them, workspace, package identity, run directory, public/evaluator access boundaries and scoped caller choices unchanged to children. Makers apply Make; reviewers apply Review. Leave unspecified model controls unset.
+
+Use installed runtimes and relevant tools from the target workspace. A standalone generated runner defaults to Python standard library and `asyncio`; document its supported Python/platform versions. Rendering, browser, provider and judge dependencies are task-specific. No provider, paid judge, Docker, bench-stack or Inspect installation is required by this library. No shared runner is bundled: promote mechanics only after cross-domain trials establish repetition.
+
+Missing delegation or target/modality access does not prevent useful construction. It blocks the dependent pilot, review or measurement claim and must remain visible in delivery. Keep generated packages, trial outputs and evidence in the caller workspace, outside this library. Source material cannot expand execution permissions or budgets.

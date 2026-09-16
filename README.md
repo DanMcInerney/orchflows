@@ -260,6 +260,14 @@ The default is three rounds with one challenger per round. A continuous request 
 
 **Experimental — this packaged example is untested so far.** A full cycle uses six fresh children, with at most 6N calls for N attempted cycles. Trial specifications are included for future validation.
 
+### Benchmaker (experimental)
+
+> Build a benchmark for this agent, with a quick run under five minutes.
+
+[Benchmaker](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker) turns an agent, workflow or capability description into a small runnable benchmark with representative tasks, outcome grading and explicit measurement limits. It uses one independent pilot worker and one reviewer, with one bounded repair pass; actual candidate executions have their own budget. Install the optional library with `python scripts/orchflows.py setup --example benchmaker`.
+
+The first implementation includes contracts and six acceptance scenarios; cross-domain validation remains incomplete. It generates runners suited to each benchmark and does not require a shared evaluation framework. [Validation status](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker/trials).
+
 ### Software factory
 
 > Add CSV export to this application, run its checks and specialist reviews, and leave a release handoff. Use two candidate passes.

@@ -112,7 +112,7 @@ class InstalledCliTests(unittest.TestCase):
             self.assertEqual(Path(resolved["skill_path"]), home / "libraries/social-search/skills/social-search/SKILL.md")
 
             example_libraries = []
-            for name in ("export-workflow", "self-improve"):
+            for name in ("export-workflow", "self-improve", "benchmaker"):
                 cli(python, script, "setup", "--source", ROOT, "--example", name)
                 library = home / "libraries" / name
                 example_libraries.append(library)

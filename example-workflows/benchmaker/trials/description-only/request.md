@@ -1,0 +1,3 @@
+# Request
+
+Build a benchmark for agents that schedule community-room bookings from supplied JSON requests and availability. I have no target agent connected yet. Make a small four-case development package covering conflict resolution and changed constraints. Allow multiple valid schedules and require an explanation when a request cannot fit. Keep it offline and use installed Python with no new dependencies. Cap authoring validation at four control outcomes per case and a two-case independent public-input audit. Do not execute a candidate or representative agent; candidate launches and paid calls have a budget of zero. Run local grader/harness checks and deliver commands for connecting a real target later. Put the generated package in this workspace.

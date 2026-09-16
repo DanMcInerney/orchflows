@@ -1,0 +1,16 @@
+{
+  "name": "benchmaker",
+  "version": "0.1.0",
+  "description": "Author and pilot small runnable agent benchmarks with defensible grading.",
+  "skills": "./skills/",
+  "author": { "name": "orchflows" },
+  "interface": {
+    "displayName": "Benchmaker",
+    "shortDescription": "Build benchmarks with tasks, graders and honest results.",
+    "longDescription": "Create task-specific benchmark packages, independently pilot their tasks and graders, and review evidence with explicit execution and measurement limits.",
+    "developerName": "orchflows",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Use benchmaker to build a small runnable benchmark for this agent."
+  }
+}
