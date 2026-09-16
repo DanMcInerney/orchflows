@@ -1,6 +1,6 @@
 {
   "name": "benchmaker",
-  "version": "0.1.0",
-  "description": "Author and pilot small runnable agent benchmarks with defensible grading.",
+  "version": "0.2.1",
+  "description": "Build staged agent benchmarks with outcome credit and calibrated difficulty.",
   "skills": "./skills/"
 }

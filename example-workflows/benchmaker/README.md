@@ -1,8 +1,8 @@
 # Benchmaker
 
-Build a small runnable benchmark from an agent, workflow, command or capability description: representative tasks, appropriate environments, defensible grading and interpretable results. Each generated package makes a bounded claim and uses dependencies appropriate to its tasks.
+Build a benchmark around substantial user work: representative tasks, appropriate environments, useful partial credit and measured difficulty. Start with a prototype, calibrate a pilot and evaluate unseen source groups as evidence and budget permit. Each generated package states its requested and achieved stage.
 
-**Experimental, version 0.1.0.** The workflow and acceptance scenarios are implemented. Cross-domain acceptance remains incomplete; see [validation status](trials/README.md). Harness checks, benchmark validation and agent measurement are separate evidence, not interchangeable readiness claims. The original [design report](DESIGN.md) is retained as historical rationale, not required invocation context.
+**Experimental, version 0.2.1.** The 0.2 series adds [quality and acceptance gates](references/quality-profile.md) and retains the 0.1.1 integrity repairs. Version 0.2.1 clarifies control and record checks after fresh 0.2.0 trials; those final clarifications have not had another authoring replay. Cross-domain acceptance remains incomplete; see [validation status](trials/README.md). Harness checks, benchmark validation and agent measurement are separate evidence, not interchangeable readiness claims. The original [design report](DESIGN.md) is retained as historical rationale, not required invocation context.
 
 ## Use
 
@@ -23,7 +23,9 @@ Benchmark agents that turn a brief into a slide deck.
 Make a benchmark for planning with changing resource constraints.
 ```
 
-Supply the target or capability, workspace and any budget or comparison constraints. Ordinary choices are inferred. A description-only request can produce a useful draft; absent target execution remains a measurement gap. The default authoring suggestion is roughly 12–24 cases, adjusted to the task. Smoke, quick and full profiles trade coverage and execution cost explicitly.
+Supply the target or capability, workspace and any budget or comparison constraints. Ordinary choices are inferred. A description-only request can produce a useful draft; absent target execution remains a measurement gap. For broad substantial-work claims, plan roughly 40–60 independently sourced development cases and a later 150–300-case evaluation suite; these are adjustable planning ranges, not statistical minimums or automatic launch budgets. A smaller prototype is labeled honestly and retains the larger request's unmet gates. Smoke, quick and full profiles select runs without changing maturity.
+
+Challenge requests use a development objective of 30–50% full success for a named strong baseline, unless specified otherwise. This is separate from mean partial credit and representative-work performance. Cases need source-work provenance, substantive dependencies and feasibility evidence; small renamed fixtures cannot establish breadth. Freeze baselines and source-group splits before measurement, investigate failures, and publish unseen results even outside the desired band. Semantic scoring remains provisional until independent held-out calibration supports it.
 
 ## Composition and dependencies
 
@@ -35,4 +37,4 @@ The library supplies authoring instructions and [execution/data contracts](refer
 
 ## Maintainer validation
 
-Use the six [trial specifications](trials/README.md) in fresh workspaces with the authoring conversation withheld. Packaging checks establish installation and discovery; only observed trials establish workflow behavior. The repository integration test copies and resolves this library in an isolated home and checks package-local links. No host registration or plugin installation is needed to inspect or edit this example.
+Use the [trial specifications](trials/README.md) in fresh workspaces with the authoring conversation withheld. Packaging checks establish installation and discovery; only observed trials establish workflow behavior. The repository integration test copies and resolves this library in an isolated home and checks package-local links. No host registration or plugin installation is needed to inspect or edit this example.
