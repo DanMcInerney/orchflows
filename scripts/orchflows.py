@@ -246,14 +246,19 @@ def setup(home: Path, source: Path, example: str | None = None, *,
     host_plans, config_issues, config_failures = [], [], {}
     if concurrency is not None:
         for host, detection in detected.items():
-            if host in {"codex", "claude"} and detection["status"] == "available":
+            if detection["status"] == "available":
+                if host not in host_config.SUPPORTED_HOSTS:
+                    message = f"No verified concurrency setting for {host}; no settings changed for this host"
+                    config_failures[host] = {"status": "unsupported", "message": message}
+                    config_issues.append(message)
+                    continue
                 try:
                     host_plans.extend(host_config.prepare_host_configs(concurrency, (host,)))
                 except (OSError, ValueError) as exc:
                     config_failures[host] = {"status": "unavailable", "message": str(exc)}
                     config_issues.append(str(exc))
         if not host_plans and not config_failures:
-            config_issues.append("Concurrency tuning requires a detected Codex or Claude CLI; no settings changed")
+            config_issues.append("Concurrency tuning requires a detected host with a supported setting; no settings changed")
     core_path = home / ".local/packages" / CORE_NAME
     core_path.parent.mkdir(parents=True, exist_ok=True)
     lock = core_path.parent / ".setup.lock"
@@ -435,7 +440,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the source's example-workflows directory")
     host_options = setup_parser.add_mutually_exclusive_group()
     host_options.add_argument("--concurrency", type=int, metavar="N",
-                              help="Explicitly tune detected, selected Codex/Claude concurrency (default: preserve settings)")
+                              help="Tune supported concurrency limits in detected, selected hosts (default: preserve settings)")
     host_options.add_argument("--skip-host-config", action="store_true", help="Preserve concurrency settings (the default); registration still runs")
     doctor_parser = commands.add_parser("doctor", help="Check a home without changing it")
     doctor_parser.add_argument("--home", help=home_help)

@@ -26,7 +26,8 @@ class InstalledCliTests(unittest.TestCase):
             project = outside / "unrelated-project"
             project.mkdir()
             environment = dict(os.environ, ORCHFLOWS_HOME=str(outside / "home"),
-                               CODEX_HOME=str(outside / "codex"), CLAUDE_CONFIG_DIR=str(outside / "claude"))
+                               CODEX_HOME=str(outside / "codex"), CLAUDE_CONFIG_DIR=str(outside / "claude"),
+                               HOME=str(outside / "userhome"), USERPROFILE=str(outside / "userhome"))
             environment.pop("PYTHONDONTWRITEBYTECODE", None)
             environment.pop("PYTHONPYCACHEPREFIX", None)
             native_log = outside / "claude/projects/demo/native-session.jsonl"
@@ -57,7 +58,8 @@ class InstalledCliTests(unittest.TestCase):
             project = outside / "unrelated-project"
             project.mkdir()
             environment = dict(os.environ, ORCHFLOWS_HOME=str(home), PYTHONDONTWRITEBYTECODE="1",
-                               CODEX_HOME=str(outside / "codex"), CLAUDE_CONFIG_DIR=str(outside / "claude"))
+                               CODEX_HOME=str(outside / "codex"), CLAUDE_CONFIG_DIR=str(outside / "claude"),
+                               HOME=str(outside / "userhome"), USERPROFILE=str(outside / "userhome"))
 
             def cli(python, script, *arguments, expected=0):
                 if arguments[0] in {"setup", "doctor"}:

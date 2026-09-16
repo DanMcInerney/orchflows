@@ -98,15 +98,16 @@ class HostConfigTests(unittest.TestCase):
         self.assertEqual(tomllib.loads(self.codex.read_text(encoding="utf-8"))["agents"]["max_threads"], 7)
         self.assertEqual(json.loads(self.claude.read_text(encoding="utf-8"))["env"][host_config.CLAUDE_KEY], "7")
 
-    def test_equal_boolean_or_float_is_not_a_configured_integer_cap(self):
+    def test_equal_boolean_or_float_is_replaced_without_changing_other_tables(self):
         for value in ("true", "1.0"):
             original = f"[other]\nmax_threads = 1\n[agents]\nmax_threads = {value}\n"
             with self.subTest(value=value):
                 self.write(self.codex, original)
-                with self.assertRaisesRegex(ValueError, "preserved"):
-                    host_config.prepare_host_configs(1)
-                self.assertEqual(self.codex.read_bytes(), original.encode())
-                self.assertFalse(self.claude.exists())
+                self.apply(1)
+                parsed = tomllib.loads(self.codex.read_text())
+                self.assertEqual(parsed["other"], {"max_threads": 1})
+                self.assertIs(type(parsed["agents"]["max_threads"]), int)
+                self.assertEqual(parsed["agents"]["max_threads"], 1)
 
     def test_layouts_that_cannot_be_edited_safely_are_refused_unchanged(self):
         for original in ('agents.max_threads = 1_0\nagents.max_depth = 2\n', 'agents.max_depth = 2\n[tools]\nenabled = true\n',

@@ -43,7 +43,14 @@ class HomeSetupTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()
         self.environment_patch = patch.dict(os.environ, {"CODEX_HOME": str(self.root / "codex"),
-                                                         "CLAUDE_CONFIG_DIR": str(self.root / "claude")})
+                                                         "CLAUDE_CONFIG_DIR": str(self.root / "claude"),
+                                                         "HOME": str(self.root / "userhome"),
+                                                         "USERPROFILE": str(self.root / "userhome"),
+                                                         "KIMI_CODE_HOME": str(self.root / "kimi"),
+                                                         "GROK_HOME": str(self.root / "grok"),
+                                                         "ZCODE_MAX_TOOL_CONCURRENCY": "",
+                                                         "KIMI_CODE_BACKGROUND_MAX_RUNNING_TASKS": "",
+                                                         "GROK_MAX_CONCURRENT_SUBAGENTS": ""})
         self.environment_patch.start()
         self.addCleanup(self.environment_patch.stop)
         detection = patch.object(orchflows.host_integration, "detect", return_value={})
@@ -162,6 +169,61 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual(json.loads((self.root / "claude/settings.json").read_text())["env"]["CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"], "9")
         integrate.assert_called_once()
         self.assertTrue(integrate.call_args.kwargs["install"])
+
+    def test_additional_host_tuning_reports_unsupported_hosts_and_preserves_enablement(self) -> None:
+        write(self.root / "grok/config.toml", '[subagents]\nenabled = false\nlimit_behavior = "fail"\n')
+        with patch.object(orchflows.host_integration, "detect", return_value={
+            host: {"status": "available"} for host in ("zcode", "kimi", "grok", "agy")
+        }), patch.object(orchflows.host_integration, "integrate", return_value={}) as integrate:
+            result = orchflows.setup(self.home, self.source, concurrency=8)
+        self.assertEqual(result["host_config_status"], "partial")
+        self.assertEqual(result["host_configs"]["agy"]["status"], "unsupported")
+        for host in ("zcode", "kimi", "grok"):
+            self.assertEqual(result["host_configs"][host]["value"], 8)
+        self.assertEqual(json.loads((self.root / "userhome/.zcode/cli/config.json").read_text()),
+                         {"toolConcurrency": {"maxConcurrency": 8}})
+        self.assertEqual(tomllib.loads((self.root / "kimi/config.toml").read_text()),
+                         {"background": {"max_running_tasks": 8}})
+        self.assertEqual(tomllib.loads((self.root / "grok/config.toml").read_text())["subagents"],
+                         {"enabled": False, "limit_behavior": "fail", "max_concurrent": 8})
+        integrate.assert_called_once()
+        self.assertFalse((self.root / "codex").exists())
+        self.assertFalse((self.root / "claude").exists())
+
+    def test_available_additional_hosts_are_not_configured_by_default(self) -> None:
+        write(self.root / "kimi/config.toml", 'invalid = [\n')
+        with patch.object(orchflows.host_integration, "detect", return_value={
+            host: {"status": "available"} for host in ("zcode", "kimi", "grok", "agy")
+        }), patch.object(orchflows.host_integration, "integrate", return_value={}):
+            result = orchflows.setup(self.home, self.source)
+        self.assertEqual(result["host_config_status"], "skipped")
+        self.assertEqual(result["host_configs"], {})
+        self.assertEqual((self.root / "kimi/config.toml").read_text(), 'invalid = [\n')
+        self.assertFalse((self.root / "userhome/.zcode").exists())
+        self.assertFalse((self.root / "grok").exists())
+
+    def test_additional_config_failure_does_not_block_a_supported_sibling(self) -> None:
+        write(self.root / "userhome/.zcode/cli/config.json", '{"toolConcurrency":null}')
+        with patch.object(orchflows.host_integration, "detect", return_value={
+            "zcode": {"status": "available"}, "kimi": {"status": "available"},
+            "grok": {"status": "not_detected"},
+        }), patch.object(orchflows.host_integration, "integrate", return_value={}):
+            result = orchflows.setup(self.home, self.source, concurrency=8)
+        self.assertEqual(result["host_config_status"], "partial")
+        self.assertEqual(result["host_configs"]["zcode"]["status"], "unavailable")
+        self.assertEqual(result["host_configs"]["kimi"]["status"], "created")
+        self.assertNotIn("grok", result["host_configs"])
+        self.assertFalse((self.root / "grok").exists())
+
+    def test_selected_zcode_tunes_only_its_native_configuration(self) -> None:
+        with patch.object(orchflows.host_integration, "detect", return_value={"zcode": {"status": "available"}}) as detect, \
+                patch.object(orchflows.host_integration, "integrate", return_value={}):
+            result = orchflows.setup(self.home, self.source, concurrency=8, hosts=["zcode"])
+        detect.assert_called_once_with(["zcode"])
+        self.assertEqual(result["host_config_status"], "configured")
+        self.assertEqual(set(result["host_configs"]), {"zcode"})
+        for host in ("codex", "claude", "kimi", "grok"):
+            self.assertFalse((self.root / host).exists())
 
     def test_setup_registers_requested_example_and_reports_manual_steps_as_partial(self) -> None:
         reports = {"kimi": {"status": "needs_action", "next_steps": ["Install in Kimi"]}}
