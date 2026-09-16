@@ -1,0 +1,31 @@
+Traceback (most recent call last):
+  File "<PYTHON_RUNTIME>/Lib/shutil.py", line 701, in _rmtree_unsafe
+    os.unlink(fullname)
+    ~~~~~~~~~^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: '<BUNDLE_ROOT>/runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/tmphdpn1ut9/events.db'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<BUNDLE_ROOT>/runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/probes.py", line 14, in <module>
+    with tempfile.TemporaryDirectory(dir=report) as tmp:
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/tempfile.py", line 971, in __exit__
+    self.cleanup()
+    ~~~~~~~~~~~~^^
+  File "<PYTHON_RUNTIME>/Lib/tempfile.py", line 975, in cleanup
+    self._rmtree(self.name, ignore_errors=self._ignore_cleanup_errors)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/tempfile.py", line 955, in _rmtree
+    _shutil.rmtree(name, onexc=onexc)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/shutil.py", line 852, in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/shutil.py", line 705, in _rmtree_unsafe
+    onexc(os.unlink, fullname, err)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_RUNTIME>/Lib/tempfile.py", line 930, in onexc
+    _os.unlink(path)
+    ~~~~~~~~~~^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: '<BUNDLE_ROOT>/runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/tmphdpn1ut9/events.db'

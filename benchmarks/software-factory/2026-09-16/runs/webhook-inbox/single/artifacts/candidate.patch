@@ -1,0 +1,1009 @@
+diff --git a/README.md b/README.md
+index 62415d0..45da490 100644
+--- a/README.md
++++ b/README.md
+@@ -1,19 +1,130 @@
+-# Webhook inbox starter
++# Durable webhook inbox
+ 
+-This deliberately incomplete starter runs on Python 3.11+ with no installed packages. Read `prompt.md` for the exact acceptance contract and `AGENTS.md` for the project release policy.
++A Python 3.11+ webhook inbox using only the standard library and SQLite. It accepts signed JSON objects, keeps exact request bodies, and provides token-protected tenant pages. No package installation or external service is needed.
+ 
+-Start locally:
++## Start and configure
++
++Create a private configuration file using `config.example.json` as the shape:
++
++```json
++{"tenants":{"alpha":{"secret":"replace-with-a-long-random-secret","token":"replace-with-a-long-random-token"}}}
++```
++
++Example credentials are test fixtures. Use distinct, strong credentials for every tenant. Tenant names and credentials are case-sensitive; names contain ASCII letters, digits, hyphens, or underscores. Use ASCII read tokens for interoperability with HTTP clients. HMAC secrets are encoded as UTF-8. Empty credentials and malformed tenant configuration fail startup. Protect configuration and database files using operating-system permissions; neither is encrypted by this application.
+ 
+ ```console
+-python inbox.py --db inbox.sqlite3 --config config.example.json --host 127.0.0.1 --port 8080
++python inbox.py --db inbox.sqlite3 --config config.example.json
++python inbox.py --db inbox.sqlite3 --config config.example.json --host 127.0.0.1 --port 0
++python inbox.py --help
++```
++
++The database is created if absent; its parent directory must exist. The default host is `127.0.0.1`, and the CLI default port is 8080. Port 0 selects an available port. Startup prints and flushes exactly one JSON line containing `host` and the actual `port`, then serves requests. `GET /health` returns `{"status":"ok"}` without credentials or event data. Health confirms that the HTTP process is reachable; it does not check disk capacity or database writability.
++
++The programmatic factory remains `create_server(db_path, config_path, host='127.0.0.1', port=0)`. Its return value supports `server_address`, `serve_forever()`, `shutdown()`, and `server_close()`. When embedding, run `serve_forever()` on a thread, call `shutdown()` from another thread, then `server_close()`. Ctrl+C stops the CLI.
++
++## Sign and submit
++
++This complete standard-library example reads credentials, signs the exact bytes sent, and submits locally:
++
++```python
++import hashlib
++import hmac
++import http.client
++import json
++import time
++from pathlib import Path
++
++credentials = json.loads(Path("config.example.json").read_text(encoding="utf-8"))["tenants"]["alpha"]
++body = json.dumps({"message": "hello"}, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
++timestamp = str(int(time.time()))
++signature = hmac.new(
++    credentials["secret"].encode("utf-8"),
++    timestamp.encode("ascii") + b"." + body,
++    hashlib.sha256,
++).hexdigest()
++connection = http.client.HTTPConnection("127.0.0.1", 8080, timeout=10)
++try:
++    connection.request("POST", "/webhooks/alpha", body=body, headers={
++        "Content-Type": "application/json",
++        "Content-Length": str(len(body)),
++        "X-Event-ID": "example-1",
++        "X-Timestamp": timestamp,
++        "X-Signature": signature,
++    })
++    response = connection.getresponse()
++    print(response.status, json.loads(response.read()))
++finally:
++    connection.close()
++```
++
++The body must be a UTF-8 JSON object of at most 65,536 bytes, inclusive. Arrays/scalars, malformed JSON/UTF-8, and non-JSON numeric constants such as `NaN` fail with 400. Deeply nested JSON and large JSON numbers are validated without Python numeric conversion or recursive traversal; returned payloads preserve their JSON representation.
++
++`X-Event-ID` is 1–128 printable ASCII characters without leading/trailing whitespace. It is stored exactly, including punctuation and SQL-looking text. `X-Timestamp` must be a canonical nonnegative decimal Unix-seconds integer. The server accepts times within 300 seconds inclusive of its integer Unix time. `X-Signature` must be exactly 64 lowercase hexadecimal characters. The HMAC input is the timestamp header's ASCII bytes, a literal dot, and the unchanged body bytes. Header values must not contain surrounding whitespace; normal clients add one separator space after the header colon. Repeated required headers and folded headers are rejected.
++
++A decimal `Content-Length` is required. Missing/invalid length is 400; a declared body larger than the limit is 413. Transfer-encoded bodies are rejected. Connections close after every response, and body reads time out after 10 seconds. No request body, token, secret, or signature is included in routine application logs. Authentication errors return generic JSON objects.
++
++## Retries and errors
++
++Idempotency is scoped to `(tenant, event ID)`:
++
++- First accepted body: 201 with `{"event_id":"example-1","duplicate":false}`.
++- Authenticated byte-identical retry: 200 with `duplicate:true` and the original event ID.
++- Authenticated different bytes for the same ID: 409, even when both bodies represent equal JSON values.
++
++Every retry must have a currently valid timestamp and signature. Recompute those headers when retrying later, but preserve the exact body and event ID. Signature verification and read-token comparison use constant-time comparison. Requests failing validation/authentication and conflicting retries do not reserve event IDs or change stored events. Concurrent requests produce one stored event per tenant/ID.
++
++Missing/malformed POST authentication headers return 400. A well-formed incorrect signature or out-of-window timestamp returns 401. Missing/malformed/incorrect read authorization returns 401. Unknown tenants and unrecognized GET/POST routes return 404. SQLite failures return 503 with a generic message. Retry transient storage errors using the same event ID and body; a lost response can safely be retried because the commit may already have succeeded. Successful and error responses are JSON objects.
++
++## Read pages
++
++```python
++import http.client
++import json
++from pathlib import Path
++from urllib.parse import urlencode
++
++credentials = json.loads(Path("config.example.json").read_text(encoding="utf-8"))["tenants"]["alpha"]
++cursor = "0"
++while True:
++    connection = http.client.HTTPConnection("127.0.0.1", 8080, timeout=10)
++    try:
++        connection.request("GET", "/events/alpha?" + urlencode({"limit": "50", "cursor": cursor}),
++                           headers={"Authorization": "Bearer " + credentials["token"]})
++        response = connection.getresponse()
++        page = json.loads(response.read())
++        if response.status != 200:
++            raise RuntimeError(f"Read failed: {response.status}")
++        for item in page["items"]:
++            print(item["sequence"], item["event_id"], item["payload"])
++    finally:
++        connection.close()
++    cursor = page["next_cursor"]
++    if cursor is None:
++        break
+ ```
+ 
+-The startup line is JSON containing the actual host and port. `GET /health` works; ingestion, authorization, durable storage, and pagination are left to implement. Example credentials are fixtures, not production credentials.
++`limit` defaults to 50 and must be a canonical decimal integer from 1 through 100. `cursor` defaults to `0` and must be a canonical nonnegative decimal string. Unknown/repeated parameters and malformed values return 400. Sequences are positive integers, assigned on first insertion, and increasing within each tenant. They are database-wide, so gaps are normal. No ordering depends on event IDs, sender timestamps, or body contents. Retries/conflicts never change sequences.
+ 
+-Run the public checks:
++Pages include events with `sequence > cursor`, oldest first. `next_cursor` is the last returned sequence as a decimal string only when another event is already available; otherwise it is JSON null. Reusing a cursor without writes gives the same page. Beyond-last cursors give an empty page and null. Cursors contain no tenant authority: applying another tenant's numeric cursor still filters only the authenticated tenant's events. To poll for future arrivals after reaching null, retain the last event sequence yourself.
++
++## Storage and operations
++
++The `events` table stores a global auto-increment integer sequence, tenant text, exact event-ID text, and exact body bytes as a BLOB. A uniqueness constraint covers tenant and event ID; a tenant/sequence index supports pagination. Each request opens its own SQLite connection. `BEGIN IMMEDIATE` makes duplicate inspection and insertion one transaction; parameterized SQL protects all supplied values. WAL journaling and `synchronous=FULL` protect committed data across process restarts. SQLite serializes writers; this is intended for modest local workloads, and write contention waits up to 10 seconds before returning a storage error.
++
++Use a local filesystem supported by SQLite. Monitor disk usage and file permissions; there is no retention, pruning, encryption, queue delivery, metrics endpoint, rate limiting, or TLS termination in this application. Removing a configured tenant stops HTTP access but does not delete its stored rows. Configuration is loaded at startup, so credential rotation requires restarting; old credentials stop authenticating after restart. Keep clocks synchronized.
++
++For a consistent live backup, use Python's `sqlite3.Connection.backup()` API. Do not copy only the main database file while WAL writers are active. For an offline copy, stop all servers and copy the database and any remaining `-wal`/`-shm` sidecars together. Restore into a separate location, run `PRAGMA integrity_check`, and verify authenticated reads before switching over. Preserve backups before schema changes. The starter had no event schema, so this change only creates the new table and index; arbitrary pre-existing incompatible schemas are not migrated.
++
++Bind to loopback unless a separately reviewed deployment supplies access controls, TLS, request/concurrency limits, secret handling, monitoring, and backup/restore procedures. The built-in threaded HTTP server is the required local service interface, not a complete internet-facing service platform. Authentication, signature verification, and tenant authorization require human approval before any live release under `AGENTS.md`. The shared local release policy also disallows webhook simulator deployment. This deliverable is prepared for that review and has not been deployed.
++
++## Checks and review artifacts
+ 
+ ```console
+ python -m unittest -v test_smoke
++python -m unittest -v
++python -m py_compile inbox.py test_inbox.py test_smoke.py
+ ```
+ 
+-The health test passes in the starter. The round-trip test intentionally fails until the product is implemented. Add broader tests and complete the operating and release documentation as part of the assignment.
++The public smoke tests are unchanged. Additional tests cover tenant isolation, strict headers/query values, body-size boundaries, exact-byte conflicts, malformed JSON and UTF-8, timestamp boundaries, SQL-looking IDs, pagination, huge cursors/numbers, deep JSON, storage rollback, concurrent duplicate/conflicting submissions, shared-database servers, restart durability, and CLI readiness. A seeded grammar check compares 1,000 generated JSON objects and 3,000 mutations with the standard JSON parser.
++
++The run's sibling `artifacts/` directory contains the checked patch, raw test outputs (including initial failures and their repairs), source manifest, release-status evidence, `HANDOFF.md`, and `RESULT.json`. The handoff records actual release disposition and the pending security review.
+diff --git a/inbox.py b/inbox.py
+index cdcb181..a288b8a 100644
+--- a/inbox.py
++++ b/inbox.py
+@@ -1,42 +1,368 @@
+-"""Runnable starter for the webhook inbox assignment; product routes are incomplete."""
++"""A durable, tenant-isolated webhook inbox using only the standard library."""
+ 
+ import argparse
+-import json
++from contextlib import closing
++import hashlib
++import hmac
+ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++import json
+ from pathlib import Path
++import re
++import socket
++import sqlite3
++import time
++from urllib.parse import parse_qsl, urlsplit
++
++
++MAX_BODY = 65_536
++DECIMAL = re.compile(r"(?:0|[1-9][0-9]*)\Z", re.ASCII)
++TENANT = re.compile(r"[A-Za-z0-9_-]+\Z", re.ASCII)
++SIGNATURE = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
++JSON_NUMBER = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?", re.ASCII)
++
++
++class RequestError(Exception):
++    def __init__(self, status, message):
++        self.status = status
++        self.message = message
++
++
++class _HeaderReader:
++    """Retain header octets before the email parser strips value whitespace."""
++
++    def __init__(self, stream):
++        self.stream = stream
++        self.lines = []
++
++    def readline(self, *args):
++        line = self.stream.readline(*args)
++        self.lines.append(line)
++        return line
++
++
++def _validate_object(raw):
++    """Validate JSON iteratively, without recursion or numeric conversion.
++
++    The byte limit bounds the stack. Use the standard JSON string scanner for
++    escaping/control-character rules, and retain raw JSON for exact storage.
++    """
++    source = raw.decode("utf-8")
++    length = len(source)
++    index = 0
++
++    def whitespace(position):
++        while position < length and source[position] in " \t\r\n":
++            position += 1
++        return position
++
++    index = whitespace(index)
++    if index == length or source[index] != "{":
++        raise ValueError("body must be an object")
++    index += 1
++    states = ["key_or_end"]
++    while states:
++        index = whitespace(index)
++        if index == length:
++            raise ValueError("incomplete JSON")
++        character = source[index]
++        state = states[-1]
++        if state in ("key_or_end", "key"):
++            if character == "}" and state == "key_or_end":
++                states.pop()
++                index += 1
++            elif character == '"':
++                _, index = json.decoder.scanstring(source, index + 1, True)
++                states[-1] = "colon"
++            else:
++                raise ValueError("expected an object key")
++        elif state == "colon":
++            if character != ":":
++                raise ValueError("expected a colon")
++            index += 1
++            states[-1] = "object_value"
++        elif state in ("object_comma", "array_comma"):
++            closing = "}" if state == "object_comma" else "]"
++            if character == closing:
++                states.pop()
++            elif character == ",":
++                states[-1] = "key" if state == "object_comma" else "array_value"
++            else:
++                raise ValueError("expected a comma or closing delimiter")
++            index += 1
++        elif state == "array_first" and character == "]":
++            states.pop()
++            index += 1
++        else:
++            states[-1] = "object_comma" if state == "object_value" else "array_comma"
++            if character in "{[":
++                states.append("key_or_end" if character == "{" else "array_first")
++                index += 1
++            elif character == '"':
++                _, index = json.decoder.scanstring(source, index + 1, True)
++            elif source.startswith(("true", "null"), index):
++                index += 4
++            elif source.startswith("false", index):
++                index += 5
++            else:
++                number = JSON_NUMBER.match(source, index)
++                if number is None:
++                    raise ValueError("expected a JSON value")
++                index = number.end()
++    if whitespace(index) != length:
++        raise ValueError("trailing data")
++
++
++def _connect(path):
++    connection = sqlite3.connect(path, timeout=10, isolation_level=None)
++    connection.execute("PRAGMA synchronous = FULL")
++    return connection
+ 
+ 
+ class InboxHandler(BaseHTTPRequestHandler):
+-    def _json(self, status, value):
+-        body = json.dumps(value, ensure_ascii=False).encode("utf-8")
++    # Each response closes the connection; rejected bodies cannot be mistaken
++    # for another request. Threads have a bounded idle/read timeout.
++    protocol_version = "HTTP/1.0"
++
++    def setup(self):
++        super().setup()
++        self.connection.settimeout(10)
++
++    def parse_request(self):
++        original = self.rfile
++        captured = _HeaderReader(original)
++        self.rfile = captured
++        try:
++            parsed = super().parse_request()
++        finally:
++            self.rfile = original
++        if not parsed:
++            return False
++        self.raw_headers = {}
++        for line in captured.lines:
++            if line in (b"\r\n", b"\n", b""):
++                break
++            if line[:1] in (b" ", b"\t") or b":" not in line:
++                self._json(400, {"error": "malformed headers"})
++                return False
++            name, value = line.rstrip(b"\r\n").split(b":", 1)
++            if not re.fullmatch(rb"[!#$%&'*+.^_`|~0-9A-Za-z-]+", name):
++                self._json(400, {"error": "malformed headers"})
++                return False
++            # Permit the conventional single separator space, but do not erase
++            # whitespace that is part of an event ID or authentication value.
++            if value.startswith(b" "):
++                value = value[1:]
++            self.raw_headers.setdefault(name.decode("ascii").lower(), []).append(
++                value.decode("latin-1"))
++        return True
++
++    def _header(self, name, status=400):
++        values = self.raw_headers.get(name.lower(), [])
++        if len(values) != 1:
++            raise RequestError(status, "missing or repeated required header")
++        return values[0]
++
++    def _bytes(self, status, body):
++        self.close_connection = True
+         self.send_response(status)
+         self.send_header("Content-Type", "application/json; charset=utf-8")
+         self.send_header("Content-Length", str(len(body)))
++        self.send_header("Cache-Control", "no-store")
++        self.send_header("Connection", "close")
+         self.end_headers()
+-        self.wfile.write(body)
++        if self.command != "HEAD":
++            self.wfile.write(body)
++
++    def _json(self, status, value):
++        self._bytes(status, json.dumps(value, ensure_ascii=True,
++                                      allow_nan=False).encode("utf-8"))
++
++    def send_error(self, code, message=None, explain=None):
++        # HTTP parser/method errors use the same credential-free JSON format.
++        self._json(code, {"error": self.responses.get(code, ("request error",))[0]})
++
++    def _route(self, prefix):
++        try:
++            target = urlsplit(self.path)
++        except ValueError:
++            raise RequestError(400, "malformed request target") from None
++        if target.scheme or target.netloc or target.fragment:
++            raise RequestError(400, "malformed request target")
++        if not target.path.startswith(prefix):
++            raise RequestError(404, "not found")
++        tenant = target.path[len(prefix):]
++        if not TENANT.fullmatch(tenant) or tenant not in self.server.tenants:
++            raise RequestError(404, "not found")
++        return tenant, target.query
+ 
+     def do_GET(self):
++        self._handle(self._get)
++
++    def do_POST(self):
++        self._handle(self._post)
++
++    def _handle(self, action):
++        try:
++            action()
++        except RequestError as error:
++            self._json(error.status, {"error": error.message})
++        except (socket.timeout, TimeoutError):
++            self._json(400, {"error": "incomplete request body"})
++        except sqlite3.Error:
++            self._json(503, {"error": "storage unavailable"})
++        except (BrokenPipeError, ConnectionResetError):
++            pass
++
++    def _post(self):
++        tenant, query = self._route("/webhooks/")
++        if query:
++            raise RequestError(400, "unsupported query parameters")
++        if "transfer-encoding" in self.raw_headers:
++            raise RequestError(400, "unsupported transfer encoding")
++        length_text = self._header("Content-Length")
++        if not re.fullmatch(r"[0-9]+", length_text, re.ASCII):
++            raise RequestError(400, "invalid content length")
++        # Bound decimal conversion as well as allocation for hostile headers.
++        normalized_length = length_text.lstrip("0") or "0"
++        if len(normalized_length) > 5 or int(normalized_length) > MAX_BODY:
++            raise RequestError(413, "body too large")
++        length = int(normalized_length)
++        event_id = self._header("X-Event-ID")
++        if (not 1 <= len(event_id) <= 128 or event_id != event_id.strip()
++                or any(ord(c) < 0x20 or ord(c) > 0x7e for c in event_id)):
++            raise RequestError(400, "invalid event ID")
++        timestamp = self._header("X-Timestamp")
++        if not DECIMAL.fullmatch(timestamp):
++            raise RequestError(400, "invalid timestamp")
++        signature = self._header("X-Signature")
++        if not SIGNATURE.fullmatch(signature):
++            raise RequestError(400, "invalid signature format")
++        raw = self.rfile.read(length)
++        if len(raw) != length:
++            raise RequestError(400, "incomplete request body")
++        now = int(time.time())
++        if len(timestamp) > max(len(str(now)), 1) + 1 or abs(int(timestamp) - now) > 300:
++            raise RequestError(401, "authentication failed")
++        expected = hmac.new(self.server.tenants[tenant]["secret"],
++                            timestamp.encode("ascii") + b"." + raw,
++                            hashlib.sha256).hexdigest()
++        if not hmac.compare_digest(signature, expected):
++            raise RequestError(401, "authentication failed")
++        try:
++            _validate_object(raw)
++        except (UnicodeDecodeError, ValueError, RecursionError):
++            raise RequestError(400, "body must be a UTF-8 JSON object") from None
++
++        with closing(_connect(self.server.db_path)) as db:
++            # Serialize read/insert together. The UNIQUE constraint additionally
++            # enforces idempotency across connections and server processes.
++            db.execute("BEGIN IMMEDIATE")
++            try:
++                row = db.execute(
++                    "SELECT body FROM events WHERE tenant = ? AND event_id = ?",
++                    (tenant, event_id)).fetchone()
++                if row is not None:
++                    if row[0] != raw:
++                        raise RequestError(409, "event ID has a different body")
++                    duplicate = True
++                else:
++                    db.execute("INSERT INTO events (tenant, event_id, body) VALUES (?, ?, ?)",
++                               (tenant, event_id, sqlite3.Binary(raw)))
++                    duplicate = False
++                db.commit()
++            except BaseException:
++                db.rollback()
++                raise
++        self._json(200 if duplicate else 201,
++                   {"event_id": event_id, "duplicate": duplicate})
++
++    def _get(self):
+         if self.path == "/health":
+             self._json(200, {"status": "ok"})
+-        elif self.path.startswith("/events/"):
+-            # TODO: authorize, load durable events, and paginate.
+-            self._json(200, {"items": [], "next_cursor": None})
++            return
++        tenant, query = self._route("/events/")
++        authorization = self._header("Authorization", status=401)
++        expected = b"Bearer " + self.server.tenants[tenant]["token"]
++        if not hmac.compare_digest(authorization.encode("utf-8"), expected):
++            raise RequestError(401, "authentication failed")
++        if re.search(r"%(?![0-9a-fA-F]{2})", query):
++            raise RequestError(400, "malformed query")
++        try:
++            pairs = parse_qsl(query, keep_blank_values=True, strict_parsing=True,
++                              encoding="utf-8", errors="strict", max_num_fields=2)
++        except (ValueError, UnicodeDecodeError):
++            raise RequestError(400, "malformed query") from None
++        options = {}
++        for key, value in pairs:
++            if key not in ("cursor", "limit") or key in options or not DECIMAL.fullmatch(value):
++                raise RequestError(400, "invalid query parameters")
++            options[key] = value
++        limit_text = options.get("limit", "50")
++        if len(limit_text) > 3 or not 1 <= int(limit_text) <= 100:
++            raise RequestError(400, "invalid limit")
++        limit = int(limit_text)
++        cursor_text = options.get("cursor", "0")
++        # All nonnegative decimal cursors are valid, including integers beyond
++        # SQLite's signed 64-bit range. Such cursors necessarily have no rows.
++        if len(cursor_text) > 19 or (len(cursor_text) == 19 and cursor_text > "9223372036854775807"):
++            rows = []
+         else:
+-            self._json(404, {"error": "not found"})
+-
+-    def do_POST(self):
+-        # TODO: validate the request, authenticate, and store an event atomically.
+-        self._json(501, {"error": "webhook ingestion is not implemented"})
++            with closing(_connect(self.server.db_path)) as db:
++                rows = db.execute(
++                    "SELECT sequence, event_id, body FROM events "
++                    "WHERE tenant = ? AND sequence > ? ORDER BY sequence LIMIT ?",
++                    (tenant, int(cursor_text), limit + 1)).fetchall()
++        has_more = len(rows) > limit
++        page = rows[:limit]
++        next_cursor = str(page[-1][0]) if has_more else None
++        # Raw JSON has already been validated as an object. Embedding it retains
++        # arbitrary JSON numbers exactly and never exposes the stored signature.
++        items = [b'{"sequence":' + str(sequence).encode("ascii")
++                 + b',"event_id":' + json.dumps(event_id).encode("ascii")
++                 + b',"payload":' + raw + b'}'
++                 for sequence, event_id, raw in page]
++        self._bytes(200, b'{"items":[' + b','.join(items) + b'],"next_cursor":'
++                    + json.dumps(next_cursor).encode("ascii") + b'}')
+ 
+     def log_message(self, format, *args):
+-        # Keep starter logs small and free of request headers and bodies.
++        # Never log request targets, bodies, headers, or authentication data.
+         pass
+ 
+ 
++class InboxServer(ThreadingHTTPServer):
++    daemon_threads = True
++    request_queue_size = 128
++
++
+ def create_server(db_path, config_path, host="127.0.0.1", port=0):
+-    server = ThreadingHTTPServer((host, port), InboxHandler)
+-    server.db_path = str(Path(db_path))
+-    server.config = json.loads(Path(config_path).read_text(encoding="utf-8"))
++    config = json.loads(Path(config_path).read_text(encoding="utf-8"))
++    if not isinstance(config, dict) or not isinstance(config.get("tenants"), dict):
++        raise ValueError("configuration must contain a tenants object")
++    tenants = {}
++    for name, credentials in config["tenants"].items():
++        if not TENANT.fullmatch(name) or not isinstance(credentials, dict):
++            raise ValueError("invalid tenant configuration")
++        if any(not isinstance(credentials.get(key), str) or not credentials[key]
++               for key in ("secret", "token")):
++            raise ValueError("tenant credentials must be nonempty strings")
++        try:
++            tenants[name] = {key: credentials[key].encode("utf-8") for key in ("secret", "token")}
++        except UnicodeEncodeError:
++            raise ValueError("tenant credentials must be valid UTF-8") from None
++    database = str(Path(db_path).resolve())
++    with closing(_connect(database)) as db:
++        db.execute("PRAGMA journal_mode = WAL")
++        db.execute("""CREATE TABLE IF NOT EXISTS events (
++            sequence INTEGER PRIMARY KEY AUTOINCREMENT,
++            tenant TEXT NOT NULL,
++            event_id TEXT NOT NULL,
++            body BLOB NOT NULL,
++            UNIQUE (tenant, event_id)
++        )""")
++        db.execute("CREATE INDEX IF NOT EXISTS events_tenant_sequence ON events (tenant, sequence)")
++    server = InboxServer((host, port), InboxHandler)
++    server.db_path = database
++    server.tenants = tenants
+     return server
+ 
+ 
+diff --git a/test_inbox.py b/test_inbox.py
+new file mode 100644
+index 0000000..c1de9fb
+--- /dev/null
++++ b/test_inbox.py
+@@ -0,0 +1,471 @@
++"""Adversarial contract, concurrency, durability, and CLI checks."""
++
++from concurrent.futures import ThreadPoolExecutor
++from contextlib import closing
++import hashlib
++import hmac
++import http.client
++import json
++from pathlib import Path
++import queue
++import random
++import socket
++import sqlite3
++import subprocess
++import sys
++import tempfile
++import threading
++import time
++import unittest
++from unittest.mock import patch
++
++from inbox import _validate_object, create_server
++
++
++class InboxTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.root = Path(self.temp.name)
++        self.db_path = self.root / "inbox.sqlite3"
++        self.config_path = self.root / "config.json"
++        self.credentials = {
++            "alpha": {"secret": "alpha-secret-\u00e9", "token": "alpha-token"},
++            "beta": {"secret": "beta-secret", "token": "beta-token"},
++            "Case_1-X": {"secret": "case-secret", "token": "CaseToken"},
++        }
++        self.config_path.write_text(json.dumps({"tenants": self.credentials}), encoding="utf-8")
++        self.running = []
++        self.server = self.start_server()
++
++    def start_server(self):
++        server = create_server(self.db_path, self.config_path)
++        thread = threading.Thread(target=lambda: server.serve_forever(poll_interval=0.01), daemon=True)
++        thread.start()
++        self.running.append((server, thread))
++        return server
++
++    def stop_server(self, server):
++        for pair in list(self.running):
++            if pair[0] is server:
++                server.shutdown()
++                server.server_close()
++                pair[1].join(timeout=3)
++                self.assertFalse(pair[1].is_alive())
++                self.running.remove(pair)
++
++    def tearDown(self):
++        for server, _ in list(self.running):
++            self.stop_server(server)
++        self.temp.cleanup()
++
++    def request(self, method, path, body=None, headers=None, server=None):
++        connection = http.client.HTTPConnection(*(server or self.server).server_address, timeout=10)
++        try:
++            connection.request(method, path, body=body, headers=headers or {})
++            response = connection.getresponse()
++            raw = response.read()
++            self.assertEqual(response.getheader("Content-Type"), "application/json; charset=utf-8")
++            self.assertEqual(int(response.getheader("Content-Length")), len(raw))
++            payload = json.loads(raw)
++            self.assertIsInstance(payload, dict)
++            return response.status, payload
++        finally:
++            connection.close()
++
++    def headers(self, tenant="alpha", body=b'{}', event_id="event", timestamp=None):
++        timestamp = str(int(time.time())) if timestamp is None else timestamp
++        secret = self.credentials[tenant]["secret"].encode("utf-8")
++        signature = hmac.new(secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
++        return {"X-Event-ID": event_id, "X-Timestamp": timestamp, "X-Signature": signature}
++
++    def post(self, event_id="event", body=b'{}', tenant="alpha", timestamp=None, server=None):
++        return self.request("POST", "/webhooks/" + tenant, body,
++                            self.headers(tenant, body, event_id, timestamp), server)
++
++    def page(self, tenant="alpha", query="", server=None):
++        return self.request("GET", "/events/" + tenant + query,
++                            headers={"Authorization": "Bearer " + self.credentials[tenant]["token"]},
++                            server=server)
++
++    def rows(self):
++        with closing(sqlite3.connect(self.db_path)) as db:
++            return db.execute("SELECT sequence, tenant, event_id, body FROM events ORDER BY sequence").fetchall()
++
++    def raw_request(self, method, path, headers, body=b''):
++        wire = f"{method} {path} HTTP/1.1\r\nHost: localhost\r\n".encode("ascii")
++        wire += b''.join(name.encode("ascii") + b": " + value.encode("latin-1") + b"\r\n"
++                         for name, value in headers)
++        wire += b"\r\n" + body
++        with socket.create_connection(self.server.server_address, timeout=5) as sock:
++            sock.sendall(wire)
++            sock.shutdown(socket.SHUT_WR)
++            response = http.client.HTTPResponse(sock)
++            response.begin()
++            value = json.loads(response.read())
++            self.assertIsInstance(value, dict)
++            return response.status, value
++
++    def test_health_unknown_routes_and_json_errors(self):
++        self.assertEqual(self.request("GET", "/health"), (200, {"status": "ok"}))
++        self.assertEqual(self.rows(), [])
++        for method, path in [("GET", "/"), ("GET", "/events/Alpha"),
++                             ("GET", "/events/alpha/extra"), ("POST", "/webhooks/missing"),
++                             ("POST", "/webhooks/alpha/extra"), ("POST", "/other")]:
++            with self.subTest(method=method, path=path):
++                self.assertEqual(self.request(method, path)[0], 404)
++        self.assertEqual(self.request("PUT", "/health")[0], 501)
++        self.assertEqual(self.server.server_address[0], "127.0.0.1")
++        self.assertGreater(self.server.server_address[1], 0)
++
++    def test_body_is_exact_and_sql_looking_id_is_data(self):
++        body = '  {"greeting": "h\u00e9llo", "quote": "\\\""}\n'.encode("utf-8")
++        event_id = "x'); DROP TABLE events; -- \\\""
++        self.assertEqual(self.post(event_id, body), (201, {"event_id": event_id, "duplicate": False}))
++        self.assertEqual(self.post(event_id, body), (200, {"event_id": event_id, "duplicate": True}))
++        self.assertEqual(self.rows()[0][2:], (event_id, body))
++        self.assertEqual(self.page()[1]["items"][0]["payload"], json.loads(body))
++
++    def test_retry_conflict_and_sequence_stability(self):
++        self.assertEqual(self.post("z", b'{"a":1}')[0], 201)
++        before = self.rows()
++        self.assertEqual(self.post("z", b'{ "a": 1 }')[0], 409)
++        self.assertEqual(self.post("z", b'{"a":1}')[0], 200)
++        self.assertEqual(self.rows(), before)
++        self.assertEqual(self.post("a")[0], 201)
++        items = self.page()[1]["items"]
++        self.assertEqual([item["event_id"] for item in items], ["z", "a"])
++        self.assertLess(items[0]["sequence"], items[1]["sequence"])
++
++    def test_post_authentication_failures_do_not_reserve_ids(self):
++        good = self.headers()
++        cases = []
++        for missing in good:
++            cases.append(({key: value for key, value in good.items() if key != missing}, 400))
++        for signature in ["", "A" * 64, "f" * 63, "f" * 65, "g" * 64, " " + good["X-Signature"]]:
++            cases.append(({**good, "X-Signature": signature}, 400))
++        cases.extend([({**good, "X-Signature": "0" * 64}, 401),
++                      (self.headers("beta"), 401),
++                      (self.headers(timestamp=str(int(time.time()) - 301)), 401),
++                      (self.headers(timestamp=str(int(time.time()) + 1000)), 401)])
++        for headers, status in cases:
++            with self.subTest(headers=list(headers), status=status):
++                self.assertEqual(self.request("POST", "/webhooks/alpha", b'{}', headers)[0], status)
++                self.assertEqual(self.rows(), [])
++        self.assertEqual(self.post()[0], 201)
++
++    def test_duplicate_rechecks_signature_and_timestamp(self):
++        self.assertEqual(self.post()[0], 201)
++        before = self.rows()
++        for headers in [{**self.headers(), "X-Signature": "0" * 64},
++                        self.headers(timestamp=str(int(time.time()) - 301))]:
++            self.assertEqual(self.request("POST", "/webhooks/alpha", b'{}', headers)[0], 401)
++            self.assertEqual(self.rows(), before)
++
++    def test_exact_timestamp_boundaries(self):
++        now = 1_800_000_000
++        with patch("inbox.time.time", return_value=now):
++            for delta, expected in [(-301, 401), (-300, 201), (0, 201), (300, 201), (301, 401)]:
++                with self.subTest(delta=delta):
++                    self.assertEqual(self.post(str(delta), timestamp=str(now + delta))[0], expected)
++        self.assertEqual(len(self.rows()), 3)
++
++    def test_malformed_timestamp_and_id_headers(self):
++        for value in ["", "00", "01", "+1", "-1", " 1", "1 ", "1.0", "1e9", "\t1", "1\t"]:
++            headers = {**self.headers(), "X-Timestamp": value}
++            with self.subTest(timestamp=value):
++                self.assertEqual(self.request("POST", "/webhooks/alpha", b'{}', headers)[0], 400)
++        for value in ["", "x" * 129, " leading", "trailing ", "a\tb", "a\x7fb", "\u00e9"]:
++            with self.subTest(event_id=value):
++                self.assertEqual(self.post(value)[0], 400)
++        self.assertEqual(self.rows(), [])
++        self.assertEqual(self.post("x" * 128)[0], 201)
++
++    def test_content_length_and_repeated_headers(self):
++        base = list(self.headers().items())
++        for length in [None, "", "-1", "+2", "2.0", " 2", "2 ", "0x2", "\t2", "two"]:
++            headers = base if length is None else base + [("Content-Length", length)]
++            with self.subTest(length=length):
++                self.assertEqual(self.raw_request("POST", "/webhooks/alpha", headers, b'{}')[0], 400)
++        for name, value in base + [("Content-Length", "2")]:
++            headers = base + [("Content-Length", "2"), (name, value)]
++            with self.subTest(duplicate=name):
++                self.assertEqual(self.raw_request("POST", "/webhooks/alpha", headers, b'{}')[0], 400)
++        self.assertEqual(self.raw_request("POST", "/webhooks/alpha", base + [("Content-Length", "2"),
++                        ("Transfer-Encoding", "chunked")], b'{}')[0], 400)
++        self.assertEqual(self.rows(), [])
++        self.assertEqual(self.raw_request("POST", "/webhooks/alpha", base + [("Content-Length", "0002")], b'{}')[0], 201)
++
++    def test_truncated_body_has_no_effect(self):
++        self.assertEqual(self.raw_request("POST", "/webhooks/alpha", list(self.headers().items()) +
++                        [("Content-Length", "20")], b'{}')[0], 400)
++        self.assertEqual(self.rows(), [])
++
++    def test_body_size_boundary_and_oversized_length(self):
++        body = b'{"x":"' + b'a' * (65536 - 8) + b'"}'
++        self.assertEqual(len(body), 65536)
++        self.assertEqual(self.post("max", body)[0], 201)
++        before = self.rows()
++        self.assertEqual(self.post("over", body + b' ')[0], 413)
++        headers = list(self.headers().items()) + [("Content-Length", "9" * 5000)]
++        self.assertEqual(self.raw_request("POST", "/webhooks/alpha", headers)[0], 413)
++        self.assertEqual(self.rows(), before)
++
++    def test_invalid_json_has_no_effect(self):
++        for body in [b'', b'[]', b'1', b'"string"', b'true', b'null', b'{', b'{"x":1,}',
++                     b'{"x":NaN}', b'{"x":Infinity}', b'{"x":-Infinity}', b'{"x":"\xff"}',
++                     b'\xef\xbb\xbf{}', b'{} trailing', b'{"x":[1,]}', b'{"x":01}', b'{"x":1.}',
++                     b'{"x":+1}', b'{"x":1e}', b'{"x":tru}', b'{"x":"\\q"}', b'{"x":"\x01"}',
++                     b'{"x" 1}', b'{"x":}', b'{"x": {"y":1} "z":2}', b'{"x": [1 2]}']:
++            with self.subTest(body=body[:30]):
++                self.assertEqual(self.post(body=body)[0], 400)
++                self.assertEqual(self.rows(), [])
++        self.assertEqual(self.post()[0], 201)
++
++    def test_deep_valid_json_does_not_depend_on_python_recursion_limit(self):
++        body = b'{"nested":' + b'[' * 15000 + b'0' + b']' * 15000 + b'}'
++        self.assertEqual(self.post("deep", body)[0], 201)
++        self.assertEqual(self.post("deep", body)[0], 200)
++        self.assertEqual(self.rows()[0][3], body)
++        connection = http.client.HTTPConnection(*self.server.server_address, timeout=5)
++        try:
++            connection.request("GET", "/events/alpha", headers={"Authorization": "Bearer alpha-token"})
++            response = connection.getresponse()
++            self.assertEqual(response.status, 200)
++            self.assertIn(b'"payload":' + body, response.read())
++        finally:
++            connection.close()
++
++    def test_valid_large_numbers_remain_json_numbers(self):
++        body = b'{"big":' + b'9' * 5000 + b',"exponent":1e1000,"escaped":"\\ud800"}'
++        self.assertEqual(self.post(body=body)[0], 201)
++        connection = http.client.HTTPConnection(*self.server.server_address, timeout=5)
++        try:
++            connection.request("GET", "/events/alpha", headers={"Authorization": "Bearer alpha-token"})
++            response = connection.getresponse()
++            raw = response.read()
++            self.assertEqual(response.status, 200)
++            parsed = json.loads(raw, parse_int=str, parse_float=str)
++            self.assertEqual(parsed["items"][0]["payload"]["big"], "9" * 5000)
++            self.assertEqual(parsed["items"][0]["payload"]["exponent"], "1e1000")
++        finally:
++            connection.close()
++
++    def test_read_authorization_and_tenant_case(self):
++        self.post()
++        for value in [None, "", "alpha-token", "bearer alpha-token", "Bearer", "Bearer ",
++                      "Bearer  alpha-token", "Bearer alpha-token ", "Bearer beta-token", "Bearer ALPHA-TOKEN"]:
++            headers = {} if value is None else {"Authorization": value}
++            with self.subTest(value=value):
++                status, result = self.request("GET", "/events/alpha", headers=headers)
++                self.assertEqual(status, 401)
++                self.assertNotIn("items", result)
++                self.assertNotIn("alpha-token", json.dumps(result))
++        self.assertEqual(self.raw_request("GET", "/events/alpha", [("Authorization", "Bearer alpha-token")] * 2)[0], 401)
++        self.assertEqual(self.post(tenant="Case_1-X")[0], 201)
++        self.assertEqual(self.page("Case_1-X")[0], 200)
++        self.assertEqual(self.request("GET", "/events/case_1-x")[0], 404)
++
++    def test_cross_tenant_ids_signatures_and_cursors(self):
++        self.assertEqual(self.post("shared", b'{"alpha":1}')[0], 201)
++        self.assertEqual(self.post("shared", b'{"beta":1}', "beta")[0], 201)
++        self.assertEqual(self.post("later", tenant="alpha")[0], 201)
++        alpha = self.page()[1]["items"]
++        beta = self.page("beta")[1]["items"]
++        self.assertEqual(alpha[0]["payload"], {"alpha": 1})
++        self.assertEqual(beta[0]["payload"], {"beta": 1})
++        cursor = beta[0]["sequence"]
++        filtered = self.page(query=f"?cursor={cursor}")[1]["items"]
++        self.assertEqual([item["event_id"] for item in filtered], ["later"])
++        self.assertEqual(self.page("beta", f"?cursor={alpha[-1]['sequence']}")[1], {"items": [], "next_cursor": None})
++        wrong = self.headers("alpha", b'{"beta":2}', "wrong")
++        self.assertEqual(self.request("POST", "/webhooks/beta", b'{"beta":2}', wrong)[0], 401)
++        self.assertEqual(len(self.rows()), 3)
++
++    def test_pagination_defaults_boundaries_and_replay(self):
++        for index in range(101):
++            self.assertEqual(self.post(f"id-{101 - index:03}", json.dumps({"i": index}).encode())[0], 201)
++        status, page = self.page()
++        self.assertEqual(status, 200)
++        self.assertEqual(len(page["items"]), 50)
++        self.assertEqual(page["next_cursor"], str(page["items"][-1]["sequence"]))
++        self.assertEqual(self.page()[1], page)
++        second = self.page(query="?cursor=" + page["next_cursor"])[1]
++        third = self.page(query="?cursor=" + second["next_cursor"])[1]
++        self.assertEqual(len(second["items"]), 50)
++        self.assertEqual(len(third["items"]), 1)
++        self.assertIsNone(third["next_cursor"])
++        all_items = page["items"] + second["items"] + third["items"]
++        self.assertEqual([item["payload"]["i"] for item in all_items], list(range(101)))
++        sequences = [item["sequence"] for item in all_items]
++        self.assertEqual(sequences, sorted(set(sequences)))
++        self.assertTrue(all(isinstance(value, int) and value > 0 for value in sequences))
++        self.assertEqual(len(self.page(query="?limit=100")[1]["items"]), 100)
++        self.assertEqual(len(self.page(query="?limit=1&cursor=0")[1]["items"]), 1)
++        self.assertEqual(self.page(query=f"?cursor={sequences[-1]}")[1], {"items": [], "next_cursor": None})
++        for cursor in ["9223372036854775808", "9" * 5000]:
++            self.assertEqual(self.page(query="?cursor=" + cursor)[1], {"items": [], "next_cursor": None})
++
++    def test_invalid_queries(self):
++        self.post()
++        before = self.rows()
++        queries = ["limit=0", "limit=101", "limit=01", "limit=+1", "limit=-1", "limit=1.0", "limit=",
++                   "cursor=", "cursor=00", "cursor=01", "cursor=-1", "cursor=+1", "cursor=1.0",
++                   "cursor=%201", "cursor=1%20", "limit=1&limit=2", "cursor=0&cursor=1", "unknown=1",
++                   "limit=1&cursor=0&other=1", "limit", "cursor=%ZZ", "cursor=%FF", "cursor=%",
++                   "cursor=0&&limit=1", "cursor=0&", "limit=1;cursor=0", "limit=%D9%A1"]
++        for query in queries:
++            with self.subTest(query=query):
++                self.assertEqual(self.page(query="?" + query)[0], 400)
++        self.assertEqual(self.rows(), before)
++
++    def test_restart_persists_raw_body_sequence_and_idempotency(self):
++        body = b' {"persist": true}\n'
++        self.assertEqual(self.post("stable", body)[0], 201)
++        before = self.rows()
++        page = self.page()[1]
++        self.stop_server(self.server)
++        self.server = self.start_server()
++        self.assertEqual(self.rows(), before)
++        self.assertEqual(self.page()[1], page)
++        self.assertEqual(self.post("stable", body)[0], 200)
++        self.assertEqual(self.post("stable", b'{"persist":true}')[0], 409)
++        self.assertEqual(self.post("new")[0], 201)
++        self.assertGreater(self.rows()[-1][0], before[-1][0])
++        with closing(sqlite3.connect(self.db_path)) as db:
++            self.assertEqual(db.execute("PRAGMA integrity_check").fetchone(), ("ok",))
++
++    def test_storage_failure_rolls_back_without_reserving_id(self):
++        with closing(sqlite3.connect(self.db_path)) as db:
++            db.execute("CREATE TRIGGER fail_insert BEFORE INSERT ON events BEGIN SELECT RAISE(ABORT, 'test'); END")
++        self.assertEqual(self.post()[0], 503)
++        self.assertEqual(self.rows(), [])
++        with closing(sqlite3.connect(self.db_path)) as db:
++            db.execute("DROP TRIGGER fail_insert")
++        self.assertEqual(self.post()[0], 201)
++
++    def run_simultaneously(self, operations):
++        barrier = threading.Barrier(len(operations))
++        def run(operation):
++            barrier.wait(timeout=10)
++            return operation()
++        with ThreadPoolExecutor(max_workers=len(operations)) as pool:
++            return list(pool.map(run, operations))
++
++    def test_concurrent_identical_retries(self):
++        results = self.run_simultaneously([lambda: self.post("race")] * 24)
++        statuses = [status for status, _ in results]
++        self.assertEqual(statuses.count(201), 1)
++        self.assertEqual(statuses.count(200), 23)
++        self.assertEqual(len(self.rows()), 1)
++
++    def test_concurrent_conflicts_across_two_servers(self):
++        second = self.start_server()
++        operations = []
++        bodies = [b'{"a":1}', b'{"a":2}']
++        for index in range(24):
++            body = bodies[index % 2]
++            server = self.server if index % 3 else second
++            operations.append(lambda body=body, server=server: self.post("race", body, server=server))
++        results = self.run_simultaneously(operations)
++        statuses = [status for status, _ in results]
++        self.assertEqual(statuses.count(201), 1)
++        self.assertEqual(statuses.count(200), 11)
++        self.assertEqual(statuses.count(409), 12)
++        self.assertEqual(len(self.rows()), 1)
++        self.assertEqual(self.page(server=second), self.page())
++
++    def test_concurrent_tenants_have_independent_ids(self):
++        operations = [lambda i=i, tenant=tenant: self.post(str(i), tenant=tenant)
++                      for i in range(12) for tenant in ("alpha", "beta")]
++        results = self.run_simultaneously(operations)
++        self.assertTrue(all(status == 201 for status, _ in results))
++        self.assertEqual(len(self.rows()), 24)
++        for tenant in ("alpha", "beta"):
++            items = self.page(tenant)[1]["items"]
++            self.assertEqual({item["event_id"] for item in items}, {str(i) for i in range(12)})
++            self.assertEqual([item["sequence"] for item in items], sorted(item["sequence"] for item in items))
++
++    def test_cli_help_and_readiness(self):
++        script = str(Path(__file__).with_name("inbox.py"))
++        help_result = subprocess.run([sys.executable, script, "--help"], capture_output=True, text=True, timeout=5)
++        self.assertEqual(help_result.returncode, 0)
++        self.assertIn("--db", help_result.stdout)
++        self.assertIn("--config", help_result.stdout)
++        process = subprocess.Popen([sys.executable, script, "--db", str(self.root / "cli.sqlite3"),
++                                    "--config", str(self.config_path), "--port", "0"],
++                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
++        output = queue.Queue()
++        reader = threading.Thread(target=lambda: output.put(process.stdout.readline()), daemon=True)
++        reader.start()
++        try:
++            line = output.get(timeout=5)
++            readiness = json.loads(line)
++            self.assertEqual(readiness["host"], "127.0.0.1")
++            self.assertGreater(readiness["port"], 0)
++            connection = http.client.HTTPConnection(readiness["host"], readiness["port"], timeout=5)
++            try:
++                connection.request("GET", "/health")
++                response = connection.getresponse()
++                self.assertEqual(response.status, 200)
++                self.assertEqual(json.loads(response.read()), {"status": "ok"})
++                connection.request("POST", "/webhooks/alpha", body=b'{}',
++                                   headers=self.headers(event_id="process-restart"))
++                response = connection.getresponse()
++                self.assertEqual(response.status, 201)
++                self.assertFalse(json.loads(response.read())["duplicate"])
++            finally:
++                connection.close()
++        finally:
++            process.terminate()
++            remaining_stdout, stderr = process.communicate(timeout=5)
++            reader.join(timeout=3)
++        self.assertEqual(remaining_stdout, "")
++        self.assertEqual(stderr, "")
++        restarted = create_server(self.root / "cli.sqlite3", self.config_path)
++        thread = threading.Thread(target=lambda: restarted.serve_forever(poll_interval=0.01), daemon=True)
++        thread.start()
++        self.running.append((restarted, thread))
++        self.assertEqual(self.page(server=restarted)[1]["items"][0]["event_id"], "process-restart")
++        self.assertEqual(self.post("process-restart", server=restarted)[0], 200)
++
++
++class JsonValidationTests(unittest.TestCase):
++    def test_generated_json_and_mutations_match_standard_parser(self):
++        randomizer = random.Random(1679)
++        atoms = [None, True, False, 0, -1, 1.25, "", 'quote" slash\\', "\u00e9\n\t", []]
++
++        def value(depth=0):
++            if depth == 4 or randomizer.randrange(3) == 0:
++                return randomizer.choice(atoms)
++            if randomizer.randrange(2):
++                return [value(depth + 1) for _ in range(randomizer.randrange(4))]
++            return {str(index): value(depth + 1) for index in range(randomizer.randrange(4))}
++
++        def reject_constant(_):
++            raise ValueError("not standard JSON")
++
++        def accepted_by_standard(raw):
++            try:
++                return isinstance(json.loads(raw.decode("utf-8"), parse_constant=reject_constant), dict)
++            except (ValueError, UnicodeDecodeError):
++                return False
++
++        def accepted_by_inbox(raw):
++            try:
++                _validate_object(raw)
++                return True
++            except (ValueError, UnicodeDecodeError):
++                return False
++
++        for _ in range(1000):
++            raw = json.dumps({"root": value()}, ensure_ascii=randomizer.choice([True, False])).encode("utf-8")
++            self.assertTrue(accepted_by_inbox(raw))
++            for _ in range(3):
++                position = randomizer.randrange(len(raw))
++                replacement = randomizer.choice(b'{}[],:"\\0+-aetfn \t\r\n\x00\xff')
++                mutated = raw[:position] + bytes([replacement]) + raw[position + 1:]
++                self.assertEqual(accepted_by_inbox(mutated), accepted_by_standard(mutated), repr(mutated))
++
++
++if __name__ == "__main__":
++    unittest.main()

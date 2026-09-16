@@ -1,0 +1,6 @@
+{"depth": 100, "bytes": 312, "baseline": 1, "candidate": 1}
+{"depth": 300, "bytes": 712, "baseline": 1, "candidate": 1}
+{"depth": 450, "bytes": 1012, "baseline": 1, "candidate": 1}
+{"depth": 499, "bytes": 1110, "baseline": 1, "candidate": "RecursionError: maximum recursion depth exceeded"}
+{"depth": 550, "bytes": 1212, "baseline": 1, "candidate": "RecursionError: maximum recursion depth exceeded"}
+{"depth": 800, "bytes": 1712, "baseline": 1, "candidate": "RecursionError: maximum recursion depth exceeded"}

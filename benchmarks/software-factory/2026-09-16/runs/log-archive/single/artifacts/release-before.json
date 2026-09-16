@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "environment": "simulated-staging",
+  "case": "log-archive",
+  "baseline": {
+    "project": "<BUNDLE_ROOT>/starters/log-archive",
+    "sha256": "1b62d83a0698b1ccd7a1595e44092a137ecd5cef1cc8efa5fd29e119425b5710",
+    "files": {
+      ".gitignore": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+      "baseline_reference.py": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f",
+      "caller-note.txt": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+      "log_archive.py": "cafc8cb00cbae48f0b392e961203162062f742f7a6a9532e234775001b14602c",
+      "README.md": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926",
+      "RUN_CONTEXT.md": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+      "sample.ndjson": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694",
+      "TASK.md": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c",
+      "tests/test_public.py": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7"
+    }
+  },
+  "candidate": null,
+  "exposure": 0,
+  "phase": "baseline",
+  "samples": [],
+  "events": [
+    {
+      "operation_id": 1,
+      "time": "2026-09-16T01:57:27.466977+00:00",
+      "operation": "init",
+      "baseline": "1b62d83a0698b1ccd7a1595e44092a137ecd5cef1cc8efa5fd29e119425b5710"
+    }
+  ]
+}

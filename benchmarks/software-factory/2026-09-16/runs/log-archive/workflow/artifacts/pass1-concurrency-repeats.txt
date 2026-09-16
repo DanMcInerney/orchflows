@@ -1,0 +1,120 @@
+REPEAT 1: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.052s
+
+OK
+
+REPEAT 2: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.076s
+
+OK
+
+REPEAT 3: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.048s
+
+OK
+
+REPEAT 4: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.135s
+
+OK
+
+REPEAT 5: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.054s
+
+OK
+
+REPEAT 6: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.073s
+
+OK
+
+REPEAT 7: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.015s
+
+OK
+
+REPEAT 8: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.032s
+
+OK
+
+REPEAT 9: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.020s
+
+OK
+
+REPEAT 10: exit 0
+test_cli_success_and_help (test_concurrency_cli.CommandLine.test_cli_success_and_help) ... ok
+test_cli_user_errors_are_useful_without_tracebacks (test_concurrency_cli.CommandLine.test_cli_user_errors_are_useful_without_tracebacks) ... ok
+test_atomic_replacements_never_mix_versions (test_concurrency_cli.ConcurrentArchives.test_atomic_replacements_never_mix_versions) ... ok
+test_replacement_after_stat_before_open_is_coherent (test_concurrency_cli.ConcurrentArchives.test_replacement_after_stat_before_open_is_coherent) ... ok
+test_simultaneous_first_load_reload_and_result_mutation (test_concurrency_cli.ConcurrentArchives.test_simultaneous_first_load_reload_and_result_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.931s
+
+OK
+

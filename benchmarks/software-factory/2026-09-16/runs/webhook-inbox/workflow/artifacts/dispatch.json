@@ -1,0 +1,10 @@
+{
+  "case": "webhook-inbox",
+  "mode": "workflow",
+  "task": "/root/webhook_workflow",
+  "started_utc": "2026-09-16T01:55:07.258925+00:00",
+  "deadline_utc": "2026-09-16T02:40:07.258925+00:00",
+  "model_override": null,
+  "effort_override": null,
+  "workflow_commit": "1a04d85254455012b9f73e2bced43218f9f755f5"
+}

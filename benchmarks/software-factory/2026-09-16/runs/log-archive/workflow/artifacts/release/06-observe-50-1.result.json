@@ -1,0 +1,38 @@
+{
+  "event": "result",
+  "time": "2026-09-16T02:35:02.854410+00:00",
+  "label": "06-observe-50-1",
+  "exit_code": 0,
+  "actual_operation_id": 7,
+  "stdout": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/release/06-observe-50-1.stdout.json",
+  "stderr": "<BUNDLE_ROOT>/runs/log-archive/workflow/artifacts/release/06-observe-50-1.stderr.txt",
+  "result": {
+    "operation": {
+      "operation_id": 7,
+      "time": "2026-09-16T02:35:02.845968+00:00",
+      "operation": "observe",
+      "exposure": 50,
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.04,
+      "p95_ms": 340,
+      "healthy": false,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    "sample": {
+      "sample": 1,
+      "requests": 1000,
+      "error_rate": 0.04,
+      "p95_ms": 340,
+      "healthy": false,
+      "synthetic_window_seconds": 10,
+      "source": "deterministic local simulation; no real traffic"
+    },
+    "thresholds": {
+      "error_rate_max": 0.01,
+      "p95_ms_max": 200
+    },
+    "phase": "breached"
+  }
+}

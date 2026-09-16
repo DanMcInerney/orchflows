@@ -1,0 +1,3 @@
+# Preserve archived source and original patch newline bytes.
+# Historical bytes include original newlines and whitespace; preserve them exactly.
+* -text -whitespace

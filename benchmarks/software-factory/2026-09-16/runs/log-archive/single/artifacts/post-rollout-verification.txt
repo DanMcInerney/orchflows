@@ -1,0 +1,3 @@
+PASS: source unchanged after freeze and throughout rollout: a1c8aa04605ec980db5d5a7ad83504e83c290243fa8de491a17371c646a250aa
+PASS: local simulation rolled back, candidate exposure 0%, recovery verified; 100% never attempted.
+PASS: original baseline, caller note and public smoke hashes remain preserved in the verified file manifest.

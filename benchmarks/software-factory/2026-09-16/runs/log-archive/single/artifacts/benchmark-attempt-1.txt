@@ -1,0 +1,137 @@
+{
+  "records": 30000,
+  "queries_per_round": 24,
+  "paired_rounds": [
+    {
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "seconds": {
+        "baseline": 5.592585800000961,
+        "candidate": 6.400126399999863
+      },
+      "mismatched_query_indices": []
+    },
+    {
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "seconds": {
+        "candidate": 7.5824806000000535,
+        "baseline": 5.7999024000000645
+      },
+      "mismatched_query_indices": []
+    }
+  ],
+  "total_seconds": {
+    "baseline": 11.392488200001026,
+    "candidate": 13.982606999999916
+  },
+  "throughput_ratio": 0.8147613817652956,
+  "target_ratio": 5.0,
+  "correctness_passed": true,
+  "performance_passed": false,
+  "archive_sha256": "bca518549719c573f90bd48f0c38eb34c6be20a73168531bdd5249b7ed721109",
+  "python": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "queries": [
+    {},
+    {
+      "query": "GATEWAY timeout"
+    },
+    {
+      "query": "ready"
+    },
+    {
+      "query": "retry ERROR"
+    },
+    {
+      "query": "request",
+      "service": "api"
+    },
+    {
+      "level": "ERROR"
+    },
+    {
+      "query": "user_login",
+      "limit": 17,
+      "offset": 7
+    },
+    {
+      "query": "gate"
+    },
+    {
+      "query": "caf\u00e9 \u0130ABC"
+    },
+    {
+      "query": "!!!",
+      "limit": 0
+    },
+    {
+      "service": "gateway",
+      "level": "WARN",
+      "limit": 25,
+      "offset": 20
+    },
+    {
+      "since": "2026-07-01T08:00:00.000Z",
+      "until": "2026-07-01T16:00:00.000Z"
+    },
+    {
+      "query": "ready",
+      "since": "2026-07-01T10:00:00.000Z",
+      "until": "2026-07-01T18:00:00.000Z"
+    },
+    {
+      "query": "error",
+      "level": "INFO",
+      "service": "database",
+      "offset": 2
+    },
+    {
+      "query": "retry retry",
+      "until": "2026-07-01T12:00:00.000Z"
+    },
+    {
+      "query": "cache hit",
+      "limit": 100,
+      "offset": 100
+    },
+    {
+      "service": "api",
+      "limit": 0
+    },
+    {
+      "level": "WARN",
+      "offset": 99999
+    },
+    {
+      "since": "2026-07-01T12:00:00.000Z",
+      "until": "2026-07-01T12:00:00.000Z"
+    },
+    {
+      "service": "",
+      "query": "ready"
+    },
+    {
+      "query": "absent_token"
+    },
+    {
+      "limit": 250,
+      "offset": 1000
+    },
+    {
+      "query": "ERROR-timeout"
+    },
+    {
+      "query": "request",
+      "service": "worker",
+      "level": "WARN",
+      "since": "2026-07-01T06:00:00.000Z",
+      "until": "2026-07-01T22:00:00.000Z"
+    }
+  ],
+  "timing": "Sequential paired rounds; setup, warmup and answer comparison excluded"
+}

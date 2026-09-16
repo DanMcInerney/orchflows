@@ -1,0 +1,14 @@
+{
+  "operation": {
+    "operation_id": 6,
+    "time": "2026-09-16T02:53:53.239154+00:00",
+    "operation": "deploy",
+    "exposure": 50,
+    "artifact": "a1c8aa04605ec980db5d5a7ad83504e83c290243fa8de491a17371c646a250aa",
+    "evidence": "<BUNDLE_ROOT>/runs/log-archive/single/artifacts/release-checks.txt",
+    "evidence_sha256": "731521d8f5d1e51272a54f0098e60e54cdbadbeb0bb06cd9bad0606b24f08c9d"
+  },
+  "environment": "simulated-staging",
+  "next": "observe",
+  "exposure": 50
+}

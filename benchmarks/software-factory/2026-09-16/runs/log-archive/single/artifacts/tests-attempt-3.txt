@@ -1,0 +1,20 @@
+test_argument_errors_even_when_archive_empty (test_contract.ContractTests.test_argument_errors_even_when_archive_empty) ... ok
+test_ascii_tokens_literal_and_matching (test_contract.ContractTests.test_ascii_tokens_literal_and_matching) ... ok
+test_cli_success_help_and_useful_errors (test_contract.ContractTests.test_cli_success_help_and_useful_errors) ... ok
+test_completed_append_truncate_replace_and_deletion (test_contract.ContractTests.test_completed_append_truncate_replace_and_deletion) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_cold_load_and_reload (test_contract.ContractTests.test_concurrent_cold_load_and_reload) ... ok
+test_different_paths_and_relative_paths (test_contract.ContractTests.test_different_paths_and_relative_paths) ... ok
+test_invalid_records_are_skipped_and_extras_preserved (test_contract.ContractTests.test_invalid_records_are_skipped_and_extras_preserved) ... ok
+test_mutation_cannot_change_future_results_or_duplicate_records (test_contract.ContractTests.test_mutation_cannot_change_future_results_or_duplicate_records) ... ok
+test_order_ties_duplicates_bounds_filters_and_pages (test_contract.ContractTests.test_order_ties_duplicates_bounds_filters_and_pages) ... ok
+test_replace_between_stat_and_open_uses_complete_version (test_contract.ContractTests.test_replace_between_stat_and_open_uses_complete_version) ... ok
+test_seeded_differential_queries (test_contract.ContractTests.test_seeded_differential_queries) ... ok
+test_warm_queries_do_not_reparse_unchanged_file (test_contract.ContractTests.test_warm_queries_do_not_reparse_unchanged_file) ... ok
+test_append_and_validation (test_public.PublicContract.test_append_and_validation) ... ok
+test_tokens_filters_order_and_pagination (test_public.PublicContract.test_tokens_filters_order_and_pagination) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 1.128s
+
+OK

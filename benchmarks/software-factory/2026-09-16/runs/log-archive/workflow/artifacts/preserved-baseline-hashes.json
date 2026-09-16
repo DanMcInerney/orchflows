@@ -1,0 +1,32 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "294614B5EAF1A85E6F72392D93FE0C95EA8C25A714596BB409B240D184D4748F",
+    "Path": "<BUNDLE_ROOT>/runs/log-archive/workflow/project/baseline_reference.py"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "1688056B517941C9189DC5C3D646E967D90F2D26DFC3532EB5764C755A80CD15",
+    "Path": "<BUNDLE_ROOT>/runs/log-archive/workflow/project/caller-note.txt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "52AC1D60A21E66AA398C72CFA4FCD9B563B0B759721B290C0EA013564123DE8C",
+    "Path": "<BUNDLE_ROOT>/runs/log-archive/workflow/project/TASK.md"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "98C4CB26C4D2D4435248778F8940642323B47C97891520CDA236D6A6B960CBE1",
+    "Path": "<BUNDLE_ROOT>/runs/log-archive/workflow/project/RUN_CONTEXT.md"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "91563575F9D02C8A6F9AB561AF4C45E96CDD1D50F8CC613F1D273188D9451926",
+    "Path": "<BUNDLE_ROOT>/runs/log-archive/workflow/project/README.md"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "2BD6CBA3E80DF118AAB16EF4C9F1E52FF186217767CF7632142FE3D613D64FE7",
+    "Path": "<BUNDLE_ROOT>/runs/log-archive/workflow/project/tests/test_public.py"
+  }
+]

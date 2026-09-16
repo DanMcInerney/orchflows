@@ -1,0 +1,101 @@
+{
+  "workflow": "software-factory:software-factory",
+  "candidate_pass_bound": 3,
+  "maximum_child_calls": 19,
+  "deadline_utc": "2026-09-16T02:42:27.670666+00:00",
+  "calls": [
+    {
+      "number": 1,
+      "pass": 1,
+      "primitive": "orch-work",
+      "role": "builder",
+      "task": "/root/log_workflow/builder_pass1",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null,
+      "candidate_commit": "0a7fc516fe94417187ee8efa208bf971c07476ff"
+    },
+    {
+      "number": 2,
+      "pass": 1,
+      "primitive": "orch-review",
+      "role": "correctness",
+      "task": "/root/log_workflow/review_correctness_p1",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null
+    },
+    {
+      "number": 3,
+      "pass": 1,
+      "primitive": "orch-review",
+      "role": "data",
+      "task": "/root/log_workflow/review_data_p1",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null
+    },
+    {
+      "number": 4,
+      "pass": 1,
+      "primitive": "orch-review",
+      "role": "infrastructure",
+      "task": "/root/log_workflow/review_infrastructure_p1",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null
+    },
+    {
+      "number": 5,
+      "pass": 2,
+      "primitive": "orch-work",
+      "role": "builder",
+      "task": "/root/log_workflow/builder_pass2",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null,
+      "candidate_commit": "a685f46be6b9b755f8fe806556626bf34530d4b9"
+    },
+    {
+      "number": 6,
+      "pass": 2,
+      "primitive": "orch-review",
+      "role": "correctness",
+      "task": "/root/log_workflow/review_correctness_p2",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null
+    },
+    {
+      "number": 7,
+      "pass": 2,
+      "primitive": "orch-review",
+      "role": "data",
+      "task": "/root/log_workflow/review_data_p2",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null
+    },
+    {
+      "number": 8,
+      "pass": 2,
+      "primitive": "orch-review",
+      "role": "infrastructure",
+      "task": "/root/log_workflow/review_infrastructure_p2",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null
+    },
+    {
+      "number": 9,
+      "pass": null,
+      "primitive": "orch-work",
+      "role": "release",
+      "task": "/root/log_workflow/release_worker",
+      "status": "complete",
+      "model_override": null,
+      "effort_override": null,
+      "result": "rolled_back_recovery_verified"
+    }
+  ]
+}

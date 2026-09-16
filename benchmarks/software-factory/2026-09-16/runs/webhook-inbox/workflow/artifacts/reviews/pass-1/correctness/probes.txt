@@ -1,0 +1,30 @@
+{"probe": "snapshot_matches_coordinator_manifest", "actual": true, "expected": true, "pass": true}
+{"probe": "utf8_exact_65536_bytes", "actual": 65536, "expected": 65536, "pass": true}
+{"probe": "utf8_exact_limit_accepted", "actual": 201, "expected": 201, "pass": true}
+{"probe": "utf8_limit_plus_one_rejected", "actual": 413, "expected": 413, "pass": true}
+{"probe": "oversize_no_row", "actual": 1, "expected": 1, "pass": true}
+{"probe": "raw_json_boundary_accepted", "actual": 201, "expected": 201, "pass": true}
+{"probe": "raw_payload_retains_number", "actual": "-0.00E+999999", "expected": "-0.00E+999999", "pass": true}
+{"probe": "raw_byte_whitespace_conflict", "actual": 409, "expected": 409, "pass": true}
+{"probe": "decoded_canonical_query_?cursor=%30", "actual": 200, "expected": 200, "pass": true}
+{"probe": "decoded_canonical_query_?limit=%31&cursor=0", "actual": 200, "expected": 200, "pass": true}
+{"probe": "malformed_query_?cursor=%", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_query_?cursor=%0", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_query_?cursor=0%00", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_query_?%6cimit=1&limit=2", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_query_?cursor=0&&limit=1", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_json_efbbbf7b7d", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_json_7b2278223a22eda080227d", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_json_7b2278223a30317d", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_json_7b2278223a312e7d", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_json_7b2278223a2e317d", "actual": 400, "expected": 400, "pass": true}
+{"probe": "malformed_json_7b2278223a31657d", "actual": 400, "expected": 400, "pass": true}
+{"probe": "invalid_requests_preserve_count", "actual": 2, "expected": 2, "pass": true}
+{"probe": "invalid_id_remains_reusable", "actual": 201, "expected": 201, "pass": true}
+{"probe": "ten_thousand_digit_cursor", "actual": [200, {"items": [], "next_cursor": null}], "expected": [200, {"items": [], "next_cursor": null}], "pass": true}
+{"probe": "unsupported_method_json_PUT", "actual": [501, true], "expected": [501, true], "pass": true}
+{"probe": "unsupported_method_json_DELETE", "actual": [501, true], "expected": [501, true], "pass": true}
+{"probe": "unsupported_method_json_PATCH", "actual": [501, true], "expected": [501, true], "pass": true}
+{"probe": "unsupported_method_json_OPTIONS", "actual": [501, true], "expected": [501, true], "pass": true}
+{"probe": "stored_bytes_exact", "actual": true, "expected": true, "pass": true}
+{"result": "all independent probes passed"}

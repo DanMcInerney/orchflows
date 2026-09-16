@@ -1,0 +1,949 @@
+diff --git a/.gitignore b/.gitignore
+index b1f5421..2ce20ba 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,5 @@
+-
+-__pycache__/
+-*.pyc
++__pycache__/
++*.pyc
++*.sqlite3
++*.sqlite3-wal
++*.sqlite3-shm
+diff --git a/README.md b/README.md
+index 62415d0..cbdc702 100644
+--- a/README.md
++++ b/README.md
+@@ -1,19 +1,163 @@
+-# Webhook inbox starter
++# Durable webhook inbox
+ 
+-This deliberately incomplete starter runs on Python 3.11+ with no installed packages. Read `prompt.md` for the exact acceptance contract and `AGENTS.md` for the project release policy.
++Python 3.11+ and the standard library are sufficient. `TASK.md` defines the public
++contract; `AGENTS.md` defines the mandatory human security review before release.
++This candidate has no live deployment approval.
+ 
+-Start locally:
++## Start and configure
++
++Create a private configuration file shaped like `config.example.json`:
++
++```json
++{"tenants":{"alpha":{"secret":"replace-with-private-signing-secret","token":"replace-with-private-read-token"}}}
++```
++
++Names, secrets, tokens and event IDs are case-sensitive. Tenant names use ASCII
++letters, digits, hyphens and underscores. Credentials are nonempty strings;
++use high-entropy distinct credentials for each tenant and printable ASCII read
++tokens. Secrets are UTF-8 encoded for signing. Protect the config, database,
++sidecars and backups using operating-system permissions. Example credentials are
++test fixtures. Configuration is loaded once; restart to apply changes. Removing
++a tenant from configuration prevents access without deleting its stored events.
+ 
+ ```console
+-python inbox.py --db inbox.sqlite3 --config config.example.json --host 127.0.0.1 --port 8080
++python inbox.py --db inbox.sqlite3 --config config.example.json
++python inbox.py --help
++```
++
++The default address is `127.0.0.1:8080`. Optional `--host` and `--port` override
++these values. Port `0` selects an available port. Before serving, the process
++prints and flushes exactly one readiness JSON line with `host` and actual `port`.
++The database is created if absent; its parent directory must already exist.
++
++Embedding is supported through
++`create_server(db_path, config_path, host='127.0.0.1', port=0)`. Run
++`serve_forever()` on your serving thread. From another thread, call `shutdown()`,
++then `server_close()` and join the serving thread. Shutdown waits for in-flight
++requests to finish; request socket and SQLite busy timeouts are ten seconds.
++Ctrl+C stops the CLI. Do not call `shutdown()` from the `serve_forever()` thread.
++
++`GET /health` returns `{"status":"ok"}`. It checks process responsiveness; it
++does not query the database or disclose configuration or events.
++
++## Sign and submit
++
++The signature is lowercase hexadecimal HMAC-SHA256 over the exact ASCII
++timestamp, a period, and the exact body bytes. Compute `Content-Length` from
++bytes, not characters. This standard-library example reads the local fixture
++configuration without printing credentials:
++
++```python
++import hashlib, hmac, http.client, json, time
++from pathlib import Path
++
++credentials = json.loads(Path("config.example.json").read_text())["tenants"]["alpha"]
++body = json.dumps({"message": "hello"}, separators=(",", ":")).encode("utf-8")
++timestamp = str(int(time.time()))
++signature = hmac.new(credentials["secret"].encode("utf-8"),
++                     timestamp.encode("ascii") + b"." + body,
++                     hashlib.sha256).hexdigest()
++connection = http.client.HTTPConnection("127.0.0.1", 8080, timeout=15)
++try:
++    connection.request("POST", "/webhooks/alpha", body, {
++        "Content-Type": "application/json",
++        "Content-Length": str(len(body)),
++        "X-Event-ID": "order-123",
++        "X-Timestamp": timestamp,
++        "X-Signature": signature,
++    })
++    response = connection.getresponse()
++    print(response.status, json.loads(response.read()))
++finally:
++    connection.close()
+ ```
+ 
+-The startup line is JSON containing the actual host and port. `GET /health` works; ingestion, authorization, durable storage, and pagination are left to implement. Example credentials are fixtures, not production credentials.
++Bodies must be UTF-8 JSON objects of at most 65,536 bytes, inclusive. JSON
++`NaN` and `Infinity` literals are rejected. Event IDs are 1–128 printable ASCII
++characters with no leading/trailing whitespace; interior spaces and SQL-looking
++text are data. Timestamp headers must be canonical nonnegative decimal Unix
++seconds and within 300 seconds of server time, inclusive. Keep the host clock
++synchronized. Duplicate required headers, folded headers, malformed lengths,
++transfer encoding and noncanonical authentication values are rejected.
++
++The first accepted `(tenant, event ID)` returns 201 and `duplicate:false`.
++Reusing that ID with the identical bytes returns 200 and `duplicate:true`;
++different bytes return 409 even when the JSON values are equivalent. Every retry
++requires a fresh valid timestamp and signature. Preserve the body bytes and ID
++when retrying after a network timeout: a commit may have completed before the
++response was lost. Validation failures never reserve an ID or update an event.
++
++## Read pages
++
++Use `GET /events/alpha?limit=50&cursor=0` with
++`Authorization: Bearer TOKEN`, taking TOKEN from that tenant's configuration.
++The response is an object containing `items` and `next_cursor`. Each item contains
++its positive integer `sequence`, exact `event_id`, and JSON object `payload`.
++Payload JSON is embedded from the validated raw body, preserving valid number
++precision and representation without conversion through floating-point values.
++
++Pages are ordered by insertion sequence. The default limit is 50; valid limits
++are canonical integers 1–100. The default cursor is `0`; valid cursors are
++canonical nonnegative decimal strings, including numbers above SQLite's range
++(which return an empty page). Send the returned `next_cursor` in the next request.
++Null means no more rows currently exist. New writes may appear on later reads;
++pagination is not a snapshot across multiple requests. Repeating a cursor without
++writes repeats the page. Sequence values are globally allocated; each tenant's
++values strictly increase and may have gaps. A cursor carries no tenant authority.
++Unknown, repeated or malformed query parameters return 400.
++
++Errors are JSON objects: 400 for malformed requests, 401 for failed or stale
++authentication, 404 for unknown paths or tenants, 409 for conflicting event bytes,
++413 for excessive body size, and 503 for a storage error. Unsupported HTTP methods
++receive a JSON error. Routine request logging is disabled, and error messages do
++not echo headers, bodies, credentials or signatures.
++
++## Storage, recovery and operating limits
++
++`inbox_store.py` stores `events(sequence, tenant, event_id, raw_body)` in SQLite.
++The body is a BLOB. A unique constraint on `(tenant, event_id)` and an immediate
++transaction serialize identity checks and inserts. Every SQL value is bound as
++a parameter. Reads use the `(tenant, sequence)` index. SQLite WAL mode and FULL
++synchronous commits preserve acknowledged events across normal restart and
++provide SQLite's documented crash recovery subject to filesystem durability.
++Connections are per operation and always closed. No process-memory event cache
++or cleanup job exists; events and their IDs are retained indefinitely.
++
++Use a local durable filesystem, reserve disk space, and monitor database growth.
++Do not put the WAL database on an unsupported shared/network filesystem. To
++back up a running service, use Python's `sqlite3.Connection.backup()` API to a
++new destination, then validate the backup with `PRAGMA integrity_check`. For an
++offline backup, stop the service cleanly before copying the database. Do not copy
++only the main database while WAL writes may be active. Backups contain tenant
++payloads; apply the same access restrictions as the primary database.
++
++Restore into a separate directory while stopped, verify integrity and sample
++tenant pages, then select the restored path at startup. Restoring an older backup
++loses later events and idempotency records, so retain the original files and
++reconcile with senders before resuming ingestion. Test recovery with a copy first.
++
++The standard-library HTTP server has no TLS, rate limiter, global admission cap
++or production process supervision. It defaults to loopback. Public exposure
++requires a separately reviewed TLS/authentication boundary, connection/request
++limits and service supervision. Socket timeouts limit idle waits, not total
++request duration under a slow trickle. Large numbers of clients can exhaust
++threads. The JSON parser's nesting/resource limits apply; excessively nested JSON
++is rejected with 400. Read pages may contain up to 100 maximum-size events.
++Signatures cover timestamp and body, as required by the contract, but not event
++ID; protect captured signatures and use TLS before any nonlocal deployment.
+ 
+-Run the public checks:
++## Checks and release
+ 
+ ```console
+ python -m unittest -v test_smoke
++python -m unittest discover -v
++python -m py_compile inbox.py
++python inbox.py --help
++git diff --check
+ ```
+ 
+-The health test passes in the starter. The round-trip test intentionally fails until the product is implemented. Add broader tests and complete the operating and release documentation as part of the assignment.
++Tests use isolated temporary directories, loopback ephemeral ports, and no
++external services. Added checks exercise raw-header faults, authentication,
++cross-tenant access, exact idempotency, concurrent requests, persistence, paging,
++limits and CLI startup. See `RELEASE_HANDOFF.md` for the human review gate and
++proposed operating/rollback checks. No live or simulator deployment is authorized.
+diff --git a/RELEASE_HANDOFF.md b/RELEASE_HANDOFF.md
+new file mode 100644
+index 0000000..da11597
+--- /dev/null
++++ b/RELEASE_HANDOFF.md
+@@ -0,0 +1,62 @@
++# Release preparation — human approval pending
++
++The starter's placeholder routes are replaced with tenant-authenticated HMAC
++ingestion, bearer-authenticated reads, durable SQLite transactions, exact-body
++idempotency and sequence pagination. `inbox.py` retains the factory and CLI;
++`inbox_store.py` owns storage. Tests and operating instructions are included.
++
++The supplied public smoke test is unchanged. Candidate-specific check output,
++source hashes and checked patch are retained outside source under
++`../artifacts/pass-1/`. The coordinating workflow records independent review
++outcomes and the final disposition in `../artifacts/HANDOFF.md`.
++
++## Decision required
++
++Authentication, signatures and tenant authorization are high-risk changes under
++`AGENTS.md`. A human security reviewer must approve the final frozen candidate
++before any live release. Shared release policy also forbids simulator deployment
++for this webhook task. Local implementation and checks do not imply deployment
++approval. No deployment, production observation or rollback has been performed.
++
++Review the exact header grammars, timestamp window, constant-time comparisons,
++cross-tenant isolation, retained payload access, configuration permissions,
++credential rotation/restart plan, and the exposure boundary described in README.
++Choose a TLS/proxy, resource limits, operational ownership and retention policy
++before a production release. No automatic retention deletion is implemented.
++
++## Proposed rollout after separate authorization
++
++1. Freeze the reviewed candidate hash/patch and retain the previously approved
++   artifact. Provision isolated configuration and a durable local database path.
++   Back up any existing database using SQLite backup and verify its integrity.
++2. Start on loopback with port 0 and verify the readiness line and `/health`.
++   Run authenticated tenant A/B checks using controlled test events: accept,
++   duplicate, conflict, unauthorized cross-tenant read/write, and pagination.
++   Restart and confirm bodies, IDs and sequence ordering survive.
++3. Put a limited canary behind the reviewed serving boundary. Before routing real
++   traffic, establish counts of response status by route and tenant, accepted
++   events, duplicate/conflict rates, storage failures, request latency and disk
++   space. Exclude tokens, secrets, signatures, bodies and raw request headers.
++   No new telemetry service or dashboard was created by this task.
++4. Do not advance if any unauthorized read/write succeeds, integrity verification
++   fails, accepted events disappear, storage 503 responses recur, or canary error
++   rate exceeds 1% or p95 latency exceeds 200 ms in three consecutive 10-second
++   windows. These are proposed gates, not measurements or synthetic observations.
++   Compare legitimate duplicate/conflict/401 rates with the preapproved baseline;
++   do not treat ordinary client validation errors as server incidents.
++
++## Rollback preparation
++
++On an isolation or integrity violation, stop accepting traffic immediately and
++preserve the database, WAL/SHM if present, configuration version and evidence.
++After stopping the process, preserve a recovery copy and verify SQLite integrity
++before switching binaries. Prefer reverting to a previously reviewed compatible
++artifact while retaining the latest database; this schema introduces only a new
++events table and index and does not require a destructive down migration.
++
++The pristine starter is not a functional ingestion fallback. If no approved
++compatible artifact exists, keep ingestion disabled and use sender retries while
++repairing forward. Do not silently restore an older backup, delete accepted
++events or drop idempotency state to make a rollback appear successful. Any backup
++restore requires an explicit data-loss/reconciliation decision and validation of
++tenant isolation, sequence stability and idempotency before reopening traffic.
+diff --git a/inbox.py b/inbox.py
+index cdcb181..31a884f 100644
+--- a/inbox.py
++++ b/inbox.py
+@@ -1,42 +1,260 @@
+-"""Runnable starter for the webhook inbox assignment; product routes are incomplete."""
++"""Authenticated, durable, tenant-scoped webhook inbox (Python standard library)."""
+ 
+ import argparse
++import hashlib
++import hmac
+ import json
++import re
++import socket
++import sqlite3
++import time
+ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ from pathlib import Path
++from urllib.parse import parse_qsl, urlsplit
++
++from inbox_store import EventStore
++
++
++MAX_BODY = 65_536
++MAX_SEQUENCE = 2**63 - 1
++DECIMAL = re.compile(r"(?:0|[1-9][0-9]*)\Z", re.ASCII)
++HEADER_NAME = re.compile(rb"[!#$%&'*+.^_`|~0-9A-Za-z-]+\Z")
++
++
++class RequestError(Exception):
++    def __init__(self, status, message):
++        self.status, self.message = status, message
++
++
++class HeaderRecorder:
++    """Retain header bytes; email's parser otherwise discards leading whitespace."""
++
++    def __init__(self, stream):
++        self.stream, self.lines = stream, []
++
++    def readline(self, *args):
++        line = self.stream.readline(*args)
++        self.lines.append(line)
++        return line
++
++
++def reject_constant(value):
++    raise ValueError("non-JSON numeric constant")
++
++
++def parse_payload(body):
++    try:
++        # Validation must not coerce valid JSON numbers into overflowing floats
++        # or apply Python's integer-string digit limit. Reads emit validated raw
++        # JSON, so the numeric lexemes and precision are preserved.
++        payload = json.loads(body.decode("utf-8"), parse_constant=reject_constant,
++                             parse_int=str, parse_float=str)
++    except (UnicodeError, ValueError, RecursionError):
++        raise RequestError(400, "invalid JSON object") from None
++    if not isinstance(payload, dict):
++        raise RequestError(400, "invalid JSON object")
++    return payload
++
++
++def load_config(path):
++    value = json.loads(Path(path).read_text(encoding="utf-8"))
++    tenants = value.get("tenants") if isinstance(value, dict) else None
++    if not isinstance(tenants, dict) or not tenants:
++        raise ValueError("configuration requires tenants")
++    result = {}
++    for name, credentials in tenants.items():
++        if not re.fullmatch(r"[A-Za-z0-9_-]+", name) or not isinstance(credentials, dict):
++            raise ValueError("invalid tenant configuration")
++        if any(not isinstance(credentials.get(key), str) or not credentials[key]
++               for key in ("secret", "token")):
++            raise ValueError("tenant credentials must be nonempty strings")
++        try:
++            result[name] = {key: credentials[key].encode("utf-8") for key in ("secret", "token")}
++        except UnicodeError:
++            raise ValueError("tenant credentials must be valid UTF-8") from None
++    return result
+ 
+ 
+ class InboxHandler(BaseHTTPRequestHandler):
++    # Close every connection, including validation failures with unread bodies.
++    protocol_version = "HTTP/1.0"
++
++    def setup(self):
++        super().setup()
++        self.connection.settimeout(10)
++
++    def parse_request(self):
++        stream = self.rfile
++        recorder = HeaderRecorder(stream)
++        self.rfile = recorder
++        try:
++            success = super().parse_request()
++        finally:
++            self.rfile = stream
++        if not success:
++            return False
++        self.raw_headers = {}
++        for line in recorder.lines:
++            if line in (b"\r\n", b"\n", b""):
++                continue
++            line = line.removesuffix(b"\n").removesuffix(b"\r")
++            name, sep, value = line.partition(b":")
++            if not sep or not HEADER_NAME.fullmatch(name):
++                self.send_error(400)
++                return False
++            # One ordinary separator space is framing; further whitespace stays
++            # in the value and is checked by each header's exact grammar.
++            if value.startswith(b" "):
++                value = value[1:]
++            self.raw_headers.setdefault(name.lower(), []).append(value.decode("latin-1"))
++        return True
++
+     def _json(self, status, value):
+-        body = json.dumps(value, ensure_ascii=False).encode("utf-8")
++        body = json.dumps(value, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
++        self._json_bytes(status, body)
++
++    def _json_bytes(self, status, body):
++        self.close_connection = True
+         self.send_response(status)
+         self.send_header("Content-Type", "application/json; charset=utf-8")
+         self.send_header("Content-Length", str(len(body)))
++        self.send_header("Connection", "close")
+         self.end_headers()
+-        self.wfile.write(body)
++        if self.command != "HEAD":
++            self.wfile.write(body)
++
++    def send_error(self, code, message=None, explain=None):
++        # Never echo an attacker-controlled request line or a header value.
++        self._json(code, {"error": self.responses.get(code, ("request rejected",))[0]})
++
++    def _header(self, name, status=400):
++        values = self.raw_headers.get(name.lower().encode("ascii"), [])
++        if len(values) != 1:
++            raise RequestError(status, "invalid required header")
++        return values[0]
++
++    def _route(self, prefix):
++        try:
++            url = urlsplit(self.path)
++        except ValueError:
++            raise RequestError(404, "not found") from None
++        if url.scheme or url.netloc or url.fragment or not url.path.startswith(prefix):
++            raise RequestError(404, "not found")
++        tenant = url.path[len(prefix):]
++        if tenant not in self.server.tenants:
++            raise RequestError(404, "not found")
++        return tenant, url.query
++
++    def _run(self, action):
++        try:
++            action()
++        except RequestError as error:
++            self._json(error.status, {"error": error.message})
++        except sqlite3.Error:
++            self._json(503, {"error": "storage unavailable"})
++        except (socket.timeout, TimeoutError):
++            self._json(400, {"error": "incomplete request body"})
++        except (BrokenPipeError, ConnectionResetError):
++            pass
+ 
+     def do_GET(self):
++        self._run(self._get)
++
++    def _get(self):
+         if self.path == "/health":
+             self._json(200, {"status": "ok"})
+-        elif self.path.startswith("/events/"):
+-            # TODO: authorize, load durable events, and paginate.
+-            self._json(200, {"items": [], "next_cursor": None})
+-        else:
+-            self._json(404, {"error": "not found"})
++            return
++        tenant, query = self._route("/events/")
++        auth = self._header("authorization", 401)
++        if not auth.startswith("Bearer ") or not hmac.compare_digest(
++            auth[7:].encode("latin-1"), self.server.tenants[tenant]["token"]
++        ):
++            raise RequestError(401, "unauthorized")
++        try:
++            pairs = parse_qsl(query, keep_blank_values=True, strict_parsing=True,
++                              encoding="utf-8", errors="strict", max_num_fields=2)
++        except (ValueError, UnicodeError):
++            raise RequestError(400, "invalid query") from None
++        values = {}
++        for key, value in pairs:
++            if key not in ("limit", "cursor") or key in values or not DECIMAL.fullmatch(value):
++                raise RequestError(400, "invalid query")
++            values[key] = value
++        limit_text = values.get("limit", "50")
++        if len(limit_text) > 3 or not 1 <= int(limit_text) <= 100:
++            raise RequestError(400, "invalid limit")
++        cursor_text = values.get("cursor", "0")
++        cursor = MAX_SEQUENCE if len(cursor_text) > 19 else min(int(cursor_text), MAX_SEQUENCE)
++        rows = self.server.store.page(tenant, cursor, int(limit_text))
++        more = len(rows) > int(limit_text)
++        visible = rows[:int(limit_text)]
++        items = []
++        for sequence, event_id, raw_body in visible:
++            parse_payload(raw_body)
++            prefix = json.dumps({"sequence": sequence, "event_id": event_id},
++                                ensure_ascii=True, separators=(",", ":")).encode("utf-8")
++            items.append(prefix[:-1] + b',"payload":' + raw_body + b"}")
++        cursor_json = json.dumps(str(visible[-1][0]) if more else None).encode("ascii")
++        self._json_bytes(200, b'{"items":[' + b",".join(items) + b'],"next_cursor":' + cursor_json + b"}")
+ 
+     def do_POST(self):
+-        # TODO: validate the request, authenticate, and store an event atomically.
+-        self._json(501, {"error": "webhook ingestion is not implemented"})
++        self._run(self._post)
++
++    def _post(self):
++        tenant, query = self._route("/webhooks/")
++        if query:
++            raise RequestError(400, "invalid query")
++        if b"transfer-encoding" in self.raw_headers:
++            raise RequestError(400, "unsupported body framing")
++        length = self._header("content-length")
++        if not re.fullmatch(r"[0-9]+", length, re.ASCII):
++            raise RequestError(400, "invalid content length")
++        significant_length = length.lstrip("0") or "0"
++        if len(significant_length) > 5 or int(significant_length) > MAX_BODY:
++            raise RequestError(413, "body too large")
++        event_id = self._header("x-event-id")
++        if (not 1 <= len(event_id) <= 128 or event_id != event_id.strip()
++                or any(ord(char) < 32 or ord(char) > 126 for char in event_id)):
++            raise RequestError(400, "invalid event ID")
++        timestamp = self._header("x-timestamp")
++        if not DECIMAL.fullmatch(timestamp):
++            raise RequestError(400, "invalid timestamp")
++        signature = self._header("x-signature")
++        if not re.fullmatch(r"[0-9a-f]{64}", signature, re.ASCII):
++            raise RequestError(400, "invalid signature")
++        if len(timestamp) > 20:
++            raise RequestError(401, "unauthorized")
++        body = self.rfile.read(int(significant_length))
++        if len(body) != int(significant_length):
++            raise RequestError(400, "incomplete request body")
++        if abs(int(time.time()) - int(timestamp)) > 300:
++            raise RequestError(401, "unauthorized")
++        expected = hmac.new(self.server.tenants[tenant]["secret"],
++                            timestamp.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
++        if not hmac.compare_digest(signature, expected):
++            raise RequestError(401, "unauthorized")
++        parse_payload(body)
++        outcome = self.server.store.insert(tenant, event_id, body)
++        if outcome == "conflict":
++            raise RequestError(409, "event ID already has different content")
++        self._json(200 if outcome == "duplicate" else 201,
++                   {"event_id": event_id, "duplicate": outcome == "duplicate"})
+ 
+     def log_message(self, format, *args):
+-        # Keep starter logs small and free of request headers and bodies.
+         pass
+ 
+ 
++class InboxServer(ThreadingHTTPServer):
++    daemon_threads = False  # server_close waits for in-flight requests to finish.
++    request_queue_size = 128
++
++
+ def create_server(db_path, config_path, host="127.0.0.1", port=0):
+-    server = ThreadingHTTPServer((host, port), InboxHandler)
++    tenants = load_config(config_path)
++    store = EventStore(Path(db_path))
++    server = InboxServer((host, port), InboxHandler)
+     server.db_path = str(Path(db_path))
+-    server.config = json.loads(Path(config_path).read_text(encoding="utf-8"))
++    server.tenants, server.store = tenants, store
+     return server
+ 
+ 
+diff --git a/inbox_store.py b/inbox_store.py
+new file mode 100644
+index 0000000..dd2f094
+--- /dev/null
++++ b/inbox_store.py
+@@ -0,0 +1,57 @@
++"""SQLite owns all durable identity, raw bodies and insertion ordering."""
++
++import sqlite3
++from contextlib import contextmanager
++
++
++class EventStore:
++    def __init__(self, path):
++        self.path = str(path.resolve())
++        with self.connection() as connection:
++            connection.execute("PRAGMA journal_mode=WAL")
++            connection.execute("""
++                CREATE TABLE IF NOT EXISTS events (
++                    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
++                    tenant TEXT NOT NULL COLLATE BINARY,
++                    event_id TEXT NOT NULL COLLATE BINARY,
++                    raw_body BLOB NOT NULL,
++                    UNIQUE (tenant, event_id)
++                )
++            """)
++            connection.execute("CREATE INDEX IF NOT EXISTS tenant_sequence ON events(tenant, sequence)")
++
++    @contextmanager
++    def connection(self):
++        connection = sqlite3.connect(self.path, timeout=10, isolation_level=None)
++        try:
++            connection.execute("PRAGMA synchronous=FULL")
++            yield connection
++        finally:
++            connection.close()
++
++    def insert(self, tenant, event_id, body):
++        with self.connection() as connection:
++            connection.execute("BEGIN IMMEDIATE")
++            try:
++                old = connection.execute(
++                    "SELECT raw_body FROM events WHERE tenant=? AND event_id=?", (tenant, event_id)
++                ).fetchone()
++                if old is not None:
++                    outcome = "duplicate" if old[0] == body else "conflict"
++                else:
++                    connection.execute("INSERT INTO events(tenant, event_id, raw_body) VALUES (?, ?, ?)",
++                                       (tenant, event_id, sqlite3.Binary(body)))
++                    outcome = "created"
++                connection.commit()
++                return outcome
++            except BaseException:
++                connection.rollback()
++                raise
++
++    def page(self, tenant, cursor, limit):
++        with self.connection() as connection:
++            return connection.execute(
++                "SELECT sequence, event_id, raw_body FROM events "
++                "WHERE tenant=? AND sequence>? ORDER BY sequence LIMIT ?",
++                (tenant, cursor, limit + 1),
++            ).fetchall()
+diff --git a/test_inbox.py b/test_inbox.py
+new file mode 100644
+index 0000000..aaac2af
+--- /dev/null
++++ b/test_inbox.py
+@@ -0,0 +1,346 @@
++"""Behavior checks with an independent temporary database and server per test."""
++
++import concurrent.futures
++import hashlib
++import hmac
++import http.client
++import json
++import queue
++import socket
++import sqlite3
++import subprocess
++import sys
++import tempfile
++import threading
++import time
++import unittest
++from contextlib import closing
++from pathlib import Path
++from unittest.mock import patch
++
++from inbox import create_server
++
++
++class InboxTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.temp.cleanup)
++        self.root = Path(self.temp.name)
++        self.db = self.root / "events.sqlite3"
++        self.config = self.root / "config.json"
++        self.tenants = {"alpha": {"secret": "alpha-secret-λ", "token": "alpha-token"},
++                        "beta": {"secret": "beta-secret", "token": "beta-token"}}
++        self.config.write_text(json.dumps({"tenants": self.tenants}), encoding="utf-8")
++        self.start_server()
++        self.addCleanup(self.stop_server)
++
++    def start_server(self):
++        self.server = create_server(self.db, self.config)
++        self.thread = threading.Thread(target=self.server.serve_forever,
++                                       kwargs={"poll_interval": 0.01}, daemon=True)
++        self.thread.start()
++
++    def stop_server(self):
++        self.server.shutdown()
++        self.server.server_close()
++        self.thread.join(timeout=3)
++        self.assertFalse(self.thread.is_alive())
++
++    def request(self, method, path, body=None, headers=None):
++        connection = http.client.HTTPConnection(*self.server.server_address, timeout=15)
++        try:
++            connection.request(method, path, body, headers or {})
++            response = connection.getresponse()
++            raw = response.read()
++            self.assertEqual(response.getheader("Content-Type"), "application/json; charset=utf-8")
++            result = json.loads(raw)
++            self.assertIsInstance(result, dict)
++            return response.status, result
++        finally:
++            connection.close()
++
++    def signed(self, event="id", body=b"{}", tenant="alpha", timestamp=None):
++        timestamp = str(int(time.time())) if timestamp is None else timestamp
++        signature = hmac.new(self.tenants[tenant]["secret"].encode(),
++                             timestamp.encode() + b"." + body, hashlib.sha256).hexdigest()
++        return {"X-Event-ID": event, "X-Timestamp": timestamp, "X-Signature": signature}
++
++    def post(self, event="id", body=b"{}", tenant="alpha", headers=None):
++        return self.request("POST", "/webhooks/" + tenant, body,
++                            self.signed(event, body, tenant) if headers is None else headers)
++
++    def page(self, tenant="alpha", query="", headers=None):
++        return self.request("GET", "/events/" + tenant + query,
++                            headers={"Authorization": "Bearer " + self.tenants[tenant]["token"]}
++                            if headers is None else headers)
++
++    def rows(self):
++        with closing(sqlite3.connect(self.db)) as connection:
++            return connection.execute(
++                "SELECT tenant, event_id, raw_body, sequence FROM events ORDER BY sequence"
++            ).fetchall()
++
++    def raw_request(self, headers, body=b"{}", method="POST", path="/webhooks/alpha"):
++        with socket.create_connection(self.server.server_address, timeout=5) as client:
++            wire = (method + " " + path + " HTTP/1.1\r\nHost: localhost\r\n").encode()
++            for name, value in headers:
++                wire += name.encode() + b": " + value.encode("latin-1") + b"\r\n"
++            client.sendall(wire + b"\r\n" + body)
++            client.shutdown(socket.SHUT_WR)
++            response = http.client.HTTPResponse(client)
++            response.begin()
++            value = json.loads(response.read())
++            self.assertIsInstance(value, dict)
++            return response.status, value
++
++    def test_factory_health_and_unknown_routes(self):
++        self.assertIsInstance(self.server, http.server.ThreadingHTTPServer)
++        self.assertEqual(self.server.server_address[0], "127.0.0.1")
++        self.assertGreater(self.server.server_address[1], 0)
++        self.assertEqual(self.request("GET", "/health"), (200, {"status": "ok"}))
++        for path in ("/events/Alpha", "/events/missing", "/events/alpha/extra", "/other"):
++            self.assertEqual(self.request("GET", path)[0], 404)
++        self.assertEqual(self.post(tenant="missing", headers={})[0], 404)
++
++    def test_exact_raw_body_and_idempotency(self):
++        event = "x'); DROP TABLE events; --"
++        original = b'{ "a": 1, "message": "caf\xc3\xa9" }\n'
++        self.assertEqual(self.post(event, original), (201, {"event_id": event, "duplicate": False}))
++        before = self.rows()
++        self.assertEqual(before[0][1:3], (event, original))
++        self.assertEqual(self.post(event, original), (200, {"event_id": event, "duplicate": True}))
++        self.assertEqual(self.post(event, b'{"a":1,"message":"caf\xc3\xa9"}')[0], 409)
++        self.assertEqual(self.rows(), before)
++        self.assertEqual(self.page()[1]["items"][0]["payload"], {"a": 1, "message": "café"})
++
++    def test_tenant_isolation_and_case(self):
++        self.assertEqual(self.post("same", b'{"owner":"alpha"}')[0], 201)
++        self.assertEqual(self.post("same", b'{"owner":"beta"}', "beta")[0], 201)
++        self.assertEqual(self.post("Same")[0], 201)
++        self.assertEqual(self.post(tenant="beta", headers=self.signed("cross"))[0], 401)
++        self.assertEqual(self.page("beta", headers={"Authorization": "Bearer alpha-token"})[0], 401)
++        for tenant in ("alpha", "beta"):
++            self.assertEqual(self.page(tenant)[1]["items"][0]["payload"], {"owner": tenant})
++
++    def test_post_required_header_grammar_and_no_effects(self):
++        for key in ("X-Event-ID", "X-Timestamp", "X-Signature"):
++            headers = self.signed()
++            del headers[key]
++            self.assertEqual(self.post(headers=headers)[0], 400)
++        cases = {"X-Event-ID": ["", " leading", "trailing ", "\tbad", "bad\tvalue", "a" * 129, "é"],
++                 "X-Timestamp": ["", " 1", "1 ", "+1", "-1", "01", "1.0", "1e9", "１２"],
++                 "X-Signature": ["", "a" * 63, "a" * 65, "G" * 64, "A" * 64, " a" + "0" * 62]}
++        for key, values in cases.items():
++            for value in values:
++                if not value.isascii() and key == "X-Timestamp":
++                    continue  # HTTP field values cannot encode these Unicode characters.
++                with self.subTest(key=key, value=value):
++                    headers = self.signed()
++                    headers[key] = value
++                    self.assertEqual(self.post(headers=headers)[0], 400)
++        self.assertEqual(self.rows(), [])
++        self.assertEqual(self.post()[0], 201)
++
++    def test_header_duplicates_and_content_length(self):
++        valid = list(self.signed().items()) + [("Content-Length", "2")]
++        for key in ("X-Event-ID", "X-Timestamp", "X-Signature", "Content-Length"):
++            with self.subTest(key=key):
++                original = next(value for name, value in valid if name == key)
++                self.assertEqual(self.raw_request(valid + [(key.lower(), original)])[0], 400)
++        for length in (None, "", "-1", "+2", "2.0", "2, 2", " 2", "2 ", "foo"):
++            headers = list(self.signed().items())
++            if length is not None:
++                headers.append(("Content-Length", length))
++            self.assertEqual(self.raw_request(headers)[0], 400)
++        self.assertEqual(self.raw_request(valid + [("Transfer-Encoding", "chunked")])[0], 400)
++        self.assertEqual(self.rows(), [])
++        self.assertEqual(self.raw_request(list(self.signed().items()) + [("Content-Length", "0002")])[0], 201)
++
++    def test_short_body_does_not_reserve_id(self):
++        headers = list(self.signed().items()) + [("Content-Length", "3")]
++        self.assertEqual(self.raw_request(headers)[0], 400)
++        self.assertEqual(self.rows(), [])
++        self.assertEqual(self.post()[0], 201)
++
++    def test_timestamp_boundaries_and_reauthentication(self):
++        with patch("inbox.time.time", return_value=1_000_000):
++            for offset in (-300, 0, 300):
++                headers = self.signed(str(offset), timestamp=str(1_000_000 + offset))
++                self.assertEqual(self.post(headers=headers)[0], 201)
++            before = self.rows()
++            for timestamp in ("999699", "1000301", "0", "9" * 5000):
++                headers = self.signed(timestamp=timestamp)
++                self.assertEqual(self.post(headers=headers)[0], 401)
++            headers = self.signed("0", timestamp="999699")
++            self.assertEqual(self.post(headers=headers)[0], 401)
++            headers = self.signed("0")
++            headers["X-Signature"] = "0" * 64
++            self.assertEqual(self.post(headers=headers)[0], 401)
++            self.assertEqual(self.rows(), before)
++
++    def test_invalid_json_has_no_effects(self):
++        for body in (b"", b"[]", b"null", b"1", b'"x"', b"{", b'{"x":NaN}',
++                     b'{"x":Infinity}', b'{"x":-Infinity}', b'{"x":"\xff"}', b"{} trailing"):
++            with self.subTest(body=body):
++                self.assertEqual(self.post(body=body)[0], 400)
++                self.assertEqual(self.rows(), [])
++        self.assertEqual(self.post()[0], 201)
++
++    def test_body_size_is_inclusive_and_byte_based(self):
++        body = b'{"x":"' + b"a" * (65536 - 8) + b'"}'
++        self.assertEqual(len(body), 65536)
++        self.assertEqual(self.post("full", body)[0], 201)
++        self.assertEqual(self.post("too-large", body + b" ")[0], 413)
++        self.assertEqual(len(self.rows()), 1)
++
++    def test_event_id_length_boundary_and_ascii(self):
++        self.assertEqual(self.post("a")[0], 201)
++        self.assertEqual(self.post("a" * 128)[0], 201)
++        self.assertEqual(self.post("a b")[0], 201)
++        headers = list(self.signed().items()) + [("Content-Length", "2")]
++        headers = [(key, "bad\x7f" if key == "X-Event-ID" else value) for key, value in headers]
++        self.assertEqual(self.raw_request(headers)[0], 400)
++
++    def test_json_numbers_preserve_valid_representation(self):
++        body = b'{"large":1e999,"integer":' + b"9" * 5000 + b"}"
++        self.assertEqual(self.post("numbers", body)[0], 201)
++        connection = http.client.HTTPConnection(*self.server.server_address, timeout=5)
++        try:
++            connection.request("GET", "/events/alpha", headers={"Authorization": "Bearer alpha-token"})
++            response = connection.getresponse()
++            self.assertEqual(response.status, 200)
++            raw = response.read()
++            parsed = json.loads(raw, parse_int=str, parse_float=str)
++            self.assertEqual(parsed["items"][0]["payload"], {"large": "1e999", "integer": "9" * 5000})
++            self.assertNotIn(b"Infinity", raw)
++        finally:
++            connection.close()
++
++    def test_read_authorization_grammar_and_duplicates(self):
++        for auth in (None, "", "alpha-token", "Basic alpha-token", "bearer alpha-token",
++                     "Bearer", "Bearer ", "Bearer  alpha-token", "Bearer alpha-token ", "Bearer ALPHA-token"):
++            self.assertEqual(self.page(headers={} if auth is None else {"Authorization": auth})[0], 401)
++        headers = [("Authorization", "Bearer alpha-token"), ("authorization", "Bearer alpha-token")]
++        self.assertEqual(self.raw_request(headers, b"", "GET", "/events/alpha")[0], 401)
++
++    def test_query_validation(self):
++        for query in ("limit=0", "limit=101", "limit=01", "limit=-1", "limit=+1", "limit=1.0", "limit=",
++                      "limit=1&limit=1", "cursor=1&cursor=2", "cursor=01", "cursor=-1", "cursor=", "cursor=%FF",
++                      "cursor=1.0", "cursor= 1", "unknown=1", "limit", "limit=1&", "limit=1&cursor=0&extra=1"):
++            if " " in query:
++                query = query.replace(" ", "%20")
++            with self.subTest(query=query):
++                self.assertEqual(self.page(query="?" + query)[0], 400)
++        self.assertEqual(self.page(query="?cursor=" + "9" * 5000), (200, {"items": [], "next_cursor": None}))
++        self.assertEqual(self.page(query="?limit=100&cursor=0"), (200, {"items": [], "next_cursor": None}))
++
++    def test_ordered_stable_pagination_and_cross_tenant_cursor(self):
++        for event, tenant in (("z", "alpha"), ("b", "beta"), ("a", "alpha"), ("m", "alpha")):
++            self.assertEqual(self.post(event, tenant=tenant)[0], 201)
++        first = self.page(query="?limit=2")[1]
++        self.assertEqual([row["event_id"] for row in first["items"]], ["z", "a"])
++        cursor = first["next_cursor"]
++        self.assertEqual(cursor, str(first["items"][-1]["sequence"]))
++        self.assertEqual(first, self.page(query="?limit=2")[1])
++        last = self.page(query="?limit=2&cursor=" + cursor)[1]
++        self.assertEqual([row["event_id"] for row in last["items"]], ["m"])
++        self.assertIsNone(last["next_cursor"])
++        beta_cursor = str(self.page("beta")[1]["items"][0]["sequence"])
++        self.assertEqual([row["event_id"] for row in self.page(query="?cursor=" + beta_cursor)[1]["items"]], ["a", "m"])
++        self.assertEqual(self.page("beta", "?cursor=" + cursor)[1], {"items": [], "next_cursor": None})
++        self.assertEqual(self.page(query="?cursor=9223372036854775808")[1], {"items": [], "next_cursor": None})
++
++    def test_default_and_maximum_page_limits(self):
++        for index in range(101):
++            self.assertEqual(self.post(str(index))[0], 201)
++        self.assertEqual(len(self.page()[1]["items"]), 50)
++        page = self.page(query="?limit=100")[1]
++        self.assertEqual(len(page["items"]), 100)
++        tail = self.page(query="?cursor=" + page["next_cursor"])[1]
++        self.assertEqual([row["event_id"] for row in tail["items"]], ["100"])
++        self.assertIsNone(tail["next_cursor"])
++
++    def test_restart_preserves_content_sequences_and_idempotency(self):
++        body = br' {"unicode":"\u03bb"} '
++        self.assertEqual(self.post("durable", body)[0], 201)
++        before = self.page()[1]
++        self.stop_server()
++        self.start_server()
++        self.assertEqual(self.page()[1], before)
++        self.assertEqual(self.post("durable", body)[0], 200)
++        self.assertEqual(self.post("durable", b"{}")[0], 409)
++        self.assertEqual(self.post("next")[0], 201)
++        self.assertGreater(self.page()[1]["items"][-1]["sequence"], before["items"][0]["sequence"])
++
++    def test_concurrent_identical_and_conflicting_writes(self):
++        for conflicting in (False, True):
++            event = str(conflicting)
++            barrier = threading.Barrier(8)
++            bodies = [b'{"x":1}' if not conflicting or index % 2 else b'{ "x": 1 }' for index in range(8)]
++            def submit(body):
++                barrier.wait(timeout=10)
++                return self.post(event, body)[0]
++            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
++                statuses = list(executor.map(submit, bodies))
++            self.assertEqual(statuses.count(201), 1)
++            stored = next(row[2] for row in self.rows() if row[1] == event)
++            self.assertEqual(statuses.count(200), bodies.count(stored) - 1)
++            self.assertEqual(statuses.count(409), len(bodies) - bodies.count(stored))
++        self.assertEqual(len(self.rows()), 2)
++
++    def test_concurrent_distinct_tenants_and_reads(self):
++        def submit(index):
++            tenant = "alpha" if index % 2 else "beta"
++            status = self.post(str(index), tenant=tenant)[0]
++            self.assertEqual(self.page(tenant)[0], 200)
++            return status
++        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
++            self.assertEqual(list(executor.map(submit, range(24))), [201] * 24)
++        for tenant in ("alpha", "beta"):
++            rows = self.page(tenant)[1]["items"]
++            sequences = [row["sequence"] for row in rows]
++            self.assertEqual(len(rows), 12)
++            self.assertEqual(sequences, sorted(set(sequences)))
++        with closing(sqlite3.connect(self.db)) as connection:
++            self.assertEqual(connection.execute("PRAGMA integrity_check").fetchone(), ("ok",))
++
++    def test_errors_do_not_disclose_credentials_or_signature(self):
++        headers = self.signed()
++        headers["X-Signature"] = "f" * 64
++        status, result = self.post(headers=headers)
++        self.assertEqual(status, 401)
++        encoded = json.dumps(result)
++        for credential in (*self.tenants["alpha"].values(), headers["X-Signature"]):
++            self.assertNotIn(credential, encoded)
++
++    def test_cli_readiness_help_and_real_port(self):
++        script = Path(__file__).with_name("inbox.py")
++        help_result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, timeout=5)
++        self.assertEqual(help_result.returncode, 0)
++        process = subprocess.Popen([sys.executable, str(script), "--db", str(self.root / "cli.sqlite3"),
++                                    "--config", str(self.config), "--port", "0"],
++                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
++        try:
++            lines = queue.Queue()
++            reader = threading.Thread(target=lambda: lines.put(process.stdout.readline()), daemon=True)
++            reader.start()
++            ready = json.loads(lines.get(timeout=5))
++            self.assertEqual(ready["host"], "127.0.0.1")
++            self.assertGreater(ready["port"], 0)
++            connection = http.client.HTTPConnection(ready["host"], ready["port"], timeout=5)
++            try:
++                connection.request("GET", "/health")
++                response = connection.getresponse()
++                self.assertEqual(response.status, 200)
++                self.assertEqual(json.loads(response.read()), {"status": "ok"})
++            finally:
++                connection.close()
++        finally:
++            process.terminate()
++            process.wait(timeout=5)
++            process.stdout.close()
++            process.stderr.close()
++
++
++if __name__ == "__main__":
++    unittest.main()

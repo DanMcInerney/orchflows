@@ -1,0 +1,18 @@
+{
+  "candidate_path": "<BUNDLE_ROOT>/runs/webhook-inbox/single/project",
+  "base_commit": "30d2cde4c11a1912b47ca5256f6dd2a19419371e",
+  "frozen_at_utc": "2026-09-16T02:54:55.593034+00:00",
+  "source_files": {
+    ".gitignore": "e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71",
+    "AGENTS.md": "8d72954f41d25ffba4c4bcd57944308d86020e9d8e2c0d6480ba8107c8df80b8",
+    "caller-note.txt": "1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15",
+    "config.example.json": "ad1712741f11f88aa97fd5afdd47f91fb3d88cbe9bb414336780044b377725e8",
+    "inbox.py": "4856c049d31526043b83844fb9d7f2c1c22a650a950f596bb5948a740e198d91",
+    "README.md": "674a7dfb74586565726c8c0a4a8dce2d1d706e99f888bd868dbc7ba9e471bb36",
+    "RUN_CONTEXT.md": "98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1",
+    "TASK.md": "90a4a79df170f8c88be9fc7f1e82cfda2fe70ca31a1cff4066c7b44617af7c47",
+    "test_inbox.py": "9c50edd3b6d9ea498be64f9a68207729240ad0642e7dbb2cc0a749ecf8a0a8d6",
+    "test_smoke.py": "406f713931d7c60a3776534e1b1fccf8bb26ebd482d606d00ccc8ab004507e74"
+  },
+  "patch_sha256": "46c3c3b1590baa5830c9af6c3e6c5268caf193bc73734d59baf555a92e5d1023"
+}

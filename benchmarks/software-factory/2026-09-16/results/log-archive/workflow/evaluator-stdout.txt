@@ -1,0 +1,8 @@
+{
+  "contract_id": "log-archive",
+  "correctness_passed": true,
+  "acceptance_passed": true,
+  "assertions_passed": 31,
+  "assertions_total": 31
+}
+throughput_ratio=374.698

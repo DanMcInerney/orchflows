@@ -1,0 +1,29 @@
+{
+  "operation": {
+    "operation_id": 3,
+    "time": "2026-09-16T02:34:38.112088+00:00",
+    "operation": "observe",
+    "exposure": 10,
+    "sample": 1,
+    "requests": 1000,
+    "error_rate": 0.001,
+    "p95_ms": 80,
+    "healthy": true,
+    "synthetic_window_seconds": 10,
+    "source": "deterministic local simulation; no real traffic"
+  },
+  "sample": {
+    "sample": 1,
+    "requests": 1000,
+    "error_rate": 0.001,
+    "p95_ms": 80,
+    "healthy": true,
+    "synthetic_window_seconds": 10,
+    "source": "deterministic local simulation; no real traffic"
+  },
+  "thresholds": {
+    "error_rate_max": 0.01,
+    "p95_ms_max": 200
+  },
+  "phase": "observing"
+}

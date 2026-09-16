@@ -1,0 +1,5 @@
+
+Algorithm : SHA256
+Hash      : BE96E08F297EDDBDBACDDC8CB2E07B30EC721FCA8D0724C6A0673BB3502BB6FC
+Path      : <BUNDLE_ROOT>/runs/webhook-inbox/workflow/artifacts/release-state.json
+

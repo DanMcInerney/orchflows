@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "commit": "a685f46be6b9b755f8fe806556626bf34530d4b9",
+  "manifest_files_verified": 14,
+  "evidence_hashes_verified": 21,
+  "independent_oracle_queries": 1000,
+  "preserved_mtime_replacements": 100,
+  "stat_fingerprint": [
+    2771403662054966545,
+    75716768735443892,
+    51475,
+    1789525631197278500,
+    1789525631197278500
+  ],
+  "fstat_fingerprint": [
+    2771403662054966545,
+    75716768735443892,
+    51475,
+    1789525631197278500,
+    1789525631197278500
+  ],
+  "benchmark_evidence_ratio": 262.47342940969696,
+  "benchmark_rerun": false,
+  "runtime": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]"
+}

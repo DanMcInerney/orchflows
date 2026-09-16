@@ -1,0 +1,103 @@
+{
+  "contract_id": "log-archive",
+  "frozen_utc": "2026-09-16T01:57:17.0300511Z",
+  "algorithm": "sha256",
+  "base_directory": "<BUNDLE_ROOT>",
+  "excluded": [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "evaluation/log-archive/SHA256SUMS.json"
+  ],
+  "files": [
+    {
+      "path": "cases/log-archive/baseline_reference.py",
+      "bytes": 3799,
+      "sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f"
+    },
+    {
+      "path": "cases/log-archive/log_archive.py",
+      "bytes": 168,
+      "sha256": "cafc8cb00cbae48f0b392e961203162062f742f7a6a9532e234775001b14602c"
+    },
+    {
+      "path": "cases/log-archive/prompt.md",
+      "bytes": 2644,
+      "sha256": "52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c"
+    },
+    {
+      "path": "cases/log-archive/README.md",
+      "bytes": 5684,
+      "sha256": "91563575f9d02c8a6f9ab561af4c45e96cdd1d50f8cc613f1d273188d9451926"
+    },
+    {
+      "path": "cases/log-archive/sample.ndjson",
+      "bytes": 412,
+      "sha256": "50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694"
+    },
+    {
+      "path": "cases/log-archive/tests/test_public.py",
+      "bytes": 1496,
+      "sha256": "2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7"
+    },
+    {
+      "path": "evaluation/log-archive/benchmark.py",
+      "bytes": 2250,
+      "sha256": "9c54cf319d645887ed3bc45d468517cd87701150630d6d185492127af76d6c53"
+    },
+    {
+      "path": "evaluation/log-archive/calibrate.py",
+      "bytes": 1806,
+      "sha256": "f34bedc1a9ae9d16b9500d288c4c4bd0d55a2a9d6df0e506bbccdbee5f4fb972"
+    },
+    {
+      "path": "evaluation/log-archive/calibration_candidate.py",
+      "bytes": 4225,
+      "sha256": "11cc0acf7cabc9054001611dd79f0d790f0511238998f61e2e2bcc803dc94352"
+    },
+    {
+      "path": "evaluation/log-archive/calibration/NOTES.md",
+      "bytes": 2406,
+      "sha256": "66832ae1add8694cc0d97cd32db9519a89df55e23f824831a10788077d15bd51"
+    },
+    {
+      "path": "evaluation/log-archive/calibration/positive-control.json",
+      "bytes": 3834,
+      "sha256": "aa6fd4e6e1567afa1d137cdde0651da6057c7129845960b92f8afc88beaa86f6"
+    },
+    {
+      "path": "evaluation/log-archive/calibration/pre-fix-observed-output.txt",
+      "bytes": 2154,
+      "sha256": "68f0174bb3e115a0d1a8d4fe108eb4dabf55b8d8bb6fde2f87a6d028192132f2"
+    },
+    {
+      "path": "evaluation/log-archive/calibration/starter.json",
+      "bytes": 3856,
+      "sha256": "000091ddcf15faa79f368516276534bcf7ecddc95b5adaceb3e994fa7b9e8a37"
+    },
+    {
+      "path": "evaluation/log-archive/checks.py",
+      "bytes": 10487,
+      "sha256": "9a102c08f0533c54b08ef73591feafc8e21f00e6af8d78a1bbb31f3397ed482a"
+    },
+    {
+      "path": "evaluation/log-archive/evaluate.py",
+      "bytes": 3833,
+      "sha256": "dc70fc1a56dcf253b983aca20cafdcd09030f2e7699cbee60b1d589123e9a98c"
+    },
+    {
+      "path": "evaluation/log-archive/frozen_baseline.py",
+      "bytes": 3799,
+      "sha256": "294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f"
+    },
+    {
+      "path": "evaluation/log-archive/oracle.py",
+      "bytes": 4902,
+      "sha256": "6c06f84926302779c7bba72618ab9ef838d5ff1a6d31a07ebbf69527df1f9558"
+    },
+    {
+      "path": "evaluation/log-archive/README.md",
+      "bytes": 2383,
+      "sha256": "3cfa2fcb80f157cba114b11007f461e066c29699da9f0e94427a7f5d3e608425"
+    }
+  ]
+}

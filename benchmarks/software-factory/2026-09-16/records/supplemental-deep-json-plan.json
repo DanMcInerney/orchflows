@@ -1,0 +1,5 @@
+{
+  "declared_at": "2026-09-16T02:50:01.251644+00:00",
+  "script_sha256": "e4be71257f89fa34300214357196746342f5cf7beeae90fe7ce1d8519e7e282f",
+  "scope": "Supplemental exploratory probe derived from the workflow review finding. Not part of the frozen primary score. Run once against the frozen reference and both completed final log candidates; no feedback or repair. Declared while single-agent builds are ongoing, before inspecting their final implementations or results."
+}

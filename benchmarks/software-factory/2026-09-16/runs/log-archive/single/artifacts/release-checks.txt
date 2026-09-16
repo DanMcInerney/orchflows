@@ -1,0 +1,211 @@
+ACTUAL CHECK OUTPUT: tests-final.txt
+test_argument_errors_even_when_archive_empty (test_contract.ContractTests.test_argument_errors_even_when_archive_empty) ... ok
+test_ascii_tokens_literal_and_matching (test_contract.ContractTests.test_ascii_tokens_literal_and_matching) ... ok
+test_cli_success_help_and_useful_errors (test_contract.ContractTests.test_cli_success_help_and_useful_errors) ... ok
+test_completed_append_truncate_replace_and_deletion (test_contract.ContractTests.test_completed_append_truncate_replace_and_deletion) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_cold_load_and_reload (test_contract.ContractTests.test_concurrent_cold_load_and_reload) ... ok
+test_different_paths_and_relative_paths (test_contract.ContractTests.test_different_paths_and_relative_paths) ... ok
+test_invalid_records_are_skipped_and_extras_preserved (test_contract.ContractTests.test_invalid_records_are_skipped_and_extras_preserved) ... ok
+test_mutation_cannot_change_future_results_or_duplicate_records (test_contract.ContractTests.test_mutation_cannot_change_future_results_or_duplicate_records) ... ok
+test_order_ties_duplicates_bounds_filters_and_pages (test_contract.ContractTests.test_order_ties_duplicates_bounds_filters_and_pages) ... ok
+test_replace_between_stat_and_open_uses_complete_version (test_contract.ContractTests.test_replace_between_stat_and_open_uses_complete_version) ... ok
+test_seeded_differential_queries (test_contract.ContractTests.test_seeded_differential_queries) ... ok
+test_warm_queries_do_not_reparse_unchanged_file (test_contract.ContractTests.test_warm_queries_do_not_reparse_unchanged_file) ... ok
+test_append_and_validation (test_public.PublicContract.test_append_and_validation) ... ok
+test_tokens_filters_order_and_pagination (test_public.PublicContract.test_tokens_filters_order_and_pagination) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.908s
+
+OK
+
+ACTUAL CHECK OUTPUT: concurrency-stress.txt
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+test_concurrent_atomic_replacements_never_mix_versions (test_contract.ContractTests.test_concurrent_atomic_replacements_never_mix_versions) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 4.611s
+
+OK
+
+ACTUAL CHECK OUTPUT: benchmark.txt
+{
+  "records": 30000,
+  "queries_per_round": 24,
+  "paired_rounds": [
+    {
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "seconds": {
+        "baseline": 5.754991299998437,
+        "candidate": 0.00918900000033318
+      },
+      "mismatched_query_indices": []
+    },
+    {
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "seconds": {
+        "candidate": 0.006964500000322005,
+        "baseline": 6.723825199998828
+      },
+      "mismatched_query_indices": []
+    }
+  ],
+  "total_seconds": {
+    "baseline": 12.478816499997265,
+    "candidate": 0.016153500000655185
+  },
+  "throughput_ratio": 772.5147181410298,
+  "target_ratio": 5.0,
+  "correctness_passed": true,
+  "performance_passed": true,
+  "archive_sha256": "bca518549719c573f90bd48f0c38eb34c6be20a73168531bdd5249b7ed721109",
+  "python": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "queries": [
+    {},
+    {
+      "query": "GATEWAY timeout"
+    },
+    {
+      "query": "ready"
+    },
+    {
+      "query": "retry ERROR"
+    },
+    {
+      "query": "request",
+      "service": "api"
+    },
+    {
+      "level": "ERROR"
+    },
+    {
+      "query": "user_login",
+      "limit": 17,
+      "offset": 7
+    },
+    {
+      "query": "gate"
+    },
+    {
+      "query": "caf\u00e9 \u0130ABC"
+    },
+    {
+      "query": "!!!",
+      "limit": 0
+    },
+    {
+      "service": "gateway",
+      "level": "WARN",
+      "limit": 25,
+      "offset": 20
+    },
+    {
+      "since": "2026-07-01T08:00:00.000Z",
+      "until": "2026-07-01T16:00:00.000Z"
+    },
+    {
+      "query": "ready",
+      "since": "2026-07-01T10:00:00.000Z",
+      "until": "2026-07-01T18:00:00.000Z"
+    },
+    {
+      "query": "error",
+      "level": "INFO",
+      "service": "database",
+      "offset": 2
+    },
+    {
+      "query": "retry retry",
+      "until": "2026-07-01T12:00:00.000Z"
+    },
+    {
+      "query": "cache hit",
+      "limit": 100,
+      "offset": 100
+    },
+    {
+      "service": "api",
+      "limit": 0
+    },
+    {
+      "level": "WARN",
+      "offset": 99999
+    },
+    {
+      "since": "2026-07-01T12:00:00.000Z",
+      "until": "2026-07-01T12:00:00.000Z"
+    },
+    {
+      "service": "",
+      "query": "ready"
+    },
+    {
+      "query": "absent_token"
+    },
+    {
+      "limit": 250,
+      "offset": 1000
+    },
+    {
+      "query": "ERROR-timeout"
+    },
+    {
+      "query": "request",
+      "service": "worker",
+      "level": "WARN",
+      "since": "2026-07-01T06:00:00.000Z",
+      "until": "2026-07-01T22:00:00.000Z"
+    }
+  ],
+  "timing": "Sequential paired rounds; setup, warmup and answer comparison excluded"
+}
+
+ACTUAL CHECK OUTPUT: integrity-and-freeze.txt
+UNCHANGED baseline_reference.py 294614b5eaf1a85e6f72392d93fe0c95ea8c25a714596bb409b240d184d4748f
+UNCHANGED caller-note.txt 1688056b517941c9189dc5c3d646e967d90f2d26dfc3532eb5764c755a80cd15
+UNCHANGED TASK.md 52ac1d60a21e66aa398c72cfa4fcd9b563b0b759721b290c0ea013564123de8c
+UNCHANGED RUN_CONTEXT.md 98c4cb26c4d2d4435248778f8940642323b47c97891520cda236d6a6b960cbe1
+UNCHANGED tests/test_public.py 2bd6cba3e80df118aab16ef4c9f1e52ff186217767cf7632142fe3d613d64fe7
+UNCHANGED sample.ndjson 50409ca29d825c2d6b6b3af2d37572994b5048518b918de804e65663b1349694
+UNCHANGED .gitignore e1a5e413d134605498088812e986d3c69033856cbb701146d49674f81b78ea71
+UNCHANGED documented API, CLI, acceptance and measurement contract
+git diff --check exit: 0
+FROZEN candidate SHA256: a1c8aa04605ec980db5d5a7ad83504e83c290243fa8de491a17371c646a250aa
+SOURCE revision: 19786e961751f9745f8fd92516b7a6e1ba249534
+ M README.md
+ M log_archive.py
+?? benchmark.py
+?? caller-note.txt
+?? tests/test_contract.py
+

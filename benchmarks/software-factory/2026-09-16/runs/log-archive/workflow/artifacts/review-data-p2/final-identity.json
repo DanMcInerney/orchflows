@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "commit": "a685f46be6b9b755f8fe806556626bf34530d4b9",
+  "manifest_sha256": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf",
+  "files_verified_per_directory": 14,
+  "directories": [
+    "<BUNDLE_ROOT>/runs/log-archive/workflow/review-data-p2",
+    "<BUNDLE_ROOT>/runs/log-archive/workflow/project"
+  ],
+  "git_status": "?? caller-note.txt\n"
+}

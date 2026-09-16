@@ -1,0 +1,7 @@
+Build the product requested in <BUNDLE_ROOT>/runs/log-archive/single/project/TASK.md. Read that exact task, its README.md, AGENTS.md if present, and RUN_CONTEXT.md. Your project is <BUNDLE_ROOT>/runs/log-archive/single/project; explicitly use it as the working directory for project commands.
+
+Execute this as one agent: implement, check and complete the handoff/release exercise yourself. Do not invoke Orchflows or load its skills/guidance. Do not spawn agents or delegate. Use the same available local tools within RUN_CONTEXT.md. This is a real implementation, not a dry run.
+
+Your dispatch was 2026-09-16T02:40:19.355401+00:00; your whole-run deadline is 2026-09-16T03:25:19.355401+00:00, including checks and handoff. Finish sooner when complete. No user answers will be supplied: complete authorized work and record any required decision in the handoff. Read only your own run and the shared release resources named in RUN_CONTEXT.md; do not inspect other arms, evaluation files, or benchmark-author conclusions.
+
+Write <BUNDLE_ROOT>/runs/log-archive/single/artifacts/RESULT.json and HANDOFF.md as RUN_CONTEXT.md specifies. Preserve the persistent candidate and raw evidence, including actual failed checks and fixes. Report actual release disposition. Submit the final result when complete and do not edit afterward. Model and effort overrides are unset.

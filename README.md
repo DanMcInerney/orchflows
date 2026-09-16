@@ -268,6 +268,15 @@ The default is three rounds with one challenger per round. A continuous request 
 
 Delivery defaults to three candidate passes, with one builder and up to five applicable reviewers per pass, plus at most one release worker. Low-risk automated review requires project opt-in; release authority remains separate. Install the optional library with `python scripts/orchflows.py setup --example software-factory`.
 
+We built two applications with this workflow and with a fresh single agent using the same product prompt, tools and observed model/effort:
+
+| Task | Software factory | Single agent |
+| --- | --- | --- |
+| Authenticated webhook inbox | 28/28 independent checks; 25.6 min | 28/28 independent checks; 17.2 min |
+| Fast log archive | 31/31 independent checks; 42.4 min | 31/31 independent checks; 16.4 min |
+
+Workflow review also caught and repaired a valid nested-JSON crash that remained in the single-agent log result. That exploratory finding is separate from the fixed scores. The workflow used 2.4× and 4.4× the output tokens, respectively. There was one run per approach per task, so these results do not establish a general winner. [Side-by-side results, all four implementations and their artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16).
+
 ### Self-improve
 
 > /self-improve Review this session and improve the workflows and guidance behind the problems you find.
@@ -323,6 +332,6 @@ plugin.json         package identity
 
 The core checkout is for library development. Your editable libraries live in `~/.orchflows/libraries/`, with `personal` as the default for new workflows. Setup maintains the installed core under `~/.orchflows/.local/`. Edit the checkout or your libraries; keep task outputs in the project workspace.
 
-The examples directory also includes `research-acquire` for public-source acquisition and `3d-browser-game` for Three.js game development. Generated projects, reports and trial evidence belong in caller workspaces and are not included in this repository.
+The examples directory also includes `research-acquire` for public-source acquisition and `3d-browser-game` for Three.js game development. Run outputs normally belong in caller workspaces. Explicitly published comparison snapshots live under `benchmarks/`, outside the installable core and example libraries.
 
 [Architecture](docs/architecture.md) · [Home and updates](docs/home.md) · [Host integration](docs/hosts.md) · [Agent history](docs/history.md) · [Authoring guidance](guidance/orchflows.md)

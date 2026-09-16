@@ -1,0 +1,68 @@
+{
+  "snapshot": "<BUNDLE_ROOT>/runs/log-archive/workflow/review-data-p2",
+  "runtime": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]",
+  "checks": [
+    {
+      "name": "frozen_snapshot_identity",
+      "status": "passed",
+      "seconds": 0.041113299999778974,
+      "detail": {
+        "commit": "a685f46be6b9b755f8fe806556626bf34530d4b9",
+        "manifest_files": 14,
+        "manifest_sha256": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf"
+      }
+    },
+    {
+      "name": "schema_calendar_ties_duplicates_extras_and_ownership",
+      "status": "passed",
+      "seconds": 0.0033578999991732417,
+      "detail": {
+        "valid_records": 5,
+        "invalid_lines": 50,
+        "durable_archive_bytes_unchanged": true
+      }
+    },
+    {
+      "name": "independent_schema_query_oracle",
+      "status": "passed",
+      "seconds": 0.0844360000010056,
+      "detail": {
+        "records": 500,
+        "independent_oracle_queries": 350,
+        "durable_archive_bytes_unchanged": true
+      }
+    },
+    {
+      "name": "path_isolation_eviction_and_completed_changes",
+      "status": "passed",
+      "seconds": 0.2685449000000517,
+      "detail": {
+        "distinct_paths": 20,
+        "interleaved_reads": 60,
+        "append_truncate_same_size_preserved_mtime_replacements": 20
+      }
+    },
+    {
+      "name": "concurrent_complete_versions_and_owned_results",
+      "status": "passed",
+      "seconds": 3.268721899999946,
+      "detail": {
+        "concurrent_reads": 2400,
+        "complete_atomic_replacements": 150,
+        "completed_write_freshness_checks": 150,
+        "returned_nested_mutations": 2400
+      }
+    },
+    {
+      "name": "source_unchanged_after_checks",
+      "status": "passed",
+      "seconds": 0.03766389999873354,
+      "detail": {
+        "commit": "a685f46be6b9b755f8fe806556626bf34530d4b9",
+        "manifest_files": 14,
+        "manifest_sha256": "431ec53dea8ab857e9aad7b298934d90fa6db497e693e9bb893e074ec69ce4cf"
+      }
+    }
+  ],
+  "status": "passed"
+}
