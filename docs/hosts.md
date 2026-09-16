@@ -22,7 +22,7 @@ Registration references: [Codex plugins](https://developers.openai.com/plugins/b
 
 ## Invocation policy
 
-Apply the [manual-only default](architecture.md#invocation) per skill; a library manifest does not set it for its skills.
+Apply the [invocation policy](architecture.md#invocation) per skill; a library manifest does not set it for its skills. The automatic fallback, `orch-dynamic-workflow`, sets `policy.allow_implicit_invocation: true` for Codex and `disable-model-invocation: false` for Claude Code. Other skills default to the manual-only settings below.
 
 | Host | Manual-only setting | Explicit invocation |
 | --- | --- | --- |

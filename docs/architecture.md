@@ -31,7 +31,7 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 
 ## Invocation
 
-Core workflows, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default. Start a workflow when the caller explicitly requests it; enable automatic selection only for a skill the caller asks to opt in. When creating or copying a workflow, write and verify both [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; omitting either setting leaves that host's automatic default in effect. An explicitly requested workflow still supplies its own composition and guidance.
+[orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) is the automatic fallback when no more specific workflow or skill fits the request. Other core skills, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default; automatic selection for those skills requires the caller's opt-in. When creating or copying a workflow, write and verify both [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; omitting either setting leaves that host's automatic default in effect. An explicitly requested workflow still supplies its own composition and guidance.
 
 ## Model and effort
 

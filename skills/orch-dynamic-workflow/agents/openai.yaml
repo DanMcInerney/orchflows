@@ -3,4 +3,4 @@ interface:
   short_description: "Coordinate a task and one independent review"
 
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

@@ -42,13 +42,13 @@ claude plugin marketplace add ~/.orchflows
 claude plugin install orchflows@orchflows-home --scope user
 ```
 
-Workflows are manual-only by default, including built-ins and skills in your personal libraries. Invoke a workflow explicitly from the skill picker or by name. [Invocation settings](docs/hosts.md#invocation-policy).
+`orch-dynamic-workflow` can be selected automatically when no more specific workflow or skill fits your request. Other core skills, bundled examples and personal workflows are manual-only by default. Invoke them explicitly from the skill picker or by name. [Invocation settings](docs/hosts.md#invocation-policy).
 
 Start a new session. [Setup options](docs/home.md#setup) · [Host registration and invocation](docs/hosts.md#register-and-refresh).
 
 ## Usage
 
-Invoke a named workflow and describe the task. Choose [/orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) to compose the smallest useful workflow for the task.
+Describe the task for automatic selection of [/orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md), or invoke a named workflow explicitly. Dynamic work composes the smallest useful workflow for the task.
 
 **Simple task.** The coordinator makes and verifies an already-clear change directly. One independent child reviews it. This is the smallest dynamic workflow, shown with no repairs needed:
 
