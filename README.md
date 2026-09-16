@@ -317,12 +317,12 @@ skills/             two primitives and three built-in compositions
 guidance/           domain preferences and extension documents
 docs/               shared architecture and operating contracts
 scripts/ + tests/   core setup, resolution and history tools
-example-workflows/  optional libraries and runnable examples
+example-workflows/  optional workflow libraries
 plugin.json         package identity
 ```
 
 The core checkout is for library development. Your editable libraries live in `~/.orchflows/libraries/`, with `personal` as the default for new workflows. Setup maintains the installed core under `~/.orchflows/.local/`. Edit the checkout or your libraries; keep task outputs in the project workspace.
 
-The examples directory also includes `research-acquire` for public-source acquisition, `3d-browser-game` for Three.js game development, and the complete Nightbind game with editable Blender sources.
+The examples directory also includes `research-acquire` for public-source acquisition and `3d-browser-game` for Three.js game development. Generated projects, reports and trial evidence belong in caller workspaces and are not included in this repository.
 
 [Architecture](docs/architecture.md) · [Home and updates](docs/home.md) · [Host integration](docs/hosts.md) · [Agent history](docs/history.md) · [Authoring guidance](guidance/orchflows.md)

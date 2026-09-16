@@ -1,4 +1,0 @@
-{
-  "productionDiagnosticStringMatches": [],
-  "command": "rg -l __gameTest|test-scenario|Development scenarios dist"
-}
