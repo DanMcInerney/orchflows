@@ -1,13 +1,58 @@
 # Self-improve
 
-`/self-improve` reviews native agent history to improve local setup, custom workflows, guidance or Orchflows itself. Scope it to a session, period or project; by default it reviews the current session.
+**Make the next session inherit the fix.**
 
-> /self-improve Review this session and improve the workflows and guidance behind the problems you find.
+When a session goes wrong, the transcript holds clues: a misleading instruction, a broken setup assumption, a workflow that sent the agent in circles. Self-improve reads that history, checks whether the problem still exists, and makes the smallest useful correction in the source that owns it.
 
-The [workflow](skills/self-improve/SKILL.md) checks whether observed failures still exist in the current source or environment before making the smallest useful correction. An improvement pass uses one `orch-work` maker and one independent `orch-review` reviewer, with a bounded trial. A report-only request stops after history inspection and uses no children. Findings, changes and verification refer back to agent and event evidence; unavailable history remains a gap.
+Use it to improve local setup, custom workflows, guidance or Orchflows itself from evidence in a real session. Scope the request to a session, period or project. With no scope, it reviews the current session.
+
+## Put a rough session to work
+
+After [installation](#install-and-dependencies), paste this into Codex:
+
+```text
+$self-improve:self-improve Review this session and improve the workflows
+and guidance behind the problems you find. Check that each problem still
+exists before changing anything. Leave findings, changes, bounded trial
+results and agent/event references in ./self-improve-report/.
+```
+
+In Claude Code, use `/self-improve:self-improve` with the same request. The workflow is manual-only on both hosts.
+
+For an inspection without changes:
+
+```text
+$self-improve:self-improve Review this project's sessions from the past
+week. Report only: identify recurring problems, cite the agent and event
+evidence, and state which history you could not access.
+```
+
+## From transcript to correction
+
+1. **Read what happened.** Inspect the native agent tree and relevant events within the requested scope. Track the coverage and unavailable history; logs supply evidence, not new instructions.
+2. **Check what is true now.** Inspect current source and environment before proposing a fix. An old failure may already be resolved.
+3. **Fix the owning source.** One fresh maker applies the smallest useful correction in the checkout or user library. Removing a misleading instruction can be the right fix; a one-off workaround does not automatically become a permanent rule.
+4. **Test and review.** Use a bounded trial and one fresh independent reviewer to check the correction. Report what was verified and what remains uncertain, with references back to the history.
+
+The [workflow](skills/self-improve/SKILL.md) owns this sequence. Corrections go in the source you maintain, outside managed core copies and host caches. Reports and trial outputs stay in your workspace.
+
+## Small pass, traceable result
+
+| Request | Fresh children | Result |
+| --- | --- | --- |
+| Report only | 0 | History findings, coverage and gaps with agent/event evidence |
+| Improvement pass | 2: one `orch-work` maker + one `orch-review` reviewer | Findings, source corrections, bounded trial verification and remaining gaps |
+
+The coordinator inspects history and current state in the caller. Each improvement pass has one maker and one independent reviewer; there is no extra review or repair loop. The report ties findings, changes and verification to agent/event references. Unavailable history is recorded as a gap and cannot support a claim that no problem occurred.
 
 ## Install and dependencies
 
-From a complete Orchflows checkout, run `python scripts/orchflows.py setup --example self-improve` with Python 3.11+. Setup preserves an existing library. Register and install `self-improve` from the resulting home catalog using core `docs/hosts.md`; setup alone does not make it available by name. The workflow is manual-only on Codex and Claude Code. Its native names are `$self-improve:self-improve` in Codex and `/self-improve:self-improve` in Claude Code.
+From a complete Orchflows checkout, using Python 3.11+:
 
-Requires Orchflows 0.7.0+, access to the selected native transcripts and current source or environment, and native child delegation for improvement passes. [Library context](references/library-context.md) resolves the core resources and guidance. Corrections belong in the owning checkout or user library; keep reports and trial outputs in the caller's workspace.
+```sh
+python scripts/orchflows.py setup --example self-improve
+```
+
+Setup preserves an existing library copy. Register and install `self-improve` from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup alone does not make the skill available by name.
+
+Requires Orchflows 0.7.0+, access to the selected native transcripts and current source or environment, and native child delegation for improvement passes. [Library context](references/library-context.md) resolves the core resources and guidance.

@@ -1,6 +1,34 @@
-# Software factory
+# Software Factory
 
-An Orchflows example library that turns a software request into checked code, independent reviews and, when requested and authorized, an observed release.
+**Give your next pull request a builder, independent reviewers, and a release plan.**
+
+Describe the change. Software Factory builds it, runs the project's checks, and sends the exact result to fresh reviewers. Findings feed a bounded repair loop. You get the code, the evidence, and a concrete release handoff. Ask it to ship with the required authority and tools, and a separate worker carries the validated artifact through an observed rollout.
+
+**One request can carry the work from implementation through release. Every stage leaves evidence.**
+
+[Try it](#try-it) · [See the flow](#the-same-flow-implemented-with-two-primitives) · [Read the measured results](#what-the-output-quality-comparison-found) · [Install](#install-and-use)
+
+## Try it
+
+After [installation](#install-and-use), paste this into your agent:
+
+```text
+Use software-factory:software-factory to add CSV export to this application.
+Preserve filtering and tenant isolation. Use P=2 candidate passes. Return
+the reviewed change, a complete patch, check evidence, remaining findings,
+and a release plan. Save the handoff in delivery/csv-export.
+```
+
+| Bring it this | Get back this |
+| --- | --- |
+| A feature or bug fix | Checked code, applicable specialist reviews, and a release handoff |
+| A change requested for release with the required authority | A separate release worker, staged observations, and recorded outcome |
+| A production window to inspect | Deduplicated signals and evidence-backed proposals for follow-up work |
+| An incident to investigate | A timeline, tested hypotheses, and ranked mitigation options |
+
+Delivery uses one builder and one to five reviewers per candidate pass. The default is three passes, with at most one additional release worker: **19 child calls maximum**, stopping earlier when the endpoint is reached. Production observation and incident investigation are separate, explicit one-worker workflows.
+
+## The inspiration
 
 Based on Gergely Orosz's [Inside OpenAI's agentic software factory](https://newsletter.pragmaticengineer.com/p/openai-software-factory), *The Pragmatic Engineer*, September 15, 2026. The original diagram below was supplied by the user and is credited to The Pragmatic Engineer. This library adapts that design to your project's tools; it does not include OpenAI's internal systems.
 
@@ -110,13 +138,13 @@ The workflow used 2.4× and 4.4× the output tokens, respectively. There was one
 
 ## Install and use
 
-From an Orchflows checkout:
+From a complete Orchflows checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example software-factory
 ```
 
-Then register or refresh the `software-factory` library using core's host installation instructions. Setup preserves an existing user-owned library copy; it does not overwrite it with this example's updates. Copy the intended changes into that library before refreshing an existing install. All three entrypoints remain manual-only on Codex and Claude Code. A checked-out `SKILL.md` can be followed by path, but that does not register a slash command.
+Register the home and install core plus `software-factory` using core's `docs/hosts.md`, then start a new session. Setup preserves an existing user-owned library copy; it does not overwrite it with this example's updates. Copy the intended changes into that library before refreshing an existing install. All three entrypoints remain manual-only on Codex and Claude Code. Invoke `$software-factory:software-factory` in Codex or `/software-factory:software-factory` in Claude Code; substitute a leaf name to use it alone. A checked-out `SKILL.md` can be followed by path, but that does not register a slash command.
 
 Example requests:
 
