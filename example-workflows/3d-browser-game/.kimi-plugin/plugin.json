@@ -1,0 +1,6 @@
+{
+  "name": "3d-browser-game",
+  "version": "0.2.0",
+  "description": "Develop substantial Three.js games through mechanics experiments, Blender production and independent browser playtests.",
+  "skills": "./skills/"
+}

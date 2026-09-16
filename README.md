@@ -22,7 +22,7 @@ When a new model no longer needs a correction, delete it from the guidance or ex
 
 ## Install
 
-Requires Python 3.11+ and Codex or Claude Code with native subagents.
+Requires Python 3.11+ and a host with native subagents: Codex, Claude Code, Google Antigravity (`agy`), Kimi Code, Grok Build or Z.ai's ZCode. See [host support and limits](docs/hosts.md).
 
 ```sh
 git clone https://github.com/DanMcInerney/orchflows.git
@@ -30,21 +30,20 @@ cd orchflows
 python scripts/orchflows.py setup
 ```
 
-Run the two commands for your host:
+Setup detects supported hosts through their executables, installs core through the Codex, Claude Code, Antigravity and Grok Build CLIs, and prints the remaining in-app steps for Kimi Code and ZCode. Rerun the same command to update. Existing settings and disabled plugins are preserved; conflicts or unsupported host versions appear in the result. One host's failure does not stop the others.
 
 ```sh
-# Codex
-codex plugin marketplace add ~/.orchflows
-codex plugin add orchflows@orchflows-home
-
-# Claude Code
-claude plugin marketplace add ~/.orchflows
-claude plugin install orchflows@orchflows-home --scope user
+python scripts/orchflows.py setup --host codex --host grok  # Choose hosts
+python scripts/orchflows.py setup --host agy               # Antigravity CLI
+python scripts/orchflows.py setup --host none              # Prepare the home only
+python scripts/orchflows.py doctor                         # Check without changes
 ```
 
-`orch-dynamic-workflow` can be selected automatically when no more specific workflow or skill fits your request. Other core skills, bundled examples and personal workflows are manual-only by default. Invoke them explicitly from the skill picker or by name. [Invocation settings](docs/hosts.md#invocation-policy).
+Setup installs optional examples only when requested with `--example <name>` and refreshes libraries already installed through the supported CLIs. Concurrency stays unchanged unless you pass `--concurrency N`. [Setup options and result statuses](docs/home.md#setup) · [Manual registration and provider setup](docs/hosts.md#register-and-refresh).
 
-Start a new session. [Setup options](docs/home.md#setup) · [Host registration and invocation](docs/hosts.md#register-and-refresh).
+`orch-dynamic-workflow` can be selected automatically when no more specific workflow or skill fits your request. Other core skills, bundled examples and personal workflows request manual-only invocation. Codex, Claude Code, Kimi Code and Grok Build support that setting; ZCode currently cannot enforce it, and Antigravity enforcement is unverified. Invoke named workflows from the skill picker or by name. [Invocation settings](docs/hosts.md#invocation-policy).
+
+Start a new session to load Orchflows.
 
 ## Usage
 
@@ -142,7 +141,7 @@ A workflow is a `SKILL.md` that connects these operations: what can run in paral
 
 The package includes two ready-made compositions: [dynamic work](skills/orch-dynamic-workflow/SKILL.md) and [workflow building](skills/orch-build-workflow/SKILL.md). They compose the two primitives and show how to write your own. A workflow declares its agent count and any repetition; loops are part of the requested workflow.
 
-Codex or Claude Code runs the agents. Orchflows adds no agent runtime, scheduler or workflow language. Loading a workflow applies its instructions in the current context; calling a primitive launches a child.
+Your host runs the agents. Orchflows adds no agent runtime, scheduler or workflow language. Loading a workflow applies its instructions in the current context; calling a primitive launches a child.
 
 ### Supply guidance separately
 
@@ -160,7 +159,7 @@ The outer workflow resolves guidance once, from general to specific. At each lev
 
 ## Example workflows
 
-These examples show parallel collection, creative production and improvement using the same two skills. They are optional libraries: add one with `python scripts/orchflows.py setup --example <name>`, then [install it through your host](docs/hosts.md#register-and-refresh). Each library documents its tool dependencies.
+These examples show parallel collection, creative production and improvement using the same two skills. They are optional libraries: add one with `python scripts/orchflows.py setup --example <name>` and follow any remaining host steps in the result. Each library documents its tool dependencies.
 
 ### Social search
 
@@ -324,7 +323,7 @@ Ask for a report only to stop after inspecting history. An improvement pass incl
 | Deterministic mechanics | The owning skill's `scripts/`, with sibling `tests/` |
 | Package identity | Root `plugin.json` |
 | Skill discovery | Native host manifests and catalogs |
-| Agent execution and isolation | Codex or Claude Code |
+| Agent execution and isolation | Native host; see [supported hosts and limits](docs/hosts.md) |
 | Results, checkpoints and run evidence | Your project workspace |
 
 The repository follows those boundaries:

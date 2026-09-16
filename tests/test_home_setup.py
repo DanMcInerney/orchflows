@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -45,16 +46,20 @@ class HomeSetupTests(unittest.TestCase):
                                                          "CLAUDE_CONFIG_DIR": str(self.root / "claude")})
         self.environment_patch.start()
         self.addCleanup(self.environment_patch.stop)
+        detection = patch.object(orchflows.host_integration, "detect", return_value={})
+        detection.start()
+        self.addCleanup(detection.stop)
         self.home = self.root / "home"
         self.source = self.root / "source"
         package(self.source, "orchflows", "7.8.9")
         write(self.source / ".codex-plugin/plugin.json", json.dumps({"name": "orchflows", "version": "7.8.9+cache"}))
         write(self.source / ".claude-plugin/plugin.json", json.dumps({"name": "orchflows", "version": "7.8.9"}))
+        write(self.source / ".kimi-plugin/plugin.json", json.dumps({"name": "orchflows", "version": "7.8.9", "skills": "./skills/"}))
         write(self.source / "guidance/code.md", "Local coding guidance.\n")
         write(self.source / "docs/hosts.md", "Fixture host docs.\n")
         write(self.source / "README.md", "Fixture core.\n")
         (self.source / "scripts").mkdir()
-        for name in ("orchflows.py", "host_config.py", "native_logs.py"):
+        for name in ("orchflows.py", "host_config.py", "host_integration.py", "agy_integration.py", "native_logs.py"):
             shutil.copy2(SCRIPT.with_name(name), self.source / "scripts" / name)
         self.example = self.source / "example-workflows/social-search"
         package(self.example, "social-search")
@@ -69,6 +74,8 @@ class HomeSetupTests(unittest.TestCase):
     def cli(self, script: Path, *arguments: str, python: str | None = None, env: dict | None = None) -> subprocess.CompletedProcess:
         unrelated = self.root / "unrelated-project"
         unrelated.mkdir(exist_ok=True)
+        if arguments[0] in {"setup", "doctor"} and "--host" not in arguments:
+            arguments = (*arguments, "--host", "none")
         return subprocess.run([python or sys.executable, "-B", str(script), *arguments], cwd=unrelated,
                               env=env, text=True, capture_output=True, timeout=45, check=False)
 
@@ -85,6 +92,8 @@ class HomeSetupTests(unittest.TestCase):
             orchflows.resolve(self.home, "orchflows-light")
         self.assertTrue((core / ".codex-plugin/plugin.json").is_file())
         self.assertTrue((core / ".claude-plugin/plugin.json").is_file())
+        self.assertEqual((core / ".kimi-plugin/plugin.json").read_bytes(),
+                         (self.source / ".kimi-plugin/plugin.json").read_bytes())
         for relative in (".git", "tests", "example-workflows", "scripts/__pycache__"):
             self.assertFalse((core / relative).exists(), relative)
         self.assertEqual(snapshot(self.example), snapshot(self.home / "libraries/social-search"))
@@ -111,24 +120,73 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual((self.root / "codex/config.toml").read_text(), "malformed = [\n")
         self.assertFalse((self.root / "claude").exists())
         write(self.root / "codex/config.toml", 'model = "personal"\n')
-        result = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), "--concurrency", "22")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        report = json.loads(result.stdout)
+        with patch.object(orchflows.host_integration, "detect", return_value={
+            "codex": {"status": "available"}, "claude": {"status": "available"},
+        }), patch.object(orchflows.host_integration, "integrate", return_value={}):
+            report = orchflows.setup(self.home, self.source, concurrency=22)
         self.assertEqual(report["host_configs"]["codex"]["value"], 22)
         self.assertEqual(tomllib.loads((self.root / "codex/config.toml").read_text())["agents"]["max_threads"], 22)
         self.assertEqual(json.loads((self.root / "claude/settings.json").read_text())["env"]["CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"], "22")
 
-    def test_host_preflight_and_invalid_concurrency_do_not_create_home(self) -> None:
+    def test_default_preserves_host_settings_and_invalid_options_do_not_create_home(self) -> None:
         write(self.root / "claude/settings.json", '{"env":null}')
-        with self.assertRaisesRegex(ValueError, "Host configuration preserved"):
-            orchflows.setup(self.home, self.source)
-        self.assertFalse(self.home.exists())
+        report = orchflows.setup(self.home, self.source)
+        self.assertEqual(report["host_config_status"], "skipped")
+        self.assertEqual((self.root / "claude/settings.json").read_text(), '{"env":null}')
         self.assertFalse((self.root / "codex").exists())
         for arguments in (("--concurrency", "0"), ("--concurrency", "-1"), ("--concurrency", "many"),
                           ("--concurrency", "5", "--skip-host-config")):
-            result = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), *arguments)
+            absent = self.root / "invalid-options-home"
+            result = self.cli(SCRIPT, "setup", "--home", str(absent), "--source", str(self.source), *arguments)
             self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
-            self.assertFalse(self.home.exists())
+            self.assertFalse(absent.exists())
+
+    def test_selected_host_concurrency_does_not_create_other_host_settings(self) -> None:
+        with patch.object(orchflows.host_integration, "detect", return_value={"codex": {"status": "available"}}) as detect, \
+                patch.object(orchflows.host_integration, "integrate", return_value={}):
+            result = orchflows.setup(self.home, self.source, concurrency=9, hosts=["codex"])
+        detect.assert_called_once_with(["codex"])
+        self.assertEqual(result["host_config_status"], "configured")
+        self.assertEqual(tomllib.loads((self.root / "codex/config.toml").read_text())["agents"]["max_threads"], 9)
+        self.assertFalse((self.root / "claude").exists())
+
+    def test_invalid_host_settings_do_not_block_other_hosts_or_registration(self) -> None:
+        write(self.root / "codex/config.toml", "invalid = [\n")
+        with patch.object(orchflows.host_integration, "detect", return_value={
+            "codex": {"status": "available"}, "claude": {"status": "available"},
+        }), patch.object(orchflows.host_integration, "integrate", return_value={}) as integrate:
+            result = orchflows.setup(self.home, self.source, concurrency=9)
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(result["host_config_status"], "partial")
+        self.assertEqual((self.root / "codex/config.toml").read_text(), "invalid = [\n")
+        self.assertEqual(json.loads((self.root / "claude/settings.json").read_text())["env"]["CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"], "9")
+        integrate.assert_called_once()
+        self.assertTrue(integrate.call_args.kwargs["install"])
+
+    def test_setup_registers_requested_example_and_reports_manual_steps_as_partial(self) -> None:
+        reports = {"kimi": {"status": "needs_action", "next_steps": ["Install in Kimi"]}}
+        with patch.object(orchflows.host_integration, "integrate", return_value=reports) as integrate:
+            result = orchflows.setup(self.home, self.source, "social-search")
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(result["hosts"], reports)
+        self.assertEqual(integrate.call_args.kwargs["requested"], ("orchflows", "social-search"))
+        self.assertEqual({p["name"] for p in integrate.call_args.args[1]}, {"orchflows", "social-search"})
+
+    def test_cli_terminal_summary_and_forced_or_piped_json_keep_exit_status(self) -> None:
+        report = {"home": str(self.home), "status": "incomplete", "issues": ["Manual step remains"],
+                  "hosts": {"kimi": {"status": "needs_action", "next_steps": ["Install in Kimi"]}}}
+        for terminal, arguments, expect_json in ((True, [], False), (True, ["--json"], True), (False, [], True)):
+            output = io.StringIO()
+            output.isatty = lambda: terminal
+            with self.subTest(terminal=terminal, arguments=arguments), patch.object(orchflows, "doctor", return_value=report), \
+                    patch.object(sys, "stdout", output):
+                status = orchflows.main(["doctor", "--home", str(self.home), "--host", "kimi", *arguments])
+            self.assertEqual(status, 1)
+            if expect_json:
+                self.assertEqual(json.loads(output.getvalue()), report)
+            else:
+                self.assertIn("Needs action", output.getvalue())
+                self.assertIn("Install in Kimi", output.getvalue())
 
     def test_repeat_preserves_user_files_and_runtime_and_regenerates_owned_files(self) -> None:
         first = self.install(example=True)
@@ -278,7 +336,7 @@ class HomeSetupTests(unittest.TestCase):
         catalogs = orchflows._catalog_texts
         attempts = []
 
-        def competing_setups(home, libraries):
+        def competing_setups(home, libraries, core_version):
             before = snapshot(self.home)
             for source in (core, other):
                 result = self.cli(core / "scripts/orchflows.py", "setup", "--home", str(home),
@@ -287,7 +345,7 @@ class HomeSetupTests(unittest.TestCase):
                 self.assertIn("Setup lock exists", json.loads(result.stderr)["error"])
                 self.assertEqual(snapshot(self.home), before)
                 attempts.append(source)
-            return catalogs(home, libraries)
+            return catalogs(home, libraries, core_version)
 
         with patch.object(orchflows, "_catalog_texts", side_effect=competing_setups):
             result = self.install(example=True)
@@ -356,26 +414,29 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual(snapshot(example), snapshot(self.home / "libraries/research-acquire"))
         expected = {"orchflows": "./.local/packages/orchflows", "custom-research": "./libraries/my-folder",
                     "research-acquire": "./libraries/research-acquire"}
-        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
+        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "marketplace.json"):
             text = (self.home / relative).read_text(encoding="utf-8")
             catalog = json.loads(text)
             self.assertEqual(catalog["name"], "orchflows-home")
             self.assertEqual({entry["name"]: entry["source"]["path"] if isinstance(entry["source"], dict) else entry["source"]
                               for entry in catalog["plugins"]}, expected)
             self.assertNotIn(str(self.home), text)
+            if relative == "marketplace.json":
+                self.assertEqual({entry["name"]: entry["version"] for entry in catalog["plugins"]},
+                                 {"orchflows": "7.8.9", "custom-research": "0.1.0", "research-acquire": "0.1.0"})
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
 
     def test_doctor_reports_stale_catalogs_and_setup_regenerates_them(self) -> None:
         self.install(example=True)
         package(self.source / "example-workflows/research-acquire", "research-acquire")
-        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
+        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "marketplace.json"):
             write(self.home / relative, '{"name":"orchflows-home","plugins":[{"name":"external","source":"./elsewhere"}]}\n')
         report = orchflows.doctor(self.home)
         self.assertEqual(report["status"], "incomplete")
         self.assertIn("rerun setup", " ".join(report["issues"]))
         result = orchflows.setup(self.home, self.source, "research-acquire")
         self.assertEqual(result["status"], "ready", result)
-        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
+        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "marketplace.json"):
             names = [entry["name"] for entry in json.loads((self.home / relative).read_text())["plugins"]]
             self.assertEqual(names, ["orchflows", "research-acquire", "social-search"])
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
@@ -390,6 +451,25 @@ class HomeSetupTests(unittest.TestCase):
             self.assertEqual(resolved["runtime_python"], first["runtime_python"])
             self.assertTrue(Path(orchflows.resolve(self.home, "social-search", skill="sample")["skill_path"]).is_file())
         self.assertEqual(orchflows.doctor(self.home)["status"], "incomplete")
+
+    def test_zcode_catalog_tracks_versions_and_survives_a_relocated_home(self) -> None:
+        first = self.install(example=True)
+        core = Path(first["core"]["package_root"])
+        write(core / "plugin.json", json.dumps({"name": "orchflows", "version": "7.8.10"}))
+        write(self.home / "libraries/social-search/plugin.json", json.dumps({"name": "social-search", "version": "0.2.0"}))
+        self.assertEqual(orchflows.doctor(self.home)["checks"]["catalogs"]["marketplace.json"], "stale")
+        result = orchflows.setup(self.home, core)
+        self.assertEqual(result["status"], "ready")
+        catalog = json.loads((self.home / "marketplace.json").read_text(encoding="utf-8"))
+        self.assertEqual({entry["name"]: entry["version"] for entry in catalog["plugins"]},
+                         {"orchflows": "7.8.10", "social-search": "0.2.0"})
+        clone = self.root / "relocated"
+        shutil.copytree(self.home, clone)
+        for entry in catalog["plugins"]:
+            package_root = (clone / entry["source"]).resolve()
+            self.assertTrue(package_root.is_relative_to(clone))
+            self.assertEqual(json.loads((package_root / "plugin.json").read_text())["version"], entry["version"])
+        self.assertEqual(orchflows.doctor(clone)["checks"]["catalogs"]["marketplace.json"], "ok")
 
     def test_example_names_reject_traversal_and_invalid_names_before_mutation(self) -> None:
         for name in ("../outside", "..\\outside", "/outside", "C:\\outside", "C:outside", "..", "", "sample.dot", "x" * 65):
@@ -422,7 +502,7 @@ class HomeSetupTests(unittest.TestCase):
             self.assertIn("Ambiguous library name: duplicate", issues)
             self.assertIn("Ambiguous library name: orchflows", issues)
             self.assertIn("Malformed package manifest", issues)
-        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
+        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "marketplace.json"):
             catalog = json.loads((self.home / relative).read_text(encoding="utf-8"))
             self.assertEqual([item["name"] for item in catalog["plugins"]], ["orchflows", "valid"])
 

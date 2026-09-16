@@ -1,0 +1,10 @@
+{
+  "name": "orchflows-local",
+  "plugins": [
+    {
+      "name": "orchflows",
+      "source": "./",
+      "version": "0.7.0+codex.20260916023046"
+    }
+  ]
+}

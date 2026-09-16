@@ -2,6 +2,10 @@
 
 The [home CLI](home.md)'s `history` command reads native transcripts without changing them or resuming agents. `HOST` is `codex` or `claude`; each command accepts `--native-home PATH` and `--help`.
 
+Antigravity, Kimi Code, Grok Build and ZCode plugin support does not add transcript adapters. Use their native session/export tools; report unavailable history as a gap. Claude Code using Z.ai still uses the `claude` adapter.
+
+Antigravity exposes `/resume` and `/agents` for session and child inspection. Its documented CLI transcript path is `~/.gemini/antigravity-cli/brain/<conversationId>/.system_generated/logs/transcript.jsonl`; desktop transcripts use `~/.gemini/antigravity/brain/`. These paths do not establish an Orchflows adapter or a stable transcript schema. [Antigravity sessions](https://www.agy.dev/docs/cli/commands/resume/), [transcript paths](https://antigravity.google/docs/hooks).
+
 Native home: `CODEX_HOME` → `~/.codex`; `CLAUDE_CONFIG_DIR` → `~/.claude`. An explicit `--native-home` wins. Codex discovery requires `state_*.sqlite`; it has no transcript-scan fallback.
 
 ## Scope

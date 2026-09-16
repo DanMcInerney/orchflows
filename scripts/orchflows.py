@@ -19,11 +19,12 @@ if __name__ == "__main__":
     sys.dont_write_bytecode = True
 
 import host_config
+import host_integration
 import native_logs
 
 
 CORE_NAME = "orchflows"
-CORE_ENTRIES = ("plugin.json", ".claude-plugin", ".codex-plugin", "skills", "guidance", "docs", "scripts",
+CORE_ENTRIES = ("plugin.json", ".claude-plugin", ".codex-plugin", ".kimi-plugin", "skills", "guidance", "docs", "scripts",
                 "README.md", "AGENTS.md", "CLAUDE.md", "LICENSE")
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
 HOME_README = """# orchflows home
@@ -159,12 +160,14 @@ def runtime_python(home: Path) -> Path:
     return home / ".local/runtime" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
-def _catalog_texts(home: Path, libraries: list[dict]) -> dict[str, str]:
+def _catalog_texts(home: Path, libraries: list[dict], core_version: str | None = None) -> dict[str, str]:
     sources = {CORE_NAME: f"./.local/packages/{CORE_NAME}"}
+    versions = {CORE_NAME: core_version}
     names = [entry["name"] for entry in libraries]
     for entry in libraries:
         if entry["name"] != CORE_NAME and names.count(entry["name"]) == 1:
             sources[entry["name"]] = "./" + Path(entry["package_root"]).relative_to(home).as_posix()
+            versions[entry["name"]] = entry["version"]
     catalogs = {
         ".agents/plugins/marketplace.json": {
             "name": "orchflows-home",
@@ -176,6 +179,12 @@ def _catalog_texts(home: Path, libraries: list[dict]) -> dict[str, str]:
         ".claude-plugin/marketplace.json": {
             "name": "orchflows-home", "owner": {"name": "orchflows-home"},
             "plugins": [{"name": name, "source": source} for name, source in sources.items()],
+        },
+        "marketplace.json": {
+            "name": "orchflows-home",
+            "plugins": [{"name": name, "source": source,
+                         **({"version": versions[name]} if versions[name] is not None else {})}
+                        for name, source in sources.items()],
         },
     }
     return {relative: json.dumps(catalog, indent=2) + "\n" for relative, catalog in catalogs.items()}
@@ -218,16 +227,33 @@ def _init_git(home: Path) -> tuple[str, list[str]]:
 
 
 def setup(home: Path, source: Path, example: str | None = None, *,
-          concurrency: int = 15, skip_host_config: bool = False) -> dict:
+          concurrency: int | None = None, skip_host_config: bool = False,
+          hosts: list[str] | tuple[str, ...] | None = None) -> dict:
     home, source = home.resolve(), source.resolve()
     _validate_core(source)
+    selected = host_integration.select_hosts(hosts)
+    if concurrency is not None and (type(concurrency) is not int or concurrency < 1):
+        raise ValueError("Concurrency must be a positive integer")
+    if concurrency is not None and (skip_host_config or not selected):
+        raise ValueError("--concurrency requires selected hosts and cannot combine with --skip-host-config")
     for relative in ("libraries", ".local", ".local/packages", f".local/packages/{CORE_NAME}", ".local/runtime",
                      ".agents", ".agents/plugins", ".claude-plugin", ".git"):
         if _is_link(home / relative):
             raise ValueError(f"Setup does not write through links: {home / relative}")
     if example is not None:
         _example_plan(home, source, example)
-    host_plans = [] if skip_host_config else host_config.prepare_host_configs(concurrency)
+    detected = host_integration.detect(hosts)
+    host_plans, config_issues, config_failures = [], [], {}
+    if concurrency is not None:
+        for host, detection in detected.items():
+            if host in {"codex", "claude"} and detection["status"] == "available":
+                try:
+                    host_plans.extend(host_config.prepare_host_configs(concurrency, (host,)))
+                except (OSError, ValueError) as exc:
+                    config_failures[host] = {"status": "unavailable", "message": str(exc)}
+                    config_issues.append(str(exc))
+        if not host_plans and not config_failures:
+            config_issues.append("Concurrency tuning requires a detected Codex or Claude CLI; no settings changed")
     core_path = home / ".local/packages" / CORE_NAME
     core_path.parent.mkdir(parents=True, exist_ok=True)
     lock = core_path.parent / ".setup.lock"
@@ -256,16 +282,24 @@ def setup(home: Path, source: Path, example: str | None = None, *,
             example_info = {"name": example, "status": plan, "package_root": str(home / "libraries" / example)}
         libraries, library_issues = _libraries(home)
         issues.extend(library_issues)
-        for relative, text in _catalog_texts(home, libraries).items():
+        for relative, text in _catalog_texts(home, libraries, manifest["version"]).items():
             files[relative] = _replace_text(home / relative, text)
         git, git_issues = _init_git(home)
         issues.extend(git_issues)
         host_configs, host_issues = host_config.apply_host_configs(host_plans)
-        issues.extend(host_issues)
+        host_configs.update(config_failures)
+        issues.extend(config_issues + host_issues)
+        packages = [{**manifest, "package_root": str(core_path)},
+                    *[entry for entry in libraries if entry["name"] != CORE_NAME
+                      and sum(other["name"] == entry["name"] for other in libraries) == 1]]
+        registrations = host_integration.integrate(home, packages, detected, install=True,
+                                                  requested=(CORE_NAME, example) if example else (CORE_NAME,))
+        issues.extend(host_integration.issues(registrations))
         return {"status": "partial" if issues else "ready", "home": str(home), "files": files,
                 "runtime_python": str(runtime_python(home)), "core": core, "runtime": runtime, "example": example_info,
                 "git": git, "host_configs": host_configs,
-                "host_config_status": "skipped" if skip_host_config else "partial" if host_issues else "configured",
+                "host_config_status": "skipped" if concurrency is None else "partial" if host_issues or config_issues else "configured",
+                "hosts": registrations,
                 "issues": issues}
     finally:
         lock.unlink()
@@ -326,12 +360,15 @@ def resolve(home: Path, library: str, skill: str | None = None, resource: str | 
     return result
 
 
-def doctor(home: Path) -> dict:
+def doctor(home: Path, hosts: list[str] | tuple[str, ...] | None = None) -> dict:
     home = home.resolve()
+    host_integration.select_hosts(hosts)
     issues, checks = [], {}
     core = home / ".local/packages" / CORE_NAME
+    core_version = None
     try:
         manifest = _validate_core(core)
+        core_version = manifest["version"]
         checks["core"] = {"package_root": str(core), **manifest}
     except (OSError, ValueError) as exc:
         checks["core"] = "unavailable"
@@ -345,14 +382,47 @@ def doctor(home: Path) -> dict:
     issues.extend(library_issues)
     issues.extend(f"Missing home entry: {relative}" for relative in ("README.md", ".gitignore") if not (home / relative).exists())
     checks["catalogs"] = {}
-    for relative, text in _catalog_texts(home, entries).items():
+    for relative, text in _catalog_texts(home, entries, core_version).items():
         path = home / relative
         stale = not path.is_file() or path.read_text(encoding="utf-8") != text
         checks["catalogs"][relative] = "stale" if stale else "ok"
         if stale:
             issues.append(f"Catalog {relative} does not match the installed libraries; rerun setup")
-    return {"status": "incomplete" if issues else "ready", "home": str(home), "checks": checks,
+    packages = [checks["core"]] if isinstance(checks["core"], dict) else []
+    packages.extend(entry for entry in entries if entry["name"] != CORE_NAME
+                    and sum(other["name"] == entry["name"] for other in entries) == 1)
+    registrations = host_integration.integrate(home, packages, host_integration.detect(hosts)) if home.is_dir() else {}
+    issues.extend(host_integration.issues(registrations))
+    return {"status": "incomplete" if issues else "ready", "home": str(home), "checks": checks, "hosts": registrations,
             "runtime_python": str(python) if checks["runtime"] == "ok" else None, "issues": issues}
+
+
+def _display(result: dict, *, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(result, separators=(",", ":")))
+        return
+    print(f"Orchflows home: {result['home']}")
+    reports = result.get("hosts", {})
+    if not reports:
+        print("Home only; host registration was not requested.")
+    for host, report in reports.items():
+        print(f"{host:<10} {report['status'].replace('_', ' ').capitalize()}")
+        if report.get("message"):
+            print(f"  {report['message']}")
+        for warning in report.get("warnings", []):
+            print(f"  Note: {warning}")
+        for name, package in report.get("packages", {}).items():
+            print(f"  {name}: {package['message']}")
+        for step in report.get("next_steps", []):
+            print(f"  {step}")
+    if reports and all(report["status"] == "not_detected" for report in reports.values()):
+        print("Home prepared. Install a supported host, then rerun setup.")
+    for issue in result.get("issues", []):
+        print(f"Issue: {issue}")
+    if result.get("host_config_status") == "configured":
+        print("Requested concurrency settings applied.")
+    if any(report["status"] in {"ready", "updated"} for report in reports.values()):
+        print("Start new host sessions to load Orchflows.")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -364,11 +434,15 @@ def main(argv: list[str] | None = None) -> int:
     setup_parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1])
     setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the source's example-workflows directory")
     host_options = setup_parser.add_mutually_exclusive_group()
-    host_options.add_argument("--concurrency", type=int, default=15, metavar="N",
-                              help="Set Codex's spawned-thread cap and Claude's shared tool/subagent cap (default: 15)")
-    host_options.add_argument("--skip-host-config", action="store_true", help="Leave both host settings untouched")
+    host_options.add_argument("--concurrency", type=int, metavar="N",
+                              help="Explicitly tune detected, selected Codex/Claude concurrency (default: preserve settings)")
+    host_options.add_argument("--skip-host-config", action="store_true", help="Preserve concurrency settings (the default); registration still runs")
     doctor_parser = commands.add_parser("doctor", help="Check a home without changing it")
     doctor_parser.add_argument("--home", help=home_help)
+    for command in (setup_parser, doctor_parser):
+        command.add_argument("--host", action="append", choices=(*host_integration.HOSTS, "auto", "none"),
+                             help="Target host; repeat to select several. Default: auto. 'none' checks/prepares the home only")
+        command.add_argument("--json", action="store_true", help="Print JSON even in a terminal (always JSON when piped)")
     resolve_parser = commands.add_parser("resolve", help="Resolve a package, skill or resource")
     resolve_parser.add_argument("--home", help=home_help)
     resolve_parser.add_argument("library")
@@ -380,9 +454,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "setup":
             result = setup(home_path(args.home), args.source.expanduser(), args.example,
-                           concurrency=args.concurrency, skip_host_config=args.skip_host_config)
+                           concurrency=args.concurrency, skip_host_config=args.skip_host_config, hosts=args.host)
         elif args.command == "doctor":
-            result = doctor(home_path(args.home))
+            result = doctor(home_path(args.home), hosts=args.host)
         elif args.command == "resolve":
             result = resolve(home_path(args.home), args.library, args.skill, args.resource)
         else:
@@ -390,7 +464,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         print(json.dumps({"status": "error", "error": str(exc)}), file=sys.stderr)
         return 2
-    print(json.dumps(result, separators=(",", ":")))
+    _display(result, as_json=args.command not in {"setup", "doctor"} or args.json or not sys.stdout.isatty())
     return 1 if args.command in {"setup", "doctor"} and result.get("issues") else 0
 
 

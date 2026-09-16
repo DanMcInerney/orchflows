@@ -31,7 +31,7 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 
 ## Invocation
 
-[orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) is the automatic fallback when no more specific workflow or skill fits the request. Other core skills, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default; automatic selection for those skills requires the caller's opt-in. When creating or copying a workflow, write and verify both [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; omitting either setting leaves that host's automatic default in effect. An explicitly requested workflow still supplies its own composition and guidance.
+[orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) is the automatic fallback when no more specific workflow or skill fits the request. Other core skills, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default; automatic selection for those skills requires the caller's opt-in. When creating or copying a workflow, write and verify the [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; report a host that cannot enforce this policy. An explicitly requested workflow still supplies its own composition and guidance.
 
 ## Model and effort
 
@@ -71,9 +71,10 @@ Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tes
 
 ```text
 <library>/
-├── plugin.json                     name, version, skills: "./skills/"
-├── .claude-plugin/plugin.json      Claude manifest
+├── plugin.json                     package identity; Antigravity manifest
+├── .claude-plugin/plugin.json      Claude, Grok Build and ZCode manifest
 ├── .codex-plugin/plugin.json       Codex manifest
+├── .kimi-plugin/plugin.json        Kimi Code manifest
 ├── README.md                       composition, agent count, install, dependencies
 ├── references/                     shared context and contracts
 ├── guidance/<domain>.md            domain or dotted specialization
@@ -84,7 +85,7 @@ Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tes
 └── trials/                         request.md, expected-behavior.md
 ```
 
-Skill identity is `<library>:<skill>`. Keep links within the package; reach other packages by native skill name or resolved paths. Never embed machine-specific paths. Declare runtime dependencies in the README; setup installs none for libraries.
+Skill identity is `<library>:<skill>`; [host invocation syntax](hosts.md#invocation-policy) can differ. Keep links within the package; reach other packages by native skill name or resolved paths. Never embed machine-specific paths. Declare runtime dependencies in the README; setup installs none for libraries. Root `plugin.json` declares `name`, `version` and `skills: "./skills/"` and also serves Antigravity. Keep the name and version aligned across host manifests; Kimi's manifest declares `skills: "./skills/"`. Existing user libraries need that manifest before installation in Kimi.
 
 ## Invariants
 

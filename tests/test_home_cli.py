@@ -60,6 +60,8 @@ class InstalledCliTests(unittest.TestCase):
                                CODEX_HOME=str(outside / "codex"), CLAUDE_CONFIG_DIR=str(outside / "claude"))
 
             def cli(python, script, *arguments, expected=0):
+                if arguments[0] in {"setup", "doctor"}:
+                    arguments = (*arguments, "--host", "none")
                 result = subprocess.run(
                     [str(python), "-B", str(script), *map(str, arguments)],
                     cwd=project, env=environment, capture_output=True, text=True, timeout=60,
@@ -68,13 +70,15 @@ class InstalledCliTests(unittest.TestCase):
                 return json.loads(result.stdout or result.stderr)
 
             installed = cli(sys.executable, ROOT / "scripts/orchflows.py", "setup", "--example", "social-search")
-            self.assertEqual(installed["host_config_status"], "configured")
-            self.assertEqual(installed["host_configs"]["codex"]["value"], 15)
-            self.assertEqual(installed["host_configs"]["claude"]["value"], 15)
+            self.assertEqual(installed["host_config_status"], "skipped")
+            self.assertEqual(installed["host_configs"], {})
+            self.assertFalse((outside / "codex").exists())
+            self.assertFalse((outside / "claude").exists())
             python = installed["runtime_python"]
             core = Path(installed["core"]["package_root"])
             script = core / "scripts/orchflows.py"
             self.assertEqual((core / "scripts/native_logs.py").read_bytes(), (ROOT / "scripts/native_logs.py").read_bytes())
+            self.assertEqual((core / ".kimi-plugin/plugin.json").read_bytes(), (ROOT / ".kimi-plugin/plugin.json").read_bytes())
             self.assertFalse((core / "example-workflows").exists())
             self.assertEqual(cli(python, script, "setup")["core"]["status"], "reused")
 
@@ -107,6 +111,13 @@ class InstalledCliTests(unittest.TestCase):
                         and "__pycache__" not in item.parts and item.suffix not in {".pyc", ".pyo"}}
 
             self.assertEqual(files(ROOT / "example-workflows/social-search"), files(home / "libraries/social-search"))
+            catalog = json.loads((home / "marketplace.json").read_text(encoding="utf-8"))
+            for entry in catalog["plugins"]:
+                package = home / entry["source"]
+                for host in (".claude-plugin", ".kimi-plugin"):
+                    manifest = json.loads((package / host / "plugin.json").read_text(encoding="utf-8"))
+                    self.assertEqual((manifest["name"], manifest["version"]), (entry["name"], entry["version"]))
+                    self.assertTrue((package / manifest["skills"]).is_dir())
             resolved = cli(python, script, "resolve", "social-search", "--skill", "social-search")
             self.assertEqual(resolved["runtime_python"], python)
             self.assertEqual(Path(resolved["skill_path"]), home / "libraries/social-search/skills/social-search/SKILL.md")
