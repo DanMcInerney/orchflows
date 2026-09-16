@@ -1,4 +1,4 @@
-"""Set both hosts' user concurrency settings; unrelated content is untouched or the file is preserved."""
+"""Set Codex and Claude concurrency; unrelated content is untouched or the file is preserved."""
 
 from __future__ import annotations
 
@@ -73,8 +73,8 @@ def _read(path: Path) -> bytes | None:
     return path.read_bytes()
 
 
-def prepare_host_configs(concurrency: int = 15) -> list[dict]:
-    """Validate both files before setup mutates anything."""
+def prepare_host_configs(concurrency: int = 15, hosts: tuple[str, ...] = ("codex", "claude")) -> list[dict]:
+    """Validate selected host files before changing them."""
     if type(concurrency) is not int or concurrency < 1:
         raise ValueError("Concurrency must be a positive integer")
     plans = []
@@ -82,6 +82,8 @@ def prepare_host_configs(concurrency: int = 15) -> list[dict]:
         ("codex", "CODEX_HOME", ".codex", "config.toml", _codex, "agents." + CODEX_KEY),
         ("claude", "CLAUDE_CONFIG_DIR", ".claude", "settings.json", _claude, "env." + CLAUDE_KEY),
     ):
+        if host not in hosts:
+            continue
         configured = os.environ.get(variable)
         path = (Path(configured).expanduser() if configured else Path.home() / default).resolve() / filename
         original = _read(path)

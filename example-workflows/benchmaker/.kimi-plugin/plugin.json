@@ -1,0 +1,6 @@
+{
+  "name": "benchmaker",
+  "version": "0.1.0",
+  "description": "Author and pilot small runnable agent benchmarks with defensible grading.",
+  "skills": "./skills/"
+}

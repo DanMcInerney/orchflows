@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Orchflows",
     "shortDescription": "Delegate work and independent review with native agents.",
-    "longDescription": "Composable delegation workflows and layered guidance for Codex and Claude Code.",
+    "longDescription": "Composable delegation workflows and layered guidance for Codex, Claude Code, Google Antigravity, Kimi Code, Grok Build and ZCode.",
     "developerName": "orchflows",
     "category": "Productivity",
     "capabilities": [],
