@@ -1,0 +1,5 @@
+interface:
+  display_name: "Benchmaker"
+  short_description: "Build runnable benchmarks with defensible grading"
+policy:
+  allow_implicit_invocation: false
