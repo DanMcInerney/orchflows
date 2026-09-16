@@ -1,0 +1,9 @@
+{
+  "name": "software-factory",
+  "version": "0.1.0",
+  "description": "Bounded software delivery, specialist review, observed rollout and production feedback.",
+  "skills": "./skills/",
+  "author": {
+    "name": "orchflows"
+  }
+}
