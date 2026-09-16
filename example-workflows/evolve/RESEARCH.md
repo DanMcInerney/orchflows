@@ -2,7 +2,7 @@
 
 Research checked **September 13, 2026**. Evolve combines a small artifact-improvement loop with occasional experiments on the instructions and tools that perform the improvement. The research supports this architecture in particular settings. It does not establish universal artistic judgment, endless gains, or RSI Level 1 for this implementation.
 
-This document consolidates the original research, inspection of earlier Orchflows implementations, subsequent source verification, and observed local trials. It distinguishes **published findings**, **our design choices**, and **local evidence**. Operating instructions live in the [workflow](skills/evolve/SKILL.md), [evaluation contract](skills/evolve/references/evaluation.md), and [state contract](skills/evolve/references/state.md).
+This document consolidates the original research, inspection of earlier Orchflows implementations, and subsequent source verification. It distinguishes **published findings** and **our design choices**. Operating instructions live in the [workflow](skills/evolve/SKILL.md), [evaluation contract](skills/evolve/references/evaluation.md), and [state contract](skills/evolve/references/state.md).
 
 ## Scope and method
 
@@ -17,7 +17,7 @@ The original request was to rebuild `orch-evolve` for orchflows-light, with thes
 
 We inspected those four systems in their latest primary versions visible on the research date, then expanded the search to harness retention, sustained artifact development, generated rubrics, judge reliability, and reflective prompt optimization. Sources are author papers and first-party reports. Version-pinned paper links identify the text used; publication and revision dates are separated below. Weco's articles are author reports, not independent replications.
 
-This was a targeted design review, not a systematic literature review. We did not reproduce the cited benchmarks, audit every implementation dependency, or establish that no other relevant work exists. “Latest” means checked through the date above. The local trials test selected behaviors of this workflow and have a different evidential status from the publications.
+This was a targeted design review, not a systematic literature review. We did not reproduce the cited benchmarks, audit every implementation dependency, or establish that no other relevant work exists. “Latest” means checked through the date above.
 
 ## What we learned from the original Orchflows library
 
@@ -198,40 +198,6 @@ For this workflow, an eventual test should compare a fixed starting system, its 
 
 These are proposed future measurements. The current implementation has **not established RSI Level 1**.
 
-## Local trials: what this workflow actually demonstrated
+## Validation
 
-These are small behavioral trials conducted during implementation on September 13, 2026. They are not replications of the papers. Their detailed records live in the repository's `reports/` directory; the identifiers below are checkout provenance, not dependencies of the installed library. Raw disposable-project evidence is located by those reports and is not bundled here.
-
-### Runnable artifact with no supplied scoring method
-
-A prepared Python duplicate finder received two real improvement rounds. The workflow created and calibrated its evaluator, checked behavior against generated cases, and promoted a candidate with a **9.598× geometric-mean speedup across six generated workloads**. The second candidate failed the saved improvement margin and was rejected. All 12 final project tests passed. This is a result for that implementation and workload collection, not a general performance estimate.
-
-The first independent review lacked the generated timing harness. The handoff contract was repaired to require scoring code, inputs, commands, environment, and raw samples; the same reviewer completed the audit. The second round also incurred unnecessary confirmation after failing screening. The workflow was clarified to stop expensive confirmation once a candidate is ineligible, and the report retains the already-spent work.
-
-Source record: `reports/evolve-trial-code-2026-09-13.md`.
-
-### Visual artifact with inferred criteria
-
-A community film-night poster received one real challenger. The workflow inferred three quality criteria and factual requirements, checked a defective contrast, rendered the artifacts, and used two fresh task-only judges with reversed presentation order. Both preferred the challenger and found the required facts preserved. This demonstrates a confirmed preference under an inferred rubric, not objective aesthetic superiority or improved event attendance.
-
-A subsequent controlled probe resumed the saved campaign in a fresh coordinator context, removed the prior finite cap, and dispatched another maker. An explicit simulated user stop interrupted it. The checkpoint retained the verified winner and recorded no in-flight work. This tests one resume and stop, not prolonged autonomous operation. Judge-context requirements were clarified before the evaluations; the report distinguishes this preparation from observed execution.
-
-Source record: `reports/evolve-trial-visual-2026-09-13.md`.
-
-### Harness experiment and recovery from a prepared checkpoint
-
-A writing campaign began from synthetic prior history and a deliberately stale checkpoint. The coordinator reconciled one already-journaled decision once, then performed two real new rounds. Its harness proposal added a sentence requiring preservation of visitor-relevant facts. Old and new procedures generated six actual outputs across a known-failure category, a retention case, and a fresh case relative to the fixture history.
-
-The motivating omission did not recur in either procedure's outputs. Judges preferred the new procedure on one case, tied on another, and disagreed on the third. The workflow rejected the revision and explicitly supplied the retained harness to the next maker. That ordinary artifact challenger also lacked confirmed preference, so the original artifact remained best.
-
-The resumed rounds used 12 native children. Equal work allowances were recorded, but exact token and monetary costs were unavailable; this was not demonstrated equal compute. The trial validates conservative rejection and later use of the retained harness. It does not exercise successful new-harness adoption, subsequent use of an accepted revision, or rollback.
-
-Source record: `reports/evolve-trial-harness-2026-09-13.md`.
-
-### Implementation checks and remaining evidence gaps
-
-The implementation report records 65 core tests: 64 passed and one Windows-inapplicable POSIX test skipped. Disposable installation checks verified the then-current 15 package files, resolution, readiness, and preservation of user additions on repeat setup. A final independent review found no substantive issues. Those are historical implementation checks; this later research document adds package documentation.
-
-Source records: `reports/evolve-implementation-2026-09-13.md` and the original research snapshot, `reports/evolve-research-2026-09-13.md`. Reusable [trial requests](trials/) describe expected behaviors, not observed outcomes.
-
-Unexercised behavior includes successful harness adoption and rollback, unknown-child recovery, wide tournaments, evaluator repair during a campaign, and long-duration operation. The trials cover runnable code, a rendered poster, and text; they establish no audio, video, or universal multimodal performance. Long-term evaluator drift, correlated judge errors, overfitting to reused cases, plural artistic preferences, and the cost of broader confirmation remain open design questions. A campaign can preserve its records correctly while still optimizing an imperfect notion of quality.
+Reusable [trial requests](trials/) describe expected behavior. Record observed outcomes, source records and evidence gaps in the caller's workspace. Local run reports are not bundled with this library; the cited research does not establish this implementation's performance.

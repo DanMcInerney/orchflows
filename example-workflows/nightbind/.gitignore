@@ -1,6 +1,0 @@
-node_modules/
-dist/
-test-dist/
-.cache/
-*.log
-__pycache__/

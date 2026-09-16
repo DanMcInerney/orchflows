@@ -1,5 +1,0 @@
-Browser tab: 1, Title: "Nightbind — a lantern against the dark", URL: "http://127.0.0.1:4191/".
-The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
-~				66 text 106 / 120
-~				67 text 18 in the dark · 1247 fallen
-The focused UI element is 76 button Return to the night, ID: resume

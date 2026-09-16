@@ -68,4 +68,4 @@ Supply an outcome, workspace and optionally the run directory, bounds, target en
 
 Require Orchflows core 0.7.0+, native child delegation and the target project's implementation/check tools. CI, Git hosting, deployment, feature flags and telemetry are needed only for requested stages that depend on them. No particular vendor, access credential or OpenAI internal system is assumed. See [library context](references/library-context.md).
 
-The [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md) define portable checks. Local trial results and limitations are recorded separately in the repository's reports; live production integrations require project-specific validation.
+The [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md) define portable checks. Record trial results and limitations in the caller's workspace; live production integrations require project-specific validation.

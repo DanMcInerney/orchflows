@@ -25,7 +25,7 @@ Without a duration or continuation request, a run defaults to three rounds. An e
 
 [Evaluation](skills/evolve/references/evaluation.md) owns scoring design and promotion. [State](skills/evolve/references/state.md) owns continuation and evidence. [Trials](trials/) contain reusable requests and expected behavior, not proof of results.
 
-[Research](RESEARCH.md) documents the original Orchflows sources, Self-Harness, AIDE², SIA, Continual Harness and related work checked September 13, 2026, with design decisions, local trial evidence and limitations.
+[Research](RESEARCH.md) documents the original Orchflows sources, Self-Harness, AIDE², SIA, Continual Harness and related work checked September 13, 2026, with design decisions and limitations.
 
 ## Install and dependencies
 

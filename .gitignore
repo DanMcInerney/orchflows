@@ -1,0 +1,23 @@
+# Local reports, generated projects and trial runs.
+/reports/
+/artifacts/
+/example-workflows/nightbind/
+/example-workflows/evolve/trials/decision-quality/
+/example-workflows/evolve/trials/self-evolution/
+
+# Machine-local workspaces, dependencies and caches.
+/.local/
+/.claude/worktrees/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+node_modules/
+.cache/
+*.log
+
+# Generated build and test output.
+dist/
+test-dist/
+coverage/
+.coverage

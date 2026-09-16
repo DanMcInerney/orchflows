@@ -1,4 +1,0 @@
-# Preserve the exact source, model and evidence bytes used by build fingerprints.
-* -text whitespace=cr-at-eol
-# Archived snapshots and frozen bundles retain captured whitespace and stay collapsed in PRs.
-evidence/** -whitespace linguist-generated=true
