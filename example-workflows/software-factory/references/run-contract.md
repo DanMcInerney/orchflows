@@ -23,6 +23,7 @@ Record at least:
 
 - Request, resolved context, bounds, consumed calls/passes and first unfinished stage.
 - Baseline and current candidate identities; use commits plus a patch/untracked-file manifest when needed, or an equivalent reproducible content snapshot.
+- Delivered artifact identity and verification evidence, including the reconstruction result when returning a complete patch, as defined in software-delivery guidance.
 - For each check/review: candidate identity, status, evidence and unresolved findings. Every reviewer sees the same frozen state.
 - Risk rationale, applicable policy and human decision where required. Bind release approval to the reviewed state, target and operation; honor the scope of valid standing authorization.
 - Release artifact and operation identifier, rollout progress, observations, follow-up fingerprints and any external action already attempted.

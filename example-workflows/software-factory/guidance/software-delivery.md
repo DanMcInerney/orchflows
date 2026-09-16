@@ -4,6 +4,8 @@
 
 Define acceptance through observable behavior. Select required checks before implementing; do not weaken a failing check to obtain a passing result. Tie builds, CI results and performance measurements to the actual candidate. For a performance-sensitive change, compare the baseline and candidate under equivalent workloads and conditions; separate regressions from measurement noise.
 
+Verify the handoff artifact as well as the working copy. A complete patch must apply to a clean copy of its recorded baseline and reconstruct the candidate, including new files and deletions. Export patch bytes without shell text conversion, then check and apply the actual saved file in isolation; compare the resulting file set and contents with the candidate under the project's Git attributes. Record the patch hash, baseline, candidate and reconstruction result. A tracked-only diff or `git diff --check` does not establish a complete, usable handoff. If the deliverable is a commit or another artifact instead, verify that exact delivered object against the candidate.
+
 Prepare rollback and deployment signals while building the change. Prefer the project's existing rollout and telemetry mechanisms. A new dashboard is useful only when it resolves a specific visibility gap; define its queries and thresholds before creating it in an external system.
 
 Deduplicate production signals by service, release, symptom and overlapping time window. Preserve underlying evidence and affected users; repeated alerts alone do not establish multiple incidents or a regression. Separate observed facts, causal hypotheses and proposed actions. Follow-up performance work needs a measurable regression, reproduction or comparison plan and acceptance criteria.
@@ -21,6 +23,8 @@ Assess the candidate against the requested behavior and real project context. A 
 | Security | Trust boundaries, authentication, authorization, secrets and dependencies; can changed inputs or access paths violate the project's security requirements? |
 
 Each reviewer reports actionable findings with location, consequence and evidence; explicitly names missing context; and assesses risk within the assigned lens. Reviewers do not repair the candidate. Missing evidence is not a clean review.
+
+Correctness review includes the delivered artifact: inspect its reconstruction evidence and identity, not just tests run in the builder's workspace. A broken or incomplete required handoff blocks readiness even if that workspace passes every test.
 
 A low-risk decision requires all of: bounded impact, understood behavior, passing required checks, complete applicable reviews without unresolved blocking findings, a supported recovery path and no material uncertainty. Changes to authorization, secrets, destructive data operations, public contracts or broad infrastructure require human review unless a specific established project policy covers the exact case. Disagreement or uncertainty takes the human-review path. Size of the diff alone does not establish low risk.
 

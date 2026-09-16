@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1456" height="1253" viewBox="0 0 1456 1253" role="img" aria-labelledby="title desc">
+  <title id="title">The software factory implemented with Orchflows</title>
+  <desc id="desc">Matches the layout of Gergely Orosz's OpenAI software factory diagram. The software-factory workflow delegates implementation and release through orch-work and independent reviews through orch-review. Project context and domain guidance supply specifics. Checks and reviews can return to a bounded builder pass. Low risk with explicit project opt-in can satisfy review; other changes need human review. Deployment additionally requires release authority. Production observation and incident investigation are separately invoked workflows using one orch-work child each.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 18 18" refX="16" refY="9" markerWidth="18" markerHeight="18" orient="auto" markerUnits="userSpaceOnUse"><path d="M2 2 L16 9 L2 16" fill="none" stroke="#171717" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+  <style>
+    .box { fill: white; stroke: #171717; stroke-width: 3; }
+    .edge { fill: none; stroke: #171717; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); }
+    .feedback { stroke-dasharray: 10 10; }
+    text { fill: #171717; font-family: 'Segoe UI', Arial, sans-serif; text-anchor: middle; }
+    .heading { font-family: 'Segoe Print', 'Comic Sans MS', cursive; font-size: 31px; font-weight: 600; }
+    .detail { font-size: 17px; }
+    .label { font-size: 16px; }
+    .primitive { font-weight: 600; }
+  </style>
+  <rect width="1456" height="1253" fill="white"/>
+  <text x="728" y="64" class="heading" style="font-size:36px">The software factory, implemented with Orchflows</text>
+
+  <!-- The positions and edge routes deliberately match the supplied source diagram. -->
+  <path class="edge" d="M447 205 L447 264"/>
+  <path class="edge" d="M583 334 L817 334"/>
+  <path class="edge feedback" d="M815 373 L584 373"/>
+  <path class="edge" d="M447 405 L447 462"/>
+  <path class="edge" d="M584 534 L845 534"/>
+  <path class="edge feedback" d="M313 534 H285 Q268 534 268 516 V391 Q268 369 310 369"/>
+  <path class="edge feedback" d="M848 593 Q824 593 824 614 V629 Q824 644 804 644 H257 Q239 644 239 626 V351 Q239 331 310 331"/>
+  <path class="edge" d="M982 610 L982 666"/>
+  <path class="edge" d="M1138 737 H1244 Q1264 737 1264 758 V780"/>
+  <path class="edge" d="M982 807 L982 911"/>
+  <path class="edge" d="M1264 937 V978 Q1264 997 1237 997 H1177"/>
+  <path class="edge" d="M848 997 H759 Q738 997 738 974 V845 Q738 824 712 824 H631"/>
+  <path class="edge feedback" d="M377 930 V1057"/>
+  <path class="edge" d="M597 930 V974 Q597 999 624 999 H651 Q676 999 676 1024 V1068"/>
+  <path class="edge feedback" d="M237 1142 H88 Q68 1142 68 1123 V306 Q68 289 88 289 H310"/>
+
+  <ellipse class="box" cx="448" cy="162" rx="166" ry="43"/>
+  <rect class="box" x="317" y="269" width="260" height="130" rx="30"/>
+  <rect class="box" x="822" y="125" width="409" height="273" rx="34"/>
+  <rect class="box" x="318" y="469" width="259" height="130" rx="27"/>
+  <rect class="box" x="852" y="457" width="314" height="152" rx="29"/>
+  <path class="box" d="M971 677 Q982 672 994 677 L1123 729 Q1141 738 1123 746 L996 796 Q982 801 969 796 L846 746 Q825 739 846 730 Z"/>
+  <rect class="box" x="1165" y="787" width="199" height="144" rx="30"/>
+  <rect class="box" x="855" y="920" width="314" height="153" rx="32"/>
+  <rect class="box" x="307" y="725" width="316" height="198" rx="30"/>
+  <rect class="box" x="243" y="1064" width="244" height="154" rx="30"/>
+  <rect class="box" x="555" y="1075" width="244" height="154" rx="32"/>
+
+  <text class="heading" x="448" y="171">Software “builder”</text>
+  <text class="label" x="481" y="233" style="text-anchor:start">Defines outcome</text>
+  <text class="heading" x="447" y="313" style="font-size:28px">software-factory</text>
+  <text class="detail primitive" x="447" y="350">orch-work: fresh builder</text>
+  <text class="detail" x="447" y="377">Writes / edits the code</text>
+
+  <text class="heading" x="1027" y="178">Your project + guidance</text>
+  <text class="detail" x="869" y="229" style="text-anchor:start">Source code + project documentation</text>
+  <text class="detail" x="869" y="254" style="text-anchor:start">Git / PRs + optional connected sources</text>
+  <text class="detail primitive" x="869" y="286" style="text-anchor:start">guidance/code.md</text>
+  <text class="detail primitive" x="869" y="311" style="text-anchor:start">guidance/software-delivery.md</text>
+  <text class="detail" x="869" y="344" style="text-anchor:start">Project CI, deploy, flags + telemetry</text>
+  <text class="detail" x="869" y="369" style="text-anchor:start">Resolved context goes to each child</text>
+  <text class="label" x="706" y="317">gets context from</text>
+
+  <text class="heading" x="447" y="512">CI: build + test</text>
+  <text class="detail" x="447" y="545">Exact candidate + saved patch</text>
+  <text class="detail" x="447" y="565">Apply, reconstruct, compare</text>
+  <text class="detail" x="447" y="585">Required CI + perf evidence</text>
+  <text class="label" x="166" y="429">Fresh builder fixes</text>
+  <text class="label" x="166" y="449">check / review issues</text>
+  <text class="label" x="166" y="469">within P passes</text>
+
+  <text class="heading" x="1009" y="494" style="font-size:29px">Agentic code review</text>
+  <text class="detail primitive" x="1009" y="530">orch-review: fresh reviewers</text>
+  <text class="detail" x="1009" y="550">Parallel: correctness + applicable</text>
+  <text class="detail" x="1009" y="570">data, infra, cloud and security</text>
+  <text class="detail" x="1009" y="590">Join findings + assess risk</text>
+  <text class="heading" x="982" y="746" style="font-size:24px">Low risk + opt-in?</text>
+  <text x="1200" y="715" style="font-size:26px">No</text>
+  <text x="1053" y="870" style="font-size:26px">Yes</text>
+
+  <text class="heading" x="1265" y="832" style="font-size:26px">Human review</text>
+  <text class="detail" x="1265" y="870">Exact diff, checks,</text>
+  <text class="detail" x="1265" y="893">risk + rollback plan</text>
+  <text class="heading" x="1012" y="962">Agentic deploy</text>
+  <text class="detail primitive" x="1012" y="995">orch-work: release worker</text>
+  <text class="detail" x="1012" y="1017">Only if requested + authorized</text>
+  <text class="detail" x="1012" y="1039">Stage, observe; stop / rollback</text>
+
+  <text class="heading" x="465" y="770">Production</text>
+  <text class="detail" x="465" y="816">Project signals + release checkpoint</text>
+  <text class="detail" x="465" y="839">Exposure, health and recovery</text>
+  <text class="detail" x="465" y="874">Uses your observability tools</text>
+  <text class="label" x="352" y="974" style="text-anchor:end">Explicit run</text>
+  <text class="label" x="352" y="994" style="text-anchor:end">or schedule</text>
+  <text class="label" x="656" y="1051" style="text-anchor:end">Incident request</text>
+  <text class="label" x="79" y="935" style="text-anchor:start">Proposed fix brief;</text>
+  <text class="label" x="79" y="957" style="text-anchor:start">new authorized run</text>
+
+  <text class="heading" x="365" y="1104" style="font-size:21px">observe-production</text>
+  <text class="detail primitive" x="365" y="1140">orch-work: one worker</text>
+  <text class="detail" x="365" y="1171">Deduplicate signals;</text>
+  <text class="detail" x="365" y="1194">propose performance fixes</text>
+  <text class="heading" x="677" y="1116" style="font-size:20px">investigate-incident</text>
+  <text class="detail primitive" x="677" y="1151">orch-work: one worker</text>
+  <text class="detail" x="677" y="1180">Evidence + mitigations</text>
+  <text class="detail" x="677" y="1204">Act within authorization</text>
+
+  <text x="1408" y="1193" class="label" style="text-anchor:end">Composing workflows: decisions + routing</text>
+  <text x="1408" y="1216" class="label" style="text-anchor:end">Two primitives: fresh work / independent review</text>
+  <text x="1408" y="1239" class="label" style="text-anchor:end">Guidance: domain criteria · No bundled scheduler</text>
+</svg>
