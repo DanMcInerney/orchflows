@@ -4,7 +4,7 @@
     {
       "name": "orchflows",
       "source": "./",
-      "version": "0.7.0+codex.20260916023046"
+      "version": "0.7.1"
     }
   ]
 }

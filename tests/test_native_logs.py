@@ -199,11 +199,14 @@ class NativeHistoryTests(unittest.TestCase):
         self.assertEqual(logs.read("claude", "session", self.home)["events"][0]["sidecars"][0]["state"], "outside_native_home")
 
     def test_unknown_records_are_identified_without_hidden_context(self):
-        self.codex("root", [response("future_tool", something="unknown"), response("reasoning", content="private"),
-                            response("message", role="system", content="private")])
+        self.home = self.home / "private-path"
+        self.home.mkdir()
+        hidden = "orchflows-hidden-context-sentinel"
+        self.codex("root", [response("future_tool", something="unknown"), response("reasoning", content=hidden),
+                            response("message", role="system", content=hidden)])
         result = logs.read("codex", "root", self.home)
         self.assertEqual(result["events"][-1]["record_type"], "future_tool")
-        self.assertNotIn("private", json.dumps(result))
+        self.assertNotIn(hidden, json.dumps(result))
 
     def test_find_claude_scopes_dates_projects_and_orphan_agents(self):
         def dated(path, cwd, *dates):

@@ -19,10 +19,9 @@ Use these native commands for optional libraries, development and manual recover
 | After editing a library | bump manifest versions; `codex plugin add <lib>@orchflows-home` | bump manifest versions; `claude plugin marketplace update orchflows-home`; `claude plugin update <lib>@orchflows-home` |
 | Invoke | `$<lib>:<skill>` or `/skills` | `/<lib>:<skill>` |
 | Core development | register the checkout's `orchflows-local` catalog; install `orchflows@orchflows-local` | same, or `claude --plugin-dir <checkout>` |
-| Concurrency key written by `setup --concurrency N` | `[agents] max_threads` in `$CODEX_HOME/config.toml` or `~/.codex/config.toml`: open spawned threads, primary excluded | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY` in `$CLAUDE_CONFIG_DIR/settings.json` or `~/.claude/settings.json`: parallel read-only tools and subagents |
 | Custom agent definitions | `.codex/agents/*.toml`, `~/.codex/agents/` | `.claude/agents/*.md`, `~/.claude/agents/` |
 
-Concurrency is unchanged unless requested and applies only to detected, selected Codex/Claude hosts. It takes effect in new sessions; higher-precedence settings may override it. Current Codex documentation names `max_concurrent_threads_per_session`; setup's `max_threads` remains a supported alias. The legacy `--skip-host-config` also preserves settings but does not disable registration. [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings), [Claude concurrency](https://code.claude.com/docs/en/env-vars).
+Concurrency is unchanged unless requested; see [concurrency settings](#concurrency) for supported hosts and the meaning of each limit. The legacy `--skip-host-config` preserves settings without disabling registration.
 
 If installed files remain stale, bump the package version in all host manifests and rerun setup. Claude may reuse its cached copy when the version is unchanged. Setup reports mismatched files and leaves private host caches untouched.
 
@@ -63,6 +62,29 @@ When detected, ZCode is reported as `needs_action` with its resolved home path. 
 After edits, bump package versions, rerun setup, refresh the marketplace and check for plugin updates. ZCode compares the catalog entry version with the installed manifest version. The documented registration route is the app UI; do not assume a `zcode plugin` shell command exists. [ZCode plugins](https://zcode.z.ai/en/docs/plugin).
 
 Z.ai can alternatively supply the model behind Claude Code, retaining Claude's registration and invocation behavior. Configure that provider using [Z.ai's Claude Code instructions](https://docs.z.ai/devpack/tool/claude), then use the Claude installation above. The documented Anthropic-compatible endpoint is `https://api.z.ai/api/anthropic`; credentials and model mappings remain user-owned.
+
+## Concurrency
+
+`setup --concurrency N` sets positive integer limits only for detected, selected hosts. Without that flag, settings remain untouched. These controls have different scopes; setting the same number does not imply identical execution behavior. Changed files retain backups, malformed or unsupported layouts are preserved, and failures do not prevent other hosts from being processed. An unsupported selected host is reported even when another host's update succeeds.
+
+| Host | User configuration | Limit changed |
+| --- | --- | --- |
+| Codex | `$CODEX_HOME/config.toml`, default `~/.codex/config.toml` | `[agents] max_threads`: open spawned threads, primary excluded |
+| Claude Code | `$CLAUDE_CONFIG_DIR/settings.json`, default `~/.claude/settings.json` | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY`: shared parallel read-only tools and subagents |
+| ZCode | `~/.zcode/cli/config.json` | `toolConcurrency.maxConcurrency`: parallel tool batches, including subagent calls |
+| Kimi Code | `$KIMI_CODE_HOME/config.toml`, default `~/.kimi-code/config.toml` | `[background] max_running_tasks`: running background Bash tasks and background Agent calls |
+| Grok Build | `$GROK_HOME/config.toml`, default `~/.grok/config.toml` | `[subagents] max_concurrent`: admitted subagents in a session |
+| Antigravity | No verified writable setting | Reported as unsupported for tuning; registration still proceeds |
+
+Current Codex documentation names `max_concurrent_threads_per_session`; setup's `max_threads` remains a supported alias. Native configuration takes effect in new sessions and higher-precedence settings can override user files. [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings), [Claude concurrency](https://code.claude.com/docs/en/env-vars).
+
+ZCode Desktop 3.11.2's installed engine 0.16.5 confirms the default cap of 10, the JSON key and the fixed user-config path. Its environment override is **`ZCODE_MAX_TOOL_CONCURRENCY`**, including the prefix. That engine's config loader does not relocate this file through `ZCODE_HOME`; an explicit native `--settings` file or project settings can supersede it. This support adapts [#201 by ozymandiashh](https://github.com/DanMcInerney/orchflows/pull/201); local checks exercised its configuration parser, not authenticated scheduling.
+
+Kimi 0.29.0 validates the background key. Kimi 0.43.1 also recognizes preferred `[task] max_running_tasks`; setup synchronizes that key when already present so it cannot shadow the updated background limit. It leaves other task settings intact. `KIMI_CODE_BACKGROUND_MAX_RUNNING_TASKS` overrides both. The separate **`KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY`** controls AgentSwarm; no persistent TOML equivalent was verified, so setup does not alter it or shell profiles. [Configuration](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files), [environment variables](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/env-vars), [0.43.1 task settings](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.43.1/packages/agent-core-v2/src/agent/task/configSection.ts).
+
+Grok requires an existing explicit boolean `subagents.enabled` before tuning; setup preserves either true or false and the separate queue/fail `limit_behavior`. Adding the section can change native enablement, so setup reports missing enablement instead of choosing it. `GROK_MAX_CONCURRENT_SUBAGENTS` overrides the file. Current official source documents the numeric limit; installed 1.0.5 contains the setting symbols but does not expose an effective-limit inspection command. Native scheduling enforcement was not exercised. [Configuration reference](https://github.com/xai-org/grok-build/blob/482711333c7195dc16a272777f86086d615e2afb/crates/codegen/xai-grok-pager/docs/user-guide/26-config-reference.md#L519), [resolver](https://github.com/xai-org/grok-build/blob/482711333c7195dc16a272777f86086d615e2afb/crates/codegen/xai-grok-shell/src/config/mod.rs#L281).
+
+Conflicting environment overrides for ZCode, Kimi background tasks and Grok leave that host's file untouched and report the variable to adjust. Matching overrides allow the requested write. Other native project/session overrides still take precedence. Antigravity's documented concurrent agents and nesting depth are not a verified configurable concurrency cap; checked its [settings](https://www.agy.dev/docs/cli/settings/) and [subagent documentation](https://www.agy.dev/docs/subagents/) on 2026-09-16.
 
 ## Invocation policy
 
