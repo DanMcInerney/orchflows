@@ -1,7 +1,7 @@
 {
   "name": "benchmaker",
-  "version": "0.1.0",
-  "description": "Author and pilot small runnable agent benchmarks with defensible grading.",
+  "version": "0.2.1",
+  "description": "Build staged agent benchmarks with outcome credit and calibrated difficulty.",
   "skills": "./skills/",
   "author": { "name": "orchflows" },
   "interface": {
@@ -11,6 +11,6 @@
     "developerName": "orchflows",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Use benchmaker to build a small runnable benchmark for this agent."
+    "defaultPrompt": "Use benchmaker to build a staged benchmark for substantial agent work."
   }
 }
