@@ -1,6 +1,6 @@
 {
   "name": "orchflows",
-  "version": "0.7.0",
+  "version": "0.7.0+codex.20260916023046",
   "description": "Composable native workflows, layered guidance and a portable user library.",
   "author": {
     "name": "orchflows"
