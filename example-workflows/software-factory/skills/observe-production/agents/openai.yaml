@@ -1,0 +1,5 @@
+interface:
+  display_name: "Observe production"
+  short_description: "Find regressions and propose measured follow-up work"
+policy:
+  allow_implicit_invocation: false

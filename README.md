@@ -260,6 +260,14 @@ The default is three rounds with one challenger per round. A continuous request 
 
 **Experimental — this packaged example is untested so far.** A full cycle uses six fresh children, with at most 6N calls for N attempted cycles. Trial specifications are included for future validation.
 
+### Software factory
+
+> Add CSV export to this application, run its checks and specialist reviews, and leave a release handoff. Use two candidate passes.
+
+[Software factory](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/software-factory) adapts the agentic software factory design into bounded implementation, CI and independent review loops, followed by risk routing and an optional authorized rollout. Separate observation and incident workflows turn production evidence into proposed fixes or mitigations. It uses the project's existing tools and adds no scheduler or CI runtime.
+
+Delivery defaults to three candidate passes, with one builder and up to five applicable reviewers per pass, plus at most one release worker. Low-risk automated review requires project opt-in; release authority remains separate. Install the optional library with `python scripts/orchflows.py setup --example software-factory`.
+
 ### Self-improve
 
 > /self-improve Review this session and improve the workflows and guidance behind the problems you find.

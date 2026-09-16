@@ -1,0 +1,5 @@
+interface:
+  display_name: "Investigate incident"
+  short_description: "Explain incidents and prepare scoped mitigations"
+policy:
+  allow_implicit_invocation: false
