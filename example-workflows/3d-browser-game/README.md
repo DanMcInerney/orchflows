@@ -1,33 +1,65 @@
 # 3D browser game
 
-Build a complete Three.js browser game with a tested central mechanic, deliberate progression, original Blender assets and independent playtesting. The workflow spends time on decisions, feel and replay value before expanding content. A short, coherent game is a valid scope; an attractive scene with movement is not a finished game.
+**Make a game worth pressing Restart for.**
 
-## Production sequence
+Give this workflow a player fantasy. It develops competing mechanics, builds a playable Three.js loop, tests the decisions, produces original Blender assets and sends two independent agents in to play. The aim is a complete game at your chosen scope: something a player can learn, finish and want another attempt at.
 
-The [workflow](skills/3d-browser-game/SKILL.md) gives each of its 20 steps an output and a condition for advancing: brief, capabilities, mechanics brainstorm, concept selection, experiment plan, testable architecture, controls and camera, graybox loop, mechanics experiments, independent core playtest, core repairs, art direction, Blender production, content and progression, asset integration, presentation, regression QA, performance, independent final playtest, and delivery.
+Think cargo that changes how you steer. A shortcut that becomes dangerous when you're winning. A puzzle whose rules reveal a second solution. This workflow puts those decisions at the center of production, then builds the art and progression around them.
 
-One game uses four children, excluding the caller: one game maker continued across phases, one core playtester, one Blender maker, and one final playtester. Both playtesters are fresh independent reviewers. The caller delegates and joins all children; the Blender maker and game maker can work concurrently on agreed, separate files. Each review allows at most one necessary repair pass and no additional review. An unchanged ready candidate keeps its existing evidence without rebuilding or replay. A blocked core stops before final asset production. Individual asset or playtest skills each use one child.
+## Try it
 
-## Ownership
+After installation, paste into Codex:
 
-| Location | Purpose |
+```text
+$3d-browser-game:3d-browser-game
+Build a salvage game where valuable cargo changes movement and the safest
+escape route. Target desktop browsers with keyboard and mouse controls.
+Make one complete escalating mission with original Blender assets, a clear
+outcome and quick retry. Work in ./salvage-game and include the playable
+build, editable sources and playtest evidence.
+```
+
+In Claude Code, use `/3d-browser-game:3d-browser-game` with the same brief. All skills in this library are manual-only by default.
+
+Bring a new idea or an existing game. Specify devices, controls, session length, assets and constraints that matter; the workflow chooses and records unspecified details. You can also request a bounded production phase, which uses only the roles that phase reaches and is delivered as partial work.
+
+## How an idea becomes a game
+
+The [main workflow](skills/3d-browser-game/SKILL.md) defines 20 steps, each with an output and a condition for advancing:
+
+| Stage | What happens |
 | --- | --- |
-| [Main workflow](skills/3d-browser-game/SKILL.md) | Ordering, assignments, checkpoints and repair bounds |
-| [Blender asset skill](skills/make-blender-game-assets/SKILL.md) | One asset maker, source through runtime handoff |
-| [Playtest skill](skills/playtest-3d-browser-game/SKILL.md) | One independent reviewer playing an exact build |
-| `guidance/` | Game design, Three.js, Blender and playtest quality criteria |
-| [Library context](references/library-context.md) | Dependencies and guidance selection |
-| [Test interface](references/test-interface.md) | How an agent observes, controls and reproduces a game |
-| [Evidence](references/evidence.md) | Small records linking claims to builds and observed sessions |
-| [Three.js](references/threejs.md), [Blender](references/blender.md) | Tool-specific implementation and asset handoff knowledge |
-| `trials/` | Ordinary trial requests and expected behavior; run outputs live elsewhere |
+| Find the game · 1–5 | Set the brief, prove the tools, compare at least three mechanics, choose a loop and plan observable experiments. |
+| Make it playable · 6–9 | Build testable architecture, tune controls and camera, complete a graybox session and run two focused mechanics experiments. |
+| Test the core · 10–11 | A fresh playtester attempts uncoached play, alternate tactics, setbacks and retry. Repair material findings before proceeding. |
+| Give it a world · 12–16 | Direct the art, produce Blender assets, develop progression, integrate GLBs and finish the player's interface and feedback. |
+| Finish with evidence · 17–20 | Run scenario QA, measure performance during gameplay, get a new independent playtest and deliver the checked result. |
 
-## Install and use
+**Four children per full game, excluding the caller:** one game maker continued across phases, one core playtester, one Blender maker and one final playtester. Children create no further agents. The caller coordinates; Blender production and game content can run concurrently on separate files.
 
-Requires orchflows 0.7.0+, native child delegation, a JavaScript runtime/package manager, a browser with rendering and input tools, and Blender with its Python API and glTF exporter. Projects declare their own Three.js, build and optional physics/test dependencies in a lockfile. No game engine, browser driver or Blender binary is bundled or installed by setup. Image generation is optional; authored reference boards and Blender studies can supply art direction.
+Each independent review permits at most one necessary repair pass and no further review. An unchanged ready candidate keeps its evidence without another rebuild or replay. A blocked core stops before final asset production. If a checkpoint remains `needs change` or `unverified`, the workflow returns the best runnable state, findings and a precise next action. Extra agents or review/repair rounds require your request.
 
-From a complete core checkout, run `python scripts/orchflows.py setup --example 3d-browser-game`. This copies the library once and preserves existing destinations. Follow core `docs/hosts.md` to register and install `3d-browser-game@orchflows-home`, then start a new session. Adding files to this checkout alone does not register the skills.
+## What you get
 
-Invoke `3d-browser-game:3d-browser-game` with a game brief, workspace and any target devices, controls, session length, existing assets or constraints. Unspecified choices are made and recorded. For example: "Build a salvage game where carrying valuable cargo changes movement and the safest escape route. Desktop browser, one complete escalating mission, original Blender assets."
+- A runnable game and production build, with controls and reproducible install, build and test commands.
+- Editable game code, `.blend` sources, GLB exports, dependent assets and re-export instructions.
+- Design and asset notes, scenario entry points, inspected captures and measured performance under stated conditions.
+- Independent playtest reports tied to exact builds, repair records and an explicit `ready`, `needs change` or `unverified` conclusion.
 
-Output includes editable game and Blender sources, production build, playtest controls and scenarios, reproducible commands, measured evidence, review findings and unresolved gaps. External deployment follows the caller's hosting request and available hosting skill; it is not an automatic production step.
+Playtests start with public player instructions so the reviewer has to discover the game through play. The [test interface](references/test-interface.md) makes scenarios reproducible; the [evidence contract](references/evidence.md) keeps ordinary play, automated checks and maker verification distinguishable. Missing browser play or target-device measurements stay visible as gaps. Public deployment follows a separate hosting request.
+
+Need only one part? [make-blender-game-assets](skills/make-blender-game-assets/SKILL.md) uses one maker for editable assets and inspected runtime exports. [playtest-3d-browser-game](skills/playtest-3d-browser-game/SKILL.md) uses one fresh reviewer on an existing build, with no repairs.
+
+## Install and requirements
+
+From a complete orchflows core checkout, with Python 3.11+:
+
+```sh
+python scripts/orchflows.py setup --example 3d-browser-game
+```
+
+Setup copies the example into your orchflows home and preserves an existing library copy. Follow core `docs/hosts.md` to register and install `3d-browser-game@orchflows-home`, then start a new session. Setup alone does not register the skills.
+
+Requires orchflows 0.7.0+, native child delegation, a JavaScript runtime/package manager, a browser with rendering and input tools, and Blender with its Python API and glTF exporter. Projects declare Three.js, build and optional physics/test dependencies in a lockfile. Setup installs no game engine, browser driver or Blender binary. Image generation is optional; sketches and Blender studies can supply art direction.
+
+For the contracts behind production, see [library context](references/library-context.md), [Three.js](references/threejs.md), [Blender](references/blender.md) and [game guidance](guidance/browser-game.md). The [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md) describe validation to run; they are not observed results.
