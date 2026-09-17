@@ -1,6 +1,6 @@
 # Library context
 
-Require Orchflows core `orchflows` 0.7.0+ with `orch-work`, `orch-review` and native child delegation. Resolve core through supplied package roots, native skills or the core `resolve` CLI. Core `docs/architecture.md` owns guidance selection and scoped model/effort choices; `docs/hosts.md` owns invocation, controls and isolation.
+Require Orchflows core `orchflows` 0.8.0+ with `orch-work`, `orch-review` and native child delegation, and `shared` 0.1.0+ with `review-revise-once`. Resolve both packages at the outer entrypoint through supplied package roots, native skills or the core `resolve` CLI. Core `docs/architecture.md` owns execution, bounds, guidance selection and scoped model/effort choices; `docs/hosts.md` owns invocation, controls and isolation. A missing shared component blocks dependent review and repair; do not silently replace it.
 
 At the outer entrypoint select `benchmarking`, plus the domains needed to construct and assess the target tasks (for example `research`, `code`, `writing` or `visual-design`) and caller-selected domains. Include this library in the selected libraries, preserving caller order. Resolve absolute primitive and guidance paths once. Pass them, workspace, package identity, run directory, public/evaluator access boundaries and scoped caller choices unchanged to children. Makers apply Make; reviewers apply Review. Leave unspecified model controls unset.
 

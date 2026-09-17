@@ -125,13 +125,20 @@ class InstalledCliTests(unittest.TestCase):
             self.assertEqual(Path(resolved["skill_path"]), home / "libraries/social-search/skills/social-search/SKILL.md")
 
             example_libraries = []
-            for name in ("export-workflow", "self-improve", "benchmaker"):
+            for name, skill_names in (
+                ("export-workflow", ("export-workflow",)),
+                ("self-improve", ("self-improve",)),
+                ("shared", ("compare-candidates", "review-revise-once")),
+                ("design-loop", ("design-loop", "test-increment")),
+                ("benchmaker", ("benchmaker",)),
+            ):
                 cli(python, script, "setup", "--source", ROOT, "--example", name)
                 library = home / "libraries" / name
                 example_libraries.append(library)
                 self.assertEqual(files(ROOT / "example-workflows" / name), files(library))
-                resolved_example = cli(python, script, "resolve", name, "--skill", name)
-                self.assertEqual(Path(resolved_example["skill_path"]), library / "skills" / name / "SKILL.md")
+                for skill_name in skill_names:
+                    resolved_example = cli(python, script, "resolve", name, "--skill", skill_name)
+                    self.assertEqual(Path(resolved_example["skill_path"]), library / "skills" / skill_name / "SKILL.md")
                 self.assertFalse((core / "skills" / name).exists())
                 self.assertFalse((core / "skills" / f"orch-{name}").exists())
 

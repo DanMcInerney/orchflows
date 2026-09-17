@@ -1,0 +1,6 @@
+interface:
+  display_name: "Review and Revise Once"
+  short_description: "Review independently, repair once and verify changes"
+
+policy:
+  allow_implicit_invocation: false

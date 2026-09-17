@@ -1,6 +1,6 @@
 {
   "name": "benchmaker",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Build staged agent benchmarks with outcome credit and calibrated difficulty.",
   "skills": "./skills/",
   "author": { "name": "orchflows" },

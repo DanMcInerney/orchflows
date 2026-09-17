@@ -110,15 +110,19 @@ The final accepted project comes with usage instructions, an initial-to-final ev
 From a complete Orchflows checkout, using Python 3.11+:
 
 ```sh
+python scripts/orchflows.py setup --example shared
 python scripts/orchflows.py setup --example design-loop
 ```
 
-Setup copies the example into the Orchflows home and preserves an existing library copy. Register and install `design-loop` from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup alone does not make the skills available by name or install project tools.
+Setup copies each example into the Orchflows home and preserves existing library copies. Register and install both packages from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup does not install transitive dependencies or project tools. Copying alone does not establish native availability.
 
-- Orchflows core `orchflows` 0.7.0+ with `orch-work`, `orch-review` and a host supporting native child delegation.
+- Orchflows core `orchflows` 0.8.0+ with `orch-work`, `orch-review` and a host supporting native child delegation.
+- `shared` 0.1.0+ for `compare-candidates`, used by `test-increment` with the same one-reviewer allocation. Full cycles require it; unrelated standalone leaves do not.
 - Task-specific tools for research, implementation, inspection and testing, plus reproducible state snapshots. The example bundles no project runtime or research service.
 - This library's [design-iteration guidance](guidance/design-iteration.md), combined with caller-selected task domains as described in [library context](references/library-context.md).
 
 ## Evaluation status
 
 The [portable trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md) are specifications for future validation. Packaging and Markdown checks do not establish workflow behavior. Keep actual execution reports and project artifacts outside the installed library.
+
+On 2026-09-17, a separate isolated trial executed standalone `test-increment` through shared comparison and one native reviewer. Both versions ran against four fixed cases; the result distinguished an intended improvement from an empty-input regression, without repair or adoption. This tests resolved-file composition, not a full design-loop cycle or native skill-name registration.

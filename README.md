@@ -139,7 +139,9 @@ A reviewer can inspect code, judge a film, rank evidence or compare competing de
 
 A workflow is a `SKILL.md` that connects these operations: what can run in parallel, what depends on what, what gets reviewed, and whether the result feeds another round. It supplies assignments, context and outputs. The same primitives support a single review, a research team, a production pipeline or an improvement loop.
 
-The package includes two ready-made compositions: [dynamic work](skills/orch-dynamic-workflow/SKILL.md) and [workflow building](skills/orch-build-workflow/SKILL.md). They compose the two primitives and show how to write your own. A workflow declares its agent count and any repetition; loops are part of the requested workflow.
+The package includes two ready-made compositions: [dynamic work](skills/orch-dynamic-workflow/SKILL.md) and [workflow building](skills/orch-build-workflow/SKILL.md). They compose the two primitives and show how to write your own. A workflow preserves its stages, independence, gates and repetition while the orchestrator chooses staffing where allowed. Resolve a finite ceiling and initial allocation before dispatch; composed calls share the remaining allowance. Dynamic work defaults to eight total child starts, including nested trials, with one review and one repair pass. The ceiling is not a staffing target.
+
+The optional [shared processes](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/shared) library provides independent candidate comparison and review with one revision pass. Design loop and benchmaker compose these processes without adding coordinator agents. Other components remain in their domain libraries. Ordinary fan-out and gathering are [core execution rules](docs/architecture.md#execution), not a required helper import. Install `shared` explicitly before examples that declare it; setup does not install transitive dependencies.
 
 Your host runs the agents. Orchflows adds no agent runtime, scheduler or workflow language. Loading a workflow applies its instructions in the current context; calling a primitive launches a child.
 
@@ -263,7 +265,7 @@ The default is three rounds with one challenger per round. A continuous request 
 
 > Build a benchmark for this agent, with a quick run under five minutes.
 
-[Benchmaker](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker) turns an agent, workflow or capability description into a small runnable benchmark with representative tasks, outcome grading and explicit measurement limits. It uses one independent pilot worker and one reviewer, with one bounded repair pass; actual candidate executions have their own budget. Install the optional library with `python scripts/orchflows.py setup --example benchmaker`.
+[Benchmaker](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker) turns an agent, workflow or capability description into a small runnable benchmark with representative tasks, outcome grading and explicit measurement limits. It uses one independent pilot worker and one reviewer, with one bounded repair pass; actual candidate executions have their own budget. Install its shared dependency with `python scripts/orchflows.py setup --example shared`, then the library with `python scripts/orchflows.py setup --example benchmaker`.
 
 The first implementation includes contracts and six acceptance scenarios; cross-domain validation remains incomplete. It generates runners suited to each benchmark and does not require a shared evaluation framework. [Validation status](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker/trials).
 
@@ -316,7 +318,8 @@ Ask for a report only to stop after inspecting history. An improvement pass incl
 | Concept | Owner |
 | --- | --- |
 | Desired result, constraints, sources, dates, budgets, model and effort | Your prompt; explicit saved model/effort preferences sit beside workflow assignments |
-| Coordination, dependencies, agent count and loops | Workflow `SKILL.md` |
+| Saved process, dependencies, independence, loops and default bounds | Workflow `SKILL.md` |
+| Runtime allocation, concurrency, gathering and cumulative usage | Orchestrator applying core execution rules |
 | Quality preferences and domain extensions | `guidance/` |
 | Package dependencies and required guidance | `references/library-context.md` |
 | Shared knowledge and handoff contracts | Library `references/`; skill-local references for one consumer |
@@ -329,7 +332,7 @@ Ask for a report only to stop after inspecting history. An improvement pass incl
 The repository follows those boundaries:
 
 ```text
-skills/             two primitives and three built-in compositions
+skills/             two primitives and two built-in compositions
 guidance/           domain preferences and extension documents
 docs/               shared architecture and operating contracts
 scripts/ + tests/   core setup, resolution and history tools

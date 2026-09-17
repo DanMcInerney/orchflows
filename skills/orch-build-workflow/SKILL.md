@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 Name the recurring request and useful result. Follow [architecture](../../docs/architecture.md) for placement and dependencies. Use [orch-dynamic-workflow](../orch-dynamic-workflow/SKILL.md) with `orchflows` and `writing` guidance.
 
+Save the user's process separately from its staffing: stages, dependencies, independence, gates, repetition and allowed effects. Leave task details in the prompt; put reusable quality, methods and taste in guidance with discoverable references. Preserve deliberate process counts; choose overridable finite defaults for execution. Classify existing instructions before moving them: keep as process, move to prompt/defaults, move to guidance/reference, isolate a demonstrated correction, or delete.
+
+Look for useful components in the caller's installed or supplied libraries, including optional shared process skills. Compose their declared contracts without adding coordinator agents, duplicating reviews or resetting budgets. Do not invent a helper for every stage or assume an optional library is installed. Each standalone component states its inputs, outputs, allowed effects and bounds; show how to reuse it and its guidance outside the parent recipe.
+
 Create example and custom personal workflows with the [manual-only invocation defaults](../../docs/architecture.md#invocation); verify the target hosts' settings and report unsupported policies before delivery.
 
 Preserve [model and effort preferences](../../docs/architecture.md#model-and-effort) beside assignments when the user asks the resulting workflow to use them; otherwise leave them unspecified.

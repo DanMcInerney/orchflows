@@ -1,0 +1,6 @@
+interface:
+  display_name: "Compare Candidates"
+  short_description: "Compare stable alternatives under common criteria"
+
+policy:
+  allow_implicit_invocation: false

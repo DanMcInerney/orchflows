@@ -1,0 +1,6 @@
+interface:
+  display_name: "Decision Brief"
+  short_description: "Compare proposals and revise an internal recommendation"
+
+policy:
+  allow_implicit_invocation: false
