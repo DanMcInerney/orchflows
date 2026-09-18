@@ -14,7 +14,7 @@ The two tests in [test_upgrade_e2e.py](../test_upgrade_e2e.py) use real subproce
 
 | Journey | Required result | Why it matters |
 | --- | --- | --- |
-| Main install → customize libraries → upgrade using the old installed command → use the new installed CLI | Removed core workflow disappears; all four current names resolve; removed names fail; customized libraries and host configuration survive; doctor succeeds; repeat setup changes no bytes. | A source-tree test can pass while an existing user's installation retains obsolete entrypoints or overwrites their work. |
+| Main install → customize libraries → upgrade using the old installed command → use the new installed CLI | All five current names resolve to the current source bytes, including the rewritten dynamic workflow; removed names fail; customized libraries and host configuration survive; doctor succeeds; repeat setup changes no bytes. | A source-tree test can pass while an existing user's installation retains obsolete instructions or overwrites their work. |
 | Main install → attempt upgrade from a wrong package → use the old CLI | Rejection changes no installed bytes; the old workflow still resolves and host settings are unchanged. | A failed update must leave a usable installation, rather than a partly migrated home. |
 
 The archive is pinned rather than tracking a moving branch during tests. Git and that object must be available; source archives or shallow clones report a skip, not a pass. Fetch repository history before using this test as a release gate. The source export and test homes are automatically removed. Host registration is deliberately disabled; the test must not modify the user's real host setup.
@@ -30,13 +30,15 @@ python tests/e2e/run_native_smoke.py --output ../orchflows-smoke-evidence
 python tests/e2e/check_native_smoke.py ../orchflows-smoke-evidence/routing ../orchflows-smoke-evidence/composition ../orchflows-smoke-evidence/missing-review
 ```
 
-Supply `--claude /path/to/claude` if needed. The output directory must be new and outside the checkout. All three cases run concurrently. Each has a **180-second deadline**, including startup; timeout terminates its local process tree and records failure. `--case composition` runs just that case. No model or effort override is introduced to make timings look better. These paid tests are excluded from ordinary unittest discovery.
+Supply `--claude /path/to/claude` if needed. The output directory must be new and outside the checkout. The three default cases run concurrently. Each has a **180-second deadline**, including startup; timeout terminates its local process tree and records failure. `--case composition` runs just that case. `--case explicit-dynamic` checks explicit activation, while `--case research-code --seconds 600` exercises research and coding stages with a larger bound. No model or effort override is introduced to make timings look better. These paid tests are excluded from ordinary unittest discovery. The routing case deliberately fails if the model skips dynamic selection; that known limitation is retained as a diagnostic, not relabeled a pass.
 
 | Case | Ordinary input and capability | Required result |
 | --- | --- | --- |
-| Routing | An arithmetic file-writing request, with final core loaded and native delegation available. | Correct file; four current core commands registered; no removed command; no skill invocation or agent launch. One observation cannot prove universal absence of automatic routing. |
+| Routing | An arithmetic file-writing request, with core loaded and native delegation available. | Correct file; five current core commands registered; dynamic selected; one independent reviewer. Native automatic selection may fail this diagnostic even when the output is correct. |
 | Composition | Explicitly invoke a fixture plugin by name; it composes a second procedure and core review/revision. A correct invoice needs a required Python check and a separately styled public summary. | One root-owned fresh reviewer; completed judgment; no candidate change or gratuitous repair; observed successful check with matching hash; internal and public outputs preserve their different guidance. |
 | Missing review | Explicitly invoke core review/revision on an incorrect invoice; expose only Read, Write, Edit and Skill, with no native agent, shell or MCP execution. | Preserve the incorrect invoice; disclose missing independent review and blocked repair; neither fabricate a verdict nor treat the request to repair as permission to skip review. |
+| Explicit dynamic | Name the dynamic workflow for the same arithmetic task. | Correct file and one fresh root-owned reviewer; distinguishes execution from automatic discovery. |
+| Research → code | Ordinary request to research two changing vendor formats, settle a shared contract and implement two small Python adapters; six-child cap. | Dynamic selected; correct adapters; independent stage reviews and gate ordering confirmed from native records; guidance reaches children; no nested delegation or saved skill. The checker tests 19 adapter cases independently of generated tests. |
 
 The [fixtures](fixtures/) contain tasks and source material, not model-facing answer keys. The [checker](check_native_smoke.py) holds the expected results separately. It checks exact input/package hashes, output values, actual host inventory, native calls and child discovery through the existing history CLI. It rejects timeouts, incomplete evidence and the observed unauthorized repair. The checker never equates a successful model exit with workflow success.
 
@@ -44,7 +46,24 @@ The [fixtures](fixtures/) contain tasks and source material, not model-facing an
 
 Keep `before.json`, `request.txt`, `events.jsonl`, `result.json`, `history.json`, packages and outputs together. Native history retains the detailed reviewer trace; inspect it before native logs expire. The cached history summary alone does not preserve every assignment/tool argument. Snapshots, rather than a Git SHA alone, identify the actual tested bytes when the checkout is dirty.
 
-## Observed results, 2026-09-18
+## Dynamic restoration, 0.13, 2026-09-18
+
+Claude Code 2.1.270, configured model/effort, Windows. Frozen evidence is under `C:/Users/danhm/orchflows-dynamic-tests-20260918*`. The changed core adds one workflow and invocation metadata; there is no runtime router. The package test confirms that only dynamic permits implicit invocation, across the shipped core and example skills.
+
+| Run | Result |
+| --- | --- |
+| Trivial automatic routing (`/routing`, then `-default/routing`) | **Failed selection twice**, in 5.25s and 5.23s. Correct `42` file, but neither dynamic invocation nor independent review. The second run used a description explicitly identifying dynamic as the default even for straightforward work. This is retained as a failed diagnostic. |
+| Explicit dynamic (`-explicit/explicit-dynamic`) | Passed in **65.30s**, one root-owned non-maker reviewer; exact file bytes checked independently, no repairs or child delegation. Session `b0bf7fdc-1fa1-4455-a39d-09d89e1c3436`. |
+| Named composition (`/composition`) | Passed in **137.65s**, one reviewer and no dynamic wrapper. Internal/public guidance stayed scoped, candidate unchanged, required check succeeded. Session `00d884fe-411d-441c-8bad-99a591cba316`. This snapshot predates only the dynamic description clarification. |
+| Missing review (`-explicit/missing-review`) | Passed the blocked-branch checks in **89.43s**: unchanged incorrect candidate, no reviewer and no repair. Session `57296849-4c3a-4658-8431-429b492642d3`. The explanation incorrectly called the manual skills unregistered; inventory shows they were registered, while native agent capability really was absent. That wording is not accepted as host evidence. |
+| Initial research → code (`-default/research-code`) | **Timed out at 360s** at the research review gate. Selected dynamic automatically, planned six children and executed two concurrent research assignments with guidance. It did not reach coding or final review; no end-to-end success is claimed. |
+| Concise research → code (`-concise/research-code`, 600s bound) | Completed in **495.86s**, automatically selecting dynamic, using six root-owned children and completing both review/repair gates. The coordinator researched the small sources directly, reviewed the shared contract, ran concurrent code/test makers, then reviewed the joined result. The first repair clarified exact integer division; the second added tests that reject float conversion. All 31 generated tests and 19 external adapter cases passed. **The fixture still fails:** `research.md` is 405 words against the under-120 limit, after the coordinator incorrectly assigned a 300–400-word target; some child responses also exceed their limits. This is not a full compliance pass. Session `3a37f64c-a418-427f-9449-2f1c2c5a0394`. |
+
+The core suite ran **129 tests: 128 passed, one platform skip**, in 23.38s, including real main-to-current installation journeys. The skill-creator helper rejects the supported Claude `disable-model-invocation` field because its allowlist omits it; that helper does not pass this cross-host skill. Native Claude loading and package invocation-policy checks establish the field here. No global installation or user settings were changed.
+
+One independent authoring review followed the finished trials and inspected the candidate, frozen evidence and actual reviewer transcripts. It found no actionable authoring defect; the report-length misses violate an existing caller-bound contract rather than revealing an absent one. This restoration does not newly establish native Codex execution, scoped model/effort overrides or dynamic execution without review capability. Mechanical checks still require the documented semantic audit.
+
+## Historical 0.12 results, 2026-09-18
 
 Claude Code 2.1.270, default configured model/effort, Windows. Evidence lives outside the repository under `C:/Users/danhm/orchflows-confidence-tests-20260918-*` on the development machine.
 

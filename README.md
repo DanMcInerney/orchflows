@@ -41,15 +41,17 @@ python scripts/orchflows.py doctor                         # Check without chang
 
 Setup installs optional examples only when requested with `--example <name>` and refreshes libraries already installed through the supported CLIs. Concurrency stays unchanged unless you pass `--concurrency N`. [Setup options and result statuses](docs/home.md#setup) · [Manual registration and provider setup](docs/hosts.md#register-and-refresh).
 
-Core skills, bundled examples and personal workflows request manual-only invocation. Invoke a workflow from the skill picker or by name. Unmatched requests use the host's ordinary agent behavior. Codex, Claude Code, Kimi Code and Grok Build support invocation settings; ZCode currently cannot enforce manual-only invocation, and Antigravity enforcement is unverified. [Invocation settings](docs/hosts.md#invocation-policy).
+For ordinary tasks, the host can select `orch-dynamic-workflow` to compose and execute an ad hoc workflow. Automatic selection is a model decision and can be skipped, especially for trivial tasks; explicitly invoke it when you require its process. Explicitly named workflows and primitives take precedence. Other core skills, bundled examples and personal workflows request manual-only invocation. Codex, Claude Code, Kimi Code and Grok Build support invocation settings; ZCode currently cannot enforce manual-only invocation, and Antigravity enforcement is unverified. [Invocation settings](docs/hosts.md#invocation-policy).
 
 Start a new session to load Orchflows.
 
 ## Usage
 
-Select a saved workflow, use either primitive directly, or build a workflow for recurring work with [/orch-build-workflow](skills/orch-build-workflow/SKILL.md). To review and revise an existing result once, select [/orch-review-revise-once](skills/orch-review-revise-once/SKILL.md).
+Describe the task, or explicitly invoke [/orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) to compose and run a plan. It selects stages, guidance, dependencies, review gates and bounds, then executes in the same coordinator. Independent research or implementation assignments can run in parallel. Important research/design handoffs can receive review before dependent coding; the default is one review of the joined final result, with at most one repair per added gate. No reusable skill is created unless requested.
 
-**Simple task.** The coordinator makes and verifies an already-clear change directly. One independent child reviews it. This is a small explicit composition, shown with no repairs needed:
+You can also select a saved workflow, use either primitive directly, or build a workflow for recurring work with [/orch-build-workflow](skills/orch-build-workflow/SKILL.md). To review and revise an existing result once, select [/orch-review-revise-once](skills/orch-review-revise-once/SKILL.md).
+
+**Simple task.** The dynamic workflow's coordinator makes and verifies an already-clear change directly. One independent child reviews it. This example needs no repairs:
 
 ```mermaid
 flowchart LR
@@ -87,7 +89,7 @@ flowchart TD
     class T,D result;
 ```
 
-There is one repair pass with verification, without another review. The coordinator can also make clear fixes directly. Calling `orch-work` alone creates just one worker. The examples select review explicitly; it is not added to every task.
+There is one repair pass with verification at this gate, without another review. The coordinator can also make clear fixes directly. Calling `orch-work` alone creates just one worker; explicitly selected workflows preserve their own process and are not wrapped in dynamic orchestration.
 
 **Custom workflows.** Use [/orch-build-workflow](skills/orch-build-workflow/SKILL.md) to turn a recurring task into a reusable workflow. It drafts the composition, tries it on real work, and refines it before independent review:
 

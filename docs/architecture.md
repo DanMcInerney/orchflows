@@ -9,7 +9,7 @@ The product is two primitives, reusable workflows and user-owned guidance. The h
 
 ## Invocation
 
-Orchflows provides explicitly selected primitives and workflows. It installs no catch-all fallback or automatic workflow router. An unmatched request stays with the host's ordinary agent behavior. Write and verify the [host invocation settings](hosts.md#invocation-policy) for each skill; report a host that cannot enforce this policy. Changing this product decision requires an explicit user request, not an incidental refactor or review preference.
+An explicitly selected workflow or primitive owns the process. Otherwise, [orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) is eligible for automatic selection on top-level tasks: it composes an ad hoc plan and executes it in the coordinator. Children follow their assigned work without starting another dynamic workflow. Other shipped skills remain manual-only. Write and verify the [host invocation settings](hosts.md#invocation-policy); report a host that cannot enforce them. This is native skill selection, not a separate routing runtime.
 
 Saved workflows compose their chosen processes and primitives directly. Explicit caller amendments can change the process; state any changed guarantee, preserve primitive meanings and honor actual permissions. Each operation has one public name. Removed interfaces fail clearly; do not retain compatibility aliases, silent substitutions or automatic migrations.
 

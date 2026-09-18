@@ -1,5 +1,7 @@
 # Orchflows: main versus the refactor
 
+This report compares the 0.12 refactor snapshot below. A subsequent explicit user decision restores [orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) in 0.13.0, with automatic selection for top-level tasks and precedence for named workflows. Statements below about its removal describe 0.12, not that later release.
+
 Compared on 2026-09-18 after fetching `origin/main`:
 
 - **Main:** `16d2644ba25562d66af5648a7dfed8ebde1cfe90`, core 0.7.1.

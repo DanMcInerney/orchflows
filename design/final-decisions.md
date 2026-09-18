@@ -1,5 +1,7 @@
 # Final design decisions
 
+Historical decision record for core 0.12.0. At the user's explicit request on 2026-09-18, core 0.13.0 restores automatic [dynamic orchestration](../skills/orch-dynamic-workflow/SKILL.md) for top-level tasks; named workflows take precedence. The no-automatic-entrypoint decision below is superseded. This does not restore compatibility aliases or change primitive ownership.
+
 This resolves the review of commit `4a145ae5` on `codex/flat-workflow-composition`. The current [architecture](../docs/architecture.md) owns execution and product policy. The earlier [design](composable-workflows.md) and [validation record](refactor-validation.md) describe the earlier candidate; they are evidence, not competing contracts.
 
 ## Decision

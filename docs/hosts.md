@@ -88,7 +88,7 @@ Conflicting environment overrides for ZCode, Kimi background tasks and Grok leav
 
 ## Invocation policy
 
-Apply the [invocation policy](architecture.md#invocation) per skill; a library manifest does not set it for its skills. All skills use the manual-only settings below. Orchflows supplies no catch-all workflow or automatic routing path.
+Apply the [invocation policy](architecture.md#invocation) per skill; a library manifest does not set it for its skills. `orch-dynamic-workflow` allows automatic selection with `disable-model-invocation: false` and Codex `policy.allow_implicit_invocation: true`. It applies to top-level tasks without an explicitly selected workflow or primitive. All other shipped skills use the manual-only settings below. Automatic selection is a host/model decision, not deterministic routing or permission to start another workflow inside a child.
 
 | Host | Manual-only setting | Explicit invocation |
 | --- | --- | --- |

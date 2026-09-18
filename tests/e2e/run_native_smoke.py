@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from orchflows import CORE_ENTRIES
 
-CASES = ("routing", "composition", "missing-review")
+CASES = ("routing", "composition", "missing-review", "explicit-dynamic", "research-code")
 
 
 def snapshot(root):
@@ -100,7 +100,7 @@ def main():
     version = subprocess.check_output([executable, "--version"], text=True, timeout=15).strip()
     revision = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
                               text=True, timeout=15, check=True).stdout.strip()
-    cases = list(dict.fromkeys(args.cases or CASES))
+    cases = list(dict.fromkeys(args.cases or CASES[:3]))
     output.mkdir(parents=True)
     failures = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(cases)) as pool:

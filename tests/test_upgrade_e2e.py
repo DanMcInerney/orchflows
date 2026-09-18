@@ -81,23 +81,22 @@ class MainUpgradeEndToEndTests(unittest.TestCase):
         self.assertEqual(completed.returncode, expected, completed.stdout + completed.stderr)
         return json.loads(completed.stdout or completed.stderr)
 
-    def test_upgrade_removes_old_core_preserves_user_libraries_and_runs_without_source(self):
+    def test_upgrade_replaces_old_core_preserves_user_libraries_and_runs_without_source(self):
         # Upgrade through the actual OLD installed command, as an existing user can.
         upgraded = self.cli(self.script, "setup", "--source", str(ROOT), "--example", "design-loop")
         self.assertEqual(upgraded["status"], "ready", upgraded)
         self.assertEqual(upgraded["example"]["status"], "preserved")
         self.assertEqual(snapshot(self.home / "libraries"), self.libraries_before)
-        self.assertFalse((self.core / "skills/orch-dynamic-workflow").exists())
         expected_version = json.loads((ROOT / "plugin.json").read_text())["version"]
         self.assertEqual(upgraded["core"]["version"], expected_version)
         # Remove the old source, then use only the installed interpreter/command.
         self.assertTrue(self.main.resolve().is_relative_to(self.root))
         shutil.rmtree(self.main)
-        for skill in ("orch-work", "orch-review", "orch-build-workflow", "orch-review-revise-once"):
+        for skill in ("orch-work", "orch-review", "orch-build-workflow", "orch-review-revise-once", "orch-dynamic-workflow"):
             resolved = Path(self.cli(self.script, "resolve", "orchflows", "--skill", skill)["skill_path"])
             self.assertTrue(resolved.is_relative_to(self.core))
             self.assertEqual(resolved.read_bytes(), (ROOT / "skills" / skill / "SKILL.md").read_bytes())
-        for library, skill in (("orchflows", "orch-dynamic-workflow"), ("shared", "review-revise-once")):
+        for library, skill in (("orchflows", "orch-make-and-review"), ("shared", "review-revise-once")):
             if library == "shared":
                 self.cli(self.script, "setup", "--source", str(ROOT), "--example", "shared")
             self.assertIn("not installed", self.cli(self.script, "resolve", library, "--skill", skill, expected=2)["error"])

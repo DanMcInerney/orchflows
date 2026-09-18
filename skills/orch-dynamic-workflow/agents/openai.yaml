@@ -1,0 +1,5 @@
+interface:
+  display_name: "Orch Dynamic Workflow"
+  short_description: "Compose and execute a workflow for this task"
+policy:
+  allow_implicit_invocation: true
