@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from orchflows import CORE_ENTRIES
 
-CASES = ("routing", "composition", "missing-review", "explicit-dynamic", "research-code", "safe-authoring")
+CASES = ("routing", "composition", "missing-review", "explicit-dynamic", "research-code", "safe-authoring",
+         "requested-review", "dynamic-review")
 
 
 def snapshot(root):
@@ -55,6 +56,8 @@ def run_case(name, output, executable, seconds, version, revision):
         shutil.move(str(workspace / "library"), library)
         plugins += ["--plugin-dir", str(library)]
     request = (workspace / "request.md").read_text(encoding="utf-8").replace("{CORE}", core.as_posix())
+    if (case / "packages/fixture").exists():
+        request = request.replace("{LIBRARY}", (case / "packages/fixture").as_posix())
     (workspace / "request.md").unlink()
     (case / "request.txt").write_text(request, encoding="utf-8")
     before = {"packages": snapshot(case / "packages"), "inputs": snapshot(workspace)}

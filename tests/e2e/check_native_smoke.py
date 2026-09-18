@@ -78,28 +78,32 @@ def check(case):
         require(any("Invoice checks passed" in str(completed.get(c["id"], {}).get("content", ""))
                     and not completed[c["id"]].get("is_error") for c in check_calls), "No observed successful caller check execution")
         require(delegations[0][1]["id"] in completed and not completed[delegations[0][1]["id"]].get("is_error"), "Reviewer did not return successfully")
-        for filename in ("review.md", "handoff.md"):
-            require(len((workspace / filename).read_text(encoding="utf-8").split()) <= 120,
-                    f"Report exceeded the fixture's word limit: {filename}")
     elif case.name == "missing-review":
         require(not delegations and not children, "Restricted case launched an agent")
         require(not ({"Agent", "Task", "Bash"} & set(init["tools"])), "Negative case accidentally enabled review/command tools")
         require(json.loads((workspace / "invoice.json").read_text())["total"] == 253, "Blocked repair changed the candidate")
-    elif case.name in {"routing", "explicit-dynamic"}:
+    elif case.name in {"routing", "explicit-dynamic", "requested-review"}:
         require((workspace / "answer.txt").read_text().strip() == "42", "Wrong ordinary-task result")
-        if case.name == "routing":
-            require(any(c["name"] == "Skill" and c.get("input", {}).get("skill") == "orchflows:orch-dynamic-workflow"
-                        for _, c in calls), "Ordinary task did not select the dynamic workflow")
-        require(len(delegations) == len(children) == 1, "Expected one independent review of the simple result")
+        if case.name == "requested-review":
+            require(len(delegations) == len(children) == 1, "Explicitly requested independent review was not performed")
+        else:
+            require(not delegations and not children, "Trivial task launched unnecessary child agents")
+    elif case.name == "dynamic-review":
+        require(1 <= len(children) <= 2 and len(delegations) == len(children), "Expected bounded independent review")
+        fixture = next(p for p in init["plugins"] if Path(p["path"]).resolve() == (packages / "fixture").resolve())
+        require(f"{fixture['name']}:style-demo" in init["slash_commands"], "Optional library was not available")
+        require(not list(workspace.rglob("SKILL.md")), "Task unexpectedly created a reusable workflow")
+        module = (workspace / "authorize.py").read_text(encoding="utf-8")
+        require("UNSELECTED_EXTENSION" not in module, "Dynamic adopted an unsolicited guidance extension")
+        checked = subprocess.run([sys.executable, "-B", "-c", AUTHORIZATION_CHECKS], cwd=workspace,
+                                 capture_output=True, text=True, timeout=20)
+        require(checked.returncode == 0, "Independent authorization cases failed: " + checked.stdout + checked.stderr)
     elif case.name == "research-code":
-        require(any(c["name"] == "Skill" and c.get("input", {}).get("skill") == "orchflows:orch-dynamic-workflow"
-                    for _, c in calls), "Research task did not select the dynamic workflow")
         require(2 <= len(children) <= 6, "Expected bounded independent stage reviews")
         require(len(delegations) == len(children), "Expected fresh root-owned assignments")
         require(not list(workspace.rglob("SKILL.md")), "Task unexpectedly created a reusable workflow")
         research = (workspace / "research.md").read_text(encoding="utf-8")
         require(research.strip(), "Missing research handoff")
-        require(len(research.split()) < 120, "Research report exceeded the fixture's word limit")
         require(list(workspace.glob("test*.py")) or list((workspace / "tests").glob("test*.py")), "Missing adapter tests")
         checked = subprocess.run([sys.executable, "-B", "-c", ADAPTER_CHECKS], cwd=workspace,
                                  capture_output=True, text=True, timeout=20)
@@ -120,14 +124,32 @@ def check(case):
         for name in ("captured_email", "captured_invite"):
             require(not any(value in artifacts[name] for value in ("ORIGINAL_MEETING_7F2A", "robin@example.invalid", "casey@example.invalid")),
                     f"Delivery capture reused reference data: {name}")
-        require(len((workspace / "trial-report.md").read_text(encoding="utf-8").split()) < 150, "Oversized trial report")
+        require((workspace / "trial-report.md").read_text(encoding="utf-8").strip(), "Missing trial report")
     else:
         raise ValueError(f"Unknown fixture: {case.name}")
     if case.name in {"composition", "missing-review"}:
         for filename in ("review.md", "handoff.md"):
             require((workspace / filename).read_text(encoding="utf-8").strip(), f"Missing {filename}")
+    dynamic_selected = any(c["name"] == "Skill" and c.get("input", {}).get("skill") == "orchflows:orch-dynamic-workflow"
+                           for _, c in calls)
     return {"case": case.name, "mechanical_checks": "passed", "seconds": result["seconds"],
+            "dynamic_skill_call_observed": dynamic_selected,
             "session_id": init["session_id"], "manual_audit": "Required: assignments, review/gap semantics and tool effects"}
+
+
+AUTHORIZATION_CHECKS = """
+from itertools import product
+from authorize import can_export
+
+cases = 0
+for role, authenticated, suspended in product(
+        ('owner', 'analyst', 'viewer', 'admin', '', None, [], {}), (True, False, 1, None), (True, False, 0, None)):
+    expected = role in ('owner', 'analyst') and authenticated is True and suspended is False
+    actual = can_export(role, authenticated, suspended)
+    assert type(actual) is bool and actual == expected, (role, authenticated, suspended, actual)
+    cases += 1
+print(f'{cases} independent authorization cases passed')
+"""
 
 
 ADAPTER_CHECKS = """

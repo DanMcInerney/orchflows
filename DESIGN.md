@@ -57,7 +57,7 @@ flowchart TB
     U([Task]) --> N{Explicitly selected<br/>workflow or primitive?}
     N -->|Yes| S[Apply that process]
     N -->|No| H{Host selects dynamic?}
-    H -->|Yes| D[Plan and execute<br/>an ad hoc workflow]
+    H -->|Yes| D[Core operations and guidance<br/>Review proportional to the work]
     H -->|No| O[Ordinary host behavior]
     S --> C[One coordinator]
     D --> C
@@ -75,11 +75,11 @@ Automatic selection is best-effort. Recorded Claude trials selected dynamic for 
 
 ## What does dynamic decide?
 
-It establishes the result and checks, stages, dependencies, guidance, review gates and bounds. It can reuse saved workflows or assemble assignments directly. A plan does not become a saved skill unless requested.
+It establishes the result and checks, composing core workflows and primitives. It selects applicable core guidance, including core specializations, without personal or library extensions. User and repository instructions still apply; task sources remain evidence. A plan does not become a saved skill unless requested. Named workflows remain the route to optional library processes and extensions.
 
-The default is one independent review of the joined final result. Intermediate gates belong where later work depends on research or design decisions costly to reverse. Independent assignments can run concurrently; shared decisions settle before dependent work.
+Straightforward, low-impact, reversible work that can be checked directly needs no independent review unless requested. For other work, default to one independent review of the joined final result. Intermediate gates belong where decisions are costly to reverse. New uncertainty can warrant review; missing reviewer capability does not make consequential work trivial. This policy applies to both automatic and explicit dynamic invocation.
 
-A research-to-code task can use parallel research → joined research review/fix → parallel coding → joined code review/fix. A clear task can use direct coordinator work followed by review. Staffing is flexible; an explicit `orch-work` call always requires a fresh maker.
+A research-to-code task can use parallel research → joined research review/fix → parallel coding → joined code review/fix. A typo fix can use direct work and a check. Independent work can run concurrently; shared decisions settle before dependent work. Staffing is flexible; an explicit `orch-work` call always requires a fresh maker.
 
 ## How can workflows nest without nested orchestrators?
 
@@ -118,7 +118,7 @@ The child can reconstruct the problem without the parent's conversation. A revie
 
 ## How does guidance compose?
 
-Callers can supply an ordered list of files. Named domains provide a convenience: visit dotted prefixes from general to specific, reading core then selected libraries in caller order at each prefix.
+Named workflows and explicitly selected primitives can use an ordered list of guidance files. Named domains provide a convenience: visit dotted prefixes from general to specific, reading core then selected libraries in caller order at each prefix. Dynamic restricts this selection to core files.
 
 For `code.api` with one personal library:
 
@@ -136,6 +136,8 @@ flowchart LR
 Keep each file once. More-specific preferences win within a domain; independent domains combine. Missing implicit parents are allowed, but explicitly selected domains/files must exist. Unresolved requirement conflicts block dependent work.
 
 Common criteria apply to makers and reviewers; optional Make and Review sections supply role-specific instructions. Local extensions refine taste, not permissions, review obligations or caller limits. Reading another scope's guidance as evidence does not adopt its preferences.
+
+Brevity, style and roughly 500-line code files are preferences. They guide judgment without automatic rejection or refactoring. A strict user requirement or destination format can make a limit mandatory; correctness, allowed effects and explicit resource bounds remain binding. There is no separate constraint schema or generic validator.
 
 ## What does review establish?
 
@@ -197,6 +199,6 @@ The dependency-free Python CLI provides `setup`, read-only `doctor`, `resolve`, 
 
 Orchflows has no execution engine, scheduler, workflow DSL or host-enforced process checker. Its contracts depend on agents following instructions and hosts exposing required capabilities. Missing capability is reported rather than silently replaced; self-review cannot replace independent review.
 
-Recorded trials include successful flat composition and staged review/repair, but also missed automatic selection, dropped output limits and timeouts. A completed six-child research-to-code run passed code checks yet failed a report-length constraint. These remain failures in the [test record](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e), not evidence of universal reliability.
+Recorded trials include successful flat composition and staged review/repair, but also missed automatic selection and timeouts. The [test record](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e) preserves the original results and distinguishes current policy from historical scoring. Soft report-length preferences no longer determine success; passing checks still does not prove universal reliability.
 
 The design aims to preserve useful processes as models improve: retain dependencies and judgments, remove obsolete corrections from guidance, and validate changes on representative work. More agents are useful when their independence or parallel work earns the coordination cost.

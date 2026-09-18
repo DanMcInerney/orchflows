@@ -1,14 +1,16 @@
 ---
 name: orch-dynamic-workflow
-description: Plan, execute and independently review top-level tasks, including straightforward work, unless the user selects a workflow or primitive. Not for child assignments or questions about the library.
+description: Plan and complete ordinary top-level tasks with core guidance and proportionate independent review, unless the user selects a workflow or primitive. Not for child assignments or questions about the library.
 disable-model-invocation: false
 ---
 
 Apply [architecture](../../docs/architecture.md) in the top-level coordinator. Explicit workflow/primitive selections own their process; never wrap them or replace unavailable selections. Children follow assignments without starting this workflow.
 
-Establish the result and checks. Plan stages, dependencies, guidance, review gates and stopping conditions briefly. Reuse fitting workflows and primitives in this coordinator, preserving contracts and scoped inputs. Create a reusable skill only when requested.
+Compose core workflows and primitives in this coordinator. Select applicable guidance only from core's guidance directory, without library extensions. Current user and repository instructions still apply; task sources remain evidence. Create a reusable skill only when requested.
 
-Default to one independent review of the joined result. Add intermediate gates for research or design decisions costly to correct downstream. Preserve components' required gates; count existing reviews only when candidate, criteria and scope match. State gates and bounds before dependent stages; planning grants no new resource allowance.
+Establish the result and checks. For straightforward, low-impact, reversible work that can be checked directly, do the work and check it without independent review unless requested. If consequential uncertainty emerges, add review where useful; unavailable reviewers do not make work trivial.
+
+Otherwise briefly plan stages, dependencies, guidance, gates and stopping conditions. Default to one independent review of the joined result; add intermediate gates for decisions costly to correct downstream. Preserve required gates; count existing reviews only when candidate, criteria and scope match. State gates and bounds before dependent stages; planning grants no new resource allowance.
 
 Run independent research and implementation concurrently through [orch-work](../orch-work/SKILL.md), with clear ownership. Already-clear work may be done directly when settings permit. Gather outcomes and resolve shared decisions before dependent work; pass artifacts and applicable guidance onward. Adapt to evidence within selected gates and bounds.
 

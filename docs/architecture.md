@@ -9,7 +9,7 @@ The host executes agents. The coordinator applies workflowsâ€”saved proceduresâ€
 
 ## Invocation
 
-An explicitly selected workflow or primitive owns the process. Otherwise, [orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) may be selected automatically for top-level tasks to compose and execute an ad hoc plan. Children follow assignments without starting another dynamic workflow. Other shipped skills are manual-only. Write and verify [host invocation settings](hosts.md#invocation-policy); report unenforceable policies. Selection is native, with no separate routing runtime.
+An explicitly selected workflow or primitive owns the process. Otherwise, [orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) may be selected automatically for top-level tasks, using core operations and guidance with review proportional to the work. Children follow assignments without starting another dynamic workflow. Other shipped skills are manual-only. Write and verify [host invocation settings](hosts.md#invocation-policy); report unenforceable policies. Selection is native, with no separate routing runtime.
 
 Workflows compose processes and primitives directly. Explicit caller amendments may change the process; state changed guarantees, preserve primitive meanings and honor actual permissions. Each operation has one public name. Removed interfaces fail clearly, without compatibility aliases, silent substitutions or automatic migrations.
 
@@ -48,6 +48,8 @@ Honor settings for every assignment, including repairs. Work directly or reuse a
 ## Guidance selection
 
 Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Keep temporary model corrections separately removable; role-only files remain valid. Select `orchflows` for authoring; the domain being extended is source material for its author.
+
+Brevity, style and approximate file size are preferences, not acceptance gates unless the user or output contract makes them strict. Correctness, allowed effects and explicit resource bounds remain binding.
 
 Pass an ordered list of applicable guidance paths, including caller-supplied files. Selection determines applicable preferences, not file access; reading another scope's guidance as evidence does not adopt it. Guidance must work without its original recipe. Techniques may be optional; tool and correctness contracts in references remain required. Extensions refine scoped preferences, not caller constraints, authority or workflow obligations. Resolve conflicts that precedence cannot settle.
 

@@ -39,9 +39,9 @@ flowchart TB
     class T,O outcome;
 ```
 
-The task determines stages and staffing. A clear change may need direct work and one reviewer. Dynamic defaults to one final review, adding intermediate gates where later work depends on important decisions. Each gate it adds permits at most one repair pass.
+The task determines stages and staffing. Trivial, reversible work gets a direct check without an independent reviewer unless requested. Other work defaults to one final review, adding intermediate gates where later work depends on important decisions. Each gate permits at most one repair pass.
 
-Dynamic is available for automatic selection on ordinary tasks; explicitly named workflows take precedence. Automatic selection is a model decision, so name it when you require its process.
+Dynamic uses core operations and applicable core guidance. It is available for automatic selection on ordinary tasks; explicitly named workflows take precedence. Automatic selection is a model decision, so name it when you require its process.
 
 ## Turn a good process into a library
 
@@ -81,7 +81,7 @@ The last three compose the first two. Only the coordinator delegates; children r
 
 Workflows express dependencies, independence, review gates and stopping conditions. Guidance expresses what good work looks like: research standards, coding preferences, writing style or a brand's voice.
 
-For example, `code.api.md` specializes `code.md`. A personal library can add its own `guidance/code.md`. Select only the domains and extensions the task needs; a marketing preference does not spill into a sibling research assignment.
+For example, `code.api.md` specializes `code.md`. Named workflows can select a personal library's `guidance/code.md`; dynamic uses core guidance without extensions. Select only applicable domains and keep local preferences scoped to their work. Brevity and approximate file-size targets guide judgment; they are not automatic failure conditions.
 
 When a model stops needing a corrective instruction, test removing that instruction from guidance. Keep the process and the preferences you still care about. [How composition and guidance work](DESIGN.md).
 

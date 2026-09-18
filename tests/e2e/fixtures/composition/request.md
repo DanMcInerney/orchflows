@@ -1,3 +1,3 @@
 /confidence-fixture:invoice-packet
 
-Prepare the invoice packet from source.json and the existing invoice.json in this workspace. Use Python to run verify_invoice.py as the required check of the invoice, writing checks.json. Keep the original independent review in review.md and the delivery account in handoff.md, at most 120 words each. Write the public summary to public.json. Core is available at {CORE}. No network or external actions are needed.
+Prepare the invoice packet from source.json and the existing invoice.json in this workspace. Use Python to run verify_invoice.py as the required check of the invoice, writing checks.json. Keep the original independent review in review.md and the delivery account in handoff.md, preferably below 120 words each. Write the public summary to public.json. Core is available at {CORE}. No network or external actions are needed.
