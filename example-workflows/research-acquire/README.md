@@ -1,25 +1,47 @@
-# Research Acquire
+# Research Acquire: make source reads count
 
-Collect public evidence through bounded discovery, semantic selection and depth reads, preserving receipts and resumable state. It runs in the current agent with **no child agents**; the caller interprets the evidence.
+An interesting search result creates a choice: read deeper, or spend the remaining budget elsewhere. Research Acquire makes that choice explicit. Discover public records, select the ones worth inspecting, and save evidence, receipts and resume state under one set of limits. It runs in the current agent, with **no child agents**; the caller interprets the evidence.
 
-## Use
-
-After [installation](#install):
+After [installation](#install), try:
 
 ```text
-Use research-acquire:research-acquire to collect Hacker News evidence about
-SQLite in production from the last 30 days. Discover up to 10 stories,
-then select at most 2 discussions worth reading, with up to 20 records each.
-Use one plan capped at 3 steps, 8 requests, 50 records, and 120 seconds of
-active acquisition. Save inspected evidence, selection reasons, receipts,
-and resume state in research/sqlite-hn. Report any coverage gaps.
+$research-acquire:research-acquire
+Collect Hacker News evidence about SQLite in production from the last
+30 days. Discover up to 10 stories, then select at most 2 discussions
+worth reading, with up to 20 records each. Use one plan capped at 3 steps,
+8 requests, 50 records, and 120 seconds of active acquisition.
+Save inspected evidence, selection reasons, receipts, and resume state
+in research/sqlite-hn. Report coverage gaps.
 ```
 
-Supply the question, sources, date window, bounds and output location. The agent chooses depth reads from retained candidate text and context. One plan shares request reservations, pacing and limits across discovery, depth and resume. Completed steps make no further requests; uncertain reads retain their budget reservation and gap.
+Use `/research-acquire:research-acquire` in Claude Code. Supply a question, sources, date window, limits and output location.
+
+## Discover, choose, inspect
+
+```mermaid
+flowchart TD
+    P[One plan with shared limits] --> D[Discover public records]
+    D --> C[Save candidates and losses]
+    C --> S[Agent selects from retained context]
+    S --> R[Read selected depth]
+    R --> E[Evidence packet, receipts and gaps]
+    C -. Saved state .-> K[Checkpoint preserves used budget]
+    R -. Saved state .-> K
+    classDef input fill:#dbeafe,stroke:#1d4ed8,color:#172554;
+    classDef work fill:#d1fae5,stroke:#047857,color:#064e3b;
+    classDef choice fill:#ede9fe,stroke:#6d28d9,color:#2e1065;
+    classDef output fill:#fef3c7,stroke:#b45309,color:#451a03;
+    class P input;
+    class D,R work;
+    class S choice;
+    class C,E,K output;
+```
+
+The agent chooses depth reads from retained text and context, explaining relevance and omissions. Requests, pacing and limits are shared across discovery, depth and resume. Completed steps make no further requests. An interrupted read without a durable result stays uncertain, retains its budget reservation and is not replayed.
 
 Bounds are ceilings. Active-work limits do not guarantee total wall time; a completed packet establishes neither complete coverage nor an answer.
 
-## Supported sources
+## What it can read
 
 Routes use public access without credentials. The [source operations reference](skills/research-acquire/references/selection-routes.md) defines exact syntax, depth operations and limits.
 
@@ -36,7 +58,7 @@ Routes use public access without credentials. The [source operations reference](
 
 Abstracts remain abstracts; captions are speech; sampled comments remain a sample. These routes exclude JavaScript rendering, X search, automatic feed discovery and guaranteed complete conversations.
 
-## Saved evidence
+## Keep the evidence directory together
 
 | Artifact | Contents |
 | --- | --- |
@@ -45,25 +67,23 @@ Abstracts remain abstracts; captions are speech; sampled comments remain a sampl
 | `candidates.json`, `selection.json` | Available choices and selection reasons |
 | `checkpoint.json`, step artifacts | Identities, reserved budgets and saved results |
 
-Keep the directory together. Resume uses unchanged plan/output paths; [acquisition](skills/research-acquire/references/acquisition.md) defines identity, corruption and uncertain-read handling. New scope needs a separate plan within remaining caller bounds. The [YouTube reader](skills/research-acquire/references/source-inspection.md) writes a separate receipt and, when retained, timing-bearing caption sidecar.
+Resume uses unchanged plan/output paths. Changed identity or corrupt state refuses reuse; new scope needs a separate plan within remaining caller bounds. See the [acquisition method](skills/research-acquire/references/acquisition.md). The separate [YouTube reader](skills/research-acquire/references/source-inspection.md) saves a receipt and, when retained, a caption sidecar with timing.
 
 ## Install
 
-From an Orchflows checkout with Python 3.11+:
+Run from an Orchflows checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example research-acquire
 ```
 
-Register the home and install `research-acquire` using core `docs/hosts.md`, then start a new session. Setup preserves user-owned copies; update that copy before refreshing an existing install. Manual invocations are `$research-acquire:research-acquire` in Codex and `/research-acquire:research-acquire` in Claude Code.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned copies and installs no runtime dependencies. The skill is manual-only by default.
 
 The backend needs **Python 3.9+ and standard library**. Optional captions need `yt-dlp` in the same interpreter:
 
 ```sh
 python -m pip install yt-dlp
 ```
-
-Setup installs no library runtime dependencies; child delegation is unnecessary.
 
 ## Inspect or extend
 
@@ -78,4 +98,4 @@ python scripts/acquire_fixture.py --output <scratch>
 
 The fixture exercises parsing, selected depth and resume without live access. These checks establish neither live availability nor research quality.
 
-Backend from [orchflows recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search), under its [MIT license](LICENSE).
+Backend adapted from [recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under its [MIT license](LICENSE).

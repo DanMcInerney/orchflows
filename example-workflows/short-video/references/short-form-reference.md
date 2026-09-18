@@ -1,6 +1,6 @@
 # Optional short-form observations
 
-The 2026-09-11 research handoff inspected original post frames/metadata, not complete audiovisual playback. These historical examples suggest possibilities, not current trends or causal popularity rules.
+Evidence is limited to original post frames and metadata; complete audiovisual playback was not inspected. These examples suggest possibilities, without establishing current trends or causes of popularity.
 
 - [Khaby Lame's banana response](https://www.tiktok.com/@khaby.lame/video/6950627842518568197), 2021-04-13: elaborate preparation versus simple peeling suggests recognizable visual reward. Frame intelligibility proves no absence of music.
 - [Nathan Apodaca's “Morning vibe”](https://www.tiktok.com/@420doggface208/video/6876424179084709126), 2020-09-25: road, drink and expression suggest warmth through an ordinary moment; presence can sustain interest without plot escalation. The credited song was not auditioned.

@@ -1,84 +1,67 @@
-# Social Search
+# Social Search: follow the evidence across sources
 
-Give Social Search a question and public sources. Researchers collect distinct evidence in parallel; a fresh reviewer ranks its support. Receive a cited assessment, source material and remaining gaps.
+Ten posts repeating one study are still one study. Social Search divides a question across public sources, preserves what researchers actually inspected, and gives a fresh reviewer the whole collection. You get a ranked, cited assessment with disagreements and coverage gaps intact.
 
-Use it to investigate product reception, compare developer experiences, or follow a claim from its paper into public discussion.
-
-## Try it
-
-After [installation](#install), paste this into your agent:
+After [installation](#install), try:
 
 ```text
-Use social-search:social-search to investigate what developers report about
-running SQLite in production. Search Hacker News, Reddit, and original
-technical writeups from the last 30 days. Give shared original-source checks
-one owner. Rank the strongest evidence, explain disagreements, and link the
-inspected sources. Spend at most 20 minutes including review. Save the report
-and collection evidence in research/sqlite-production.
+$social-search:social-search
+Investigate what developers report about running SQLite in production.
+Search Hacker News, Reddit, and original technical writeups from the last
+30 days. Give shared original-source checks one owner. Explain the strongest
+evidence and disagreements. Spend at most 20 minutes including review.
+Save the assessment and collection evidence in research/sqlite-production.
 ```
 
-Change the question, dates, sources, time limit and output directory. Assign a site, web scope, feed set or related sources together.
+Use `/social-search:social-search` in Claude Code. Change the question, dates, sources, bounds and output directory. An assignment can cover a site, a web scope, supplied feeds or related sources together.
 
-## Why this is useful
-
-- **Clear ownership.** Researchers divide unmet scope; shared originals get one owner.
-- **Independent judgment.** A fresh reviewer ranks support, provenance, limitations and corroboration.
-- **Preserved context.** Findings retain dates, inspected support, discussion context and engagement. Posts citing one study remain one underlying study.
-- **Visible gaps.** Partial, blocked and empty searches remain distinct; failed access cannot establish absence.
-
-## How it works
+## Collect separately, judge together
 
 ```mermaid
-flowchart LR
-    Q[Question and bounds] --> A[Assign distinct source scopes]
-    A --> R1[Researcher A]
-    A --> R2[Researcher B]
-    A --> RN[Researcher N]
-    R1 --> E[Evidence and coverage gaps]
-    R2 --> E
-    RN --> E
-    E --> J[Independent review ranks evidence]
-    J --> O[Cited assessment]
-    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b;
-    classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95;
-    class R1,R2,RN work;
-    class J review;
+flowchart TD
+    Q[Question, sources and bounds] --> A[Assign distinct source scopes]
+    A --> B[Collect discussions]
+    A --> C[Inspect shared originals]
+    B --> E[Gather evidence and every outcome]
+    C --> E
+    E --> R[Fresh reviewer ranks support]
+    R --> O[Cited assessment and gaps]
+    classDef input fill:#dbeafe,stroke:#1d4ed8,color:#172554;
+    classDef work fill:#d1fae5,stroke:#047857,color:#064e3b;
+    classDef review fill:#ede9fe,stroke:#6d28d9,color:#2e1065;
+    classDef output fill:#fef3c7,stroke:#b45309,color:#451a03;
+    class Q input;
+    class A,B,C,E work;
+    class R review;
+    class O output;
 ```
 
-The orchestrator assigns collection through `search-site` → `orch-work`, gathers actual outcomes, then requests one whole-result assessment through `rank-evidence` → `orch-review`. Time limits include collection, handoff and assessment.
+The coordinator launches independent collection assignments within capacity and provider limits. Shared original-source checks have one owner; other researchers contribute distinct evidence. Existing evidence can fill part of the scope, so collection focuses on what is missing.
 
-Supply existing evidence to collect only missing scope, or invoke assessment directly. The reviewer neither collects nor changes evidence.
+Time limits include collection, evidence writing, gathering and the final review. At the handoff deadline, unfinished work stops; useful partial material survives and missing assignments become gaps. One fresh assessor then ranks the gathered evidence without collecting more or changing it.
 
-| Entrypoint | Use it for |
+| Entrypoint | Result |
 | --- | --- |
-| [social-search](skills/social-search/SKILL.md) | Collect and assess a bounded question |
-| [search-site](skills/search-site/SKILL.md) | Collect one source assignment |
-| [rank-evidence](skills/rank-evidence/SKILL.md) | Assess evidence you already have |
+| [social-search](skills/social-search/SKILL.md) | Collection plus one independent assessment |
+| [search-site](skills/search-site/SKILL.md) | Evidence for one bounded source assignment |
+| [rank-evidence](skills/rank-evidence/SKILL.md) | Independent assessment of evidence already supplied |
 
-## What you get
+## A claim you can trace
 
-A ranked, cited assessment and `results.md` per collection assignment, linking support, original URLs, qualified dates, available engagement and coverage limits. The [evidence contract](references/evidence.md) defines the handoff.
+Each collection writes `results.md` with original URLs, inspected support, qualified dates, available engagement and coverage limits. A search snippet is a lead. An abstract supports claims about its contents, not uninspected methods. Sampled discussion establishes experiences or viewpoints, not prevalence; engagement and reliability stay separate. The [evidence contract](references/evidence.md) defines these distinctions.
 
-Reach and reliability remain separate. Sampled discussion establishes experiences, not prevalence. Sources and access determine coverage.
+Adapt [research guidance](guidance/research.search-site.md) and its site specializations to your question. [Library context](references/library-context.md) owns guidance selection and dependencies.
 
 ## Install
 
-From a complete Orchflows checkout with Python 3.11+:
+Run from a complete Orchflows checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example social-search
 ```
 
-Register the home and install core plus `social-search` using core `docs/hosts.md`; start a new session. Setup preserves user-owned copies; update those before refreshing an existing install.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies and installs no runtime dependencies. Skills are manual-only by default. Requires **core 0.11.0+, native child delegation and public search/read tools**.
 
-All skills are manual-only. Use `$social-search:social-search` in Codex or `/social-search:social-search` in Claude Code; substitute a leaf name for standalone use.
+Optionally run `python scripts/orchflows.py setup --example research-acquire` for bounded acquisition and optional YouTube captions; register that library too. It owns its runtime requirements; generic feeds require 0.4.0+.
 
-Requires core 0.11.0+, native child delegation and public search/read tools. Optional `python scripts/orchflows.py setup --example research-acquire` adds acquisition tools and YouTube transcripts; register that library too. It owns its dependencies/routes; generic feeds require 0.4.0+. Setup installs no runtime dependencies.
-
-## Make it yours
-
-[Research guidance](guidance/research.search-site.md) defines collection/assessment criteria, with Reddit, Hacker News, GitHub, X, YouTube, web, feed and Lemmy specializations. Unfamiliar sites use general criteria. [Library context](references/library-context.md) resolves guidance, dependencies and outputs.
-
-Trial specifications cover [sites](trials/request.md), [web/feeds/Lemmy](trials/web-feeds-lemmy/request.md) and [papers/discussion](trials/papers-and-discussion/request.md); they are expectations, not observed results.
-
-Adapted from [orchflows recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under the retained [MIT license](LICENSE).
+[Trial specifications](trials/request.md), including [web/feeds/Lemmy](trials/web-feeds-lemmy/request.md) and [papers/discussion](trials/papers-and-discussion/request.md), describe expected behavior, not observed passes. Adapted from [recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under the retained [MIT license](LICENSE).

@@ -47,4 +47,4 @@ Outcome credit represents useful partial work. Full success and critical failure
 
 Generated packages and evidence live outside this library. Use installed tooling and the lightest environment that preserves fidelity and required access controls. A local directory is not a secrecy boundary. Shared runner templates or optional harness integrations need demonstrated cross-domain reuse and outcome parity before adoption.
 
-The library remains experimental. [Recorded trial coverage](trials/README.md) determines which behavior has been exercised; a passing pilot does not establish broad readiness.
+The library remains experimental. [Trial scenarios and validation gaps](trials/README.md) define what to exercise; a passing pilot does not establish broad readiness.

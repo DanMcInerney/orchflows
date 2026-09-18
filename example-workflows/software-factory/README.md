@@ -1,6 +1,6 @@
 # Software Factory
 
-Build a software change, check the exact candidate, obtain independent specialist reviews and return a release handoff. Findings feed a bounded repair loop. A requested, authorized release uses a separate worker for observed rollout.
+Use Software Factory when a code change needs a verifiable handoff: what changed, what was checked, what remains risky, and what may be released. It builds the change, checks the exact candidate, gathers independent specialist reviews and returns a reconstructible patch with a release plan. A requested, authorized release gets its own worker and observed rollout.
 
 ## Try it
 
@@ -11,105 +11,58 @@ Use P=2 candidate passes. Return the reviewed change, complete patch, check
 evidence, findings and release plan in delivery/csv-export.
 ```
 
-Claude Code: `/software-factory:software-factory`. Delivery defaults to three candidate passes, including the first; the coordinator chooses staffing and stops at the requested endpoint or bound. Observation and incident investigation are separate requests.
+Claude Code uses `/software-factory:software-factory`. Entry points are manual-only. Supply the outcome and workspace; optionally set outputs, bounds, policy, release target, guidance or model/effort. Unspecified model/effort stays unset.
 
-## Flow and ownership
+## A bounded path to release
 
-Inspired by Gergely Orosz's [Inside OpenAI's agentic software factory](https://newsletter.pragmaticengineer.com/p/openai-software-factory), *The Pragmatic Engineer*, September 15, 2026. The user-supplied original diagram is credited to The Pragmatic Engineer. This library adapts the process to your tools; OpenAI's internal systems are not included.
+```mermaid
+flowchart TD
+    B["Acceptance, baseline and permissions"] --> C["Build candidate and run checks"]
+    C -->|Checks pass| R["Independent specialist reviews"]
+    R -->|Findings; passes remain| C
+    R -->|Required evidence complete| G["Risk and review gate"]
+    G --> H["Validated change and release handoff"]
+    H -->|Requested and authorized| D["Release worker observes rollout"]
+    C -->|Bound or blocker| X["Checkpoint and unresolved work"]
+    R -->|Bound or blocker| X
+    classDef input fill:#0F172A,color:#FFFFFF,stroke:#0F172A
+    classDef work fill:#DBEAFE,color:#172554,stroke:#1D4ED8
+    classDef review fill:#FEF3C7,color:#451A03,stroke:#92400E
+    classDef result fill:#D1FAE5,color:#064E3B,stroke:#047857
+    classDef stop fill:#FEE2E2,color:#7F1D1D,stroke:#B91C1C
+    class B input
+    class C work
+    class R,G review
+    class H,D result
+    class X stop
+```
 
-| Original design | Orchflows implementation |
+The default is **P=3 candidate passes, including the first**. Each attempt consumes a pass before work. `orch-work` builds; after checks pass, fresh `orch-review` children review the frozen candidate once per applicable lens: correctness always, plus affected data, infrastructure, cloud and security. Gather every required judgment before repairs. Failed checks or findings feed a remaining pass; revised candidates repeat required checks and all applicable reviews. No extra final review or nested repair loop follows.
+
+Checks, required CI, reviews and approvals identify the candidate. The saved patch must reconstruct it from its baseline, including additions and deletions. Automatic low-risk review acceptance requires explicit project opt-in; otherwise prepare a human-review handoff. Failed checks or missing required evidence block readiness.
+
+Release authority is separate. One worker verifies validated inputs, baseline signals, rollback and stop criteria, then observes each rollout stage. Changed inputs need revalidation within remaining passes. Failures stop advancement; rollback requires existing authorization and recovery verification. Missing telemetry means incomplete observation.
+
+Stop at the requested endpoint, exhausted bounds, caller stop or missing required capability/decision. Resuming preserves consumed passes. Return artifacts, evidence, findings, risk, actual external actions, gaps and a checkpoint with stop reason. [Delivery guidance](guidance/software-delivery.md) and the [run contract](references/run-contract.md) define the details.
+
+| Entry point | Outcome |
 | --- | --- |
-| [![The Pragmatic Engineer diagram](assets/openai-factory-original.png)](assets/openai-factory-original.png) | [![Orchflows flowchart](assets/orchflows-factory.svg)](assets/orchflows-factory.svg) |
+| [software-factory](skills/software-factory/SKILL.md) | Validated change and handoff; optional authorized rollout |
+| [observe-production](skills/observe-production/SKILL.md) | Bounded read-only comparison and proposed work |
+| [investigate-incident](skills/investigate-incident/SKILL.md) | Timeline, tested hypotheses and ranked mitigations |
 
-Open either image or the [comparison page](assets/comparison.html) for detail.
+Observation starts no fix or subscription; recurrence needs a requested host schedule. Investigation grants no mitigation authority.
 
-1. Record acceptance, checks, review lenses, starting state and existing permissions.
-2. Build through `orch-work`; verify tests, required CI and applicable performance. A complete patch must reconstruct the exact candidate, including additions/deletions, from its recorded baseline using the saved patch bytes.
-3. Freeze the candidate. Fresh `orch-review` children cover correctness plus affected data, infrastructure, cloud and security concerns.
-4. Feed failed checks/findings into remaining passes. Revised candidates repeat required checks and all applicable reviews; exhaustion returns unresolved work.
-5. Route risk. Automatic low-risk acceptance needs explicit project opt-in; otherwise prepare a concrete human-review handoff. Required failures/evidence gaps still block readiness.
-6. Release only when requested and authorized. One owner verifies validated inputs, baseline, rollback and stopping criteria, then observes rollout stages. Failures stop advancement; already-authorized rollback includes recovery verification. Missing telemetry is not health.
+## Setup and limits
 
-`orch-work` and `orch-review` are the only primitives; composing skills run in the caller. [Delivery guidance](guidance/software-delivery.md) owns artifact integrity, review criteria and risk. The [run contract](references/run-contract.md) owns identity, evidence, authority and resume state; the project supplies source, tools, CI, policy and telemetry. Changed release inputs need new validation; a reviewed workspace alone does not prove a usable patch or authorize deployment.
-
-| Entrypoint | Outcome |
-| --- | --- |
-| [software-factory](skills/software-factory/SKILL.md) | Checked change, reviews, risk decision and optionally authorized observed rollout |
-| [observe-production](skills/observe-production/SKILL.md) | Read-only bounded comparison, deduplicated signals and proposed performance work |
-| [investigate-incident](skills/investigate-incident/SKILL.md) | Timeline, tested hypotheses, ranked mitigations and specifically authorized operations |
-
-Observation starts no fix; recurrence needs a requested host schedule. Investigation alone authorizes no mitigation. Missing capabilities/decisions return a checkpoint and gap. The package includes no scheduler, service adapters or production access.
-
-## What the output-quality comparison found
-
-We tested version 0.1.0 at commit `1a04d85254455012b9f73e2bced43218f9f755f5` against a fresh single agent on two tasks. Each pair received identical source and product prompts, the same model/effort (`gpt-6-astra`, `xhigh`), tools and a 45-minute limit. Workflow agents could delegate; controls could not use Orchflows or delegate. Independent acceptance suites were prepared before the builds. Candidates were frozen before external grading.
-
-The [published comparison](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16) includes **all four implementations**, their tests and documentation, exact task prompts, independent evaluators, saved scores, reviewer reports, handoffs, original patches and simulated release evidence. The applications and evidence live outside the installable library.
-
-### Authenticated webhook inbox
-
-Tenant isolation, SQLite persistence, idempotency, concurrency and pagination.
-
-| Measure | Software factory | Single agent |
-| --- | ---: | ---: |
-| Independent acceptance checks | 28/28 | 28/28 |
-| Build + handoff time | 25.6 min | 17.2 min |
-| Agent contexts, including coordinator | 6 | 1 |
-| Output tokens | 76,085 | 31,283 |
-| Uncached input tokens | 362,300 | 102,156 |
-| Cached input tokens | 5,376,640 | 772,992 |
-| Delivered patch | Complete; applies | Complete; applies |
-| Release outcome | Human security review required | Human security review required |
-| Implementation | [Code and tests](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/webhook-inbox/workflow/project) | [Code and tests](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/webhook-inbox/single/project) |
-| Run evidence | [Handoff and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/webhook-inbox/workflow/artifacts) | [Handoff and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/webhook-inbox/single/artifacts) |
-
-### Fast log archive
-
-Preserve the search API/CLI, freshness and concurrency; exceed a 5× warm-search target and handle a failing staged-release simulation.
-
-| Measure | Software factory | Single agent |
-| --- | ---: | ---: |
-| Independent acceptance checks | 31/31 | 31/31 |
-| Build + handoff time | 42.4 min | 16.4 min |
-| Agent contexts, including coordinator | 10 | 1 |
-| Output tokens | 118,011 | 27,110 |
-| Uncached input tokens | 762,299 | 117,821 |
-| Cached input tokens | 13,387,264 | 1,337,856 |
-| Warm-search speedup over reference | 374.7× | 620.8× |
-| Exploratory nested-JSON probe | Pass after review-driven repair | API and CLI crash |
-| Original delivered patch | Fails on LF baseline | Tracked files only |
-| Simulated release checks | 8/8; rollback and recovery verified | 8/8; rollback and recovery verified |
-| Implementation | [Code and tests](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/log-archive/workflow/project) | [Code and tests](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/log-archive/single/project) |
-| Run evidence | [Handoff, reviews and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/log-archive/workflow/artifacts) | [Handoff and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16/runs/log-archive/single/artifacts) |
-
-Times include coordination and handoff. Output tokens include reasoning; cached input can be reused across many calls. Counts are recorded usage, not dollar costs. The [full report](https://github.com/DanMcInerney/orchflows/blob/main/benchmarks/software-factory/2026-09-16/REPORT.md) links the underlying scores and measurements.
-
-The nested-JSON probe is **separate from the fixed acceptance score**. It was chosen after workflow review found the problem, before inspecting the control's final result, then applied identically to the frozen reference and both candidates. The reference and workflow passed; the control raised `RecursionError` in its API and CLI. This is evidence for that specific review benefit, not a general quality ranking.
-
-Both log implementations exceeded the 5× warm-search target (374.7× workflow, 620.8× single agent in short paired query loops). Both stopped the local release simulation at a failing 50% rollout, rolled back and verified recovery. These were synthetic signals, not a live production deployment.
-
-Handoff quality had a separate defect: the workflow log patch failed to apply to the clean LF baseline because its export changed line endings, although its Git candidate was valid. The single-agent log patch was explicitly tracked-only, so its new benchmark and test files required the full candidate and manifest. Version **0.1.1** adds reconstruction evidence to the guidance, correctness review and checkpoint contract. The original benchmark artifacts and scores remain unchanged.
-
-A targeted trial of the revised guidance packaged the same log candidate without changing its source. The new saved patch reconstructed the exact candidate tree with both LF and CRLF checkouts, reversed to the baseline, and passed all 17 application tests in the candidate and reconstructed checkouts. The old patch's failure was reproduced on the LF baseline; it does apply to a CRLF checkout. This validates the exercised handoff, not a rerun of the full delivery comparison.
-
-The workflow used 2.4× and 4.4× the output tokens, respectively. There was one run per approach per task, not equal compute or a statistical experiment. A Windows SQLite cleanup bug in the webhook evaluator was corrected without changing assertions and the same corrected evaluator graded both arms. These results do not establish visual polish, game appeal, virality, live deployment reliability or overall maintainability. Published evidence preserves the original scores and source; machine-specific paths in supporting documents are made portable, with changes recorded in the archive manifest. Private host transcripts, duplicate worktrees and generated bulk data are excluded.
-
-## Install and use
-
-From a complete Orchflows checkout with Python 3.11+:
+From a complete Orchflows core checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example software-factory
 ```
 
-Follow core `docs/hosts.md` for registration/installation; start a new session. Setup preserves user-owned library copies, so apply intended updates there before refreshing. All entrypoints are manual-only on Codex/Claude. Substitute a leaf name for standalone use; following a file by path does not register a command.
+Setup preserves existing library copies and installs no project tools. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session.
 
-Example operational requests:
+Requires core 0.11.0+, native children and project build/check tools. CI, release, flags and telemetry are needed by dependent stages; no scheduler, service adapters or production access are bundled. See [library context](references/library-context.md).
 
-> Ship this approved fix to staging under the repository rollout policy. Its documented rollback is authorized if the error threshold is breached. Observe the full window and record the release ID.
-
-> Use software-factory:observe-production to compare the hour after v42 with baseline, deduplicate latency alerts and propose measured fixes.
-
-> Use software-factory:investigate-incident to explain checkout errors from 14:00–14:20 UTC and rank mitigations.
-
-Supply outcome/workspace and optional bounds, outputs, release target, policy, guidance or model/effort preferences; unspecified settings remain unset. Requires core 0.11.0+, native children and project build/check tools. CI, release, flags and telemetry are needed only by dependent stages; setup installs none. See [library context](references/library-context.md), [trial request](trials/request.md) and [acceptance](trials/expected-behavior.md).
+Inspired by [The Pragmatic Engineer's software-factory account](https://newsletter.pragmaticengineer.com/p/openai-software-factory). The [published two-task comparison](https://github.com/DanMcInerney/orchflows/blob/main/benchmarks/software-factory/2026-09-16/REPORT.md) records narrow results and simulated rollout. It does not validate live production. The [trial specification](trials/expected-behavior.md) defines further acceptance requirements.

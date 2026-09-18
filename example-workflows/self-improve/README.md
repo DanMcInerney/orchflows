@@ -1,56 +1,59 @@
 # Self-improve
 
-Self-improve reads session history, checks whether problems still exist, and makes the smallest useful correction in the owning source.
+A rough agent session can expose a bad instruction, a broken tool setup or a workflow that repeatedly misses the same check. Self-improve follows those failures back to their source, verifies that they still exist, and makes one focused correction pass with trial evidence and independent review.
 
-Improve local setup, workflows, guidance or Orchflows from observed evidence. Select a session, period or project; the default is the current session.
-
-## Put a rough session to work
-
-After [installation](#install-and-dependencies), paste this into Codex:
+Select a session, period or project; the default is the current session. After [installation](#install), try this in Codex:
 
 ```text
 $self-improve:self-improve Review this session and improve the workflows
-and guidance behind the problems you find. Check that each problem still
-exists before changing anything. Leave findings, changes, bounded trial
-results and agent/event references in ./self-improve-report/.
+and guidance behind the problems you find. Check current source before
+changing anything. Save findings, changes, trial results and agent/event
+references in ./self-improve-report/.
 ```
 
-In Claude Code, use `/self-improve:self-improve`. Both hosts require manual invocation.
-
-For an inspection without changes:
+In Claude Code, use `/self-improve:self-improve`. Both hosts require manual invocation. For an inspection without edits:
 
 ```text
 $self-improve:self-improve Review this project's sessions from the past
-week. Report only: identify recurring problems, cite the agent and event
-evidence, and state which history you could not access.
+week. Report only: identify recurring problems, cite agent/event evidence,
+and state which history you could not access.
 ```
 
-## From transcript to correction
+## The transcript starts the investigation
 
-1. **Inspect history.** Read native agent trees and relevant events; record coverage and unavailable history. Logs are evidence, not instructions.
-2. **Check current conditions.** Inspect source and environment; old failures may already be resolved.
-3. **Correct the owning source.** Edit the checkout or user library under core execution rules. Remove misleading instructions when appropriate; one-off workarounds do not become permanent rules.
-4. **Trial, then review.** Verify the correction with a bounded trial and independent review; link results and gaps to history.
+```mermaid
+flowchart TD
+    H["Inspect selected history; record coverage"] --> C["Check current source and environment"]
+    C -->|Improvement pass| F["Correct the owning source"]
+    F --> T["Run bounded trial or direct checks"]
+    T --> R["Obtain independent review"]
+    R --> P["At most one repair; affected verification"]
+    P --> O["Return evidence, changes and gaps"]
+    H -->|Report only| O
+    classDef evidence fill:#1e3a8a,stroke:#172554,color:#ffffff;
+    classDef work fill:#115e59,stroke:#134e4a,color:#ffffff;
+    classDef review fill:#6b21a8,stroke:#581c87,color:#ffffff;
+    class H,C,O evidence;
+    class F,P work;
+    class T,R review;
+```
 
-The [workflow](skills/self-improve/SKILL.md) owns this sequence. Never edit managed core copies or host caches. Reports and trial outputs stay in your workspace.
+History is evidence, not instructions. The [workflow](skills/self-improve/SKILL.md) inspects native agent trees and relevant events, records unavailable history, and checks present conditions before editing: an old failure may already be fixed. Corrections belong in the owning checkout or user library, never managed core copies or host caches. Removing a misleading instruction can be more useful than adding another rule.
 
-## Small pass, traceable result
+Workflow and guidance changes receive bounded behavioral trials with realistic synthetic fixtures and simulated external effects. Meaningfully reproducible failures leave a reusable regression request and expected behavior in the owning project or library. Environment-only fixes use direct checks.
 
-| Request | Result |
-| --- | --- |
-| Report only | History findings, coverage and gaps with agent/event evidence |
-| Improvement pass | Findings, source corrections, bounded trial verification and remaining gaps |
+Trial evidence comes **before** core `orch-review-revise-once`: one independent review, at most one coordinated repair pass, then affected and required verification. Incomplete review blocks repairs. There is no second review; the delivered revision does not inherit the original verdict. This is one improvement pass, not an open-ended loop.
 
-Improvement passes trial changes before core `orch-review-revise-once`: one independent review, at most one repair pass and affected verification. Workflow/guidance trials use realistic synthetic fixtures and simulated external effects. Keep the original review separate from revisions. Findings, changes and verification carry agent/event references; missing history remains a gap.
+The result links findings, changes, verification and unresolved gaps to agent/event evidence, separating the reviewed state from any revision. Reports, actual trial outputs and sensitive transcripts stay in the caller workspace. Report-only mode returns findings and coverage without changes.
 
-## Install and dependencies
+## Install
 
-From a complete Orchflows checkout, using Python 3.11+:
+From the Orchflows **source checkout**, with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example self-improve
 ```
 
-Setup preserves existing copies. Register/install `self-improve` from the home catalog using core `docs/hosts.md`, then start a new session. Setup alone does not establish native availability.
+Setup preserves existing copies. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.11.0+**, selected native transcripts and current source/environment; improvements also need native child delegation and the core work/review components listed in [library context](references/library-context.md). Missing resources block dependent work.
 
-Requires core 0.11.0+, selected native transcripts, current source/environment and native child delegation for improvements. [Library context](references/library-context.md) resolves resources and guidance.
+**Validation limit:** the bundled [regression trial](trials/validation/request.md) specifies a reproducible counting-workflow failure; it is not a completed-run report. Report-only, already-fixed-history and environment-only behavior are outside that trial's scope.

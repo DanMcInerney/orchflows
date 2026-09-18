@@ -195,10 +195,35 @@ Eleven optional [example libraries](https://github.com/DanMcInerney/orchflows/tr
 
 The dependency-free Python CLI provides `setup`, read-only `doctor`, `resolve`, and native `history` access for Codex/Claude. Registration is not proof of authenticated execution. [Home and CLI contracts](docs/home.md).
 
+## How do we test a nondeterministic process?
+
+A test specifies an ordinary request, synthetic inputs and an acceptable range of outcomes. The executing agent receives the task; a separate evaluator receives the acceptance criteria and recorded evidence. Checks catch objective errors. The evaluator judges consequential behavior, including guidance scope, independent review, authorized effects and honest handling of missing capabilities. Neither grades private thoughts or demands one exact plan.
+
+```mermaid
+flowchart TB
+    I[Request + synthetic inputs] --> N[Native agent execution]
+    N --> E[Freeze outputs and execution record]
+    E --> C[Objective checks]
+    C --> A[Fresh process and outcome audit]
+    A --> V[Acceptable · material failure · inconclusive]
+    classDef run fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
+    classDef evidence fill:#ecfdf5,stroke:#059669,color:#064e3b;
+    classDef judgment fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95;
+    class I,N run;
+    class E,C evidence;
+    class A,V judgment;
+```
+
+The maintainer-only runner discovers `case.json` beside an example's trial or in the core test directory. A new ordinary case needs no runner edit. A journey can build a library, freeze it, then test its larger workflow and a component on unseen inputs in parallel. A curated smoke suite stays small as examples accumulate.
+
+One pool limits runner-launched target and audit sessions; native subagents and Build's inner trials add activity. Suite deadlines include checks and audits. A timeout is inconclusive unless evidence already establishes a material invariant violation. Calibration challenges the evaluator with a valid trace, harmless verbosity, skipped review and missing evidence. Frozen originals survive re-auditing.
+
+The runner currently supports Claude Code. Four smoke cases passed independent audits in one 175.5-second run; the complete Build journey and two example cases remain inconclusive. Synthetic inputs and fake services protect these trials from live effects, but the harness does not provide a security sandbox. [Running tests, adding cases and current evidence](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e).
+
 ## What is deliberately not guaranteed?
 
-Orchflows has no execution engine, scheduler, workflow DSL or host-enforced process checker. Its contracts depend on agents following instructions and hosts exposing required capabilities. Missing capability is reported rather than silently replaced; self-review cannot replace independent review.
+Production workflows have no Orchflows execution engine, scheduler, workflow DSL or host-enforced process checker. Their contracts depend on agents following instructions and hosts exposing required capabilities. Missing capability is reported rather than silently replaced; self-review cannot replace independent review.
 
-Recorded trials include successful flat composition and staged review/repair, but also missed automatic selection and timeouts. The [test record](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e) preserves the original results and distinguishes current policy from historical scoring. Soft report-length preferences no longer determine success; passing checks still does not prove universal reliability.
+Successful trials establish observed behavior under recorded conditions. Automatic workflow selection can still be missed, reviews can time out and passing checks do not establish general reliability. Soft report-length preferences are not acceptance gates.
 
 The design aims to preserve useful processes as models improve: retain dependencies and judgments, remove obsolete corrections from guidance, and validate changes on representative work. More agents are useful when their independence or parallel work earns the coordination cost.

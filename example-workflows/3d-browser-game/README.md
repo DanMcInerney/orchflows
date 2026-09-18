@@ -1,6 +1,6 @@
 # 3D browser game
 
-Build a complete Three.js game from a player fantasy: competing mechanics, a playable core, original Blender assets and independent core/final playtests. The target is a game players can learn, finish and retry within your chosen scope.
+Find a playable game in a player fantasy, then build the art and content around it. This library develops a complete Three.js session with original Blender assets, tests the mechanics before final asset production, and gives the core and finished game separate independent playtests. Use it for a small game players can learn, finish and replay.
 
 ## Try it
 
@@ -12,34 +12,49 @@ Blender assets, a clear outcome and quick retry in ./salvage-game. Include
 the playable build, editable sources and playtest evidence.
 ```
 
-Claude Code: `/3d-browser-game:3d-browser-game`. Skills are manual-only by default. Supply devices, controls, session length, assets and constraints; unspecified details are chosen and recorded. Existing games and explicitly bounded phases are supported; partial work is labeled.
+Claude Code uses `/3d-browser-game:3d-browser-game`. Entry points are manual-only. Supply target devices, controls, session length, assets and constraints. Unspecified choices are recorded. Existing games and bounded production phases are supported; partial work is labeled.
 
-## Production
+## Prove the core, then produce the game
 
-| Stage | Required outcome |
-| --- | --- |
-| Scope and capabilities | Player promise, release boundary, target conditions and observed tool support |
-| Playable core | At least three mechanics compared; complete graybox session and two focused before/after experiments |
-| Independent core playtest | Uncoached/adaptive play, alternate tactics, setback/retry and a ready core before final assets |
-| Production and integration | Inspected Blender exports joined with completed content, finished player flow, QA and performance evidence |
-| Independent final playtest | A different fresh reviewer assesses the exact production candidate before delivery |
+```mermaid
+flowchart TD
+    S["Scope and capability probes"] --> C["Graybox and mechanics experiments"]
+    C --> P["Independent core playtest<br/>At most 1 repair pass"]
+    P -->|Ready| A["Blender assets, content and QA"]
+    A --> F["Independent final playtest<br/>At most 1 repair pass"]
+    F -->|Ready| D["Game, editable sources and evidence"]
+    P -->|Unresolved| X["Stop dependent work; return findings"]
+    F -->|Unresolved| X
+    classDef input fill:#0F172A,color:#FFFFFF,stroke:#0F172A
+    classDef work fill:#DBEAFE,color:#172554,stroke:#1D4ED8
+    classDef review fill:#FEF3C7,color:#451A03,stroke:#92400E
+    classDef result fill:#D1FAE5,color:#064E3B,stroke:#047857
+    classDef stop fill:#FEE2E2,color:#7F1D1D,stroke:#B91C1C
+    class S input
+    class C,A work
+    class P,F review
+    class D result
+    class X stop
+```
 
-The coordinator chooses production staffing, with shared direction and one integration owner. Assets and content may run concurrently on separate files. Each playtest allows one necessary repair pass with affected checks and start–play–outcome–retry, labeled maker verification; no second review follows. Unchanged ready candidates need no rebuild/replay. A remaining `needs change` or `unverified` checkpoint stops dependent production and returns findings plus a next action. Extra rounds require your request.
+The core compares **at least three mechanics** and runs **two focused before/after experiments**. It must support ordinary-input start–play–outcome–retry. Uncoached, adaptive browser play tests understanding, alternate tactics and setback/recovery. Only a ready core advances to final assets and content, with shared direction and one integration owner.
 
-Delivery includes the game/build, controls and reproducible commands; editable code/`.blend` sources, GLBs and dependencies; design/asset notes, scenarios and inspected captures; measured conditions and independent reports tied to build identities. Missing browser play or target-device measurements remain gaps. Public deployment requires a hosting request.
+Each checkpoint permits at most one necessary repair pass, followed by affected checks and a complete session/retry. These checks are maker verification; there is no second independent review. An unchanged ready candidate needs no rebuild or replay. The final reviewer is fresh and different from the core reviewer. Remaining `needs change` or `unverified` stops dependent work and returns the best runnable state, findings and next action. Extra rounds require a request.
 
-Use [make-blender-game-assets](skills/make-blender-game-assets/SKILL.md) for assets alone or [playtest-3d-browser-game](skills/playtest-3d-browser-game/SKILL.md) for independent review without repairs. The [main workflow](skills/3d-browser-game/SKILL.md), [test interface](references/test-interface.md) and [evidence contract](references/evidence.md) define the gates.
+Delivery includes the build/preview, controls, reproducible commands, editable code and `.blend` sources, GLBs, dependencies, design/asset notes and measured conditions. Reports identify frozen source/build candidates; full commits must cover all tested source, otherwise hashes include relevant dirty files and assets. Repaired builds retain their own identities and maker verification. The [evidence contract](references/evidence.md) and [test interface](references/test-interface.md) distinguish ordinary play, assistance and scenarios.
 
-## Install
+Standalone components are [make-blender-game-assets](skills/make-blender-game-assets/SKILL.md), without independent review, and [playtest-3d-browser-game](skills/playtest-3d-browser-game/SKILL.md), one independent review without repairs. See the [complete workflow](skills/3d-browser-game/SKILL.md).
 
-From a complete Orchflows checkout with Python 3.11+:
+## Setup and limits
+
+Run from a complete Orchflows core checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example 3d-browser-game
 ```
 
-Setup preserves existing library copies. Follow core `docs/hosts.md` for registration/installation and start a new session; verify availability by name.
+Setup preserves existing copies and installs no runtimes. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session.
 
-Requires core 0.10.0+, native child delegation, JavaScript/package tools, browser rendering/input tools and Blender with Python/glTF export. Projects declare Three.js, build and optional physics/test dependencies in a lockfile. Setup installs none of these runtimes. Image generation is optional.
+Requires core 0.10.0+, native children, JavaScript/package tools, browser rendering/input and Blender with Python/glTF export. Declare Three.js, build and optional physics/test dependencies in the project lockfile. Image generation is optional; [library context](references/library-context.md) defines capability probes.
 
-See [library context](references/library-context.md), [game guidance](guidance/browser-game.md), [Three.js](references/threejs.md) and [Blender](references/blender.md). [Trial request](trials/request.md) and [acceptance](trials/expected-behavior.md) specify validation; they are not observed results.
+Actual play and target-device performance remain unverified when the necessary tools or hardware are missing. Public deployment needs a hosting request. The [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) specify expected behavior; they do not establish complete native validation or game quality.

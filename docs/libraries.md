@@ -50,12 +50,14 @@ Reserve `orch-` for built-ins. Create custom workflows in `~/.orchflows/librarie
 ├── skills/<skill>/agents/openai.yaml Codex invocation policy and UI metadata
 ├── skills/<skill>/references/       knowledge used by this skill only
 ├── skills/<skill>/scripts/          mechanics; sibling tests/
-└── trials/                         request.md, expected-behavior.md
+└── trials/<case>/                  case.json, request.md, fixtures/, expected-behavior.md
 ```
 
 Skill identity is `<library>:<skill>`; [invocation syntax](hosts.md#invocation-policy) varies by host. Keep links package-relative; reach other packages by native skill name or resolved paths, never embedded machine-specific paths. Declare runtime dependencies in README; setup installs none for libraries. Root `plugin.json` declares `name`, `version` and `skills: "./skills/"` and serves Antigravity. Align names and versions across host manifests. Kimi requires its own manifest with `skills: "./skills/"`, including for existing user libraries.
 
 A reusable component declares inputs, dependencies, process, allowed effects, outputs and stopping conditions. Domain libraries own domain components; optional shared libraries own cross-domain processes. Core depends on neither.
+
+For executable E2E cases, `case.json` declares packages, entrypoint and bounds; `request.md` supplies ordinary inputs. Keep `expected-behavior.md` evaluator-only. Optional `check.py` tests objective outcomes; `driver.py` coordinates multi-session journeys. The runner discovers cases without registry edits; adding one does not enlarge the curated smoke suite. Folders without `case.json` are manual trial specifications. See [E2E contracts and commands](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e). Discovery is not evidence of execution; report completed native outcomes and gaps.
 
 ## Invariants
 

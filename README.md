@@ -104,11 +104,20 @@ python scripts/orchflows.py setup --example social-search
 
 [All libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows), including game development, source acquisition, candidate comparison, self-improvement and standalone export. Libraries declare their dependencies; setup does not install them transitively.
 
-## What the evidence says
+## Test the behavior, not the wording
 
-These are instructions agents can misapply, not host-enforced guarantees. Trials have exposed skipped automatic selection, missed constraints and incomplete review. [Native trial record](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e).
+An LLM can follow two different plans and get both right. The E2E framework runs ordinary requests through a native agent, freezes the outputs and execution record, checks objective requirements, then asks a fresh evaluator whether the process and result were acceptable. Harmless variation passes. Unsupported review, unauthorized effects and material wrong results fail. Unfinished work stays inconclusive.
 
-In a published two-task software comparison, both approaches passed the fixed checks. Workflow review also caught a nested-JSON crash missed by the single agent, while using more time and tokens. One run per approach per task does not establish a general winner. [Prompts, implementations, measurements and artifacts](https://github.com/DanMcInerney/orchflows/tree/main/benchmarks/software-factory/2026-09-16).
+From a checkout, with an authenticated Claude Code CLI:
+
+```sh
+python tests/e2e/run.py --suite smoke --plan
+python tests/e2e/run.py --suite smoke --jobs 3 --output ../e2e-smoke
+```
+
+Native runs consume normal agent usage. Independent cases run concurrently under a five-minute smoke deadline; the recorded four-case run completed and passed its audits in 175.5 seconds. That is one observation, not a reliability estimate. Full Build and the two example cases remain inconclusive at their tested budgets. No Codex runner ships yet.
+
+Add a scenario beside any example workflow without changing the runner. Larger authoring journeys and examples stay opt-in. [Case format, evidence, coverage and limits](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e).
 
 ## Setup, customization and updates
 
