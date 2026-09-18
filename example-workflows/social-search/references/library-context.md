@@ -1,8 +1,8 @@
 # Library context
 
-Apply core `docs/architecture.md` execution rules before planning assignments.
+Apply core `docs/architecture.md`.
 
-Locate core 0.11.0+ primitives through native skills, supplied package roots or the core's `resolve` CLI; reuse resolved locations in composed calls. `orchflows:docs/architecture.md` owns scoped guidance selection; `orchflows:docs/home.md` owns CLI resolution. Pass applicable guidance, request constraints and output locations to each assignment without changing sibling selections.
+Locate core 0.11.0+ primitives through native skills, supplied package roots or the core's `resolve` CLI; reuse resolved locations in composed calls.
 
 Select collection guidance by scope: `research.search-site.web`, `.feeds`, `.lemmy`, or another supplied site specialization; unfamiliar sites use `research.search-site`. Combine applicable names for grouped scopes. Assessment selects `research.search-site` and `writing`. Include caller-selected guidance and libraries in their supplied order. Both leaves pass the [evidence contract](evidence.md).
 

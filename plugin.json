@@ -1,6 +1,6 @@
 {
   "name": "orchflows",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Composable native workflows, layered guidance and a portable user library.",
   "author": {
     "name": "orchflows"
@@ -13,6 +13,6 @@
     "developerName": "orchflows",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Run orch-dynamic-workflow for this task."
+    "defaultPrompt": "Use orch-build-workflow to turn this recurring task into a reusable workflow."
   }
 }

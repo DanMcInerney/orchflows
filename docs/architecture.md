@@ -5,13 +5,13 @@
 - [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
-The host executes agents. Workflows are saved procedures: the coordinating session applies them to inputs and uses their results. They may compose to any depth; loading another workflow does not launch an agent, add a review or reset a bound. Prompts supply the task; workflows preserve the chosen process; guidance supplies quality criteria, methods and taste.
+The product is two primitives, reusable workflows and user-owned guidance. The host executes agents. Workflows are saved procedures: the coordinating session applies them to inputs and uses their results. They may compose to any depth; loading another workflow does not launch an agent, add a review or reset a bound. Prompts supply the task; workflows preserve the chosen process; guidance supplies quality criteria, methods and taste.
 
 ## Invocation
 
-Skills are manual-only by default; automatic selection requires the caller's opt-in. [orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) is an optional fallback for top-level requests when no specific workflow fits. Write and verify the [host invocation settings](hosts.md#invocation-policy) for each skill; report a host that cannot enforce this policy.
+Orchflows provides explicitly selected primitives and workflows. It installs no catch-all fallback or automatic workflow router. An unmatched request stays with the host's ordinary agent behavior. Write and verify the [host invocation settings](hosts.md#invocation-policy) for each skill; report a host that cannot enforce this policy. Changing this product decision requires an explicit user request, not an incidental refactor or review preference.
 
-Saved workflows compose their chosen processes and primitives directly. The dynamic fallback is not a component. Explicit caller amendments can change the process; state any changed guarantee, preserve primitive meanings and honor actual permissions.
+Saved workflows compose their chosen processes and primitives directly. Explicit caller amendments can change the process; state any changed guarantee, preserve primitive meanings and honor actual permissions. Each operation has one public name. Removed interfaces fail clearly; do not retain compatibility aliases, silent substitutions or automatic migrations.
 
 ## Composition
 
@@ -26,6 +26,10 @@ Only the top-level orchestrator launches agents, assigns work and continues agen
 Resolve applicable dependencies, guidance, settings and caller constraints before dependent work. The orchestrator may work directly, continue a suitable maker or use `orch-work`, honoring scoped settings. Run independent work concurrently within host limits, with one owner for shared edits and external operations. Gather required outcomes before dependent work; missing work is a gap. Preserve authorization and reconcile uncertain actions before retrying.
 
 Return results, supporting evidence and unresolved gaps. Keep durable state when a consumer or resumption needs it; short tasks need no checkpoint protocol. Preserve the workflow's repetition and stopping rules and caller limits. Missing capabilities block dependent work, not unrelated useful work. Report unsupported controls; never substitute self-review for required independent review.
+
+## Iteration bounds
+
+A bounded loop counts an attempt before its first work, including failed or paused attempts. A resumable loop records the attempt identity, starting state and updated count durably before that work. Resuming unfinished work keeps the same attempt; stale checkpoints do not reset consumption. Each workflow defines its iteration, limit and stopping conditions. These are record contents, not a shared event format or runtime.
 
 ## Review
 

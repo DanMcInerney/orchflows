@@ -12,7 +12,7 @@ Flatten composed workflow decisions into the entrypoint or local references. Rep
 
 Copy required scripts and assets with their transitive local dependencies. Rewrite package-relative paths, imports and data lookups so they work from the exported skill directory; keep task inputs and outputs relative to the caller's workspace. Never bake author-machine paths, credentials, caches or trial outputs into the skill. Preserve applicable licenses and attribution. Omit unrelated package files and plugin manifests unless the caller separately requests plugin packaging.
 
-Optional integrations may remain optional only when a usable bundled or native fallback preserves the source's contract. Required external tools, runtimes and authentication remain declared prerequisites; the export does not provision them. A required non-Orchflows skill must be bundled too, or remain an explicitly unresolved gap.
+An integration remains optional only when the source workflow explicitly defines useful behavior without it. Do not invent a substitute during export. Required external tools, runtimes and authentication remain declared prerequisites; the export does not provision them. A required non-Orchflows skill must be bundled too, or remain an explicitly unresolved gap.
 
 ## Preserve or disclose
 

@@ -32,7 +32,7 @@ The shared transport refuses unsafe addresses and hosts owned by another declare
 
 ## Feeds
 
-`rss_atom` takes one supplied public HTTPS RSS 2.0 or Atom URL per discovery step. A YouTube channel ID or channel-feed URL uses its dedicated feed route; other URLs use the shared open-page policy and host budget. No feed registry, automatic discovery or pagination is implied.
+`rss_atom` takes one supplied public HTTPS RSS 2.0 or Atom URL per discovery step. A YouTube channel-feed URL uses its dedicated feed route; other URLs use the shared open-page policy and host budget. Bare channel IDs are refused without a request. No feed registry, automatic discovery or pagination is implied.
 
 Entries retain title, available prose, original link, publisher-reported publication time, feed provenance and available enclosure/transcript links. Atom `updated` becomes `modified_at`, never a substitute publication date. Known dates are filtered to the window; undated entries remain incomplete. A feed is a publisher-selected slice, not a historical archive. Selected article links can use `open_page` depth.
 

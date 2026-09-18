@@ -63,7 +63,7 @@ A [harness experiment](skills/evolve/references/harness.md) replaces an ordinary
 
 Subjective tournaments may need further comparisons to choose among qualifying challengers, so their total is variable. Cheap rejections skip expensive confirmation. The coordinator records width, repetitions and per-experiment work limits before dispatch, retaining the required confirmation before promotion.
 
-Absent supplied bounds, a run defaults to **three rounds**. A durable round-start counts each artifact or harness attempt before its proposal or production begins; failures and interruptions do not refund it. Seed creation, initial calibration and between-round evaluator repair consume resource limits without adding or resetting artifact/harness rounds. An explicit continuous request removes the total round cap. After three informative rounds without a promotion, the workflow changes its approach, investigates the failure or tests a harness change; all attempted rounds and spent resources still count against caller bounds. Reaching a target stops the run only when the caller made it a stop condition.
+Absent supplied bounds, a run defaults to **three rounds**. A durable attempt start counts each artifact or harness attempt before its proposal or production begins; failures and interruptions do not refund it. Seed creation, initial calibration and between-round evaluator repair consume resource limits without adding or resetting artifact/harness rounds. An explicit continuous request removes the total round cap. After three informative rounds without a promotion, the workflow changes its approach, investigates the failure or tests a harness change; all attempted rounds and spent resources still count against caller bounds. Reaching a target stops the run only when the caller made it a stop condition.
 
 The host must keep executing or resume the checkpoint; Markdown cannot schedule itself. When execution is unavailable, the result is a saved state and an explicit gap. A continuous request does not guarantee continuous gains.
 
@@ -94,7 +94,7 @@ python scripts/orchflows.py setup --example evolve
 
 Setup preserves an existing library copy. Register and install `evolve` from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup alone does not make the skill available by name.
 
-Requires orchflows 0.11.0+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
+Requires orchflows 0.12.0+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
 
 ## Evidence and lineage
 

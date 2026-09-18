@@ -1,12 +1,10 @@
 # Library context
 
-Apply core `docs/architecture.md` execution rules before planning assignments.
+Apply core `docs/architecture.md`.
 
-Resolve dependencies at the outer entrypoint, including either leaf invoked alone. Use core native skills, supplied package roots or core's `resolve` CLI; cache resolved paths and extend them when composed work introduces a dependency. Core `docs/architecture.md` owns guidance selection and `docs/hosts.md` owns delegation and isolation. A missing home runtime does not block resolved native resources.
+Resolve dependencies at the outer entrypoint, including either leaf invoked alone. Use core native skills, supplied package roots or core's `resolve` CLI; cache resolved paths and extend them when composed work introduces a dependency. Use core `docs/hosts.md` for host capabilities and isolation.
 
 Include this library and caller-supplied package roots in supplied order. Select `browser-game` for game design, with `writing` for player/design copy, `code` and `browser-game.threejs` for implementation, `visual-design` and `browser-game.blender` for art, and `browser-game.playtesting` for QA and review. Give reviewers the same applicable quality criteria: core reviewers also receive Three.js guidance; final reviewers receive all three game specializations and relevant core domains. A leaf selects its specialization and relevant core domains when invoked alone.
-
-Resolve dotted prefixes per core, deduplicate and pass only applicable absolute guidance paths to each assignment. Makers and reviewers read the common criteria plus their respective Make or Review section. Caller-supplied guidance and local extensions remain scoped to the work they concern; they do not change sibling selections or workflow obligations.
 
 Pass the original player brief, applicable caller amendments and constraints, workspace, selected guidance, core primitive locations and library root with each assignment. Add phase, owned files, dependencies, current build identity, run commands and relevant records. Reviewers receive the public player instructions separately from design intent and maker findings so they can attempt first play without a walkthrough.
 

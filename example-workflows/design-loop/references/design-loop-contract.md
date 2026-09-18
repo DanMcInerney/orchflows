@@ -12,7 +12,7 @@ Keep records in the caller's output directory, outside immutable state snapshots
 
 | Record | Required content |
 | --- | --- |
-| Run checkpoint | Request context, N, cycle-start records and attempts started/completed, active cycle/stage, accepted state identity, artifact links, decisions, remaining bounds and stop reason. |
+| Run checkpoint | Request context, N, attempt-start records and attempts started/completed, active cycle/stage, accepted state identity, artifact links, decisions, remaining bounds and stop reason. |
 | Baseline | Exact initial or last accepted state: absolute path, stable identity, relevant files/configuration, environment and reproduction instructions. Preserve existing uncommitted and relevant untracked work. A commit alone is insufficient when the working tree differs. |
 | Candidate | Separate editable copy derived from the baseline, then a frozen state identity after implementation. Identify changed artifacts and how to reproduce the result. |
 | Stage handoff | Cycle/stage, input artifact and state identities, result, evidence links, assumptions, and gaps. Mark an unexecuted stage explicitly. |

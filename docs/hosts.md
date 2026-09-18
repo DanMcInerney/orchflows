@@ -21,7 +21,7 @@ Use these native commands for optional libraries, development and manual recover
 | Core development | register the checkout's `orchflows-local` catalog; install `orchflows@orchflows-local` | same, or `claude --plugin-dir <checkout>` |
 | Custom agent definitions | `.codex/agents/*.toml`, `~/.codex/agents/` | `.claude/agents/*.md`, `~/.claude/agents/` |
 
-Concurrency is unchanged unless requested; see [concurrency settings](#concurrency) for supported hosts and the meaning of each limit. The legacy `--skip-host-config` preserves settings without disabling registration.
+Concurrency is unchanged unless requested; see [concurrency settings](#concurrency) for supported hosts and the meaning of each limit.
 
 If installed files remain stale, bump the package version in all host manifests and rerun setup. Claude may reuse its cached copy when the version is unchanged. Setup reports mismatched files and leaves private host caches untouched.
 
@@ -45,7 +45,7 @@ When detected, Kimi is reported as `needs_action` with its resolved install comm
 
 Kimi requires `.kimi-plugin/plugin.json` (or `kimi.plugin.json`), supplied for core and bundled examples. A minimal manifest has `name`, `version` and `skills: "./skills/"`; it does not consume the Claude manifest. Local installation copies the complete package under `$KIMI_CODE_HOME/plugins/managed/`, preserving its resources. User configuration defaults to `~/.kimi-code/config.toml`. [Kimi plugins](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/plugins), [manifest parser](https://github.com/MoonshotAI/kimi-code/blob/main/packages/agent-core-v2/src/app/plugin/manifest.ts).
 
-Plugin skills keep their unqualified frontmatter names: `/skill:orch-dynamic-workflow`. Same-named skills from different libraries can collide; keep installed skill names unique or report the ambiguity and resolve the intended package by absolute path. [Kimi skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html), [skill registry](https://github.com/MoonshotAI/kimi-code/blob/main/packages/agent-core-v2/src/features/skill/catalog/registry.ts).
+Plugin skills keep their unqualified frontmatter names: `/skill:orch-build-workflow`. Same-named skills from different libraries can collide; keep installed skill names unique or report the ambiguity and resolve the intended package by absolute path. [Kimi skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html), [skill registry](https://github.com/MoonshotAI/kimi-code/blob/main/packages/agent-core-v2/src/features/skill/catalog/registry.ts).
 
 ### Grok Build
 
@@ -80,7 +80,7 @@ Current Codex documentation names `max_concurrent_threads_per_session`; setup's 
 
 ZCode Desktop 3.11.2's installed engine 0.16.5 confirms the default cap of 10, the JSON key and the fixed user-config path. Its environment override is **`ZCODE_MAX_TOOL_CONCURRENCY`**, including the prefix. That engine's config loader does not relocate this file through `ZCODE_HOME`; an explicit native `--settings` file or project settings can supersede it. This support adapts [#201 by ozymandiashh](https://github.com/DanMcInerney/orchflows/pull/201); local checks exercised its configuration parser, not authenticated scheduling.
 
-Kimi 0.29.0 validates the background key. Kimi 0.43.1 also recognizes preferred `[task] max_running_tasks`; setup synchronizes that key when already present so it cannot shadow the updated background limit. It leaves other task settings intact. `KIMI_CODE_BACKGROUND_MAX_RUNNING_TASKS` overrides both. The separate **`KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY`** controls AgentSwarm; no persistent TOML equivalent was verified, so setup does not alter it or shell profiles. [Configuration](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files), [environment variables](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/env-vars), [0.43.1 task settings](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.43.1/packages/agent-core-v2/src/agent/task/configSection.ts).
+Setup writes only the documented `[background] max_running_tasks` key. A `[task] max_running_tasks` override is rejected without editing the file; remove that override before tuning. Other task settings remain untouched. `KIMI_CODE_BACKGROUND_MAX_RUNNING_TASKS` overrides the background setting. The separate **`KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY`** controls AgentSwarm; no persistent TOML equivalent was verified, so setup does not alter it or shell profiles. [Configuration](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files), [environment variables](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/env-vars), [0.43.1 task settings](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.43.1/packages/agent-core-v2/src/agent/task/configSection.ts).
 
 Grok requires an existing explicit boolean `subagents.enabled` before tuning; setup preserves either true or false and the separate queue/fail `limit_behavior`. Adding the section can change native enablement, so setup reports missing enablement instead of choosing it. `GROK_MAX_CONCURRENT_SUBAGENTS` overrides the file. Current official source documents the numeric limit; installed 1.0.5 contains the setting symbols but does not expose an effective-limit inspection command. Native scheduling enforcement was not exercised. [Configuration reference](https://github.com/xai-org/grok-build/blob/482711333c7195dc16a272777f86086d615e2afb/crates/codegen/xai-grok-pager/docs/user-guide/26-config-reference.md#L519), [resolver](https://github.com/xai-org/grok-build/blob/482711333c7195dc16a272777f86086d615e2afb/crates/codegen/xai-grok-shell/src/config/mod.rs#L281).
 
@@ -88,7 +88,7 @@ Conflicting environment overrides for ZCode, Kimi background tasks and Grok leav
 
 ## Invocation policy
 
-Apply the [invocation policy](architecture.md#invocation) per skill; a library manifest does not set it for its skills. All skills, including `orch-dynamic-workflow`, default to the manual-only settings below. To opt into top-level automatic fallback, set that skill's `policy.allow_implicit_invocation: true` for Codex and `disable-model-invocation: false` in its frontmatter, then refresh the installed package. Its child-assignment exclusion still applies.
+Apply the [invocation policy](architecture.md#invocation) per skill; a library manifest does not set it for its skills. All skills use the manual-only settings below. Orchflows supplies no catch-all workflow or automatic routing path.
 
 | Host | Manual-only setting | Explicit invocation |
 | --- | --- | --- |
@@ -101,7 +101,7 @@ Apply the [invocation policy](architecture.md#invocation) per skill; a library m
 
 Keep skills enabled and user-invocable. Include `interface.display_name` and `interface.short_description` in Codex metadata. Opting a skill into automatic selection requires changing both metadata settings. Refresh the installed plugin after changing these files.
 
-ZCode ignores unsupported frontmatter and has no native manual-only skill switch. Explicit invocation works, but automatic selection cannot be restricted to the dynamic fallback. Report this policy gap; use Claude Code with Z.ai when native enforcement is required. Do not relabel the skill as disabled or claim equivalent enforcement. [ZCode skills](https://zcode.z.ai/en/docs/skill).
+ZCode ignores unsupported frontmatter and has no native manual-only skill switch. Explicit invocation works, but automatic skill selection cannot be disabled. Report this policy gap; use Claude Code with Z.ai when native enforcement is required. Do not relabel the skill as disabled or claim equivalent enforcement. [ZCode skills](https://zcode.z.ai/en/docs/skill).
 
 Antigravity documents automatic skill discovery but does not establish support for `disable-model-invocation`. Keep that field for other hosts and report the unverified policy. Its `disable-slash-command` setting hides explicit invocation while leaving model invocation available; it does not enforce this contract. [Antigravity skills](https://www.agy.dev/docs/skills/), [CLI changelog](https://www.agy.dev/changelog?tab=cli).
 

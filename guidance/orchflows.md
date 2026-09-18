@@ -6,6 +6,10 @@ Record deliberate preferences. Define local meanings the reader cannot infer. Ke
 
 A reusable artifact works from its declared inputs and dependencies, without the author's conversation or undocumented preparation.
 
+## Corrections
+
+Authoring trials have triggered premature review on partial evidence. A later supplement does not satisfy the trial-before-review dependency. This reminder can be removed when trials show it is unnecessary; the dependency remains in the workflow.
+
 Reuse a component when its contract fits; a plain assignment can be simpler than adapting another domain's workflow. Reference shared rules instead of repeating them. Explain a count's purpose when unclear. Keep local guidance scoped to its work; maker and reviewer share the substantive quality criteria.
 
 ## Review

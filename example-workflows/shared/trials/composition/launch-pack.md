@@ -1,6 +1,6 @@
 # Launch planning pack
 
-Inputs: source packet, research and campaign guidance, core/shared package roots,
+Inputs: source packet, research and campaign guidance, core package root,
 and an output directory. This is an internal planning exercise.
 
 Apply [research-brief](research-brief.md) to explain current commitments, the

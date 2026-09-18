@@ -1,6 +1,6 @@
 # Composable workflows refactor
 
-Status: implemented and dogfooded; independent review completed, with its documentation findings corrected and checked. Baseline: `codex/flat-workflow-composition` at `b9675e5b`. This document is maintainer design material, not required execution context.
+Design record for the 4a145ae5 refactor; [final decisions](final-decisions.md) and the current [architecture](../docs/architecture.md) supersede its invocation and compatibility choices. Baseline: `codex/flat-workflow-composition` at `b9675e5b`. This document is maintainer design material, not required execution context.
 
 ## Outcome
 
@@ -56,7 +56,7 @@ Migrate representative core guidance to shared criteria plus useful role methods
 
 ### Invocation and installation
 
-Make dynamic fallback opt-in, matching the proposal's small explicit library. Its manual invocation remains available, and its top-level-only boundary remains. Set both native invocation metadata fields consistently. Document how users can opt into fallback and hosts that cannot enforce manual-only discovery. Preserve existing user registrations and settings during this development task.
+The refactor made dynamic fallback opt-in. This was an implementation product decision, not a requirement in Fable's proposal; it is superseded by the final no-fallback decision. Its manual invocation remains available, and its top-level-only boundary remains. Set both native invocation metadata fields consistently. Document how users can opt into fallback and hosts that cannot enforce manual-only discovery. Preserve existing user registrations and settings during this development task.
 
 Readable package files, resolved dependencies and native child tools are sufficient for execution. The home CLI remains an optional setup/resolution convenience. Missing a home runtime alone does not block supplied native resources; missing a capability blocks only work that actually requires it. Do not silently replace requested model settings or independent review.
 

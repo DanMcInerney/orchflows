@@ -2,7 +2,7 @@
 
 Build a benchmark around substantial user work: representative tasks, appropriate environments, useful partial credit and measured difficulty. Start with a prototype, calibrate a pilot and evaluate unseen source groups as evidence and budget permit. Each generated package states its requested and achieved stage.
 
-**Experimental, version 0.4.2.** The orchestrator owns authoring, pilot and target assignments; final review and repair explicitly uses core `orch-review-revise-once`. Pilot independence, at most one repair pass and versioned validation remain part of the process. The [quality and acceptance gates](references/quality-profile.md) remain in force; cross-domain acceptance is incomplete. See [validation status](trials/README.md) for actual replay coverage. Harness checks, benchmark validation and agent measurement are separate evidence. The original [design report](DESIGN.md) is historical rationale, not invocation context.
+**Experimental, version 0.4.3.** The orchestrator owns authoring, pilot and target assignments; final review and repair explicitly uses core `orch-review-revise-once`. Pilot independence, at most one repair pass and versioned validation remain part of the process. The [quality and acceptance gates](references/quality-profile.md) remain in force; cross-domain acceptance is incomplete. See [validation status](trials/README.md) for actual replay coverage. Harness checks, benchmark validation and agent measurement are separate evidence. The original [design report](DESIGN.md) is historical rationale, not invocation context.
 
 ## Use
 

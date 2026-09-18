@@ -2,7 +2,7 @@
 
 ## Current fixtures
 
-The [composition fixture](composition/request.md) applies `launch-pack` → `research-brief` → `shared:review-revise-once` → core `orch-review-revise-once` in one coordinator. It checks nested procedure composition, one independent review and separate guidance for a neutral internal brief and a campaign concept. Ordinary drafting leaves staffing to the coordinator; procedure depth adds no agent or review. Its [expected behavior](composition/expected-behavior.md) is evaluator-only.
+The [composition fixture](composition/request.md) applies `launch-pack` → `research-brief` → core `orch-review-revise-once` in one coordinator. It checks nested procedure composition, one independent review and separate guidance for a neutral internal brief and a campaign concept. Ordinary drafting leaves staffing to the coordinator; procedure depth adds no agent or review. Its [expected behavior](composition/expected-behavior.md) is evaluator-only.
 
 The [builder journey](build-personal/request.md) discovers fitting components and creates and trials a fresh personal library with separate guidance. It also checks native entrypoint loading and reuses the guidance through a simpler process. Its [expected behavior](build-personal/expected-behavior.md) is evaluator-only. Native registration, native execution and resolved-file composition are separate claims.
 
@@ -10,9 +10,9 @@ The comparison and office fixtures below remain reusable, with their obsolete st
 
 Run from an unrelated workspace with declared core/library dependencies and the fixture's ordinary inputs. Supply only the request and its inputs, never the authoring conversation or expected behavior. Keep outputs outside the package. Record package revisions, native child identities, actual staffing, reviewed and delivered states, checks, interventions and gaps. Filesystem copies do not establish native invocation or portability.
 
-## Core 0.11.0 / shared 0.4.0 development observations, 2026-09-18
+## Historical core 0.11.0 / shared 0.4.0 development observations, 2026-09-18
 
-Fresh Codex and Claude Code sessions exercised the composition fixture from frozen development snapshots. Both kept nested procedures in one coordinator, completed one independent brief review before one repair, and preserved the source costs and uncertainty. Codex drafted directly and launched one reviewer; Claude launched two makers and one reviewer. All children were root-owned leaves. This establishes observed execution with supplied paths, not native plugin registration or general reliability.
+Fresh Codex and Claude Code sessions exercised an earlier composition fixture, including the now-removed shared revision alias, from frozen development snapshots. Both kept nested procedures in one coordinator, completed one independent brief review before one repair, and preserved the source costs and uncertainty. Codex drafted directly and launched one reviewer; Claude launched two makers and one reviewer. All children were root-owned leaves. This establishes observed execution with supplied paths, not native plugin registration or general reliability.
 
 The audit found limits: Codex's review rejected caller-supplied “fictional” metadata; Claude's campaign overstated source completeness, and its coordinator incorrectly claimed the reviewer never read campaign guidance. Reading that file for a contamination check did not adopt its preferences. Claude exceeded the soft six-minute target. The campaign overstatement remains an output failure; the process does not add an unrequested campaign review.
 

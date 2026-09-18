@@ -1,6 +1,6 @@
 # Refactor validation
 
-Worktree: `codex/flat-workflow-composition`, based on `b9675e5b`. This records development trials, not a claim that every workflow or host conforms. The [design](composable-workflows.md) defines the refactor and acceptance questions.
+Worktree: `codex/flat-workflow-composition`, based on `b9675e5b`. This is the validation record for candidate `4a145ae5`; subsequent cleanup and decisions are recorded in [final decisions](final-decisions.md). This records development trials, not a claim that every workflow or host conforms. The [design](composable-workflows.md) defines the refactor and acceptance questions.
 
 ## Evidence and preparation
 

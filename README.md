@@ -41,15 +41,15 @@ python scripts/orchflows.py doctor                         # Check without chang
 
 Setup installs optional examples only when requested with `--example <name>` and refreshes libraries already installed through the supported CLIs. Concurrency stays unchanged unless you pass `--concurrency N`. [Setup options and result statuses](docs/home.md#setup) · [Manual registration and provider setup](docs/hosts.md#register-and-refresh).
 
-Core skills, bundled examples and personal workflows request manual-only invocation. Invoke a workflow from the skill picker or by name; automatic fallback through `orch-dynamic-workflow` is opt-in. Codex, Claude Code, Kimi Code and Grok Build support invocation settings; ZCode currently cannot enforce manual-only invocation, and Antigravity enforcement is unverified. [Invocation settings and fallback opt-in](docs/hosts.md#invocation-policy).
+Core skills, bundled examples and personal workflows request manual-only invocation. Invoke a workflow from the skill picker or by name. Unmatched requests use the host's ordinary agent behavior. Codex, Claude Code, Kimi Code and Grok Build support invocation settings; ZCode currently cannot enforce manual-only invocation, and Antigravity enforcement is unverified. [Invocation settings](docs/hosts.md#invocation-policy).
 
 Start a new session to load Orchflows.
 
 ## Usage
 
-Invoke [/orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) with your task, or select a saved workflow. Dynamic work chooses useful staffing and includes one final independent review. Users who want automatic fallback can opt in through the host invocation settings.
+Select a saved workflow, use either primitive directly, or build a workflow for recurring work with [/orch-build-workflow](skills/orch-build-workflow/SKILL.md). To review and revise an existing result once, select [/orch-review-revise-once](skills/orch-review-revise-once/SKILL.md).
 
-**Simple task.** The coordinator makes and verifies an already-clear change directly. One independent child reviews it. This is the smallest dynamic workflow, shown with no repairs needed:
+**Simple task.** The coordinator makes and verifies an already-clear change directly. One independent child reviews it. This is a small explicit composition, shown with no repairs needed:
 
 ```mermaid
 flowchart LR
@@ -87,7 +87,7 @@ flowchart TD
     class T,D result;
 ```
 
-There is one repair pass with verification, without another review. The coordinator can also make clear fixes directly. Calling `orch-work` alone creates just one worker; the dynamic workflow includes independent review.
+There is one repair pass with verification, without another review. The coordinator can also make clear fixes directly. Calling `orch-work` alone creates just one worker. The examples select review explicitly; it is not added to every task.
 
 **Custom workflows.** Use [/orch-build-workflow](skills/orch-build-workflow/SKILL.md) to turn a recurring task into a reusable workflow. It drafts the composition, tries it on real work, and refines it before independent review:
 
@@ -120,7 +120,7 @@ The exporter bundles selected guidance, helper workflows, scripts and assets, re
 
 > Work: gpt-5.6-sol at medium. Review: gpt-6-astra at high. Worker B: high. Final fixer: gpt-6-astra at xhigh.
 
-Use models and effort levels supported by your host. This works for dynamic and saved workflows. To save these preferences, ask `/orch-build-workflow` to keep them beside the assignments in `SKILL.md`. Your current request overrides saved preferences field by field; settings absent from both use native defaults. A worker with different settings runs separately when the host cannot change an existing agent. [Resolution and host controls](docs/architecture.md#model-and-effort).
+Use models and effort levels supported by your host. These choices apply to primitive assignments and saved workflows. To save these preferences, ask `/orch-build-workflow` to keep them beside the assignments in `SKILL.md`. Your current request overrides saved preferences field by field; settings absent from both use native defaults. A worker with different settings runs separately when the host cannot change an existing agent. [Resolution and host controls](docs/architecture.md#model-and-effort).
 
 ## Design
 
@@ -139,7 +139,7 @@ A reviewer can inspect code, judge a film, rank evidence or compare competing de
 
 A workflow is a `SKILL.md` that connects these operations: what can run in parallel, what depends on what, what gets reviewed, and whether the result feeds another round. It supplies assignments, context and outputs. The same primitives support a single review, a research team, a production pipeline or an improvement loop.
 
-The package includes [dynamic work](skills/orch-dynamic-workflow/SKILL.md), [workflow building](skills/orch-build-workflow/SKILL.md), and [review with one revision pass](skills/orch-review-revise-once/SKILL.md). These are workflows built from the two primitives. Saved workflows may compose other workflows at any depth in the same coordinator, preserving dependencies, independence and bounds. Ordinary production stages can run directly or use suitable makers; an explicit `orch-work` call always creates a fresh maker. Dynamic work is a top-level option, not a component for custom workflows.
+The package includes [workflow building](skills/orch-build-workflow/SKILL.md) and [review with one revision pass](skills/orch-review-revise-once/SKILL.md). These are workflows built from the two primitives. Saved workflows may compose other workflows at any depth in the same coordinator, preserving dependencies, independence and bounds. Ordinary production stages can run directly or use suitable makers; an explicit `orch-work` call always creates a fresh maker.
 
 The optional [shared processes](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/shared) library provides independent candidate comparison and review with one revision pass. Design loop uses comparison; personal briefs and reports can use review-and-revision. Only the top-level orchestrator launches, assigns or continues agents; children return results and further-work requests. Other components remain in their domain libraries. Ordinary fan-out and gathering are [core execution rules](docs/architecture.md#execution), not a required helper import. Install `shared` explicitly before examples that declare it; setup does not install transitive dependencies.
 
