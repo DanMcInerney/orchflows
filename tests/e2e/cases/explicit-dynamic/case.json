@@ -1,0 +1,10 @@
+{
+  "packages": [
+    "orchflows"
+  ],
+  "covers": [
+    "proportional-review"
+  ],
+  "timeout_seconds": 45,
+  "entrypoint": "orchflows:orch-dynamic-workflow"
+}

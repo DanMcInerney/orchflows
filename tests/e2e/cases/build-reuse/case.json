@@ -1,0 +1,7 @@
+{
+  "entrypoint": "orchflows:orch-build-workflow",
+  "packages": ["orchflows", "shared"],
+  "covers": ["authoring", "fresh-reuse", "component-reuse", "guidance-separation"],
+  "requires": ["independent-review", "local-exec"],
+  "timeout_seconds": 540
+}

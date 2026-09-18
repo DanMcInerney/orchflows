@@ -1,0 +1,7 @@
+{
+  "entrypoint": "shared:compare-candidates",
+  "packages": ["orchflows", "shared"],
+  "covers": ["comparison", "independence", "candidate-stability"],
+  "requires": ["independent-review"],
+  "timeout_seconds": 120
+}

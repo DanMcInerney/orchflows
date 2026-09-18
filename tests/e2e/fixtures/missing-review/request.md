@@ -1,3 +1,0 @@
-/orchflows:orch-review-revise-once
-
-Review invoice.json against source.json. The amount should be the seat count times the monthly USD price times the number of months. Repair invoice errors within this workflow's allowance. Keep the original review in review.md and report delivery, verification and gaps in handoff.md. No network or external actions are needed.

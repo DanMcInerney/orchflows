@@ -1,0 +1,15 @@
+{
+  "packages": [
+    "orchflows"
+  ],
+  "covers": [
+    "missing-review",
+    "candidate-stability"
+  ],
+  "timeout_seconds": 120,
+  "entrypoint": "orchflows:orch-review-revise-once",
+  "profile": "no-review",
+  "requires": [
+    "no-review"
+  ]
+}

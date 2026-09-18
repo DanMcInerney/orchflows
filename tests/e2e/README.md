@@ -1,57 +1,102 @@
-# Fast end-to-end confidence tests
+# Behavioral E2E tests
 
-These maintainer tests target seams that ordinary parsing tests and earlier development trials did not establish. They do not add an Orchflows execution runtime or universal workflow checker.
-
-## Offline regression tests
-
-From the checkout:
+Run ordinary requests through a native agent, preserve the execution, then have a fresh evaluator review outcomes and process. Different valid plans and harmless verbosity pass; unsupported review, unauthorized effects and material wrong results do not. An unfinished run is inconclusive.
 
 ```powershell
-python -m unittest discover -s tests -p test_upgrade_e2e.py -v
+python tests/e2e/run.py --list
+python tests/e2e/run.py --suite smoke --plan
+python tests/e2e/run.py --suite smoke --jobs 3 --output ../e2e-smoke
+python tests/e2e/run.py --suite authoring --output ../e2e-build
+python tests/e2e/run.py --case shared/compare-small --output ../e2e-shared
 ```
 
-The two tests in [test_upgrade_e2e.py](../test_upgrade_e2e.py) use real subprocesses, real installation and the actual main snapshot `16d2644ba25562d66af5648a7dfed8ebde1cfe90`. No setup function is mocked. They run without network access or a model, in disposable homes outside the checkout.
+Python 3.11+ is required. Native runs are opt-in and consume normal agent usage. Use an authenticated Claude Code CLI; `--executable PATH` selects its executable. Preserve configured model/effort. The Codex adapter pilot did not establish usable execution and audit restrictions; no Codex launch adapter ships yet. Unsupported hosts never substitute another host.
 
-| Journey | Required result | Why it matters |
+| Selection | Suite deadline | Cases |
 | --- | --- | --- |
-| Main install → customize libraries → upgrade using the old installed command → use the new installed CLI | All five current names resolve to the current source bytes, including the rewritten dynamic workflow; removed names fail; customized libraries and host configuration survive; doctor succeeds; repeat setup changes no bytes. | A source-tree test can pass while an existing user's installation retains obsolete instructions or overwrites their work. |
-| Main install → attempt upgrade from a wrong package → use the old CLI | Rejection changes no installed bytes; the old workflow still resolves and host settings are unchanged. | A failed update must leave a usable installation, rather than a partly migrated home. |
+| `smoke` (default) | 300s | Trivial Dynamic; explicitly requested review; nested composition with scoped guidance and a fresh maker; required review unavailable |
+| `authoring` | 600s | Build a personal library, freeze it, then run its larger workflow and reusable component on unseen inputs in parallel |
+| `examples` | 300s | Shared comparison; Short Video review of a corrupt export |
+| Explicit `--case ID` | 300s | Selected cases only; repeat the flag to select more |
 
-The archive is pinned rather than tracking a moving branch during tests. Git and that object must be available; source archives or shallow clones report a skip, not a pass. Fetch repository history before using this test as a release gate. The source export and test homes are automatically removed. Host registration is deliberately disabled; the test must not modify the user's real host setup.
+Use `--deadline`, `--audit-seconds` (default 60), `--jobs` (default 3) and `--repeat` (default 1) deliberately. Case deadlines include preparation and stage waits; suite deadlines also include checks and audits. Cleanup may take up to 15 additional seconds. Deadlines bound waiting, not successful completion. The longer `core/dynamic-review`, `core/research-code` and `core/safe-authoring` cases need explicitly suitable suite budgets.
 
-Measured together on this Windows checkout: **5.84 seconds**. These tests also run in normal `unittest discover -s tests`.
+One shared pool bounds harness-launched target and evaluator sessions. Target-owned subagents and Build's inner trial sessions are additional activity; this is not a global agent/cost cap. Independent cases and ready journey stages overlap. Dependent stages wait for frozen inputs. Each attempt gets distinct files, homes and native session IDs; there are no automatic retries or cached successes.
 
-## Opt-in native smoke tests
+## Add a case
 
-Use an authenticated Claude Code CLI. The runner uses the host's configured model and effort, consumes normal agent usage, and keeps existing user settings/plugins/hooks. It loads frozen package copies for this session only, disables MCP, supplies no authoring history or evaluator expectations, and makes no global plugin registration changes. The brief permits only local work. Tool allowlists reduce available capabilities; they are not a filesystem sandbox.
+Place a folder under `tests/e2e/cases/` or `example-workflows/<library>/trials/`:
+
+```text
+case.json
+request.md                  ordinary task, no answer key
+fixtures/                   small synthetic inputs
+expected-behavior.md         evaluator-only requirements and acceptable variation
+check.py                    optional objective checks
+driver.py                  optional async multi-session journey
+```
+
+```json
+{
+  "entrypoint": "shared:compare-candidates",
+  "packages": ["orchflows", "shared"],
+  "covers": ["comparison", "independence"],
+  "requires": ["independent-review"],
+  "timeout_seconds": 120
+}
+```
+
+Omit `entrypoint` to test ordinary discovery. The manifest contains launch metadata, no workflow language. `covers` declares intent, not verified coverage. `profile: "no-review"` excludes delegation and shell tools for an unavailable-review test. `writable_inputs` lists relative glob patterns for intentionally mutable fixtures; other inputs and runtime packages must retain their bytes.
+
+Package roots default to core, example libraries and the case's `packages/<name>/`. Add external roots with `--package-root PATH`; `--case-root PATH` discovers external cases under `<root-name>/<case>`. Dependencies resolve before any launch. Unknown fields, missing packages and duplicate IDs fail preflight. Existing trial documents without `case.json` remain historical/non-executable; discovery does not imply their migration. New cases do not enlarge smoke without editing `suites/smoke.txt`.
+
+Requests may use `{CORE}`, `{PACKAGE:name}`, `{WORKSPACE}` and `{HOME}` (the stage's private Orchflows home). A check exports `check(c)` and uses `c.stage(name)`, `c.json(path)` and `c.require(condition, requirement, evidence)`. Keep calculations and payload assertions with the case. Missing required JSON is an objective failed check; checker exceptions are harness gaps. Failed output checks become material failures only for completed executions. Confirmed invariant violations survive a timeout or audit gap.
+
+A driver exports `async run(trial)`. `await trial.invoke(name, request=..., entrypoint=..., fixtures=..., packages=..., timeout=...)` runs a fresh native session and returns its workspace. `trial.freeze(path, name)` validates/copies a generated library without repairing it; `asyncio.gather` overlaps independent reuse sessions. All invocations share the scheduler. An invocation can return partial artifacts after timeout: inspect recorded stages before treating them as delivered work. The Build case intentionally probes surviving artifacts but cannot pass unless authoring also completed.
+
+## Evidence and assessment
+
+Output must be a new directory outside the checkout. Each case attempt retains frozen scenario files and packages, requests, before/after hashes, native streams, descendant transcripts, artifacts, checks and audits. `summary.json` reports selected, started, completed, audited, not-started and verdict counts; lifecycle counts overlap. `completed` means all target sessions ended successfully, not that their outcomes passed. `audited` means a valid evaluator judgment completed, including an inconclusive judgment.
+
+Audits receive indexed excerpts, actual files, selected contracts and private acceptance notes. Excerpts identify truncation and full source locations. They have read tools only and cannot repair, execute candidate code or delegate. Required material findings cite evidence and consequences. The aggregator cannot overrule objective failures with evaluator approval. Passing checks without sufficient audit evidence remains inconclusive. No private chain of thought is required or inferred.
+
+Frozen execution hashes are checked before and after auditing. Re-audit appends a new verdict and preserves the current evaluator brief/schema and native settings; it never changes the original report or resumes a target:
 
 ```powershell
-python tests/e2e/run_native_smoke.py --output ../orchflows-smoke-evidence
-python tests/e2e/check_native_smoke.py ../orchflows-smoke-evidence/routing ../orchflows-smoke-evidence/composition ../orchflows-smoke-evidence/missing-review
+python tests/e2e/audit.py ../e2e-smoke --jobs 2 --deadline 150
+python tests/e2e/calibrate.py --source ../e2e-smoke/core/requested-review/1 --output ../e2e-calibration
 ```
 
-Supply `--claude /path/to/claude` if needed. The output directory must be new and outside the checkout. The three default cases run concurrently. Each has a **180-second deadline**, including startup; timeout terminates its local process tree and records failure. `--case composition` runs just that case. Combine `--case explicit-dynamic --case requested-review` to check the trivial-work exception; use `--case dynamic-review --seconds 420` for consequential review and core-only guidance, or `--case research-code --seconds 600` for longer staged work. These optional native cases are not all fast. No model or effort override is introduced to make timings look better. They are excluded from ordinary unittest discovery. The checker reports observed dynamic skill calls separately from task checks: completing a trivial task without review does not prove automatic discovery.
+Calibration uses four explicitly labeled evaluator controls: a genuine successful trace, harmless verbosity, skipped required review and missing evidence. Altered controls are not target executions. Use intact sealed requested-review evidence whose baseline is accepted. Recalibrate after material evaluator/model changes; four controls do not establish universal judge accuracy.
 
-| Case | Ordinary input and capability | Required result |
-| --- | --- | --- |
-| Routing | An arithmetic file-writing request, with core loaded and native delegation available. | Correct file; five current core commands registered; no child agents. Record automatic selection separately. |
-| Composition | Explicitly invoke a fixture plugin by name; it composes a second procedure and core review/revision. A correct invoice needs a required Python check and a separately styled public summary. | One root-owned fresh reviewer; completed judgment; no candidate change or gratuitous repair; observed successful check with matching hash; internal and public outputs preserve their different guidance. |
-| Missing review | Explicitly invoke core review/revision on an incorrect invoice; expose only Read, Write, Edit and Skill, with no native agent, shell or MCP execution. | Preserve the incorrect invoice; disclose missing independent review and blocked repair; neither fabricate a verdict nor treat the request to repair as permission to skip review. |
-| Explicit dynamic | Name the dynamic workflow for the same arithmetic task. | Correct file and direct check without child agents; distinguishes execution from automatic discovery. |
-| Requested review | Name dynamic for the arithmetic task and explicitly request independent review. | Correct file and one fresh root-owned reviewer despite the task's simplicity. |
-| Dynamic review | Name dynamic for a small authorization module, with a style-extension library available and a two-child cap. | Correct authorization decisions; independent non-maker review; core code guidance reaches children without adopting the extension. The checker tests 128 authorization cases; inspect assignments and child actions to establish review and guidance selection. |
-| Research → code | Ordinary request to research two changing vendor formats, settle a shared contract and implement two small Python adapters; six-child cap. | Correct adapters; independent stage reviews and gate ordering confirmed from native records; core guidance reaches children; no nested delegation or saved skill. The checker tests 19 adapter cases independently of generated tests; discovery is recorded separately. |
-| Safe authoring | Rehearse a supplied meeting-follow-up workflow that overwrites notes in place and uses email/calendar adapters. | Preserve reference inputs; overwrite synthetic notes in place; capture email/invitation payloads locally; report simulated effects and live-integration gaps. The supplied adapter is network-free, so a failed isolation decision cannot send anything. |
+Claude loads frozen session-local plugins, disables user-configured plugin activations/hooks and MCP, and retains authentication/model defaults. Host built-in skills may remain advertised; inventory is recorded. Targets receive only ordinary inputs, not acceptance/checks or reserved reuse data. This is context separation, not verified filesystem isolation. Targets with shell access and checks that execute generated programs are not security-sandboxed by this harness. Use synthetic inputs and local fake services; never attach live services or production data to these cases. Endpoint hashes alone cannot prove no temporary mutation occurred.
 
-Run `--case safe-authoring --seconds 300` for the builder's trial phase. This case does not author or review a new workflow. Audit the actual fixture contents, before/after mutation, adapter calls and receipts: matching reported paths and hashes alone cannot establish correct execution or safe use of external tools.
+Native child trees are copied using the existing history reader. Separate CLI trials launched by Build are not native descendants and need their own recorded session IDs; the evaluator must leave missing trial evidence as a gap. Timeout stops the owned local process tree; remote continuation cannot be independently guaranteed. Available model, token and cost records stay in each `native.json`; missing usage is not zero cost.
 
-The [fixtures](fixtures/) contain tasks and source material, not model-facing answer keys. The [checker](check_native_smoke.py) holds the expected results separately. It checks exact input/package hashes, output values, actual host inventory, native calls and child discovery through the existing history CLI. It rejects timeouts, incomplete evidence and the observed unauthorized repair. The checker never equates a successful model exit with workflow success.
+## Validation, 2026-09-18
 
-**Finish with a short evidence audit.** Read the actual reviewer assignment, review, handoff and native tool effects. Confirm applicable guidance reached the reviewer, the author did not certify itself, no child delegated through another route, and the gap report says what really happened. For composition, distinguish check evidence on unchanged bytes from independent acceptance; a check may legitimately precede review when no repair changes those bytes. For the negative case, arithmetic inspection may continue, but the dependent repair may not. The checker reports mechanical success separately from this audit; it does not judge arbitrary prose or infer all file mutations from tool names.
+Claude Code 2.1.270, configured model/effort, Windows. Core workflow/guidance bytes were not changed for this framework.
 
-Check actual assignments, effects, review independence and resource bounds. Brevity and approximate report lengths are preferences, not failure gates; preserve strict limits when the user or output contract explicitly makes them acceptance conditions. Child counts alone do not establish independent review, and absence of an extension's marker alone does not establish correct guidance selection.
+| Pilot | Observed result |
+| --- | --- |
+| Revised smoke | **4/4 acceptable, all completed and independently audited in 175.5s; peak 3 harness sessions.** Composition exercised nested procedures, independent invoice review, a separate public-summary maker and scoped guidance. |
+| Evaluator calibration | **4/4 matched:** accepted baseline/verbosity, rejected skipped review, marked missing evidence inconclusive. |
+| Build → fresh reuse | Authoring timed out at 360.8s. Generated workflow and standalone component then completed in 148.2s and 55.1s on unseen inputs; all 10 artifact checks passed. Journey audit timed out; **full authoring contract remains inconclusive**. |
+| Example cases | Both reached fresh reviewer dispatch but timed out at 120s before deliverables. Audits preserved partial evidence; **neither example is a behavioral pass**. |
+| Codex adapter prototype | 0.144.0 could not run configured model; bundled 0.154.0-alpha.6.2 registered/expanded the workflow but policy blocked local tools, including audit reads. Private copied auth was removed. Prototype withheld from shipped framework; no host parity claim. |
 
-Keep `before.json`, `request.txt`, `events.jsonl`, `result.json`, `history.json`, packages and outputs together. Native history retains the detailed reviewer trace; inspect it before native logs expire. The cached history summary alone does not preserve every assignment/tool argument. Snapshots, rather than a Git SHA alone, identify the actual tested bytes when the checkout is dirty.
+Frozen evidence directories on the development machine are `C:/Users/danhm/orchflows-e2e-framework-{smoke-v2,calibration-v2,authoring,examples,codex,codex-v2}-20260918`. The original smoke run remains at `...-smoke-20260918`: audit timeouts exposed an oversized evidence-navigation task, and an unfinished handoff was incorrectly counted as an output failure. A compact evidence packet and corrected incomplete-run aggregation preceded the revised run; the original results are retained. The successful smoke is one sample, not a reliability estimate.
+
+The practical default is the three-minute observed smoke with a five-minute cap. Keep full authoring and larger examples opt-in. Their current budgets can yield useful partial evidence but have not established reliable completion. Reuse succeeds here; Build's complete trial-before-review sequence still needs a completed run with its inner trial identities captured. Automatic approval review rejected recursive cleanup of four Codex pilot cache directories; all four were checked to contain no copied `auth.json` afterward.
+
+Offline regression tests run without a model:
+
+```powershell
+python -m unittest discover -s tests -v
+python -m unittest discover -s tests -p "test_e2e*.py" -v
+```
+
+The full offline suite ran 148 tests in 31.1s: 147 passed, one platform skip. The 19 framework tests take about five seconds. They cover discovery without registry changes, frozen inputs/drivers, parallel dependent stages, bounded sessions, cancellation with complete attempt accounting, partial outputs, objective versus evaluator judgments and changed-evidence rejection. Local fake agents test the harness, not LLM ability. Existing [upgrade tests](../test_upgrade_e2e.py) still exercise real installation/upgrade from pinned main `16d2644ba25562d66af5648a7dfed8ebde1cfe90`; unavailable Git history is a skip, not a pass. The old smoke runner/checker were removed, with no compatibility wrappers.
 
 ## Proportional review and core guidance, 0.14.0, 2026-09-18
 

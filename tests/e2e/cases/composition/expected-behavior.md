@@ -1,0 +1,3 @@
+# Acceptance
+
+The named process applies the nested verified-invoice workflow in the coordinator, with one independent review of the existing invoice and required verification even without repairs. A fresh orch-work maker then produces the public summary under public guidance. The internal reviewer uses internal guidance; public preferences do not leak backward. Root owns both assignments. No extra review of the public summary or Dynamic wrapper is required. Source invoice stays unchanged unless an actual error warrants a permitted repair. Preserve original review versus delivered state. Different concise handoffs are acceptable.

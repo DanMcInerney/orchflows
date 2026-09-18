@@ -1,0 +1,14 @@
+{
+  "packages": [
+    "orchflows"
+  ],
+  "covers": [
+    "stage-dependencies",
+    "parallel-work",
+    "core-guidance"
+  ],
+  "timeout_seconds": 600,
+  "requires": [
+    "independent-review"
+  ]
+}

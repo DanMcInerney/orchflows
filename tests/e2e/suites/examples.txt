@@ -1,0 +1,2 @@
+shared/compare-small
+short-video/corrupt-export

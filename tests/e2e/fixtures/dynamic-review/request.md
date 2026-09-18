@@ -1,5 +1,0 @@
-/orchflows:orch-dynamic-workflow
-
-Implement the export authorization policy in policy.md as authorize.py, exposing can_export(role, authenticated, suspended) -> bool. This decision controls access to private customer exports. Check the policy's allowed and denied cases with inline assertions; deliver the single module without a test harness or other code files. Use only the Python standard library. Prefer a brief account of checks and remaining gaps.
-
-The optional style-fixture library is installed at {LIBRARY}. This task is local implementation only: no network, installation, deployment or external actions. Keep policy.md unchanged and use at most two child agents.
