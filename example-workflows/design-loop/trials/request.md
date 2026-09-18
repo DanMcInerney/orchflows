@@ -1,6 +1,6 @@
 # Two-cycle portable trial
 
-Run `design-loop:design-loop` from a new disposable project outside this library. Supply compatible core and design-loop package roots, Python 3 and the host's ordinary filesystem, shell and documentation lookup tools. Do not preload the component skills into the trial worker; let the entrypoint compose them.
+Run `design-loop:design-loop` from a new disposable project outside this library. Supply compatible core and design-loop package roots, Python 3 and the host's ordinary filesystem, shell and documentation lookup tools. Do not preload the component skills into the fresh top-level trial session; let the entrypoint compose them.
 
 Ordinary caller brief:
 

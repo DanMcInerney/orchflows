@@ -1,6 +1,6 @@
 # Design iteration handoff
 
-The [design-loop](../skills/design-loop/SKILL.md) coordinator owns cycle scheduling and the run checkpoint. Reuse or establish the design context in [library context](library-context.md). Every component works independently from the inputs below and its declared stage inputs, performing only that stage. A composing skill runs in its caller; only `orch-work` and `orch-review` launch agents. Assignments do their own work without further delegation.
+The [design-loop](../skills/design-loop/SKILL.md) coordinator owns cycle scheduling and the run checkpoint. Reuse or establish the design context in [library context](library-context.md). Every component works independently from the inputs below and its declared stage inputs, performing only that stage. A composing skill runs in its caller; only `orch-work` and `orch-review` launch agents. The orchestrator chooses assignments under core execution rules.
 
 ## Request context
 
@@ -12,7 +12,7 @@ Keep records in the caller's output directory, outside immutable state snapshots
 
 | Record | Required content |
 | --- | --- |
-| Run checkpoint | Request context, N, attempts started/completed, child calls consumed, active cycle/stage, accepted state identity, artifact links, decisions, remaining bounds and stop reason. |
+| Run checkpoint | Request context, N, attempts started/completed, active cycle/stage, accepted state identity, artifact links, decisions, remaining bounds and stop reason. |
 | Baseline | Exact initial or last accepted state: absolute path, stable identity, relevant files/configuration, environment and reproduction instructions. Preserve existing uncommitted and relevant untracked work. A commit alone is insufficient when the working tree differs. |
 | Candidate | Separate editable copy derived from the baseline, then a frozen state identity after implementation. Identify changed artifacts and how to reproduce the result. |
 | Stage handoff | Cycle/stage, input artifact and state identities, result, evidence links, assumptions, and gaps. Mark an unexecuted stage explicitly. |

@@ -121,6 +121,12 @@ Grok's full-capability type is `general-purpose`; its `explore` and `plan` types
 
 Antigravity documents `invoke_subagent` with fresh conversation context; the `self` type retains the parent's instructions and tools. Pass each assignment's guidance and inputs explicitly. Native messaging wakes idle children, and nesting is limited to ten child levels. Use the controls actually exposed by the installed version. [Antigravity subagents](https://www.agy.dev/docs/subagents/).
 
+## Workflow trials
+
+Run a composing workflow in a separate fresh top-level session with its own orchestrator, ordinary inputs and declared dependencies. Exclude authoring history and expected answers. The authoring orchestrator owns this test invocation; a worker must not launch it or become a nested coordinator. A nondelegating leaf may be trialed through `orch-work`. If the required independent session is unavailable, report that validation gap.
+
+Keep outputs outside packages. Record preparation, interventions, artifact identities and unexercised paths. Audit native launches, assignments and continuations: only the trial's top-level orchestrator may direct agents. Verify requested model/effort from native metadata and guidance from actual assignment context; registration alone proves neither.
+
 ## Model and effort
 
 Apply the [resolved assignment choices](architecture.md#model-and-effort) through the controls exposed by the current host. Unset controls use native defaults, which may differ from the coordinator's settings. Writing a model name in a child's prompt does not select it.

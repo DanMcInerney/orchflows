@@ -1,6 +1,6 @@
 {
   "name": "evolve",
-  "version": "0.1.1",
+  "version": "0.3.0",
   "description": "Improve any artifact and its improvement process with inferred evaluation and resumable search.",
   "skills": "./skills/"
 }

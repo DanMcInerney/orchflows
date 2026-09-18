@@ -5,9 +5,7 @@
 - [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
-All delegation goes through these primitives. The host owns agent execution; orchflows adds no runtime, scheduler or workflow language. Loading a `SKILL.md` applies its instructions in the caller's context; it does not launch an agent. Composing workflows add only their own decisions and supply each child's assignment and context.
-
-Workflows preserve commitments between pieces of work. Prompts supply the current task; guidance supplies quality, methods and taste. The caller applies the [execution rules](#execution) before dispatch. A stage is not an agent: several stages may share a maker, and one stage may use several workers where the selected workflow permits it.
+The host executes agents. The top-level orchestrator applies composed skills as instructions and dispatches their assignments through these primitives. Loading a skill does not launch an agent. Workflows preserve process; prompts supply the current task; guidance supplies methods and taste.
 
 ## Where things live
 
@@ -16,8 +14,8 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 | Concept | Owner / location |
 | --- | --- |
 | Request and defaults: question, dates, sources, bounds, model, effort, output location | Caller prompt; [model and effort](#model-and-effort) covers saved preferences |
-| Saved process: dependencies, independence, gates, repetition, allowed effects and default bounds | Composing workflow's `SKILL.md` |
-| Actual assignments, concurrency, ownership, integration and cumulative use | Caller applying the execution rules within the saved process and current request |
+| Saved process: dependencies, independence, gates, repetition, stopping conditions and allowed effects | Composing workflow's `SKILL.md` |
+| Actual assignments, concurrency, ownership and integration | Caller applying the execution rules |
 | Quality criteria, including source-specific preferences | `guidance/<domain>.md` |
 | Shared contracts and operational knowledge | Library `references/`; skill-local `references/` for one consumer |
 | Package dependencies and guidance requirements | `references/library-context.md`, reused by entrypoints |
@@ -32,33 +30,31 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 
 ## Invocation
 
-[orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) is the automatic fallback when no more specific workflow or skill fits the request. Other core skills, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default; automatic selection for those skills requires the caller's opt-in. When creating or copying a workflow, write and verify the [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; report a host that cannot enforce this policy. An explicitly requested workflow still supplies its own composition and guidance.
+[orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) is the automatic fallback for top-level requests when no more specific workflow or skill fits. Other core skills, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default; automatic selection for those skills requires the caller's opt-in. When creating or copying a workflow, write and verify the [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; report a host that cannot enforce this policy.
 
-An explicit caller amendment can select a modified process; state any changed guarantee. Skipping review produces an unreviewed result. Vague urgency does not cancel a required stage, and an amendment does not redefine the primitives or bypass actual permissions.
+Saved workflows compose their chosen processes and primitives directly. The dynamic fallback is not a component. Explicit caller amendments can change the process; state any changed guarantee, preserve primitive meanings and honor actual permissions.
 
 ## Execution
 
-Resolve the result, dependencies, selected guidance, scoped settings and bounds before planning assignments. Split work around shared prerequisites, useful independence and edit conflicts. Run independent assignments concurrently within host and resource limits; start dependent work when its inputs are ready. Give each assignment enough context, clear ownership and a useful result to return. Gathering and integration are ordinary coordination, not extra agents or required helper skills.
+Only the top-level orchestrator launches agents, assigns work and continues agents. Children do their assignments without delegating, including to existing agents or through other tools; they return results and requests to the orchestrator. Composition stays at the top level.
 
-Gather every actual outcome, reconcile overlaps and give each shared fix or integration task one owner. Missing or unfinished work is a gap. Return compact handoffs with useful results, artifact identities or paths, evidence, decisions and gaps; keep large raw evidence available for inspection instead of copying it through every prompt. Checkpoints and accepted-state records belong to workflows that need resumption or adoption, not every small task.
+Resolve dependencies, guidance, settings and caller constraints before planning. The orchestrator does clear work directly when settings permit and chooses maker staffing. Split when useful; run independent work concurrently within host limits. Gather the required outcomes before dependent work, keeping missing work as a gap. Give each shared fix, integration and external operation one owner. Preserve authorization and reconcile uncertain actions before retrying.
 
-Review identified stable work with children who did not make it. When the workflow permits parallel review, assign coverage of the whole result and its interactions, then gather findings before repairs. Multiple reviewers of the same candidate form one review round; review of a revised candidate is another. A repair pass includes changes and affected checks, not another independent review. A changed candidate does not inherit the old verdict.
+Return compact handoffs with inspectable evidence. Keep checkpoints and native handles when resuming. Preserve the workflow's repetition and stopping rules and explicit caller limits; report unsupported controls. Extra stages require a caller amendment. Persistent inability to progress returns a gap; continuous work follows its requested stop conditions.
 
-For external actions, preserve the selected authority boundary and reconcile an uncertain outcome before retrying. Reuse applicable authorization already supplied; do not invent approval stages.
+## Standard review and repair
 
-### Bounds
+A workflow may select this pattern after producing and joining its result. One independent child who made none of it reviews the whole stable result through `orch-review`, reporting findings and coverage gaps without edits. Wait for the reviewer to finish before repairs.
 
-Finite workflows declare a default total child-start ceiling or a finite formula from their resolved inputs, plus any repetition and stopping rules. A fixed-count recipe retains its count. State the resolved ceiling and initial allocation before dispatch, reserving allowance for required later stages. Concurrency is a separate limit, not a total budget. A requested number of independent alternatives or judges is a process requirement unless the caller changes it.
+If needed, make one coordinated repair pass. Use the orchestrator, a continued maker or `orch-work`, honoring the fixer's settings. Prefer one fixer; independent repairs may use several, with one owner per shared fix. Run affected checks and caller-required verification even when no repair was needed. There is no second review; a revision does not inherit the original verdict.
 
-Composed calls inherit the remaining allowance; their standalone defaults never replenish it. Count failed or interrupted starts, replacements, nested trial children and any delegated integration. Rejoining a child is not a new start, but continuing work still consumes applicable time and cost limits. Resume preserves usage. Reallocate within the ceiling only where the workflow allows it; extra stages, review rounds or repairs need a caller request. If required work cannot fit, return the achievable result and gap rather than claim completion.
-
-Honor time and spending limits using available measurements and report unsupported controls. Child count is not an exact cost bound. Explicit continuous workflows use bounded batches and cumulative checkpoints under the caller's stop conditions, without an invented total round cap.
+Workflows may select different processes, such as comparison, specialist reviews or confirmation. Gather every required judgment before repairing. Selecting this pattern does not add reviews to its internal stages.
 
 ## Model and effort
 
-Model and effort are optional choices for work, review, a stage or a named assignment. Resolve each setting separately: current caller instructions override saved workflow preferences; within either source, the named assignment overrides its parent stage, then the operation default. Runtime assignments inherit their stage's scoped choices. Leave unspecified controls unset for the host to resolve. Keep the caller's choices and their scope with request context through composed workflows.
+Model and effort are optional choices for work, review, a stage or a named assignment. Resolve each separately: current caller instructions override saved preferences; within either source, the named assignment overrides its stage, then the operation default. Runtime assignments inherit their stage's choices. Leave unspecified controls unset. Preserve scope through composition.
 
-Record saved preferences beside the relevant assignments only when the user asks the generated workflow to use them. The authoring session's settings do not become workflow defaults. Plain language is sufficient; no model file or role registry is required. Behavioral corrections remain in guidance.
+Record saved preferences beside the relevant assignments only when the user asks the generated workflow to use them. The authoring session's settings do not become workflow defaults. Behavioral corrections remain in guidance.
 
 Apply these choices to every assignment, including repairs. Direct coordinator work or reuse of an existing worker is valid only when it honors that assignment's settings; otherwise use a fresh worker. The primitives apply choices through [native host controls](hosts.md#model-and-effort); report an unsupported setting as a gap instead of substituting another value.
 
@@ -66,7 +62,7 @@ Apply these choices to every assignment, including repairs. Direct coordinator w
 
 Guidance records domain preferences in `## Make` and `## Review`; omit empty sections. Apply Make when producing and Review when assessing. Workflows name required domains; select `orchflows` for authoring workflows, guidance or libraries. A domain being extended is source material for its author.
 
-Guidance must make relevant supporting references discoverable without its original recipe. It may explain an ordered technique within an assignment; delegation, gates and review or repair rounds belong in the workflow. Keep enough domain meaning in the workflow to identify its inputs, outputs and decisions.
+Guidance must work without its original recipe and expose relevant supporting references. It may explain techniques within an assignment; delegation and gates belong in workflows. Route guidance by role or kind of work, not numbered child.
 
 Resolve once at the outer entrypoint, including a leaf invoked alone:
 
@@ -98,7 +94,7 @@ Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tes
 ├── .claude-plugin/plugin.json      Claude, Grok Build and ZCode manifest
 ├── .codex-plugin/plugin.json       Codex manifest
 ├── .kimi-plugin/plugin.json        Kimi Code manifest
-├── README.md                       composition, bounds, install, dependencies
+├── README.md                       composition, stopping rules, dependencies
 ├── references/                     shared context and contracts
 ├── guidance/<domain>.md            domain or dotted specialization
 ├── skills/<skill>/SKILL.md          frontmatter, invocation policy; instructions
@@ -110,11 +106,9 @@ Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tes
 
 Skill identity is `<library>:<skill>`; [host invocation syntax](hosts.md#invocation-policy) can differ. Keep links within the package; reach other packages by native skill name or resolved paths. Never embed machine-specific paths. Declare runtime dependencies in the README; setup installs none for libraries. Root `plugin.json` declares `name`, `version` and `skills: "./skills/"` and also serves Antigravity. Keep the name and version aligned across host manifests; Kimi's manifest declares `skills: "./skills/"`. Existing user libraries need that manifest before installation in Kimi.
 
-A reusable component declares its inputs and dependencies, promised process and allowed effects, outputs including gaps, and standalone bounds. Extract meaningful process commitments or useful domain interfaces, not every verb. Domain components stay in their libraries; an optional shared library can own processes used across domains. Core remains independent of optional libraries. No numbered tier hierarchy or central helper dependency is required.
+A reusable component declares inputs, dependencies, process, allowed effects, outputs and stopping conditions. Domain components stay in their libraries; optional shared libraries own cross-domain processes. Core remains independent of them.
 
 ## Invariants
 
 - Skills name scripts, inputs and results; scripts own their internals.
-- Resolve and declare bounds and allocation before dispatch; composition, retries and resume share cumulative usage. Preserve explicit process requirements.
-- Report missing work as a gap, never as no-results evidence.
 - Establish behavior with a real bounded trial. Valid frontmatter proves no behavior; unexercised failure paths remain untested.

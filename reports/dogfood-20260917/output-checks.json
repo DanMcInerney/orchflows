@@ -1,0 +1,132 @@
+{
+  "notice": {
+    "pass": true,
+    "evidence": {
+      "words": 52,
+      "text": "# Maintenance notice\n\nMaintenance is scheduled for Sunday, 20 September 2026, from 02:00 to 02:30 UTC. The dashboard will be unavailable during this window. The API and scheduled jobs will continue to operate. No customer action is needed.\n\nStatus updates will be posted at https://status.example.test. Completion before 02:30 UTC is not guaranteed.\n"
+    }
+  },
+  "purchasing_arithmetic": {
+    "pass": true,
+    "evidence": {
+      "expected_costs": {
+        "Aster": [
+          "2096.00",
+          "5416.00"
+        ],
+        "Birch": [
+          "2040.00",
+          "2560.00"
+        ],
+        "Cedar": [
+          "2650.00",
+          "7720.00"
+        ]
+      },
+      "decision_words": 400
+    }
+  },
+  "six_branch_arithmetic": {
+    "pass": true,
+    "evidence": {
+      "decisions": {
+        "North": {
+          "recommended": "Birch",
+          "cost": "2040.00"
+        },
+        "South": {
+          "recommended": "Aster",
+          "cost": "1496.00"
+        },
+        "East": {
+          "recommended": "Birch",
+          "cost": "2400.00"
+        },
+        "West": {
+          "recommended": null,
+          "cost": null
+        },
+        "Central": {
+          "recommended": null,
+          "cost": null
+        },
+        "Harbor": {
+          "recommended": "Birch",
+          "cost": "2040.00"
+        }
+      },
+      "total": "7976.00",
+      "vendor_rows_checked": 18
+    }
+  },
+  "software_factory_output": {
+    "pass": true,
+    "evidence": {
+      "accepted_values": 10,
+      "rejected_values": 10,
+      "caller_note_preserved": true
+    }
+  },
+  "dynamic-small_sources": {
+    "pass": true,
+    "evidence": [
+      "facts.txt"
+    ]
+  },
+  "dynamic-medium_sources": {
+    "pass": true,
+    "evidence": [
+      "quotes.csv",
+      "usage.csv",
+      "policy.md",
+      "clarification.md"
+    ]
+  },
+  "ticket_cli": {
+    "pass": true,
+    "evidence": [
+      "sample numerical result",
+      "timezone equivalence and strict overdue boundary",
+      "empty input",
+      "duplicate ID rejected; prior outputs preserved",
+      "unknown priority rejected; prior outputs preserved",
+      "unknown status rejected; prior outputs preserved",
+      "naive timestamp rejected; prior outputs preserved",
+      "malformed timestamp rejected; prior outputs preserved",
+      "missing ID rejected; prior outputs preserved",
+      "missing due rejected; prior outputs preserved",
+      "missing column rejected; prior outputs preserved",
+      "open with resolution rejected; prior outputs preserved",
+      "resolved without resolution rejected; prior outputs preserved",
+      "negative resolution duration rejected; prior outputs preserved",
+      "invalid --as-of rejected",
+      "repeat output byte stability"
+    ]
+  },
+  "ticket_malformed_timezone_offset": {
+    "pass": false,
+    "error": "AssertionError([{'location': 'input due_at', 'exit': 0, 'preserved': False, 'stderr': ''}, {'location': '--as-of', 'exit': 0, 'preserved': False, 'stderr': ''}])"
+  },
+  "evolve_compatibility": {
+    "pass": true,
+    "evidence": {
+      "matched_cases": 604,
+      "candidate": "C:\\Users\\danhm\\orchflows-dogfood-20260917\\evolve\\workspace\\duplicates.py"
+    }
+  },
+  "shopping_list_candidate": {
+    "pass": true,
+    "evidence": {
+      "candidate": "C:\\Users\\danhm\\orchflows-dogfood-20260917\\design-loop\\workspace\\design-loop\\candidates\\cycle-2\\shopping_list.py",
+      "checks": "persistent add/show/remove; invalid requests preserve list; corrupt list reported and preserved"
+    }
+  },
+  "export_standalone_output": {
+    "pass": true,
+    "evidence": {
+      "original_preserved": true,
+      "orchflows_not_installed": true,
+      "delivered_sha256": "38ca9b1eeea9f3ceac364e62d5646e02bbe3b776434b03a391ed6818a9dd47ca"
+    }
+  }
+}

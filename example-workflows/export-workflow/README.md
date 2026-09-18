@@ -27,11 +27,11 @@ Give it a workflow path or library/skill identity, a destination and an optional
 The [workflow](skills/export-workflow/SKILL.md) creates the export in the caller's context, then tests whether it can stand on its own:
 
 1. **Follow the dependencies.** Read the reachable workflows, guidance, references, scripts and assets. Bundle what the skill needs, preserve licenses and rewrite paths.
-2. **Preserve the behavior.** Translate core work/review calls into native delegation, retaining the workflow's supported decisions, agent counts, handoffs and bounds.
-3. **Try it elsewhere.** Give a fresh trial worker the exported folder, ordinary inputs and declared prerequisites in an unrelated disposable workspace. Record interventions and anything the trial could not exercise.
+2. **Preserve the behavior.** Translate core work/review calls into native delegation, retaining the workflow's supported decisions, deliberate process counts, handoffs, stopping conditions and caller constraints.
+3. **Try it elsewhere.** Give a fresh top-level trial session the exported folder, ordinary inputs and declared prerequisites in an unrelated disposable workspace. Record interventions and anything the trial could not exercise.
 4. **Get an independent verdict.** A new reviewer compares the source, export and trial evidence without making repairs. Make at most one repair pass and, if behavior changed, one affected retrial. There is no second review.
 
-**Normally two fresh children, at most three with a retrial**, excluding the caller, **plus the exported workflow's declared children for each trial**. The exported workflow supplies its own orchestration during those trials.
+Trial the export under its own orchestration, then independently review source fidelity and observed behavior. One repair pass and an affected retrial may follow; no second review is implied.
 
 A live-search workflow gets a live discovery-and-source-inspection trial when authorized tools are available. Fixtures establish only the offline path. Missing capabilities remain explicit validation gaps; a bounded successful trial does not establish every branch, site or host.
 
@@ -59,6 +59,6 @@ python scripts/orchflows.py setup --example export-workflow
 
 Setup copies the example into your orchflows home and preserves an existing library copy. Follow core `docs/hosts.md` to register and install `export-workflow@orchflows-home`, then start a new session. Setup alone does not make the workflow available by name.
 
-Requires orchflows 0.7.0+, native child delegation, filesystem access, the source workflow and its selected dependencies, and the tools needed for the bounded trial. [Library context](references/library-context.md) resolves package dependencies. Setup installs no library runtime dependencies.
+Requires orchflows 0.10.0+, native child delegation, filesystem access, the source workflow and its selected dependencies, and the tools needed for the bounded trial. [Library context](references/library-context.md) resolves package dependencies. Setup installs no library runtime dependencies.
 
 The [trial requests](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) support repeatable validation; they are not proof that every workflow, site or host has been tested.

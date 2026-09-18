@@ -1,0 +1,8 @@
+Command: python -m unittest discover -s tests
+Run after all live-source clarifications.
+Ran 126 tests in 16.991s
+OK (skipped=1)
+125 passed; one platform skip.
+Exit status: 0
+
+git diff --check: passed (line-ending conversion notices only).

@@ -1,6 +1,6 @@
 {
   "name": "shared",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Reusable independent comparison and bounded review-and-revision processes.",
   "author": {
     "name": "orchflows"

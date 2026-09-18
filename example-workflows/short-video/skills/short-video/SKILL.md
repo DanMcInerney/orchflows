@@ -4,8 +4,8 @@ description: Create short videos for any genre or placement, then independently 
 disable-model-invocation: true
 ---
 
-Reuse or establish [library context](../../references/library-context.md). For N requested films, declare N makers and N fresh reviewers, 2N agents total. Placement versions of one film share its pair. Run this coordination in the current context.
+Reuse or establish [library context](../../references/library-context.md). Coordinate production and independent review in the caller. Choose staffing for the requested films and placements under core execution rules.
 
-Invoke [make-short-video](../make-short-video/SKILL.md) once per film with its brief and separate output location. Independent films may run concurrently using returned handles; gather their actual outcomes. For each outcome, invoke [review-short-video](../review-short-video/SKILL.md) once over all its exact exports and any gaps, carrying the original brief and resolved guidance.
+Invoke [make-short-video](../make-short-video/SKILL.md) once per film with its brief and separate output location. Run independent work concurrently and gather actual outcomes. As each film is ready, invoke [review-short-video](../review-short-video/SKILL.md) once over all its exact exports and any gaps, carrying the original brief and resolved guidance.
 
 Return the editable projects, playable exports, independent findings and remaining gaps. No research stage, outline review, additional coordinator or repair loop is implied. Further work occurs only when requested.

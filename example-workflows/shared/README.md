@@ -1,17 +1,17 @@
 # Shared processes
 
-Small composable workflows for decisions and bounded revision. Task details come from the prompt; quality and taste come from selected guidance. Ordinary task allocation, fan-out, gathering and cumulative bounds come from core.
+Small composable workflows for decisions and bounded revision. Task details come from the prompt; quality and taste come from selected guidance. Ordinary task allocation, fan-out, gathering and staffing come from core.
 
-| Component | Contract | Standalone default |
-| --- | --- | --- |
-| [compare-candidates](skills/compare-candidates/SKILL.md) | Compare stable alternatives under common criteria; return evidence and preference, without adoption or edits | One reviewer, one child start |
-| [review-revise-once](skills/review-revise-once/SKILL.md) | Review independently, repair at most once, verify, and distinguish reviewed and delivered states | One reviewer and at most one fresh fixer; two child starts |
+| Component | Contract |
+| --- | --- |
+| [compare-candidates](skills/compare-candidates/SKILL.md) | Compare stable alternatives under common criteria; return evidence and preference, without adoption or edits |
+| [review-revise-once](skills/review-revise-once/SKILL.md) | Review independently, repair at most once, verify, and distinguish reviewed and delivered states |
 
-A caller can supply a broader allocation for one round, or a smaller one with an existing maker or caller-owned repair. The parent retains its process requirements and remaining allowance. Defaults do not replenish a composed run's budget. These are process choices, not a global one-worker/one-reviewer restriction.
+The top-level orchestrator dispatches all assignments. Comparison uses one independent comparer. Review-and-revision uses core's standard pattern: one independent whole-result reviewer, at most one coordinated repair pass and required verification. Repair staffing stays flexible.
 
 ## Use and dependencies
 
-Requires Orchflows core 0.8.0+ and native child delegation. This package adds no runtime, domain guidance or required tools. See [library context](references/library-context.md).
+Requires Orchflows core 0.10.0+ and native child delegation. This package adds no runtime, domain guidance or required tools. See [library context](references/library-context.md).
 
 From the checkout:
 
@@ -27,7 +27,7 @@ Example requests:
 
 > Review this operating report against its source records, then revise it once and check the changed figures. Preserve the original report and review findings. Use writing guidance and this company's reporting extension.
 
-The design-loop example uses comparison for `test-increment`; benchmaker uses review-and-revision after its independent pilot. Their required counts and stronger domain rules remain with their recipes. These consumers do not wrap the component in another worker.
+Design loop uses comparison for `test-increment`. Personal briefs and reports can use review-and-revision on an existing candidate. Their evidence requirements and domain rules remain with their recipes; the orchestrator applies component instructions directly.
 
 ## Build a personal composition
 
@@ -35,8 +35,8 @@ For example, save a decision-brief workflow in `~/.orchflows/libraries/personal/
 
 > Resolve the question, supplied proposals and decision criteria. Use shared:compare-candidates on the proposals. Write a recommendation from its actual evidence, retaining uncertainty or no eligible choice. Use shared:review-revise-once on that draft and the source records. Return the recommendation, comparison, original review, delivered revision and gaps. Stop after this one revision pass; take no external action.
 
-Declare `shared` as a dependency, select the applicable guidance and save finite defaults. For this example, three child starts cover comparison, review and a fresh fixer; direct drafting and permitted caller-owned repair need no child. If drafting is delegated, provide its allowance too. Keep criteria and writing taste in personal guidance, current inputs in the invocation, and package metadata with the personal library.
+Declare `shared` as a dependency and select the applicable guidance. Keep criteria and writing taste in personal guidance, current inputs in the invocation, and metadata with the personal library. Save the process and stopping conditions; leave staffing to the orchestrator.
 
 ## Validation
 
-[Trials](trials/README.md) cover an existing example's comparison, a personal office-work composition, and exhausted allowance. Run from an unrelated workspace using declared package roots, without the authoring discussion or expected answers. Metadata checks do not establish behavior or cross-host portability.
+[Trials](trials/README.md) distinguish earlier component checks from the current builder-to-personal-library acceptance scenarios. Run from an unrelated workspace with declared dependencies and ordinary inputs. Metadata checks do not establish behavior or cross-host portability.

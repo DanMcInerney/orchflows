@@ -22,7 +22,7 @@ Preserve source defaults. Model, effort and other choices for the export session
 | --- | --- |
 | `orch-work` | Replace with direct native delegation to a fresh child, carrying the assignment, workspace/input state, resolved local Make guidance and scoped caller choices. |
 | `orch-review` | Replace with a fresh native child who did not make the candidate, applying local Review guidance without making or delegating repairs. |
-| Composition, parallel work, joins and handoffs | Preserve dependencies, ownership, declared agent count, output contracts, bounds and partial-result handling using native host tools. |
+| Composition, parallel work, joins and handoffs | Only the top-level orchestrator launches, assigns and continues agents; children return results and further-work requests. Preserve dependencies, ownership, process counts, caller constraints, output contracts, bounds and partial-result handling using native host tools. |
 | Repairs, loops, checkpoints and continuous runs | Preserve requested stopping and promotion rules. Host execution/resume remains required; a skill does not add a scheduler. |
 | Model and effort choices | Preserve saved assignment settings and caller overrides; current caller beats saved, named assignment beats its operation default within each source, resolved separately per field. Unspecified fields stay unset. Apply through supported native controls; prompt text alone does not select a model. Reuse an agent only if its settings fit. Unsupported settings are gaps, never silent substitutions. |
 | Isolation | Preserve the intended workspace and input revision, including required uncommitted inputs. Use native isolation or an explicit worktree when available; missing required isolation blocks the affected step. |
@@ -38,7 +38,7 @@ A requested single-file export must inline required textual guidance and contrac
 
 Move a copy of the completed folder to an unrelated workspace. Check local Markdown targets, script entrypoints, imports and resource loading there. Inspect remaining package names and absolute paths by meaning: provenance can name the source, runtime instructions cannot require it. Verify supported frontmatter, invocation metadata and that every bundled reference is reachable when needed.
 
-The bounded trial must run using that copy and declared prerequisites, without reading the source checkout, Orchflows home or unrelated installed skills. Use a fresh native child with only those inputs; if the host cannot provide that context boundary, record the trial's weaker isolation. Do not claim filesystem isolation merely because the child was instructed to avoid the source.
+The bounded trial must run using that copy and declared prerequisites, without reading the source checkout, Orchflows home or unrelated installed skills. Run a composing export in a fresh top-level session with only those inputs, following core's workflow-trial contract. If that session is unavailable, report the execution gap; a child cannot become a nested coordinator. Do not claim filesystem isolation merely because the child was instructed to avoid the source.
 
 Choose a trial that exercises the workflow's primary capability with available, authorized tools. For live retrieval, exercise discovery and source inspection; a fixture-only trial validates only the offline path. If the primary capability cannot be exercised, report it as unvalidated.
 

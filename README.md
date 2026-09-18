@@ -63,7 +63,7 @@ flowchart LR
     class D result;
 ```
 
-**Larger task.** Independent workers run in parallel, their results join, and one reviewer assesses the combined work. When fixes are needed, an existing or new worker can implement them:
+**Larger task.** Independent workers run in parallel, their results join, and independent review covers the combined work. When fixes are needed, an existing or new worker can implement them:
 
 ```mermaid
 flowchart TD
@@ -139,9 +139,9 @@ A reviewer can inspect code, judge a film, rank evidence or compare competing de
 
 A workflow is a `SKILL.md` that connects these operations: what can run in parallel, what depends on what, what gets reviewed, and whether the result feeds another round. It supplies assignments, context and outputs. The same primitives support a single review, a research team, a production pipeline or an improvement loop.
 
-The package includes two ready-made compositions: [dynamic work](skills/orch-dynamic-workflow/SKILL.md) and [workflow building](skills/orch-build-workflow/SKILL.md). They compose the two primitives and show how to write your own. A workflow preserves its stages, independence, gates and repetition while the orchestrator chooses staffing where allowed. Resolve a finite ceiling and initial allocation before dispatch; composed calls share the remaining allowance. Dynamic work defaults to eight total child starts, including nested trials, with one review and one repair pass. The ceiling is not a staffing target.
+The package includes [dynamic work](skills/orch-dynamic-workflow/SKILL.md), the fallback when no more specific workflow or skill fits, and [workflow building](skills/orch-build-workflow/SKILL.md). Saved workflows compose the primitives and useful library processes. They preserve stages, independence, gates and repetition while the orchestrator chooses staffing. Dynamic work ends after one independent review and at most one repair pass; it is not a component for custom workflows.
 
-The optional [shared processes](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/shared) library provides independent candidate comparison and review with one revision pass. Design loop and benchmaker compose these processes without adding coordinator agents. Other components remain in their domain libraries. Ordinary fan-out and gathering are [core execution rules](docs/architecture.md#execution), not a required helper import. Install `shared` explicitly before examples that declare it; setup does not install transitive dependencies.
+The optional [shared processes](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/shared) library provides independent candidate comparison and review with one revision pass. Design loop uses comparison; personal briefs and reports can use review-and-revision. Only the top-level orchestrator launches, assigns or continues agents; children return results and further-work requests. Other components remain in their domain libraries. Ordinary fan-out and gathering are [core execution rules](docs/architecture.md#execution), not a required helper import. Install `shared` explicitly before examples that declare it; setup does not install transitive dependencies.
 
 Your host runs the agents. Orchflows adds no agent runtime, scheduler or workflow language. Loading a workflow applies its instructions in the current context; calling a primitive launches a child.
 
@@ -195,13 +195,13 @@ flowchart TD
     class Q,O result;
 ```
 
-N collection assignments use N workers and one reviewer. Shared original sources have one owner; missing or failed collection stays visible as a gap. Source-specific guidance shapes collection; shared research and writing guidance shapes the final assessment.
+The orchestrator chooses collection assignments; one independent assessor returns the completed evidence assessment. Shared original sources have one owner; missing or failed collection stays visible as a gap. Source-specific guidance shapes collection; shared research and writing guidance shapes the final assessment.
 
 ### Short video
 
 > Make a 30-second launch film for this product. Deliver the editable project and the finished video.
 
-[Short video](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/short-video) gives one maker the brief, then sends the actual rendered exports to a fresh reviewer. Genre, placement and brand requirements come from the brief and selected guidance.
+[Short video](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/short-video) produces the requested films, then independently reviews their actual rendered exports. Genre, placement and brand requirements come from the brief and selected guidance.
 
 ```mermaid
 flowchart LR
@@ -217,7 +217,7 @@ flowchart LR
     class B,E,D result;
 ```
 
-One film uses one maker and one reviewer, including its placement versions. Additional films can run in parallel. The composition ends after review; a repair round is a separate requested step.
+Every film receives independent review of all its placement versions. Staffing adapts to the work, and films can proceed concurrently. The composition ends after review; a repair round is a separate requested step.
 
 ### Evolve
 
@@ -249,7 +249,7 @@ flowchart TD
     class S,O result;
 ```
 
-The working **harness** is the maker instructions, tools and search strategy used by the run. Evolve can test a change to that harness against its predecessor, then use the verified revision in later rounds. Its coordinating evaluation and promotion rules stay fixed during that comparison. Harness experiments use one proposer and two fresh makers per test case, with independent review of their outputs. A subjective winner requires confirmation from a second fresh reviewer.
+The working **harness** is the maker instructions, tools and search strategy used by the run. Evolve can test a change to that harness against its predecessor, then use the verified revision in later rounds. Its coordinating evaluation and promotion rules stay fixed during that comparison. Harness experiments produce old/new outputs independently from matched inputs, with independent review. A subjective winner requires confirmation from a second fresh reviewer.
 
 The default is three rounds with one challenger per round. A continuous request removes the round cap; the host must keep executing or resume the checkpoint. A plateau changes the search strategy. It does not prove the artifact cannot improve.
 
@@ -259,13 +259,13 @@ The default is three rounds with one challenger per round. A continuous request 
 
 [Design loop](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/design-loop) composes eight reusable workflows around a project endgoal: brainstorm and research, design one increment, implement it, independently compare it with the accepted baseline, then analyze the evidence for the next cycle. Its README includes a detailed flowchart and the component contracts.
 
-**Experimental — this packaged example is untested so far.** A full cycle uses six fresh children, with at most 6N calls for N attempted cycles. Trial specifications are included for future validation.
+**Experimental.** Design-loop preserves N attempted cycles with independent comparison and explicit adoption. Staffing follows core execution rules. Its comparison leaf has behavioral trial evidence; full cycles remain unvalidated.
 
 ### Benchmaker (experimental)
 
 > Build a benchmark for this agent, with a quick run under five minutes.
 
-[Benchmaker](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker) turns an agent, workflow or capability description into a small runnable benchmark with representative tasks, outcome grading and explicit measurement limits. It uses one independent pilot worker and one reviewer, with one bounded repair pass; actual candidate executions have their own budget. Install its shared dependency with `python scripts/orchflows.py setup --example shared`, then the library with `python scripts/orchflows.py setup --example benchmaker`.
+[Benchmaker](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker) turns an agent, workflow or capability description into a small runnable benchmark with representative tasks, outcome grading and explicit measurement limits. It preserves an independent pilot and core's standard review and repair; the orchestrator owns target dispatch under the declared measurement plan. Install with `python scripts/orchflows.py setup --example benchmaker`.
 
 The first implementation includes contracts and six acceptance scenarios; cross-domain validation remains incomplete. It generates runners suited to each benchmark and does not require a shared evaluation framework. [Validation status](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker/trials).
 
@@ -275,7 +275,7 @@ The first implementation includes contracts and six acceptance scenarios; cross-
 
 [Software factory](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/software-factory) adapts the agentic software factory design into bounded implementation, CI and independent review loops, followed by risk routing and an optional authorized rollout. Separate observation and incident workflows turn production evidence into proposed fixes or mitigations. It uses the project's existing tools and adds no scheduler or CI runtime.
 
-Delivery defaults to three candidate passes, with one builder and up to five applicable reviewers per pass, plus at most one release worker. Low-risk automated review requires project opt-in; release authority remains separate. Install the optional library with `python scripts/orchflows.py setup --example software-factory`.
+Delivery defaults to three candidate passes. The orchestrator chooses staffing for implementation, applicable independent review and any authorized release. Low-risk automated review requires project opt-in; release authority remains separate. Install the optional library with `python scripts/orchflows.py setup --example software-factory`.
 
 We built two applications with this workflow and with a fresh single agent using the same product prompt, tools and observed model/effort:
 
@@ -318,8 +318,8 @@ Ask for a report only to stop after inspecting history. An improvement pass incl
 | Concept | Owner |
 | --- | --- |
 | Desired result, constraints, sources, dates, budgets, model and effort | Your prompt; explicit saved model/effort preferences sit beside workflow assignments |
-| Saved process, dependencies, independence, loops and default bounds | Workflow `SKILL.md` |
-| Runtime allocation, concurrency, gathering and cumulative usage | Orchestrator applying core execution rules |
+| Saved process, dependencies, independence, loops and stopping conditions | Workflow `SKILL.md` |
+| Runtime allocation, concurrency, gathering and integration | Orchestrator applying core execution rules |
 | Quality preferences and domain extensions | `guidance/` |
 | Package dependencies and required guidance | `references/library-context.md` |
 | Shared knowledge and handoff contracts | Library `references/`; skill-local references for one consumer |

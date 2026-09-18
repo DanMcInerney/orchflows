@@ -1,5 +1,7 @@
 # Library context
 
+Apply core `docs/architecture.md` execution rules before planning assignments.
+
 Resolve once at the outer entrypoint, including either leaf invoked alone. Use core native skills, supplied package roots or core's `resolve` CLI. Core `docs/architecture.md` owns guidance selection and `docs/hosts.md` owns delegation and isolation. A missing home runtime does not block resolved native resources.
 
 Include this library and caller-supplied package roots in supplied order. The main workflow selects independent `code`, `writing`, `visual-design` and `browser-game` domains. Select `browser-game.threejs` for game implementation, `browser-game.blender` for asset making, and `browser-game.playtesting` for QA and review. Core reviewers also receive the Three.js specialization; final reviewers receive all three specializations. Resolve dotted prefixes per core, deduplicate and pass absolute guidance paths unchanged; children read the applicable Make or Review sections. A leaf selects its specialization plus the relevant core domains when invoked alone.

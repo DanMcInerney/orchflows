@@ -50,18 +50,18 @@ Sometimes the repeated failure is in the process: the maker prompt, tool choice,
 
 A harness experiment replaces an ordinary round. It runs the old and proposed procedures from matched starting artifacts on a known failure, a previously successful case and a fresh representative case. Adoption depends on the outputs they produce, required behavior they preserve and recorded cost. Accepted revisions become the instructions for later makers; later contradictory evidence can restore the predecessor. The caller's purpose, evaluation, promotion rules, budgets and checkpoint ownership remain fixed.
 
-## Bounds and agent counts
+## Search and confirmation
 
-[Evolve](skills/evolve/SKILL.md) coordinates in the caller and uses core `orch-work` for makers and `orch-review` for independent judges. There is no separate planning agent. Let `W` be challengers per ordinary round, default **1**.
+[Evolve](skills/evolve/SKILL.md) coordinates in the caller and uses core `orch-work` for makers and `orch-review` for independent judges. Staffing follows core execution rules. Let `W` be challengers per ordinary round, default **1**.
 
-| Work | Fresh children |
+| Work | Required process |
 | --- | --- |
-| Create a seed from a brief | 1 maker |
-| Ordinary metric round | W makers; 1 reviewer if a finalist reaches audit |
-| Ordinary subjective round | W makers; 1 judge per comparison, plus 1 fresh confirmation judge for each proposed winner |
-| Harness experiment with T test cases | 1 proposer + 2 makers per case, plus the applicable judging calls above |
+| Create a seed | Make an initial artifact from the brief |
+| Metric round | Produce challengers; independently audit a promising measured winner |
+| Subjective comparison | Independent preference plus a second fresh judgment in reversed order before promotion |
+| Harness experiment | Produce old/new outputs independently on matched test cases, then apply the same evaluation |
 
-Subjective tournaments may need further comparisons to choose among qualifying challengers, so their total is variable. Cheap rejections skip expensive confirmation. The coordinator records width, repetitions and per-experiment work limits before dispatch, including enough budget to confirm a possible winner.
+Subjective tournaments may need further comparisons to choose among qualifying challengers, so their total is variable. Cheap rejections skip expensive confirmation. The coordinator records width, repetitions and per-experiment work limits before dispatch, retaining the required confirmation before promotion.
 
 Absent supplied bounds, a run defaults to **three rounds**. An explicit continuous request removes the total round cap. After three informative rounds without a promotion, the workflow changes its approach, investigates the failure or tests a harness change; all attempted rounds and spent resources still count against caller bounds. Reaching a target stops the run only when the caller made it a stop condition.
 
@@ -94,7 +94,7 @@ python scripts/orchflows.py setup --example evolve
 
 Setup preserves an existing library copy. Register and install `evolve` from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup alone does not make the skill available by name.
 
-Requires orchflows 0.7.0+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
+Requires orchflows 0.10.0+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
 
 ## Evidence and lineage
 

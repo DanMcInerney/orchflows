@@ -8,6 +8,6 @@ Reuse or establish [library context](../../references/library-context.md). Accep
 
 Use `orchflows:orch-review` once with the resolved assessment guidance and evidence contract. Supply the question, scope, output requirements, remaining bounds, evidence, every collection outcome and a separate report location:
 
-> Apply the Review guidance to the supplied evidence without changing it or collecting more. Write the requested assessment in the report location. Work without child agents.
+> Apply the Review guidance to the supplied evidence without changing it or collecting more. Write the requested assessment in the report location.
 
-Await this reviewer and return its assessment.
+Return the independent assessor's complete assessment, including disagreements and gaps. Do not rewrite its substantive ranking, collect new evidence or add another review.

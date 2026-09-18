@@ -17,11 +17,11 @@ This is a handoff, not a new configuration format. Use plain Markdown and refere
 
 ## Evidence and checkpoint
 
-The coordinator owns `checkpoint.md`. Before each child or external mutation, record its stage, exact inputs, allocated call and intended operation. Afterward, save its result or interruption. Link the actual code, command results, CI runs, reviewer reports and telemetry; do not replace evidence with a green label.
+The coordinator owns `checkpoint.md`. Record stage inputs and resumable work at handoff; before an external mutation, record its exact inputs and intended operation. Afterward, save its result or interruption. Link the actual code, command results, CI runs, reviewer reports and telemetry; do not replace evidence with a green label.
 
 Record at least:
 
-- Request, resolved context, bounds, consumed calls/passes and first unfinished stage.
+- Request, resolved context, bounds, attempted passes and first unfinished stage.
 - Baseline and current candidate identities; use commits plus a patch/untracked-file manifest when needed, or an equivalent reproducible content snapshot.
 - Delivered artifact identity and verification evidence, including the reconstruction result when returning a complete patch, as defined in software-delivery guidance.
 - For each check/review: candidate identity, status, evidence and unresolved findings. Every reviewer sees the same frozen state.
@@ -29,7 +29,7 @@ Record at least:
 - Release artifact and operation identifier, rollout progress, observations, follow-up fingerprints and any external action already attempted.
 - Current result: in progress, blocked, ready for review/release, released and observed, observation incomplete, rolled back, or failed. A prepared release is not a deployed change.
 
-On resume, verify source, candidate, policy, authorization and external operation state before continuing the first unfinished stage. Reuse evidence only while its inputs remain valid. A source change invalidates dependent checks, reviews and approvals; use a remaining candidate pass or report that an extension is needed. Resuming never resets bounds. An interrupted call still counts. Reconcile an uncertain publish/deploy/rollback result before retrying; a timeout does not prove the action did not happen.
+On resume, verify source, candidate, policy, authorization and external operation state before continuing the first unfinished stage. Reuse evidence only while its inputs remain valid. A source change invalidates dependent checks, reviews and approvals; use a remaining candidate pass or report that an extension is needed. Resuming never resets bounds. Reconcile an uncertain publish/deploy/rollback result before retrying; a timeout does not prove the action did not happen.
 
 Do not overwrite newer caller work when returning changes. Verify the integration target against the preserved starting state, then apply the candidate if integration was requested. Integrating into a changed base requires new validation within the same bounds. External release uses only the validated artifact; a changed merge result must be checked again.
 

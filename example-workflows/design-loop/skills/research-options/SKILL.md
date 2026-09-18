@@ -4,7 +4,7 @@ description: Investigate bounded uncertainties in proposed project increments an
 disable-model-invocation: true
 ---
 
-Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, baseline and proposed options with questions; caller-supplied options work without brainstorm-options. Uses 1 fresh child.
+Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, baseline and proposed options with questions; caller-supplied options work without brainstorm-options.
 
 Unless the caller supplies tighter or broader bounds, use at most 3 focused lookup/search operations and 5 relevant sources per invocation. Inspect supplied/local material first, and use external sources when needed. A lookup can read documentation, project evidence or a public source. Record coverage and unresolved uncertainty.
 

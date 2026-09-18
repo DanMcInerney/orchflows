@@ -26,7 +26,7 @@ and a release plan. Save the handoff in delivery/csv-export.
 | A production window to inspect | Deduplicated signals and evidence-backed proposals for follow-up work |
 | An incident to investigate | A timeline, tested hypotheses, and ranked mitigation options |
 
-Delivery uses one builder and one to five reviewers per candidate pass. The default is three passes, with at most one additional release worker: **19 child calls maximum**, stopping earlier when the endpoint is reached. Production observation and incident investigation are separate, explicit one-worker workflows.
+Delivery defaults to three candidate passes, stopping earlier when the endpoint is reached. The orchestrator chooses staffing for implementation and independent review. Production observation and incident investigation remain separate, explicit workflows.
 
 ## The inspiration
 
@@ -55,12 +55,12 @@ The diagrams use the same positions, stages and feedback paths. Open either imag
 ## How a delivery runs
 
 1. **Define the outcome.** The coordinator reads the project, preserves the starting state and records acceptance checks, applicable review lenses and existing permissions.
-2. **Build.** One fresh `orch-work` child implements the change, updates relevant documentation and prepares the handoff and rollout plan.
-3. **Check the exact result.** The builder runs required tests, builds, CI and applicable performance checks. A delivered patch must also apply to its recorded clean baseline and reconstruct the candidate, including new files and deletions. The returned candidate is frozen for review.
+2. **Build.** Use `orch-work` for implementation, relevant documentation and the handoff and rollout plan, assigning ownership across the work.
+3. **Check the exact result.** Run required tests, builds, CI and applicable performance checks. A delivered patch must also apply to its recorded clean baseline and reconstruct the candidate, including new files and deletions. The integrated candidate is frozen for review.
 4. **Review independently.** Fresh `orch-review` children inspect that candidate in parallel. Correctness is mandatory; data, infrastructure, cloud and security are included when the affected surfaces call for them. They receive real project context and the same candidate identity.
-5. **Repair within the bound.** Failed checks or blocking findings go to a fresh builder on the next pass. Every revised candidate gets new required checks and applicable reviews. Running out of passes returns unresolved work; it never promotes a failed candidate.
+5. **Repair within the bound.** Failed checks or blocking findings inform the next implementation pass. Every revised candidate gets new required checks and applicable reviews. Running out of passes returns unresolved work; it never promotes a failed candidate.
 6. **Decide readiness.** Low risk can satisfy the review gate automatically only with explicit project opt-in. Other cases need human review of the concrete diff, check evidence, findings, risk and rollback plan. Missing required evidence still blocks readiness.
-7. **Release when requested and authorized.** A separate `orch-work` child receives the validated artifact. It verifies the actual published/merged inputs, baseline health, rollback path and stopping criteria, then advances through the project's rollout stages. A breach stops rollout; an already-authorized rollback is applied and recovery checked. Missing telemetry or an unfinished window cannot count as healthy.
+7. **Release when requested and authorized.** Assign release through `orch-work`, with one accountable owner for each external operation. Verify the actual published/merged inputs, baseline health, rollback path and stopping criteria, then advance through the project's rollout stages. A breach stops rollout; an already-authorized rollback is applied and recovery checked. Missing telemetry or an unfinished window cannot count as healthy.
 
 Build, validation and deployment are separate checkpoints with recorded evidence. The same builder can run implementation checks, but it cannot approve its own independent review or silently deploy. Approval for one candidate does not cover changed release inputs. The default endpoint is a validated change and release handoff; shipping requires the release stage's authority and capabilities.
 
@@ -72,13 +72,13 @@ This includes checking the actual saved patch bytes. A passing test suite in the
 
 ## Production feedback and bounds
 
-| Workflow | What it returns | Fresh children |
-| --- | --- | --- |
-| [software-factory](skills/software-factory/SKILL.md) | Checked change, reviews, risk decision and optional observed rollout | Per pass: 1 builder and 1–5 reviewers; optional 1 release worker per run |
-| [observe-production](skills/observe-production/SKILL.md) | Bounded telemetry comparison, deduplicated signals and proposed performance-fix briefs | 1 `orch-work` worker |
-| [investigate-incident](skills/investigate-incident/SKILL.md) | Incident timeline, evidence, answers and proposed or specifically authorized mitigation | 1 `orch-work` worker |
+| Workflow | What it returns |
+| --- | --- |
+| [software-factory](skills/software-factory/SKILL.md) | Checked change, reviews, risk decision and optional observed rollout |
+| [observe-production](skills/observe-production/SKILL.md) | Bounded telemetry comparison, deduplicated signals and proposed performance-fix briefs |
+| [investigate-incident](skills/investigate-incident/SKILL.md) | Incident timeline, evidence, answers and proposed or specifically authorized mitigation |
 
-Delivery defaults to `P=3` candidate passes, including the first attempt: at most `6P + 1` child calls, or 19 by default. It stops early when the requested endpoint is reached. An unavailable required capability or missing decision returns the checkpoint and gap.
+Delivery defaults to `P=3` candidate passes, including the first attempt. The orchestrator staffs implementation, applicable review coverage and any authorized release. It stops early when the requested endpoint is reached. A missing required capability or decision returns the checkpoint and gap.
 
 Observation and incident investigation are explicit invocations. Observation is read-only and proposes follow-up work; it does not automatically start a fix. Recurring observation requires a caller-requested host schedule. Incident investigation can perform a specifically authorized operation, but a request to investigate alone authorizes no mitigation. The package adds no daemon, scheduler, service adapters or production access.
 
@@ -156,4 +156,4 @@ Example requests:
 
 > Use software-factory:investigate-incident to investigate checkout errors between 14:00 and 14:20 UTC. Explain likely causes and rank possible mitigations.
 
-Supply an outcome and workspace, plus any chosen bounds, output directory, release target, project policy, domain guidance or model/effort preferences. Unspecified model settings stay with the host. Require Orchflows core 0.7.0+, native child delegation and the target project's build/check tools; CI hosting, deployment, flags and telemetry are needed only for stages that depend on them. See [library context](references/library-context.md), the [run contract](references/run-contract.md), [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md).
+Supply an outcome and workspace, plus any chosen bounds, output directory, release target, project policy, domain guidance or model/effort preferences. Unspecified model settings stay with the host. Require Orchflows core 0.10.0+, native child delegation and the target project's build/check tools; CI hosting, deployment, flags and telemetry are needed only for stages that depend on them. See [library context](references/library-context.md), the [run contract](references/run-contract.md), [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md).

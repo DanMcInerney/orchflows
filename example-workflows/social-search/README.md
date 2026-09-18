@@ -39,19 +39,19 @@ flowchart LR
     R1 --> E[Evidence and coverage gaps]
     R2 --> E
     RN --> E
-    E --> J[Fresh reviewer ranks evidence]
+    E --> J[Independent review ranks evidence]
     J --> O[Cited assessment]
 ```
 
-**N collection assignments use N workers and one reviewer.** Collection runs through `search-site` → `orch-work`; assessment runs through `rank-evidence` → `orch-review`. The coordinator gathers every outcome before review. A total time limit includes collection, handoff, and assessment.
+The orchestrator chooses collection assignments. Collection runs through `search-site` → `orch-work`; one independent assessor runs through `rank-evidence` → `orch-review` with whole-result coverage. Gather actual outcomes before assessment. Caller time limits include collection, handoff and assessment.
 
 Already have evidence? Supply it and collect only what's missing, or invoke the assessment leaf directly. The reviewer assesses the supplied material without collecting more or changing it.
 
-| Entrypoint | Use it for | Fresh children |
-| --- | --- | --- |
-| [social-search](skills/social-search/SKILL.md) | Collect and assess a bounded question | N workers + 1 reviewer |
-| [search-site](skills/search-site/SKILL.md) | Collect one source assignment | 1 worker |
-| [rank-evidence](skills/rank-evidence/SKILL.md) | Assess evidence you already have | 1 reviewer |
+| Entrypoint | Use it for |
+| --- | --- |
+| [social-search](skills/social-search/SKILL.md) | Collect and assess a bounded question |
+| [search-site](skills/search-site/SKILL.md) | Collect one source assignment |
+| [rank-evidence](skills/rank-evidence/SKILL.md) | Assess evidence you already have |
 
 ## What you get
 
@@ -71,7 +71,7 @@ Register the home and install core plus `social-search` for your host using core
 
 All three skills are manual-only by default. Invoke `$social-search:social-search` in Codex or `/social-search:social-search` in Claude Code; substitute the leaf name to use it alone.
 
-Requires Orchflows 0.7.0+, native child delegation, and public search/read tools. Optional `python scripts/orchflows.py setup --example research-acquire` adds acquisition tools and a YouTube transcript reader; install that library with your host too. It owns its dependencies and routes, and its generic feed support requires version 0.4.0+. Setup installs no library runtime dependencies.
+Requires Orchflows 0.10.0+, native child delegation, and public search/read tools. Optional `python scripts/orchflows.py setup --example research-acquire` adds acquisition tools and a YouTube transcript reader; install that library with your host too. It owns its dependencies and routes, and its generic feed support requires version 0.4.0+. Setup installs no library runtime dependencies.
 
 ## Make it yours
 

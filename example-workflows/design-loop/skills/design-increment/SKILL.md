@@ -4,7 +4,7 @@ description: Turn a project goal, options and research into one scoped implement
 disable-model-invocation: true
 ---
 
-Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, baseline, options and research evidence, plus any prior observations; equivalent caller-supplied material is sufficient. Uses 1 fresh child.
+Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, baseline, options and research evidence, plus any prior observations; equivalent caller-supplied material is sufficient.
 
 Invoke core `orch-work` for the named assignment `design-increment` with these inputs and resolved Make guidance. Ask it to select one coherent increment, explain the decision and rejected alternatives, and specify changed behavior, boundaries, implementation outline, risks and required dependencies. The first cycle must target a minimum working PoC from the actual baseline.
 

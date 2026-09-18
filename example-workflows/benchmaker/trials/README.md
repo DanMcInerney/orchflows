@@ -12,8 +12,23 @@ Run each request in a fresh workspace using the packaged skill, resolved core/gu
 | [Description only](description-only/request.md) | Useful provisional package without invented execution | Observed locally, 2026-09-16; bounded development validation |
 | [Substantial research](substantial-research/request.md) | Staged acceptance, evidence decisions, outcome credit and semantic-calibration gaps | 0.2.0 observed locally, 2026-09-16; two development cases, one native target; semantic-control gate incomplete |
 | [Substantial stateful work](substantial-stateful/request.md) | Interacting recovery work, feasible alternatives, partial outcomes and honest synthetic provenance | 0.2.0 observed locally, 2026-09-16; two synthetic variants, one native tool episode; difficulty uncalibrated |
+| [Shared revision](shared-revision/request.md) | Ordinary authoring, public-only pilot, shared review, one repair and preserved target evidence | 0.3.0 observed locally, 2026-09-17; one synthetic group, two native repetitions; machinery prototype |
 
 These specifications are not evidence that a run occurred. A bounded trial can expose defects and validate the observed behavior; completing one does not establish cross-domain acceptance. See each scenario's sibling `expected-behavior.md` for its observable checks.
+
+## Core 0.10.0 / Benchmaker 0.4.x observations, 2026-09-17
+
+The 0.4.0 compact reconciliation run preserved root-only dispatch and staged public-answer disclosure, but failed the workflow: it repaired before a separate final review and made five target launches against a two-launch, no-retry plan. The controller stopped it. Target setup/delivery failures and an overwritten audit score remain recorded; this run establishes no eligible target-performance result.
+
+Version 0.4.1 makes the separate review and failed-attempt accounting explicit. A fresh top-level continuation received the interrupted package with zero remaining target budget. It launched no targets, obtained an independent package review before one local repair, versioned the delivered scorer and passed affected controls, preflight and safe summarization. Both planned quality units remain unscored. This tests the continuation, not a complete new authoring/pilot run or cross-domain acceptance. Raw failures, identities, review, repair and native dispatch audit are preserved locally under `reports/flat-orchestration-20260917/` and the isolated trial directories identified there.
+
+## Historical 0.3.0 shared composition replay
+
+The 0.3.0 replay authored an invoice/credit reconciliation benchmark from an ordinary request. Two actual fresh native representatives completed public-input solves within 162 seconds each, under the requested five-minute limits. The pilot answer was saved before evaluator disclosure to the same worker. One independent shared review confirmed correct answers and three grader/runner repair causes. One repair pass produced a new identity, passed 40 controls and explicitly rescored the unchanged answers as two full successes. Original failures and reviewed definitions remain preserved; no extra measurement or second review occurred. The revision has affected verification, not independent acceptance.
+
+This was one synthetic case/group with two repetitions, not a calibrated population sample. Deadline cancellation, protected evaluator access, billing termination and semantic generalization remain unestablished. Benchmaker and 19 of its 20 recorded dependency files matched the then-final 0.3.0 sources; the frozen shared 0.2.0 review step still prohibited reviewer delegation and preceded the explicit review-round wording. Separate shared 0.2.0 component trials covered that wording. The integration was exercised, but broader adaptive staffing was not. Reports, source identities, native transcripts, disclosure timing and repair checks are retained locally at the authoring checkout's `reports/native-composition-trials/benchmaker-replay/`.
+
+## Earlier observations
 
 The description-only trial produced a four-case Python-standard-library scheduling package. All 16 declared control outcomes matched; two public-input answers were saved before reference disclosure and independently confirmed valid. One pilot and one reviewer were used. Three runner/test defects were repaired in one pass; seven final harness checks passed both in place and from a standalone copy. Cases and scorer were unchanged by repair; the original control evidence was preserved. Target/representative executions and target scores were zero. Explanation judgments are not calibrated, and actual target integration remains untested.
 

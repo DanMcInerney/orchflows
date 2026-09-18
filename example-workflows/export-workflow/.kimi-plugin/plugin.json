@@ -1,6 +1,6 @@
 {
   "name": "export-workflow",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Export Orchflows workflows as standalone native skills with bounded trials and portability reports.",
   "skills": "./skills/"
 }

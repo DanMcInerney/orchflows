@@ -84,22 +84,22 @@ The failure branch applies to any failed stage; failures and skipped work remain
 
 ## Reusable workflows
 
-| Workflow | Responsibility | Fresh children per call |
-| --- | --- | --- |
-| [design-loop](skills/design-loop/SKILL.md) | Coordinate bounded cycles, checkpoints and adoption decisions. | At most 6N through components |
-| [brainstorm-research](skills/brainstorm-research/SKILL.md) | Compose brainstorming and research in sequence. | 2 through its leaves |
-| [brainstorm-options](skills/brainstorm-options/SKILL.md) | Propose scoped increments and uncertainties. | 1 via `orch-work` |
-| [research-options](skills/research-options/SKILL.md) | Investigate uncertainties and return decision evidence. | 1 via `orch-work` |
-| [design-increment](skills/design-increment/SKILL.md) | Define scope, acceptance criteria and comparison plan. | 1 via `orch-work` |
-| [implement-increment](skills/implement-increment/SKILL.md) | Build an isolated, reproducible candidate. | 1 via `orch-work` |
-| [test-increment](skills/test-increment/SKILL.md) | Independently compare baseline and candidate without repairs. | 1 via `orch-review` |
-| [analyze-iteration](skills/analyze-iteration/SKILL.md) | Recommend adopt/retain and inform the next brainstorm. | 1 via `orch-work` |
+| Workflow | Responsibility |
+| --- | --- |
+| [design-loop](skills/design-loop/SKILL.md) | Coordinate bounded cycles, checkpoints and adoption decisions. |
+| [brainstorm-research](skills/brainstorm-research/SKILL.md) | Compose brainstorming and research in sequence. |
+| [brainstorm-options](skills/brainstorm-options/SKILL.md) | Propose scoped increments and uncertainties. |
+| [research-options](skills/research-options/SKILL.md) | Investigate uncertainties and return decision evidence. |
+| [design-increment](skills/design-increment/SKILL.md) | Define scope, acceptance criteria and comparison plan. |
+| [implement-increment](skills/implement-increment/SKILL.md) | Build an isolated, reproducible candidate. |
+| [test-increment](skills/test-increment/SKILL.md) | Independently compare baseline and candidate without repairs. |
+| [analyze-iteration](skills/analyze-iteration/SKILL.md) | Recommend adopt/retain and inform the next brainstorm. |
 
-A full cycle uses six fresh children. Composers run in the caller and add none; there is no extra final review or hidden repair loop. `N` counts attempted cycles, including the first PoC and failed attempts, and defaults to 3. A run uses at most 6N child calls, including interrupted calls and replacements.
+The orchestrator chooses assignments for the six stages. Composers run in the caller; there is no extra final review or hidden repair loop. `N` counts attempted cycles, including the first PoC and failed attempts, and defaults to 3.
 
 The loop runs through N unless the caller stops, a stated resource bound is reached, required capability or authorization is missing, or the caller explicitly chose stop-on-goal. Goal attainment alone does not shorten the run. Adoption requires evidence that the increment meets its acceptance criteria and preserves required existing behavior. Otherwise the accepted baseline remains in place, and the next brainstorm receives the observations.
 
-Research defaults to at most three focused lookup/search operations and five relevant sources per invocation, starting with supplied or local material. The caller can change those bounds. A paused cycle resumes its first unfinished stage after checking state identities and remaining budget; resuming does not silently add attempts or child calls.
+Research defaults to at most three focused lookup/search operations and five relevant sources per invocation, starting with supplied or local material. The caller can change those bounds. A paused cycle resumes its first unfinished stage after checking state identities and remaining budget; resuming does not silently add attempts or reset caller constraints.
 
 ## What you get back
 
@@ -116,8 +116,8 @@ python scripts/orchflows.py setup --example design-loop
 
 Setup copies each example into the Orchflows home and preserves existing library copies. Register and install both packages from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup does not install transitive dependencies or project tools. Copying alone does not establish native availability.
 
-- Orchflows core `orchflows` 0.8.0+ with `orch-work`, `orch-review` and a host supporting native child delegation.
-- `shared` 0.1.0+ for `compare-candidates`, used by `test-increment` with the same one-reviewer allocation. Full cycles require it; unrelated standalone leaves do not.
+- Orchflows core `orchflows` 0.10.0+ with `orch-work`, `orch-review` and a host supporting native child delegation.
+- `shared` 0.3.0+ for `compare-candidates`, used by `test-increment` in one independent comparison round. Full cycles require it; unrelated standalone leaves do not.
 - Task-specific tools for research, implementation, inspection and testing, plus reproducible state snapshots. The example bundles no project runtime or research service.
 - This library's [design-iteration guidance](guidance/design-iteration.md), combined with caller-selected task domains as described in [library context](references/library-context.md).
 

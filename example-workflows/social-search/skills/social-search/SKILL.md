@@ -16,4 +16,4 @@ Gather every assignment's actual outcome by its handoff deadline; stop unfinishe
 
 Invoke [rank-evidence](../rank-evidence/SKILL.md) once with the question, all supplied and returned evidence and gaps, remaining bounds and report location.
 
-Return the assessment. For N assignments, the workflow uses N workers and one reviewer.
+Return the gathered assessment, actual coverage and gaps.
