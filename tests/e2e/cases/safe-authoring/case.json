@@ -1,0 +1,13 @@
+{
+  "packages": [
+    "orchflows"
+  ],
+  "covers": [
+    "synthetic-trials",
+    "simulated-effects"
+  ],
+  "timeout_seconds": 300,
+  "requires": [
+    "independent-review"
+  ]
+}

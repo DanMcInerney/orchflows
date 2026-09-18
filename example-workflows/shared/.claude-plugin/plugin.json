@@ -1,0 +1,9 @@
+{
+  "name": "shared",
+  "version": "0.5.1",
+  "description": "Reusable independent comparison of stable candidates.",
+  "author": {
+    "name": "orchflows"
+  },
+  "skills": "./skills/"
+}

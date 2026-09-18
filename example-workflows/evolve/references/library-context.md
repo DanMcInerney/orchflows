@@ -1,7 +1,7 @@
 # Library context
 
-Resolve core `orch-work`, `orch-review` and guidance once through native skills, supplied package roots or core's `resolve` CLI. Core `docs/architecture.md` owns guidance selection and `docs/hosts.md` owns isolation. Include this library and caller-selected libraries in supplied order.
+Require Orchflows `orchflows` 0.12.0+ and apply core `docs/architecture.md`. Resolve components/guidance through native skills, supplied roots or core's `resolve` CLI; reuse paths. Independent judgment needs `orch-review`; harness experiments need their declared fresh execution capabilities.
 
-Select guidance for the target: for example `code`, `visual-design` or `writing`; add `orchflows` when changing a workflow. No single artifact domain is required. Pass absolute primitive and guidance paths, target state, brief, capabilities and run directory to children. Makers apply Make; reviewers apply Review. New artifact types may extend the resolved context.
+Select this library's `evolve`, caller guidance and target domains, such as `code`, `visual-design` or `writing`; add `orchflows` for workflow authoring. Preserve supplied library order. Withhold reserved evaluation inputs from makers.
 
-Keep run outputs in the caller's workspace, never inside an installed library. Missing native delegation blocks execution. Missing creation or inspection capabilities block dependent work; absence of a numeric metric does not.
+Keep outputs in the caller workspace. Missing creation, inspection or independent execution blocks dependent work; a missing numeric metric does not. Evaluation, state and harness contracts are required process.

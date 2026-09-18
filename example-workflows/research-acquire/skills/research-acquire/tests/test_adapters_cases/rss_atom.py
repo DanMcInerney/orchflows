@@ -15,7 +15,7 @@ def rss_atom_cases():
 
 
 def syndication_request(channel_id=FEED_CHANNEL_ID):
-    return adapters.AdapterRequest(step_id="s1-rss", target_ids=(channel_id,))
+    return adapters.AdapterRequest(step_id="s1-rss", target_ids=("https://www.youtube.com/feeds/videos.xml?channel_id=" + channel_id,))
 
 
 def rss_atom_page(fixture, status=200, channel_id=FEED_CHANNEL_ID, module=None):
@@ -35,7 +35,7 @@ def rss_atom_page(fixture, status=200, channel_id=FEED_CHANNEL_ID, module=None):
 
 
 class RssAtomReaderTest(unittest.TestCase):
-    """RSS/Atom parsing and compatibility with the original YouTube feed route."""
+    """RSS/Atom parsing and the explicit YouTube feed route."""
 
     def test_an_atom_feed_yields_the_entries_it_listed(self):
         page, opener = rss_atom_page("youtube_channel_feed.xml")
@@ -184,7 +184,7 @@ class RssAtomReaderTest(unittest.TestCase):
         )
 
         rss_atom.fetch_native_page(
-            carrier, adapters.AdapterRequest(step_id="s1", query=FEED_CHANNEL_ID)
+            carrier, adapters.AdapterRequest(step_id="s1", query="https://www.youtube.com/feeds/videos.xml?channel_id=" + FEED_CHANNEL_ID)
         )
 
         self.assertIn("channel_id=" + FEED_CHANNEL_ID, opener.opened[0].url)
@@ -206,7 +206,7 @@ class RssAtomReaderTest(unittest.TestCase):
 
 
 class RssAtomDescriptorTest(unittest.TestCase):
-    """Legacy pacing and the shared route for caller-supplied feeds."""
+    """Measured pacing and routes for caller-supplied feeds."""
 
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
         budget = runner.route_budgets()[transport.YOUTUBE_CHANNEL_FEED_ROUTE]

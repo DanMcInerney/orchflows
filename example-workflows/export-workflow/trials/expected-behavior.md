@@ -1,11 +1,11 @@
 # Trial acceptance
 
-Inspect delivered files and native execution evidence, including actual tool arguments and outcomes. Record the source revision or hashes, available prerequisites, author preparation, interventions and untested paths.
+Inspect delivered files and native tool arguments/outcomes. Record source revision/hashes, prerequisites, fixtures, preparation, interventions, simulated effects and untested branches under core's workflow-trial contract.
 
-- The example resolves core resources from its declared package roots after installation outside the checkout. Its links stay within the example package; it does not depend on a sibling core directory.
-- The standalone folder works when relocated away from the source and Orchflows home. Every required local dependency is bundled, both host invocation policies survive, and external prerequisites are stated.
-- Source scopes and runtime inputs remain configurable. Social-search retains its supported guidance specializations, evidence contract, native collectors and one independent evidence reviewer. No additional runtime children appear without a caller request.
-- Live retrieval includes real discovery and inspection, rather than snippet-only claims or fixtures. Search/read limits, dates, engagement provenance, counterevidence, canonical deduplication and missing assignments survive the handoff.
-- A fresh export reviewer compares source behavior with actual trial evidence. At most one repair pass and one affected retrial occur; missing capabilities remain disclosed rather than silently adapted.
-- The explicitly requested original-workflow run receives the same brief and bounds without the export's results. Compare behavior and support, allowing normal research variation; distinguish conversion defects from access gaps and sampling limits.
-- Exports and reports stay outside packages. The report identifies changes, dependencies, observed behavior and limits; untested installation, other hosts or other sites are not claimed as validated.
+- Resolve core from declared roots outside the checkout; package links stay local without assuming sibling core.
+- The relocated export needs no source/home. Bundle required local dependencies, preserve both invocation policies and declare external prerequisites.
+- Keep source scopes/runtime inputs configurable. Social-search retains guidance specializations, evidence contract, native collectors and one independent assessor returning completed evidence assessment.
+- Synthetic retrieval exercises discovery, primary-source/reply inspection, per-target limits, dates, engagement provenance, counterevidence, canonical deduplication and missing assignments. Label simulated outputs; claim no live integration.
+- A fresh top-level session coordinates the export; audit launches, assignments and continuations. Finish trial judgments before export review. A fresh reviewer compares source fidelity and actual evidence; allow one repair pass and one affected retrial, with gaps disclosed.
+- The requested original-workflow comparison receives identical fixtures/brief/bounds, no export findings. Distinguish conversion defects, fake-service limitations and valid sampling differences.
+- Verify read-only references unchanged and effects captured. Reports/outputs stay outside packages and installable exports. Report changes, dependencies, observed behavior and limits without claiming untested installation, hosts or sites.

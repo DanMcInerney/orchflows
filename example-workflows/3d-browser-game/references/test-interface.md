@@ -1,53 +1,53 @@
 # Agent-playable test interface
 
-Implement this contract in the generated game when building its foundation. Adapt names to an established project, document the mapping and keep one owner. It is not a requirement to install a particular browser driver. Follow the host browser skill: supported UI interaction always works as the baseline, and page evaluation is used only where the tool permits it.
+Implement with the foundation. Adapt names to an existing project, document their mapping and keep one owner. Follow the host browser skill: supported UI is the baseline; use page evaluation only when permitted. No particular driver is required.
 
-## Three forms of evidence
+## Evidence modes
 
-| Mode | Control and observation | Establishes |
+| Mode | Controls/observations | Establishes |
 | --- | --- | --- |
-| Ordinary play | Public start/menu, keyboard/pointer/touch, visible game feedback | Actual reachability, usability and player experience |
-| Assisted play | Same rules, explicit slow/step mode or semantic action controls, captures after actions | Tactical reasoning and diagnosis, with timing assistance disclosed |
-| Scenario/regression | Seed, legal starting fixture, bounded actions and assertions | Reproducible rule/state coverage; not evidence that a player can reach the fixture |
+| Ordinary | Public menus, keyboard/pointer/touch, visible feedback | Reachability, usability, player experience |
+| Assisted | Same rules, explicit slow/step or semantic actions, action captures | Tactical reasoning/diagnosis with disclosed timing assistance |
+| Scenario/regression | Seed, legal fixture, bounded actions/assertions | Reproducible rule/state coverage, not fixture reachability |
 
-Complete at least one start–play–outcome–retry path through ordinary input for a full game. Use assisted sessions when the browser tool cannot reliably perform an action, but keep any untested real-time control claim unverified. Never teleport to an ending and describe it as a played win.
+A full game needs an ordinary-input start–play–outcome–retry path. Use assistance for actions tools cannot reliably perform; untested real-time controls remain unverified. Teleporting to an ending is not a played win.
 
-## Public controls first
+## Public controls
 
-Provide usable instructions and named start, pause/resume, restart and settings controls as appropriate. Make canvas focus intentional and give the canvas an accessible name. Expose key UI states through DOM text/roles where practical; essential cues still need to be visible during normal play. A DOM HUD can describe health/objective/cooldowns without revealing hidden enemies or a puzzle solution.
+Provide instructions and named start, pause/resume, restart and settings as applicable. Make canvas focus intentional and name it accessibly. Expose useful UI text/roles while preserving visible essential cues; DOM health/objective/cooldowns must not reveal hidden enemies or solutions.
 
-At the capability probe, prove press-and-release, a held movement/action, mouse or camera input and pause/resume with the actual browser tools. If pointer lock is unsupported, provide a development look panel or equivalent supported action path and document what ordinary camera testing remains unavailable. Do not change an FPS into a different genre to accommodate a tool limitation.
+Probe actual press/release, held action/movement, mouse/camera and pause/resume. If pointer lock is unsupported, provide a development look panel or supported equivalent and identify missing ordinary camera tests. Do not change genre to fit tool limitations.
 
-## Development controls
+## Development adapter
 
-Implement a small versioned adapter, for example `window.__gameTest`, only in a local development/test build. Also expose its operations as labeled DOM controls when programmatic calls are unavailable. The DOM panel must be sufficient to select a scenario/seed, reset, release inputs, choose live/manual mode, issue a legal action, advance a bounded number of ticks and read status. Both adapters call the same functions; neither owns a second simulation.
+Provide a small versioned adapter, e.g. `window.__gameTest`, only in local development/test builds. When programmatic calls are unavailable, expose equivalent labeled DOM controls. Both call the same functions, never a second simulation. The panel must select scenario/seed, reset/release inputs, select live/manual mode, issue legal actions, advance bounded ticks and show status.
 
-| Operation | Semantics |
+| Operation | Contract |
 | --- | --- |
-| `describe()` | Adapter version, supported actions and ranges, coordinate units, scenarios, fixed tick duration, build ID and readiness/error state |
-| `snapshot()` | Serializable copy of the current observable state; no live object references or setters |
-| `reset({seed, scenario})` | Clear queued/held input, timers, entities, outcome, random state and transient UI; load a known legal fixture and render it |
-| `setMode('live' \| 'manual')` | Explicitly choose the clock owner; switching clears accumulated time and pending held input |
-| `act(action)` | Queue a validated semantic input through the ordinary action dispatcher, with explicit press/release or bounded duration |
-| `step(ticks)` | In manual mode only, advance an integer in a documented safe range, then render; fail in live mode |
-| `releaseAll()` | Clear held actions, including after test failure, blur or session cleanup |
+| `describe()` | Version, actions/ranges, coordinate units, scenarios, fixed tick duration, build ID, readiness/errors |
+| `snapshot()` | Serializable observable-state copy; no live references/setters |
+| `reset({seed, scenario})` | Clear queued/held input, timers, entities, outcome, random state and transient UI; load/render a legal fixture |
+| `setMode('live' \| 'manual')` | Choose clock owner; clear accumulated time and pending held input |
+| `act(action)` | Validate/queue semantic input through ordinary dispatch with press/release or bounded duration |
+| `step(ticks)` | Manual only: advance an integer in a documented safe range and render; fail in live mode |
+| `releaseAll()` | Clear held actions after failure, blur or cleanup |
 
-`reset` and asset readiness may be asynchronous. Expose loading/ready/error status and wait for completion before accepting actions or stepping. Bound durations and validate names/numbers to reject invalid work rather than hanging the browser. Pausing and stepping must have documented semantics: the adapter may set manual simulation mode, but must not accidentally bypass a player's paused-menu state or an ended session.
+Expose asynchronous reset/asset loading as loading/ready/error; wait before actions/steps. Validate names/numbers and bound durations. Document pause/step semantics; manual mode must not accidentally bypass paused menus or ended sessions.
 
-A useful snapshot contains build/scenario/seed/tick, mode and phase, player transform/velocity, currently visible entities with stable IDs and useful states, objective progress, resources/cooldowns, current input intent, recent events, and load/error status. Define position axes and units. Keep diagnostic information that reveals hidden state separately labeled, and do not use it for an uncoached or player-equivalent play claim. Have an event tail such as interaction accepted/rejected, resource spent, damage/setback, objective completed and session ended so silent bugs have an explanation.
+Snapshots include build/scenario/seed/tick, mode/phase, player transform/velocity, visible entities with stable IDs/states, objectives, resources/cooldowns, input intent, recent events and loading/errors. Define axes/units. Label hidden diagnostics separately and exclude them from uncoached/player-equivalent claims. Include event tails for accepted/rejected interactions, spending, setbacks, objectives and session end to explain silent bugs.
 
-Record scenarios as data using the real simulation initializer. A fixture can begin at a late-game situation for QA, but the same rule system must decide collisions, opponent responses and outcomes. Preserve an ordinary path through the actual level progression. If complete deterministic replay is infeasible, use stable seeds and approximate assertions with recorded tolerances; do not promise bitwise agreement across machines.
+Store scenarios as data for the real initializer. Late-game fixtures still use normal collision, opponents and outcomes; preserve ordinary progression. If exact replay is infeasible, use stable seeds and recorded assertion tolerances, not promises of cross-machine bitwise agreement.
 
-## Production and adapter verification
+## Production and verification
 
-The normal release keeps public controls and omits state-changing development hooks, fixture menus and overlays. If using a separate test build, generate both from the same source/configuration for gameplay and assets; only diagnostics differ. Record both identities. An opt-in URL alone is not a production isolation boundary if cheats must be absent from the release. Final ordinary play and performance run on the actual production candidate.
+Release builds retain public controls and omit state-changing hooks, fixture menus and overlays. Test builds share gameplay/asset source and configuration; only diagnostics differ. Record both identities. An opt-in URL alone cannot isolate production cheats. Final ordinary play and performance use the actual production candidate.
 
-Verify the interface before relying on it:
+Verify behavior with the project's available runner:
 
-1. Reset the same scenario/seed twice, apply the same bounded actions and compare observable outcomes within the declared tolerance.
-2. Hold manual mode without stepping and confirm simulation tick/state do not advance; step a known number and confirm exactly that advance and a changed render when the action calls for it.
-3. Trigger a representative action with ordinary browser input and the adapter from the same starting state. Confirm the same rule/event outcomes, accounting for live timing.
-4. Trigger blur/pause/restart and confirm held input is cleared, only one loop remains and a new session has fresh state.
-5. Verify the production build boots with required assets and its ordinary controls work with diagnostic hooks/panel absent.
+1. Reset the same seed/scenario twice; compare identical bounded actions within declared tolerances.
+2. Hold manual mode without stepping: ticks/state must remain fixed. Step a known count: exactly that advance and an appropriately changed render must follow.
+3. Compare ordinary browser input and adapter actions from the same state; rule/events must match, allowing live timing.
+4. Blur/pause/restart must clear held input, retain one loop and create fresh session state.
+5. Production must boot with required assets and ordinary controls, without diagnostics.
 
-These checks belong in the generated project using its available test runner. They validate actual behavior, not merely that named functions exist. Browser input semantics and supported actions depend on the driver; consult its [official input documentation](https://playwright.dev/docs/input) when using standalone Playwright, and the host's own documented API when using an in-app browser.
+Function existence alone proves none of this. Use [official Playwright input docs](https://playwright.dev/docs/input) for standalone Playwright or the host's documented in-app API.

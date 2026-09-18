@@ -1,38 +1,35 @@
-# Acceptance trials
+# Test the benchmark before trusting the score
 
-Run each request in a fresh workspace using the packaged skill, resolved core/guidance and only the request's raw inputs. Withhold the authoring conversation and expected-behavior file from the executing author. The evaluator uses expected behavior afterward. Save generated packages, native child identities, commands, outputs, timings and findings in the caller workspace, outside this library.
+A runnable benchmark can still reward the wrong thing. These manual scenarios probe whether Benchmaker produces useful tasks, valid graders and an honest account of what was measured.
 
-| Scenario | Focus | Status |
-| --- | --- | --- |
-| [Research](research/request.md) | Distinct source-grounded tasks, native execution, supported alternatives | Observed locally, 2026-09-16; synthetic corpus, three representative native executions |
-| [Stateful planning](stateful-planning/request.md) | Reset, valid actions, preservation and explanations | Observed locally, 2026-09-16; three native tool episodes, two overlapping |
-| [Artifacts](artifacts/request.md) | Actual modality inspection and unavailable judgments | Specified; not run |
-| [Coding](coding/request.md) | Real workflow invocation and delivered behavior | Specified; not run |
-| [Unreliable adapter](unreliable-adapter/request.md) | Overlap, cleanup, durable partial results, retries/resume | Persistence boundaries exercised locally; full command/fault battery untested |
-| [Description only](description-only/request.md) | Useful provisional package without invented execution | Observed locally, 2026-09-16; bounded development validation |
-| [Substantial research](substantial-research/request.md) | Staged acceptance, evidence decisions, outcome credit and semantic-calibration gaps | 0.2.0 observed locally, 2026-09-16; two development cases, one native target; semantic-control gate incomplete |
-| [Substantial stateful work](substantial-stateful/request.md) | Interacting recovery work, feasible alternatives, partial outcomes and honest synthetic provenance | 0.2.0 observed locally, 2026-09-16; two synthetic variants, one native tool episode; difficulty uncalibrated |
+| Scenario | What it probes |
+| --- | --- |
+| [Research](research/request.md) | Distinct source-grounded tasks, native execution and valid alternatives |
+| [Stateful planning](stateful-planning/request.md) | Reset, valid actions, preservation and explanations |
+| [Artifacts](artifacts/request.md) | Actual modality inspection and unavailable judgments |
+| [Coding](coding/request.md) | Real workflow invocation and delivered behavior |
+| [Unreliable adapter](unreliable-adapter/request.md) | Overlap, cleanup, durable partial results and retry/resume |
+| [Description only](description-only/request.md) | A useful provisional package without invented execution |
+| [Substantial research](substantial-research/request.md) | Staged acceptance, evidence decisions, outcome credit and calibration gaps |
+| [Substantial stateful work](substantial-stateful/request.md) | Recovery, feasible alternatives, partial outcomes and synthetic provenance |
+| [Review and revision](shared-revision/request.md) | Public-only pilot, separate review, one repair and preserved target evidence |
 
-These specifications are not evidence that a run occurred. A bounded trial can expose defects and validate the observed behavior; completing one does not establish cross-domain acceptance. See each scenario's sibling `expected-behavior.md` for its observable checks.
+```mermaid
+flowchart TB
+    I[Request + raw inputs] --> B[Build benchmark in a fresh session]
+    B --> P[Preserve package and pilot evidence]
+    P --> E[Assess against private expectations]
+    E --> R[Observed behavior + untested branches]
+    classDef make fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
+    classDef evidence fill:#ecfdf5,stroke:#059669,color:#064e3b;
+    classDef review fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95;
+    class I,B make;
+    class P evidence;
+    class E,R review;
+```
 
-The description-only trial produced a four-case Python-standard-library scheduling package. All 16 declared control outcomes matched; two public-input answers were saved before reference disclosure and independently confirmed valid. One pilot and one reviewer were used. Three runner/test defects were repaired in one pass; seven final harness checks passed both in place and from a standalone copy. Cases and scorer were unchanged by repair; the original control evidence was preserved. Target/representative executions and target scores were zero. Explanation judgments are not calibrated, and actual target integration remains untested.
+Run a request in a fresh workspace using the complete library, resolved core/guidance and only its raw inputs. Withhold the authoring conversation and sibling `expected-behavior.md` from the executing author. An independent evaluator uses those expectations afterward. Save packages, native identities, commands, outputs, timings and findings outside this library.
 
-The separate library review found that public-input audit instructions needed to explicitly exclude inherited authoring history. That instruction was repaired to require the no-history context and staged disclosure already used successfully in the trial. At that stage, no post-repair native library replay had been performed. Local evidence is in the authoring workspace at `artifacts/benchmaker/2026-09-16/`, including `VALIDATION.md` and `description-only/TRIAL-REPORT.md`; it is not bundled with the installable library.
+These folders have no `case.json` and are not discovered by the automated E2E runner. They specify coverage to exercise; they do not establish execution or cross-domain acceptance.
 
-## Two native development trials
-
-The later 0.1.0 replay generated five research cases over ten clearly synthetic documents and five reservation cases using a resettable service. Two fresh authors each completed a sealed public-only audit, one independent review and one repair. Three fresh native representatives per trial completed within five-minute target windows; all six provisionally passed their measured criteria. Only three of five cases in each suite were measured, with no holdout or population claim. The two feasible reservation episodes overlapped for 59.712 seconds with separate state and preserved unrelated bookings. Research used a named corpus-synthesis representative, not the live-acquisition workflow.
-
-Independent challenges and reviews exposed accepted foreign or changed records, invalid delivered state excluded as a grader error, forbidden intermediate changes, budget/failure-transition weaknesses, and one mandatory rubric requirement absent from its public task. The generated packages were repaired under new identities and saved native outputs were explicitly rescored, without more target launches. Final reservation checks passed 17 controls and 11 regressions; research passed its focused checks and seven control labels, with its new omission control labeled author-adjudicated. Semantic judgment remains provisional, and two inconsistent coordinator dimension judgments were corrected separately without changing their binary outcomes.
-
-These observations motivated 0.1.1's persisted-record validation, failure-classification, public-task alignment and pilot boundary-check instructions. At that point, those source corrections had not had another fresh native authoring replay. Owned-child cleanup, transient retry, live interruption recovery, protected evaluator access and broader generalization remained untested. The two reports, original failures, package snapshots and native traces are retained locally under `artifacts/benchmaker/2026-09-16-native-trials/`; generated evidence is not bundled with this library.
-
-## Quality-profile replays
-
-Two fresh 0.2.0 authors produced a research decision package and a synthetic scheduling-recovery package, two development cases each. Both retained the larger calibrated-pilot request and missing gates, grouped related cases honestly, defined weighted useful-outcome credit separately from full success and critical failures, and used a public-only audit before reference disclosure. One native target per package completed within its ten-minute budget; both saved outputs provisionally earned full success and credit 1.0. Native metadata later confirmed gpt-6-astra/xhigh; original frozen unknown settings remain intact with supplemental observations. These two observations establish no challenge calibration, source diversity or unseen performance.
-
-The replays exercised the 0.1.1 instructions and exposed recurring implementation failures: research accepted positive scores on ineligible execution statuses, while stateful grading crashed on nested malformed state and trusted altered saved scores. Independent reviews confirmed the findings. Each generated package received one repair pass under version 0.1.1/scorer 1.0.1, retaining initial candidates and evidence. Research passed 16 affected checks through one fresh worker; stateful passed 51 CLI command checks and rechecked 14 controls, with 16 separate HTTP checks. Coordinator reproductions also passed after repair. There were no extra target attempts; stateful explicitly rescored saved artifacts and research preserved its original measured result.
-
-Research remains a draft development package because full semantic-control evidence is incomplete. Stateful is a synthetic development prototype with provisional semantic grading. Neither achieved a calibrated pilot. Held-out semantic calibration, practitioner grounding, independently sourced breadth, repeats, comparisons and unseen evaluation remain absent. Evidence, commands, native traces, findings and repaired packages are retained locally under `artifacts/benchmaker/2026-09-16-quality-improvements/`, outside this library.
-
-The final independent source/evidence review prompted 0.2.1's explicit artifact/state control requirement and score-eligibility, score-content, nested-output and grading-recovery checks. These source clarifications received package verification, not another native authoring replay. The successful repaired package checks above are evidence for those specific generated packages.
+**Full current authoring behavior remains unverified.** Complete native authoring/pilot execution, held-out semantic calibration, interruption and owned-child cleanup, evaluator isolation and broader generalization require evidence. A machinery check or successful generated package does not establish Benchmaker's reliability across domains.

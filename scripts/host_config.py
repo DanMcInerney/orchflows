@@ -35,7 +35,7 @@ def _toml_limit(text: str, concurrency: int, table: str, key: str) -> str:
     match = re.search(header, text)
     if key in section:
         if not match:
-            raise ValueError(f"unsupported layout; set [{table}] {key} yourself or pass --skip-host-config")
+            raise ValueError(f"unsupported layout; set [{table}] {key} yourself or omit --concurrency")
         following = re.search(r"(?m)^[ \t]*\[", text[match.end():])
         end = match.end() + following.start() if following else len(text)
         section_text = re.sub(rf"(?m)^([ \t]*{re.escape(key)}[ \t]*=[ \t]*)[^ \t\r\n#]+",
@@ -49,7 +49,7 @@ def _toml_limit(text: str, concurrency: int, table: str, key: str) -> str:
     parsed = tomllib.loads(updated)
     if (parsed != {**data, table: {**section, key: concurrency}}
             or type(parsed[table][key]) is not int):
-        raise ValueError(f"unsupported layout; set [{table}] {key} yourself or pass --skip-host-config")
+        raise ValueError(f"unsupported layout; set [{table}] {key} yourself or omit --concurrency")
     return updated
 
 
@@ -88,11 +88,9 @@ def _kimi(text: str, concurrency: int) -> str:
     task = tomllib.loads(text).get("task", {})
     if not isinstance(task, dict):
         raise ValueError("Kimi [task] must be a table")
-    updated = _toml_limit(text, concurrency, "background", "max_running_tasks")
-    # Newer Kimi versions overlay [task] on the legacy [background] section.
     if "max_running_tasks" in task:
-        updated = _toml_limit(updated, concurrency, "task", "max_running_tasks")
-    return updated
+        raise ValueError("Use [background] max_running_tasks; remove [task] max_running_tasks before tuning")
+    return _toml_limit(text, concurrency, "background", "max_running_tasks")
 
 
 def _grok(text: str, concurrency: int) -> str:

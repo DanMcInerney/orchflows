@@ -1,6 +1,6 @@
 # Research lessons
 
-Use these precedents to choose an approach, then inspect primary sources relevant to the actual target. These notes derive from the caller-supplied September 16, 2026 [design report](../DESIGN.md); they are not a new reproduction or independent validation. The similarly named BenchMaker research project is separate from this workflow.
+Use these precedents to choose an approach, then inspect primary sources relevant to the target. Sources were checked September 16, 2026, without reproduction or independent validation. The similarly named BenchMaker project is separate from this workflow.
 
 | Decision | Precedent and lesson |
 | --- | --- |
@@ -16,4 +16,4 @@ Useful implementation boundaries: [Inspect](https://inspect.aisi.org.uk/tasks.ht
 
 For domain design, inspect [AppWorld](https://github.com/StonyBrookNLP/appworld) for state and collateral-change evaluation, [TravelPlanner](https://github.com/OSU-NLP-Group/TravelPlanner) for resource-grounded constraints, [τ-bench](https://github.com/sierra-research/tau-bench) for complete interactive episodes, and [DeepResearch Bench](https://github.com/Ayanami0730/deep_research_bench) for distinguishing report quality from citation support. A small local fixture may borrow the boundary without claiming to reproduce the full benchmark.
 
-The historical Orchflows benchmaker and local bench-stack informed the design. Neither is a runtime dependency or ready-made acceptance suite. Retain native execution, controls and explicit gaps; do not inherit the old ticket machinery or global concurrency assumptions. The [quality profile](quality-profile.md) now explicitly scopes a 30–50% development objective to challenge requests; it is not a universal quality rule. Optional adapters must preserve upstream execution/scoring meaning and demonstrate outcome parity before claiming integration.
+Bench-stack is not a runtime dependency or acceptance suite. Optional adapters must preserve upstream execution/scoring meaning and demonstrate outcome parity before claiming integration.

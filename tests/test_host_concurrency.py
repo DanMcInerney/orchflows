@@ -82,20 +82,19 @@ class AdditionalConcurrencyTests(unittest.TestCase):
                 self.assertIs(type(actual), int)
                 self.assertEqual(actual, 1)
 
-    def test_kimi_synchronizes_existing_preferred_limit_in_either_table_order(self):
+    def test_kimi_refuses_alternate_limit_without_mutating_either_table(self):
         for tables in (("background", "task"), ("task", "background")):
             with self.subTest(tables=tables):
                 original = '[other]\nmax_running_tasks = 99\n' + ''.join(
                     f'[{table}] # keep\nmax_running_tasks = {index + 2}\nkeep = true\n'
                     for index, table in enumerate(tables))
                 self.write(self.kimi, original)
-                self.apply("kimi")
-                parsed = tomllib.loads(self.kimi.read_text())
-                self.assertEqual(parsed["other"]["max_running_tasks"], 99)
-                for table in tables:
-                    self.assertEqual(parsed[table], {"max_running_tasks": 7, "keep": True})
+                with self.assertRaisesRegex(ValueError, "remove.*task"):
+                    self.apply("kimi")
+                self.assertEqual(self.kimi.read_text(), original)
+                self.assertEqual(list(self.root.rglob("*.bak")), [])
 
-    def test_kimi_adds_legacy_limit_without_inventing_a_preferred_override(self):
+    def test_kimi_sets_documented_limit_and_preserves_unrelated_task_settings(self):
         self.write(self.kimi, '[task]\nkeep = true\n')
         self.apply("kimi")
         self.assertEqual(tomllib.loads(self.kimi.read_text()),

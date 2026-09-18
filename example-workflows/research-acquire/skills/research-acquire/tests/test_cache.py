@@ -1,4 +1,4 @@
-"""Compatibility selector for the cache suite's behavioral partitions."""
+"""Cache suite discovery entrypoint, partitioned by behavior."""
 
 from .test_cache_cases.cacheability import CacheabilityTest
 from .test_cache_cases.failure import OracleCanFailTest, RunLocalTest

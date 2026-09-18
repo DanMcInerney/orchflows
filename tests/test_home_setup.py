@@ -119,9 +119,9 @@ class HomeSetupTests(unittest.TestCase):
                 self.assertFalse((self.root / "codex").exists())
                 self.assertFalse((self.root / "claude").exists())
 
-    def test_setup_cli_concurrency_override_and_opt_out(self) -> None:
+    def test_setup_cli_concurrency_override_and_default_preservation(self) -> None:
         write(self.root / "codex/config.toml", "malformed = [\n")
-        result = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), "--skip-host-config")
+        result = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["host_config_status"], "skipped")
         self.assertEqual((self.root / "codex/config.toml").read_text(), "malformed = [\n")
@@ -142,7 +142,7 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual((self.root / "claude/settings.json").read_text(), '{"env":null}')
         self.assertFalse((self.root / "codex").exists())
         for arguments in (("--concurrency", "0"), ("--concurrency", "-1"), ("--concurrency", "many"),
-                          ("--concurrency", "5", "--skip-host-config")):
+                          ("--skip-host-config",)):
             absent = self.root / "invalid-options-home"
             result = self.cli(SCRIPT, "setup", "--home", str(absent), "--source", str(self.source), *arguments)
             self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
@@ -402,7 +402,7 @@ class HomeSetupTests(unittest.TestCase):
             before = snapshot(self.home)
             for source in (core, other):
                 result = self.cli(core / "scripts/orchflows.py", "setup", "--home", str(home),
-                                  "--source", str(source), "--example", "social-search", "--skip-host-config")
+                                  "--source", str(source), "--example", "social-search")
                 self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
                 self.assertIn("Setup lock exists", json.loads(result.stderr)["error"])
                 self.assertEqual(snapshot(self.home), before)

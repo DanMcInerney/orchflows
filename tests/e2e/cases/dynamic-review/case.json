@@ -1,0 +1,15 @@
+{
+  "packages": [
+    "orchflows",
+    "style-fixture"
+  ],
+  "covers": [
+    "core-guidance",
+    "consequential-review"
+  ],
+  "timeout_seconds": 420,
+  "entrypoint": "orchflows:orch-dynamic-workflow",
+  "requires": [
+    "independent-review"
+  ]
+}

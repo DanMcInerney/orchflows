@@ -1,0 +1,1 @@
+Independently review export.mp4 against brief.md. Record the exact file identity and actual inspection coverage in review.md. The editable source is unavailable; report that gap. Do not repair, regenerate or replace the export. No network, publishing, installation or extra review rounds. Return useful findings even if the export cannot be decoded.

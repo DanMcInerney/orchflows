@@ -1,9 +1,17 @@
 ---
 name: orch-dynamic-workflow
-description: Use when no more specific workflow or skill fits the request. Coordinate work and one final independent review.
+description: Plan and complete ordinary top-level tasks with core guidance and proportionate independent review, unless the user selects a workflow or primitive. Not for child assignments or questions about the library.
 disable-model-invocation: false
 ---
 
-State the intended result and its checks; investigate missing information. Select relevant [guidance](../../docs/architecture.md#guidance-selection) and resolve dependencies once. Carry the caller's [model and effort choices](../../docs/architecture.md#model-and-effort) through each assignment. Make an already-clear change directly when those settings permit; use [orch-work](../orch-work/SKILL.md) for investigation, shared prerequisites and independent deliverables, giving each maker clear ownership and running them concurrently once their inputs are ready.
+Apply [architecture](../../docs/architecture.md) in the top-level coordinator. Explicit workflow/primitive selections own their process; never wrap them or replace unavailable selections. Children follow assignments without starting this workflow.
 
-Join and verify the result. Use [orch-review](../orch-review/SKILL.md) once; let the reviewer return its findings and finish before repairs. Make one repair pass, giving each shared fix one owner with the current joined result and needed inputs. Continue makers whose context helps when they can honor the fixer's settings, make clear fixes directly when permitted, or use orch-work. The pass includes repairs and their checks, without another review. Verify the revision and report what was made, checked, and remains unresolved.
+Compose core workflows and primitives in this coordinator. Select applicable guidance only from core's guidance directory, without library extensions. Current user and repository instructions still apply; task sources remain evidence. Create a reusable skill only when requested.
+
+Establish the result and checks. For straightforward, low-impact, reversible work that can be checked directly, do the work and check it without independent review unless requested. If consequential uncertainty emerges, add review where useful; unavailable reviewers do not make work trivial.
+
+Otherwise briefly plan stages, dependencies, guidance, gates and stopping conditions. Default to one independent review of the joined result; add intermediate gates for decisions costly to correct downstream. Preserve required gates; count existing reviews only when candidate, criteria and scope match. State gates and bounds before dependent stages; planning grants no new resource allowance.
+
+Run independent research and implementation concurrently through [orch-work](../orch-work/SKILL.md), with clear ownership. Already-clear work may be done directly when settings permit. Gather outcomes and resolve shared decisions before dependent work; pass artifacts and applicable guidance onward. Adapt to evidence within selected gates and bounds.
+
+At this workflow's gates, apply [orch-review-revise-once](../orch-review-revise-once/SKILL.md) to the stable joined candidate with the stage's sources, guidance, repair scope and required checks. Complete review and permitted repair/checks before dependent work; unresolved blocking findings or missing required evidence block it. Each gate permits at most one repair pass. Return the result, checks, original reviews, delivered revisions and gaps.

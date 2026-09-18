@@ -1,0 +1,6 @@
+{
+  "name": "personal",
+  "version": "0.3.0",
+  "description": "Personal decision-brief composition used by the bounded office trial.",
+  "skills": "./skills/"
+}

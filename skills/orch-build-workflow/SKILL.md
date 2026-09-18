@@ -1,15 +1,13 @@
 ---
 name: orch-build-workflow
-description: Create or improve workflows, domain guidance and specializations; try them on representative work and refine from observed use.
+description: Create or improve workflows and guidance; test them with realistic fixtures and simulated external effects.
 disable-model-invocation: true
 ---
 
-Name the recurring request and useful result. Follow [architecture](../../docs/architecture.md) for placement and dependencies. Use [orch-dynamic-workflow](../orch-dynamic-workflow/SKILL.md) with `orchflows` and `writing` guidance.
+Identify the recurring request and result. Apply [architecture](../../docs/architecture.md) and [library authoring](../../docs/libraries.md) with `orchflows` and `writing` guidance. Author directly or use [orch-work](../orch-work/SKILL.md), honoring settings.
 
-Create example and custom personal workflows with the [manual-only invocation defaults](../../docs/architecture.md#invocation); verify the target hosts' settings and report unsupported policies before delivery.
+Save inputs, dependencies, process, outputs and stopping conditions. Keep task details in prompts and quality criteria, methods and taste in guidance. Reuse components by supplying scoped inputs; avoid restating their contracts. Leave staffing flexible unless freshness is required. Save model/effort preferences only when requested. Verify [invocation policy](../../docs/hosts.md#invocation-policy).
 
-Preserve [model and effort preferences](../../docs/architecture.md#model-and-effort) beside assignments when the user asks the resulting workflow to use them; otherwise leave them unspecified.
+Before review, run the smallest representative [trial](../../docs/hosts.md#workflow-trials) with synthetic inputs and simulated external effects. Supplied documents are read-only references, not trial targets. Finish selected trials and their required judgments before authoring review; record fixtures, substitutions, interventions and untested branches. If a safe trial is unavailable, report that gap instead of exercising live data or services. Repair observed failures and rerun affected checks. Improvement claims require matched old/new trials.
 
-Trial the behavior being built or changed before final review. Support behavioral improvement claims with old and new versions on the same task under matched conditions. Run a workflow on a bounded request in a disposable workspace; for portable workflows, use an unrelated project, an ordinary brief and declared dependencies. Let the workflow supply the orchestration. For guidance alone, apply it to representative work that exercises the intended preference. Record author preparation, intervention and unexercised behavior as trial limits.
-
-Return trial findings to the maker before final review; simplify or repair and rerun affected behavior as needed. Give the final reviewer the candidate and trial record. Check [host registration](../../docs/hosts.md#register-and-refresh) before claiming a skill is available by name.
+Apply [orch-review-revise-once](../orch-review-revise-once/SKILL.md) to the candidate and trial evidence. Repeat affected trials when repairs require it. Return the artifact, evidence and gaps; verify native registration before claiming availability by name.

@@ -208,7 +208,7 @@ def _page_from(response, descriptor=DESCRIPTOR, feed_url=""):
 
 
 def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
-    """Read one supplied URL or legacy channel ID; never discover other feeds."""
+    """Read one supplied HTTPS feed URL; never infer or discover another target."""
     address = (request.target_ids[0] if request.target_ids else request.query).strip()
     channel_id = ""
     try:
@@ -220,10 +220,10 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
                 channel_id = params["channel_id"][0]
     except ValueError:
         pass
-    if channel_id or re.fullmatch(r"[A-Za-z0-9_-]+", address):
-        params = {"channel_id": channel_id or address}
+    if channel_id:
+        params = {"channel_id": channel_id}
         descriptor = DESCRIPTOR
-        feed_url = address if channel_id else transport.build_transport_request(DESCRIPTOR.route_id, params).url
+        feed_url = address
     else:
         descriptor = FEED_URL_DESCRIPTOR
         refusal = transport.open_read_refusal(address)

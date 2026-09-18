@@ -1,103 +1,59 @@
 # Evolve
 
-**The next draft has to beat your best.**
+Make a game faster without losing its feel, or revise a poster without losing its message. Evolve creates challengers to an artifact, compares actual outputs, and keeps only independently confirmed improvements. Give it an existing artifact or a creation brief; it can infer evaluation when no metric exists.
 
-Give Evolve an artifact and say what matters. It makes a challenger, compares actual outputs through independent review, and promotes only a confirmed improvement. Code, posters, writing, generated media, prompts and workflows can all be targets if the host can create and inspect them. A creation brief works too: the workflow makes a starting artifact first.
-
-You do not need to invent a scoring system before asking for better work. Evolve derives and records evaluation from the brief when you have not supplied it. A numerical score and a target threshold are optional.
-
-```text
-infer evaluation → make challenger → independently compare → retain best
-                         ↑                                ↓
-                         └──── evidence + checkpoint ─────┘
-```
-
-## Give it something to beat
-
-After [installation](#install-and-dependencies), paste this into Codex:
+After [installation](#install), try this in Codex:
 
 ```text
 $evolve:evolve Improve this game's FPS while preserving gameplay and
-visual quality. Run three rounds with one challenger per round. Use
-./evolve-runs/game-fps/ for artifacts and evidence. Return the best version,
-the measurements behind each decision and the checkpoint for resuming.
+visual quality. Run three rounds with one challenger per round. Save the
+best version, measurements, decisions and resume checkpoint in
+./evolve-runs/game-fps/.
 ```
 
-In Claude Code, use `/evolve:evolve` with the same request. The workflow is manual-only by default.
+In Claude Code, use `/evolve:evolve`. Invocation is manual. Creation and inspection tools depend on the artifact: code, writing, images, audio and workflows need different evidence.
 
-Other starting points:
+## A challenger has to earn its place
 
-| What you have | What to ask |
-| --- | --- |
-| A poster that is almost there | `$evolve:evolve Improve this poster for first-time conference attendees. Keep the event details exact.` |
-| A performance problem | `$evolve:evolve Improve this game's FPS while preserving gameplay. Run for an hour.` |
-| A brief without an artifact | `$evolve:evolve Develop cover art from this brief. Keep improving until I stop you, including how you generate it.` |
-| An interrupted search | `$evolve:evolve Resume from ./evolve-runs/game-fps/. Try three challengers per round.` |
-
-## How a version earns promotion
-
-1. **Define better.** Preserve the original, separate binding requirements from qualities to improve, and save an evaluator before creating challengers. Check that the evaluator detects an obvious defect or meaningful contrast.
-2. **Try a concrete hypothesis.** Make an isolated candidate from the current best. Optional wider tournaments explore distinct ideas; each maker owns its own candidate.
-3. **Compare the actual work.** Screen cheap failures first. Measure runnable artifacts under matched conditions; inspect renders, listen to audio or exercise interactions when the medium calls for it. Makers never certify their own wins.
-4. **Confirm, then keep.** A subjective winner needs a second fresh judge with presentation order reversed. A metric finalist receives an independent audit of the measurements and required checks. Missing evidence, failed requirements, ties and unconfirmed wins keep the current best.
-5. **Save the lesson and continue.** Record evidence and a checkpoint after each decision. A plateau changes the approach instead of quietly lowering the standard.
-
-The [evaluation contract](skills/evolve/references/evaluation.md) defines scoring, judging and promotion. If evaluation itself needs repair, the workflow versions it and re-evaluates contenders; scores from different versions do not count as comparable progress.
-
-## It can test a better way to improve
-
-Sometimes the repeated failure is in the process: the maker prompt, tool choice, context selection or search strategy. Evolve can propose one small change to that working process, called its **harness**.
-
-A harness experiment replaces an ordinary round. It runs the old and proposed procedures from matched starting artifacts on a known failure, a previously successful case and a fresh representative case. Adoption depends on the outputs they produce, required behavior they preserve and recorded cost. Accepted revisions become the instructions for later makers; later contradictory evidence can restore the predecessor. The caller's purpose, evaluation, promotion rules, budgets and checkpoint ownership remain fixed.
-
-## Bounds and agent counts
-
-[Evolve](skills/evolve/SKILL.md) coordinates in the caller and uses core `orch-work` for makers and `orch-review` for independent judges. There is no separate planning agent. Let `W` be challengers per ordinary round, default **1**.
-
-| Work | Fresh children |
-| --- | --- |
-| Create a seed from a brief | 1 maker |
-| Ordinary metric round | W makers; 1 reviewer if a finalist reaches audit |
-| Ordinary subjective round | W makers; 1 judge per comparison, plus 1 fresh confirmation judge for each proposed winner |
-| Harness experiment with T test cases | 1 proposer + 2 makers per case, plus the applicable judging calls above |
-
-Subjective tournaments may need further comparisons to choose among qualifying challengers, so their total is variable. Cheap rejections skip expensive confirmation. The coordinator records width, repetitions and per-experiment work limits before dispatch, including enough budget to confirm a possible winner.
-
-Absent supplied bounds, a run defaults to **three rounds**. An explicit continuous request removes the total round cap. After three informative rounds without a promotion, the workflow changes its approach, investigates the failure or tests a harness change; all attempted rounds and spent resources still count against caller bounds. Reaching a target stops the run only when the caller made it a stop condition.
-
-The host must keep executing or resume the checkpoint; Markdown cannot schedule itself. When execution is unavailable, the result is a saved state and an explicit gap. A continuous request does not guarantee continuous gains.
-
-## What survives the session
-
-The result includes the best artifact, what improved under which evaluation, the active harness, evidence, observable resource use, the actual stop reason and a resume path. Claims distinguish measurements, judge preferences and untested possibilities.
-
-Run records live in your chosen directory or a distinct `evolve-runs/<run-id>/` under the workspace:
-
-```text
-brief.md          Purpose, constraints, bounds and assumptions
-evaluation/       Versioned evaluators, inputs and calibration
-harness/          Working process and its revisions
-experiments/      Hypotheses, snapshots, raw evidence and decisions
-journal.jsonl     Append-only experiment events
-checkpoint.json   Current best, active versions and next action
+```mermaid
+flowchart TD
+    S["Preserve seed; calibrate evaluation"] --> A["Count round; make isolated challenger"]
+    A --> J["Screen, compare and confirm independently"]
+    J --> D{"Confirmed improvement?"}
+    D -->|Yes| P["Promote challenger"]
+    D -->|No or missing evidence| R["Keep current best"]
+    P --> B["Checkpoint; check remaining bounds"]
+    R --> B
+    B -->|Continue| A
+    B -->|Stop or yield| O["Return best artifact and resume path"]
+    classDef work fill:#115e59,stroke:#134e4a,color:#ffffff;
+    classDef review fill:#6b21a8,stroke:#581c87,color:#ffffff;
+    classDef state fill:#1e3a8a,stroke:#172554,color:#ffffff;
+    class A,P work;
+    class J,D review;
+    class S,R,B,O state;
 ```
 
-The original, current best, previous best and a small set of promising alternatives are retained. The [state contract](skills/evolve/references/state.md) covers interrupted work, identity checks and resumption without silently resetting the budget.
+The [evaluation contract](skills/evolve/references/evaluation.md) separates requirements from qualities to improve. Subjective promotion needs two fresh judges with reversed presentation order. Metric promotion needs matched measurements, required checks and a fresh audit. Ties, regressions, missing evidence and unconfirmed wins retain the current best. Judges compare without repairing candidates.
 
-## Install and dependencies
+An evaluator repair creates a new version and requires re-evaluating the current best and contenders; scores across versions are not comparable progress. A [harness experiment](skills/evolve/references/harness.md) instead tests the working instructions, tools or search policy. It replaces an ordinary round and uses reserved cases plus fresh, matched executions. Adoption needs confirmed output improvement, preserved requirements and acceptable recorded cost. Later contradictory validation restores the predecessor. Harness proposals cannot change purpose, evaluation, promotion rules, budgets or checkpoint ownership.
 
-From a complete Orchflows checkout, using Python 3.11+:
+## Bounded search, resumable state
+
+Defaults are **three rounds, one challenger per round**. Each artifact or harness attempt counts before proposal or production, including failures and interruptions. Seed creation, calibration and evaluator repair consume resources without adding or resetting rounds. After three informative rounds without promotion, the approach changes or the failure is investigated.
+
+An explicit continuous request removes the total round cap; execution still stops for caller limits, interruption or blocked capability. A target stops work only when requested as a stop condition. Continuation requires host support; otherwise Evolve returns a checkpoint and the gap.
+
+The result includes the best artifact, improvements, evaluation and harness versions, evidence, observed resource use, stop reason and resume path. The chosen directory—or `evolve-runs/<run-id>/`—retains originals, alternatives, experiments, an append-only journal and checkpoint. [Resumption](skills/evolve/references/state.md) reconciles in-flight work and preserves consumed bounds; it does not duplicate uncertain work or reset attempts.
+
+## Install
+
+From the Orchflows **source checkout**, with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example evolve
 ```
 
-Setup preserves an existing library copy. Register and install `evolve` from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup alone does not make the skill available by name.
+Setup preserves existing library copies. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.12.0+**, native child delegation and task-specific creation/inspection tools; see [library context](references/library-context.md). No scoring service is required.
 
-Requires orchflows 0.7.0+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
-
-## Evidence and lineage
-
-[Trials](trials/) contain reusable requests and expected behavior, not proof of results. [Research](RESEARCH.md) documents the original Orchflows sources, Self-Harness, AIDE², SIA, Continual Harness and related work checked September 13, 2026, with design decisions and limitations. The cited research does not validate this implementation's performance.
-
-This is a fresh successor to the original `orch-evolve`; `orch-` remains reserved for core skills. It supports experiments on improving an improvement harness. An RSI Level 1 claim would additionally require evidence of sustained gains over a strong human baseline on unseen tasks at matched cost; shipping this workflow does not establish that result.
+**Validation limit:** bundled [trials](trials/) specify expected behavior, not observed results. [Research lessons](references/research.md) do not validate this implementation. Sustained gains on unseen tasks at matched cost remain unestablished.

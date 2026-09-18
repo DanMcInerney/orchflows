@@ -1,0 +1,6 @@
+[
+  {"name": "empty", "records": [], "expected": 0},
+  {"name": "mixed", "records": [{"amount": 120, "status": "closed"}, {"amount": 80, "status": "open"}, {"amount": -20, "status": "closed"}], "expected": 100},
+  {"name": "closed-only", "records": [{"amount": 120, "status": "closed"}, {"amount": -20, "status": "closed"}], "expected": 100},
+  {"name": "negative-only", "records": [{"amount": -20, "status": "closed"}], "expected": -20}
+]

@@ -1,9 +1,11 @@
 # Library context
 
-Resolve core `docs/history.md` and `docs/architecture.md` once through supplied package roots or core's `resolve` CLI. For improvement passes, also resolve `orchflows:orch-work` and `orchflows:orch-review` through native skills, supplied roots or the CLI. Missing required resources block dependent work.
+Require core 0.11.0+; apply its `docs/architecture.md`.
 
-For workflow or guidance fixes, also resolve `orchflows:orch-build-workflow` to read its behavioral trial contract.
+Resolve `docs/history.md` and `docs/architecture.md` through supplied roots or core's `resolve` CLI. Improvements also require `docs/libraries.md`, `orchflows:orch-work` and `orchflows:orch-review-revise-once`, including its `orchflows:orch-review` dependency; resolve through native skills, roots or CLI. Reuse paths. Missing resources block dependent work.
 
-Core architecture owns placement, guidance selection and model/effort choices. Select guidance for the changes, including `orchflows` when authoring workflows, guidance or libraries; include this library and caller-selected libraries in supplied order. Makers apply Make and reviewers apply Review.
+For workflow/guidance fixes, resolve `orchflows:orch-build-workflow` for its behavioral trial contract.
 
-Pass resolved absolute paths, history scope, agent and event references, current source locations and caller choices unchanged to composed primitives. Keep reports and trial outputs in the caller's workspace, outside installed packages.
+Select applicable guidance, including `orchflows` for workflow, guidance or library authoring. Include this library and caller libraries in supplied order.
+
+Pass relevant history/source references with assignments. Keep reports and trial outputs in the caller's workspace, outside packages.

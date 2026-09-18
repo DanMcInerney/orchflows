@@ -1,14 +1,14 @@
-# Expected behavior
+# Trial acceptance
 
-Run in an unrelated disposable project with only the brief and declared package/runtime capabilities. The workflow, rather than the trial author, supplies orchestration and design choices. Keep observed results outside the library.
+Apply core's workflow-trial contract in an unrelated disposable project. Give the runner only the brief and declared dependencies; let the workflow supply design and orchestration. Keep results outside the library.
 
-- The caller probes build/render/input and Blender-to-GLB capability before relying on them, and resolves guidance once.
-- One game maker proposes different mechanics within the brief, chooses a loop and produces a playable graybox before final asset production. It records two observed mechanics experiments and provides genuine competing route decisions.
-- The test interface exists in the first implementation and shares normal rules. Ordinary input changes the rendered game. Manual ticking/reset are behavioral checks; fixture wins are not reported as played wins.
-- A fresh core reviewer actually attempts uncoached/adaptive play, reaches a session outcome/retry or reports the blocker, and distinguishes findings from gaps. The original maker handles necessary repairs within one pass; an unchanged ready core closes on existing evidence without rebuilding or replay. A core that remains unverified or materially broken stops dependent production.
-- Once the core checkpoint is ready, one Blender maker produces editable sources and inspected runtime GLBs in its own directory, alongside the game maker's content work. Art integration preserves or rechecks gameplay timing, collision and readability.
-- A fresh final reviewer plays the exact production candidate and inspects actual runtime art and evidence. The original makers handle necessary repairs within one pass; an unchanged ready candidate requires no additional pass. Reviewed and delivered identities stay distinct if changes occur.
-- A full successful run uses four children plus its caller, no per-step agent proliferation or nested ticket runtime. An early capability/core stop uses fewer and is recorded as partial behavior.
-- Delivery is a complete playable mission with learning, meaningful choices, setback/recovery and replay, with source/assets/commands and honest review/performance limits. It is not a moving-object scene mislabeled complete.
+- Probe actual build/render/input and Blender-to-GLB behavior before relying on it. Reuse resolved dependencies and extend applicable guidance without leaking local selections. Makers/reviewers share quality criteria.
+- Honor scoped settings with flexible production staffing. Compare at least three mechanics, build a playable graybox and record two observed before/after experiments against predictions. Route choices must compete meaningfully.
+- Implement the test interface with the foundation and real rules. Check ordinary input changes rendered gameplay, manual ticking and reset; fixture wins are not played wins.
+- A fresh nonmaker reviews core through uncoached/adaptive play to outcome/retry or a disclosed blocker. Finish its report before any repair. Allow one necessary repair pass with affected situations and the main session; unchanged ready cores need no rebuild/replay. Unverified or materially broken cores block final production.
+- After core readiness, produce editable Blender sources and inspected runtime GLBs in owned files. Concurrent content and assets must both finish before integration, which preserves or rechecks timing, collision and readability.
+- A different fresh reviewer plays the exact frozen final candidate and inspects runtime art/evidence. One necessary repair pass follows its completed report, with affected checks, main session, changed visuals and affected performance. Preserve reviewed/delivered identities and distinguish maker verification; add no review round. Unchanged ready candidates need no pass.
+- Full success includes staged production, core review, integration and final review. Capability/core stops and bounded phases remain partial; do not claim unvisited checkpoints or replace independent review with self-review.
+- Deliver a complete mission with learning, decisions, setback/recovery and replay, source/assets/commands and honest performance/review limits. Missing capabilities block dependent work while unrelated authorized work may continue.
 
-Record author preparation, runtime setup, unexpected interventions, skipped stages and actual child count. A partial run cannot validate the unvisited asset/final-review stages. Re-run only the affected behavior after supported workflow repairs; static link/manifest checks alone do not establish this behavior.
+Record fixtures, simulated effects, setup/interventions, skipped stages and actual child calls. Audit unchanged references and captured outbound effects. A partial run validates no unvisited stage; rerun affected behavior after supported repairs. Static package checks prove no production behavior.

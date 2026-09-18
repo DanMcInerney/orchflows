@@ -1,13 +1,11 @@
 # Design iteration
 
-## Make
+Choose observable improvements toward the endgoal. Separate evidence, assumptions and questions. Prefer one small, coherent increment with explicit tradeoffs. A first PoC proves the smallest useful end-to-end behavior from the actual starting state.
 
-Choose improvements that move the stated endgoal forward and can be observed. Separate evidence, assumptions and unresolved questions. Prefer a small coherent increment with explicit tradeoffs over a collection of unrelated additions. A first PoC proves the smallest useful end-to-end behavior from the actual starting state.
+Research uncertainties that affect the decision. Identify sources and their applicability; absent support is a gap, not a negative result. Preserve required behavior and caller constraints.
 
-Use research to reduce a decision-relevant uncertainty. Identify sources and their applicability; the absence of supporting evidence is a gap, not a negative result. For an existing project, preserve known required behavior and the caller's constraints.
-
-Make acceptance criteria inspectable before implementation. Explain how old and new behavior will be compared, including expected feature deficits, regression checks and meaningful limitations. Recommendations should follow the observed results, including failures; do not relabel an untested change as an improvement.
+Set inspectable acceptance criteria before implementation. Explain the old/new comparison, expected feature deficits, regression checks and limitations. Base recommendations on observed results, including failures; an untested change is not an improvement.
 
 ## Review
 
-Assess the exact candidate against its design, endgoal and required prior behavior. Use comparable conditions for old and new states, separate expected new capability from regressions, and distinguish missing evidence from passing checks. Report correctness and meaningful improvement separately. Identify source/state identities and the scope actually examined. Keep findings tied to observations, including partial or unsuccessful results.
+Assess the exact candidate against its design, endgoal and required prior behavior under comparable old/new conditions. Separate expected new capability from regressions, missing evidence from passing checks, and correctness from improvement. Identify sources, states and examined scope; tie findings to observations, including partial or unsuccessful results.

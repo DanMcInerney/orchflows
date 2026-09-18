@@ -1,15 +1,11 @@
 ---
 name: make-short-video
-description: Make an original short video through an editable project and rendered exports using one maker.
+description: Make an original short video with an editable project and rendered exports.
 disable-model-invocation: true
 ---
 
-Reuse or establish [library context](../../references/library-context.md). Resolve the film's subject, audience, genre, intent, placements and caller constraints from the request. Carry supplied assets, sources and context. Load [Remotion guidance](../../references/remotion.md) only when Remotion is chosen.
+Apply [library context](../../references/library-context.md). Resolve subject, audience, genre, intent, placements and constraints; carry supplied assets, sources and context. Load [Remotion](../../references/remotion.md) only when chosen and optional [short-form observations](../../references/short-form-reference.md) for requested inspiration/research; neither adds a stage or agent.
 
-For requested inspiration or research, pass the optional [short-form observations](../../references/short-form-reference.md). They add source context, not another stage or agent.
+Use `orchflows:orch-work` for production assignments with the complete brief, owned outputs and guidance; preserve shared creative direction and final integration. Assign concept through editable project and actual exports using available tools, with maker checks. Require requested placements, export paths/SHA-256, source/assets, reopen/render instructions and unresolved constraints/capability gaps.
 
-Invoke `orchflows:orch-work` once with the complete brief, output workspace and resolved guidance paths. Keep this delegation entrypoint in the caller; give the child the production assignment:
-
-> Create the film from original concept through an editable project and actual rendered exports. Use the available authoring tools, check your result and deliver the requested placements. Return export paths and SHA-256 identities, editable source and assets, how to reopen and render, and any unresolved constraints or capability gaps. Work without child agents.
-
-When the caller gathers, return the native worker handle and expected output location immediately. Otherwise await the worker and return its actual result. This leaf launches no reviewer.
+If the caller gathers, return native handles and expected output locations immediately; otherwise gather actual results. Launch no reviewer.

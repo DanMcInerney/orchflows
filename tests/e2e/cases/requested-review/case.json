@@ -1,0 +1,14 @@
+{
+  "packages": [
+    "orchflows"
+  ],
+  "covers": [
+    "requested-review",
+    "independence"
+  ],
+  "timeout_seconds": 120,
+  "entrypoint": "orchflows:orch-dynamic-workflow",
+  "requires": [
+    "independent-review"
+  ]
+}

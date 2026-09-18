@@ -1,4 +1,4 @@
-"""Compatibility selector for the context suite, partitioned by behavioral seam."""
+"""Context suite discovery entrypoint, partitioned by behavior."""
 
 import unittest
 

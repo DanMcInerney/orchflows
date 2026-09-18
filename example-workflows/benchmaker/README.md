@@ -1,40 +1,57 @@
 # Benchmaker
 
-Build a benchmark around substantial user work: representative tasks, appropriate environments, useful partial credit and measured difficulty. Start with a prototype, calibrate a pilot and evaluate unseen source groups as evidence and budget permit. Each generated package states its requested and achieved stage.
+A benchmark can run perfectly and still measure the wrong thing. Benchmaker builds tasks around substantial user work, checks whether their graders recognize useful outcomes, and separates that validation from measurements of the agent. Each package reports the stage requested, the stage achieved and the evidence still missing.
 
-**Experimental, version 0.2.1.** The 0.2 series adds [quality and acceptance gates](references/quality-profile.md) and retains the 0.1.1 integrity repairs. Version 0.2.1 clarifies control and record checks after fresh 0.2.0 trials; those final clarifications have not had another authoring replay. Cross-domain acceptance remains incomplete; see [validation status](trials/README.md). Harness checks, benchmark validation and agent measurement are separate evidence, not interchangeable readiness claims. The original [design report](DESIGN.md) is retained as historical rationale, not required invocation context.
+**Experimental:** cross-domain acceptance remains incomplete. After [installation](#install), try this in Codex:
 
-## Use
+```text
+$benchmaker:benchmaker Compare the two research workflows in this workspace.
+Build a development prototype from representative source tasks. Allow at
+most two target launches, ten minutes each, with no retries. Save the
+package, reproducible commands, measurements and unmet quality gates in
+./benchmark-run/.
+```
 
-From an Orchflows checkout, copy the example into an Orchflows home:
+In Claude Code, use `/benchmaker:benchmaker`; invocation is manual. Supply a target path, callable, command, endpoint, native workflow or capability description, plus budget and output location. A description supports a draft; measurement requires actual execution.
+
+## Validate the ruler before trusting the score
+
+```mermaid
+flowchart TD
+    A["Define claim, source work and budget"] --> B["Build and freeze tasks, graders and controls"]
+    B --> C["Fresh pilot solves public inputs first"]
+    C --> D["Audit grading; gather target measurements"]
+    D --> E["Separate independent package review"]
+    E --> F["At most one repair; affected checks"]
+    F --> G["Deliver achieved stage, results and gaps"]
+    classDef work fill:#115e59,stroke:#134e4a,color:#ffffff;
+    classDef evidence fill:#1e3a8a,stroke:#172554,color:#ffffff;
+    classDef review fill:#6b21a8,stroke:#581c87,color:#ffffff;
+    class A,B,F work;
+    class C,E review;
+    class D,G evidence;
+```
+
+The pilot saves answers before seeing evaluator material. A different reviewer then inspects the frozen package and joined evidence through core `orch-review-revise-once`. Repairs wait for that review; at most one pass follows, with affected independent checks within the remaining allowance. The original verdict applies only to the reviewed version.
+
+The [quality profile](references/quality-profile.md) distinguishes **prototype**, **calibrated pilot** and **evaluation suite**. Smoke, quick and full select runs, not maturity. Broad claims plan around 40–60 independently sourced development cases and a later 150–300-case suite; these adjustable ranges are neither statistical minimums nor launch budgets. Smaller prototypes retain the larger request's unmet gates.
+
+Challenge tracks default to 30–50% full-task success for a named strong baseline on development cases. This is a calibration target, not an unseen-performance promise. Baselines, source-group splits and conditions freeze before measurement; semantic grading stays provisional until independent held-out calibration.
+
+## What the package preserves
+
+Expect a benchmark card, cases and provenance, fixtures, adapters, graders, controls, reproducible commands, observed time/cost and raw evidence in your workspace. Results keep **full success, useful outcome credit and critical failures** separate, with denominators and per-family coverage. Harness checks, benchmark validation and fresh agent measurements remain distinct.
+
+The [execution contract](references/benchmark-contract.md) bounds launches, retries, time and spend. Failed attempts consume limits; wrong answers are never transient retries. Resume requires matching benchmark and condition identities, reuses completed work, and reconciles uncertain execution before relaunch. Re-scoring retained outputs records a new scorer result, not a fresh agent attempt. Missing access or judgment leaves affected claims incomplete. Local folder separation does not enforce evaluator secrecy.
+
+## Install
+
+From the Orchflows **source checkout**, with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example benchmaker
 ```
 
-This uses the repository's ordinary setup behavior. Register the home and install `benchmaker` with the host's normal plugin flow described in core `docs/hosts.md`, then start a new session. Writing or copying files alone does not register a skill. `/benchmaker` is the requested short name; fully qualified native invocations are `$benchmaker:benchmaker` in Codex and `/benchmaker:benchmaker` in Claude Code. Both hosts default to manual invocation.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.11.0+** and native child delegation; [library context](references/library-context.md) lists core components and task-specific tools. No paid judge, Docker or additional benchmark runtime is required.
 
-Example requests:
-
-```text
-Build a benchmark for this customer-support agent.
-Compare these two research workflows; keep a quick run under five minutes.
-Benchmark agents that turn a brief into a slide deck.
-Make a benchmark for planning with changing resource constraints.
-```
-
-Supply the target or capability, workspace and any budget or comparison constraints. Ordinary choices are inferred. A description-only request can produce a useful draft; absent target execution remains a measurement gap. For broad substantial-work claims, plan roughly 40–60 independently sourced development cases and a later 150–300-case evaluation suite; these are adjustable planning ranges, not statistical minimums or automatic launch budgets. A smaller prototype is labeled honestly and retains the larger request's unmet gates. Smoke, quick and full profiles select runs without changing maturity.
-
-Challenge requests use a development objective of 30–50% full success for a named strong baseline, unless specified otherwise. This is separate from mean partial credit and representative-work performance. Cases need source-work provenance, substantive dependencies and feasibility evidence; small renamed fixtures cannot establish breadth. Freeze baselines and source-group splits before measurement, investigate failures, and publish unseen results even outside the desired band. Semantic scoring remains provisional until independent held-out calibration supports it.
-
-## Composition and dependencies
-
-The coordinator researches, designs and constructs in the caller context. One fresh `orch-work` pilot worker audits public inputs before seeing references, then exercises the package. One fresh `orch-review` reviewer assesses the frozen package and pilot evidence. One bounded repair pass follows; an affected independent rerun may use one additional worker. Two planned child calls, at most three, plus separately budgeted benchmarked agent executions. There is no automatic second review. Missing delegation leaves dependent validation incomplete.
-
-Requires Orchflows core 0.7.0+ and native delegation; see [library context](references/library-context.md). The library itself has no runtime dependency beyond its host. Generated benchmarks prefer installed runtimes and, for new standalone runners, Python standard library and `asyncio`. Rendering, browsers, providers, containers and judges are added only when the task needs them. Bench-stack and Inspect integration are optional future work; neither is bundled.
-
-The library supplies authoring instructions and [execution/data contracts](references/benchmark-contract.md), not a universal runner template. Generated packages, trial runs and evidence live outside the installed library in the caller workspace. Outputs include a benchmark card, cases/fixtures, target adapter, graders/controls, reproducible commands, raw evidence and a report with coverage and limitations. Local staging alone does not protect evaluator secrets from agents with broader filesystem access.
-
-## Maintainer validation
-
-Use the [trial specifications](trials/README.md) in fresh workspaces with the authoring conversation withheld. Packaging checks establish installation and discovery; only observed trials establish workflow behavior. The repository integration test copies and resolves this library in an isolated home and checks package-local links. No host registration or plugin installation is needed to inspect or edit this example.
+**Validation limit:** the [trial catalog](trials/README.md) specifies research, stateful, artifact, coding and failure scenarios. Full current authoring/pilot execution, held-out semantic calibration, interruption/cleanup and protected evaluator access remain unverified. No cross-domain readiness is claimed.

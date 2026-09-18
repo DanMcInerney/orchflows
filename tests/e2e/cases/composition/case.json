@@ -1,0 +1,17 @@
+{
+  "packages": [
+    "orchflows",
+    "confidence-fixture"
+  ],
+  "covers": [
+    "composition",
+    "guidance-scope",
+    "independence",
+    "fresh-maker"
+  ],
+  "timeout_seconds": 150,
+  "entrypoint": "confidence-fixture:invoice-packet",
+  "requires": [
+    "independent-review"
+  ]
+}

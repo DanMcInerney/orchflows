@@ -1,64 +1,59 @@
-# Export Workflow
+# Export Workflow: take the process with you
 
-**Your best workflow, ready to travel.**
+A workflow can depend on more than its `SKILL.md`: shared guidance, scripts, other workflows, and rules for independent review. Export Workflow follows those dependencies and builds one native skill folder that runs without an Orchflows installation. A portability report says what was preserved, changed or left unverified.
 
-Turn an orchflows workflow into a standalone native skill folder that runs without orchflows installed. Export Workflow gathers the selected guidance, scripts and dependencies, translates orchestration into native host delegation and writes down anything it cannot preserve.
-
-Use it to hand a useful workflow to a teammate, carry it into another host or keep a portable snapshot of a setup you want to reuse. The export keeps runtime inputs configurable, so the next person can give it their own task.
-
-## Try it
-
-After installation, paste into Codex:
+After [installation](#install), try:
 
 ```text
 $export-workflow:export-workflow
-Export social-search:social-search for Codex into ./exports/social-search,
-retaining all supported source scopes. Test its live search on uv adoption
-friction in GitHub and Hacker News. Include the portability report and
-identify any behavior the standalone version cannot preserve.
+Export social-search:social-search for Codex into ./exports/social-search.
+Preserve supported source scopes and configurable runtime inputs. Trial it
+with synthetic search/source fixtures and simulated external effects.
+Include a portability report identifying changes and validation gaps.
 ```
 
-In Claude Code, use `/export-workflow:export-workflow` with the same request. This workflow is manual-only by default on both hosts. The example requires the source `social-search` library and authorized access to its search tools.
+Use `/export-workflow:export-workflow` in Claude Code. Supply a source path or library/skill identity; the target defaults to the current host and `exports/<skill-name>/`. Source files stay untouched. Without an update request, the exporter chooses an unused destination.
 
-Give it a workflow path or library/skill identity, a destination and an optional target host. It defaults to the current host and `exports/<skill-name>/` in your workspace. The source stays untouched; an occupied destination gets a new location unless you asked to update that export.
+## Portability includes behavior
 
-## Pack it. Try it. Review it.
+```mermaid
+flowchart TD
+    S[Source workflow and target host] --> I[Resolve dependencies and guidance]
+    I --> B[Build standalone skill folder]
+    B --> T[Trial relocated copy with synthetic inputs]
+    T --> R[Independent fidelity review]
+    R --> F[At most one repair pass]
+    F --> O[Folder and portability report]
+    F -. If behavior changes .-> V[One affected retrial]
+    V --> O
+    classDef input fill:#dbeafe,stroke:#1d4ed8,color:#172554;
+    classDef work fill:#d1fae5,stroke:#047857,color:#064e3b;
+    classDef review fill:#ede9fe,stroke:#6d28d9,color:#2e1065;
+    classDef output fill:#fef3c7,stroke:#b45309,color:#451a03;
+    class S input;
+    class I,B,F work;
+    class T,R,V review;
+    class O output;
+```
 
-The [workflow](skills/export-workflow/SKILL.md) creates the export in the caller's context, then tests whether it can stand on its own:
+Dependencies are bundled once, paths rewritten and licenses retained. Native delegation replaces Orchflows calls while preserving supported independence, scoped guidance/settings, handoffs, decisions and stopping bounds. Runtime inputs remain configurable; the trial question does not become the exported skill's permanent job.
 
-1. **Follow the dependencies.** Read the reachable workflows, guidance, references, scripts and assets. Bundle what the skill needs, preserve licenses and rewrite paths.
-2. **Preserve the behavior.** Translate core work/review calls into native delegation, retaining the workflow's supported decisions, agent counts, handoffs and bounds.
-3. **Try it elsewhere.** Give a fresh trial worker the exported folder, ordinary inputs and declared prerequisites in an unrelated disposable workspace. Record interventions and anything the trial could not exercise.
-4. **Get an independent verdict.** A new reviewer compares the source, export and trial evidence without making repairs. Make at most one repair pass and, if behavior changed, one affected retrial. There is no second review.
+The relocated copy runs in a fresh top-level session with only the export, ordinary synthetic inputs and declared prerequisites. External effects are simulated. After the trial and its required judgments finish, one independent review compares the export with the source and trial evidence. At most one repair pass follows; changed behavior gets one affected retrial, with no second review.
 
-**Normally two fresh children, at most three with a retrial**, excluding the caller, **plus the exported workflow's declared children for each trial**. The exported workflow supplies its own orchestration during those trials.
+## What you receive
 
-A live-search workflow gets a live discovery-and-source-inspection trial when authorized tools are available. Fixtures establish only the offline path. Missing capabilities remain explicit validation gaps; a bounded successful trial does not establish every branch, site or host.
+The installable folder has `SKILL.md` and its required resources. A sibling report records source revision/hashes, library and guidance order, target host, bundled dependencies, external prerequisites, behavior changes, reviewed/delivered identities and validation limits. Trial outputs stay outside the installable folder.
 
-## What travels with it
+Tools, runtimes and authentication remain prerequisites; export provisions none. Single-file or single-agent requests can require disclosed losses. Missing required behavior makes the export incomplete. Simulated trials establish local behavior, not live integration. Source changes require re-export; installation and verified native registration are separate steps. The [export contract](skills/export-workflow/references/export-contract.md) defines fidelity and these limits.
 
-| Source feature | Standalone result |
-| --- | --- |
-| Selected layered guidance | A bundled snapshot preserving precedence and Make/Review roles. |
-| Work, independent review, parallel collection and handoffs | Native delegation preserving supported composition and ownership. |
-| Loops, repairs and model/effort controls | The source's bounds and supported settings, with unsupported controls disclosed. |
-| Helper workflows, references, scripts and assets | Local dependencies and paths; helper entrypoints may be flattened. |
-| Tools, runtimes and authentication | Declared external prerequisites; export does not provision them. |
+## Install
 
-You receive one installable skill folder and a sibling report naming source revision or hashes, selected libraries and guidance order, target host, bundled dependencies, external requirements, behavior changes and validation limits. Trial outputs and the report stay outside the installable folder. Unresolved required behavior makes the deliverable incomplete.
-
-The [export contract](skills/export-workflow/references/export-contract.md) defines the preservation rules. A single-file or single-agent export is an extra constraint that can require disclosed losses. Source updates require re-export. Installing and registering the exported skill is a separate step.
-
-## Install and requirements
-
-From a complete orchflows core checkout, with Python 3.11+:
+Run from a complete Orchflows checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example export-workflow
 ```
 
-Setup copies the example into your orchflows home and preserves an existing library copy. Follow core `docs/hosts.md` to register and install `export-workflow@orchflows-home`, then start a new session. Setup alone does not make the workflow available by name.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing library copies and installs no runtime dependencies. The skill is manual-only by default.
 
-Requires orchflows 0.7.0+, native child delegation, filesystem access, the source workflow and its selected dependencies, and the tools needed for the bounded trial. [Library context](references/library-context.md) resolves package dependencies. Setup installs no library runtime dependencies.
-
-The [trial requests](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) support repeatable validation; they are not proof that every workflow, site or host has been tested.
+Requires **core 0.11.0+**, including `orch-review-revise-once`, native child delegation, filesystem access, source dependencies and bounded-trial tools. See [library context](references/library-context.md). The [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) are specifications, not observed passes.

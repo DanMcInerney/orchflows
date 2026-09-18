@@ -1,15 +1,19 @@
 # Orchflows
 
-## Make
+Preserve intended choices in the shortest clear wording. Follow [architecture](../docs/architecture.md) for contracts and [libraries](../docs/libraries.md) for placement.
 
-Use the shortest wording that preserves the intended choices. Follow [architecture](../docs/architecture.md) for contracts and placement.
+Record deliberate preferences; define meanings the reader cannot infer. Keep shared definitions with their contracts. Specializations state differences from parents. Keep model corrections separately removable.
 
-Record deliberate preferences. Define local meanings the reader cannot infer. Keep shared definitions with the contract they describe. Specializations state differences from their parents. Keep corrections for model weaknesses separately removable.
+Expose expected task variations as inputs; avoid speculative options. A reusable artifact works from declared inputs and dependencies, without authoring history or undocumented preparation.
 
-A reusable artifact works from its declared inputs and dependencies, without the author's conversation or undocumented preparation.
+Extract components around independently useful results. Reuse components whose contracts fit; plain assignments may be simpler than adapting another domain's workflow. Reference shared rules. Explain unclear purposes of counts. Scope guidance to its work; makers and reviewers share substantive quality criteria.
+
+## Corrections
+
+Trials have triggered premature review on partial evidence. Later supplements do not satisfy trial-before-review dependencies. Remove this reminder when trials show it unnecessary; preserve the workflow dependency.
 
 ## Review
 
-Look for duplicated instructions, unnecessary coordination and misplaced responsibilities. Cut generic advice; preserve deliberate preferences even when current models follow them. Flag ambiguity about required behavior, scope or outputs. Check that specializations add a useful difference.
+Flag duplicate instructions, unnecessary coordination, misplaced responsibilities and ambiguous behavior, scope or outputs. Cut generic advice; preserve deliberate preferences even when models follow them. Require useful differences from specializations.
 
-Check whether another agent can use the artifact from its declared context. Judge behavioral claims against observed use.
+Check scoped settings, role guidance, central dispatch and process guarantees in trials. Exercise components through real consumers on varied inputs, including generated personal workflows. Measure recipes with their required context; relocating repetition does not simplify them.

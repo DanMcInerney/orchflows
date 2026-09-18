@@ -56,7 +56,7 @@ REDDIT_PERMALINK = (
     + ARCHIVED_POST_ID
     + "/what_is_the_best_local_model_right_now/"
 )
-FEED_CHANNEL_ID = "UCharbourlight0000000000"
+FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id=UCharbourlight0000000000"
 ARTICLE_TITLE = "Rate_limiting"
 PROFILE_SLUG = "avery-lindqvist-8a41b207"
 INSTAGRAM_USERNAME = "harbourlight.optics"
@@ -139,7 +139,7 @@ def roster_manifest():
         steps=(
             discovery("s49-archive-search", "reddit_archive", "search:subreddit=LocalLLaMA"),
             hydration("s02-archive", "reddit_archive", REDDIT_PERMALINK, ARCHIVED_POST_ID),
-            discovery("s04-channel-feed", "rss_atom", FEED_CHANNEL_ID),
+            discovery("s04-channel-feed", "rss_atom", FEED_URL),
             discovery("s13-hn-search", "hacker_news", "local models"),
             hydration(
                 "s14-hn-story",
@@ -280,8 +280,8 @@ def assert_nothing_wanted_a_credential(case, artifact, expected_adapters):
         case.fail("the artifact reported " + AUTH_REQUIRED)
 
 
-FEED_STEP = discovery("s04-channel-feed", "rss_atom", FEED_CHANNEL_ID)
-FEED_REQUEST = adapters.AdapterRequest(step_id=FEED_STEP.step_id, query=FEED_CHANNEL_ID)
+FEED_STEP = discovery("s04-channel-feed", "rss_atom", FEED_URL)
+FEED_REQUEST = adapters.AdapterRequest(step_id=FEED_STEP.step_id, query=FEED_URL)
 
 
 def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):

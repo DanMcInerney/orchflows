@@ -1,18 +1,20 @@
 ---
 name: playtest-3d-browser-game
-description: Independently play and assess an exact Three.js game build, covering usability, mechanics, QA and rendered assets using one fresh reviewer without repairs.
+description: Independently assess an exact Three.js build through browser play, mechanics, QA and rendered assets; no repairs.
 disable-model-invocation: true
 ---
 
-Reuse or establish [library context](../../references/library-context.md). Declare one fresh reviewer who did not make the candidate. Resolve `core` or `final` scope from the caller; a standalone request reviews the supplied game's current scope. Require the brief, source/build identity and runnable location/commands. Read the [test interface](../../references/test-interface.md) and [evidence contract](../../references/evidence.md).
+Apply [library context](../../references/library-context.md), [test interface](../../references/test-interface.md) and [evidence](../../references/evidence.md). Resolve `core` or `final` scope; standalone review uses the supplied game's scope. Require the brief, source/build identity and runnable location/commands.
 
-Invoke `orchflows:orch-review` once, with the selected Review guidance, exact candidate, conditions, test route/scenarios and evidence location. Freeze edits or isolate the candidate/server. Give the reviewer the public player instructions first, with maker explanations, previous findings and QA evidence reserved until its first ordinary run reaches an outcome or an observed blocker. Its assignment is:
+Use `orchflows:orch-review` once with a fresh reviewer who made none of the candidate; final review uses a different reviewer from core. Supply applicable common/Review guidance, exact candidate, conditions, test route/scenarios and evidence location. Freeze edits or isolate the candidate/server. Provide public instructions first; reserve maker explanations, previous findings and QA evidence until first ordinary play reaches an outcome or observed blocker.
 
-1. Confirm the served candidate and actual browser input/rendering capabilities. Record conditions and limitations. Run/install only what the project's declared instructions require.
-2. Attempt first play using only the public instructions and rendered feedback, through an outcome or an observed blocker. Observe comprehension, time to meaningful action, control/camera behavior and whether setbacks explain themselves. Record uncertainty before consulting design notes. Reuse a complete run for step 3's session requirement. If private notes were read earlier, state that boundary and label subsequent play as informed.
-3. Play a complete representative session adaptively, including at least one changed tactic caused by something observed. Reach an outcome and retry through ordinary input. Try a different viable approach, a failure/setback with recovery, and an exploit/dominant-strategy attempt. Apply the playtesting guidance, adapting session boundaries to the genre.
-4. Read the design/maker notes and run targeted diagnostic scenarios and regressions. Separate naturally reached states from injected fixtures and assisted play. Inspect rule outcomes, input lifecycle, camera/collider behavior, important branches, errors and repeated reset. Record coverage and missing cases explicitly.
-5. In `core` scope, judge readable graybox mechanics, decisions, feedback and full-loop feasibility; do not demand production art. In `final` scope, also inspect integrated assets at gameplay scale, motion, UI/loading/outcome flows, audio where supported, and measured performance evidence under its stated conditions. Run performance checks only where the environment supports the claimed target; otherwise mark the target unverified.
-6. Save an evidence-linked report with episodes, coverage, findings and ready/needs change/unverified conclusion. Explain the causal gameplay impact and most useful changes. Return actual observations, contradictions and limits, not a checklist with inferred passes.
+Assign the reviewer:
 
-The reviewer makes or delegates no repairs, edits no game state through undocumented shortcuts, and creates no child agents. It may write its report, captures and isolated test artifacts. Return the report and evidence paths to the caller; this leaf neither repairs nor launches another judgment round.
+1. Confirm the served candidate and actual browser input/rendering capabilities; record conditions and limits. Install/run only declared project requirements.
+2. Attempt first play from public instructions and rendered feedback through an outcome or blocker. Record comprehension, time to meaningful action, controls/camera, setback clarity and uncertainty before reading design notes. This run may satisfy step 3. Disclose earlier private-note exposure and label subsequent play informed.
+3. Play a complete representative session adaptively: change a tactic because of an observation, reach an outcome and retry through ordinary input. Try another viable approach, setback/recovery and an exploit/dominant-strategy attempt. Adapt session boundaries to the genre under playtesting guidance.
+4. Read maker/design notes, then run diagnostic scenarios and regressions. Distinguish natural reachability, injected fixtures and assisted play. Inspect rules, input lifecycle, camera/colliders, important branches, errors and repeated reset; record omissions.
+5. For `core`, judge graybox mechanics, decisions, readable feedback and full-loop feasibility without demanding production art. For `final`, also inspect runtime assets, motion, UI/loading/outcomes, supported audio and measured performance. Claim target performance only where the environment supports it; otherwise mark it unverified.
+6. Save an evidence-linked report of episodes, coverage, findings, causal gameplay impact, useful changes, contradictions and limits, concluding ready/needs change/unverified. Never infer passes from a checklist.
+
+The reviewer neither alters the candidate nor makes/delegates repairs or undocumented game-state edits. Reports, captures and isolated test artifacts are allowed. Return their paths; add no judgment round.

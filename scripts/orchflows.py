@@ -25,7 +25,7 @@ import native_logs
 
 CORE_NAME = "orchflows"
 CORE_ENTRIES = ("plugin.json", ".claude-plugin", ".codex-plugin", ".kimi-plugin", "skills", "guidance", "docs", "scripts",
-                "README.md", "AGENTS.md", "CLAUDE.md", "LICENSE")
+                "README.md", "DESIGN.md", "AGENTS.md", "CLAUDE.md", "LICENSE")
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
 HOME_README = """# orchflows home
 
@@ -227,15 +227,15 @@ def _init_git(home: Path) -> tuple[str, list[str]]:
 
 
 def setup(home: Path, source: Path, example: str | None = None, *,
-          concurrency: int | None = None, skip_host_config: bool = False,
+          concurrency: int | None = None,
           hosts: list[str] | tuple[str, ...] | None = None) -> dict:
     home, source = home.resolve(), source.resolve()
     _validate_core(source)
     selected = host_integration.select_hosts(hosts)
     if concurrency is not None and (type(concurrency) is not int or concurrency < 1):
         raise ValueError("Concurrency must be a positive integer")
-    if concurrency is not None and (skip_host_config or not selected):
-        raise ValueError("--concurrency requires selected hosts and cannot combine with --skip-host-config")
+    if concurrency is not None and not selected:
+        raise ValueError("--concurrency requires selected hosts")
     for relative in ("libraries", ".local", ".local/packages", f".local/packages/{CORE_NAME}", ".local/runtime",
                      ".agents", ".agents/plugins", ".claude-plugin", ".git"):
         if _is_link(home / relative):
@@ -438,10 +438,8 @@ def main(argv: list[str] | None = None) -> int:
     setup_parser.add_argument("--home", help=home_help)
     setup_parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1])
     setup_parser.add_argument("--example", metavar="NAME", help="Copy a named library from the source's example-workflows directory")
-    host_options = setup_parser.add_mutually_exclusive_group()
-    host_options.add_argument("--concurrency", type=int, metavar="N",
+    setup_parser.add_argument("--concurrency", type=int, metavar="N",
                               help="Tune supported concurrency limits in detected, selected hosts (default: preserve settings)")
-    host_options.add_argument("--skip-host-config", action="store_true", help="Preserve concurrency settings (the default); registration still runs")
     doctor_parser = commands.add_parser("doctor", help="Check a home without changing it")
     doctor_parser.add_argument("--home", help=home_help)
     for command in (setup_parser, doctor_parser):
@@ -459,7 +457,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "setup":
             result = setup(home_path(args.home), args.source.expanduser(), args.example,
-                           concurrency=args.concurrency, skip_host_config=args.skip_host_config, hosts=args.host)
+                           concurrency=args.concurrency, hosts=args.host)
         elif args.command == "doctor":
             result = doctor(home_path(args.home), hosts=args.host)
         elif args.command == "resolve":

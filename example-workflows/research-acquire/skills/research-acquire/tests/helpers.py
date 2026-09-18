@@ -60,7 +60,7 @@ ROSTER_WINDOW_START = "2026-08-01T00:00:00Z"
 ROSTER_QUERIES = {
     "hacker_news": ("python", ROSTER_WINDOW_START),
     "reddit_shreddit": ("listing:programming", ""),
-    "rss_atom": ("UC_x5XG1OV2P6uZZ5FSM9Ttw", ""),
+    "rss_atom": ("https://www.youtube.com/feeds/videos.xml?channel_id=UC_x5XG1OV2P6uZZ5FSM9Ttw", ""),
     "scholarly": ("crossref:machine learning", ""),
     "x_fxtwitter": ("conversation:123", ""),
 }

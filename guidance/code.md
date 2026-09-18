@@ -1,7 +1,5 @@
 # Code
 
-## Make
-
 Prefer code files below roughly 500 lines; split longer changed files at coherent responsibility boundaries when this improves the design. Give each behavior one owner. Use a maintained dependency when it simplifies the implementation.
 
 Design tests to run independently and in parallel, with isolated state and fixtures. Test observable behavior rather than implementation structure.

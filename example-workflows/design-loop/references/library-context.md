@@ -1,7 +1,7 @@
 # Library context
 
-Require Orchflows core `orchflows` 0.7.0+ with `orch-work`, `orch-review` and native child delegation. Resolve core through native skills, supplied package roots or core's `resolve` CLI. Core `docs/architecture.md` owns guidance selection and `docs/hosts.md` owns isolation and host controls.
+Require core `orchflows` 0.12.0+ and apply its `docs/architecture.md`. Full runs and standalone `test-increment` also require `shared` 0.4.0+ with `compare-candidates` and native independent review. Resolve packages through native skills, supplied roots or core's `resolve` CLI; reuse paths. Missing comparison capability blocks that stage.
 
-Resolve context once at the outer entrypoint, including a leaf invoked alone. Select `design-iteration` from this library and the caller's task domains, such as `code`, `writing` or `visual-design`. Include `design-loop` if absent from the selected libraries, preserving the supplied library order. Resolve absolute primitive and guidance paths and pass them with the request context unchanged through composed workflows. Makers apply Make; reviewers apply Review. Extend context only for new dependencies, and preserve scoped caller model and effort choices without adding defaults.
+Select `design-iteration` plus applicable caller guidance and task domains. Include `design-loop` in selected libraries if absent, preserving supplied order.
 
-The host must provide the tools needed to inspect, implement and test the requested project, preserve reproducible states, and research decision-relevant uncertainties. No fixed project runtime or research service is bundled. Report unavailable dependencies and blocked stages as gaps. Keep outputs, snapshots and evidence in the caller's workspace, never inside this library.
+The host supplies inspection, implementation, testing, reproducible snapshots and research tools; no project runtime or research service is bundled. Report missing dependencies and blocked stages as gaps. Keep outputs, snapshots and evidence in the caller's workspace, outside this library.

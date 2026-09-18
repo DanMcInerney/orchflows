@@ -2,4 +2,4 @@
 
 ## Make
 
-Scores are net votes and may be negative; they are not counts of agreeing participants. Top comments are a selected sample.
+Scores are net votes, possibly negative, not agreeing-participant counts. Top comments are a selected sample.

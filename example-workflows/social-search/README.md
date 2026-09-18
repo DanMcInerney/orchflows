@@ -1,82 +1,67 @@
-# Social Search
+# Social Search: follow the evidence across sources
 
-**One question. Parallel researchers. An answer you can trace.**
+Ten posts repeating one study are still one study. Social Search divides a question across public sources, preserves what researchers actually inspected, and gives a fresh reviewer the whole collection. You get a ranked, cited assessment with disagreements and coverage gaps intact.
 
-Give Social Search a question and the public sources you care about. Researchers collect distinct evidence in parallel, then a fresh reviewer ranks what actually supports the answer. You get a cited assessment, the source material behind it, and the gaps that still matter.
-
-Use it to investigate a product's reception, compare developer experiences, or follow a research claim from its original paper into public discussion.
-
-## Try it
-
-After [installation](#install), paste this into your agent:
+After [installation](#install), try:
 
 ```text
-Use social-search:social-search to investigate what developers report about
-running SQLite in production. Search Hacker News, Reddit, and original
-technical writeups from the last 30 days. Give shared original-source checks
-one owner. Rank the strongest evidence, explain disagreements, and link the
-inspected sources. Spend at most 20 minutes including review. Save the report
-and collection evidence in research/sqlite-production.
+$social-search:social-search
+Investigate what developers report about running SQLite in production.
+Search Hacker News, Reddit, and original technical writeups from the last
+30 days. Give shared original-source checks one owner. Explain the strongest
+evidence and disagreements. Spend at most 20 minutes including review.
+Save the assessment and collection evidence in research/sqlite-production.
 ```
 
-Change the question, dates, sources, time limit, and output directory. Sources can be a site, a web scope, supplied feeds, or related sources grouped into one assignment.
+Use `/social-search:social-search` in Claude Code. Change the question, dates, sources, bounds and output directory. An assignment can cover a site, a web scope, supplied feeds or related sources together.
 
-## Why this is useful
-
-- **Parallel coverage with clear ownership.** Researchers divide unmet scope. Shared originals get one owner, so overlapping discussions can reuse the same source check.
-- **A fresh judgment.** The final reviewer reads the collected evidence and ranks its support, provenance, limitations, and independent corroboration.
-- **Context survives collection.** Relevant dates, inspected excerpts, discussion context, and available engagement travel with each finding. Multiple posts citing one study remain one underlying study.
-- **Gaps survive the summary.** Partial, blocked, and empty searches remain distinguishable. A failed source cannot silently become “nobody is talking about this.”
-
-## How it works
+## Collect separately, judge together
 
 ```mermaid
-flowchart LR
-    Q[Question and bounds] --> A[Assign distinct source scopes]
-    A --> R1[Researcher A]
-    A --> R2[Researcher B]
-    A --> RN[Researcher N]
-    R1 --> E[Evidence and coverage gaps]
-    R2 --> E
-    RN --> E
-    E --> J[Fresh reviewer ranks evidence]
-    J --> O[Cited assessment]
+flowchart TD
+    Q[Question, sources and bounds] --> A[Assign distinct source scopes]
+    A --> B[Collect discussions]
+    A --> C[Inspect shared originals]
+    B --> E[Gather evidence and every outcome]
+    C --> E
+    E --> R[Fresh reviewer ranks support]
+    R --> O[Cited assessment and gaps]
+    classDef input fill:#dbeafe,stroke:#1d4ed8,color:#172554;
+    classDef work fill:#d1fae5,stroke:#047857,color:#064e3b;
+    classDef review fill:#ede9fe,stroke:#6d28d9,color:#2e1065;
+    classDef output fill:#fef3c7,stroke:#b45309,color:#451a03;
+    class Q input;
+    class A,B,C,E work;
+    class R review;
+    class O output;
 ```
 
-**N collection assignments use N workers and one reviewer.** Collection runs through `search-site` → `orch-work`; assessment runs through `rank-evidence` → `orch-review`. The coordinator gathers every outcome before review. A total time limit includes collection, handoff, and assessment.
+The coordinator launches independent collection assignments within capacity and provider limits. Shared original-source checks have one owner; other researchers contribute distinct evidence. Existing evidence can fill part of the scope, so collection focuses on what is missing.
 
-Already have evidence? Supply it and collect only what's missing, or invoke the assessment leaf directly. The reviewer assesses the supplied material without collecting more or changing it.
+Time limits include collection, evidence writing, gathering and the final review. At the handoff deadline, unfinished work stops; useful partial material survives and missing assignments become gaps. One fresh assessor then ranks the gathered evidence without collecting more or changing it.
 
-| Entrypoint | Use it for | Fresh children |
-| --- | --- | --- |
-| [social-search](skills/social-search/SKILL.md) | Collect and assess a bounded question | N workers + 1 reviewer |
-| [search-site](skills/search-site/SKILL.md) | Collect one source assignment | 1 worker |
-| [rank-evidence](skills/rank-evidence/SKILL.md) | Assess evidence you already have | 1 reviewer |
+| Entrypoint | Result |
+| --- | --- |
+| [social-search](skills/social-search/SKILL.md) | Collection plus one independent assessment |
+| [search-site](skills/search-site/SKILL.md) | Evidence for one bounded source assignment |
+| [rank-evidence](skills/rank-evidence/SKILL.md) | Independent assessment of evidence already supplied |
 
-## What you get
+## A claim you can trace
 
-A ranked, cited assessment plus a compact `results.md` per collection assignment, with links to supporting artifacts. Findings retain inspected support, original URLs, date qualifications, relevant engagement when available, and coverage limits. The [evidence contract](references/evidence.md) defines the handoff.
+Each collection writes `results.md` with original URLs, inspected support, qualified dates, available engagement and coverage limits. A search snippet is a lead. An abstract supports claims about its contents, not uninspected methods. Sampled discussion establishes experiences or viewpoints, not prevalence; engagement and reliability stay separate. The [evidence contract](references/evidence.md) defines these distinctions.
 
-Reach and reliability are assessed separately. Sampled discussion can show what participants experienced; it cannot establish how common that experience is. Supplied sources and available access determine coverage.
+Adapt [research guidance](guidance/research.search-site.md) and its site specializations to your question. [Library context](references/library-context.md) owns guidance selection and dependencies.
 
 ## Install
 
-From a complete Orchflows checkout with Python 3.11+:
+Run from a complete Orchflows checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example social-search
 ```
 
-Register the home and install core plus `social-search` for your host using core's `docs/hosts.md`, then start a new session. Setup preserves existing user-owned library copies; apply example updates to that copy before refreshing an existing install.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies and installs no runtime dependencies. Skills are manual-only by default. Requires **core 0.11.0+, native child delegation and public search/read tools**.
 
-All three skills are manual-only by default. Invoke `$social-search:social-search` in Codex or `/social-search:social-search` in Claude Code; substitute the leaf name to use it alone.
+Optionally run `python scripts/orchflows.py setup --example research-acquire` for bounded acquisition and optional YouTube captions; register that library too. It owns its runtime requirements; generic feeds require 0.4.0+.
 
-Requires Orchflows 0.7.0+, native child delegation, and public search/read tools. Optional `python scripts/orchflows.py setup --example research-acquire` adds acquisition tools and a YouTube transcript reader; install that library with your host too. It owns its dependencies and routes, and its generic feed support requires version 0.4.0+. Setup installs no library runtime dependencies.
-
-## Make it yours
-
-[Research guidance](guidance/research.search-site.md) sets collection and assessment criteria. Site specializations cover Reddit, Hacker News, GitHub, X, YouTube, web, feeds, and Lemmy; unfamiliar sites use the general criteria with available tools. [Library context](references/library-context.md) connects guidance, dependencies, and output paths.
-
-Trial specifications cover [sites](trials/request.md), [web/feeds/Lemmy](trials/web-feeds-lemmy/request.md), and [papers/discussion](trials/papers-and-discussion/request.md). They describe requests and expected behavior, not observed results.
-
-Adapted from [orchflows recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under the retained [MIT license](LICENSE).
+[Trial specifications](trials/request.md), including [web/feeds/Lemmy](trials/web-feeds-lemmy/request.md) and [papers/discussion](trials/papers-and-discussion/request.md), describe expected behavior, not observed passes. Adapted from [recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under the retained [MIT license](LICENSE).

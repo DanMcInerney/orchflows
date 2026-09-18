@@ -1,0 +1,10 @@
+# Observable acceptance
+
+- Invoke the installed builder by native name in an unrelated workspace, using only the request, source packet and declared dependencies. Record registration separately from execution.
+- It creates a complete personal library with a fresh workflow and discoverable guidance. Current question, source records and options stay invocation inputs. The workflow discovers available components and uses only those whose contracts fit; it does not force domain-specific components into generic stages.
+- The generated workflow is executed on ordinary inputs. A fresh draft is produced from actual evidence; no defective draft or staffing plan is supplied to force a repair path.
+- Trace dependency resolution, actual primitive delegation, independent evidence assessment, draft production and review, any justified repair and verification. Preserve review versus delivered identities. No dynamic fallback is imported as a component.
+- Native composition must use a supported route. A denied native call must not be bypassed by reading its file. File-based composition without a denied call may be supported, but does not prove separate native invocation of that component.
+- Register the generated library in the isolated host and invoke its entrypoint by name in a separate workspace. Reuse its guidance in a simpler process on the same source packet to check that taste is not trapped in the recipe. Treat resulting differences as observations, not a performance comparison.
+- Record preparation, repairs to test setup, author interventions, unexercised paths and actual package identities. Audit launches, assignments and continuations: all come from the top-level orchestrator. Confirm requested model/effort in native metadata and distinct research/writing guidance in the relevant assignments. Measure recipe plus required context; brevity alone does not prove quality. Do not supply this file to executing workers.
+- Reviewer-only settings must not be applied to makers or fixers to work around missing host controls. Report unsupported assignment scoping as a validation gap; a session-wide setting does not establish per-role control.

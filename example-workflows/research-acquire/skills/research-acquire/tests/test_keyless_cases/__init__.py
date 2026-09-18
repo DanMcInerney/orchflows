@@ -1,1 +1,1 @@
-"""Behavioral seams supporting the legacy ``tests.test_keyless`` suite."""
+"""Behavioral partitions loaded by tests.test_keyless."""

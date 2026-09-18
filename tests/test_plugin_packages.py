@@ -9,6 +9,25 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PluginPackageTests(unittest.TestCase):
+    def test_only_dynamic_workflow_allows_automatic_selection(self):
+        packages = [ROOT, *sorted((ROOT / "example-workflows").iterdir())]
+        automatic = []
+        for package in packages:
+            for skill in sorted((package / "skills").glob("*/SKILL.md")):
+                with self.subTest(skill=str(skill.relative_to(ROOT))):
+                    frontmatter = skill.read_text(encoding="utf-8").split("---", 2)[1]
+                    claude = [line.split(":", 1)[1].strip() for line in frontmatter.splitlines()
+                              if line.startswith("disable-model-invocation:")]
+                    metadata = (skill.parent / "agents/openai.yaml").read_text(encoding="utf-8")
+                    codex = [line.split(":", 1)[1].strip() for line in metadata.splitlines()
+                             if line.strip().startswith("allow_implicit_invocation:")]
+                    is_dynamic = skill == ROOT / "skills/orch-dynamic-workflow/SKILL.md"
+                    self.assertEqual(claude, ["false" if is_dynamic else "true"])
+                    self.assertEqual(codex, ["true" if is_dynamic else "false"])
+                    if is_dynamic:
+                        automatic.append(skill)
+        self.assertEqual(len(automatic), 1)
+
     def test_host_manifests_match_package_identity_and_reachable_skills(self):
         packages = [ROOT, *sorted((ROOT / "example-workflows").iterdir())]
         for package in packages:

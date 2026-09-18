@@ -1,45 +1,45 @@
 # Export contract
 
-A raw skill is one installable directory containing `SKILL.md` and any required `agents/`, `references/`, `scripts/` and `assets/`. It has no runtime dependency on Orchflows, its home, library registry or other installed workflows. It can still require native host capabilities, tools and language runtimes; state those requirements in the skill. A single file or a single agent is a separate constraint, used only when requested.
+A raw skill is one installable directory with `SKILL.md` and needed `agents/`, `references/`, `scripts/` and `assets/`. It has no runtime dependency on Orchflows, its home/registry or other installed workflows. Declare required host capabilities, tools and runtimes. Single-file/single-agent export is an additional caller constraint.
 
 ## Resolve and bundle
 
-Read the dependency closure, including links from guidance and references, script imports and data files. Track visited resources so shared dependencies are bundled once and reference cycles do not cause recursive copying. Preserve any intentional workflow loop and its stopping condition. Identify dynamic dependencies that cannot be enumerated; bind an explicit supported scope or report the unresolved capability instead of claiming a universal export.
+Traverse workflows, guidance/reference links, script imports and data dependencies. Track visited resources to bundle shared dependencies once and terminate reference cycles; preserve intentional workflow loops/bounds. For dynamic dependencies, define supported scope or disclose unresolved capability rather than claiming universal coverage.
 
-Resolve guidance by the core selection rule established in [library context](../../../references/library-context.md). Snapshot the selected core and library layers with their order and Make/Review roles intact. Keep corrections separately removable. For runtime domain selection, bundle the supported domains and retain their selection rules; an unbundled explicit domain is a gap. Do not silently freeze an open-ended workflow to the trial's domain or drop a library-only specialization.
+Resolve guidance through [library context](../../../references/library-context.md). Snapshot selected core/library layers with order, common criteria, Make/Review additions, explicit paths and call applicability. Local extensions stay local; corrections remain removable. For runtime domain selection, bundle supported domains and preserve selection rules. Missing explicit domains remain gaps; never silently freeze open-ended selection to the trial domain or discard library-only specializations.
 
-Flatten composed workflow decisions into the entrypoint or local references. Replace native skill invocations and package resolution with local instructions and paths. Keep a shared contract in one local reference when multiple steps use it. Remove obsolete package-setup and registration instructions from runtime instructions; extract any behavior-bearing rules from architecture or host documents before dropping their links.
+Flatten composed decisions into entrypoint/local references. Replace native skill invocation/package resolution with local instructions/paths; shared contracts have one local owner. Remove obsolete package setup/registration after retaining behavior-bearing architecture/host rules.
 
-Copy required scripts and assets with their transitive local dependencies. Rewrite package-relative paths, imports and data lookups so they work from the exported skill directory; keep task inputs and outputs relative to the caller's workspace. Never bake author-machine paths, credentials, caches or trial outputs into the skill. Preserve applicable licenses and attribution. Omit unrelated package files and plugin manifests unless the caller separately requests plugin packaging.
+Copy scripts/assets with transitive local dependencies. Resolve their paths/imports/data from the export and task inputs/outputs from the caller workspace. Exclude author-machine paths, credentials, caches, trial outputs and unrelated package files/manifests; plugin packaging requires a separate request. Preserve licenses/attribution.
 
-Optional integrations may remain optional only when a usable bundled or native fallback preserves the source's contract. Required external tools, runtimes and authentication remain declared prerequisites; the export does not provision them. A required non-Orchflows skill must be bundled too, or remain an explicitly unresolved gap.
+Optional integrations remain optional only when the source defines useful behavior without them; invent no substitute. Declare external tools/runtimes/authentication without provisioning them. Bundle required non-Orchflows skills or report unresolved dependencies.
 
 ## Preserve or disclose
 
-Preserve source defaults. Model, effort and other choices for the export session or trial do not become exported runtime defaults unless the caller asks to save them.
+Preserve source defaults. Authoring/trial settings become runtime defaults only on explicit caller request.
 
-| Source feature | Standalone treatment |
+| Source feature | Standalone contract |
 | --- | --- |
-| `orch-work` | Replace with direct native delegation to a fresh child, carrying the assignment, workspace/input state, resolved local Make guidance and scoped caller choices. |
-| `orch-review` | Replace with a fresh native child who did not make the candidate, applying local Review guidance without making or delegating repairs. |
-| Composition, parallel work, joins and handoffs | Preserve dependencies, ownership, declared agent count, output contracts, bounds and partial-result handling using native host tools. |
-| Repairs, loops, checkpoints and continuous runs | Preserve requested stopping and promotion rules. Host execution/resume remains required; a skill does not add a scheduler. |
-| Model and effort choices | Preserve saved assignment settings and caller overrides; current caller beats saved, named assignment beats its operation default within each source, resolved separately per field. Unspecified fields stay unset. Apply through supported native controls; prompt text alone does not select a model. Reuse an agent only if its settings fit. Unsupported settings are gaps, never silent substitutions. |
-| Isolation | Preserve the intended workspace and input revision, including required uncommitted inputs. Use native isolation or an explicit worktree when available; missing required isolation blocks the affected step. |
-| Layered guidance and model corrections | Bundle a snapshot with precedence, roles and removable layers. Shared upstream updates and discovery of new libraries stop; re-export to refresh them. |
-| Home resolution and installed helper workflows | Replace with bundled local dependencies. No setup-managed runtime or Orchflows resolver remains necessary. |
-| Host-specific APIs, history or environment mutation | Adapt to declared target capabilities and ownership paths. If the purpose depends on editing Orchflows itself, a generic standalone equivalent needs an explicit new target; disclose that limitation. |
+| `orch-work` | Fresh native maker with assignment, workspace/input state, applicable common/Make guidance and scoped choices |
+| `orch-review` | Fresh nonmaker with applicable common/Review guidance; no repairs or repair delegation |
+| Composition, parallelism, joins/handoffs | Same coordinator, scoped inputs/guidance; references add no agents/reviews or reset bounds. Only top-level orchestrator launches, assigns and continues agents; children return results/requests. Preserve dependencies, ownership, counts, caller constraints, outputs, bounds and partial results through native tools. |
+| Repairs/loops/checkpoints/continuous runs | Preserve stopping/promotion rules and consumed attempts through resume; host execution/resume remains necessary. A skill adds no scheduler. |
+| Model/effort | Resolve fields separately: caller over saved; within each, named assignment over stage over operation default. Runtime assignments inherit stages; unspecified fields stay unset. Apply supported native controls, not prompt-only names. Reuse only compatible workers; unsupported controls are gaps. |
+| Isolation | Preserve workspace/revision and required uncommitted inputs through native isolation or explicit worktrees. Missing required isolation blocks that step. |
+| Guidance/corrections | Snapshot precedence, roles and removable layers. Upstream refresh/new-library discovery requires re-export. |
+| Home/helpers | Bundle dependencies; require no Orchflows runtime/resolver. |
+| Host APIs/history/environment mutation | Adapt to declared target capabilities/ownership. Editing Orchflows itself requires an explicit new target for a generic equivalent; disclose limits. |
 
-Keep the behavioral guarantees in the exported instructions. Missing native delegation does not turn an independent review into self-review. If the caller requests a single-agent adaptation, label the loss of fresh context, parallelism, independent judgment and per-agent controls. Serial execution is equivalent only where concurrency is not part of the source contract or its bounds.
+Retain guarantees in runtime instructions. Missing native delegation cannot become self-review. A requested single-agent adaptation must disclose losses of fresh context, parallelism, independent judgment and per-agent controls. Serialization is equivalent only when concurrency is outside source guarantees/bounds.
 
-A requested single-file export must inline required textual guidance and contracts. Required scripts, binary assets and Codex invocation metadata cannot simply be discarded: disclose which constraints prevent a faithful single-file result, and offer the folder form or a caller-requested adaptation. Do not represent a bare file as preserving settings that require a sidecar.
+A single-file export must inline required text. Scripts, binaries and invocation sidecars cannot simply disappear: identify conflicts, offer folder form or caller-requested adaptation, and never claim sidecar-dependent settings for a bare file.
 
 ## Verify portability
 
-Move a copy of the completed folder to an unrelated workspace. Check local Markdown targets, script entrypoints, imports and resource loading there. Inspect remaining package names and absolute paths by meaning: provenance can name the source, runtime instructions cannot require it. Verify supported frontmatter, invocation metadata and that every bundled reference is reachable when needed.
+Relocate a copy to an unrelated workspace. Check Markdown targets, script entrypoints/imports/resources, supported frontmatter, invocation metadata and reference reachability. Inspect absolute paths/package names by meaning: provenance may name the source; runtime must not require it.
 
-The bounded trial must run using that copy and declared prerequisites, without reading the source checkout, Orchflows home or unrelated installed skills. Use a fresh native child with only those inputs; if the host cannot provide that context boundary, record the trial's weaker isolation. Do not claim filesystem isolation merely because the child was instructed to avoid the source.
+Trial the copy with declared prerequisites, without source checkout, Orchflows home or unrelated installed skills. Follow core's workflow-trial contract in a fresh top-level session; unavailable sessions are execution gaps, not permission for child orchestration. Instructions to avoid source files alone do not establish filesystem isolation.
 
-Choose a trial that exercises the workflow's primary capability with available, authorized tools. For live retrieval, exercise discovery and source inspection; a fixture-only trial validates only the offline path. If the primary capability cannot be exercised, report it as unvalidated.
+Exercise representative behavior with realistic synthetic inputs and simulated external effects. For retrieval, fake discovery and source-inspection responses, including relevant failures; report live access unvalidated. Supplied documents are read-only fixture-design references. Keep real independent reviewers; service fakes do not replace judgments. Trial containment does not change the export's production permissions or capabilities.
 
-Compare observed outputs and orchestration with the source contract. A successful path does not establish failure handling, all dynamic branches, another host or future source changes. Report those limits separately from unresolved required dependencies. Passing link and metadata checks alone establishes packaging, not behavior.
+Compare observed outputs/orchestration with source contracts. Report untested failures, dynamic branches, hosts and future source changes separately from unresolved dependencies. Link/metadata checks establish packaging, not behavior; simulation establishes no live integration.

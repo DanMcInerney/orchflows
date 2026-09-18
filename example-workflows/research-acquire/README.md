@@ -1,102 +1,101 @@
-# Research Acquire
+# Research Acquire: make source reads count
 
-**Every research rabbit hole needs a budget and a way back.**
+An interesting search result creates a choice: read deeper, or spend the remaining budget elsewhere. Research Acquire makes that choice explicit. Discover public records, select the ones worth inspecting, and save evidence, receipts and resume state under one set of limits. It runs in the current agent, with **no child agents**; the caller interprets the evidence.
 
-Research Acquire gives your agent a bounded way to collect public evidence: discover candidates, choose the ones worth reading, fetch their details, and save the evidence with receipts. An interrupted run can resume from its checkpoint with the same plan and remaining budget.
-
-It works inside the current agent. **Zero child agents.** The caller decides what the evidence means.
-
-## Try it
-
-After [installation](#install), paste this into your agent:
+After [installation](#install), try:
 
 ```text
-Use research-acquire:research-acquire to collect Hacker News evidence about
-SQLite in production from the last 30 days. Discover up to 10 stories,
-then select at most 2 discussions worth reading, with up to 20 records each.
-Use one plan capped at 3 steps, 8 requests, 50 records, and 120 seconds of
-active acquisition. Save inspected evidence, selection reasons, receipts,
-and resume state in research/sqlite-hn. Report any coverage gaps.
+$research-acquire:research-acquire
+Collect Hacker News evidence about SQLite in production from the last
+30 days. Discover up to 10 stories, then select at most 2 discussions
+worth reading, with up to 20 records each. Use one plan capped at 3 steps,
+8 requests, 50 records, and 120 seconds of active acquisition.
+Save inspected evidence, selection reasons, receipts, and resume state
+in research/sqlite-hn. Report coverage gaps.
 ```
 
-Use it inside a larger research workflow, to deepen known leads, or to collect a reproducible evidence packet for later assessment. Supply the question, sources, date window, bounds, and output location.
+Use `/research-acquire:research-acquire` in Claude Code. Supply a question, sources, date window, limits and output location.
 
-## Follow the evidence, keep the receipts
+## Discover, choose, inspect
 
-```text
-Discovery → candidate list → agent selects with reasons → depth reads
-                                                           ↓
-                                             Evidence + receipts + checkpoint
+```mermaid
+flowchart TD
+    P[One plan with shared limits] --> D[Discover public records]
+    D --> C[Save candidates and losses]
+    C --> S[Agent selects from retained context]
+    S --> R[Read selected depth]
+    R --> E[Evidence packet, receipts and gaps]
+    C -. Saved state .-> K[Checkpoint preserves used budget]
+    R -. Saved state .-> K
+    classDef input fill:#dbeafe,stroke:#1d4ed8,color:#172554;
+    classDef work fill:#d1fae5,stroke:#047857,color:#064e3b;
+    classDef choice fill:#ede9fe,stroke:#6d28d9,color:#2e1065;
+    classDef output fill:#fef3c7,stroke:#b45309,color:#451a03;
+    class P input;
+    class D,R work;
+    class S choice;
+    class C,E,K output;
 ```
 
-- **Spend reads where they matter.** The agent selects candidates from their retained text and context before fetching deeper material.
-- **Carry the budget through resume.** One plan shares request reservations, source pacing, and limits across discovery and depth. Completed steps make no more requests when resumed.
-- **Preserve what happened.** Evidence records, selection reasons, source outcomes, losses, and budget usage remain inspectable.
-- **Keep uncertainty visible.** If a read started but its result was never saved, resume retains the uncertain gap. Source refusals and partial coverage stay in the handoff.
+The agent chooses depth reads from retained text and context, explaining relevance and omissions. Requests, pacing and limits are shared across discovery, depth and resume. Completed steps make no further requests. An interrupted read without a durable result stays uncertain, retains its budget reservation and is not replayed.
 
-Bounds are ceilings. Active-work limits do not guarantee total wall time, and a completed packet does not establish complete source coverage or answer the research question.
+Bounds are ceilings. Active-work limits do not guarantee total wall time; a completed packet establishes neither complete coverage nor an answer.
 
 ## What it can read
 
-The included routes use public access without credentials. Availability depends on the source; the [source operations reference](skills/research-acquire/references/selection-routes.md) defines exact queries, depth operations, and limits.
+Routes use public access without credentials. The [source operations reference](skills/research-acquire/references/selection-routes.md) defines exact syntax, depth operations and limits.
 
-| Source | Included operations |
+| Source | Operations |
 | --- | --- |
-| Reddit | Archive discovery, public listings/search, selected submissions and sampled comments |
-| Hacker News | Story/comment search and selected discussion trees or items |
-| GitHub | Anonymous repository search, repository details, issues, and releases |
-| Crossref and arXiv | Paper metadata and available abstracts; selected original-page reads |
-| Public web pages | Known HTTPS documents and available extracted prose; discovery uses host tools |
-| RSS and Atom | Supplied feed URLs, entries, and selected article reads |
-| X via FxTwitter | Known post IDs and returned conversation material through a third-party provider |
-| YouTube | Channel feeds; a separate optional reader for a known video's captions |
+| Reddit | Archive discovery, listings/search, selected submissions and sampled comments |
+| Hacker News | Story/comment search, discussion trees and items |
+| GitHub | Anonymous repository search/details, issues and releases |
+| Crossref/arXiv | Metadata, available abstracts and selected original-page reads |
+| Web | Known HTTPS documents and extracted prose; host tools own discovery |
+| RSS/Atom | Supplied feeds, entries and selected articles |
+| X via FxTwitter | Known post IDs and returned conversation material through a third party |
+| YouTube | Channel feeds; separate optional caption reader for known videos |
 
-An abstract remains an abstract. Captions are video speech. Sampled comments remain a sample. JavaScript rendering, X search, automatic feed discovery, and complete conversation coverage are outside these routes.
+Abstracts remain abstracts; captions are speech; sampled comments remain a sample. These routes exclude JavaScript rendering, X search, automatic feed discovery and guaranteed complete conversations.
 
-## What lands in your workspace
+## Keep the evidence directory together
 
-| Artifact | Why you want it |
+| Artifact | Contents |
 | --- | --- |
-| `packet.json` | Evidence records, relationships, step outcomes, and losses |
-| `summary.json` | Packet hash, counts, timings, limits, and gaps |
-| `candidates.json` and `selection.json` | What the agent could choose and why it chose |
-| `checkpoint.json` and step artifacts | Identities, reserved budgets, and saved results needed to resume |
+| `packet.json` | Records, relationships, step outcomes and losses |
+| `summary.json` | Packet hash, counts, timings, limits and gaps |
+| `candidates.json`, `selection.json` | Available choices and selection reasons |
+| `checkpoint.json`, step artifacts | Identities, reserved budgets and saved results |
 
-Keep the output directory together. Resume uses the unchanged plan and output location; identity changes, corruption, and uncertain reads have explicit handling in the [acquisition method](skills/research-acquire/references/acquisition.md). New scope needs a separate plan within the caller's remaining bounds.
-
-The optional [YouTube reader](skills/research-acquire/references/source-inspection.md) writes a separate caption receipt and, when retained, a timing-bearing caption sidecar.
+Resume uses unchanged plan/output paths. Changed identity or corrupt state refuses reuse; new scope needs a separate plan within remaining caller bounds. See the [acquisition method](skills/research-acquire/references/acquisition.md). The separate [YouTube reader](skills/research-acquire/references/source-inspection.md) saves a receipt and, when retained, a caption sidecar with timing.
 
 ## Install
 
-From a complete Orchflows checkout with Python 3.11+:
+Run from an Orchflows checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example research-acquire
 ```
 
-Register the home and install `research-acquire` for your host using core's `docs/hosts.md`, then start a new session. Setup preserves existing user-owned library copies; apply example updates to that copy before refreshing an existing install.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned copies and installs no runtime dependencies. The skill is manual-only by default.
 
-The skill is manual-only by default: `$research-acquire:research-acquire` in Codex or `/research-acquire:research-acquire` in Claude Code.
-
-The acquisition backend requires **Python 3.9+ and the standard library**. The optional YouTube reader needs `yt-dlp` in the same interpreter:
+The backend needs **Python 3.9+ and standard library**. Optional captions need `yt-dlp` in the same interpreter:
 
 ```sh
 python -m pip install yt-dlp
 ```
 
-Setup installs no library runtime dependencies. This skill runs in the current context and requires no child delegation.
+## Inspect or extend
 
-## Inspect or extend it
+Start with the [skill](skills/research-acquire/SKILL.md), [acquisition](skills/research-acquire/references/acquisition.md) and [routes](skills/research-acquire/references/selection-routes.md). [Protocol](skills/research-acquire/references/protocol.md) owns direct APIs/manual manifests. Mechanics and offline checks live in the skill's `scripts/` and `tests/`.
 
-Start with the [skill](skills/research-acquire/SKILL.md), [acquisition method](skills/research-acquire/references/acquisition.md), and [supported routes](skills/research-acquire/references/selection-routes.md). The [protocol](skills/research-acquire/references/protocol.md) covers direct APIs and manual manifests. Mechanics live in `skills/research-acquire/scripts/`; offline checks live beside them in `tests/`.
-
-From the skill directory, with `PYTHONPATH` set to its absolute `scripts/` path:
+From the skill directory, set `PYTHONPATH` to its absolute `scripts/` path:
 
 ```sh
 python -m unittest discover -s tests -t .
 python scripts/acquire_fixture.py --output <scratch>
 ```
 
-The fixture exercises parsing, selected depth, and resume offline. Neither it nor the unit suite establishes live access or research quality.
+The fixture exercises parsing, selected depth and resume without live access. These checks establish neither live availability nor research quality.
 
-Backend from [orchflows recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search), under its [MIT license](LICENSE).
+Backend adapted from [recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under its [MIT license](LICENSE).

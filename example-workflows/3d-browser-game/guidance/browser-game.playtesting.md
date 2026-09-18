@@ -1,19 +1,25 @@
 # Browser game playtesting
 
+Distinguish rule correctness, comprehension/control, sustained interest and rendered target quality. Scripts/state hooks establish only parts of correctness.
+
+Adaptive play observes the rendered situation, chooses intent, applies bounded ordinary input, inspects consequences and chooses again. Include an observation-driven change of plan. Match action duration to feedback speed; blind long sequences are coverage scripts.
+
+Cover entry through completion/retry, setback/recovery, consequential mechanic/content branches, alternate strategies and exploits. Where applicable, exercise pause/focus loss, resize, repeated restart, resource exhaustion, asset failure and saved state. Separate genuine play, deterministic scenario/seed coverage and diagnostics; explain omissions. Winning alone proves neither fairness nor depth.
+
+Inspect actual images/motion: gameplay-scale assets, camera occlusion, animation/feedback timing, HUD and start/outcome states. Inspect the game canvas as well as UI; moving overlays cannot prove 3D motion. Listen for audio claims or mark audio unreviewed. Judge graybox and finished art by their phases.
+
+Identify actual browser/device/input conditions and matrix coverage. Viewport emulation proves neither touch/controller behavior nor device performance. Pair diagnostics with rendered observations; unvisited states are unverified.
+
+Record observations and contrary evidence before conclusions. Findings identify build, scenario, reproduction, expected/observed behavior, player impact and captures/logs. Prioritize blocked/broken play, then substantial clarity/fairness/strategy defects, then polish. Do not infer audience enjoyment scores or device-wide performance from a few agent sessions.
+
 ## Make
 
-Prepare a test route an agent can actually use on this host: ordinary input and screenshots/motion, plus inspectable diagnostic controls. Put scarce timing-sensitive actions within the tool's capabilities using bounded held input or explicit time stepping for diagnostics. Keep ordinary real-time play available and label any assisted run. Test a concrete action with the real browser before committing to the route.
+Prove a usable host test route with ordinary input, screenshots/motion and inspectable diagnostics before relying on it. For timing-sensitive actions, use supported bounded holds or explicit diagnostic time stepping. Preserve ordinary real-time play and label assistance.
 
-Use named scenarios for hard-to-reach cases, seeded randomness where feasible and state snapshots that help explain failures. Scenarios should initialize legal game states and then execute normal rules. Keep setup shortcuts distinguishable from evidence of player reachability. Record which tested states were entered naturally and which were injected.
+Provide named hard-to-reach scenarios, feasible seeds and explanatory snapshots. Initialize legal states and run normal rules. Distinguish setup shortcuts from player reachability; record natural versus injected states and vary seeds/configurations that may expose defects.
 
 ## Review
 
-Separate four questions: do the rules work, can a player understand/control them, do choices sustain interest, and does the rendered game hold up on the stated target? Scripts and state hooks answer parts of the first; they cannot stand in for the others.
+Begin with public instructions only; attempt goal discovery, start, action and consequence interpretation before maker explanations/solutions. Then complete adaptive play under the common criteria.
 
-Begin with the public instructions alone. Attempt to identify the goal, begin, act and interpret consequences before reading maker explanations or solutions. Then play a complete session adaptively: observe the rendered situation, state a short intent, apply a bounded ordinary input, inspect what changed and choose the next action. Include at least one change of plan caused by observation. Adjust action duration to feedback speed; blind long input sequences are coverage scripts, not adaptive play.
-
-After first play, use design notes, scenarios and state summaries to diagnose. Exercise success/session completion, failure or setback, recovery and restart as appropriate; use different strategies, deliberately waste or hoard a resource, test boundaries and try to defeat the intended tradeoff. Visit the consequential branches and explain omissions. A win alone does not prove fairness or depth.
-
-Inspect actual images and motion from the game: assets at gameplay scale, camera occlusion, animation/feedback timing, HUD legibility and start/outcome states. Listen when judging audio; report unreviewed audio if unavailable. Capture and inspect the game's canvas as well as relevant UI. A moving overlay cannot prove a frozen 3D scene is functioning.
-
-Record observations and contrary evidence before concluding. Findings identify the build, scenario, reproduction steps, expected versus observed behavior, player impact and supporting captures/logs. Rank broken/blocked play before substantial clarity, fairness or strategy defects, then lesser polish. Report limitations plainly; do not infer a human enjoyment score or device-wide performance from a few agent sessions.
+After first play, use design notes, scenarios and summaries diagnostically. Waste/hoard resources, test boundaries and try to defeat tradeoffs. Support judgments with observed episodes and preserve the distinction between uninformed play and later diagnostics.

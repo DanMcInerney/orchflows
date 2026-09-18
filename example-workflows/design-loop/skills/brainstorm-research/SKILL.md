@@ -4,6 +4,6 @@ description: Generate project improvement options, then research their decision-
 disable-model-invocation: true
 ---
 
-Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are the request context, baseline and any prior observations or decisions; first-use baseline may be an empty workspace. This composing skill adds no agent of its own and uses 2 fresh children.
+Use the [handoff contract](../../references/design-loop-contract.md). Inputs: request context, baseline and any prior observations or decisions. An empty initial workspace is valid. Coordinate in the caller.
 
-Invoke [brainstorm-options](../brainstorm-options/SKILL.md), then [research-options](../research-options/SKILL.md) with those options and the unchanged request context. Return both handoffs together: candidate improvements, questions, evidence, ranking changes and unresolved gaps. Research informs design; this skill makes no adoption decision.
+Apply [brainstorm-options](../brainstorm-options/SKILL.md), then [research-options](../research-options/SKILL.md) to its options and applicable context. Return both handoffs: proposed improvements, questions, evidence, ranking changes and gaps. Make no adoption decision.

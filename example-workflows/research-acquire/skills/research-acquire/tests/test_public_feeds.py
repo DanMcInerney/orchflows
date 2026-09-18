@@ -158,7 +158,7 @@ class PublicFeedTests(unittest.TestCase):
         self.assertTrue(page.warnings)
 
     def test_unsafe_input_is_refused_before_transport(self):
-        for url in ("http://publisher.example/feed", "file:///tmp/feed", "https://127.0.0.1/feed",
+        for url in ("UC_example", "publisher", "", "http://publisher.example/feed", "file:///tmp/feed", "https://127.0.0.1/feed",
                     "https://10.0.0.1/feed", "https://[::1]/feed", "https://localhost/feed",
                     "https://user:secret@publisher.example/feed", "https://publisher.example:444/feed",
                     "https://publisher.example/\nfeed", "https://[bad/feed"):

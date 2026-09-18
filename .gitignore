@@ -1,6 +1,7 @@
 # Local reports, generated projects and trial runs.
 /reports/
 /artifacts/
+/design/
 /example-workflows/nightbind/
 /example-workflows/evolve/trials/decision-quality/
 /example-workflows/evolve/trials/self-evolution/

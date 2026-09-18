@@ -5,91 +5,62 @@
 - [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
-All delegation goes through these primitives. The host owns agent execution; orchflows adds no runtime, scheduler or workflow language. Loading a `SKILL.md` applies its instructions in the caller's context; it does not launch an agent. Composing workflows add only their own decisions and supply each child's assignment and context.
-
-Choose planning, delegation and isolation from unknowns, dependencies and edit conflicts. Run independent work concurrently.
-
-## Where things live
-
-Give each instruction and mechanism one owner; reference shared facts. READMEs address humans; other live documentation addresses agents.
-
-| Concept | Owner / location |
-| --- | --- |
-| Request and defaults: question, dates, sources, bounds, model, effort, output location | Caller prompt; [model and effort](#model-and-effort) covers saved preferences |
-| Coordination: composition, control flow, agent count | Composing workflow's `SKILL.md` |
-| Quality criteria, including source-specific preferences | `guidance/<domain>.md` |
-| Shared contracts and operational knowledge | Library `references/`; skill-local `references/` for one consumer |
-| Package dependencies and guidance requirements | `references/library-context.md`, reused by entrypoints |
-| Resolved paths and request context | Outermost entrypoint; pass through composed calls |
-| Deterministic mechanics | Owning skill's `scripts/`, with sibling `tests/`; core CLI in `scripts/` |
-| Package identity | Root `plugin.json` |
-| Native skill discovery | Host manifests and catalogs per [hosts.md](hosts.md) |
-| Host registration, execution and isolation facts | [hosts.md](hosts.md) |
-| Setup, updates and home paths | [home.md](home.md) |
-| Transcript access and interpretation | [history.md](history.md) |
-| Run outputs and evidence | Caller workspace, never a package |
+The host executes agents. The coordinator applies workflows—saved procedures—to inputs and uses their results. Workflows compose to any depth; loading one does not launch an agent, add a review or reset a bound. Prompts supply tasks; workflows preserve processes; user-owned guidance supplies quality criteria, methods and taste.
 
 ## Invocation
 
-[orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) is the automatic fallback when no more specific workflow or skill fits the request. Other core skills, every workflow under `example-workflows/`, and custom workflows in `~/.orchflows/libraries/` (including `personal`) are manual-only by default; automatic selection for those skills requires the caller's opt-in. When creating or copying a workflow, write and verify the [host invocation settings](hosts.md#invocation-policy) for every skill, including helpers; report a host that cannot enforce this policy. An explicitly requested workflow still supplies its own composition and guidance.
+An explicitly selected workflow or primitive owns the process. Otherwise, [orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) may be selected automatically for top-level tasks, using core operations and guidance with review proportional to the work. Children follow assignments without starting another dynamic workflow. Other shipped skills are manual-only. Write and verify [host invocation settings](hosts.md#invocation-policy); report unenforceable policies. Selection is native, with no separate routing runtime.
+
+Workflows compose processes and primitives directly. Explicit caller amendments may change the process; state changed guarantees, preserve primitive meanings and honor actual permissions. Each operation has one public name. Removed interfaces fail clearly, without compatibility aliases, silent substitutions or automatic migrations.
+
+## Composition
+
+A reusable workflow declares inputs, dependencies, process, useful result and stopping conditions; no fixed headings or record format. Apply nested workflows in the same coordinator with scoped inputs, constraints, settings and guidance. Local additions and output locations neither overwrite the parent nor leak into siblings. Pass artifacts to dependent work.
+
+An explicit `orch-work` call requires a fresh maker; ordinary production steps leave staffing to the coordinator. Use separate sessions for isolation or context needs, including [workflow trials](hosts.md#workflow-trials), regardless of procedure depth.
+
+## Execution
+
+Only the top-level orchestrator launches, assigns and continues agents. Children return results and requests without delegating, including to existing agents or through other tools. Composition stays at the top level.
+
+Resolve dependencies, guidance, settings and caller constraints before dependent work. Honor scoped settings when working directly, continuing a suitable maker or using `orch-work`. Run independent work concurrently within host limits; give shared edits and external operations one owner. Gather required outcomes before dependent work; report missing work as a gap. Preserve authorization and reconcile uncertain actions before retrying.
+
+Return results, evidence and unresolved gaps. Keep durable state when needed by consumers or resumption; short tasks need no checkpoint protocol. Preserve workflow repetition, stopping rules and caller limits. Missing capabilities block only dependent work. Report unsupported controls; never replace required independent review with self-review.
+
+## Iteration bounds
+
+Count each bounded-loop attempt before its first work, including failed or paused attempts. For resumable loops, first record the attempt identity, starting state and updated count durably. Resumption keeps the same attempt; stale checkpoints do not reset consumption. Each workflow defines its iteration, limit and stopping conditions. No shared event format or runtime is required.
+
+## Review
+
+Keep candidates stable during review; gather every required completed judgment before repairs. Verdicts apply only to the inspected state and scope; changes do not inherit them. Reviewers may run checks and write separate evidence without changing candidates. Task-only context excludes the maker's argument; disclose unavailable required context isolation or blinding.
+
+Workflows own review and repair counts. [orch-review-revise-once](../skills/orch-review-revise-once/SKILL.md) requires explicit selection; it never wraps a workflow automatically.
 
 ## Model and effort
 
-Model and effort are optional choices for work, review or a named assignment. Resolve each setting separately: current caller instructions override saved workflow preferences; within either source, the named assignment overrides the operation default. Leave unspecified controls unset for the host to resolve. Keep the caller's choices and their scope with request context through composed workflows.
+Model and effort are optional for work, review, stages and named assignments. Resolve each separately: current caller instructions override saved preferences; within either source, named assignment overrides stage, then operation default. Runtime assignments inherit stage choices. Leave unspecified controls unset and preserve scope through composition.
 
-Record saved preferences beside the relevant assignments only when the user asks the generated workflow to use them. The authoring session's settings do not become workflow defaults. Plain language is sufficient; no model file or role registry is required. Behavioral corrections remain in guidance.
+Save preferences beside assignments only when the user requests them for the generated workflow. Authoring-session settings do not become workflow defaults. Behavioral corrections belong in guidance.
 
-Apply these choices to every assignment, including repairs. Direct coordinator work or reuse of an existing worker is valid only when it honors that assignment's settings; otherwise use a fresh worker. The primitives apply choices through [native host controls](hosts.md#model-and-effort); report an unsupported setting as a gap instead of substituting another value.
+Honor settings for every assignment, including repairs. Work directly or reuse a worker only when those settings can be honored; otherwise use a fresh worker. Primitives use [native host controls](hosts.md#model-and-effort); report unsupported settings as gaps without substituting values.
 
 ## Guidance selection
 
-Guidance records domain preferences in `## Make` and `## Review`; omit empty sections. Apply Make when producing and Review when assessing. Workflows name required domains; select `orchflows` for authoring workflows, guidance or libraries. A domain being extended is source material for its author.
+Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Keep temporary model corrections separately removable; role-only files remain valid. Select `orchflows` for authoring; the domain being extended is source material for its author.
 
-Resolve once at the outer entrypoint, including a leaf invoked alone:
+Brevity, style and approximate file size are preferences, not acceptance gates unless the user or output contract makes them strict. Correctness, allowed effects and explicit resource bounds remain binding.
+
+Pass an ordered list of applicable guidance paths, including caller-supplied files. Selection determines applicable preferences, not file access; reading another scope's guidance as evidence does not adopt it. Guidance must work without its original recipe. Techniques may be optional; tool and correctness contracts in references remain required. Extensions refine scoped preferences, not caller constraints, authority or workflow obligations. Resolve conflicts that precedence cannot settle.
+
+For named domains, resolve paths with this convenience rule, including a leaf invoked alone:
 
 1. Select independent domain names, such as `writing`, `visual-design`, `short-video.marketing`.
-2. For each name, visit dotted prefixes from general to specific. At each prefix, read core then selected libraries in caller-supplied order. Example: `short-video` across packages, then `short-video.marketing` across packages.
+2. Visit each name's dotted prefixes from general to specific; at each, read core then selected libraries in caller order. Example: `short-video` across packages, then `short-video.marketing` across packages.
 3. Keep each resolved file once, in first-use order. More specific guidance wins within its domain; independent domains compose.
-4. Missing implicit parents are allowed; library-only domains are valid. An explicit selection must exist in core or a selected library; report a gap and block dependent work otherwise. Use general guidance for unfamiliar sites or genres.
-5. Resolve package dependencies through native skills, supplied roots or the [home CLI](home.md#resolve). Pass absolute paths and request context unchanged to composed skills and primitives; extend only for new dependencies.
+4. Implicit parents may be missing; library-only domains are valid. Explicit selections must exist in core or a selected library; otherwise report a gap and block dependent work. Use general guidance for unfamiliar sites or genres.
+5. Resolve dependencies through native skills, supplied roots or the [home CLI](home.md#resolve). Reuse absolute paths; extend selection for new work. Pass only applicable guidance and scoped request context. Explicit extensions follow their defaults; missing selected files block dependent work. Local extensions never alter siblings.
 
 Selected libraries may supply removable model corrections under existing domain names. Normal specificity applies; model names are not domain specializations.
 
-## Three roots
-
-| Root | Contents / editing owner |
-| --- | --- |
-| Core checkout | Built-in `skills/orch-*/`, guidance, docs, CLI, tests, example libraries; orchflows developers |
-| Home `~/.orchflows` | User-owned libraries and runtime; setup-managed core per [home.md](home.md) |
-| Project workspace | Task outputs |
-
-Reserve `orch-` for built-ins. Create custom workflows in `~/.orchflows/libraries/personal/skills/<workflow>/` unless the caller names another library or repository. Edit the checkout or user library, never managed core or host caches.
-
-Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tests and example libraries stay in the checkout; core Markdown links must resolve within the shipped core. To update core: edit the checkout, run `python -m unittest discover -s tests`, then [load it for development](hosts.md#register-and-refresh) or [run setup](home.md#setup) to update a home.
-
-## A library
-
-```text
-<library>/
-├── plugin.json                     package identity; Antigravity manifest
-├── .claude-plugin/plugin.json      Claude, Grok Build and ZCode manifest
-├── .codex-plugin/plugin.json       Codex manifest
-├── .kimi-plugin/plugin.json        Kimi Code manifest
-├── README.md                       composition, agent count, install, dependencies
-├── references/                     shared context and contracts
-├── guidance/<domain>.md            domain or dotted specialization
-├── skills/<skill>/SKILL.md          frontmatter, invocation policy; instructions
-├── skills/<skill>/agents/openai.yaml Codex invocation policy and UI metadata
-├── skills/<skill>/references/       knowledge used by this skill only
-├── skills/<skill>/scripts/          mechanics; sibling tests/
-└── trials/                         request.md, expected-behavior.md
-```
-
-Skill identity is `<library>:<skill>`; [host invocation syntax](hosts.md#invocation-policy) can differ. Keep links within the package; reach other packages by native skill name or resolved paths. Never embed machine-specific paths. Declare runtime dependencies in the README; setup installs none for libraries. Root `plugin.json` declares `name`, `version` and `skills: "./skills/"` and also serves Antigravity. Keep the name and version aligned across host manifests; Kimi's manifest declares `skills: "./skills/"`. Existing user libraries need that manifest before installation in Kimi.
-
-## Invariants
-
-- Skills name scripts, inputs and results; scripts own their internals.
-- Declare agent counts; extra reviews, loops or repairs require a caller request.
-- Report missing work as a gap, never as no-results evidence.
-- Establish behavior with a real bounded trial. Valid frontmatter proves no behavior; unexercised failure paths remain untested.
+For authoring, package layout and maintenance, use [libraries](libraries.md).

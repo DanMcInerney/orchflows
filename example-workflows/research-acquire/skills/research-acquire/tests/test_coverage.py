@@ -1,4 +1,4 @@
-"""Compatibility selector for the partitioned coverage checks."""
+"""Coverage suite discovery entrypoint, partitioned by behavior."""
 
 from __future__ import annotations
 

@@ -2,4 +2,4 @@
 
 ## Make
 
-Distinguish posts by an account from discussion about it, and quoted posts from added commentary. Reposts are distribution, not independent observations.
+Distinguish an account's posts from discussion about it, and quotes from added commentary. Reposts are not independent observations.
