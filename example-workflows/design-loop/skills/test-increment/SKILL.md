@@ -4,8 +4,8 @@ description: Independently test exact baseline and candidate states against a su
 disable-model-invocation: true
 ---
 
-Use the [shared handoff contract](../../references/design-loop-contract.md). Inputs are request context, design/evaluation plan, immutable baseline and candidate identities, reproduction instructions and relevant implementation handoff.
+Use the [handoff contract](../../references/design-loop-contract.md). Inputs: request context, design/evaluation plan, immutable baseline/candidate identities, reproduction instructions and implementation handoff.
 
-Apply `shared:compare-candidates` with both actual states, intended outcome, the same evaluation plan, applicable common criteria and Review guidance, and isolated verification locations for side-effecting checks. Preserve scoped settings for `test-increment`. Require actual planned comparisons, raw evidence, old/new observations, candidate acceptance results, regressions, expected baseline feature deficits and missing or inapplicable checks. Candidates remain unchanged; a separate evaluation harness is permitted.
+Apply `shared:compare-candidates` with both states, intended outcome, evaluation plan, common criteria and Review guidance, and isolated locations for side-effecting checks. Preserve `test-increment` settings. Require planned comparisons, raw evidence, old/new observations, candidate acceptance results, regressions, expected baseline deficits and missing/inapplicable checks. Preserve candidates; a separate harness is permitted.
 
-Return the evidence handoff with exact state/harness identities, conditions, reproduction procedures, results and limitations. A skipped or failed run is recorded as such; the reviewer does not decide adoption.
+Return exact state/harness identities, conditions, reproduction procedures, results and limitations. Label skipped or failed runs. The reviewer does not decide adoption.

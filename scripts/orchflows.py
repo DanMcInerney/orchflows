@@ -25,7 +25,7 @@ import native_logs
 
 CORE_NAME = "orchflows"
 CORE_ENTRIES = ("plugin.json", ".claude-plugin", ".codex-plugin", ".kimi-plugin", "skills", "guidance", "docs", "scripts",
-                "README.md", "AGENTS.md", "CLAUDE.md", "LICENSE")
+                "README.md", "DESIGN.md", "AGENTS.md", "CLAUDE.md", "LICENSE")
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
 HOME_README = """# orchflows home
 

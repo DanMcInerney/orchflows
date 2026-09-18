@@ -1,86 +1,44 @@
 # Software Factory
 
-**Give your next pull request a builder, independent reviewers, and a release plan.**
-
-Describe the change. Software Factory builds it, runs the project's checks, and sends the exact result to fresh reviewers. Findings feed a bounded repair loop. You get the code, the evidence, and a concrete release handoff. Ask it to ship with the required authority and tools, and a separate worker carries the validated artifact through an observed rollout.
-
-**One request can carry the work from implementation through release. Every stage leaves evidence.**
-
-[Try it](#try-it) · [See the flow](#the-same-flow-implemented-with-two-primitives) · [Read the measured results](#what-the-output-quality-comparison-found) · [Install](#install-and-use)
+Build a software change, check the exact candidate, obtain independent specialist reviews and return a release handoff. Findings feed a bounded repair loop. A requested, authorized release uses a separate worker for observed rollout.
 
 ## Try it
 
-After [installation](#install-and-use), paste this into your agent:
-
 ```text
-Use software-factory:software-factory to add CSV export to this application.
-Preserve filtering and tenant isolation. Use P=2 candidate passes. Return
-the reviewed change, a complete patch, check evidence, remaining findings,
-and a release plan. Save the handoff in delivery/csv-export.
+$software-factory:software-factory
+Add CSV export to this application. Preserve filtering and tenant isolation.
+Use P=2 candidate passes. Return the reviewed change, complete patch, check
+evidence, findings and release plan in delivery/csv-export.
 ```
 
-| Bring it this | Get back this |
+Claude Code: `/software-factory:software-factory`. Delivery defaults to three candidate passes, including the first; the coordinator chooses staffing and stops at the requested endpoint or bound. Observation and incident investigation are separate requests.
+
+## Flow and ownership
+
+Inspired by Gergely Orosz's [Inside OpenAI's agentic software factory](https://newsletter.pragmaticengineer.com/p/openai-software-factory), *The Pragmatic Engineer*, September 15, 2026. The user-supplied original diagram is credited to The Pragmatic Engineer. This library adapts the process to your tools; OpenAI's internal systems are not included.
+
+| Original design | Orchflows implementation |
 | --- | --- |
-| A feature or bug fix | Checked code, applicable specialist reviews, and a release handoff |
-| A change requested for release with the required authority | A separate release worker, staged observations, and recorded outcome |
-| A production window to inspect | Deduplicated signals and evidence-backed proposals for follow-up work |
-| An incident to investigate | A timeline, tested hypotheses, and ranked mitigation options |
+| [![The Pragmatic Engineer diagram](assets/openai-factory-original.png)](assets/openai-factory-original.png) | [![Orchflows flowchart](assets/orchflows-factory.svg)](assets/orchflows-factory.svg) |
 
-Delivery defaults to three candidate passes, stopping earlier when the endpoint is reached. The orchestrator chooses staffing for implementation and independent review. Production observation and incident investigation remain separate, explicit workflows.
+Open either image or the [comparison page](assets/comparison.html) for detail.
 
-## The inspiration
+1. Record acceptance, checks, review lenses, starting state and existing permissions.
+2. Build through `orch-work`; verify tests, required CI and applicable performance. A complete patch must reconstruct the exact candidate, including additions/deletions, from its recorded baseline using the saved patch bytes.
+3. Freeze the candidate. Fresh `orch-review` children cover correctness plus affected data, infrastructure, cloud and security concerns.
+4. Feed failed checks/findings into remaining passes. Revised candidates repeat required checks and all applicable reviews; exhaustion returns unresolved work.
+5. Route risk. Automatic low-risk acceptance needs explicit project opt-in; otherwise prepare a concrete human-review handoff. Required failures/evidence gaps still block readiness.
+6. Release only when requested and authorized. One owner verifies validated inputs, baseline, rollback and stopping criteria, then observes rollout stages. Failures stop advancement; already-authorized rollback includes recovery verification. Missing telemetry is not health.
 
-Based on Gergely Orosz's [Inside OpenAI's agentic software factory](https://newsletter.pragmaticengineer.com/p/openai-software-factory), *The Pragmatic Engineer*, September 15, 2026. The original diagram below was supplied by the user and is credited to The Pragmatic Engineer. This library adapts that design to your project's tools; it does not include OpenAI's internal systems.
+`orch-work` and `orch-review` are the only primitives; composing skills run in the caller. [Delivery guidance](guidance/software-delivery.md) owns artifact integrity, review criteria and risk. The [run contract](references/run-contract.md) owns identity, evidence, authority and resume state; the project supplies source, tools, CI, policy and telemetry. Changed release inputs need new validation; a reviewed workspace alone does not prove a usable patch or authorize deployment.
 
-## The same flow, implemented with two primitives
-
-The diagrams use the same positions, stages and feedback paths. Open either image to read it at full size, or open [the comparison page](assets/comparison.html) locally.
-
-| Original design · The Pragmatic Engineer | Orchflows implementation |
+| Entrypoint | Outcome |
 | --- | --- |
-| [![Original software factory diagram](assets/openai-factory-original.png)](assets/openai-factory-original.png) | [![Matching Orchflows flowchart](assets/orchflows-factory.svg)](assets/orchflows-factory.svg) |
+| [software-factory](skills/software-factory/SKILL.md) | Checked change, reviews, risk decision and optionally authorized observed rollout |
+| [observe-production](skills/observe-production/SKILL.md) | Read-only bounded comparison, deduplicated signals and proposed performance work |
+| [investigate-incident](skills/investigate-incident/SKILL.md) | Timeline, tested hypotheses, ranked mitigations and specifically authorized operations |
 
-**`orch-work` and `orch-review` are the only primitives.** `software-factory`, `observe-production` and `investigate-incident` are composing workflows exposed as skills. Loading their `SKILL.md` supplies instructions in the caller; each delegates through the primitives. The operational entrypoints are not independent agent implementations hidden behind a new primitive.
-
-| Part | What it owns |
-| --- | --- |
-| Workflow `SKILL.md` | Order of work, assignments, branches, retry bounds and when to stop |
-| `orch-work` | A fresh child that makes the assigned result using common quality criteria and Make instructions |
-| `orch-review` | A fresh independent child that applies the same criteria and Review instructions, reports findings and does not repair |
-| Core `guidance/code.md` | General code quality criteria |
-| [software-delivery guidance](guidance/software-delivery.md) | Artifact integrity, specialist review criteria, risk, recovery and production evidence |
-| [Run contract](references/run-contract.md) | Candidate identities, evidence, checkpoints, authority and resumption |
-| Your project | Source, documentation, acceptance criteria, CI, rollout policy and available telemetry |
-
-## How a delivery runs
-
-1. **Define the outcome.** The coordinator reads the project, preserves the starting state and records acceptance checks, applicable review lenses and existing permissions.
-2. **Build.** Use `orch-work` for implementation, relevant documentation and the handoff and rollout plan, assigning ownership across the work.
-3. **Check the exact result.** Run required tests, builds, CI and applicable performance checks. A delivered patch must also apply to its recorded clean baseline and reconstruct the candidate, including new files and deletions. The integrated candidate is frozen for review.
-4. **Review independently.** Fresh `orch-review` children inspect that candidate in parallel. Correctness is mandatory; data, infrastructure, cloud and security are included when the affected surfaces call for them. They receive real project context and the same candidate identity.
-5. **Repair within the bound.** Failed checks or blocking findings inform the next implementation pass. Every revised candidate gets new required checks and applicable reviews. Running out of passes returns unresolved work; it never promotes a failed candidate.
-6. **Decide readiness.** Low risk can satisfy the review gate automatically only with explicit project opt-in. Other cases need human review of the concrete diff, check evidence, findings, risk and rollback plan. Missing required evidence still blocks readiness.
-7. **Release when requested and authorized.** Assign release through `orch-work`, with one accountable owner for each external operation. Verify the actual published/merged inputs, baseline health, rollback path and stopping criteria, then advance through the project's rollout stages. A breach stops rollout; an already-authorized rollback is applied and recovery checked. Missing telemetry or an unfinished window cannot count as healthy.
-
-Build, validation and deployment are separate checkpoints with recorded evidence. The same builder can run implementation checks, but it cannot approve its own independent review or silently deploy. Approval for one candidate does not cover changed release inputs. The default endpoint is a validated change and release handoff; shipping requires the release stage's authority and capabilities.
-
-The central handoff rule in the guidance is:
-
-> A complete patch must apply to a clean copy of its recorded baseline and reconstruct the candidate, including new files and deletions.
-
-This includes checking the actual saved patch bytes. A passing test suite in the builder's directory, or `git diff --check`, does not prove that someone else can apply the patch.
-
-## Production feedback and bounds
-
-| Workflow | What it returns |
-| --- | --- |
-| [software-factory](skills/software-factory/SKILL.md) | Checked change, reviews, risk decision and optional observed rollout |
-| [observe-production](skills/observe-production/SKILL.md) | Bounded telemetry comparison, deduplicated signals and proposed performance-fix briefs |
-| [investigate-incident](skills/investigate-incident/SKILL.md) | Incident timeline, evidence, answers and proposed or specifically authorized mitigation |
-
-Delivery defaults to `P=3` candidate passes, including the first attempt. The orchestrator staffs implementation, applicable review coverage and any authorized release. It stops early when the requested endpoint is reached. A missing required capability or decision returns the checkpoint and gap.
-
-Observation and incident investigation are explicit invocations. Observation is read-only and proposes follow-up work; it does not automatically start a fix. Recurring observation requires a caller-requested host schedule. Incident investigation can perform a specifically authorized operation, but a request to investigate alone authorizes no mitigation. The package adds no daemon, scheduler, service adapters or production access.
+Observation starts no fix; recurrence needs a requested host schedule. Investigation alone authorizes no mitigation. Missing capabilities/decisions return a checkpoint and gap. The package includes no scheduler, service adapters or production access.
 
 ## What the output-quality comparison found
 
@@ -144,16 +102,14 @@ From a complete Orchflows checkout with Python 3.11+:
 python scripts/orchflows.py setup --example software-factory
 ```
 
-Register the home and install core plus `software-factory` using core's `docs/hosts.md`, then start a new session. Setup preserves an existing user-owned library copy; it does not overwrite it with this example's updates. Copy the intended changes into that library before refreshing an existing install. All three entrypoints remain manual-only on Codex and Claude Code. Invoke `$software-factory:software-factory` in Codex or `/software-factory:software-factory` in Claude Code; substitute a leaf name to use it alone. A checked-out `SKILL.md` can be followed by path, but that does not register a slash command.
+Follow core `docs/hosts.md` for registration/installation; start a new session. Setup preserves user-owned library copies, so apply intended updates there before refreshing. All entrypoints are manual-only on Codex/Claude. Substitute a leaf name for standalone use; following a file by path does not register a command.
 
-Example requests:
+Example operational requests:
 
-> Use software-factory:software-factory to add a CSV export to this application. Preserve its filtering behavior. Use P=2 passes and return a reviewed change with test evidence and a release plan.
+> Ship this approved fix to staging under the repository rollout policy. Its documented rollback is authorized if the error threshold is breached. Observe the full window and record the release ID.
 
-> Use software-factory:software-factory to ship this approved fix to staging using the repository's rollout policy. You may use its documented rollback if the error-rate threshold is breached. Observe the full policy window and record the release identifier.
+> Use software-factory:observe-production to compare the hour after v42 with baseline, deduplicate latency alerts and propose measured fixes.
 
-> Use software-factory:observe-production to compare the last hour after release v42 with its baseline. Deduplicate latency alerts and prepare fix briefs for supported regressions.
+> Use software-factory:investigate-incident to explain checkout errors from 14:00–14:20 UTC and rank mitigations.
 
-> Use software-factory:investigate-incident to investigate checkout errors between 14:00 and 14:20 UTC. Explain likely causes and rank possible mitigations.
-
-Supply an outcome and workspace, plus any chosen bounds, output directory, release target, project policy, domain guidance or model/effort preferences. Unspecified model settings stay with the host. Require Orchflows core 0.11.0+, native child delegation and the target project's build/check tools; CI hosting, deployment, flags and telemetry are needed only for stages that depend on them. See [library context](references/library-context.md), the [run contract](references/run-contract.md), [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md).
+Supply outcome/workspace and optional bounds, outputs, release target, policy, guidance or model/effort preferences; unspecified settings remain unset. Requires core 0.11.0+, native children and project build/check tools. CI, release, flags and telemetry are needed only by dependent stages; setup installs none. See [library context](references/library-context.md), [trial request](trials/request.md) and [acceptance](trials/expected-behavior.md).

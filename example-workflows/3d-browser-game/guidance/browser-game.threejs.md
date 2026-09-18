@@ -1,17 +1,17 @@
 # Three.js browser game
 
-Treat Three.js as the presentation layer around explicit game state. Keep a single owner for simulation updates, input intent, entity lifecycle and asset ownership. Rendering frequency must not determine movement, timers, damage or resource costs. Use the project's established framework; add physics/ECS/state libraries only when their complexity buys something concrete.
+Keep Three.js presentation around explicit game state, with one owner for simulation, input intent, entity lifecycle and assets. Rendering frequency must not determine movement, timers, damage or costs. Use the established framework; add physics/ECS/state libraries only for concrete benefits.
 
-Resolve collision and game events against gameplay geometry and rules, not incidental art hierarchy or pixel appearance. Keep camera and feedback synchronized with authoritative state. Debug displays should make collider, aiming and camera errors inspectable without leaking into normal play.
+Resolve collisions/events against gameplay geometry/rules, independent of art hierarchy or pixels. Synchronize camera/feedback with authoritative state. Keep collider, aim and camera diagnostics inspectable outside normal play.
 
-Use current APIs matching the installed Three.js release and keep addons/decoders compatible. Make loading failures actionable. Inspect exported assets through the production loader with game lighting and camera settings. Profile actual busy gameplay before reducing fidelity or adding optimization machinery. See the library's Three.js reference for implementation details.
+Match APIs, addons and decoders to installed Three.js. Make loading failures actionable. Inspect exports through the production loader, camera and lighting. Profile busy gameplay before reducing fidelity or adding optimization; use the Three.js reference for implementation details.
 
-Controls and camera should remain responsive and predictable at actual play speed. Check movement/interaction tolerances, diagonals, walls, edges, occlusion, camera collision, resizing, pause/focus loss and resumed input as the game requires. Art integration must preserve readable silhouettes, perceived hitboxes, line of sight and event timing; changed gameplay conditions need new checks.
+Keep controls/camera responsive and predictable at play speed. Check applicable movement/interaction tolerances, diagonals, walls, edges, occlusion/camera collision, resize, pause/focus loss and resumed input. Art must preserve silhouette, perceived hitbox, line of sight and event timing; recheck changed gameplay conditions.
 
 ## Make
 
-Build and tune the main verb in a simple space before relying on it in mechanics experiments. Play a normal camera route through each important environment after integration, including actual asset failures. Use the Three.js reference for engineering and profiling methods and the test-interface contract for required diagnostic behavior.
+Tune the main verb in a simple space before mechanics experiments. After integration, play normal camera routes through important environments and actual asset failures. Follow the Three.js reference and required test-interface behavior.
 
 ## Review
 
-Look for frame-rate-dependent rules, duplicate loops/listeners, stuck input after blur, camera clipping, stale state on reset, mismatched hitboxes and unhandled asset errors. Verify ordinary and diagnostic controls share action/rule ownership. Check that performance claims identify the real rendering backend and workload. Restart and load repeatedly to expose lifecycle leaks.
+Check frame-dependent rules, duplicate loops/listeners, stuck input after blur, clipping, stale reset state, hitbox mismatch and unhandled asset errors. Ordinary/diagnostic controls must share action/rule ownership. Require actual rendering backend/workload in performance claims; repeat restart/load to expose leaks.

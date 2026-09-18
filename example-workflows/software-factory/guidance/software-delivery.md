@@ -2,30 +2,28 @@
 
 ## Make
 
-Define acceptance through observable behavior. Select required checks before implementing; do not weaken a failing check to obtain a passing result. Tie builds, CI results and performance measurements to the actual candidate. For a performance-sensitive change, compare the baseline and candidate under equivalent workloads and conditions; separate regressions from measurement noise.
+Define observable acceptance and required checks before implementation; never weaken failures into passes. Bind builds, CI and performance results to the candidate. For performance-sensitive changes, compare equivalent baseline/candidate workloads and conditions, separating regressions from noise.
 
-Verify the handoff artifact as well as the working copy. A complete patch must apply to a clean copy of its recorded baseline and reconstruct the candidate, including new files and deletions. Export patch bytes without shell text conversion, then check and apply the actual saved file in isolation; compare the resulting file set and contents with the candidate under the project's Git attributes. Record the patch hash, baseline, candidate and reconstruction result. A tracked-only diff or `git diff --check` does not establish a complete, usable handoff. If the deliverable is a commit or another artifact instead, verify that exact delivered object against the candidate.
+Verify the delivered artifact, not only the workspace. A complete patch must reconstruct the candidate from its recorded clean baseline, including additions/deletions. Export bytes without shell text conversion; check/apply the actual saved patch in isolation and compare file set/content under project Git attributes. Record patch hash, baseline, candidate and reconstruction. Tracked-only diffs and `git diff --check` prove no complete handoff. For commits/other artifacts, verify the exact delivered object against the candidate.
 
-Prepare rollback and deployment signals while building the change. Prefer the project's existing rollout and telemetry mechanisms. A new dashboard is useful only when it resolves a specific visibility gap; define its queries and thresholds before creating it in an external system.
+Prepare rollback/signals while building. Prefer existing rollout/telemetry; create a dashboard only for a specific visibility gap, defining queries/thresholds before external creation.
 
-Deduplicate production signals by service, release, symptom and overlapping time window. Preserve underlying evidence and affected users; repeated alerts alone do not establish multiple incidents or a regression. Separate observed facts, causal hypotheses and proposed actions. Follow-up performance work needs a measurable regression, reproduction or comparison plan and acceptance criteria.
+Deduplicate production signals by service, release, symptom and overlapping window. Preserve evidence/affected users; repeated alerts prove neither distinct incidents nor regression. Separate facts, causal hypotheses and actions. Performance follow-ups need measurable regression, reproduction/comparison plan and acceptance.
 
 ## Review
 
-Assess the candidate against the requested behavior and real project context. A specialist label alone is not evidence of expertise. Use these lenses where applicable:
+Judge requested behavior in actual project context; specialist labels alone prove no expertise. Apply relevant lenses:
 
-| Lens | Context and questions |
+| Lens | Context/checks |
 | --- | --- |
-| Correctness | Acceptance criteria, callers, tests and failure behavior; does the change meet the request and preserve required behavior? |
-| Data | Schemas, migrations, retention and consumers; are integrity, compatibility, backfills and reversibility accounted for? |
-| Infrastructure | Runtime topology, CI, deployment and recovery; are availability, rollout ordering and rollback assumptions supported? |
-| Cloud | Provider resources, IAM, quotas, scaling and cost; do the actual environment and permission boundaries support the change? |
-| Security | Trust boundaries, authentication, authorization, secrets and dependencies; can changed inputs or access paths violate the project's security requirements? |
+| Correctness | Acceptance, callers, tests, failure behavior; requested and preserved behavior |
+| Data | Schemas, migrations, retention, consumers; integrity, compatibility, backfills, reversibility |
+| Infrastructure | Topology, CI, deployment/recovery; availability, rollout ordering, rollback |
+| Cloud | Resources, IAM, quotas, scaling, cost; actual environment/permission boundaries |
+| Security | Trust, authentication/authorization, secrets, dependencies; changed inputs/access paths |
 
-Each reviewer reports actionable findings with location, consequence and evidence; explicitly names missing context; and assesses risk within the assigned lens. Reviewers do not repair the candidate. Missing evidence is not a clean review.
+Report actionable locations, consequences and evidence, missing context and lens-specific risk. Make no repairs; missing evidence is not a clean review. Correctness also inspects delivered identity/reconstruction: broken required handoffs block readiness despite passing workspace tests.
 
-Correctness review includes the delivered artifact: inspect its reconstruction evidence and identity, not just tests run in the builder's workspace. A broken or incomplete required handoff blocks readiness even if that workspace passes every test.
+Low risk requires bounded impact, understood behavior, passing checks, complete applicable reviews without blocking findings, supported recovery and no material uncertainty. Authorization/secrets changes, destructive data operations, public contracts and broad infrastructure require human review unless specific established policy covers the exact case. Disagreement/uncertainty also takes that path; small diffs alone are not low risk.
 
-A low-risk decision requires all of: bounded impact, understood behavior, passing required checks, complete applicable reviews without unresolved blocking findings, a supported recovery path and no material uncertainty. Changes to authorization, secrets, destructive data operations, public contracts or broad infrastructure require human review unless a specific established project policy covers the exact case. Disagreement or uncertainty takes the human-review path. Size of the diff alone does not establish low risk.
-
-Human review can address judgment and risk; it does not turn failed checks or missing required evidence into success. Automatic review acceptance requires explicit project opt-in for the affected area. Release authority remains a separate requirement, even when automated review is accepted.
+Human judgment cannot turn failed checks or missing required evidence into success. Automatic review acceptance requires explicit project opt-in for the affected area. Release authority is separate.

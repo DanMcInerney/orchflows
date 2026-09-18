@@ -2,20 +2,20 @@
 
 ## Make
 
-Give this audience an original reason to watch and an earned payoff. A hook can be a question, image, recognizable situation or surprising action; its promise must match the film. Develop the feeling or usefulness the genre calls for: comic recognition and surprise, personal specificity and connection, educational understanding, or persuasive evidence. Give viewers something worth remembering, using or sharing without pretending to guarantee popularity.
+Give this audience an original reason to watch and an earned payoff. A question, image, situation or surprising action can hook attention; fulfill its promise. Serve the genre: comic recognition/surprise, personal specificity/connection, educational understanding or persuasive evidence. Offer something memorable, useful or shareable without guaranteeing popularity.
 
-Develop anticipation, change or a sustained mood as the idea requires; quiet presence can be the reward. Preserve enough continuity to follow what changes and why. Let rhythm include contrast and breathing room; each beat earns its time. Essential wording needs time to settle and be read at normal speed. Let motion serve the intended experience; give significant moments room to register.
+Develop anticipation, change or sustained mood; quiet presence may be the reward. Preserve understandable continuity. Use rhythmic contrast and breathing room; every beat earns its time. Hold essential wording long enough to read normally and significant motion long enough to register.
 
-Compose for the actual placement and viewing size, including its interface overlays. Coordinate captions, narration and visuals so they help rather than compete. When sound is present, make speech intelligible, cues purposeful, timing convincing and endings complete. Silence can be an intentional creative choice. Claims and borrowed assets retain their support and permitted use; reference work informs choices without supplying copied expression.
+Compose for placement, actual viewing size and interface overlays. Coordinate captions, narration and visuals. Make speech intelligible, sound purposeful, timing convincing and endings complete; intentional silence is valid. Support claims and permitted asset use; references inform choices without copied expression.
 
-Keep the kind of claim clear: a joke is not factual instruction, an observation is not a proven explanation, and fabricated spectacle is not documentary evidence. If publishing copy is requested, align its promise with the film and keep essential context understandable when the film travels alone.
+Distinguish jokes from factual instruction, observations from proven explanations and fabricated spectacle from documentary evidence. Requested publishing copy must match the film's promise; essential context survives standalone sharing.
 
-Deliver editable source, available assets and sufficient dependency and render instructions to reproduce the film. The encoded exports must match the brief and play through. Inspect the actual result; technical success alone does not establish creative or audiovisual quality.
+Deliver editable source, available assets, dependencies and render instructions. Encoded exports must match the brief and play through. Inspect them; successful encoding proves neither creative nor audiovisual quality.
 
 ## Review
 
-Does the opening earn attention and the ending fulfill its promise? Judge the humor, connection, learning or persuasion this film attempts. Identify where surprise becomes confusion, interest fades, claims outrun support or the viewer needs to pause to understand. Separate a comprehension defect from a different stylistic preference.
+Judge the intended humor, connection, learning or persuasion: does the opening earn attention and ending fulfill its promise? Identify confusion, fading interest, unsupported claims and moments requiring a pause. Separate comprehension defects from taste.
 
-Examine the exact exported media, including its opening, ending, dense passages and transitions. At normal speed and intended viewing size, assess continuity, meaningful motion, rhythm and readable holds. Listen to the actual mix when present for intelligibility, sync, balance and truncation. Check captions against the final speech, not just a script.
+Examine exact exports, including opening, ending, dense passages and transitions. At normal speed/viewing size, assess continuity, meaningful motion, rhythm and readable holds. Listen to actual sound for intelligibility, sync, balance and truncation; compare captions with final speech.
 
-Confirm format, dimensions, duration and audio against the brief and decode the complete export with available tools. Inspect editability and render instructions. Name the file identity, method and coverage behind conclusions: sampled frames establish sampled layout, not watched motion; transcripts, waveforms and successful playback commands do not establish heard audio. Unobserved motion or sound remains an explicit review gap, with the export available for capable review. Do not grant full audiovisual acceptance from partial evidence.
+Confirm format, dimensions, duration and audio against the brief; decode the complete export with available tools. Inspect editability/render instructions. State file identity, method and coverage. Frames establish sampled layout, not watched motion; transcripts, waveforms and successful playback commands establish no listening. Name unobserved motion/sound as gaps and retain exports for capable review. Partial evidence cannot earn full audiovisual acceptance.

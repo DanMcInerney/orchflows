@@ -1,6 +1,6 @@
 {
   "name": "research-acquire",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Optional bounded public-source acquisition with receipts and resume.",
   "skills": "./skills/"
 }

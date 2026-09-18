@@ -1,14 +1,10 @@
 # Design loop
 
-**Build the next version. Make it earn its place.**
+Develop an endgoal through bounded cycles, starting with the smallest useful working proof of concept. Each candidate faces an independent comparison against the accepted version; failures inform the next increment without replacing the baseline.
 
-Give Design loop an endgoal and a cycle count. It starts with the smallest useful working proof of concept, then uses each attempt's evidence to choose the next increment. Every candidate faces an independent comparison against the accepted version before it can become the new baseline.
+Use it for a new CLI, a prototype needing another capability, or an existing project whose next increment needs research and testing.
 
-**Endgoal → brainstorm + research → design → implement → test → analyze → repeat.**
-
-Use it when you have a destination but want implementation choices to respond to what actually works: a new CLI, a prototype that needs another capability, or an existing project whose next increment needs research and testing. An unsuccessful candidate still leaves observations for the next cycle.
-
-> **Experimental:** this packaged example has not been validated end to end in its standalone form. The bundled trials specify intended behavior; they are not completed tests.
+> **Experimental:** the standalone loop has not been validated end to end. Bundled trials specify intended behavior, not completed tests.
 
 ## Try two cycles
 
@@ -22,107 +18,76 @@ working PoC. Put the project, usage instructions, comparison evidence and
 checkpoint in ./shopping-list-run/.
 ```
 
-In Claude Code, use `/design-loop:design-loop` with the same request. Every skill in this library is manual-only by default.
+In Claude Code, use `/design-loop:design-loop`. All library skills are manual-only.
 
-Supply an endgoal, starting workspace or artifacts, and an output directory. You can also specify success criteria, constraints, task domains and scoped model/effort choices; unspecified model settings stay with the host. An empty workspace is valid. Existing uncommitted and relevant untracked work is preserved as part of the baseline.
+Supply an endgoal, starting workspace or artifacts, and output directory. Optional inputs include success criteria, constraints, task domains and scoped model/effort choices; unspecified settings use host defaults. Empty workspaces are valid. Existing uncommitted and relevant untracked work belongs to the baseline.
 
-## Why the loop is worth running
-
-- **The first cycle has to build something useful.** Later cycles start from the last accepted version and the observations that led there.
-- **The design sets the test before implementation.** Acceptance criteria, existing behavior to preserve and the old-versus-new comparison are fixed before the candidate is built.
-- **The tester did not make the candidate.** It inspects the exact old and new states under comparable conditions, keeps raw evidence and makes no repairs.
-- **A failed idea does not replace the accepted version.** Adoption requires supporting evidence; gaps and regressions produce a retain decision and inform the next attempt.
-
-The coordinator applies small, reusable workflows in the same session. Production stages can run directly, continue a suitable maker or use `orch-work`, honoring scoped settings. Each component can also run independently with the inputs described in its skill and the [shared handoff contract](references/design-loop-contract.md).
-
-## Detailed flow
+## How it works
 
 ```mermaid
 flowchart TD
-    U(["User: endgoal, workspace, criteria, constraints and N"])
-    U --> INIT["design-loop: resolve context and bounds<br/>Preserve initial accepted baseline or verify checkpoint"]
-    INIT --> START["Start or resume cycle<br/>Record attempt start before work; checkpoint each returned stage"]
-    START --> B
-
-    subgraph BR["brainstorm-research — composes two reusable workflows"]
-        B["brainstorm-options<br/>Propose 2–4 increments from goal, baseline and observations"]
-        B --> R["research-options<br/>Investigate decision-relevant uncertainties<br/>Return sources, findings, tradeoffs and gaps"]
-    end
-
-    R --> D["design-increment<br/>Choose one bounded increment<br/>Define acceptance and old-versus-new evaluation before edits"]
-    D --> CHANGE{"Justified change?"}
-    CHANGE -->|Yes| C["Coordinator: isolate candidate from accepted baseline<br/>First cycle: smallest useful working PoC"]
-    C --> I["implement-increment<br/>Implement the design and perform ordinary checks<br/>Return reproducible candidate; freeze its state"]
-    I --> T["test-increment → shared:compare-candidates<br/>Fresh independent tester compares exact old and new states<br/>Same relevant harness and conditions; no repairs"]
-    CHANGE -->|No| SKIP["Mark implementation and testing inapplicable"]
-    T --> A["analyze-iteration<br/>Assess acceptance, regressions and evidence gaps<br/>Recommend adopt or retain; record lessons"]
-    SKIP --> A
-    A --> DEC{"Coordinator checks recommendation<br/>against criteria and evidence"}
-    DEC -->|Adopt| AD["Accepted state becomes candidate"]
-    DEC -->|Retain| KEEP["Accepted state stays baseline"]
-    AD --> SAVE["Checkpoint decision, exact accepted state,<br/>evidence, counts and next-cycle observations"]
-    KEEP --> SAVE
-    SAVE --> CONT{"Attempts remain and no early-stop condition?"}
-    CONT -->|Yes: use accepted state and observations| START
-    CONT -->|No| OUT(["Return accepted project and usage instructions,<br/>initial-to-final evidence, decisions, gaps and checkpoint"])
-
-    FAIL["Any stage fails: preserve evidence<br/>Mark dependent stages unexecuted"]
-    FAIL --> AVAIL{"Scheduled analysis can proceed?"}
-    AVAIL -->|Yes: partial evidence| A
-    AVAIL -->|No| MISSING["Record missing analysis and retain baseline"]
-    MISSING --> SAVE
-
+    P["Record counted attempt from accepted baseline<br/>Brainstorm → research → design"] -->|Justified change| I[Implement isolated candidate; freeze state]
+    I --> T[Independent old/new comparison; no repairs]
+    P -->|No justified change| DEC
+    T --> DEC{Analyze evidence; orchestrator decides}
+    DEC -->|Adopt candidate| SAVE[Checkpoint accepted state, decision and observations]
+    DEC -->|Retain baseline| SAVE
+    SAVE --> CONT{Attempts remain; no early stop?}
+    CONT -->|Continue from accepted state| P
+    CONT -->|No| OUT[Return accepted project, evidence and gaps]
     classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b;
     classDef review fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95;
     classDef coordinate fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;
-    class B,R,D,I,A work;
+    class I work;
     class T review;
-    class INIT,START,C,CHANGE,SKIP,DEC,AD,KEEP,SAVE,CONT,FAIL,AVAIL,MISSING coordinate;
+    class P,DEC,SAVE,CONT,OUT coordinate;
 ```
 
-The failure branch applies to any failed stage; failures and skipped work remain visible in the checkpoint. Corrections belong to a later bounded cycle. A paused cycle resumes its first unfinished stage after validating recorded state identities and remaining bounds.
+Design fixes acceptance criteria, required existing behavior and comparison conditions before implementation. A fresh tester inspects exact old/new states and keeps raw evidence. Adoption requires supported acceptance criteria and preserved required behavior; otherwise the baseline remains accepted.
 
-## Reusable workflows
+Failed stages retain evidence and mark dependent work unexecuted. Analysis uses partial evidence when possible; missing analysis means retain. Corrections belong to later bounded cycles. Checkpoints preserve attempt counts, stage results and state identities; resumption continues the same attempt's first unfinished stage.
+
+## Components and bounds
 
 | Workflow | Responsibility |
 | --- | --- |
-| [design-loop](skills/design-loop/SKILL.md) | Coordinate bounded cycles, checkpoints and adoption decisions. |
-| [brainstorm-research](skills/brainstorm-research/SKILL.md) | Compose brainstorming and research in sequence. |
-| [brainstorm-options](skills/brainstorm-options/SKILL.md) | Propose scoped increments and uncertainties. |
-| [research-options](skills/research-options/SKILL.md) | Investigate uncertainties and return decision evidence. |
-| [design-increment](skills/design-increment/SKILL.md) | Define scope, acceptance criteria and comparison plan. |
-| [implement-increment](skills/implement-increment/SKILL.md) | Build an isolated, reproducible candidate. |
-| [test-increment](skills/test-increment/SKILL.md) | Independently compare baseline and candidate without repairs. |
-| [analyze-iteration](skills/analyze-iteration/SKILL.md) | Recommend adopt/retain and inform the next brainstorm. |
+| [design-loop](skills/design-loop/SKILL.md) | Bound cycles, checkpoint and decide adoption |
+| [brainstorm-research](skills/brainstorm-research/SKILL.md) | Compose brainstorming, then research |
+| [brainstorm-options](skills/brainstorm-options/SKILL.md) | Propose scoped increments and questions |
+| [research-options](skills/research-options/SKILL.md) | Investigate uncertainties |
+| [design-increment](skills/design-increment/SKILL.md) | Define scope, acceptance and comparison |
+| [implement-increment](skills/implement-increment/SKILL.md) | Build a reproducible candidate |
+| [test-increment](skills/test-increment/SKILL.md) | Compare independently without repairs |
+| [analyze-iteration](skills/analyze-iteration/SKILL.md) | Recommend adopt/retain and next steps |
 
-The orchestrator chooses assignments for the six stages. Composers run in the caller; there is no extra final review or hidden repair loop. `N` counts attempted cycles, including the first PoC and failed attempts, and defaults to 3. A named attempt start consumes an attempt before brainstorming or other cycle work; it is recorded durably so an interruption cannot erase the attempt.
+Components also work independently with their declared inputs and the [handoff contract](references/design-loop-contract.md). Composition stays in the caller; production staffing follows core execution rules and scoped settings. There is one independent comparison per cycle, with no extra final review or hidden repair loop.
 
-The loop runs through N unless the caller stops, a stated resource bound is reached, required capability or authorization is missing, or the caller explicitly chose stop-on-goal. Goal attainment alone does not shorten the run. Adoption requires evidence that the increment meets its acceptance criteria and preserves required existing behavior. Otherwise the accepted baseline remains in place, and the next brainstorm receives the observations.
+`N` counts attempted cycles, including the first PoC and failures; it defaults to 3. An attempt is recorded durably before its first work. Run through N unless the caller stops, a resource bound is reached, required capability or authorization is missing, or explicit stop-on-goal applies. Goal attainment alone does not end the run.
 
-Research defaults to at most three focused lookup/search operations and five relevant sources per invocation, starting with supplied or local material. The caller can change those bounds. A paused cycle resumes its first unfinished stage after checking state identities and remaining budget; resuming does not silently add attempts or reset caller constraints.
+Research defaults to 3 focused lookups and 5 relevant sources per invocation, starting with supplied/local material. Callers may override those bounds. Resumption preserves consumed attempts and caller constraints.
 
-## What you get back
+## Results
 
-The final accepted project comes with usage instructions, an initial-to-final evidence summary, adopt/retain decisions, attempted and completed cycle counts, remaining gaps and a checkpoint path. Baselines, candidates and stage handoffs remain identifiable so the next cycle or resumed session can use the same evidence. Project artifacts and run records live in your workspace, outside the installed library.
+Receive the accepted project, usage instructions, initial-to-final evidence, adopt/retain decisions, attempted/completed counts, gaps and checkpoint path. Identifiable baselines, candidates and handoffs remain in your workspace, outside the installed library.
 
 ## Install and dependencies
 
-From a complete Orchflows checkout, using Python 3.11+:
+From an Orchflows checkout with Python 3.11+:
 
 ```sh
 python scripts/orchflows.py setup --example shared
 python scripts/orchflows.py setup --example design-loop
 ```
 
-Setup copies each example into the Orchflows home and preserves existing library copies. Register and install both packages from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup does not install transitive dependencies or project tools. Copying alone does not establish native availability.
+Setup preserves existing library copies. Register/install both packages from the home catalog using core `docs/hosts.md`, then start a new host session. Setup installs neither transitive dependencies nor project tools; copying alone does not establish native availability.
 
-- Orchflows core `orchflows` 0.12.0+; full cycles and standalone comparison require native independent review. Production staffing follows core execution rules.
-- `shared` 0.4.0+ for `compare-candidates`, used by `test-increment` in one independent comparison round. Full cycles require it; unrelated standalone leaves do not.
-- Task-specific tools for research, implementation, inspection and testing, plus reproducible state snapshots. The example bundles no project runtime or research service.
-- This library's [design-iteration guidance](guidance/design-iteration.md), combined with caller-selected task domains as described in [library context](references/library-context.md).
+- Core `orchflows` 0.12.0+.
+- `shared` 0.4.0+ and native independent review for full cycles and standalone `test-increment`; other leaves do not require comparison.
+- Task-specific research, implementation and test tools, plus reproducible snapshots. No project runtime or research service is bundled.
+- [Design-iteration guidance](guidance/design-iteration.md) and applicable task domains, resolved through [library context](references/library-context.md).
 
 ## Evaluation status
 
-The [portable trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md) are specifications for future validation. Packaging and Markdown checks do not establish workflow behavior. Keep actual execution reports and project artifacts outside the installed library.
+The [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md) specify future validation. Packaging checks do not establish behavior; actual run outputs stay outside the library.
 
-On 2026-09-17, a separate isolated trial executed standalone `test-increment` through shared comparison and one native reviewer. Both versions ran against four fixed cases; the result distinguished an intended improvement from an empty-input regression, without repair or adoption. This tests resolved-file composition, not a full design-loop cycle or native skill-name registration.
+On 2026-09-17, an isolated standalone `test-increment` trial used shared comparison and one native reviewer. Both versions ran four fixed cases; results separated an intended improvement from an empty-input regression, without repair or adoption. This tested resolved-file composition, not full cycles or native skill-name registration.

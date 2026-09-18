@@ -1,10 +1,10 @@
 # Benchmark contract
 
-These are responsibilities of each generated benchmark, not a universal schema or mandatory runtime. Use the selected harness's equivalent records when appropriate. Describe any unsupported responsibility as a gap. Benchmarking guidance owns validity and interpretation; this contract owns data and execution boundaries.
+Generated benchmarks must satisfy these responsibilities through the selected harness's records or report gaps; no universal schema/runtime is required. Benchmarking guidance owns validity/interpretation; this contract owns data/execution boundaries.
 
 ## Package and preflight
 
-Prefer transparent JSON/JSONL records and a Markdown report. A standalone package commonly contains:
+Prefer JSON/JSONL records and a Markdown report, commonly:
 
 ```text
 README.md              purpose, commands, requirements, limits
@@ -17,9 +17,9 @@ run.py                 runner or documented upstream entrypoint
 runs/<run-id>/          attempts, artifacts, summary
 ```
 
-Provide reproducible preflight, controls, smoke, quick, full and resume commands (or explicit host-driven steps). Preflight checks inputs, required runtimes/tools/access, output paths and adapter/scorer availability without launching billable target work. Show planned cases/repetitions, concurrency, launch limit, deadlines and estimated spend before execution. Missing target or judge access may permit controls but never fabricated measurement.
+Provide reproducible preflight, controls, smoke, quick, full and resume commands or host-driven steps. Preflight checks inputs, runtimes/tools/access, output paths and adapter/scorer availability without billable target work. Show planned cases/repetitions, concurrency, launch limit, deadlines and estimated spend before execution. Missing target or judge access may permit controls but never fabricated measurement.
 
-The benchmark card records the intended decision and bounded claim, task population, complete system boundary, capability/family coverage, source and split policy, metric meanings and mandatory constraints, assumptions, budgets, dependencies/access, provenance, limitations and validation status. Include the [quality profile](quality-profile.md)'s requested/achieved stage, track, gate evidence/gaps, work dossiers, coverage matrix and calibration plan/results. Reference solutions and expected controls belong to evaluator material.
+The card records decision/claim, population, complete system boundary, capability/family coverage, source/split policy, metric meanings/constraints, assumptions, budgets, dependencies/access, provenance, limitations and validation status. Include the [quality profile](quality-profile.md)'s requested/achieved stage, track, gate evidence/gaps, work dossiers, coverage matrix and calibration plan/results. Reference solutions and expected controls belong to evaluator material.
 
 ## Records and identity
 
@@ -32,9 +32,9 @@ The benchmark card records the intended decision and bounded claim, task populat
 | Attempt | Case/condition/repetition/retry IDs; start/end and phase timings; execution status/reason; artifacts or final state; transcript path; observed usage/cost, with unknowns explicit |
 | Score | Scorer identity; grading status/reason per metric; anchored dimension outcomes/evidence and weights; aggregate outcome credit or explicit unavailable reason; separate full success and critical failures; indeterminate or uncertainty information |
 
-Bind results to a digest of explicit immutable manifest inputs: cases, public assets, references, graders and relevant adapter/runner files. Exclude generated runs, caches and outputs. Retain the file inventory and hashes or a clean revision with local changes; Git is optional. Bind condition identity separately, including target instructions/settings, environment and budgets. Redact credential values from records. A resumed run must reject incompatible identities, including scorer or profile/repetition changes; re-scoring saved outputs produces an explicitly new scorer result, not a fresh agent attempt.
+Bind results to a digest of immutable manifest inputs: cases, public assets, references, graders and relevant adapter/runner files. Exclude runs/caches/outputs. Retain file inventory/hashes or a clean revision plus local changes; Git is optional. Bind condition identity separately, including target instructions/settings, environment and budgets. Redact credential values from records. A resumed run must reject incompatible identities, including scorer or profile/repetition changes; re-scoring saved outputs produces an explicitly new scorer result, not a fresh agent attempt.
 
-Validate saved plans and records on every resume, import and summary read: fixed membership, case/repetition/retry IDs, benchmark and condition bindings, legal execution transitions, artifact hashes and score provenance. Reject missing, extra, foreign or inconsistent records even when filenames and top-level digests match.
+On resume, import and summary reads, validate: fixed membership, case/repetition/retry IDs, benchmark and condition bindings, legal execution transitions, artifact hashes and score provenance. Reject missing, extra, foreign or inconsistent records even when filenames and top-level digests match.
 
 Only stage public case material into the solver's writable workspace. Pass no evaluator answers, controls or hidden rubric in the candidate prompt. Document actual filesystem/network access; this layout is not a security boundary.
 
@@ -42,7 +42,7 @@ Only stage public case material into the solver's writable workspace. Pass no ev
 
 An async adapter may expose `run_case(public_case, context) -> result`. The context supplies an isolated workspace, public assets, condition, remaining execution budget and evidence destinations. The adapter returns delivered artifacts/state, transcript, execution status/reason and observable usage. Scoring reads evaluator material afterward and remains separate from the solver.
 
-A CLI adapter builds an argument vector, invokes the real candidate and translates native output. An API adapter uses async calls or moves blocking clients off the scheduling path. Interactive adapters own an ordered episode and expose final state plus transcript, recording simulator identity/state. Native workflow adapters preserve the native composition. If automation is unavailable, provide a host-driven route and exact evidence to capture. A canned response exercises plumbing only.
+CLI adapters invoke the real candidate through an argument vector and translate native output. An API adapter uses async calls or moves blocking clients off the scheduling path. Interactive adapters own an ordered episode and expose final state plus transcript, recording simulator identity/state. Native workflow adapters preserve the native composition. If automation is unavailable, provide a host-driven route and exact evidence to capture. A canned response exercises plumbing only.
 
 ## Profiles
 
@@ -52,12 +52,12 @@ A CLI adapter builds an argument vector, invokes the real candidate and translat
 | Quick | Fixed stratified subset, commonly 6–12 cases, one attempt each; aim for 2–5 minutes when faithful |
 | Full | All declared evaluation cases and predeclared repeats; show duration/spend estimates before launch |
 
-These are adjustable starting budgets. Record actual membership in the manifest and keep comparable runs fixed. A smaller development suite may use the same cases in quick/full with that limitation stated. Do not compress an intrinsically long task into a misleading short trial.
+Adjust these budgets to the task; record manifest membership and freeze comparable runs. Disclose shared quick/full cases in small development suites. Do not shorten tasks so far that the trial loses fidelity.
 
 ## Scheduling and persistence
 
 - Bound independent episodes with configurable concurrency. Keep turns/dependencies within an episode ordered. Use async subprocess/provider APIs; keep blocking and CPU-heavy work off the event loop. Avoid process-global cwd/environment changes.
-- Give attempts separate writable state, outputs and ports as needed. Share immutable fixtures only. Reset memory between episodes unless carryover is the stated capability. Limit providers, judges and costly resources separately; serialize only contested resources. Record concurrency and hardware for timing comparisons.
+- Isolate writable state, outputs and required ports per attempt; share only immutable fixtures. Reset memory between episodes unless carryover is the stated capability. Limit providers, judges and costly resources separately; serialize only contested resources. Record concurrency and hardware for timing comparisons.
 - Bound each attempt, the overall run, total launches (including retries/repeats), and spend. Reserve capacity for in-flight work before admission. Label estimated spend limits honestly when exact provider spend cannot be enforced; enforce observable call/token/time limits as well. Do not admit more work after a bound is reached.
 - Persist planned attempts and each launch before dispatch; write completed records as they finish through one writer or atomic per-attempt files. Preserve artifacts and logs on failure. Resume matching completed work without relaunch. Record interrupted attempts; reconcile uncertain remote completion before relaunching anything that could still be running or billed. Prevent overlapping owners of one run directory.
 - Retry only enumerated transient infrastructure errors within a small declared retry budget. Every retry has a distinct ID, links to its original attempt and consumes launch/time/cost budget. Wrong answers and declared agent time/budget exhaustion are not transient retries. Independent stochastic repetitions have separate IDs and fixed counts.
@@ -65,7 +65,7 @@ These are adjustable starting budgets. Record actual membership in the manifest 
 
 ## Boundary checks
 
-Within the declared pilot budget, exercise the generated adapter/runner's actual boundaries: changed plan membership and attempt/score identities, stale artifacts, invalid delivered output or known nondelivery, and applicable failed-dispatch, intermediate-preservation and overall-deadline transitions. Check budget enforcement under supported invocation modes. Include valid records and outcomes so rejecting everything cannot pass. Use stand-ins only at the actual execution boundary; retain unsupported properties as gaps rather than testing a substitute runner.
+Within pilot bounds, exercise actual adapter/runner boundaries: changed plan membership and attempt/score identities, stale artifacts, invalid delivered output or known nondelivery, and applicable failed-dispatch, intermediate-preservation and overall-deadline transitions. Check budget enforcement under supported invocation modes. Include valid records and outcomes so rejecting everything cannot pass. Use stand-ins only at the actual execution boundary; retain unsupported properties as gaps rather than testing a substitute runner.
 
 Exercise score eligibility against execution and delivery evidence on import, resume and summary: ordinary infrastructure failures or unknown capture stay unscored, task-budget exhaustion defeats full success, and established nondelivery earns no progress. Change a stored success or credit while retaining its identity fields and artifact hashes; reject unsupported score content using bound authoritative judgments and deterministic recomputation where applicable. Matching provenance fields alone do not validate a score.
 
@@ -83,7 +83,7 @@ Average scored repetitions within cases before applying predeclared case/family 
 
 For weighted outcome credit, use `sum(weight[d] * credit[d])` with nonnegative finite weights summing to one and anchored finite credits in [0, 1]. Validate definitions and reject invalid scorer records. If a required dimension is unjudged, retain observed dimensions but leave the aggregate unavailable; optional lower/upper bounds may fill unknown credits with 0/1 and must be labeled as bounds. Inapplicability and any case-specific weights must be defined before results, not renormalized after missing judgments.
 
-Full success is a separate 0/1 judgment under predeclared requirements, or unknown when evidence cannot establish it. Known critical failures defeat full success even if some dimensions are unknown. Report full-success rate, mean outcome credit, critical-failure counts/rates and each metric's scored denominator separately, including per-family coverage. Do not blend these into one acceptance score. A partial score of 0.8 can coexist with full success 0; it does not mean the result is operationally acceptable. Record a reason when a benchmark uses binary-only scoring.
+Full success is a separate 0/1 judgment under predeclared requirements, or unknown when evidence cannot establish it. Known critical failures defeat full success even if some dimensions are unknown. Report full-success rate, mean outcome credit, critical-failure counts/rates and each metric's scored denominator separately, including per-family coverage. Do not blend these into one acceptance score. Record a reason when a benchmark uses binary-only scoring.
 
 For comparisons retain per-case deltas/ties and common-case coverage. Report cold setup, candidate execution, grading, total wall time and throughput separately. Save raw evidence alongside a human-readable summary with commands, conditions, limits and untested paths.
 
@@ -91,4 +91,4 @@ For comparisons retain per-case deltas/ties and common-case coverage. Report col
 
 Keep three labeled groups: harness checks (including stand-ins and injected failures), benchmark validation (controls, independent public-input audit and solvability evidence), and fresh agent measurements (conditions, executions, artifacts, scores, usage). Record the pilot worker's public answers before reference disclosure and its subsequent discrepancies. Keep review findings, the candidate identity reviewed, repair changes, new identities and affected verification. A repaired development case does not become fresh held-out evidence.
 
-Deliver a runnable package even if only controls are currently runnable, with the blocked execution step and required capability explicit. Classify required unresolved validation as draft/partial. Do not claim general readiness from one passing pilot.
+Deliver runnable controls/package with blocked execution and required capabilities explicit. Unresolved required validation remains draft/partial; one passing pilot establishes no general readiness.

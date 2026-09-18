@@ -1,19 +1,19 @@
 # Orchflows
 
-Use the shortest wording that preserves the intended choices. Follow [architecture](../docs/architecture.md) for contracts and [libraries](../docs/libraries.md) for placement.
+Preserve intended choices in the shortest clear wording. Follow [architecture](../docs/architecture.md) for contracts and [libraries](../docs/libraries.md) for placement.
 
-Record deliberate preferences. Define local meanings the reader cannot infer. Keep shared definitions with the contract they describe. Specializations state differences from their parents. Keep corrections for model weaknesses separately removable.
+Record deliberate preferences; define meanings the reader cannot infer. Keep shared definitions with their contracts. Specializations state differences from parents. Keep model corrections separately removable.
 
-A reusable artifact works from its declared inputs and dependencies, without the author's conversation or undocumented preparation.
+A reusable artifact works from declared inputs and dependencies, without authoring history or undocumented preparation.
+
+Reuse components whose contracts fit; plain assignments may be simpler than adapting another domain's workflow. Reference shared rules. Explain unclear purposes of counts. Scope guidance to its work; makers and reviewers share substantive quality criteria.
 
 ## Corrections
 
-Authoring trials have triggered premature review on partial evidence. A later supplement does not satisfy the trial-before-review dependency. This reminder can be removed when trials show it is unnecessary; the dependency remains in the workflow.
-
-Reuse a component when its contract fits; a plain assignment can be simpler than adapting another domain's workflow. Reference shared rules instead of repeating them. Explain a count's purpose when unclear. Keep local guidance scoped to its work; maker and reviewer share the substantive quality criteria.
+Trials have triggered premature review on partial evidence. Later supplements do not satisfy trial-before-review dependencies. Remove this reminder when trials show it unnecessary; preserve the workflow dependency.
 
 ## Review
 
-Look for duplicated instructions, unnecessary coordination and misplaced responsibilities. Cut generic advice; preserve deliberate preferences even when current models follow them. Flag ambiguity about required behavior, scope or outputs. Check that specializations add a useful difference.
+Flag duplicate instructions, unnecessary coordination, misplaced responsibilities and ambiguous behavior, scope or outputs. Cut generic advice; preserve deliberate preferences even when models follow them. Require useful differences from specializations.
 
-Check scoped settings, role guidance, central dispatch and process guarantees in actual trials. Evaluate components through real consumers, including generated personal workflows. Measure the recipe and its required context together; moving repetition into another file does not simplify it.
+Check scoped settings, role guidance, central dispatch and process guarantees in trials. Exercise components through real consumers, including generated personal workflows. Measure recipes with their required context; relocating repetition does not simplify them.

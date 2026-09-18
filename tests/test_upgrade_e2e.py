@@ -14,7 +14,7 @@ import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-# The fetched main used in design/main-to-current.md; deliberately immutable.
+# The main snapshot used for the original upgrade comparison; immutable.
 MAIN = "16d2644ba25562d66af5648a7dfed8ebde1cfe90"
 
 

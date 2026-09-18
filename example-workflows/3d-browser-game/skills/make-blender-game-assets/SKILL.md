@@ -1,18 +1,18 @@
 ---
 name: make-blender-game-assets
-description: Create original Blender game assets with editable sources, GLB exports and inspection through a game's Three.js loader.
+description: Create original Blender assets with editable sources, GLB exports and inspection through a Three.js loader.
 disable-model-invocation: true
 ---
 
-Reuse or establish [library context](../../references/library-context.md). No independent review is included. Resolve the art brief, gameplay camera, asset scope, runtime preview/loader, budgets and owned output directory using the [asset contract](../../references/blender.md). For a standalone asset request, supply a small project-local Three.js preview if the game is unavailable; identify final integration as unverified.
+Apply [library context](../../references/library-context.md). Resolve the art brief, gameplay camera, asset scope, runtime loader/preview, budgets and owned output directory under the [asset contract](../../references/blender.md). For standalone work without a game, provide a project-local Three.js preview and mark final integration unverified. This workflow includes no independent review.
 
-Produce assets under core execution rules with the applicable common criteria and Make guidance, asset contract, actual game baseline and relevant source assets. Staffing is flexible; a production step does not require a fresh maker. Preserve these dependencies across assignments:
+Use applicable common/Make guidance, actual game baseline and source assets. Production staffing is flexible under core execution rules. Preserve these dependencies:
 
-1. Inspect Blender/export capabilities and the brief. Plan the asset family, shape language, modular relationships and budget allocation. Resolve unspecified art choices; report a gap if an essential gameplay contract is absent.
-2. Create silhouette/proportion blockouts for the key asset and a representative environment piece when in scope. Inspect orthographic/three-quarter and gameplay-camera renders. Choose and refine the forms before fine detail.
-3. Complete those representative models, materials, necessary UVs/bakes and animations. Save editable sources and export GLB with explicit object/clip selection. Inspect through the game loader/preview at gameplay scale and communicate any contract conflict before multiplying it through the asset set.
-4. Build the remaining set under the proven style/export settings. Follow the Blender reference for topology, material/texture and animation decisions; do not add unused rigging or texture work.
-5. Inspect exports structurally and visually, including required clips. Check bounds, pivots/sockets, texture dependencies, collider fit and measured costs. Supply game-camera views alongside source contact views. Report what still needs integrated play verification.
-6. Return `.blend`, GLB, dependent assets, scripts/export settings, asset metadata, inspected views, reproduction commands and unresolved deviations.
+1. Probe Blender/export capabilities. Plan the asset family, shape language, modular relationships and budgets. Choose unspecified art details; report missing essential gameplay contracts.
+2. Block out the key asset and a representative environment piece when in scope. Inspect orthographic/three-quarter and gameplay-camera views; refine forms before detail.
+3. Finish representative models, materials, needed UVs/bakes and animation. Save editable sources and explicitly selected GLB objects/clips. Inspect through the game loader at gameplay scale; resolve contract conflicts before producing the set.
+4. Build remaining assets with the proven style/export settings and Blender reference. Omit unused rigging or texture work.
+5. Inspect export structure, visuals and required clips; verify bounds, pivots/sockets, textures, collider fit and measured costs. Supply gameplay-camera and source contact views; identify remaining integrated-play checks.
+6. Return `.blend`, GLB, dependencies, scripts/settings, metadata, inspected views, reproduction commands and deviations.
 
-Use a separate asset directory so code/content work can continue without conflicts. Gather completed asset outcomes and return the actual result; the caller integrates exports and checks actual gameplay. Continue suitable makers for production feedback or the caller's repair pass under its scoped settings; no extra review or unbounded remake loop is implied.
+Own a separate asset directory for concurrent code/content work. Gather completed assets before returning them for caller integration and gameplay checks. Continue suitable makers for production feedback or a caller-allocated repair pass with its scoped settings; add no review or unbounded remake loop.

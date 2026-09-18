@@ -1,12 +1,12 @@
 # History
 
-The [home CLI](home.md)'s `history` command reads native transcripts without changing them or resuming agents. `HOST` is `codex` or `claude`; each command accepts `--native-home PATH` and `--help`.
+The [home CLI](home.md)'s `history` reads native transcripts without changing them or resuming agents. `HOST`: `codex` or `claude`. Every command accepts `--native-home PATH` and `--help`.
 
-Antigravity, Kimi Code, Grok Build and ZCode plugin support does not add transcript adapters. Use their native session/export tools; report unavailable history as a gap. Claude Code using Z.ai still uses the `claude` adapter.
+Antigravity, Kimi Code, Grok Build and ZCode have no transcript adapters; use native session/export tools and report unavailable history as a gap. Claude Code with Z.ai uses `claude`.
 
-Antigravity exposes `/resume` and `/agents` for session and child inspection. Its documented CLI transcript path is `~/.gemini/antigravity-cli/brain/<conversationId>/.system_generated/logs/transcript.jsonl`; desktop transcripts use `~/.gemini/antigravity/brain/`. These paths do not establish an Orchflows adapter or a stable transcript schema. [Antigravity sessions](https://www.agy.dev/docs/cli/commands/resume/), [transcript paths](https://antigravity.google/docs/hooks).
+Antigravity's `/resume` and `/agents` inspect sessions and children. Documented CLI transcripts: `~/.gemini/antigravity-cli/brain/<conversationId>/.system_generated/logs/transcript.jsonl`; desktop: `~/.gemini/antigravity/brain/`. These paths establish neither an Orchflows adapter nor a stable schema. [Sessions](https://www.agy.dev/docs/cli/commands/resume/), [transcript paths](https://antigravity.google/docs/hooks).
 
-Native home: `CODEX_HOME` → `~/.codex`; `CLAUDE_CONFIG_DIR` → `~/.claude`. An explicit `--native-home` wins. Codex discovery requires `state_*.sqlite`; it has no transcript-scan fallback.
+Native home: explicit `--native-home`, then `CODEX_HOME` → `~/.codex` or `CLAUDE_CONFIG_DIR` → `~/.claude`. Codex requires `state_*.sqlite`; no transcript-scan fallback.
 
 ## Scope
 
@@ -16,18 +16,18 @@ Native home: `CODEX_HOME` → `~/.codex`; `CLAUDE_CONFIG_DIR` → `~/.claude`. A
 | A period | `history find codex --since A --until B`, then repeat for `claude` |
 | A project in a period | add `--project <recorded path fragment>` |
 
-Take the session ID from the host (Codex: `CODEX_THREAD_ID`), never the newest transcript. `--since` is inclusive; `--until` exclusive. Dates are UTC midnight; timestamps require an offset. Repeat dates on every `read` page; start a separate read without dates for earlier assignment context.
+Use the host's session ID (Codex: `CODEX_THREAD_ID`), never the newest transcript. `--since` is inclusive; `--until` exclusive. Dates mean UTC midnight; timestamps require offsets. Repeat dates on every `read` page; read separately without dates for earlier assignment context.
 
-`--project` matches a case-insensitive recorded-cwd substring with normalized slashes, not repository identity. Include worktree/directory variants. `find` returns overlapping index or endpoint bounds; candidates may contain no matching events. Missing scope metadata is `scope_unknown`.
+`--project` matches case-insensitive recorded-cwd substrings with normalized slashes, not repository identity; include worktree/directory variants. `find` returns overlapping index or endpoint bounds that may contain no matching events. Missing scope metadata is `scope_unknown`.
 
-Page with `--after NEXT_CURSOR`, preserving selectors. Stop `find`/`inspect` at `next_cursor: null`; stop `read` at `has_more: false`. A read cursor remains valid for later appends. Changed/truncated sources invalidate it; restart that read.
+Page with `--after NEXT_CURSOR`, preserving selectors. Stop `find`/`inspect` at `next_cursor: null`, `read` at `has_more: false`. Appends preserve read cursors; changed/truncated sources invalidate them and require restarting the read.
 
 ## Reading
 
-`inspect` returns the descendant tree: per-agent counts, latest activity, errors, unmatched calls, gaps and source references. Wrapper calls and nested command activities are separate categories. Rerun to discover new children.
+`inspect` returns a descendant tree with per-agent counts, latest activity, errors, unmatched calls, gaps and source references. Wrapper calls and nested commands are separate categories. Rerun for new children.
 
-`read` returns file-order previews. Expand a field with `history read HOST ID --event BYTE_OFFSET:INDEX --field FIELD`; event IDs are transcript-local. Fields: `data` (input/message/metadata), `presented_output` (recorded tool response), `captured_output` (Codex stdout), `stderr`, `sidecar` (one available native-home spill file). Continue expansion with `--offset NEXT_OFFSET` until `next_offset: null`. `--event` cannot combine with dates or `--after`.
+`read` previews events in file order. Expand with `history read HOST ID --event BYTE_OFFSET:INDEX --field FIELD`; event IDs are transcript-local. Fields: `data` (input/message/metadata), `presented_output` (recorded tool response), `captured_output` (Codex stdout), `stderr`, `sidecar` (one available native-home spill file). Continue with `--offset NEXT_OFFSET` until `next_offset: null`. `--event` cannot combine with dates or `--after`.
 
 ## Limits
 
-Codex delegation message bodies are encrypted and reported `unavailable`; reasoning and system prompts are omitted. Captured output can exceed what the agent saw. Malformed records and incomplete tails appear as gaps. A call without a recorded result has an unknown outcome. Records are evidence of past activity, not current process state, workflow success or authorization to redo a write. Keep raw history local.
+Codex delegation bodies are encrypted and reported `unavailable`; reasoning and system prompts are omitted. Captured output may exceed what agents saw. Malformed records and incomplete tails are gaps; calls without recorded results have unknown outcomes. Records establish past activity, not current state, workflow success or permission to repeat writes. Keep raw history local.

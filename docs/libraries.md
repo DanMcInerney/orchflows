@@ -1,10 +1,10 @@
 # Authoring libraries
 
-Apply [architecture](architecture.md) for composition, guidance and execution. This page owns authoring placement, packaging and maintenance.
+Apply [architecture](architecture.md) for composition, guidance and execution; this page owns placement, packaging and maintenance.
 
 ## Where things live
 
-Give each instruction and mechanism one owner; reference shared facts. READMEs address humans; other live documentation addresses agents.
+Give each instruction and mechanism one owner; reference shared facts. README and DESIGN files address humans; other live documentation addresses agents without authoring history.
 
 | Concept | Owner / location |
 | --- | --- |
@@ -31,9 +31,9 @@ Give each instruction and mechanism one owner; reference shared facts. READMEs a
 | Home `~/.orchflows` | User-owned libraries and runtime; setup-managed core per [home.md](home.md) |
 | Project workspace | Task outputs |
 
-Reserve `orch-` for built-ins. Create custom workflows in `~/.orchflows/libraries/personal/skills/<workflow>/` unless the caller names another library or repository. Edit the checkout or user library, never managed core or host caches.
+Reserve `orch-` for built-ins. Create custom workflows in `~/.orchflows/libraries/personal/skills/<workflow>/` unless the caller selects another library or repository. Edit checkouts or user libraries, never managed core or host caches.
 
-Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tests and example libraries stay in the checkout; core Markdown links must resolve within the shipped core. To update core: edit the checkout, run `python -m unittest discover -s tests`, then [load it for development](hosts.md#register-and-refresh) or [run setup](home.md#setup) to update a home.
+`CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped files. Tests and examples stay in the checkout; core Markdown links must resolve within shipped core. After editing core, run `python -m unittest discover -s tests`, then [load for development](hosts.md#register-and-refresh) or [update a home](home.md#setup).
 
 ## A library
 
@@ -53,11 +53,11 @@ Setup's `CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped file list. Tes
 └── trials/                         request.md, expected-behavior.md
 ```
 
-Skill identity is `<library>:<skill>`; [host invocation syntax](hosts.md#invocation-policy) can differ. Keep links within the package; reach other packages by native skill name or resolved paths. Never embed machine-specific paths. Declare runtime dependencies in the README; setup installs none for libraries. Root `plugin.json` declares `name`, `version` and `skills: "./skills/"` and also serves Antigravity. Keep the name and version aligned across host manifests; Kimi's manifest declares `skills: "./skills/"`. Existing user libraries need that manifest before installation in Kimi.
+Skill identity is `<library>:<skill>`; [invocation syntax](hosts.md#invocation-policy) varies by host. Keep links package-relative; reach other packages by native skill name or resolved paths, never embedded machine-specific paths. Declare runtime dependencies in README; setup installs none for libraries. Root `plugin.json` declares `name`, `version` and `skills: "./skills/"` and serves Antigravity. Align names and versions across host manifests. Kimi requires its own manifest with `skills: "./skills/"`, including for existing user libraries.
 
-A reusable component declares inputs, dependencies, process, allowed effects, outputs and stopping conditions. Domain components stay in their libraries; optional shared libraries own cross-domain processes. Core remains independent of them.
+A reusable component declares inputs, dependencies, process, allowed effects, outputs and stopping conditions. Domain libraries own domain components; optional shared libraries own cross-domain processes. Core depends on neither.
 
 ## Invariants
 
 - Skills name scripts, inputs and results; scripts own their internals.
-- Establish behavior with a real bounded trial. Valid frontmatter proves no behavior; unexercised failure paths remain untested.
+- Establish behavior with a real bounded [trial](hosts.md#workflow-trials). Frontmatter proves no behavior; unexercised failure paths remain untested.

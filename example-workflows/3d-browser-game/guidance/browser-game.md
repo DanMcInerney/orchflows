@@ -1,37 +1,37 @@
 # Browser game
 
-Apply these criteria within the requested work and phase.
+Apply within the requested work and phase.
 
-Design around a player verb and an interesting decision under constraints. The same action should create different consequences as space, information, resources or opponents change. Ask what the player observes, predicts, commits, risks and learns. A new skin, larger number or extra collectible does not by itself add a decision.
+Center a player verb and a consequential decision under constraints. Actions should change meaning with space, information, resources or opponents. Identify what players observe, predict, commit, risk and learn; reskins, larger numbers and extra collectibles alone add no decision.
 
-Mechanics need interacting rules and at least two viable approaches whose advantage changes with circumstances. For example, carrying more salvage could reduce acceleration, making a hazardous shortcut valuable only with a light load; a defensive move might also reposition an obstacle but spend a resource needed later. These illustrate interacting rules, not required genres. Preserve the caller's fantasy and chosen mechanics; do not force combat, bosses, timers or scoring onto a different game.
+Require interacting rules and at least two viable approaches whose advantage changes with circumstances: cargo might reduce acceleration enough to change route choice. Preserve the caller's fantasy/mechanics without imposing combat, bosses, timers or scoring.
 
-Make skill visible: a beginner can cause something useful, a practiced player can predict and improve, and mistakes produce understandable consequences with a chance to recover when the design allows. Avoid obligatory busywork, waiting that carries no decision, and progression that repairs deliberately unpleasant starting controls.
+Make skill visible: beginners can act usefully, practice improves prediction, and mistakes have understandable consequences and recovery where intended. Avoid busywork, decisionless waiting and progression that merely fixes deliberately unpleasant starting controls.
 
-Use a small number of systems deeply. Give threats, tools and spaces distinct roles and counterplay. Teach one idea in a forgiving situation, test it, combine it with another and offer a mastery challenge. Alternate pressure and relief deliberately. Rewards should support future choices rather than only inflate a score.
+Use few systems deeply. Give threats, tools and spaces distinct roles and counterplay. Teach in a forgiving situation, test, combine and offer mastery; alternate pressure and relief. Rewards should support future choices, not only scores.
 
-Define enough content and variation to sustain the intended session. Completion includes entry, learning, the core loop, an ending or meaningful session boundary and replay. A single level can have substantial depth; a long feature list can still be a toy. Respect any explicitly bounded prototype phase without mislabeling it a finished game.
+Sustain the intended session with content and variation. Completion includes entry, learning, core loop, ending or meaningful boundary, and replay. Judge depth over feature count; label bounded prototypes accurately.
 
-Build test access with the game: ordinary usable controls, understandable player feedback, stable action semantics and reproducible diagnostic scenarios. Test helpers expose and exercise the real rules. They must not silently replace collision, AI or win conditions with simplified test behavior.
+Build test access with ordinary controls, readable feedback, stable action semantics and reproducible scenarios. Helpers exercise real rules, never simplified collision, AI or outcomes.
 
-The finished experience includes a clear start flow, contextual teaching, legible HUD, pause/settings, understandable outcomes and quick retry. Handle loading/progress/error states, unavailable rendering and input changes. Anticipation, response and consequence should read at gameplay speed through animation, sound and VFX as appropriate. Provide volume/mute and motion controls where needed and redundant cues for essential information. Polish must preserve actionable cues and responsive input. Judge legibility at the target resolution and camera, not only in enlarged captures.
+Finish start flow, contextual teaching, legible HUD, pause/settings, outcomes and quick retry. Handle loading/progress/errors, unavailable rendering and input changes. Animation, sound and VFX should communicate anticipation, response and consequence at play speed. Supply needed volume/mute/motion controls and redundant essential cues. Preserve responsive input and actionable feedback; judge at target camera/resolution.
 
-Require separate evidence for correctness, adaptive play, art in runtime and performance under stated conditions. Treat agent enjoyment observations as qualitative evidence, not proof of a human audience's preferences.
+Require distinct evidence for correctness, adaptive play, runtime art and performance under stated conditions. Agent enjoyment is qualitative, not proof of audience preference.
 
 ## Make
 
-Extract the fantasy, audience, target conditions, controls, session length, difficulty, visual tone, distribution and required features. State what the player repeatedly decides, what improves with mastery and what ends a session. Distinguish the complete release from optional expansion. Choose depth and finish over feature count.
+Extract fantasy, audience, target conditions, controls, session length, difficulty, tone, distribution and required features. Define repeated decisions, mastery and session end; separate release scope from expansion. Prefer depth and finish.
 
-Compare candidate mechanics by their main verb, constraint, competing choices, risk/reward, feedback, skill ceiling and system interactions. Describe a concrete 30-second episode, a way each idea could become boring or exploitable and a cheap experiment to expose it. Cosmetic variants of one loop do not count as different mechanics. Choose using agency, interacting rules, readable consequences, feasibility and testability; explain the tradeoff.
+Compare mechanics by verb, constraint, competing choices, risk/reward, feedback, skill ceiling and interactions. For each, describe a 30-second episode, boredom/exploit risk and cheap experiment. Cosmetic variants are not different mechanics. Choose on agency, interactions, readable consequences, feasibility and testability; explain tradeoffs.
 
-Develop the second-to-second action, session loop and longer progression where appropriate. Specify costs, recovery, loss, success, restart and learning through play. Document controls/state transitions and tunable parameters in a diagram and table. Identify the highest-risk assumptions, then plan scenarios with an action, expected player-visible consequence and failure signal before building all content.
+Develop second-to-second action, session loop and appropriate progression, including costs, recovery, loss, success, restart and learning. Diagram controls/state transitions and tabulate tunable parameters. Before full content, identify risky assumptions and scenarios with actions, visible consequences and failure signals.
 
-Use a small graybox arena/course/puzzle set that exercises introduction, complication, combination and mastery. Connect actual progression and collision through a complete session, rather than assembling disconnected features. Add content variety by changing relationships, space, information and tradeoffs before increasing health, speed or counts. Tune economies and unlocks only when needed; keep content data separate from rule code.
+Use a small graybox arena/course/puzzle set to exercise introduction, complication, combination and mastery through real progression/collision. Vary relationships, space, information and tradeoffs before increasing health, speed or counts. Tune economies/unlocks only as needed; separate content data from rule code.
 
-Tie tuning to a hypothesis: "The full load is too safe, so the shortcut never matters; increasing braking distance should make route choice depend on cargo." Compare the same situation before and after, retaining adverse observations. Shorten or simplify a weak feature before compensating with more content. Prioritize goal/control confusion, dominant strategies, unfair setbacks, softlocks and unrecoverable states when making repairs.
+Tie tuning to a decision hypothesis, such as longer loaded braking making route choice depend on cargo. Compare the same situation before/after and retain adverse observations. Simplify weak features before adding content. Prioritize goal/control confusion, dominant strategies, unfair setbacks, softlocks and unrecoverable states.
 
 ## Review
 
-Play the actual candidate before judging its design. Explain what decisions were available and why you changed strategy. Look for one-action dominance, unreadable consequences, fake choice, empty progression, unfair setbacks, friction in retry and repetitive pacing. Support criticisms with an observed episode and a causal explanation; list aesthetic preferences separately.
+Play the candidate before judging design. Explain available decisions and observed reasons to change strategy. Identify one-action dominance, unreadable consequences, fake choices, empty progression, unfair setbacks, retry friction and repetitive pacing. Support criticism with an episode and causal explanation; separate aesthetic preference.
 
-Judge the result against the brief and session scope. Verify that the central mechanic, promised interaction and complete session actually exist. A polished render does not compensate for an absent core loop.
+Judge against brief/session scope. Verify the central mechanic, promised interaction and complete session; polish cannot compensate for an absent loop.

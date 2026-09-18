@@ -1,9 +1,7 @@
 # Library context
 
-Apply core `docs/architecture.md`.
+Require core 0.11.0+ and apply its `docs/architecture.md`. Resolve primitives through native skills, supplied roots or core's `resolve` CLI; reuse paths through composition.
 
-Locate core 0.11.0+ primitives through native skills, supplied package roots or the core's `resolve` CLI; reuse resolved locations in composed calls.
+Select applicable `writing`, `visual-design` and `short-video`; marketing uses `short-video.marketing`. Include this library and caller guidance/libraries in order. Give each film its brief, assets, relevant guidance and output location.
 
-Select applicable `writing`, `visual-design` and `short-video` guidance; marketing selects `short-video.marketing` as the video specialization. Include this library and caller-supplied guidance files or libraries in order. Give each film assignment its relevant guidance, brief, assets and output location.
-
-Choose unspecified creative settings for the brief. Use the caller's output directory or a task directory in its workspace, with separate locations for different films. Missing required skills, guidance or rendering capabilities block dependent work; missing playback/listening limits review. An absent home runtime alone does not block native skills with resolved resources.
+Choose unspecified creative settings for the brief. Use caller output paths or a task directory in its workspace, separating films. Missing required skills, guidance or rendering blocks dependent work; missing motion/audio playback limits review. Resolved native resources need no home runtime.

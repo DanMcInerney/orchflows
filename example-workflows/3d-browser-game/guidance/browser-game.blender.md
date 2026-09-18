@@ -1,19 +1,19 @@
 # Blender game assets
 
-Design assets for their gameplay role and visible size. Establish silhouette, proportion and primary/secondary/tertiary forms before surface detail. Give interactive, hazardous and decorative objects distinguishable shapes and value groups. Test hero assets as small silhouettes and from the actual gameplay camera; a close-up beauty render can conceal weak readability.
+Design for gameplay role and visible size. Establish silhouette, proportion and primary/secondary/tertiary forms before detail. Distinguish interactive, hazardous and decorative objects by shape/value; test hero silhouettes small and at the gameplay camera, not only in beauty renders.
 
-Use consistent units, pivots, sockets, modular dimensions, palette and material response. Preserve intentional asymmetry and authored landmarks so a scene does not look assembled from identical primitive stacks. Spend geometry and texture detail where it affects contour, motion or player attention. A stylized asset can use simple materials and still need deliberate form design.
+Keep units, pivots, sockets, modular dimensions, palette and material response consistent. Use intentional asymmetry and landmarks to avoid identical primitive stacks. Spend geometry/textures on contour, motion and attention; simple stylized materials still require deliberate forms.
 
-Model for deformation, silhouette and repeated use. Choose topology, bevels, smooth/flat shading, UV seams, texel density, atlases and baking according to the asset, not a universal checklist. Keep an editable source before destructive export preparation. Bake procedural appearance when the runtime cannot reproduce it; do not assume Blender nodes survive GLB export.
+Choose topology, bevels, shading, UV seams, texel density, atlases and baking for deformation, silhouette and reuse. Preserve editable sources before destructive export preparation. Bake appearance unsupported by runtime; Blender nodes do not necessarily survive GLB.
 
-Animation must communicate anticipation, action and recovery at gameplay speed. Test contact, foot sliding, loop seams, poses and clipping where relevant. Agree with the game maker whether movement comes from simulation or root motion, and who owns action/hit timing. Decorative animation cannot silently move gameplay colliders or delay an action.
+Animation must communicate anticipation/action/recovery at gameplay speed. Check contact, foot sliding, loop seams, poses and clipping. Agree simulation versus root-motion ownership and action/hit timing; decoration must not silently move colliders or delay actions.
 
-Inspect the source, exported model and model in the game. Deliver `.blend`, dependencies, export settings/scripts and GLB together. Explain third-party asset provenance and permission when using external material; preserve attribution supplied with it. Do not call generated geometry an original Blender deliverable without actually opening/saving it through Blender and inspecting its export.
+Inspect source, export and in-game assets. Deliver `.blend`, dependencies, settings/scripts and GLB together. Preserve external provenance, permissions and attribution. Original Blender deliverables must actually be opened/saved through Blender and their exports inspected.
 
 ## Make
 
-Derive the visual brief from gameplay: mood, silhouette families, palette/value hierarchy, scale, material language, focal points, animation style and UI/audio treatment. Make reference sketches, concept images or Blender studies for the hero object and a representative environment section, then inspect them at the intended game camera. Build the asset list from gameplay roles and reuse opportunities using the Blender handoff contract. Record production priority; give hero/interactive assets deliberate design and background content a coherent reusable kit.
+Derive mood, silhouette families, palette/value hierarchy, scale, materials, focal points, animation and UI/audio treatment from gameplay. Inspect hero/environment sketches, concept images or Blender studies at the game camera. Use the handoff contract to plan assets by role, reuse and priority; deliberately design hero/interactive objects and a coherent background kit.
 
 ## Review
 
-Inspect gameplay-camera views and runtime motion, not only studio renders. Check visual hierarchy, silhouette, scale, readable affordances, visible mesh quality, materials, animation, missing resources and collider fit. Check source editability and reproducible export. Budget decisions should be supported by exported/runtime measurements, because Blender mesh counts can differ from exported counts.
+Inspect gameplay-camera views and runtime motion. Check hierarchy, silhouette, scale, affordances, visible mesh quality, materials, animation, resources and collider fit. Verify source editability and reproducible export. Judge budgets by exported/runtime measurements, which may differ from Blender counts.

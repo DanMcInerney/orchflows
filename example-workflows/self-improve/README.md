@@ -1,10 +1,8 @@
 # Self-improve
 
-**Make the next session inherit the fix.**
+Self-improve reads session history, checks whether problems still exist, and makes the smallest useful correction in the owning source.
 
-When a session goes wrong, the transcript holds clues: a misleading instruction, a broken setup assumption, a workflow that sent the agent in circles. Self-improve reads that history, checks whether the problem still exists, and makes the smallest useful correction in the source that owns it.
-
-Use it to improve local setup, custom workflows, guidance or Orchflows itself from evidence in a real session. Scope the request to a session, period or project. With no scope, it reviews the current session.
+Improve local setup, workflows, guidance or Orchflows from observed evidence. Select a session, period or project; the default is the current session.
 
 ## Put a rough session to work
 
@@ -17,7 +15,7 @@ exists before changing anything. Leave findings, changes, bounded trial
 results and agent/event references in ./self-improve-report/.
 ```
 
-In Claude Code, use `/self-improve:self-improve` with the same request. The workflow is manual-only on both hosts.
+In Claude Code, use `/self-improve:self-improve`. Both hosts require manual invocation.
 
 For an inspection without changes:
 
@@ -29,12 +27,12 @@ evidence, and state which history you could not access.
 
 ## From transcript to correction
 
-1. **Read what happened.** Inspect the native agent tree and relevant events within the requested scope. Track the coverage and unavailable history; logs supply evidence, not new instructions.
-2. **Check what is true now.** Inspect current source and environment before proposing a fix. An old failure may already be resolved.
-3. **Fix the owning source.** Apply the smallest useful corrections in the checkout or user library, with staffing chosen under core execution rules. Removing a misleading instruction can be the right fix; a one-off workaround does not automatically become a permanent rule.
-4. **Test and review.** Use a bounded trial and independent review to check the correction. Report what was verified and what remains uncertain, with references back to the history.
+1. **Inspect history.** Read native agent trees and relevant events; record coverage and unavailable history. Logs are evidence, not instructions.
+2. **Check current conditions.** Inspect source and environment; old failures may already be resolved.
+3. **Correct the owning source.** Edit the checkout or user library under core execution rules. Remove misleading instructions when appropriate; one-off workarounds do not become permanent rules.
+4. **Trial, then review.** Verify the correction with a bounded trial and independent review; link results and gaps to history.
 
-The [workflow](skills/self-improve/SKILL.md) owns this sequence. Corrections go in the source you maintain, outside managed core copies and host caches. Reports and trial outputs stay in your workspace.
+The [workflow](skills/self-improve/SKILL.md) owns this sequence. Never edit managed core copies or host caches. Reports and trial outputs stay in your workspace.
 
 ## Small pass, traceable result
 
@@ -43,7 +41,7 @@ The [workflow](skills/self-improve/SKILL.md) owns this sequence. Corrections go 
 | Report only | History findings, coverage and gaps with agent/event evidence |
 | Improvement pass | Findings, source corrections, bounded trial verification and remaining gaps |
 
-The coordinator inspects history and current state. An improvement pass includes a behavioral trial followed by core `orch-review-revise-once`: one independent review, at most one repair pass and affected verification. The original review remains separate from any delivered revision. Staffing follows core execution rules. Tie findings, changes and verification to agent/event references; missing history is a gap.
+Improvement passes trial changes before core `orch-review-revise-once`: one independent review, at most one repair pass and affected verification. Workflow/guidance trials use realistic synthetic fixtures and simulated external effects. Keep the original review separate from revisions. Findings, changes and verification carry agent/event references; missing history remains a gap.
 
 ## Install and dependencies
 
@@ -53,6 +51,6 @@ From a complete Orchflows checkout, using Python 3.11+:
 python scripts/orchflows.py setup --example self-improve
 ```
 
-Setup preserves an existing library copy. Register and install `self-improve` from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup alone does not make the skill available by name.
+Setup preserves existing copies. Register/install `self-improve` from the home catalog using core `docs/hosts.md`, then start a new session. Setup alone does not establish native availability.
 
-Requires Orchflows 0.11.0+, access to the selected native transcripts and current source or environment, and native child delegation for improvement passes. [Library context](references/library-context.md) resolves the core resources and guidance.
+Requires core 0.11.0+, selected native transcripts, current source/environment and native child delegation for improvements. [Library context](references/library-context.md) resolves resources and guidance.

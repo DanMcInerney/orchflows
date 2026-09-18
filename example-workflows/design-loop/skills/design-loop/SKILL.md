@@ -4,32 +4,32 @@ description: Develop a project endgoal through N bounded cycles of brainstorm an
 disable-model-invocation: true
 ---
 
-Use the request and [shared handoff contract](../../references/design-loop-contract.md). Inputs are an endgoal, starting workspace or artifacts, output directory and optional N, criteria, constraints, domains and scoped model/effort choices. Reuse resolved context and extend it for newly introduced work. This skill coordinates in the caller through the component workflows below.
+Use the [handoff contract](../../references/design-loop-contract.md). Inputs: endgoal, starting workspace/artifacts, output directory and optional N, criteria, constraints, domains and scoped model/effort choices. Coordinate in the caller; reuse context and extend it for new work.
 
 ## Bounds
 
-`N` is the maximum number of attempted cycles in this run, including the first PoC and failed cycles; default to 3 and state it. Require a positive integer. Apply core's iteration bounds to cycle attempts; brainstorming is the first work of a cycle. Run through N unless the caller stops, a stated resource bound is reached, required capability or authorization is missing, or the caller explicitly chose stop-on-goal. Reaching the goal alone does not shorten the requested run; remaining cycles may improve robustness or confirm that no justified change is available.
+`N` caps attempted cycles, including the first PoC and failures. Require a positive integer; default to 3 and state it. Apply core's iteration bounds; brainstorming is a cycle's first work. Run through N unless the caller stops, a resource bound is reached, required capability or authorization is missing, or explicit stop-on-goal applies. Goal attainment alone does not shorten the run.
 
-The orchestrator chooses assignments for each stage under core execution rules. Stages preserve their dependencies and independent testing; caller resource limits still apply.
+Choose stage assignments under core execution rules, preserving dependencies, independent testing and caller limits.
 
 ## Run
 
-1. Establish or resume the checkpoint, state the resolved N and bounds, and preserve the initial accepted baseline. Each cycle starts from the last accepted state. The first cycle scopes the smallest working PoC; later cycles use the accumulated decisions and observations, including failed candidates.
-2. Record the start of a new attempt, or resume the active one. Apply [brainstorm-research](../brainstorm-research/SKILL.md) with the request, baseline and prior observations. Pass its result to [design-increment](../design-increment/SKILL.md).
-3. Create an isolated candidate from the baseline and invoke [implement-increment](../implement-increment/SKILL.md) with the design. Freeze its returned state and pass the baseline, candidate and evaluation plan to [test-increment](../test-increment/SKILL.md).
-4. Invoke [analyze-iteration](../analyze-iteration/SKILL.md) with all cycle evidence, including any failures or gaps. Check its recommendation, record adopt/retain and the exact accepted state, and pass its observations into the next cycle. Checkpoint each returned stage. Apply the failure/resumption rules below if a stage cannot complete.
-5. Stop at the resolved bound or a declared early-stop condition and return the result below. Further work requires a new or extended caller request.
+1. Establish or resume the checkpoint, state N and bounds, and preserve the initial baseline. Start each cycle from the last accepted state. Target the smallest working PoC first; later cycles use accumulated decisions and observations, including failures.
+2. Record a new attempt before work, or resume the active one. Apply [brainstorm-research](../brainstorm-research/SKILL.md) with request, baseline and observations, then [design-increment](../design-increment/SKILL.md) to its result.
+3. Create an isolated baseline copy; apply [implement-increment](../implement-increment/SKILL.md) with the design. Freeze the returned candidate; pass it, the baseline and evaluation plan to [test-increment](../test-increment/SKILL.md).
+4. Apply [analyze-iteration](../analyze-iteration/SKILL.md) to all cycle evidence, including failures/gaps. Check its recommendation; record adopt/retain, exact accepted state and next-cycle observations. Checkpoint each returned stage; use the rules below for incomplete stages.
+5. Stop at the bound or declared early-stop condition. Further work requires a new or extended caller request.
 
-Composition: `brainstorm-research → design-increment → implement-increment → test-increment → analyze-iteration`. The first component calls two leaves; testing supplies one independent comparison round. No additional final review or repair loop is part of this workflow.
+Brainstorm-research calls two leaves; testing supplies one independent comparison round. There is no additional final review or repair loop.
 
 ## Failure and resumption
 
-On a failed stage, retain its evidence and mark dependent stages unexecuted. If available, run the scheduled analysis on the partial handoff; otherwise record the missing analysis and retain the baseline. A completed failed attempt still counts. Continue only if another bounded cycle can make progress; a persistent capability or authorization block ends the run with an explicit gap. Corrections are proposed in a later cycle, within N.
+On failure, retain evidence and mark dependent stages unexecuted. Run scheduled analysis on the partial handoff if possible; otherwise record missing analysis and retain the baseline. Failed attempts count. Continue only if another bounded cycle can progress; persistent capability/authorization blocks end the run with a gap. Corrections belong to later cycles within N.
 
-If design finds no justified change, mark implementation and testing inapplicable, analyze that evidence, and record retain. The attempt still counts and the normal early-stop rules apply.
+For no justified change, mark implementation/testing inapplicable, analyze the evidence and record retain. The attempt counts; normal early-stop rules apply.
 
-To resume, read the checkpoint and attempt-start records and verify the recorded state/artifact identities and remaining bounds. Reconcile starts or completed work not yet reflected in the checkpoint; a stale checkpoint does not erase an attempt. Continue the first unfinished stage of that same attempt, reusing valid completed work. Recover completed work or rejoin live assignments before replacing lost work. If inputs changed, mark affected downstream evidence stale and report that the caller must supply a new or extended run to repeat completed stages. Resuming does not silently increase N or reset caller constraints.
+To resume, read checkpoint and attempt-start records; verify state/artifact identities and remaining bounds. Reconcile uncheckpointed starts or completed work; stale checkpoints erase no attempts. Continue the same attempt's first unfinished stage, reusing valid work. Recover completed work or rejoin live assignments before replacements. Changed inputs make affected downstream evidence stale; repeating completed stages requires a new or extended caller run. Never reset N or caller constraints on resume.
 
 ## Return
 
-Return the exact final accepted state and how to use it, the initial-to-final change and evidence summary, completed/attempted counts, decisions, remaining gaps and checkpoint path. Keep retained candidates available as evidence. If the caller requested integration into an existing checkout, verify it still matches the preserved starting state before applying the chosen changes; report a conflict rather than overwrite newer work.
+Return exact accepted state, usage, initial-to-final changes/evidence, completed/attempted counts, decisions, gaps and checkpoint path. Keep retained candidates as evidence. For requested integration, verify the checkout still matches its preserved starting state; report conflicts instead of overwriting newer work.

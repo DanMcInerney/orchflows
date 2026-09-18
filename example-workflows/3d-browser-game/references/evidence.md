@@ -1,41 +1,43 @@
-# Game notes and evidence
+# Game evidence
 
-Keep enough evidence for someone else to reproduce a finding and distinguish candidates. Use a few readable files and machine output where helpful; no ticket system or bespoke validation schemas are required. Record artifacts in the project, never in this library.
+Keep reproducible findings and distinguishable candidates in the project. Use readable files and useful machine output; no ticket system or custom schema is required. Combine records and omit empty documents.
 
-## Working records
+## Records
 
-- **Design:** brief/assumptions, selected concept and alternatives, core loops, tunable parameters, content arc, target budgets and experiment observations.
-- **Run guide:** dependency/runtime versions, install/build/preview/test commands, URL/port, controls, scenario/seed entry, source/export commands and build identification.
-- **Asset list:** source and GLB paths, textures, provenance when applicable, dimensions/pivots/colliders, clips, budgets and inspected runtime views. The Blender reference owns the fields.
-- **Playtest report:** candidate identity, test conditions, sessions and coverage, findings, captures/log paths, conclusion and limits.
-- **Repair record:** finding IDs, shared cause, changes, new candidate identity and affected checks, with unresolved findings preserved.
+- **Design:** brief/assumptions, selected concept/alternatives, loops, parameters, content arc, target budgets and experiments.
+- **Run guide:** dependency/runtime versions, install/build/preview/test commands, URL/port, controls, scenario/seed entry, source/export commands and build identity.
+- **Assets:** source/GLB/dependency paths, provenance, dimensions/pivots/colliders, clips, budgets and inspected runtime views under the [Blender contract](blender.md).
+- **Playtest:** candidate, conditions, sessions/coverage, findings, captures/logs, conclusion and limits.
+- **Repairs:** finding IDs, shared causes, changes, new identity, affected checks and unresolved findings.
 
-Combine these where it stays readable. Do not generate empty documents solely to satisfy a list.
+## Identity and conditions
 
-## Candidate identity
+Use a full commit only if it identifies all tested source. Otherwise hash relevant source/configuration/lockfile/assets and built files, excluding dependencies, caches and evidence. Embed source identity in the running build; record the served production directory or immutable preview URL. Commits alone omit dirty changes; screenshot names do not identify builds.
 
-Use a full commit when it describes all tested source. If the workspace is dirty or not in Git, save a content manifest/hash of relevant source/configuration/lockfile/assets and built files, excluding dependencies, caches and evidence outputs. Include the source identity in the running build and report the served production directory or immutable preview URL. A commit alone cannot identify uncommitted changes; a screenshot filename cannot identify a build.
+Freeze edits or give reviewers an exact copy and isolated server. Record browser, renderer/backend, viewport, pixel ratio, quality, seed/scenario, mode, throttling and assistance. Preserve original review identity after repairs; identify delivered-revision maker verification separately.
 
-Freeze edits while a reviewer uses the candidate, or give it an exact copy with an isolated preview server. Record browser, renderer/backend, viewport, device pixel ratio, quality, seed/scenario, mode and any throttling/assistance. Keep the original review tied to its original identity after repairs; identify maker verification of the delivered revision separately.
+## Sessions
 
-## Session evidence
+Record significant episodes, not every frame:
 
-For ordinary or assisted play, record a few significant episodes, not every frame:
-
-| Observation | Intent/input | Observed consequence | Interpretation/evidence |
+| Observation | Intent/input | Consequence | Interpretation/evidence |
 | --- | --- | --- | --- |
-| What the player could see before acting | What was attempted and why, with duration if held | Actual feedback/state change, including surprise or failure | Why the choice mattered; capture/clip and useful event reference |
+| Visible situation before action | Attempt, reason and held duration | Actual feedback/state change, including failure/surprise | Why it mattered; inspected capture/clip and event reference |
 
-Include the initial learning attempt, a consequential decision, a change of plan, a setback/recovery and the outcome/retry as applicable. Keep real failures and failed routes; do not replace them with the final successful script. Captures must be opened and inspected to support a visual claim. Clips or sequential captures are needed for motion/timing claims; listening is needed for audio claims.
+Include applicable learning, consequential choice, changed plan, setback/recovery and outcome/retry. Preserve failed routes instead of replacing them with a successful script. Open captures supporting visual claims; use clips/sequential captures for motion/timing and listening for audio.
 
-Report coverage as observed pass, observed fail, assisted only, scenario only, or not exercised. Cover start/learning, core actions/interactions, important content branches, success/session boundary, failure/setback, recovery, restart, alternate strategy and exploit attempts. Adapt inapplicable states to the actual genre and explain that decision. Separate automated checks from adaptive play and maker checks from independent review.
+Label coverage **observed pass**, **observed fail**, **assisted only**, **scenario only** or **not exercised**. Cover start/learning, core interactions, important branches, session boundary, setback/recovery, restart, alternate strategy and exploits; explain genre-specific omissions. Separate automated checks from adaptive play and maker checks from independent review.
 
-## Findings and checkpoint conclusions
+## Findings and conclusions
 
-Give each material finding a stable ID, severity/player impact, build, setup/seed, minimal input steps, expected versus actual behavior and evidence. Recommend the smallest change that addresses the cause; reviewers do not repair. State which requirement or design assumption it affects. Preserve contrary evidence and distinguish an untested suspicion from an observed defect.
+Material findings need stable ID, severity/player impact, build, setup/seed, minimal inputs, expected/actual behavior, evidence and affected requirement/assumption. Recommend the smallest causal fix without repairing. Preserve contrary evidence; distinguish suspicion from observed defect.
 
-Use ready when required work and checks are supported, needs change for an observed material failure, and unverified when evidence/capability is missing. Do not average these into a quality score. Minor known polish issues may accompany ready if they do not defeat the brief. Substantial fun/readability failures are material, even when tests pass.
+- **ready:** required work/checks are supported; minor polish may remain if it does not defeat the brief.
+- **needs change:** observed material failure, including substantial fun/readability failure despite passing tests.
+- **unverified:** missing evidence or capability.
 
-For performance, record the workload, warm-up/measurement duration, sample count, timing source, median and tail frame times/stalls, load conditions and renderer counters that matter. Identify hardware versus software/headless rendering. Frame callbacks measure scheduling intervals, not proof of presented 3D frames; inspect moving gameplay and use available profiling to explain stalls. Never report manual-step throughput or an idle menu as target gameplay FPS. Missing target hardware yields a limited measurement, not an invented pass.
+Do not average these into a score. After repairs, link each finding to verification and identify the final build. Recheck affected camera, collision, animation timing, content and performance; old independent verdicts do not transfer.
 
-After repairs, retain the review, link each finding to its verification and identify the final build. If a change affects camera, collision, animation timing, content or performance, rerun those relevant conditions. Do not silently transfer an old independent verdict to a changed game.
+## Performance
+
+Record workload, warm-up/measurement duration, sample count, timing source, median/tail frame times/stalls, load conditions and relevant renderer counters. Identify hardware versus software/headless rendering. Frame callbacks measure scheduling, not presented 3D frames; inspect moving gameplay and profile stalls where possible. Manual-step throughput and idle menus cannot establish gameplay FPS. Missing target hardware limits the measurement.

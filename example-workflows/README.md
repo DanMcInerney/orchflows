@@ -1,10 +1,10 @@
 # Example libraries
 
-Use a complete recipe, invoke a component independently, or reuse its guidance in your own workflow. Save custom workflows and libraries under `~/.orchflows/libraries/`; `personal` is the default. Core `orch-build-workflow` creates and trials these compositions.
+Run a complete recipe, invoke a component, or reuse its guidance. Save custom libraries under `~/.orchflows/libraries/`, defaulting to `personal`. Core `orch-build-workflow` creates and trials compositions.
 
 | Library | Useful components and process |
 | --- | --- |
-| [Shared](shared/README.md) | Compare candidates; independently review and revise once |
+| [Shared](shared/README.md) | Independently compare stable candidates |
 | [Social search](social-search/README.md) | Collect assigned source scopes; rank supplied evidence; coordinate adaptive collection |
 | [Research acquire](research-acquire/README.md) | Bounded public-source acquisition and inspectable evidence |
 | [Short video](short-video/README.md) | Make a film; review exact exports; coordinate independent films |
@@ -16,10 +16,10 @@ Use a complete recipe, invoke a component independently, or reuse its guidance i
 | [Export workflow](export-workflow/README.md) | Export a standalone native skill and trial its behavior |
 | [Self-improve](self-improve/README.md) | Improve instructions from observed history and current evidence |
 
-Small workflows live in their owning domain libraries. `shared/` holds useful processes that cross domains. Extract a component when its inputs, outputs and process commitments help real callers; keep ordinary fan-out and gathering in core.
+Domain libraries own their small workflows; `shared/` holds cross-domain processes. Extract components when their contracts help real callers. Core owns ordinary fan-out and gathering.
 
-Workflows preserve order, independence, gates and stopping conditions. The orchestrator chooses assignments under [core execution rules](../docs/architecture.md#execution); specialist reviews and requested repetitions retain their own requirements.
+Workflows preserve order, independence, gates and stops. The orchestrator assigns work under [core execution rules](../docs/architecture.md#execution), preserving specialist reviews and requested repetitions.
 
-For a personal operations brief, a useful composition is `research options → independently assess evidence → draft → orchflows:orch-review-revise-once`. Use work/review primitives for simple stages and installed components when their contracts fit. The prompt supplies the question and source packet; personal writing guidance supplies reporting preferences. The [builder trial](shared/trials/build-personal/request.md) exercises creating that kind of library from a recurring request.
+An operations brief might compose `research → independent evidence assessment → draft → orchflows:orch-review-revise-once`. Use primitives for simple stages and components whose contracts fit. Prompts supply questions/sources; personal guidance supplies reporting preferences. The [builder trial](shared/trials/build-personal/request.md) exercises this composition.
 
-For each library, install the whole package and its declared dependencies using the checkout's `setup --example NAME` and the host's registration procedure. Setup does not install transitive dependencies. Keep guidance and references with their packages rather than copying bare skill folders. See core `docs/home.md` and `docs/hosts.md` for paths and host limits.
+Install whole packages and declared dependencies using `setup --example NAME` and host registration. Setup installs no transitive dependencies. Keep guidance/references with their packages. Core `docs/home.md` and `docs/hosts.md` cover paths and host limits.

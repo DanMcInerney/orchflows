@@ -1,13 +1,11 @@
 ---
 name: review-short-video
-description: Independently examine the exact exported short video without repairs.
+description: Independently examine exact short-video exports without repairs.
 disable-model-invocation: true
 ---
 
-Reuse or establish [library context](../../references/library-context.md). Accept an existing film's exports, editable project and original brief; prior use of make-short-video is unnecessary. Identify exports by absolute path and SHA-256 and keep them stable for review.
+Apply [library context](../../references/library-context.md). Accept existing exports, editable project and original brief; prior maker use is unnecessary. Identify exports by absolute path/SHA-256 and keep them stable.
 
-Use `orchflows:orch-review` once with a reviewer who made none of the film, covering every export and overall coherence. Pass the actual exports, source, brief, supporting facts and the same resolved guidance paths:
+Use `orchflows:orch-review` once with a nonmaker, covering every export and overall coherence. Supply exact media, source, brief, supporting facts and the same applicable guidance. Require timestamped findings against brief/guidance, examined identities, technical/frame/motion/listening coverage and gaps, including absent/corrupt exports. Review actual encoded media without changing source or exports.
 
-> Review every supplied export against the brief and guidance, using the actual encoded media. Report findings at useful timestamps, identify the exact files examined, and distinguish technical checks, frame inspection, motion viewing and listening with their coverage and gaps. Do not change source or exports.
-
-Return the review findings, including unresolved criteria and absent or corrupt exports. This leaf makes no repairs or additional review.
+Return findings and unresolved criteria. Add no repairs or review round.

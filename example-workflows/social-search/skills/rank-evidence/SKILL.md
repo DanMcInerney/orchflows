@@ -4,10 +4,8 @@ description: Delegate one independent review of supplied evidence into a globall
 disable-model-invocation: true
 ---
 
-Reuse or establish [library context](../../references/library-context.md). Accept a question and inspectable evidence from any caller under the [evidence contract](../../references/evidence.md).
+Establish [library context](../../references/library-context.md). Accept a question and inspectable evidence under the [evidence contract](../../references/evidence.md).
 
-Use `orchflows:orch-review` once with the resolved assessment guidance and evidence contract. Supply the question, scope, output requirements, remaining bounds, evidence, every collection outcome and a separate report location:
+Use `orchflows:orch-review` once with assessment guidance and evidence contract. Supply question, scope, output requirements, remaining bounds, evidence, every collection outcome and a separate report location. Instruct the assessor to apply Review guidance and write the assessment without changing evidence or collecting more.
 
-> Apply the Review guidance to the supplied evidence without changing it or collecting more. Write the requested assessment in the report location.
-
-Return the independent assessor's complete assessment, including disagreements and gaps. Do not rewrite its substantive ranking, collect new evidence or add another review.
+Return the complete independent assessment, disagreements and gaps. Do not rewrite substantive rankings, collect evidence or add review.

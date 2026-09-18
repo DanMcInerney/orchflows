@@ -1,55 +1,53 @@
 ---
 name: 3d-browser-game
-description: Build substantial Three.js browser games from mechanics brainstorming through playable experiments, Blender assets, progression, QA and independent agent playtests. Use for a complete game or an explicitly bounded production phase.
+description: Build a complete Three.js game or bounded production phase through mechanics experiments, Blender assets, QA and independent playtests.
 disable-model-invocation: true
 ---
 
-Apply this workflow in the caller with [library context](../../references/library-context.md). Inputs are the player brief, existing project when present, target conditions, workspace and caller constraints. Resolve unspecified creative choices from the brief and record assumptions; ask only when a missing choice materially prevents progress. A bounded phase uses its applicable prerequisites and returns the work and evidence it reaches without claiming a finished game.
+Apply [library context](../../references/library-context.md) in the caller. Inputs: player brief, existing project, target conditions, workspace and constraints. Choose and record unspecified creative details; ask only when a missing choice blocks progress. A bounded phase uses its prerequisites and returns reached work without claiming a finished game.
 
-Production staffing follows core execution rules, with shared creative direction and one integration owner. A production stage does not require a fresh maker. The two playtests below require independent reviewers through [playtest-3d-browser-game](../playtest-3d-browser-game/SKILL.md). Missing capabilities stop dependent work while independent authorized work may continue.
+Use shared creative direction and one integration owner. Production staffing follows core execution rules; only the two playtests require fresh independent reviewers. Missing capabilities block dependent work.
 
-## Checkpoint rule
+## Checkpoints
 
-Use [evidence](../../references/evidence.md) to identify candidates and record ready, needs change or unverified outcomes. Freeze the candidate during each independent playtest and wait for its completed report before changing it. These are working checkpoints, not user approval prompts.
+Use [evidence](../../references/evidence.md) for candidate identities and `ready`, `needs change` or `unverified` conclusions. Freeze each candidate until its independent playtest report completes. These are work gates, not user approval prompts.
 
-Each checkpoint permits at most one repair pass when material findings or relevant candidate changes require it. Reproduce material findings, repair shared causes, then rebuild and replay affected situations plus the main start–play–outcome–retry session. Recapture changed visual states and rerun affected performance conditions. Preserve the original review, identify the delivered revision and label subsequent checks as maker verification; the old independent verdict does not transfer to changed work. Repair staffing follows the assignment's scope and settings.
+Each checkpoint permits at most one necessary repair pass: reproduce material findings, fix shared causes, rebuild and replay affected situations plus start–play–outcome–retry. Recapture changed visuals and remeasure affected performance. Preserve the original report and identify the delivered revision; subsequent checks are maker verification, not renewed independent acceptance. Honor scoped repair settings.
 
-An unchanged ready candidate keeps its review and evidence without repair, rebuild or replay. No second independent review is included. Production QA and tuning before a checkpoint are ordinary work, not additional review rounds. Extra review/repair rounds require a caller request. If a checkpoint remains needs change or unverified, stop dependent production and return the best runnable state, remaining findings and the precise next action; do not declare acceptance.
+An unchanged ready candidate needs no repair, rebuild or replay. Pre-checkpoint QA/tuning is ordinary production. No second independent review is included; extra review/repair rounds require a caller request. If a checkpoint remains needs change or unverified, stop dependent production and return the best runnable state, findings and precise next action.
 
 ## 1. Establish scope and capabilities
 
-Record the player promise, requirements versus design defaults, target browser/device/input, session scope and observable completion criteria. Preserve an existing game's intent and architecture. Use the `browser-game` guidance for brief and design work; a larger brief needs a coherent release boundary without silently dropping requirements.
+Record the player promise, requirements versus defaults, browser/device/input, session scope and observable completion criteria. Preserve existing intent and architecture; bound a larger release without silently dropping requirements. Select `browser-game` for design.
 
-Probe the actual project install/build/preview route, rendered browser input and captures, and Blender source-to-GLB export loaded in Three.js. Apply the [test interface](../../references/test-interface.md) and library capability rules; a version command alone is insufficient. Probe audio when it is part of the promise. Keep disposable capability content out of the finished game.
+Probe install/build/preview, rendered browser input/captures and Blender source-to-GLB loading in Three.js under the [test interface](../../references/test-interface.md) and library capability rules. Probe promised audio. Remove disposable probe content from the finished game. Continue only with a feasible ordinary-play route and recorded capability results.
 
-Continue with observed capability results and a feasible ordinary agent play route. Record missing capabilities before assigning dependent work.
+## 2. Produce and test the core
 
-## 2. Produce the playable core and experiment evidence
+Compare at least three materially different mechanics; choose rules, controls, tunable parameters and completion states. Before implementation, write experiment predictions and observable success/failure scenarios. Set load, frame-time and asset/content budget hypotheses for the agreed device.
 
-Compare at least three materially different mechanics, choose the loop and define its rules, controls, tunable parameters and completion states. Write experiment predictions and observable success/failure scenarios before implementation. Establish target load, frame-time and asset/content budgets as hypotheses for the agreed device.
+Build a Three.js graybox under the [test interface](../../references/test-interface.md) and [Three.js reference](../../references/threejs.md). Complete the session with responsive controls, readable placeholders, real collision/progression, an outcome and ordinary-input restart. Verify rule behavior, interface and production boot before experiments; control defects must not distort them.
 
-Build a testable Three.js graybox using the required [test interface](../../references/test-interface.md) and the [Three.js reference](../../references/threejs.md). Complete the intended session with responsive controls, readable placeholder feedback, actual collision/progression and ordinary input through an outcome and restart. Verify the interface, rule behavior and production boot; no control defect should distort the experiments.
+Run **two focused mechanics experiments**. Each predicts how one rule/parameter change affects decisions, compares observed baseline and changed behavior in the same scenario, and records the chosen setting and contrary evidence. Include alternate strategies, misuse and recovery. If meaningful decisions remain absent, report needs change before independent review.
 
-Run **two focused mechanics experiments**. For each, predict how one rule or parameter change will affect player decisions, compare observed baseline and changed behavior in the same scenario, and record the chosen setting and contrary evidence. Include different strategies, deliberate misuse and recovery. Apply the shared design criteria: if the loop still has no meaningful decisions, report needs change before requesting independent review.
+The core handoff includes the runnable graybox, mechanics comparison/choice, scenario predictions, two observed before/after experiments, verified controls/interface and a complete ordinary session. Final assets wait for the core checkpoint.
 
-Continue with the runnable graybox, mechanics comparison and chosen design, scenario predictions, two observed before/after experiments, tested controls/interface and a complete ordinary session. Keep final asset production behind the core checkpoint.
+## 3. Independently establish the core
 
-## 3. Independently review and establish the core
+Apply [playtest-3d-browser-game](../playtest-3d-browser-game/SKILL.md) in `core` mode to the frozen candidate with its required inputs and evidence. Missing uncoached/adaptive browser play is unverified. Apply the checkpoint rule after the completed report.
 
-Freeze the core candidate and apply the playtest workflow in `core` mode with its declared inputs, scenarios and evidence. Require actual uncoached/adaptive browser play and a report tied to that build; missing play is unverified. Apply the checkpoint rule to its completed findings.
+Only a ready core advances. Record established rules, camera, timing and collider contracts for art/content; later changes require affected gameplay checks. After repair, maker verification establishes the delivered baseline without a second independent acceptance.
 
-Only a ready core advances. Record the established rules, camera, timing and collider contract for art and content production; later changes affecting them require affected gameplay checks. A repaired core's maker verification establishes the delivered baseline without claiming a second independent acceptance.
+## 4. Produce and integrate
 
-## 4. Produce and integrate the finished game
+Derive art direction and the [Blender handoff](../../references/blender.md) from the ready core. Apply [make-blender-game-assets](../make-blender-game-assets/SKILL.md) with the art brief, actual baseline, runtime loader and owned output directory. Content/progression may run concurrently on separate files under the proven rules. Gather both completed outcomes before integration.
 
-Derive art direction and the [Blender asset handoff](../../references/blender.md) from the ready core. Apply [make-blender-game-assets](../make-blender-game-assets/SKILL.md) with the art brief, actual baseline, runtime loader and owned output directory. Content/progression work may proceed concurrently on separate files under the proven rules. Gather both completed outcomes before integration.
+Integrate inspected exports through the production loader; finish agreed content, UI, feedback and session flow under applicable game, Blender and Three.js criteria. Preserve or recheck timing, collision, camera and readability affected by integration. Required content cannot remain a promised later feature.
 
-Integrate the inspected exports through the production loader and finish the agreed content, interface, feedback and session flow under the shared game, Blender and Three.js criteria. Preserve or recheck the core's timing, collision, camera and readability when art/content changes affect them. No required content remains a promised later feature.
+Run scenario QA/regression play with `browser-game.playtesting`; measure and optimize representative production gameplay under the references. Fix known material defects before final review. Supply editable sources, reproducible exports, runtime asset views, complete-session/branch evidence, behavior checks, target-relative load/performance measurements and explicit coverage gaps. Unvisited states and unsupported targets remain unverified.
 
-Run scenario QA and regression play using `browser-game.playtesting`, then measure and optimize representative production gameplay using the Three.js and evidence references. Fix known material defects before final review. Continue with editable sources and reproducible exports, integrated runtime asset views, complete-session and branch evidence, behavior checks, target-relative load/performance observations and explicit coverage gaps. An unvisited state or unsupported target is not a pass.
+## 5. Independently review and deliver
 
-## 5. Independently review, verify and deliver
+Apply the playtest workflow in `final` mode to the exact frozen production candidate, using a fresh reviewer different from the core reviewer. Supply the brief, public instructions, candidate/run location, test route, core review/repairs, asset evidence and measured conditions as that workflow directs. Apply the checkpoint rule after its completed report; graybox review does not accept production.
 
-Freeze the exact production candidate and apply the playtest workflow in `final` mode with a fresh reviewer different from the core reviewer. Supply the original brief, public instructions, candidate identity, run location, test route, core review/repairs, asset evidence and measured conditions as the leaf directs. A graybox review does not accept the production candidate. Apply the checkpoint rule to the completed final report.
-
-Return the runnable game/preview prominently, editable game and Blender sources, build/run/test/re-export commands, controls, scenario entry points, design/asset notes, independent reports and evidence. State ready, needs change or unverified against the caller's scope, with unresolved gaps and next actions. Use a hosting skill when the caller requested deployment; local preview is not public hosting.
+Return the game/preview prominently, editable game/Blender sources, build/run/test/re-export commands, controls, scenarios, design/asset notes, independent reports and evidence. State ready, needs change or unverified against the requested scope, with gaps and next actions. Requested public deployment uses a hosting skill; local preview is not hosting.

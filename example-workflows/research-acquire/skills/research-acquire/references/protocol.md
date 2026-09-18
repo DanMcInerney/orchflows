@@ -1,6 +1,6 @@
 # Direct acquisition protocol
 
-Use the [bounded plan](acquisition.md) for normal collection. This reference describes manual manifests and returned records; [source operations](selection-routes.md) own query syntax. Direct runner calls have no plan-wide request/time budget, checkpoint or resume guarantee.
+Use [bounded plans](acquisition.md) for routine collection; this contract owns manual manifests/records and [source operations](selection-routes.md) own queries. Direct runner calls have no plan-wide request/time budget, checkpoint or resume guarantee.
 
 ## Manifest
 
@@ -16,7 +16,7 @@ Step keys are `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`, `select
 
 ## Artifact and provenance
 
-An `AcquisitionArtifact` contains `manifest_id`, `as_of`, `records`, `steps`, `edges`, `groups`, `outcome` and `loss`. Each `StepResult` retains `step_id`, `adapter_id`, first `route_id`, `kind`, `query`, page/received/kept counts, `outcome`, `loss` and `warnings`. Read these before interpreting an empty result. Each record retains its actual answering route.
+An `AcquisitionArtifact` contains `manifest_id`, `as_of`, `records`, `steps`, `edges`, `groups`, `outcome` and `loss`. Each `StepResult` retains `step_id`, `adapter_id`, first `route_id`, `kind`, `query`, page/received/kept counts, `outcome`, `loss` and `warnings`. Inspect these before interpreting emptiness; records retain their actual answering route.
 
 An `AcquisitionRecord` carries:
 
@@ -28,17 +28,17 @@ An `AcquisitionRecord` carries:
 | Time and engagement | `published_at`, `observed_at`, `time_confidence`, `usable_basis_time`, `engagement` |
 | Provenance | `route_id`, `access_class`, `operator_identity`, `page_index`, `list_index`, `native_position`, `outcome`, `loss` |
 
-Records are immutable. Identity groups hold related records side by side; they never merge content, dates or counts. Strong grouping uses native namespace, item ID and content kind; otherwise a complete weak key uses scope, representation, normalized locator, content kind and content hash. Representations remain separate. A `discovery_hydration` edge ties a selected read to the exact discovery locator; similarity creates no edge. Missing discovery lineage stays visible.
+Keep records immutable; identity groups associate records without merging content, dates or counts. Strong grouping uses native namespace, item ID and content kind; otherwise a complete weak key uses scope, representation, normalized locator, content kind and content hash. Keep representations separate. A `discovery_hydration` edge requires the exact discovery locator, not similarity; retain missing-lineage gaps.
 
 `engagement` contains `EngagementSnapshot(metric_name, value, observed_at)` using exact native integers. Counts must be nonnegative and at most `2^63-1`; only platform `reddit` with metric `score` permits signed 64-bit integers. Booleans, floats and out-of-range values are refused. Metric names are not aliased, combined or compared across platforms. `attributes` holds named string facts, including repeated values where the source repeats them. Missing engagement is not zero, and popularity is not a quality score.
 
 `usable_basis_time` preserves `published_at`. Missing publication gives `time_confidence=unknown`; indexes, feeds and third-party records use `reported` with `published_at_basis` of `index_reported`, `publisher_reported` or `third_party_reported`. Other directly reported dates use `authoritative`, an origin label rather than independent verification. Candidate `date_eligibility` prefixes reported dates with `reported_` and `date_qualification` explains what remains unverified. Keep publication, revision/event time and observation time distinct; a recent index date cannot make an old paper recent.
 
-Access labels describe acquisition, not truth: `K0` keyless official endpoint, `K2` structured public HTML, `K3` third-party operator, `offline` fixture. The schema also reserves `K1` for a public client credential and `K4` for a discovery index; no current route uses either. No route accepts user credentials or performs login.
+Interpret access labels as acquisition provenance, not truth: `K0` keyless official endpoint, `K2` structured public HTML, `K3` third-party operator, `offline` fixture. The schema also reserves `K1` for a public client credential and `K4` for a discovery index; no current route uses either. No route accepts user credentials or performs login.
 
 ## Outcomes and losses
 
-Outcomes are `ok`, `empty`, `partial`, `failed`, `refused`, in increasing severity. Losses are additive qualifications, not a second outcome: useful content can coexist with missing fields. A parser failure or refusal is never evidence that the source had no matches. Inspect warnings for the actual cause; routes do not retry or fall back.
+Outcomes are `ok`, `empty`, `partial`, `failed`, `refused`, in increasing severity. Losses add qualifications; useful content can have missing fields. A parser failure or refusal is never evidence that the source had no matches. Inspect warnings for the actual cause; routes do not retry or fall back.
 
 | Loss | Meaning |
 | --- | --- |
@@ -60,4 +60,4 @@ Outcomes are `ok`, `empty`, `partial`, `failed`, `refused`, in increasing severi
 
 Declared route methods are read-only HTTPS. The transport bounds responses to 8 MiB and checks redirects and open-document addresses. Route ceilings and server `Retry-After`/`X-RateLimit-Reset` govern pacing; server limits may lengthen cooldowns. The run cache holds at most 32 entries of at most 1 MiB (32 MiB of cached bodies), keyed by route and canonical request, with route-specific TTLs. Hits carry `cache_hit` and spend no origin budget; cached bodies do not survive a run. The bounded plan persists refusal/pacing reservations, not this cache.
 
-With the skill's `scripts/` on `PYTHONPATH`, direct callers use `schema.parse_manifest`, `runner.run_acquisition`, then `dataclasses.asdict` to serialize. `coverage.plan_depth` builds steps from already selected records without I/O; `coverage.review_manifest` and `coverage.review_artifact` report anticipated and observed gaps. These checks establish acquisition coverage only. Source access, recall and research quality still require observed evidence.
+With the skill's `scripts/` on `PYTHONPATH`, direct callers use `schema.parse_manifest`, `runner.run_acquisition`, then `dataclasses.asdict` to serialize. `coverage.plan_depth` builds steps from already selected records without I/O; `coverage.review_manifest` and `coverage.review_artifact` report anticipated and observed gaps. Coverage checks establish neither source access, recall nor research quality; those require observed evidence.

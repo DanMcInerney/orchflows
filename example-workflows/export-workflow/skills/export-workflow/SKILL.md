@@ -1,21 +1,21 @@
 ---
 name: export-workflow
-description: Export an Orchflows workflow and its selected dependencies as a standalone native skill, with a portability report and bounded trial.
+description: Export an Orchflows workflow as a standalone native skill with a portability report and bounded trial.
 disable-model-invocation: true
 ---
 
-Create a skill folder that works without Orchflows installed. Establish [library context](../../references/library-context.md) once. The exported skill follows the [export contract](references/export-contract.md).
+Apply [library context](../../references/library-context.md) and [export contract](references/export-contract.md) to create a skill requiring no installed Orchflows.
 
-Resolve the source workflow by supplied path or library and skill name. Read it and its dependencies as source material; do not execute its task during discovery. Use the caller's target host, else the current host, and selected libraries in their supplied order. Establish any missing source identity or scope needed to resolve dependencies before exporting.
+Resolve the source path or library/skill identity and dependencies as source material; discovery does not execute the source task. Use caller host or current host, preserving selected library order. Resolve missing identity/scope before dependent conversion.
 
-Use the requested destination, else `exports/<skill-name>/` in the caller's workspace. Keep the source untouched; choose an unused destination if one already exists unless updating that export was requested. Use the source name without a leading `orch-` unless the caller names the export. Exporting does not install or register it.
+Write in the caller's context to its destination or `exports/<skill-name>/`. Preserve source files; choose an unused destination unless updating was requested. Default to the source name without leading `orch-`. Exporting does not install/register.
 
-Inventory reachable composed workflows, guidance, references, scripts, assets and host requirements. Apply the export contract, preserving supported behavior and recording every changed, omitted or unresolved capability. Keep the source's runtime inputs configurable; export-time choices select dependencies, not a hard-coded trial task. Report a missing dependency as a gap and stop dependent conversion; label any deliverable with unresolved required behavior incomplete.
+Inventory reachable workflows, guidance, references, scripts/assets and host requirements. Preserve supported behavior and record changes, omissions and unresolved capabilities. Runtime inputs stay configurable; export-time dependency choices must not hard-code the trial task. Missing dependencies block dependent conversion; unresolved required behavior makes the result incomplete.
 
-Write the export in the caller's context. Check metadata, relative links, script imports and resource paths from outside the source tree. Verify both host invocation settings from the resolved core's `docs/hosts.md`, preserving explicit caller opt-ins and otherwise using manual-only defaults.
+Check metadata, links, imports and resource paths outside the source tree. Verify both invocation settings under core `docs/hosts.md`, preserving caller opt-ins and otherwise manual-only defaults.
 
-Try the exported skill on one bounded representative request in a disposable, unrelated workspace, following core `docs/hosts.md#workflow-trials`. Give the fresh top-level session only the exported folder, ordinary inputs and declared external dependencies, without the source or authoring conversation. Its guidance comes only from the export. Keep outputs and the export report outside the installable folder. Record preparation, interventions and behavior not exercised; unavailable capabilities limit the claim.
+Run one bounded representative trial under core `docs/hosts.md#workflow-trials` in an unrelated disposable workspace. The fresh top-level session receives only the relocated export, ordinary synthetic inputs and declared prerequisites, without source/authoring history; its guidance comes from the export. Simulate external effects, keep references read-only and record fixtures, interventions and unexercised integrations. Keep outputs/report outside the installable folder. Unavailable safe execution is a validation gap, not authority for live trials.
 
-After the trial finishes, apply `orchflows:orch-review-revise-once` to the stable export against the source, export requirements, selected authoring guidance and trial evidence, with repairs scoped to the export and required portability checks. If repairs affect trial behavior, repeat the affected trial once under the same trial contract. Missing prerequisites block dependent trials, not disclosure of the gap.
+After the trial and its required judgments complete, apply `orchflows:orch-review-revise-once` to the stable export, source, requirements, author guidance and trial evidence. Scope repairs to export/portability checks. If repairs change trial behavior, repeat affected trial once under the same contract. Missing prerequisites block dependent trials, not gap disclosure.
 
-Deliver the skill folder and a sibling export report naming the source revision with local changes identified, or content hashes; selected libraries and guidance order; target host; bundled dependencies; required external tools; behavior changes; original review and delivered revision; checks and trial limits. Explain that source updates require re-export. Claim availability by name only after separate, verified host registration.
+Deliver folder and sibling report: source revision plus local changes or hashes; libraries/guidance order; host; bundled dependencies; external tools; behavior changes; original review/delivered revision; checks/trial limits. Source updates require re-export. Claim native availability only after separate verified registration.

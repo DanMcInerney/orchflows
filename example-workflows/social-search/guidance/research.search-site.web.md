@@ -2,4 +2,4 @@
 
 ## Make
 
-Search filters and displayed dates can reflect indexing or updates; verify publication on the original page. For research covered by a blog or news story, prefer DOI or versioned paper links for the assigned original-source checks.
+Search filters/dates may reflect indexing or updates; verify publication on the original. For research in blogs or news, prefer DOI or versioned paper links for original-source checks.

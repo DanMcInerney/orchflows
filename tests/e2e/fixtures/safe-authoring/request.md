@@ -1,0 +1,3 @@
+Use the trial procedure in {CORE}/skills/orch-build-workflow/SKILL.md to evaluate meeting-followup.md. notes.md shows the meeting format. integrations.py supplies the email/calendar adapter interface.
+
+This fresh session is the trial coordinator; drafting and authoring review are handled by the calling maintainer. Exercise only the trial phase here, without changing the workflow or package. Return trial-report.md (under 150 words) and trial-summary.json with a paths object containing strings named fixture_input (the notes path actually passed to the workflow), rewritten_notes, captured_email and captured_invite, plus validation gaps. Keep the rehearsal small.

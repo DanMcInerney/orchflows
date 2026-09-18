@@ -16,43 +16,43 @@
 
 Home selection: `--home PATH` → `ORCHFLOWS_HOME` → `~/.orchflows`; never the current directory. Package layout: [libraries.md](libraries.md); execution contracts: [architecture.md](architecture.md).
 
-CLI: `python <core>/scripts/orchflows.py COMMAND`, using any Python 3.11+; no dependencies. `<core>` is a checkout or `<home>/.local/packages/orchflows`. The home interpreter is `.local/runtime/Scripts/python.exe` on Windows, `.local/runtime/bin/python` elsewhere.
+CLI: `python <core>/scripts/orchflows.py COMMAND`; Python 3.11+, no dependencies. `<core>` is a checkout or `<home>/.local/packages/orchflows`. Home interpreter: `.local/runtime/Scripts/python.exe` on Windows, `.local/runtime/bin/python` elsewhere.
 
-`setup` and `doctor` show a readable summary in terminals and one JSON line when piped; `--json` forces JSON. Other commands return JSON. Exit 0: success; 1: `setup`/`doctor` has `issues`, including remaining manual host steps; 2: command error (JSON on stderr) or argument error. Use `COMMAND --help` for flags.
+`setup` and `doctor` return terminal summaries or one JSON line when piped; `--json` forces JSON. Other commands return JSON. Exit 0: success; 1: `setup`/`doctor` issues, including manual host steps; 2: command error (JSON on stderr) or argument error. Flags: `COMMAND --help`.
 
 ## setup
 
 `setup [--home PATH] [--source CORE] [--example NAME] [--host HOST] [--concurrency N] [--json]`
 
-- Creates the tree, dependency-free venv and native `orchflows-home` catalogs; runs `git init` if available, never commits. Existing seeded files and runtime contents are preserved; an incomplete runtime is an issue. The root `marketplace.json` supplies ZCode with relative package paths and current versions; `doctor` detects stale catalogs.
-- Source defaults to the executing CLI's core. `--example NAME` copies `<source>/example-workflows/NAME` into `libraries/NAME/` once, preserving an existing destination. Installed cores omit examples; supply a checkout.
-- Rerun to update the managed core and regenerate catalogs. The core is staged and swapped; running from the installed core reuses it. A failed swap restores the previous copy. If restoration fails, the error names the retained backup; later setup preserves it.
-- `--host auto` is the default: check executables on `PATH` and common installation paths; configuration folders alone do not establish availability. Repeat `--host codex`, `claude`, `agy`, `grok`, `kimi` or `zcode` to select hosts. `--host none` prepares only the home. `auto` and `none` cannot combine with other selections. An explicitly selected but missing host is an issue; an undetected host in automatic mode is not.
-- Registers and verifies core plus the requested example through detected Codex, Claude Code, Antigravity and Grok Build CLIs. Refreshes already installed home libraries; other optional libraries remain uninstalled. Checks Grok's effective plugin inventory first, including Claude-compatible discovery. Preserves disabled plugins, registrations from other sources and ambiguous multiple installations; reports the required action instead of replacing them. Antigravity updates require this home's installation receipt and an unchanged cached copy.
-- Kimi Code and ZCode return in-app installation/verification steps with resolved paths. A host failure or unsupported CLI capability is reported without preventing the remaining hosts from being processed. [Host registration details](hosts.md#register-and-refresh).
-- Preserves concurrency settings by default. `--concurrency N` tunes supported limits in detected, selected hosts; [hosts.md](hosts.md#concurrency) owns their keys, scopes and prerequisites. Invalid configuration, conflicting environment overrides and unsupported hosts are reported without changing their files. Changed files get `<file>.orchflows-<id>.bak`; failures or unsupported tuning return `host_config_status: partial`. Use `--host none` to skip host integration; it cannot combine with `--concurrency`.
-- `.local/packages/.setup.lock` covers all setup writes, including host updates and core reuse. Host files use `<file>.orchflows.lock`. Remove a leftover lock only after checking for an active installer.
+- Creates the tree, dependency-free venv and native `orchflows-home` catalogs; runs available `git init`, never commits. Preserves seeded files and runtime contents; reports incomplete runtimes. Root `marketplace.json` gives ZCode relative package paths and current versions; `doctor` detects stale catalogs.
+- Source defaults to the running CLI's core. `--example NAME` copies `<source>/example-workflows/NAME` to `libraries/NAME/` only if absent. Supply a checkout; installed cores omit examples.
+- Rerun to update managed core and catalogs. Core updates stage and swap; running from installed core reuses it. Failed swaps restore the previous copy. If restoration fails, the error identifies the retained backup; later setup preserves it.
+- Default `--host auto` checks executables on `PATH` and common installation paths; configuration folders do not establish availability. Select hosts with repeated `--host codex`, `claude`, `agy`, `grok`, `kimi` or `zcode`; `--host none` prepares only home. Neither `auto` nor `none` combines with other selections. Missing explicit hosts are issues; undetected automatic hosts are not.
+- Registers and verifies core and the requested example through detected Codex, Claude Code, Antigravity and Grok Build CLIs; refreshes installed home libraries without installing others. First checks Grok's effective inventory, including Claude-compatible discovery. Preserves disabled, foreign and ambiguous multiple installations, reporting required action. Antigravity refresh requires this home's receipt and an unchanged cached copy.
+- Kimi Code and ZCode return in-app installation/verification steps with resolved paths. Reported failures or unsupported CLI capabilities do not stop other hosts. See [registration](hosts.md#register-and-refresh).
+- Preserves concurrency unless `--concurrency N` requests supported limits for detected, selected hosts; [hosts.md](hosts.md#concurrency) owns keys, scopes and prerequisites. Invalid configuration, conflicting environment overrides or unsupported hosts leave files unchanged and report issues. Changed files get `<file>.orchflows-<id>.bak`; failures or unsupported tuning return `host_config_status: partial`. `--host none` skips integration and cannot combine with `--concurrency`.
+- `.local/packages/.setup.lock` covers every setup write, including host updates and core reuse; host files use `<file>.orchflows.lock`. Check for active installers before removing leftover locks.
 
-Result: `status`, `home`, `files`, `runtime_python`, `core` (`status`, `package_root`, `name`, `version`), `runtime`, `example`, `git`, `host_configs`, `host_config_status`, `hosts`, `issues`. Each host reports `ready`, `updated`, `needs_action`, `not_detected` or `failed`, with package details and next steps where applicable. `needs_action` and `failed` produce exit 1; readiness verifies package installation, not authenticated workflow execution. Antigravity's unverified manual-only invocation policy is reported as a warning without blocking installation.
+Result: `status`, `home`, `files`, `runtime_python`, `core` (`status`, `package_root`, `name`, `version`), `runtime`, `example`, `git`, `host_configs`, `host_config_status`, `hosts`, `issues`. Host status: `ready`, `updated`, `needs_action`, `not_detected` or `failed`, with relevant package details and next steps. `needs_action`/`failed` cause exit 1. Readiness verifies installation, not authenticated execution. Antigravity's unverified manual-only policy warns without blocking installation.
 
 ## doctor
 
 `doctor [--home PATH] [--host HOST] [--json]`
 
-Read-only checks: core manifest and required files, runtime files, library manifests and `skills/`, seeded files, catalogs against installed libraries. Uses setup's host discovery and inventory checks without registering or updating plugins. The same host selectors apply; `--host none` checks only the home. Kimi and ZCode still require native in-app verification. Returns `checks`, `hosts`, `issues` and `status: ready|incomplete`.
+Read-only checks: core manifest/required files, runtime files, library manifests/`skills/`, seeded files and catalogs against installed libraries. Uses setup's host selectors, discovery and inventory without registration or updates; `--host none` checks only home. Kimi and ZCode require in-app verification. Returns `checks`, `hosts`, `issues` and `status: ready|incomplete`.
 
 ## resolve
 
 `resolve <library> [--home PATH] [--skill NAME | --resource RELATIVE/PATH]`
 
-Returns `name`, `version`, `package_root`, optional `skill_path`/`resource_path`, and unverified `runtime_python`; launches nothing. `orchflows` selects the managed core; other names match root `plugin.json` under `libraries/`. Rejects duplicate names and absolute or escaping resources.
+Returns `name`, `version`, `package_root`, optional `skill_path`/`resource_path` and unverified `runtime_python`; launches nothing. `orchflows` selects managed core; other names match root `plugin.json` under `libraries/`. Rejects duplicate names and absolute or escaping resources.
 
-Supplied package roots and native skills can run without a home or its runtime. Report a missing capability only where required: unavailable native delegation blocks a required child call, not unrelated authorized work.
+Supplied roots and native skills need no home or its runtime. Missing capabilities block only dependent work; unavailable native delegation blocks required child calls, not unrelated authorized work.
 
 ## Libraries
 
-Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique across the home and cannot be `orchflows`. After adding a library, rerun setup to regenerate catalogs, then [install it in the intended hosts](hosts.md#register-and-refresh). Later setup runs refresh existing Codex, Claude Code and Grok Build installations, plus Antigravity copies installed by this home. Bump manifest versions before refreshing changed libraries; Claude can retain stale cached files at the same version.
+Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique within home and cannot be `orchflows`. After adding a library, rerun setup for catalogs, then [install in intended hosts](hosts.md#register-and-refresh). Later setup refreshes existing Codex, Claude Code and Grok Build installations and this home's Antigravity copies. Bump manifest versions before refreshing changes; Claude may retain stale same-version caches.
 
 ## Another computer
 
-After cloning the home, run the intended core's `setup --home <clone>`, reinstall library dependencies, and follow any remaining host steps. Setup installs core in detected hosts; [install wanted libraries](hosts.md#register-and-refresh) on the new computer. Setup copies local packages and installs no library dependencies; `.local/`, `artifacts/` and Python caches are ignored by the seeded `.gitignore`.
+After cloning home, run the intended core's `setup --home <clone>`, reinstall library dependencies and complete host steps. Setup installs core in detected hosts; [install wanted libraries](hosts.md#register-and-refresh) separately. Setup copies local packages without installing library dependencies. Seeded `.gitignore` excludes `.local/`, `artifacts/` and Python caches.

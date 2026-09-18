@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from orchflows import CORE_ENTRIES
 
-CASES = ("routing", "composition", "missing-review", "explicit-dynamic", "research-code")
+CASES = ("routing", "composition", "missing-review", "explicit-dynamic", "research-code", "safe-authoring")
 
 
 def snapshot(root):

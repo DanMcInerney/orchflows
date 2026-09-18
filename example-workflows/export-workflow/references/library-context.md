@@ -1,9 +1,5 @@
 # Library context
 
-Require Orchflows core 0.11.0+. Apply core `docs/architecture.md`.
+Require core 0.11.0+ and apply its `docs/architecture.md`. Resolve `orch-work`, `orch-review-revise-once`, its `orch-review` dependency and `docs/hosts.md` through native skills, supplied roots or core's `resolve` CLI once.
 
-Resolve core `orch-work`, `orch-review-revise-once` and its `orch-review` dependency, `docs/architecture.md` and `docs/hosts.md` once through native skills, supplied package roots or core's `resolve` CLI.
-
-Select `orchflows` and `writing` for export authoring and review, including this library and caller-selected libraries in supplied order. Source-workflow guidance is source material to bundle; it does not replace the export author's guidance.
-
-Pass relevant source references and target-host requirements with each assignment. Keep exports, reports and trial outputs in the caller's workspace, outside packages.
+Select `orchflows` and `writing` for export authors/reviewers, including this library and caller libraries in order. Source-workflow guidance is material to bundle, not author guidance. Pass relevant source references and host requirements to assignments. Keep exports, reports and trial outputs in the caller workspace, outside packages.
