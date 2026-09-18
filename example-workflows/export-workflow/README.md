@@ -39,7 +39,7 @@ A live-search workflow gets a live discovery-and-source-inspection trial when au
 
 | Source feature | Standalone result |
 | --- | --- |
-| Selected layered guidance | A bundled snapshot preserving precedence and Make/Review roles. |
+| Selected layered guidance | A bundled snapshot preserving precedence, shared criteria, Make/Review additions and call scope. |
 | Work, independent review, parallel collection and handoffs | Native delegation preserving supported composition and ownership. |
 | Loops, repairs and model/effort controls | The source's bounds and supported settings, with unsupported controls disclosed. |
 | Helper workflows, references, scripts and assets | Local dependencies and paths; helper entrypoints may be flattened. |
@@ -59,6 +59,6 @@ python scripts/orchflows.py setup --example export-workflow
 
 Setup copies the example into your orchflows home and preserves an existing library copy. Follow core `docs/hosts.md` to register and install `export-workflow@orchflows-home`, then start a new session. Setup alone does not make the workflow available by name.
 
-Requires orchflows 0.10.0+, native child delegation, filesystem access, the source workflow and its selected dependencies, and the tools needed for the bounded trial. [Library context](references/library-context.md) resolves package dependencies. Setup installs no library runtime dependencies.
+Requires orchflows 0.11.0+, including `orch-review-revise-once`, native child delegation, filesystem access, the source workflow and its selected dependencies, and the tools needed for the bounded trial. [Library context](references/library-context.md) resolves package dependencies. Setup installs no library runtime dependencies.
 
 The [trial requests](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) support repeatable validation; they are not proof that every workflow, site or host has been tested.

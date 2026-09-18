@@ -25,19 +25,19 @@ Bring a new idea or an existing game. Specify devices, controls, session length,
 
 ## How an idea becomes a game
 
-The [main workflow](skills/3d-browser-game/SKILL.md) defines 20 steps, each with an output and a condition for advancing:
+The [main workflow](skills/3d-browser-game/SKILL.md) follows five stages, with required evidence before dependent work advances:
 
 | Stage | What happens |
 | --- | --- |
-| Find the game · 1–5 | Set the brief, prove the tools, compare at least three mechanics, choose a loop and plan observable experiments. |
-| Make it playable · 6–9 | Build testable architecture, tune controls and camera, complete a graybox session and run two focused mechanics experiments. |
-| Test the core · 10–11 | A fresh playtester attempts uncoached play, alternate tactics, setbacks and retry. Repair material findings before proceeding. |
-| Give it a world · 12–16 | Direct the art, produce Blender assets, develop progression, integrate GLBs and finish the player's interface and feedback. |
-| Finish with evidence · 17–20 | Run scenario QA, measure performance during gameplay, get a new independent playtest and deliver the checked result. |
+| Establish scope and capabilities · 1 | Set the player promise, release boundary, target conditions and observed tool/testing capabilities. |
+| Produce the playable core · 2 | Compare at least three mechanics, choose the rules, build a testable graybox session and record two focused mechanics experiments. |
+| Independently review the core · 3 | A fresh playtester attempts uncoached play, alternate tactics, setbacks and retry. Establish a ready core before final asset production. |
+| Produce and integrate the game · 4 | Direct and produce Blender assets, develop content, join their completed results, finish the player experience and gather QA/runtime/performance evidence. |
+| Independently review and deliver · 5 | A different fresh playtester reviews the exact production candidate; handle any permitted repair and deliver the checked result. |
 
-The orchestrator chooses production assignments and independent core/final review coverage. Shared creative direction and integration ownership keep the game coherent. Blender production and game content can run concurrently on separate files.
+The orchestrator chooses production assignments; a full run requires both independent playtests. Shared creative direction and integration ownership keep the game coherent. Blender production and game content can run concurrently on separate files. Guidance gives makers and reviewers the same applicable quality criteria, with production methods kept alongside them and in the references.
 
-Each independent review permits at most one necessary repair pass and no further review. An unchanged ready candidate keeps its evidence without another rebuild or replay. A blocked core stops before final asset production. If a checkpoint remains `needs change` or `unverified`, the workflow returns the best runnable state, findings and a precise next action. Extra review/repair rounds require your request.
+Each independent review permits at most one necessary repair pass and no further review. A repair includes affected checks and the main start–play–outcome–retry session, labeled as maker verification. An unchanged ready candidate keeps its evidence without another rebuild or replay. A blocked core stops before final asset production. If a checkpoint remains `needs change` or `unverified`, the workflow returns the best runnable state, findings and a precise next action. Extra review/repair rounds require your request.
 
 ## What you get
 

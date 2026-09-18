@@ -71,7 +71,7 @@ Register the home and install core plus `social-search` for your host using core
 
 All three skills are manual-only by default. Invoke `$social-search:social-search` in Codex or `/social-search:social-search` in Claude Code; substitute the leaf name to use it alone.
 
-Requires Orchflows 0.10.0+, native child delegation, and public search/read tools. Optional `python scripts/orchflows.py setup --example research-acquire` adds acquisition tools and a YouTube transcript reader; install that library with your host too. It owns its dependencies and routes, and its generic feed support requires version 0.4.0+. Setup installs no library runtime dependencies.
+Requires Orchflows 0.11.0+, native child delegation, and public search/read tools. Optional `python scripts/orchflows.py setup --example research-acquire` adds acquisition tools and a YouTube transcript reader; install that library with your host too. It owns its dependencies and routes, and its generic feed support requires version 0.4.0+. Setup installs no library runtime dependencies.
 
 ## Make it yours
 

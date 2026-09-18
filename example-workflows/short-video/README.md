@@ -57,6 +57,6 @@ python scripts/orchflows.py setup --example short-video
 
 Setup copies the example into your orchflows home, preserves existing library copies and installs no media dependencies. Follow core `docs/hosts.md` to register and install `short-video@orchflows-home`, then start a new session. Core `docs/home.md` covers updates.
 
-Requires orchflows 0.10.0+, native child delegation, an authoring/export toolchain and access to the exported media. [Remotion](references/remotion.md) is optional; generated projects carry their own dependencies in the caller's workspace. Full audiovisual review also needs motion viewing and, for films with sound, listening capabilities.
+Requires orchflows 0.11.0+, native child delegation, an authoring/export toolchain and access to the exported media. [Remotion](references/remotion.md) is optional; generated projects carry their own dependencies in the caller's workspace. Full audiovisual review also needs motion viewing and, for films with sound, listening capabilities.
 
 The [trial requests](trials/request.md) and [expected behavior](trials/expected-behavior.md) describe repeatable validation, not observed results or a promise of popularity.

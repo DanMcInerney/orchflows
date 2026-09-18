@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Reuse or establish [library context](../../references/library-context.md). No independent review is included. Resolve the art brief, gameplay camera, asset scope, runtime preview/loader, budgets and owned output directory using the [asset contract](../../references/blender.md). For a standalone asset request, supply a small project-local Three.js preview if the game is unavailable; identify final integration as unverified.
 
-Use `orchflows:orch-work` for asset production assignments with resolved Make guidance, the asset contract, actual game baseline and relevant source assets. Preserve these dependencies across assignments:
+Produce assets under core execution rules with the applicable common criteria and Make guidance, asset contract, actual game baseline and relevant source assets. Staffing is flexible; a production step does not require a fresh maker. Preserve these dependencies across assignments:
 
 1. Inspect Blender/export capabilities and the brief. Plan the asset family, shape language, modular relationships and budget allocation. Resolve unspecified art choices; report a gap if an essential gameplay contract is absent.
 2. Create silhouette/proportion blockouts for the key asset and a representative environment piece when in scope. Inspect orthographic/three-quarter and gameplay-camera renders. Choose and refine the forms before fine detail.
@@ -15,4 +15,4 @@ Use `orchflows:orch-work` for asset production assignments with resolved Make gu
 5. Inspect exports structurally and visually, including required clips. Check bounds, pivots/sockets, texture dependencies, collider fit and measured costs. Supply game-camera views alongside source contact views. Report what still needs integrated play verification.
 6. Return `.blend`, GLB, dependent assets, scripts/export settings, asset metadata, inspected views, reproduction commands and unresolved deviations.
 
-Use a separate asset directory so code/content work can continue without conflicts. The caller integrates exports and checks actual gameplay. Return assignment handles and expected output paths immediately when the caller is gathering parallel work; otherwise await and return the actual result. Continue suitable makers for production feedback or the caller’s repair pass; no extra review or unbounded remake loop is implied.
+Use a separate asset directory so code/content work can continue without conflicts. Gather completed asset outcomes and return the actual result; the caller integrates exports and checks actual gameplay. Continue suitable makers for production feedback or the caller's repair pass under its scoped settings; no extra review or unbounded remake loop is implied.

@@ -1,7 +1,5 @@
 # API code
 
-## Make
-
 Prefer stable caller contracts and machine-readable errors. Make ordering and pagination limits explicit; state whether repeating a request repeats its effect. Distinguish absent, empty and invalid values when their behavior differs.
 
 ## Review

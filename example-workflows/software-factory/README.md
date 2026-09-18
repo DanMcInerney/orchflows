@@ -45,8 +45,8 @@ The diagrams use the same positions, stages and feedback paths. Open either imag
 | Part | What it owns |
 | --- | --- |
 | Workflow `SKILL.md` | Order of work, assignments, branches, retry bounds and when to stop |
-| `orch-work` | A fresh child that makes the assigned result using the selected guidance's Make sections |
-| `orch-review` | A fresh independent child that applies Review sections, reports findings and does not repair |
+| `orch-work` | A fresh child that makes the assigned result using common quality criteria and Make instructions |
+| `orch-review` | A fresh independent child that applies the same criteria and Review instructions, reports findings and does not repair |
 | Core `guidance/code.md` | General code quality criteria |
 | [software-delivery guidance](guidance/software-delivery.md) | Artifact integrity, specialist review criteria, risk, recovery and production evidence |
 | [Run contract](references/run-contract.md) | Candidate identities, evidence, checkpoints, authority and resumption |
@@ -156,4 +156,4 @@ Example requests:
 
 > Use software-factory:investigate-incident to investigate checkout errors between 14:00 and 14:20 UTC. Explain likely causes and rank possible mitigations.
 
-Supply an outcome and workspace, plus any chosen bounds, output directory, release target, project policy, domain guidance or model/effort preferences. Unspecified model settings stay with the host. Require Orchflows core 0.10.0+, native child delegation and the target project's build/check tools; CI hosting, deployment, flags and telemetry are needed only for stages that depend on them. See [library context](references/library-context.md), the [run contract](references/run-contract.md), [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md).
+Supply an outcome and workspace, plus any chosen bounds, output directory, release target, project policy, domain guidance or model/effort preferences. Unspecified model settings stay with the host. Require Orchflows core 0.11.0+, native child delegation and the target project's build/check tools; CI hosting, deployment, flags and telemetry are needed only for stages that depend on them. See [library context](references/library-context.md), the [run contract](references/run-contract.md), [trial request](trials/request.md) and [expected behavior](trials/expected-behavior.md).

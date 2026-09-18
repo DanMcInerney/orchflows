@@ -1,17 +1,19 @@
 # Shared processes
 
-Small composable workflows for decisions and bounded revision. Task details come from the prompt; quality and taste come from selected guidance. Ordinary task allocation, fan-out, gathering and staffing come from core.
+Composable procedures for decisions and bounded revision. Task details come from the prompt; quality and taste come from selected guidance. Core defines execution rules; the coordinator staffs the work.
 
 | Component | Contract |
 | --- | --- |
 | [compare-candidates](skills/compare-candidates/SKILL.md) | Compare stable alternatives under common criteria; return evidence and preference, without adoption or edits |
-| [review-revise-once](skills/review-revise-once/SKILL.md) | Review independently, repair at most once, verify, and distinguish reviewed and delivered states |
+| [review-revise-once](skills/review-revise-once/SKILL.md) | Compatibility entry to core `orch-review-revise-once`: review independently, repair at most once, verify, and distinguish reviewed and delivered states |
 
-The top-level orchestrator dispatches all assignments. Comparison uses one independent comparer. Review-and-revision uses core's standard pattern: one independent whole-result reviewer, at most one coordinated repair pass and required verification. Repair staffing stays flexible.
+Procedures compose to any depth in one coordinator. Loading a nested procedure does not launch an agent, add a review or reset a bound. Only the top-level coordinator dispatches agents; children do not delegate. Comparison uses one independent comparer. The compatibility entry applies core review-and-revision in that same coordinator, adding no stage: one independent whole-result review, at most one coordinated repair pass and required verification. Ordinary drafting and repair staffing stay flexible.
+
+Pass applicable guidance, constraints and settings through each call. Keep local guidance and output locations scoped to that work; they do not overwrite the parent or leak into siblings. Makers and reviewers share the substantive quality criteria, with role-specific instructions where supplied.
 
 ## Use and dependencies
 
-Requires Orchflows core 0.10.0+ and native child delegation. This package adds no runtime, domain guidance or required tools. See [library context](references/library-context.md).
+Requires Orchflows core 0.11.0+ and native child delegation. This package adds no runtime, domain guidance or required tools. See [library context](references/library-context.md).
 
 From the checkout:
 
@@ -19,7 +21,7 @@ From the checkout:
 python scripts/orchflows.py setup --example shared
 ```
 
-Register the package with the intended host using core `docs/hosts.md`; a copied file is not proof of native availability. All skills are manual-only by default. Use `$shared:compare-candidates` in Codex or `/shared:compare-candidates` in Claude, with the corresponding syntax for `review-revise-once`. Honor host restrictions on composed calls. Setup installs no transitive library dependencies.
+Register the package with the intended host using core `docs/hosts.md`; a copied file is not proof of native availability. All skills are manual-only by default. Use `$shared:compare-candidates` in Codex or `/shared:compare-candidates` in Claude, with the corresponding syntax for `review-revise-once`. Resolve dependencies through supported native skills or supplied package paths. Setup installs no transitive library dependencies.
 
 Example requests:
 
@@ -39,4 +41,4 @@ Declare `shared` as a dependency and select the applicable guidance. Keep criter
 
 ## Validation
 
-[Trials](trials/README.md) distinguish earlier component checks from the current builder-to-personal-library acceptance scenarios. Run from an unrelated workspace with declared dependencies and ordinary inputs. Metadata checks do not establish behavior or cross-host portability.
+[Trials](trials/README.md) include builder-to-personal-library scenarios and a new [composition fixture](trials/composition/request.md) for nested procedures, scoped guidance and the compatibility entry. The new fixture has not yet been run. Earlier observations remain historical evidence. Run from an unrelated workspace with declared dependencies and ordinary inputs; metadata checks do not establish behavior or cross-host portability.

@@ -1,7 +1,5 @@
 # Design iteration
 
-## Make
-
 Choose improvements that move the stated endgoal forward and can be observed. Separate evidence, assumptions and unresolved questions. Prefer a small coherent increment with explicit tradeoffs over a collection of unrelated additions. A first PoC proves the smallest useful end-to-end behavior from the actual starting state.
 
 Use research to reduce a decision-relevant uncertainty. Identify sources and their applicability; the absence of supporting evidence is a gap, not a negative result. For an existing project, preserve known required behavior and the caller's constraints.

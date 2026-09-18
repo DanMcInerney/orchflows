@@ -1,6 +1,6 @@
 # Three.js implementation reference
 
-Use for foundation, asset integration and profiling. These are preferred engineering choices, not a required framework. Inspect the installed package and lockfile and consult its matching official documentation before relying on release-sensitive APIs. Do not copy a second Three.js version through an addon/CDN.
+Use for foundation, asset integration and profiling. Framework and optimization choices are methods; timing, input, asset and verification contracts remain required. Inspect the installed package and lockfile and consult its matching official documentation before relying on release-sensitive APIs. Do not copy a second Three.js version through an addon/CDN.
 
 ## Responsibilities and timing
 
@@ -31,6 +31,8 @@ Three.js uses a linear working color space. Color textures such as base color an
 Start with readable lighting and physically based materials where appropriate. Establish key/fill/environment balance and roughness before bloom, fog or elaborate shaders. Limit shadow-casting lights, shadow distance/map size and transparent overdraw. Tune shadow bias against the actual scene scale. Ensure effects preserve interaction cues. Blender's render settings are not a promise of identical Three.js output.
 
 ## Performance and lifetime
+
+Profile production preview during representative busy action after warm-up, and measure cold load/start and repeated retries. Record the build, actual browser/device, viewport, pixel ratio, quality, duration and workload under the evidence contract. Compare results with the agreed target budgets. Retest changed visuals and gameplay at the same workload; measure another target or low-quality settings when required by the brief. A static menu, software/headless renderer or manual simulation stepping cannot establish real-device gameplay performance; report those limits.
 
 Measure first. `renderer.info` helps track draw calls, triangles, textures and geometries, not total GPU memory or displayed-frame timing. Record raw frame intervals before clamping simulation time so long stalls remain visible. With multiple passes configure counter resets so measurements cover the intended frame. Pair counters with browser timing/profiling and observed changing game frames. Cap device pixel ratio or provide quality settings based on measured target cost. Resize the drawing buffer and update camera projection without fighting CSS layout. [WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html)
 

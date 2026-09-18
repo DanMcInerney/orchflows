@@ -98,7 +98,8 @@ class InstalledCliTests(unittest.TestCase):
             expanded = cli(python, script, "history", "read", "claude", "native-session", "--event", page["events"][0]["event_id"])
             self.assertEqual(json.loads(expanded["text"])["file_path"], "evidence-λ.txt")
             self.assertEqual({skill.name for skill in (core / "skills").iterdir()},
-                             {"orch-work", "orch-review", "orch-dynamic-workflow", "orch-build-workflow"})
+                             {"orch-work", "orch-review", "orch-review-revise-once",
+                              "orch-dynamic-workflow", "orch-build-workflow"})
             for removed in ("orch-parallel", "orch-compare", "orch-make-and-review", "orch-setup", "orch-record-run",
                             "orch-self-improve", "self-improve"):
                 unavailable = cli(python, script, "resolve", "orchflows", "--skill", removed, expected=2)

@@ -1,7 +1,5 @@
 # Visual design
 
-## Make
-
 Make the main message or action easy to identify. Prefer consistent typography, spacing, color and reusable patterns. Use realistic content and inspect the rendered result at its intended size and in its intended medium.
 
 ## Review

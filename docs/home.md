@@ -14,7 +14,7 @@
     └── packages/orchflows/          managed core                      replaced by setup
 ```
 
-Home selection: `--home PATH` → `ORCHFLOWS_HOME` → `~/.orchflows`; never the current directory. Package contracts: [architecture.md](architecture.md).
+Home selection: `--home PATH` → `ORCHFLOWS_HOME` → `~/.orchflows`; never the current directory. Package layout: [libraries.md](libraries.md); execution contracts: [architecture.md](architecture.md).
 
 CLI: `python <core>/scripts/orchflows.py COMMAND`, using any Python 3.11+; no dependencies. `<core>` is a checkout or `<home>/.local/packages/orchflows`. The home interpreter is `.local/runtime/Scripts/python.exe` on Windows, `.local/runtime/bin/python` elsewhere.
 
@@ -47,7 +47,7 @@ Read-only checks: core manifest and required files, runtime files, library manif
 
 Returns `name`, `version`, `package_root`, optional `skill_path`/`resource_path`, and unverified `runtime_python`; launches nothing. `orchflows` selects the managed core; other names match root `plugin.json` under `libraries/`. Rejects duplicate names and absolute or escaping resources.
 
-No home or runtime: use available native skills and report the gap. No native delegation: block the workflow.
+Supplied package roots and native skills can run without a home or its runtime. Report a missing capability only where required: unavailable native delegation blocks a required child call, not unrelated authorized work.
 
 ## Libraries
 

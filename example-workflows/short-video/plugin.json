@@ -1,6 +1,6 @@
 {
   "name": "short-video",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Composable short-video making and independent export review.",
   "skills": "./skills/",
   "author": {

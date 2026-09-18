@@ -1,14 +1,12 @@
 # Orchflows
 
-## Make
-
-Use the shortest wording that preserves the intended choices. Follow [architecture](../docs/architecture.md) for contracts and placement.
+Use the shortest wording that preserves the intended choices. Follow [architecture](../docs/architecture.md) for contracts and [libraries](../docs/libraries.md) for placement.
 
 Record deliberate preferences. Define local meanings the reader cannot infer. Keep shared definitions with the contract they describe. Specializations state differences from their parents. Keep corrections for model weaknesses separately removable.
 
 A reusable artifact works from its declared inputs and dependencies, without the author's conversation or undocumented preparation.
 
-Reuse a component when its contract fits; a plain assignment can be simpler than adapting another domain's workflow. Reference shared rules instead of repeating them. Explain a count's purpose when unclear.
+Reuse a component when its contract fits; a plain assignment can be simpler than adapting another domain's workflow. Reference shared rules instead of repeating them. Explain a count's purpose when unclear. Keep local guidance scoped to its work; maker and reviewer share the substantive quality criteria.
 
 ## Review
 

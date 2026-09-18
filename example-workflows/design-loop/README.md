@@ -33,7 +33,7 @@ Supply an endgoal, starting workspace or artifacts, and an output directory. You
 - **The tester did not make the candidate.** It inspects the exact old and new states under comparable conditions, keeps raw evidence and makes no repairs.
 - **A failed idea does not replace the accepted version.** Adoption requires supporting evidence; gaps and regressions produce a retain decision and inform the next attempt.
 
-The coordinator calls small, reusable workflows. Each component can also run independently with the inputs described in its skill and the [shared handoff contract](references/design-loop-contract.md).
+The coordinator applies small, reusable workflows in the same session. Production stages can run directly, continue a suitable maker or use `orch-work`, honoring scoped settings. Each component can also run independently with the inputs described in its skill and the [shared handoff contract](references/design-loop-contract.md).
 
 ## Detailed flow
 
@@ -41,21 +41,21 @@ The coordinator calls small, reusable workflows. Each component can also run ind
 flowchart TD
     U(["User: endgoal, workspace, criteria, constraints and N"])
     U --> INIT["design-loop: resolve context and bounds<br/>Preserve initial accepted baseline or verify checkpoint"]
-    INIT --> START["Start or resume cycle<br/>New attempt consumes one of N; checkpoint each returned stage"]
+    INIT --> START["Start or resume cycle<br/>Record cycle-start before work; checkpoint each returned stage"]
     START --> B
 
     subgraph BR["brainstorm-research — composes two reusable workflows"]
-        B["brainstorm-options · orch-work<br/>Propose 2–4 increments from goal, baseline and observations"]
-        B --> R["research-options · orch-work<br/>Investigate decision-relevant uncertainties<br/>Return sources, findings, tradeoffs and gaps"]
+        B["brainstorm-options<br/>Propose 2–4 increments from goal, baseline and observations"]
+        B --> R["research-options<br/>Investigate decision-relevant uncertainties<br/>Return sources, findings, tradeoffs and gaps"]
     end
 
-    R --> D["design-increment · orch-work<br/>Choose one bounded increment<br/>Define acceptance and old-versus-new evaluation before edits"]
+    R --> D["design-increment<br/>Choose one bounded increment<br/>Define acceptance and old-versus-new evaluation before edits"]
     D --> CHANGE{"Justified change?"}
     CHANGE -->|Yes| C["Coordinator: isolate candidate from accepted baseline<br/>First cycle: smallest useful working PoC"]
-    C --> I["implement-increment · orch-work<br/>Implement the design and perform ordinary checks<br/>Return reproducible candidate; freeze its state"]
-    I --> T["test-increment · orch-review<br/>Fresh independent tester compares exact old and new states<br/>Same relevant harness and conditions; no repairs"]
+    C --> I["implement-increment<br/>Implement the design and perform ordinary checks<br/>Return reproducible candidate; freeze its state"]
+    I --> T["test-increment → shared:compare-candidates<br/>Fresh independent tester compares exact old and new states<br/>Same relevant harness and conditions; no repairs"]
     CHANGE -->|No| SKIP["Mark implementation and testing inapplicable"]
-    T --> A["analyze-iteration · orch-work<br/>Assess acceptance, regressions and evidence gaps<br/>Recommend adopt or retain; record lessons"]
+    T --> A["analyze-iteration<br/>Assess acceptance, regressions and evidence gaps<br/>Recommend adopt or retain; record lessons"]
     SKIP --> A
     A --> DEC{"Coordinator checks recommendation<br/>against criteria and evidence"}
     DEC -->|Adopt| AD["Accepted state becomes candidate"]
@@ -67,7 +67,7 @@ flowchart TD
     CONT -->|No| OUT(["Return accepted project and usage instructions,<br/>initial-to-final evidence, decisions, gaps and checkpoint"])
 
     FAIL["Any stage fails: preserve evidence<br/>Mark dependent stages unexecuted"]
-    FAIL --> AVAIL{"Scheduled analysis child available?"}
+    FAIL --> AVAIL{"Scheduled analysis can proceed?"}
     AVAIL -->|Yes: partial evidence| A
     AVAIL -->|No| MISSING["Record missing analysis and retain baseline"]
     MISSING --> SAVE
@@ -95,7 +95,7 @@ The failure branch applies to any failed stage; failures and skipped work remain
 | [test-increment](skills/test-increment/SKILL.md) | Independently compare baseline and candidate without repairs. |
 | [analyze-iteration](skills/analyze-iteration/SKILL.md) | Recommend adopt/retain and inform the next brainstorm. |
 
-The orchestrator chooses assignments for the six stages. Composers run in the caller; there is no extra final review or hidden repair loop. `N` counts attempted cycles, including the first PoC and failed attempts, and defaults to 3.
+The orchestrator chooses assignments for the six stages. Composers run in the caller; there is no extra final review or hidden repair loop. `N` counts attempted cycles, including the first PoC and failed attempts, and defaults to 3. A named cycle-start consumes an attempt before brainstorming or other cycle work; it is recorded durably so an interruption cannot erase the attempt.
 
 The loop runs through N unless the caller stops, a stated resource bound is reached, required capability or authorization is missing, or the caller explicitly chose stop-on-goal. Goal attainment alone does not shorten the run. Adoption requires evidence that the increment meets its acceptance criteria and preserves required existing behavior. Otherwise the accepted baseline remains in place, and the next brainstorm receives the observations.
 
@@ -116,8 +116,8 @@ python scripts/orchflows.py setup --example design-loop
 
 Setup copies each example into the Orchflows home and preserves existing library copies. Register and install both packages from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup does not install transitive dependencies or project tools. Copying alone does not establish native availability.
 
-- Orchflows core `orchflows` 0.10.0+ with `orch-work`, `orch-review` and a host supporting native child delegation.
-- `shared` 0.3.0+ for `compare-candidates`, used by `test-increment` in one independent comparison round. Full cycles require it; unrelated standalone leaves do not.
+- Orchflows core `orchflows` 0.11.0+; full cycles and standalone comparison require native independent review. Production staffing follows core execution rules.
+- `shared` 0.4.0+ for `compare-candidates`, used by `test-increment` in one independent comparison round. Full cycles require it; unrelated standalone leaves do not.
 - Task-specific tools for research, implementation, inspection and testing, plus reproducible state snapshots. The example bundles no project runtime or research service.
 - This library's [design-iteration guidance](guidance/design-iteration.md), combined with caller-selected task domains as described in [library context](references/library-context.md).
 

@@ -1,9 +1,7 @@
 # Library context
 
-Apply core `docs/architecture.md` execution rules before planning assignments.
+Require Orchflows core `orchflows` 0.11.0+ and apply its `docs/architecture.md`. Resolve required components and guidance through native skills, supplied package roots or core's `resolve` CLI; reuse resolved paths. Independent judgment requires `orch-review`; harness experiments also require the fresh execution capabilities in their contract.
 
-Resolve core `orch-work`, `orch-review` and guidance once through native skills, supplied package roots or core's `resolve` CLI. Core `docs/architecture.md` owns guidance selection and `docs/hosts.md` owns isolation. Include this library and caller-selected libraries in supplied order.
+Select `evolve` from this library plus applicable caller guidance and target domains, such as `code`, `visual-design` or `writing`; add `orchflows` for workflow authoring. Include this library and caller-selected libraries in supplied order. Pass applicable resolved guidance, inputs, constraints, output locations and scoped settings to each assignment. Extend selection for new work without changing parent or sibling context. Reserved evaluation inputs stay outside maker context.
 
-Select guidance for the target: for example `code`, `visual-design` or `writing`; add `orchflows` when changing a workflow. No single artifact domain is required. Pass absolute primitive and guidance paths, target state, brief, capabilities and run directory to children. New artifact types may extend the resolved context.
-
-Keep run outputs in the caller's workspace, never inside an installed library. Missing native delegation blocks execution. Missing creation or inspection capabilities block dependent work; absence of a numeric metric does not.
+Keep outputs in the caller's workspace. Missing creation, inspection or independent execution capabilities block dependent work; absence of a numeric metric does not. Evaluation, state and harness references define required process, not optional technique.

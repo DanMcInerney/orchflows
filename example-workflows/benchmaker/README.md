@@ -2,7 +2,7 @@
 
 Build a benchmark around substantial user work: representative tasks, appropriate environments, useful partial credit and measured difficulty. Start with a prototype, calibrate a pilot and evaluate unseen source groups as evidence and budget permit. Each generated package states its requested and achieved stage.
 
-**Experimental, version 0.4.1.** The orchestrator owns authoring, pilot and target assignments; final review and repair uses the core pattern. Pilot independence, one repair pass and versioned validation remain part of the process. The [quality and acceptance gates](references/quality-profile.md) remain in force; cross-domain acceptance is incomplete. See [validation status](trials/README.md) for actual replay coverage. Harness checks, benchmark validation and agent measurement are separate evidence. The original [design report](DESIGN.md) is historical rationale, not invocation context.
+**Experimental, version 0.4.2.** The orchestrator owns authoring, pilot and target assignments; final review and repair explicitly uses core `orch-review-revise-once`. Pilot independence, at most one repair pass and versioned validation remain part of the process. The [quality and acceptance gates](references/quality-profile.md) remain in force; cross-domain acceptance is incomplete. See [validation status](trials/README.md) for actual replay coverage. Harness checks, benchmark validation and agent measurement are separate evidence. The original [design report](DESIGN.md) is historical rationale, not invocation context.
 
 ## Use
 
@@ -29,9 +29,9 @@ Challenge requests use a development objective of 30–50% full success for a na
 
 ## Composition and dependencies
 
-Authoring produces a frozen benchmark package. A fresh pilot audit sees public inputs before evaluator disclosure; independent review assesses the package and pilot evidence. At most one repair pass follows, with an affected independent rerun when needed. The orchestrator chooses staffing; benchmarked target executions retain their declared measurement conditions. Missing delegation leaves dependent validation incomplete.
+Authoring produces a frozen benchmark package. A fresh pilot audit sees public inputs before evaluator disclosure; independent review assesses the package and pilot evidence. At most one repair pass follows, with an affected independent rerun when needed and within the remaining allowance. The original review remains separate from the delivered revision. The orchestrator chooses staffing; benchmarked target executions retain their declared measurement conditions. Missing delegation leaves dependent validation incomplete.
 
-Requires Orchflows core 0.10.0+ and native delegation; see [library context](references/library-context.md). The library itself has no additional execution runtime. Generated benchmarks prefer installed runtimes and, for new standalone runners, Python standard library and `asyncio`. Rendering, browsers, providers, containers and judges are added only when the task needs them. Bench-stack and Inspect integration are optional future work; neither is bundled.
+Requires Orchflows core 0.11.0+ and native delegation; see [library context](references/library-context.md). The library itself has no additional execution runtime. Generated benchmarks prefer installed runtimes and, for new standalone runners, Python standard library and `asyncio`. Rendering, browsers, providers, containers and judges are added only when the task needs them. Bench-stack and Inspect integration are optional future work; neither is bundled.
 
 The library supplies authoring instructions and [execution/data contracts](references/benchmark-contract.md), not a universal runner template. Generated packages, trial runs and evidence live outside the installed library in the caller workspace. Outputs include a benchmark card, cases/fixtures, target adapter, graders/controls, reproducible commands, raw evidence and a report with coverage and limitations. Local staging alone does not protect evaluator secrets from agents with broader filesystem access.
 

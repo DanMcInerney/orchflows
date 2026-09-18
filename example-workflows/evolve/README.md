@@ -42,17 +42,17 @@ Other starting points:
 4. **Confirm, then keep.** A subjective winner needs a second fresh judge with presentation order reversed. A metric finalist receives an independent audit of the measurements and required checks. Missing evidence, failed requirements, ties and unconfirmed wins keep the current best.
 5. **Save the lesson and continue.** Record evidence and a checkpoint after each decision. A plateau changes the approach instead of quietly lowering the standard.
 
-The [evaluation contract](skills/evolve/references/evaluation.md) defines scoring, judging and promotion. If evaluation itself needs repair, the workflow versions it and re-evaluates contenders; scores from different versions do not count as comparable progress.
+The required [evaluation contract](skills/evolve/references/evaluation.md) defines scoring, judging and promotion. If evaluation itself needs repair, the workflow versions it and re-evaluates contenders; scores from different versions do not count as comparable progress. [Evolve guidance](guidance/evolve.md) supplies reusable search and proposal methods, including planning enough budget for confirmation.
 
 ## It can test a better way to improve
 
 Sometimes the repeated failure is in the process: the maker prompt, tool choice, context selection or search strategy. Evolve can propose one small change to that working process, called its **harness**.
 
-A harness experiment replaces an ordinary round. It runs the old and proposed procedures from matched starting artifacts on a known failure, a previously successful case and a fresh representative case. Adoption depends on the outputs they produce, required behavior they preserve and recorded cost. Accepted revisions become the instructions for later makers; later contradictory evidence can restore the predecessor. The caller's purpose, evaluation, promotion rules, budgets and checkpoint ownership remain fixed.
+A [harness experiment](skills/evolve/references/harness.md) replaces an ordinary round. It reserves a known failure, a previously successful case and a fresh representative case before the proposer sees the validation inputs, then runs old and proposed procedures independently from matched starting artifacts. Adoption depends on confirmed output improvement, preserved requirements and acceptable recorded cost. Accepted revisions become the instructions for later makers; later contradictory evidence can restore the predecessor. The caller's purpose, evaluation, promotion rules, budgets and checkpoint ownership remain fixed.
 
 ## Search and confirmation
 
-[Evolve](skills/evolve/SKILL.md) coordinates in the caller and uses core `orch-work` for makers and `orch-review` for independent judges. Staffing follows core execution rules. Let `W` be challengers per ordinary round, default **1**.
+[Evolve](skills/evolve/SKILL.md) coordinates in the caller. Ordinary production can run directly, continue a suitable maker or use `orch-work`, honoring scoped settings. Judges use `orch-review`; harness proposals and validation retain their required fresh contexts. Let `W` be challengers per ordinary round, default **1**.
 
 | Work | Required process |
 | --- | --- |
@@ -63,7 +63,7 @@ A harness experiment replaces an ordinary round. It runs the old and proposed pr
 
 Subjective tournaments may need further comparisons to choose among qualifying challengers, so their total is variable. Cheap rejections skip expensive confirmation. The coordinator records width, repetitions and per-experiment work limits before dispatch, retaining the required confirmation before promotion.
 
-Absent supplied bounds, a run defaults to **three rounds**. An explicit continuous request removes the total round cap. After three informative rounds without a promotion, the workflow changes its approach, investigates the failure or tests a harness change; all attempted rounds and spent resources still count against caller bounds. Reaching a target stops the run only when the caller made it a stop condition.
+Absent supplied bounds, a run defaults to **three rounds**. A durable round-start counts each artifact or harness attempt before its proposal or production begins; failures and interruptions do not refund it. Seed creation, initial calibration and between-round evaluator repair consume resource limits without adding or resetting artifact/harness rounds. An explicit continuous request removes the total round cap. After three informative rounds without a promotion, the workflow changes its approach, investigates the failure or tests a harness change; all attempted rounds and spent resources still count against caller bounds. Reaching a target stops the run only when the caller made it a stop condition.
 
 The host must keep executing or resume the checkpoint; Markdown cannot schedule itself. When execution is unavailable, the result is a saved state and an explicit gap. A continuous request does not guarantee continuous gains.
 
@@ -94,7 +94,7 @@ python scripts/orchflows.py setup --example evolve
 
 Setup preserves an existing library copy. Register and install `evolve` from the resulting home catalog using core `docs/hosts.md`, then start a new host session. Setup alone does not make the skill available by name.
 
-Requires orchflows 0.10.0+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
+Requires orchflows 0.11.0+, native child delegation, and tools that can create and inspect the requested artifact. There is no additional runtime or mandatory scoring service. Image, audio, browser or other capabilities depend on the task. Package context is resolved through [library-context](references/library-context.md).
 
 ## Evidence and lineage
 

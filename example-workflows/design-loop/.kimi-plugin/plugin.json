@@ -1,6 +1,6 @@
 {
   "name": "design-loop",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Experimental project design cycles composed from reusable brainstorm, research, design, implementation, test and analysis workflows.",
   "skills": "./skills/"
 }

@@ -88,7 +88,7 @@ Conflicting environment overrides for ZCode, Kimi background tasks and Grok leav
 
 ## Invocation policy
 
-Apply the [invocation policy](architecture.md#invocation) per skill; a library manifest does not set it for its skills. The automatic fallback, `orch-dynamic-workflow`, sets `policy.allow_implicit_invocation: true` for Codex and `disable-model-invocation: false` for hosts that support it. Other skills default to the manual-only settings below.
+Apply the [invocation policy](architecture.md#invocation) per skill; a library manifest does not set it for its skills. All skills, including `orch-dynamic-workflow`, default to the manual-only settings below. To opt into top-level automatic fallback, set that skill's `policy.allow_implicit_invocation: true` for Codex and `disable-model-invocation: false` in its frontmatter, then refresh the installed package. Its child-assignment exclusion still applies.
 
 | Host | Manual-only setting | Explicit invocation |
 | --- | --- | --- |
@@ -105,7 +105,7 @@ ZCode ignores unsupported frontmatter and has no native manual-only skill switch
 
 Antigravity documents automatic skill discovery but does not establish support for `disable-model-invocation`. Keep that field for other hosts and report the unverified policy. Its `disable-slash-command` setting hides explicit invocation while leaving model invocation available; it does not enforce this contract. [Antigravity skills](https://www.agy.dev/docs/skills/), [CLI changelog](https://www.agy.dev/changelog?tab=cli).
 
-These settings control native skill invocation. Claude also blocks model calls and subagent preloading for manual-only skills; if a composed step requires a blocked native call, the user must invoke it. Do not bypass a host rejection. [Codex invocation policy](https://learn.chatgpt.com/docs/build-skills#optional-metadata), [Claude invocation control](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill).
+These settings control native skill invocation. Composition applies declared workflow files in the coordinating session; it is not a request to invoke a native skill tool for every nested step. A supplied workflow path can be read directly where the host permits it. Claude blocks model calls and subagent preloading for manual-only skills; do not bypass a host rejection. If a required native call is blocked, report the capability gap. [Codex invocation policy](https://learn.chatgpt.com/docs/build-skills#optional-metadata), [Claude invocation control](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill).
 
 ## Loading
 

@@ -2,9 +2,9 @@
 
 # orchflows
 
-**Delete your skill libraries. You only need two skills.**
+**Two primitives. Reusable workflows. Your own guidance.**
 
-Compose these skills into infinitely complex, task-specific workflows, including self-improving loops.
+Build small reusable workflows, then compose them into larger processes, including improvement loops.
 
 [**Work**](skills/orch-work/SKILL.md) makes a result. [**Review**](skills/orch-review/SKILL.md) independently judges it. Everything else is composition.
 
@@ -18,7 +18,7 @@ Overprescription also ages badly. A workaround for one model can become unnecess
 
 **Orchflows abstracts prescription into guidance and guidance extension documents.** The two skills handle making and reviewing. Workflows describe the relationships between those operations. Separate, modular documents hold domain preferences, task specializations and corrections for model weaknesses.
 
-When a new model no longer needs a correction, delete it from the guidance or extension document. Keep the preferences you still care about. The two skills and your workflow structures stay unchanged across model upgrades; model-related churn belongs in these modular guidance documents.
+When a new model no longer needs a correction, test its removal from the guidance or extension document. Keep the preferences you still care about. Model upgrades should usually change guidance and staffing while preserving your chosen process and quality standard.
 
 ## Install
 
@@ -41,13 +41,13 @@ python scripts/orchflows.py doctor                         # Check without chang
 
 Setup installs optional examples only when requested with `--example <name>` and refreshes libraries already installed through the supported CLIs. Concurrency stays unchanged unless you pass `--concurrency N`. [Setup options and result statuses](docs/home.md#setup) · [Manual registration and provider setup](docs/hosts.md#register-and-refresh).
 
-`orch-dynamic-workflow` can be selected automatically when no more specific workflow or skill fits your request. Other core skills, bundled examples and personal workflows request manual-only invocation. Codex, Claude Code, Kimi Code and Grok Build support that setting; ZCode currently cannot enforce it, and Antigravity enforcement is unverified. Invoke named workflows from the skill picker or by name. [Invocation settings](docs/hosts.md#invocation-policy).
+Core skills, bundled examples and personal workflows request manual-only invocation. Invoke a workflow from the skill picker or by name; automatic fallback through `orch-dynamic-workflow` is opt-in. Codex, Claude Code, Kimi Code and Grok Build support invocation settings; ZCode currently cannot enforce manual-only invocation, and Antigravity enforcement is unverified. [Invocation settings and fallback opt-in](docs/hosts.md#invocation-policy).
 
 Start a new session to load Orchflows.
 
 ## Usage
 
-Describe the task for automatic selection of [/orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md), or invoke a named workflow explicitly. Dynamic work composes the smallest useful workflow for the task.
+Invoke [/orch-dynamic-workflow](skills/orch-dynamic-workflow/SKILL.md) with your task, or select a saved workflow. Dynamic work chooses useful staffing and includes one final independent review. Users who want automatic fallback can opt in through the host invocation settings.
 
 **Simple task.** The coordinator makes and verifies an already-clear change directly. One independent child reviews it. This is the smallest dynamic workflow, shown with no repairs needed:
 
@@ -130,8 +130,8 @@ Give an agent a result to produce, then give another agent the result to assess.
 
 | Skill | Contract |
 | --- | --- |
-| [orch-work](skills/orch-work/SKILL.md) | A fresh native child makes the requested result under selected **Make** guidance. |
-| [orch-review](skills/orch-review/SKILL.md) | A fresh child who did not make the result assesses it under selected **Review** guidance, without fixing it. |
+| [orch-work](skills/orch-work/SKILL.md) | A fresh native child makes the result using common quality criteria and **Make** instructions. |
+| [orch-review](skills/orch-review/SKILL.md) | A fresh child who did not make the result assesses it using the same criteria and **Review** instructions, without fixing it. |
 
 A reviewer can inspect code, judge a film, rank evidence or compare competing designs. The subject changes; the two operations do not.
 
@@ -139,7 +139,7 @@ A reviewer can inspect code, judge a film, rank evidence or compare competing de
 
 A workflow is a `SKILL.md` that connects these operations: what can run in parallel, what depends on what, what gets reviewed, and whether the result feeds another round. It supplies assignments, context and outputs. The same primitives support a single review, a research team, a production pipeline or an improvement loop.
 
-The package includes [dynamic work](skills/orch-dynamic-workflow/SKILL.md), the fallback when no more specific workflow or skill fits, and [workflow building](skills/orch-build-workflow/SKILL.md). Saved workflows compose the primitives and useful library processes. They preserve stages, independence, gates and repetition while the orchestrator chooses staffing. Dynamic work ends after one independent review and at most one repair pass; it is not a component for custom workflows.
+The package includes [dynamic work](skills/orch-dynamic-workflow/SKILL.md), [workflow building](skills/orch-build-workflow/SKILL.md), and [review with one revision pass](skills/orch-review-revise-once/SKILL.md). These are workflows built from the two primitives. Saved workflows may compose other workflows at any depth in the same coordinator, preserving dependencies, independence and bounds. Ordinary production stages can run directly or use suitable makers; an explicit `orch-work` call always creates a fresh maker. Dynamic work is a top-level option, not a component for custom workflows.
 
 The optional [shared processes](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/shared) library provides independent candidate comparison and review with one revision pass. Design loop uses comparison; personal briefs and reports can use review-and-revision. Only the top-level orchestrator launches, assigns or continues agents; children return results and further-work requests. Other components remain in their domain libraries. Ordinary fan-out and gathering are [core execution rules](docs/architecture.md#execution), not a required helper import. Install `shared` explicitly before examples that declare it; setup does not install transitive dependencies.
 
@@ -147,7 +147,7 @@ Your host runs the agents. Orchflows adds no agent runtime, scheduler or workflo
 
 ### Supply guidance separately
 
-Guidance describes what good work means in a domain. Each document has a **Make** section for production and a **Review** section for assessment. For example, code guidance can require independently runnable tests; visual guidance can require inspection of the rendered result.
+Guidance describes what good work means in a domain. Common criteria apply to makers and reviewers; optional **Make** and **Review** sections supply role-specific methods. For example, independently runnable tests are a shared quality criterion, while a technique for constructing them may be maker guidance. Temporary corrections can live in a removable section or extension.
 
 Select only the domains the task needs. A film might use `writing`, `visual-design` and `short-video`. A coding task might use `code` and `code.api`. The workflow's structure stays the same when its selected guidance changes.
 
@@ -157,7 +157,7 @@ Guidance extension documents specialize a domain. `code.api.md` extends `code.md
 
 Your libraries can also extend an existing domain with a `guidance/code.md` of their own. Keep corrections for a particular model separately removable in such a library. When the correction stops helping, remove the instruction or deselect that library. Model names do not become new domain names.
 
-The outer workflow resolves guidance once, from general to specific. At each level it reads core guidance, then selected libraries in the supplied order. More specific guidance takes precedence within its domain; independent domains combine. Resolved paths and request context pass through to the workers and reviewers. See [guidance selection](docs/architecture.md#guidance-selection) for the complete contract.
+A workflow can receive an ordered list of guidance files directly. Named domains are a convenience: resolve general to specific, reading core then selected libraries at each level. Reuse resolved paths and extend selection when a nested call introduces new work. Local guidance stays scoped to that call; a campaign's tone does not change its sibling research brief. See [guidance selection](docs/architecture.md#guidance-selection).
 
 ## Example workflows
 
@@ -265,7 +265,7 @@ The default is three rounds with one challenger per round. A continuous request 
 
 > Build a benchmark for this agent, with a quick run under five minutes.
 
-[Benchmaker](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker) turns an agent, workflow or capability description into a small runnable benchmark with representative tasks, outcome grading and explicit measurement limits. It preserves an independent pilot and core's standard review and repair; the orchestrator owns target dispatch under the declared measurement plan. Install with `python scripts/orchflows.py setup --example benchmaker`.
+[Benchmaker](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker) turns an agent, workflow or capability description into a small runnable benchmark with representative tasks, outcome grading and explicit measurement limits. It preserves an independent pilot and explicitly applies core's review/revision workflow; the orchestrator owns target dispatch under the declared measurement plan. Install with `python scripts/orchflows.py setup --example benchmaker`.
 
 The first implementation includes contracts and six acceptance scenarios; cross-domain validation remains incomplete. It generates runners suited to each benchmark and does not require a shared evaluation framework. [Validation status](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker/trials).
 
