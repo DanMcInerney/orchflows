@@ -2,15 +2,9 @@
 
 **Build an agent workflow once. Reuse it inside bigger jobs.**
 
-Stop re-explaining your process in every agent session. Orchflows saves it as small Markdown workflows for Codex, Claude Code and other agents with native subagents.
+## Install
 
-Two primitives—**work** and **independent review**—compose into research, coding, creative work and improvement loops. Your process lives in workflows; your standards and model-specific corrections live in editable guidance.
-
-**A better model should need fewer instructions, not a new workflow architecture.**
-
-## Try it
-
-Requires Python 3.11+ and a supported agent host.
+Requires Python 3.11+ and an agent with native subagents, such as Codex or Claude Code. [Supported hosts](docs/hosts.md).
 
 ```sh
 git clone https://github.com/DanMcInerney/orchflows.git
@@ -18,113 +12,121 @@ cd orchflows
 python scripts/orchflows.py setup
 ```
 
-Start a new agent session, then ask:
+Follow any host steps printed by setup, then start a new agent session.
 
-> Use orch-dynamic-workflow to research two approaches to this feature, review the recommendation, implement it, and review the combined result.
+## Build your first workflow
 
-The coordinator can assemble this task-specific process:
+Make a **clear-writing** workflow. All you need is text to paste:
+
+> Use orch-build-workflow to create clear-writing: have a worker rewrite my text concisely, then have an independent reviewer check that the meaning and tone survived. Revise at most once to address the review, check the changes, and return the final text with any unresolved concerns separately.
+
+The [builder](skills/orch-build-workflow/SKILL.md) saves a Markdown skill in your personal library, rehearses it with sample text, and independently reviews it. It also checks host registration; follow any reported steps and start a new session to use it by name:
+
+> Use clear-writing. Keep this friendly and under 25 words: "Just wanted to check if you could possibly send me the draft by Friday so I can take a look before our meeting on Monday."
+
+Example result:
+
+> Could you send me the draft by Friday so I can review it before Monday's meeting?
+
+Next time, change the text, audience, or tone in your prompt. Reuse the same workflow.
+
+## Try a dynamic workflow
+
+For a task you only need once:
+
+> Use orch-dynamic-workflow to develop three approaches to this message in parallel, combine the strongest ideas, then independently review and revise once if needed: "Our team should record meeting decisions."
+
+[Dynamic](skills/orch-dynamic-workflow/SKILL.md) assembles and runs a process for the current task without saving a workflow. It adapts the work and review to the task; simple tasks can use a direct check unless you request independent review.
+
+## Why save the process?
+
+You find a process that works: split up the work, combine the results, get a second opinion, fix the issues. Then the next session starts, and you explain it all again.
+
+Orchflows saves those choices in editable Markdown: **what happens, what gets checked, and when to stop.** Your host runs the agents; orchflows supplies the reusable process.
+
+## Put specificity where it belongs
+
+**Most task-specific detail belongs in the prompt.** Skills keep reusable steps. Root guidance docs hold shared standards; optional extension docs add increasingly specific preferences you want to reuse.
 
 ```mermaid
 flowchart TB
-    T([Your request]) --> A[Research A] & B[Research B]
-    A & B --> R["Join findings · review · fix"]
-    R --> C[Implement one part] & D[Implement another]
-    C & D --> F["Join changes · review · fix · check"]
-    F --> O([Result + evidence + remaining gaps])
-    classDef work fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:2px;
-    classDef review fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:2px;
-    classDef outcome fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
-    class A,B,C,D work;
-    class R,F review;
-    class T,O outcome;
+    P["PROMPT · this task<br/>Rewrite this customer email.<br/>Warm. Under 80 words.<br/>[paste email]"]
+    subgraph G["GUIDANCE · standards across tasks"]
+        direction TB
+        B["Root guidance<br/>guidance/writing.md<br/>Lead with the point."]
+        E["Optional extension<br/>writing.email.md<br/>One clear next action."]
+        S["Narrower extension<br/>writing.email.support.md<br/>Acknowledge the issue."]
+        B -->|specialize if useful| E -->|specialize further| S
+    end
+    subgraph W["SKILL · the same reusable process"]
+        direction LR
+        A[Rewrite] --> R[Independent review] --> F[Revise at most once] --> C[Check]
+    end
+    P -->|task and constraints| W
+    G -.->|selected standards guide work and review| W
+    classDef prompt fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px;
+    classDef guidance fill:#fef3c7,stroke:#b45309,color:#78350f,stroke-width:2px;
+    classDef extension fill:#ffedd5,stroke:#c2410c,color:#7c2d12,stroke-width:2px;
+    classDef work fill:#d1fae5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#ede9fe,stroke:#7c3aed,color:#4c1d95,stroke-width:2px;
+    class P prompt;
+    class B guidance;
+    class E,S extension;
+    class A,F work;
+    class R,C review;
+    style G fill:#fffbeb,stroke:#b45309,color:#78350f;
+    style W fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
 ```
 
-The task determines stages and staffing. Trivial, reversible work gets a direct check without an independent reviewer unless requested. Other work defaults to one final review, adding intermediate gates where later work depends on important decisions. Each gate permits at most one repair pass.
+The extension names above are examples you could add in your own library. A saved workflow selects only what applies: general writing → email → support email. Extensions refine shared standards; the current request still controls the task. [How guidance composes](DESIGN.md#how-does-guidance-compose).
 
-Dynamic uses core operations and applicable core guidance. It is available for automatic selection on ordinary tasks; explicitly named workflows take precedence. Automatic selection is a model decision, so name it when you require its process.
+## Start small. Compose upward.
 
-## Turn a good process into a library
-
-> Use orch-build-workflow to create a reusable meeting follow-up workflow from these example notes. Extract actions, draft emails, and prepare calendar invitations.
-
-The builder saves the workflow, rehearses it with realistic synthetic data and simulated external effects, then independently reviews it. **Your examples are read-only references. A rehearsal does not send real emails or invitations.** Untestable integrations remain explicit gaps.
-
-Later, compose that workflow with others:
+**1. Make something, then get an independent review.**
 
 ```mermaid
 flowchart LR
-    A[Meeting follow-up] --> B[Weekly team digest]
-    C[Project status] --> B
-    B --> D[Leadership update]
-    G["Your guidance<br/>tone · evidence · quality"] -.-> A & B & C & D
-    classDef workflow fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:2px;
-    classDef guidance fill:#fefce8,stroke:#a16207,color:#713f12;
-    class A,B,C,D workflow;
-    class G guidance;
+    W["orch-work<br/>Make a result"] --> R["orch-review<br/>Review the result"]
+    classDef work fill:#d1fae5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#ede9fe,stroke:#7c3aed,color:#4c1d95,stroke-width:2px;
+    class W work;
+    class R review;
 ```
 
-Like functions in a Python library, workflows can call other workflows. One coordinator applies their procedures and launches actual workers. Loading another workflow does not create another orchestrator.
+These are the two primitives: [work](skills/orch-work/SKILL.md) launches a fresh maker; [review](skills/orch-review/SKILL.md) launches a fresh reviewer who did not make the result. The reviewer reports findings without changing it.
 
-## Five built-ins, two primitives
+**2. Work in parallel, then review the combined result.**
 
-| Skill | What it does | Invocation |
-| --- | --- | --- |
-| [`orch-work`](skills/orch-work/SKILL.md) | Delegate a result to a fresh worker. | Explicit |
-| [`orch-review`](skills/orch-review/SKILL.md) | Get a fresh non-maker's judgment, without repairs. | Explicit |
-| [`orch-review-revise-once`](skills/orch-review-revise-once/SKILL.md) | Review an existing result, repair at most once, run checks. | Explicit |
-| [`orch-build-workflow`](skills/orch-build-workflow/SKILL.md) | Create or improve a reusable workflow or guidance. | Explicit |
-| [`orch-dynamic-workflow`](skills/orch-dynamic-workflow/SKILL.md) | Compose and execute the current task. | Automatic or explicit |
-
-The last three compose the first two. Only the coordinator delegates; children receive concrete assignments and relevant guidance. Your host runs the agents. Orchflows supplies no agent runtime, scheduler or workflow language.
-
-## Keep taste out of the plumbing
-
-Workflows express dependencies, independence, review gates and stopping conditions. Guidance expresses what good work looks like: research standards, coding preferences, writing style or a brand's voice.
-
-For example, `code.api.md` specializes `code.md`. Named workflows can select a personal library's `guidance/code.md`; dynamic uses core guidance without extensions. Select only applicable domains and keep local preferences scoped to their work. Brevity and approximate file-size targets guide judgment; they are not automatic failure conditions.
-
-When a model stops needing a corrective instruction, test removing that instruction from guidance. Keep the process and the preferences you still care about. [How composition and guidance work](DESIGN.md).
-
-## Start from an example
-
-Optional libraries install separately:
-
-```sh
-python scripts/orchflows.py setup --example social-search
+```mermaid
+flowchart LR
+    A[Worker A] & B[Worker B] --> J[Combine]
+    J --> R[Review once] --> F["Revise if needed<br/>at most once"] --> C[Check]
+    classDef work fill:#d1fae5,stroke:#059669,color:#064e3b,stroke-width:2px;
+    classDef review fill:#ede9fe,stroke:#7c3aed,color:#4c1d95,stroke-width:2px;
+    class A,B,J,F work;
+    class R,C review;
 ```
 
-| Library | Use it for |
-| --- | --- |
-| [Social search](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/social-search) | Parallel source research and independent evidence ranking. |
-| [Short video](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/short-video) | Script, render and review a finished video. |
-| [Software factory](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/software-factory) | Bounded implementation, checks, review and authorized release. |
-| [Evolve](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/evolve) | Compare challengers against an incumbent and retain improvements. |
-| [Design loop](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/design-loop) | Develop and evaluate successive increments; experimental. |
-| [Benchmaker](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/benchmaker) | Build a runnable benchmark for a capability; experimental. |
+The last three steps are a reusable workflow too: [orch-review-revise-once](skills/orch-review-revise-once/SKILL.md). It stops after the checks, reporting anything unresolved.
 
-[All libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows), including game development, source acquisition, candidate comparison, self-improvement and standalone export. Libraries declare their dependencies; setup does not install them transitively.
+**3. Use whole workflows as steps in a bigger workflow.**
 
-## Test the behavior, not the wording
-
-An LLM can follow two different plans and get both right. The E2E framework runs ordinary requests through a native agent, freezes the outputs and execution record, checks objective requirements, then asks a fresh evaluator whether the process and result were acceptable. Harmless variation passes. Unsupported review, unauthorized effects and material wrong results fail. Unfinished work stays inconclusive.
-
-From a checkout, with an authenticated Claude Code CLI:
-
-```sh
-python tests/e2e/run.py --suite smoke --plan
-python tests/e2e/run.py --suite smoke --jobs 3 --output ../e2e-smoke
+```mermaid
+flowchart LR
+    subgraph U[Team update workflow]
+        direction LR
+        N["Extract decisions<br/>workflow"] --> D["Draft an update<br/>workflow"] --> C["clear-writing<br/>workflow"]
+    end
+    classDef workflow fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px;
+    class N,D,C workflow;
+    style U fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
 ```
 
-Native runs consume normal agent usage. Independent cases run concurrently under a five-minute smoke deadline; the recorded four-case run completed and passed its audits in 175.5 seconds. That is one observation, not a reliability estimate. Full Build and the two example cases remain inconclusive at their tested budgets. No Codex runner ships yet.
+Each box can contain the patterns above—or other workflows. Your **clear-writing** workflow keeps its review and revision steps when reused here. One coordinator connects the procedures and delegates the actual work.
 
-Add a scenario beside any example workflow without changing the runner. Larger authoring journeys and examples stay opt-in. [Case format, evidence, coverage and limits](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e).
+## Go further
 
-## Setup, customization and updates
-
-- Setup detects installed hosts and preserves existing settings. Codex, Claude Code, Antigravity and Grok Build use CLI registration; Kimi Code and ZCode receive remaining in-app steps. [Host support and limitations](docs/hosts.md).
-- Edit your workflows in `~/.orchflows/libraries/`. The default authoring library is `personal`; the installed core under `.local/` is setup-managed.
-- Specify model and effort per operation, stage or assignment. Current instructions override saved preferences; unspecified settings use native defaults. [Precedence](docs/architecture.md#model-and-effort).
-- Update the checkout and rerun `python scripts/orchflows.py setup`. Use `doctor` for read-only checks. Concurrency changes only with `--concurrency N`. [Setup and updates](docs/home.md).
-- Invocation settings differ by host: ZCode cannot enforce manual-only skills; Antigravity enforcement is unverified. [Invocation policy](docs/hosts.md#invocation-policy).
-
-[Design report](DESIGN.md) · [Agent contracts](docs/architecture.md) · [Library authoring](docs/libraries.md) · [Native history](docs/history.md) · [MIT license](LICENSE)
+- [Example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows): research, software development, video, and improvement loops.
+- [Setup and updates](docs/home.md) · [Host support](docs/hosts.md) · [Model and effort settings](docs/architecture.md#model-and-effort).
+- [Design and built-ins](DESIGN.md) · [Library authoring](docs/libraries.md) · [Agent contracts](docs/architecture.md) · [Native history](docs/history.md).
+- [Behavior tests and evidence](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e) · [MIT license](LICENSE).
