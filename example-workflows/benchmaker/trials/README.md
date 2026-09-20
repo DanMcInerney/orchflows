@@ -28,7 +28,7 @@ flowchart TB
     class E,R review;
 ```
 
-Run a request in a fresh workspace using the complete library, resolved core/guidance and only its raw inputs. Withhold the authoring conversation and sibling `expected-behavior.md` from the executing author. An independent evaluator uses those expectations afterward. Save packages, native identities, commands, outputs, timings and findings outside this library.
+Run a request in a fresh workspace using the complete library, resolved core/shared packages and guidance, and only its raw inputs. Withhold the authoring conversation and sibling `expected-behavior.md` from the executing author. An independent evaluator uses those expectations afterward. Save packages, native identities, commands, outputs, timings and findings outside this library.
 
 These folders have no `case.json` and are not discovered by the automated E2E runner. They specify coverage to exercise; they do not establish execution or cross-domain acceptance.
 

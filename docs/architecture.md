@@ -35,7 +35,7 @@ Count each bounded-loop attempt before its first work, including failed or pause
 
 Keep candidates stable during review; gather every required completed judgment before repairs. Verdicts apply only to the inspected state and scope; changes do not inherit them. Reviewers may run checks and write separate evidence without changing candidates. Task-only context excludes the maker's argument; disclose unavailable required context isolation or blinding.
 
-Workflows own review and repair counts. [orch-review-revise-once](../skills/orch-review-revise-once/SKILL.md) requires explicit selection; it never wraps a workflow automatically.
+Workflows own review and repair counts; composition never adds a review or repair pass automatically.
 
 ## Model and effort
 

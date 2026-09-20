@@ -1,7 +1,7 @@
 {
   "name": "shared",
-  "version": "0.5.1",
-  "description": "Reusable independent comparison of stable candidates.",
+  "version": "0.6.0",
+  "description": "Reusable independent comparison and bounded review with revision.",
   "author": {
     "name": "orchflows"
   },

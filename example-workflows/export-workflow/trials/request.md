@@ -1,6 +1,6 @@
 # Forward trial
 
-Apply core `docs/hosts.md#workflow-trials` from an unrelated disposable workspace with supplied core, export-workflow and social-search roots or installed libraries. Prepare realistic synthetic GitHub/Hacker News search and source responses covering replies, dates, engagement, duplicates, contrary evidence and failures. Simulate external reads/writes locally, withhold production credentials and keep source references read-only. Give the runner ordinary inputs and declared fake-tool capabilities; keep [acceptance](expected-behavior.md) separate.
+Apply core `docs/hosts.md#workflow-trials` from an unrelated disposable workspace with supplied core, shared, export-workflow and social-search roots or installed libraries. Prepare realistic synthetic GitHub/Hacker News search and source responses covering replies, dates, engagement, duplicates, contrary evidence and failures. Simulate external reads/writes locally, withhold production credentials and keep source references read-only. Give the runner ordinary inputs and declared fake-tool capabilities; keep [acceptance](expected-behavior.md) separate.
 
 > Use export-workflow to export social-search:social-search for current Codex into exports/social-search. Preserve supported source scopes and configurable inputs.
 >

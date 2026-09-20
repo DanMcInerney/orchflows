@@ -1,4 +1,6 @@
-# Shared: compare before you choose
+# Shared: comparison and bounded revision
+
+Reusable processes for comparing alternatives and improving an existing result. `compare-candidates` returns evidence for a choice; `review-revise-once` reviews one candidate, repairs it at most once and checks the result. Both compose with core primitives and other workflows.
 
 Two supplier proposals can quote different prices for different things. Two code changes can pass different tests. `compare-candidates` gives a fresh reviewer the same criteria and stable alternatives, then returns the evidence for a choice—including when there is no defensible winner.
 
@@ -37,9 +39,23 @@ The [comparison skill](skills/compare-candidates/SKILL.md) calls core `orchflows
 
 The result preserves requirement failures, regressions, conflicting evidence and unavailable checks. A preference is a recommendation; adoption and any further confirmation remain with the caller.
 
-## Use the result in a larger process
+## Review and revise once
 
-A personal decision brief can compare alternatives, draft a recommendation from that evidence, then explicitly use core `orchflows:orch-review-revise-once` for one review and at most one repair. Your guidance owns the report's priorities and voice. Shared supplies comparison, with no bundled domain criteria or runtime.
+The [revision workflow](skills/review-revise-once/SKILL.md) calls `orchflows:orch-review` once on an existing stable candidate. Supply the candidate, requirements, source evidence, guidance, repair scope, required checks and output location:
+
+```text
+$shared:review-revise-once
+Review drafts/recommendation.md against brief.md and sources.md.
+Repair factual errors and unsupported claims at most once. Run the
+required source checks even if no repairs are needed. Save the original
+review, delivered recommendation, changes and checks in decisions/review.
+```
+
+Incomplete independent review blocks repairs. After review, at most one coordinated repair pass follows, then affected and required verification. The original verdict applies only to the inspected state; a revision does not inherit it. The workflow adds no second review or release authorization.
+
+## Use the results in a larger process
+
+A personal decision brief can apply `shared:compare-candidates`, draft a recommendation from that evidence, then apply `shared:review-revise-once`. Your guidance owns the report's priorities and voice. Shared supplies the processes, with no bundled domain criteria or runtime. Core's Build and Dynamic workflows use core primitives directly and do not depend on this library.
 
 ## Install
 
@@ -49,6 +65,6 @@ Run from a complete Orchflows checkout with Python 3.11+:
 python scripts/orchflows.py setup --example shared
 ```
 
-Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies. Requires **core 0.12.0+ and native independent review**; see [library context](references/library-context.md). The skill is manual-only by default.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies; update an existing copy from the source library before refreshing its host registration. Requires **core 0.12.0+ and native independent review**; see [library context](references/library-context.md). Both skills are manual-only by default. Shared 0.6.0+ supplies `review-revise-once`; core 0.15.0 removes `orch-review-revise-once`, with no compatibility alias.
 
 [Trial scenarios](trials/README.md) exercise comparison through real consumers. The automated comparison pilot timed out before delivery; it is inconclusive. Executing supplied files does not establish native registration.

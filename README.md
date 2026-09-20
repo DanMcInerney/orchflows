@@ -107,7 +107,7 @@ flowchart LR
     class R,C review;
 ```
 
-The last three steps are a reusable workflow too: [orch-review-revise-once](skills/orch-review-revise-once/SKILL.md). It stops after the checks, reporting anything unresolved.
+The optional [shared library](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows/shared) packages the last three steps as `shared:review-revise-once`. It stops after the checks, reporting anything unresolved.
 
 **3. Use whole workflows as steps in a bigger workflow.**
 

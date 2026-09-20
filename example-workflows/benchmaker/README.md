@@ -32,7 +32,7 @@ flowchart TD
     class D,G evidence;
 ```
 
-The pilot saves answers before seeing evaluator material. A different reviewer then inspects the frozen package and joined evidence through core `orch-review-revise-once`. Repairs wait for that review; at most one pass follows, with affected independent checks within the remaining allowance. The original verdict applies only to the reviewed version.
+The pilot saves answers before seeing evaluator material. A different reviewer then inspects the frozen package and joined evidence through `shared:review-revise-once`. Repairs wait for that review; at most one pass follows, with affected independent checks within the remaining allowance. The original verdict applies only to the reviewed version.
 
 The [quality profile](references/quality-profile.md) distinguishes **prototype**, **calibrated pilot** and **evaluation suite**. Smoke, quick and full select runs, not maturity. Broad claims plan around 40–60 independently sourced development cases and a later 150–300-case suite; these adjustable ranges are neither statistical minimums nor launch budgets. Smaller prototypes retain the larger request's unmet gates.
 
@@ -49,9 +49,10 @@ The [execution contract](references/benchmark-contract.md) bounds launches, retr
 From the Orchflows **source checkout**, with Python 3.11+:
 
 ```sh
+python scripts/orchflows.py setup --example shared
 python scripts/orchflows.py setup --example benchmaker
 ```
 
-Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.11.0+** and native child delegation; [library context](references/library-context.md) lists core components and task-specific tools. No paid judge, Docker or additional benchmark runtime is required.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.12.0+, shared 0.6.0+** and native child delegation; [library context](references/library-context.md) lists components and task-specific tools. Setup preserves existing library copies and does not install transitive dependencies; update an older shared copy before refreshing host registration. No paid judge, Docker or additional benchmark runtime is required.
 
 **Validation limit:** the [trial catalog](trials/README.md) specifies research, stateful, artifact, coding and failure scenarios. Full current authoring/pilot execution, held-out semantic calibration, interruption/cleanup and protected evaluator access remain unverified. No cross-domain readiness is claimed.

@@ -92,14 +92,16 @@ class MainUpgradeEndToEndTests(unittest.TestCase):
         # Remove the old source, then use only the installed interpreter/command.
         self.assertTrue(self.main.resolve().is_relative_to(self.root))
         shutil.rmtree(self.main)
-        for skill in ("orch-work", "orch-review", "orch-build-workflow", "orch-review-revise-once", "orch-dynamic-workflow"):
+        for skill in ("orch-work", "orch-review", "orch-build-workflow", "orch-dynamic-workflow"):
             resolved = Path(self.cli(self.script, "resolve", "orchflows", "--skill", skill)["skill_path"])
             self.assertTrue(resolved.is_relative_to(self.core))
             self.assertEqual(resolved.read_bytes(), (ROOT / "skills" / skill / "SKILL.md").read_bytes())
-        for library, skill in (("orchflows", "orch-make-and-review"), ("shared", "review-revise-once")):
-            if library == "shared":
-                self.cli(self.script, "setup", "--source", str(ROOT), "--example", "shared")
-            self.assertIn("not installed", self.cli(self.script, "resolve", library, "--skill", skill, expected=2)["error"])
+        for skill in ("orch-make-and-review", "orch-review-revise-once", "review-revise-once"):
+            self.assertIn("not installed", self.cli(self.script, "resolve", "orchflows", "--skill", skill, expected=2)["error"])
+        self.cli(self.script, "setup", "--source", str(ROOT), "--example", "shared")
+        resolved_shared = Path(self.cli(self.script, "resolve", "shared", "--skill", "review-revise-once")["skill_path"])
+        self.assertEqual(resolved_shared, self.home / "libraries/shared/skills/review-revise-once/SKILL.md")
+        self.assertEqual(resolved_shared.read_bytes(), (ROOT / "example-workflows/shared/skills/review-revise-once/SKILL.md").read_bytes())
         self.assertTrue(Path(self.cli(self.script, "resolve", "personal", "--skill", "weekly-note")["skill_path"]).is_file())
         self.assertEqual(self.cli(self.script, "doctor")["status"], "ready")
         before = snapshot(self.home)
