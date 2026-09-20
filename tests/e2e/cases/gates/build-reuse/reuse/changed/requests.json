@@ -1,0 +1,25 @@
+{
+  "capacity_hours": 7,
+  "tasks": [
+    {
+      "id": "large",
+      "hours": 4,
+      "critical": false
+    },
+    {
+      "id": "mystery",
+      "hours": null,
+      "critical": false
+    },
+    {
+      "id": "tiny",
+      "hours": 1,
+      "critical": false
+    },
+    {
+      "id": "hot",
+      "hours": 6,
+      "critical": true
+    }
+  ]
+}

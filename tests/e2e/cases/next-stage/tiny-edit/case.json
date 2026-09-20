@@ -1,0 +1,7 @@
+{
+  "entrypoint": "orchflows:orch-dynamic-workflow",
+  "packages": ["orchflows"],
+  "covers": ["review-cost", "tiny-task", "policy-comparison"],
+  "requires": ["independent-review", "local-exec"],
+  "timeout_seconds": 240
+}

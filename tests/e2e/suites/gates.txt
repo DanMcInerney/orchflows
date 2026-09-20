@@ -1,0 +1,5 @@
+# Opt-in development diagnostics; not part of smoke.
+core/gates/mixed-guidance
+core/gates/contract-code
+core/gates/repair-once
+core/gates/missing-evidence

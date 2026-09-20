@@ -1,0 +1,44 @@
+{
+  "product": "Harbor Sync",
+  "version": "3.9.0",
+  "released_at": "2026-10-09",
+  "changes": [
+    {
+      "id": "REL-210", "status": "shipped", "visibility": "public",
+      "summary": "Filter CSV exports by project",
+      "details": ["Workspace administrators can select one project for a CSV export.", "The default remains an export of every project they can access."],
+      "source_url": "https://releases.harbor.example/changes/REL-210",
+      "breaking": false, "migration": null
+    },
+    {
+      "id": "REL-211", "status": "shipped", "visibility": "public",
+      "summary": "Webhook signature version 1 enters retirement",
+      "details": ["Webhook endpoints can opt into signature version 2.", "Version 1 verification will stop being supported on the migration deadline."],
+      "source_url": "https://releases.harbor.example/changes/REL-211",
+      "breaking": true,
+      "migration": {"action": "Enable signature version 2 in the webhook endpoint settings and update the receiver to verify the X-Harbor-Signature-V2 header.", "deadline": "2027-01-15"}
+    },
+    {
+      "id": "REL-212", "status": "shipped", "visibility": "public",
+      "summary": "Incident exports use stable severity codes",
+      "details": ["Incident CSV exports replace display labels with severity_code values.", "Mappings based on translated display labels are affected."],
+      "source_url": "https://releases.harbor.example/changes/REL-212",
+      "breaking": true,
+      "migration": {"action": "Update incident import mappings to read severity_code instead of the translated severity label.", "deadline": null}
+    },
+    {
+      "id": "REL-290", "status": "planned", "visibility": "public",
+      "summary": "Automatic receiver upgrades",
+      "details": ["A future updater may rewrite webhook receiver settings automatically."],
+      "source_url": "https://releases.harbor.example/changes/REL-290",
+      "breaking": false, "migration": null
+    },
+    {
+      "id": "REL-291", "status": "shipped", "visibility": "internal",
+      "summary": "Rename a telemetry dashboard",
+      "details": ["The on-call telemetry dashboard is now named harbor-north."],
+      "source_url": "https://releases.harbor.example/changes/REL-291",
+      "breaking": false, "migration": null
+    }
+  ]
+}

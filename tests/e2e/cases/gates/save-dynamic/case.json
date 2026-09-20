@@ -1,0 +1,17 @@
+{
+  "entrypoint": "orchflows:orch-dynamic-workflow",
+  "packages": [
+    "orchflows"
+  ],
+  "covers": [
+    "authoring",
+    "fresh-reuse",
+    "unknown-inputs",
+    "execute-then-save"
+  ],
+  "requires": [
+    "independent-review",
+    "local-exec"
+  ],
+  "timeout_seconds": 1260
+}

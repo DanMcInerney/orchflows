@@ -1,0 +1,2 @@
+core/gates/blocked-authoring
+core/requested-review

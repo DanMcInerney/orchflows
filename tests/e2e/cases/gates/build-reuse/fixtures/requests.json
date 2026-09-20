@@ -1,0 +1,20 @@
+{
+  "capacity_hours": 8,
+  "tasks": [
+    {
+      "id": "normal",
+      "hours": 3,
+      "critical": false
+    },
+    {
+      "id": "unknown",
+      "hours": null,
+      "critical": true
+    },
+    {
+      "id": "urgent",
+      "hours": 5,
+      "critical": true
+    }
+  ]
+}

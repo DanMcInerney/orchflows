@@ -1,0 +1,7 @@
+{
+  "entrypoint": "orchflows:orch-dynamic-workflow",
+  "packages": ["orchflows"],
+  "covers": ["ordinary-request", "source-authority", "revision-resolution", "adapter-behavior"],
+  "requires": ["local-exec"],
+  "timeout_seconds": 900
+}

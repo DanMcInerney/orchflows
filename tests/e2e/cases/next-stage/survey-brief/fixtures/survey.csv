@@ -1,0 +1,25 @@
+respondent_id,department,tenure,satisfaction,recommend
+S01,Support,Under 1 year,5,yes
+S02,Support,1 year or more,4,yes
+S03,Support,Under 1 year,4,no
+S04,Support,1 year or more,3,yes
+S05,Support,Under 1 year,2,
+S06,Support,1 year or more,,no
+S07,Support,Under 1 year,4,yes
+S08,Support,1 year or more,,
+P01,Product,Under 1 year,4,yes
+P02,Product,1 year or more,5,yes
+P03,Product,Under 1 year,5,yes
+P04,Product,1 year or more,4,
+P05,Product,Under 1 year,3,yes
+P06,Product,1 year or more,4,yes
+P07,Product,Under 1 year,5,no
+P08,Product,1 year or more,,yes
+O01,Operations,Under 1 year,2,no
+O02,Operations,1 year or more,3,no
+O03,Operations,Under 1 year,3,
+O04,Operations,1 year or more,4,yes
+O05,Operations,Under 1 year,,no
+O06,Operations,1 year or more,2,
+O07,Operations,Under 1 year,,no
+O08,Operations,,3,yes

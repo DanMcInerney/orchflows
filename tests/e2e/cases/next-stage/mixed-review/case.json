@@ -1,0 +1,7 @@
+{
+  "entrypoint": "orchflows:orch-dynamic-workflow",
+  "packages": ["orchflows"],
+  "covers": ["mixed-guidance-review", "joined-candidate", "bounded-repair"],
+  "requires": ["independent-review", "local-exec"],
+  "timeout_seconds": 900
+}

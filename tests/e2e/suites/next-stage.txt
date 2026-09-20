@@ -1,0 +1,7 @@
+# Current policy: ordinary requests, mixed-domain review, and authoring/reuse.
+core/next-stage/mixed-review
+core/next-stage/research-code-plain
+core/next-stage/survey-brief
+core/next-stage/api-migration
+core/next-stage/release-direct
+core/next-stage/release-build

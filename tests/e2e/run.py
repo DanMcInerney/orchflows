@@ -137,7 +137,7 @@ def parser():
     p.add_argument('--case', action='append', default=[])
     p.add_argument('--case-root', type=Path, action='append', default=[])
     p.add_argument('--package-root', type=Path, action='append', default=[])
-    p.add_argument('--host', default='claude', choices=['claude'])
+    p.add_argument('--host', default='claude', choices=['claude', 'codex'])
     p.add_argument('--executable')
     p.add_argument('--jobs', type=int, default=3)
     p.add_argument('--deadline', type=float)

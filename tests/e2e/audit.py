@@ -26,7 +26,7 @@ async def execute(args):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('root', type=Path)
-    p.add_argument('--host', default='claude', choices=['claude'])
+    p.add_argument('--host', default='claude', choices=['claude', 'codex'])
     p.add_argument('--executable')
     p.add_argument('--jobs', type=int, default=2)
     p.add_argument('--deadline', type=float, default=120)
