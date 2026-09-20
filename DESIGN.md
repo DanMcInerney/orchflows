@@ -74,11 +74,11 @@ Automatic selection is best-effort. Recorded Claude trials selected dynamic for 
 
 ## What does dynamic decide?
 
-It establishes the result and checks, composing core workflows and primitives. It selects applicable core guidance, including core specializations, without personal or library extensions. User and repository instructions still apply; task sources remain evidence. A plan does not become a saved skill unless requested. Named workflows remain the route to optional library processes and extensions.
+It establishes the result and checks, composing core workflows and primitives. Core `orchflows` guidance helps shape the process; applicable task-domain guidance guides makers and reviewers. Planning does not add an authoring review. Dynamic uses core guidance, including core specializations, without personal or library extensions. User and repository instructions still apply; task sources remain evidence. A request to create or save a reusable process invokes Build. Named workflows remain the route to optional library processes and extensions.
 
-Straightforward, low-impact, reversible work that can be checked directly needs no independent review unless requested. For other work, default to one independent review of the joined final result. Intermediate gates belong where decisions are costly to reverse. New uncertainty can warrant review; missing reviewer capability does not make consequential work trivial. This policy applies to both automatic and explicit dynamic invocation.
+Straightforward, low-impact, reversible work that can be checked directly needs no independent review unless requested. Otherwise, plan coherent units around results and real dependencies, with a gate on each joined result before dependent work. Top-level domains suggest boundaries; supporting guidance does not add units, and consequential handoffs can separate units within one domain. New uncertainty can warrant review; missing reviewer capability does not make consequential work trivial. This policy applies to both automatic and explicit dynamic invocation.
 
-A research-to-code task can use parallel research → joined research review/fix → parallel coding → joined code review/fix. A typo fix can use direct work and a check. Independent work can run concurrently; shared decisions settle before dependent work. Staffing is flexible; an explicit `orch-work` call always requires a fresh maker.
+A research-to-code task can use parallel research → joined research review/fix → parallel coding → joined code review/fix. A typo fix can use direct work and a check. Each gate gets one independent reviewer and one worker for at most one repair pass when needed, followed by required checks. Other staffing is flexible; an explicit `orch-work` call always requires a fresh maker.
 
 ## How can workflows nest without nested orchestrators?
 
@@ -144,7 +144,7 @@ It supplies an independent judgment of an identified state and scope. The candid
 
 The optional shared library's `shared:review-revise-once` permits one coordinated repair pass after review, followed by affected and caller-required checks—even when no repair is needed. Missing or incomplete review blocks repair. The original verdict stays attached to the inspected state; a revision does not inherit it. There is no automatic second review or release authorization.
 
-Build and Dynamic use `orch-review` directly and own their review and repair counts, without depending on shared. Dynamic preserves component gates and counts an existing review only when candidate, criteria and scope match its planned gate.
+Build and Dynamic use `orch-review` directly, with one reviewer and one worker for at most one repair pass when needed, without depending on shared. Build also uses this default for new production workflows while preserving explicit choices and selected component contracts. Dynamic counts an existing review only when candidate, criteria and scope match its planned gate. Build's completed authoring review satisfies the authoring unit when Dynamic composes it; no wrapper review is added.
 
 ## How does workflow building avoid touching real data?
 
@@ -217,7 +217,7 @@ The maintainer-only runner discovers `case.json` beside an example's trial or in
 
 One pool limits runner-launched target and audit sessions; native subagents and Build's inner trials add activity. Suite deadlines include checks and audits. A timeout is inconclusive unless evidence already establishes a material invariant violation. Calibration challenges the evaluator with a valid trace, harmless verbosity, skipped review and missing evidence. Frozen originals survive re-auditing.
 
-The runner currently supports Claude Code. Four smoke cases passed independent audits in one 175.5-second run; the complete Build journey and two example cases remain inconclusive. Synthetic inputs and fake services protect these trials from live effects, but the harness does not provide a security sandbox. [Running tests, adding cases and current evidence](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e).
+The runner supports Claude Code and Codex. Historical Claude trials passed four smoke cases with independent audits in one 175.5-second run; the complete Build journey and two example cases remained inconclusive. Those trials do not validate the revised gate policy or Codex adapter. Synthetic inputs and fake services protect these trials from live effects, but the harness does not provide a security sandbox. [Running tests, adding cases and current evidence](https://github.com/DanMcInerney/orchflows/tree/main/tests/e2e).
 
 ## What is deliberately not guaranteed?
 

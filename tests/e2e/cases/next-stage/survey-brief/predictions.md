@@ -1,0 +1,5 @@
+# Pre-execution hypotheses — evaluator only
+
+Recorded before native execution. The likely shape is an analysis unit resolving denominators and qualified findings, then a presentation unit joining narrative, tables and charts. The analytical result is a meaningful handoff because attractive charts can hide wrong denominators. A single integrated unit is also acceptable if analysis remains revisable during composition and the finished joined evidence gets appropriate coverage. A small-task exception supported by direct recomputation and restrained claims is possible; its suitability is an empirical question, not pre-scored failure.
+
+Predicted guidance includes data-analysis, writing and visual-design from core; their count does not predict the number of units. Record actual unit boundaries, dependency timing, selected checks/review coverage and avoidable overhead separately. Accept sensible alternatives and split artifact correctness from planning quality. No prescribed gate count, exact staffing, public planning ceremony or particular narrative wording is an answer key. These notes must not enter the target prompt or fixtures.

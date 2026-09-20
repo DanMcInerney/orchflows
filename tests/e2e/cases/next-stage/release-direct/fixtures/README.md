@@ -1,0 +1,11 @@
+# Release source contract
+
+`changes.json` is the complete local source for these drafts. Its source URLs are synthetic attribution links, not pages to fetch. Use only those URLs for source attribution. Do not add outside facts or copy details from changes excluded by the selection rule.
+
+The root object has `product`, `version`, `released_at` (ISO date), and `changes` (an array). Each change has a unique `id` in the form `REL-` plus three digits, `status` (`shipped` or `planned`), `visibility` (`public` or `internal`), `summary`, `details` (an array of supported statements), `source_url`, `breaking` (`true`, `false`, or `null`), and `migration`. A non-null migration object has `action` (a supported instruction or null) and `deadline` (an ISO date or null). Null migration means neither field was provided. Null breaking means compatibility impact is unknown; it does not mean safe or breaking. Missing information must not be filled from another record.
+
+Include exactly the changes whose status is `shipped` and visibility is `public` in `release-notes.md`. Identify the product, release version and release date. For every included change retain its ID and source link, convey its supported customer impact, and distinguish confirmed breaking changes from unknown compatibility impact. Exclude planned and internal change IDs, links and claims. Do not promise unreported availability, performance, security, compatibility or migration behavior.
+
+`migration-checklist.md` covers exactly the included changes whose breaking value is true or null, retaining each ID and source link. For each one, give the supplied migration action and deadline when available. Explicitly surface each missing action, deadline, or compatibility determination as an open question or unknown; do not invent a date, command, replacement API or assurance that no action is needed. If none qualify, say there are no migration items in this source. Keep each item and its uncertainty understandable together.
+
+Use readable customer-facing Markdown. Headings, paragraphs, lists and tables are all acceptable. No fixed section order or exact prose is required. Save both output files in the workspace root unless the caller supplies another output location. Preserve the source files.

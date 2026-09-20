@@ -1,0 +1,1 @@
+Fix the spelling mistake in the first sentence of notice.txt. Save the corrected text as corrected.txt and keep the rest exactly the same, including line breaks. Preserve notice.txt. No network or other external actions.

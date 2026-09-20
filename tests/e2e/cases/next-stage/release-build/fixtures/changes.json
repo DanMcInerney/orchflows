@@ -1,0 +1,50 @@
+{
+  "product": "Harbor Sync",
+  "version": "3.8.0",
+  "released_at": "2026-09-18",
+  "changes": [
+    {
+      "id": "REL-110", "status": "shipped", "visibility": "public",
+      "summary": "Pause scheduled imports without deleting their settings",
+      "details": ["Workspace administrators can pause and resume an import schedule.", "Pausing a schedule does not stop an import already running."],
+      "source_url": "https://releases.harbor.example/changes/REL-110",
+      "breaking": false, "migration": null
+    },
+    {
+      "id": "REL-111", "status": "shipped", "visibility": "public",
+      "summary": "Import history moves to cursor pagination",
+      "details": ["The import-history API now returns a next_cursor field.", "Offset pagination is deprecated and remains available until the stated migration deadline."],
+      "source_url": "https://releases.harbor.example/changes/REL-111",
+      "breaking": true,
+      "migration": {"action": "Update import-history integrations to send the returned next_cursor as the cursor parameter instead of using offset.", "deadline": "2026-12-01"}
+    },
+    {
+      "id": "REL-112", "status": "shipped", "visibility": "public",
+      "summary": "Retried completion webhooks retain their event ID",
+      "details": ["Retries for an import-completed webhook now reuse the original event_id.", "Consumers can use that ID to recognize duplicate deliveries; delivery itself is still at least once."],
+      "source_url": "https://releases.harbor.example/changes/REL-112",
+      "breaking": false, "migration": null
+    },
+    {
+      "id": "REL-113", "status": "shipped", "visibility": "public",
+      "summary": "Audit exports rename the actor column",
+      "details": ["The audit export actor column is renamed to actor_email.", "Existing parsers that require the old header are affected."],
+      "source_url": "https://releases.harbor.example/changes/REL-113",
+      "breaking": true, "migration": null
+    },
+    {
+      "id": "REL-190", "status": "planned", "visibility": "public",
+      "summary": "Offline access to import history",
+      "details": ["An offline history viewer is proposed for a future release."],
+      "source_url": "https://releases.harbor.example/changes/REL-190",
+      "breaking": false, "migration": null
+    },
+    {
+      "id": "REL-191", "status": "shipped", "visibility": "internal",
+      "summary": "Move staging queue workers to pool cedar",
+      "details": ["Internal staging deployment uses the cedar worker pool."],
+      "source_url": "https://releases.harbor.example/changes/REL-191",
+      "breaking": false, "migration": null
+    }
+  ]
+}

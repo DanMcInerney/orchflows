@@ -1,0 +1,8 @@
+{
+  "entrypoint": "orchflows:orch-build-workflow",
+  "packages": ["orchflows"],
+  "covers": ["release-writing", "author-only", "fresh-reuse", "source-grounding", "migration-uncertainty"],
+  "requires": ["independent-review", "local-exec"],
+  "profile": "local",
+  "timeout_seconds": 2100
+}

@@ -44,7 +44,7 @@ def discover(extra_roots=()):
             seconds = config.get('timeout_seconds', 150)
             if type(seconds) not in (int, float) or not 0 < seconds <= 3600:
                 raise ValueError(f'{identifier}: invalid timeout_seconds')
-            if config.get('profile', 'local') not in ('local', 'no-review'):
+            if config.get('profile', 'local') not in ('local', 'authoring', 'no-review'):
                 raise ValueError(f'{identifier}: unsupported profile')
             if 'entrypoint' in config and (not isinstance(config['entrypoint'], str) or
                     not re.fullmatch(r'[\w-]+:[\w-]+', config['entrypoint'])):

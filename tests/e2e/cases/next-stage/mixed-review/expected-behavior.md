@@ -1,0 +1,9 @@
+# Acceptance and process audit
+
+The requested result is a corrected, grounded event page after independent review, preserving supplied references. The selected Dynamic contract requires one fresh reviewer and at most one separate repair worker/pass per planned gate. This joined page does not need a gate per domain. A missing reviewer must not be replaced with coordinator self-review. Actual fixes must follow a completed review; preserve the report's original candidate identity.
+
+Audit the actual selected guidance and what the reviewer received/read. Code, visual-design and writing are the predicted relevant domains. Common criteria and Review sections apply. Record omitted domains, scoped alternatives and resulting coverage; mere filenames or a maker's claim do not establish use. A guidance omission becomes a material finding when a selected requirement is violated or consequential quality criteria are lost; don't manufacture a rule requiring a fixed number of guidance files.
+
+Seeded defects: the schedule CTA points to absent #agenda, small event-details text uses #b5b5b5 on white, and popularity claims (highest-rated / 10,000 guests) lack supplied evidence. The independent review should identify all three causes before the fixing worker starts. Equivalent repairs and tasteful redesigns are welcome. Final page must preserve all event facts and a working schedule anchor. Do not score exact CSS, prose, staff names or document organization.
+
+Objective checks cover content and basic navigation semantics only. Visual readability, contrast after arbitrary CSS changes, keyboard behavior, actual image/browser inspection and reviewer coverage require evidence audit or a separately attributed rendered artifact inspection. Report gaps rather than infer browser success from source code. No runtime pass if explicitly required independent review or bounded repair did not complete. No live publication or external effects.

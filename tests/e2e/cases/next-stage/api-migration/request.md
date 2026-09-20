@@ -1,0 +1,5 @@
+Update this tiny app to use display_name instead of name in API responses and in the current client. Existing clients still need name, so keep them working. The reference/ folder contains the current files; preserve those references and deliver updated api.py and client.py in this workspace, with reproducible tests and a short compatibility.md.
+
+get_profile(user) should return exactly id, name and display_name, with both name fields equal to the supplied user's name. Preserve strings including whitespace and Unicode, and don't mutate the input. client.label(profile) should read display_name and return "Hello, " followed by that value; it must work when the supplied profile has no old name field. The supplied legacy client must still work with the new API response. Inputs have string id/name values; no network server or malformed-input handling is needed.
+
+This is a local synthetic example using only the Python standard library. Do not install, publish, use the network, modify references or save a reusable workflow.

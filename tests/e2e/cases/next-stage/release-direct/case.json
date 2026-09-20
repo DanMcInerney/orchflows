@@ -1,0 +1,7 @@
+{
+  "packages": ["orchflows"],
+  "covers": ["release-writing", "joined-deliverables", "source-grounding", "migration-uncertainty"],
+  "requires": ["local-exec"],
+  "profile": "local",
+  "timeout_seconds": 480
+}

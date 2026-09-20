@@ -1,0 +1,16 @@
+{
+  "entrypoint": "orchflows:orch-dynamic-workflow",
+  "packages": [
+    "orchflows"
+  ],
+  "covers": [
+    "same-domain-boundaries",
+    "dependent-code",
+    "contract-handoff"
+  ],
+  "requires": [
+    "independent-review",
+    "local-exec"
+  ],
+  "timeout_seconds": 600
+}

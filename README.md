@@ -36,7 +36,7 @@ For a task you only need once:
 
 > Use orch-dynamic-workflow to develop three approaches to this message in parallel, combine the strongest ideas, then independently review and revise once if needed: "Our team should record meeting decisions."
 
-[Dynamic](skills/orch-dynamic-workflow/SKILL.md) assembles and runs a process for the current task without saving a workflow. It adapts the work and review to the task; simple tasks can use a direct check unless you request independent review.
+[Dynamic](skills/orch-dynamic-workflow/SKILL.md) assembles and runs a process for the current task. It adapts the work and review to the task; simple tasks can use a direct check unless you request independent review. If you also ask to save the process, it uses Build to author and test the reusable workflow.
 
 ## Why save the process?
 

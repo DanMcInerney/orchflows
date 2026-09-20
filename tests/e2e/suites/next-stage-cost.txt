@@ -1,0 +1,3 @@
+# Run under both isolated conditions with identical inputs and budgets.
+core/next-stage/tiny-edit
+core/explicit-dynamic

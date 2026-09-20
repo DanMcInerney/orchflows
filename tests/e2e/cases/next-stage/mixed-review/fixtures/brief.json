@@ -1,0 +1,11 @@
+{
+  "title": "Lantern Workshop",
+  "venue": "Riverside Studio",
+  "price": "$24",
+  "accessibility": "Step-free entrance; quiet room available.",
+  "sessions": [
+    {"time": "10:00", "title": "Paper forms"},
+    {"time": "11:30", "title": "Light and shadow"},
+    {"time": "13:00", "title": "Build your lantern"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "entrypoint": "orchflows:orch-build-workflow",
+  "packages": ["orchflows"],
+  "covers": ["authoring", "blocked-trial", "dependent-review-stop", "honest-validation-gap"],
+  "requires": ["independent-review", "local-exec"],
+  "timeout_seconds": 600
+}

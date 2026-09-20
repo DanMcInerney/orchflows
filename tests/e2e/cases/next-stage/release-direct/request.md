@@ -1,0 +1,3 @@
+Turn the local changes.json into release-notes.md and migration-checklist.md directly in this workspace root for workspace administrators and integration maintainers. Follow the input and output contract in README.md: cover shipped public changes, keep source IDs and links, preserve supported claims, and make missing breaking-change and migration information explicit. The result should be concise, useful customer-facing Markdown.
+
+Preserve supplied files. Use only local source material; no task-facing network access, installation, messages, publishing, purchases or global registration changes.

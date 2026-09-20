@@ -1,0 +1,16 @@
+{
+  "entrypoint": "orchflows:orch-dynamic-workflow",
+  "packages": [
+    "orchflows"
+  ],
+  "covers": [
+    "blocked-research",
+    "uncertainty",
+    "decision-handoff"
+  ],
+  "requires": [
+    "independent-review",
+    "local-exec"
+  ],
+  "timeout_seconds": 480
+}

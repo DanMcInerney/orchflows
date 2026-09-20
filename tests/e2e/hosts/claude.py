@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import uuid
 
-from common import read_json
+from common import read_json, write_json
 from evidence import stream
 
 
@@ -32,6 +32,7 @@ class Claude:
 
     def command(self, packages, profile='local', schema=None, allowed_root=None, directory=None):
         tools = {'local': 'Read,Write,Edit,Bash,Agent,Skill,Glob,Grep',
+                 'authoring': 'Read,Write,Edit,Bash,Agent,Skill,Glob,Grep',
                  'no-review': 'Read,Write,Edit,Skill,Glob,Grep',
                  'audit': 'Read,Glob,Grep'}[profile]
         command = [self.executable, '-p', '--verbose', '--output-format', 'stream-json',
@@ -45,6 +46,8 @@ class Claude:
             command += ['--restricted', '--add-dir', str(allowed_root)]
         if schema:
             command += ['--json-schema', json.dumps(schema)]
+        if directory is not None:
+            write_json(Path(directory) / 'claude-launch.json', {'profile': profile})
         return command
 
     def invocation(self, entrypoint, request):
@@ -55,6 +58,8 @@ class Claude:
         init = next((e for e in records if e.get('subtype') == 'init'), {})
         finals = [e for e in records if e.get('type') == 'result']
         final = finals[-1] if finals else {}
+        launch_path = Path(directory) / 'claude-launch.json'
+        launch = read_json(launch_path) if launch_path.exists() else {}
         if not init:
             gaps.append('Missing native initialization record')
         if not final or final.get('is_error'):
@@ -64,8 +69,10 @@ class Claude:
                 'tools': init.get('tools', []), 'plugins': init.get('plugins', []),
                 'slash_commands': init.get('slash_commands', []), 'final': final.get('result', ''),
                 'structured_output': final.get('structured_output'), 'usage': final.get('usage'),
-                'cost_usd': final.get('total_cost_usd'), 'gaps': gaps,
+                'cost_usd': final.get('total_cost_usd'), 'gaps': gaps, 'launch_profile': launch.get('profile'),
                 'conditions': 'Session-local packages; user model/settings retained; user-configured plugin activations and hooks disabled. '
                               'Host built-in skills may remain advertised in native inventory. '
-                              'Target shell/filesystem and network are not sandboxed by this harness; fixtures use local fakes. '
+                              'Local and authoring targets have the same tools; their shell/filesystem and network are not sandboxed by this harness. '
+                              'Authoring permits nested host inference; trial requests still constrain task-facing effects to local fakes. '
+                              'Audits have read tools only, without shell or delegation. '
                               'Evaluator material withheld from context, not proven inaccessible to target shell.'}

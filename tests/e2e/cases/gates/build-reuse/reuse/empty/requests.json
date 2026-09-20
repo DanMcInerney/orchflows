@@ -1,0 +1,15 @@
+{
+  "capacity_hours": 0,
+  "tasks": [
+    {
+      "id": "unestimated",
+      "hours": null,
+      "critical": true
+    },
+    {
+      "id": "next",
+      "hours": 1,
+      "critical": true
+    }
+  ]
+}

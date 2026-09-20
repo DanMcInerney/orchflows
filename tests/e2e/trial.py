@@ -53,10 +53,13 @@ class Trial:
         original = original.replace('{CORE}', chosen.get('orchflows', Path('UNAVAILABLE')).as_posix())
         original = original.replace('{HOME}', orch_home.as_posix())
         original = original.replace('{WORKSPACE}', workspace.as_posix())
+        original = original.replace('{HOST_CLI}', self.host.name)
         if entrypoint is None:
             entrypoint = self.case.config.get('entrypoint')
         prompt = self.host.invocation(entrypoint, original)
         (directory / 'request.txt').write_text(prompt, encoding='utf-8')
+        if hasattr(self.host, 'prepare'):
+            self.host.prepare(workspace, chosen)
         before = snapshot(workspace)
         package_before = {key: snapshot(path) for key, path in chosen.items()}
         write_json(directory / 'before.json', {'inputs': before, 'packages': package_before})

@@ -1,0 +1,22 @@
+{
+  "product": "Harbor Sync",
+  "version": "4.0.1",
+  "released_at": "2026-11-06",
+  "changes": [
+    {
+      "id": "REL-310", "status": "shipped", "visibility": "public",
+      "summary": "Project archive events include a reason code",
+      "details": ["Project archive webhook payloads include a reason_code field."],
+      "source_url": "https://releases.harbor.example/changes/REL-310",
+      "breaking": null, "migration": null
+    },
+    {
+      "id": "REL-390", "status": "planned", "visibility": "public",
+      "summary": "Archive compatibility adapter",
+      "details": ["A proposed adapter would drop reason_code for older clients."],
+      "source_url": "https://releases.harbor.example/changes/REL-390",
+      "breaking": true,
+      "migration": {"action": "Enable the proposed legacy-archive adapter.", "deadline": "2027-02-01"}
+    }
+  ]
+}

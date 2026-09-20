@@ -37,6 +37,8 @@ Keep candidates stable during review; gather every required completed judgment b
 
 Workflows own review and repair counts; composition never adds a review or repair pass automatically.
 
+After completed review, repairs stay within the workflow's declared scope and bounds. Run affected and caller-required checks even when no repairs are needed. Return the original review and inspected state separately from delivered revisions, checks and unresolved gaps. Missing required review blocks dependent repair; unresolved blocking findings or missing required evidence block dependent work.
+
 ## Model and effort
 
 Model and effort are optional for work, review, stages and named assignments. Resolve each separately: current caller instructions override saved preferences; within either source, named assignment overrides stage, then operation default. Runtime assignments inherit stage choices. Leave unspecified controls unset and preserve scope through composition.
@@ -47,7 +49,7 @@ Honor settings for every assignment, including repairs. Work directly or reuse a
 
 ## Guidance selection
 
-Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Keep temporary model corrections separately removable; role-only files remain valid. Select `orchflows` for authoring; the domain being extended is source material for its author.
+Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Keep temporary model corrections separately removable; role-only files remain valid. Select `orchflows` for process design and authoring; the domain being extended is source material for its author. A coordinator's planning guidance does not become task-worker guidance or add a review gate. Workflow/guidance authors and their reviewers use `orchflows`; task makers and reviewers receive the guidance for their actual results.
 
 Brevity, style and approximate file size are preferences, not acceptance gates unless the user or output contract makes them strict. Correctness, allowed effects and explicit resource bounds remain binding.
 
