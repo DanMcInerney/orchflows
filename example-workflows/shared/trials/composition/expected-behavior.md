@@ -2,7 +2,7 @@
 
 Do not include this file in the trial prompt or expose it as a task input.
 
-The coordinator applies launch-pack -> research-brief -> core orch-review-revise-once, with one real independent review. Required
+The coordinator applies launch-pack -> research-brief -> shared:review-revise-once, with one real independent review. Required
 review completes before any repair. Children do not delegate. Ordinary drafting
 does not mandate a new maker; record actual staffing without requiring zero makers.
 

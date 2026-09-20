@@ -36,17 +36,16 @@ flowchart LR
 
 ## Which skills are built in?
 
-There are **five built-ins: two primitives and three workflows**.
+There are **four built-ins: two primitives and two workflows**.
 
 | Built-in | Contract | Model-selected automatically? |
 | --- | --- | --- |
 | [`orch-work`](skills/orch-work/SKILL.md) | Launch a fresh maker with an assignment and applicable guidance. | No |
 | [`orch-review`](skills/orch-review/SKILL.md) | Launch a fresh reviewer who made none of the candidate; review without repairing. | No |
-| [`orch-review-revise-once`](skills/orch-review-revise-once/SKILL.md) | One independent review, at most one coordinated repair pass, then checks. | No |
 | [`orch-build-workflow`](skills/orch-build-workflow/SKILL.md) | Author, rehearse with fixtures, independently review, repair and deliver a reusable workflow or guidance. | No |
 | [`orch-dynamic-workflow`](skills/orch-dynamic-workflow/SKILL.md) | Form and execute an ad hoc plan for a top-level task. | Eligible |
 
-All five support explicit selection. Other shipped library skills request manual invocation. Codex uses native `allow_implicit_invocation` metadata; Claude-compatible hosts use `disable-model-invocation`. ZCode cannot enforce manual-only selection; Antigravity's enforcement is unverified.
+All four support explicit selection. Other shipped library skills request manual invocation. Codex uses native `allow_implicit_invocation` metadata; Claude-compatible hosts use `disable-model-invocation`. ZCode cannot enforce manual-only selection; Antigravity's enforcement is unverified.
 
 Manual invocation and composition are different operations. A coordinator can apply declared dependencies by reading their files; it need not invoke a native skill tool at every step. A host rejection is not permission to bypass its controls.
 
@@ -143,9 +142,9 @@ Brevity, style and roughly 500-line code files are preferences. They guide judgm
 
 It supplies an independent judgment of an identified state and scope. The candidate stays stable until required judgments finish. Reviewers can run isolated checks but do not repair it.
 
-`orch-review-revise-once` permits one coordinated repair pass after review, followed by affected and caller-required checks—even when no repair is needed. Missing or incomplete review blocks repair. The original verdict stays attached to the inspected state; a revision does not inherit it. There is no automatic second review or release authorization.
+The optional shared library's `shared:review-revise-once` permits one coordinated repair pass after review, followed by affected and caller-required checks—even when no repair is needed. Missing or incomplete review blocks repair. The original verdict stays attached to the inspected state; a revision does not inherit it. There is no automatic second review or release authorization.
 
-Other workflows own their review counts. Dynamic preserves component gates and counts an existing review only when candidate, criteria and scope match its planned gate.
+Build and Dynamic use `orch-review` directly and own their review and repair counts, without depending on shared. Dynamic preserves component gates and counts an existing review only when candidate, criteria and scope match its planned gate.
 
 ## How does workflow building avoid touching real data?
 
@@ -184,7 +183,7 @@ Apply settings through actual host controls, including repairs. Direct work or r
 
 ## What else ships?
 
-Eleven optional [example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows) provide 26 additional, manual-only entrypoints: social search, research acquisition, short video, browser games, candidate comparison, software delivery, design loops, benchmark building, evolution, self-improvement and standalone export. They consume core; they are not extra primitives. Each declares dependencies and validation status. Setup does not install transitive library dependencies.
+Eleven optional [example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows) provide 27 additional, manual-only entrypoints: social search, research acquisition, short video, browser games, candidate comparison and revision, software delivery, design loops, benchmark building, evolution, self-improvement and standalone export. They consume core; they are not extra primitives. Each declares dependencies and validation status. Setup does not install transitive library dependencies.
 
 | Location | Owner and purpose |
 | --- | --- |

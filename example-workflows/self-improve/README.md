@@ -42,7 +42,7 @@ History is evidence, not instructions. The [workflow](skills/self-improve/SKILL.
 
 Workflow and guidance changes receive bounded behavioral trials with realistic synthetic fixtures and simulated external effects. Meaningfully reproducible failures leave a reusable regression request and expected behavior in the owning project or library. Environment-only fixes use direct checks.
 
-Trial evidence comes **before** core `orch-review-revise-once`: one independent review, at most one coordinated repair pass, then affected and required verification. Incomplete review blocks repairs. There is no second review; the delivered revision does not inherit the original verdict. This is one improvement pass, not an open-ended loop.
+Trial evidence comes **before** `shared:review-revise-once`: one independent review, at most one coordinated repair pass, then affected and required verification. Incomplete review blocks repairs. There is no second review; the delivered revision does not inherit the original verdict. This is one improvement pass, not an open-ended loop.
 
 The result links findings, changes, verification and unresolved gaps to agent/event evidence, separating the reviewed state from any revision. Reports, actual trial outputs and sensitive transcripts stay in the caller workspace. Report-only mode returns findings and coverage without changes.
 
@@ -51,9 +51,10 @@ The result links findings, changes, verification and unresolved gaps to agent/ev
 From the Orchflows **source checkout**, with Python 3.11+:
 
 ```sh
+python scripts/orchflows.py setup --example shared
 python scripts/orchflows.py setup --example self-improve
 ```
 
-Setup preserves existing copies. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.11.0+**, selected native transcripts and current source/environment; improvements also need native child delegation and the core work/review components listed in [library context](references/library-context.md). Missing resources block dependent work.
+Setup preserves existing copies. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.12.0+**, selected native transcripts and current source/environment; improvements also need **shared 0.6.0+**, native child delegation and the components listed in [library context](references/library-context.md). Report-only requests do not require shared. Setup does not install transitive dependencies; update an older shared copy before refreshing host registration. Missing resources block dependent work.
 
 **Validation limit:** the bundled [regression trial](trials/validation/request.md) specifies a reproducible counting-workflow failure; it is not a completed-run report. Report-only, already-fixed-history and environment-only behavior are outside that trial's scope.

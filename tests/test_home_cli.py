@@ -98,10 +98,10 @@ class InstalledCliTests(unittest.TestCase):
             expanded = cli(python, script, "history", "read", "claude", "native-session", "--event", page["events"][0]["event_id"])
             self.assertEqual(json.loads(expanded["text"])["file_path"], "evidence-λ.txt")
             self.assertEqual({skill.name for skill in (core / "skills").iterdir()},
-                             {"orch-work", "orch-review", "orch-review-revise-once",
+                             {"orch-work", "orch-review",
                               "orch-build-workflow", "orch-dynamic-workflow"})
             for removed in ("orch-parallel", "orch-compare", "orch-make-and-review", "orch-setup", "orch-record-run",
-                            "orch-self-improve", "self-improve"):
+                            "orch-self-improve", "self-improve", "orch-review-revise-once", "review-revise-once"):
                 unavailable = cli(python, script, "resolve", "orchflows", "--skill", removed, expected=2)
                 self.assertIn("error", unavailable)
             for skill in (ROOT / "skills").iterdir():
@@ -129,7 +129,7 @@ class InstalledCliTests(unittest.TestCase):
             for name, skill_names in (
                 ("export-workflow", ("export-workflow",)),
                 ("self-improve", ("self-improve",)),
-                ("shared", ("compare-candidates",)),
+                ("shared", ("compare-candidates", "review-revise-once")),
                 ("design-loop", ("design-loop", "test-increment")),
                 ("benchmaker", ("benchmaker",)),
             ):
@@ -137,9 +137,6 @@ class InstalledCliTests(unittest.TestCase):
                 library = home / "libraries" / name
                 example_libraries.append(library)
                 self.assertEqual(files(ROOT / "example-workflows" / name), files(library))
-                if name == "shared":
-                    unavailable = cli(python, script, "resolve", name, "--skill", "review-revise-once", expected=2)
-                    self.assertIn("error", unavailable)
                 for skill_name in skill_names:
                     resolved_example = cli(python, script, "resolve", name, "--skill", skill_name)
                     self.assertEqual(Path(resolved_example["skill_path"]), library / "skills" / skill_name / "SKILL.md")

@@ -1,5 +1,5 @@
 interface:
-  display_name: "Orch Review and Revise Once"
+  display_name: "Review and Revise Once"
   short_description: "Independent review and one checked revision"
 policy:
   allow_implicit_invocation: false
