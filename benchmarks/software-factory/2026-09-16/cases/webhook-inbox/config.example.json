@@ -1,6 +1,0 @@
-{
-  "tenants": {
-    "alpha": {"secret": "alpha-example-hmac-secret-2026", "token": "alpha-example-read-token-2026"},
-    "beta": {"secret": "beta-example-hmac-secret-2026", "token": "beta-example-read-token-2026"}
-  }
-}

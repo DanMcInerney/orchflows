@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "<BUNDLE_ROOT>/runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/probes.py", line 81, in <module>
-    reject(label,headers,401 if label=="raw-body tamper" else 400,value)
-    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<BUNDLE_ROOT>/runs/webhook-inbox/workflow/artifacts/reviews/pass-1/security/probes.py", line 42, in reject
-    assert status == expected, (label, status, expected)
-           ^^^^^^^^^^^^^^^^^^
-AssertionError: ('deep nesting', 201, 400)

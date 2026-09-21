@@ -1,5 +1,6 @@
 # Local reports, generated projects and trial runs.
 /reports/
+/benchmarks/
 /artifacts/
 /design/
 /example-workflows/nightbind/

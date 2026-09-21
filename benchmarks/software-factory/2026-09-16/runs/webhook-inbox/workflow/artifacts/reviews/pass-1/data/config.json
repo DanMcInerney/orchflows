@@ -1,1 +1,0 @@
-{"tenants": {"alpha": {"secret": "probe-alpha", "token": "read-alpha"}, "beta": {"secret": "probe-beta", "token": "read-beta"}}}

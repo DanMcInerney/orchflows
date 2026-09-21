@@ -1,3 +1,0 @@
-Script error:
-apply_patch verification failed: invalid patch: multiple operations target <BUNDLE_ROOT>/runs/webhook-inbox/single/project/inbox.py
-No source mutation occurred; replacement was subsequently written successfully.

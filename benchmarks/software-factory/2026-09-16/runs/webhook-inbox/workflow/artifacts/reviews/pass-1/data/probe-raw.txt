@@ -1,5 +1,0 @@
-{"probe": "two_servers_shared_database_conflict", "outcome": "PASS", "counts": {"200": 11, "409": 12, "201": 1}}
-{"probe": "exact_bytes_ids_tenant_scope_and_stable_sequence", "outcome": "PASS", "rows": 3, "body_sha256": "cd980bfc1bfe1307d315f06dadc5ea41e14371d09058d0d9a3f2b8ac6be25b9d"}
-{"probe": "storage_error_rolls_back_partial_effects_and_does_not_reserve_id", "outcome": "PASS", "error_status": 503, "retry_status": 201}
-{"probe": "online_backup_integrity_restore_and_sequence_continuity", "outcome": "PASS", "backed_up_rows": 4, "next_sequence": 5}
-{"probe": "abrupt_process_termination_retains_acknowledged_events", "outcome": "PASS", "acknowledged_events": 20, "retry_status": 200, "conflict_status": 409}
