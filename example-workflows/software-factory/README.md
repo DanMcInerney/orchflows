@@ -65,4 +65,4 @@ Setup preserves existing library copies and installs no project tools. Complete 
 
 Requires core 0.11.0+, native children and project build/check tools. CI, release, flags and telemetry are needed by dependent stages; no scheduler, service adapters or production access are bundled. See [library context](references/library-context.md).
 
-Inspired by [The Pragmatic Engineer's software-factory account](https://newsletter.pragmaticengineer.com/p/openai-software-factory). The [published two-task comparison](https://github.com/DanMcInerney/orchflows/blob/main/benchmarks/software-factory/2026-09-16/REPORT.md) records narrow results and simulated rollout. It does not validate live production. The [trial specification](trials/expected-behavior.md) defines further acceptance requirements.
+Inspired by [The Pragmatic Engineer's software-factory account](https://newsletter.pragmaticengineer.com/p/openai-software-factory). The [trial specification](trials/expected-behavior.md) defines acceptance requirements.

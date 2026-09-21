@@ -1,3 +1,0 @@
-[master a685f46] Copy parsed JSON containers iteratively for deeply nested results
- 2 files changed, 100 insertions(+), 2 deletions(-)
- create mode 100644 tests/test_deep_results.py

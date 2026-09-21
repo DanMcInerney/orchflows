@@ -1,7 +1,0 @@
-{"probe": "snapshot_identity", "files": 12, "mismatches": [], "expected_tree": "93f5ad441ff2ef764f6aaf75f813402a969add20488e74de1e8902b900e67807"}
-{"probe": "storage_lock_recovery", "status": 503, "seconds": 10.891, "failed_request_left_no_rows": true, "retry_status": 201}
-{"probe": "graceful_inflight_shutdown", "status": 201, "request_drained": true, "serving_thread_stopped": true}
-{"probe": "factory_restart_same_port", "rows": 2, "same_port": true, "duplicate_status": 200}
-{"probe": "cli_abrupt_stop_restart", "readiness_flushed": true, "acknowledged_event_survived": true, "sequence_and_payload_stable": true, "duplicate_status": 200, "conflict_status": 409}
-{"probe": "documented_sqlite_backup", "integrity": "ok", "exact_rows_preserved": true}
-{"probe": "result", "status": "PASS"}

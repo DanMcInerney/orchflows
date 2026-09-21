@@ -1,8 +1,0 @@
-test_header_helper_composes_exact_bytes (test_harness.SigningCalibration.test_header_helper_composes_exact_bytes) ... ok
-test_rfc4231_hmac_sha256_vector (test_harness.SigningCalibration.test_rfc4231_hmac_sha256_vector) ... ok
-test_signature_uses_timestamp_and_secret (test_harness.SigningCalibration.test_signature_uses_timestamp_and_secret) ... ok
-
-----------------------------------------------------------------------
-Ran 3 tests in 0.002s
-
-OK

@@ -1,4 +1,0 @@
-{"id":"r2","timestamp":"2026-07-01T09:01:00.000Z","service":"gateway","level":"ERROR","message":"Gateway timeout for request 42","extra":{"region":"east"}}
-{"id":"r1","timestamp":"2026-07-01T09:00:00.000Z","service":"worker","level":"INFO","message":"Job started"}
-this malformed line is skipped
-{"id":"r3","timestamp":"2026-07-01T09:02:00.000Z","service":"gateway","level":"INFO","message":"Gateway recovered"}
