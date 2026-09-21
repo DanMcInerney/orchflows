@@ -1,6 +1,6 @@
 # Library context
 
-Require core `orchflows` 0.12.0+, `shared` 0.6.0+ and native child delegation. At the outer entrypoint resolve `orchflows:orch-work`, `shared:review-revise-once` and its `orchflows:orch-review` dependency through supplied roots, native skills or core's `resolve` CLI. Apply core `docs/architecture.md`; use `docs/hosts.md` for capabilities and trials.
+Require core `orchflows`, `shared` and native child delegation. At the outer entrypoint resolve `orchflows:orch-work`, `shared:review-revise-once` and its `orchflows:orch-review` dependency through supplied roots, native skills or core's `resolve` CLI. Apply core `docs/architecture.md`; use `docs/hosts.md` for capabilities and trials.
 
 Select `benchmarking`, caller domains and domains needed to construct/assess tasks, such as `research`, `code`, `writing` or `visual-design`. Include this library in caller-supplied order. Pass applicable guidance, workspace/package identity, run directory, public/evaluator boundaries and scoped choices. Withhold evaluator material from the pilot's initial solve.
 

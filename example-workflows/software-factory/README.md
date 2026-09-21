@@ -63,6 +63,6 @@ python scripts/orchflows.py setup --example software-factory
 
 Setup preserves existing library copies and installs no project tools. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session.
 
-Requires core 0.11.0+, native children and project build/check tools. CI, release, flags and telemetry are needed by dependent stages; no scheduler, service adapters or production access are bundled. See [library context](references/library-context.md).
+Requires core, native children and project build/check tools. CI, release, flags and telemetry are needed by dependent stages; no scheduler, service adapters or production access are bundled. See [library context](references/library-context.md).
 
 Inspired by [The Pragmatic Engineer's software-factory account](https://newsletter.pragmaticengineer.com/p/openai-software-factory). The [trial specification](trials/expected-behavior.md) defines acceptance requirements.

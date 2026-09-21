@@ -1,6 +1,6 @@
 # Library context
 
-Require core 0.11.0+ and apply its `docs/architecture.md`. Resolve primitives through native skills, supplied roots or core's `resolve` CLI; reuse paths.
+Require core and apply its `docs/architecture.md`. Resolve primitives through native skills, supplied roots or core's `resolve` CLI; reuse paths.
 
 Select collection guidance by scope: `research.search-site.web`, `.feeds`, `.lemmy` or another site specialization; use `research.search-site` for unfamiliar sites. Combine names for grouped scopes. Assessment selects `research.search-site` and `writing`. Preserve caller guidance/library order. Both leaves pass the [evidence contract](evidence.md).
 

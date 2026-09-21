@@ -55,6 +55,6 @@ python scripts/orchflows.py setup --example 3d-browser-game
 
 Setup preserves existing copies and installs no runtimes. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session.
 
-Requires core 0.10.0+, native children, JavaScript/package tools, browser rendering/input and Blender with Python/glTF export. Declare Three.js, build and optional physics/test dependencies in the project lockfile. Image generation is optional; [library context](references/library-context.md) defines capability probes.
+Requires core, native children, JavaScript/package tools, browser rendering/input and Blender with Python/glTF export. Declare Three.js, build and optional physics/test dependencies in the project lockfile. Image generation is optional; [library context](references/library-context.md) defines capability probes.
 
 Actual play and target-device performance remain unverified when the necessary tools or hardware are missing. Public deployment needs a hosting request. The [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) specify expected behavior; they do not establish complete native validation or game quality.

@@ -1,6 +1,6 @@
 # Library context
 
-Require core 0.11.0+ and apply its `docs/architecture.md`. Resolve primitives through native skills, supplied roots or core's `resolve` CLI; reuse paths through composition.
+Require core and apply its `docs/architecture.md`. Resolve primitives through native skills, supplied roots or core's `resolve` CLI; reuse paths through composition.
 
 Select applicable `writing`, `visual-design` and `short-video`; marketing uses `short-video.marketing`. Include this library and caller guidance/libraries in order. Give each film its brief, assets, relevant guidance and output location.
 

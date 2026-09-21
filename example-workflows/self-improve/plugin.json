@@ -1,6 +1,6 @@
 {
   "name": "self-improve",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Review native agent history to improve local setup, custom workflows and Orchflows.",
   "author": {
     "name": "orchflows"

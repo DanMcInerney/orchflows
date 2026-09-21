@@ -4,7 +4,7 @@ description: Compare supplied proposals and produce one independently reviewed, 
 disable-model-invocation: true
 ---
 
-Run in the caller. Require core `orchflows` 0.12.0+ and `shared` 0.6.0+; resolve package roots through the supplied home. Select `writing` and this personal library's `decision-brief` guidance, preserving caller library order. Apply core execution rules. No external action is part of this workflow.
+Run in the caller. Require core `orchflows` and `shared`; resolve package roots through the supplied home. Select `writing` and this personal library's `decision-brief` guidance, preserving caller library order. Apply core execution rules. No external action is part of this workflow.
 
 Invoke `shared:compare-candidates` on the actual proposals and common requirements. Preserve uncertainty and no eligible choice. Use an existing draft when supplied; otherwise draft from the returned evidence, directly when settings permit or through `orchflows:orch-work`.
 

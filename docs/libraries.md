@@ -53,7 +53,7 @@ Reserve `orch-` for built-ins. Create custom workflows in `~/.orchflows/librarie
 └── trials/<case>/                  case.json, request.md, fixtures/, expected-behavior.md
 ```
 
-Skill identity is `<library>:<skill>`; [invocation syntax](hosts.md#invocation-policy) varies by host. Keep links package-relative; reach other packages by native skill name or resolved paths, never embedded machine-specific paths. Declare runtime dependencies in README; setup installs none for libraries. Root `plugin.json` declares `name`, `version` and `skills: "./skills/"` and serves Antigravity. Align names and versions across host manifests. Kimi requires its own manifest with `skills: "./skills/"`, including for existing user libraries.
+Skill identity is `<library>:<skill>`; [invocation syntax](hosts.md#invocation-policy) varies by host. Keep links package-relative; reach other packages' skills by native skill name, which requires them to allow [model invocation](architecture.md#invocation), and their other files by resolved paths, never embedded machine-specific paths. Declare runtime dependencies in README; setup installs none for libraries. Root `plugin.json` declares `name`, `version` and `skills: "./skills/"` and serves Antigravity. Align names and versions across host manifests. Kimi requires its own manifest with `skills: "./skills/"`, including for existing user libraries.
 
 A reusable component declares inputs, dependencies, process, allowed effects, outputs and stopping conditions. Domain libraries own domain components; optional shared libraries own cross-domain processes. Core depends on neither.
 

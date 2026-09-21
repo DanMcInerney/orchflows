@@ -1,6 +1,6 @@
 # Library context
 
-Require core 0.11.0+, `orch-work`, `orch-review` and native child delegation. Apply core `docs/architecture.md`; use `docs/hosts.md` for controls/isolation. Resolve native skills, supplied roots or core's `resolve` CLI once.
+Require core, `orch-work`, `orch-review` and native child delegation. Apply core `docs/architecture.md`; use `docs/hosts.md` for controls/isolation. Resolve native skills, supplied roots or core's `resolve` CLI once.
 
 Select `code`, `software-delivery` and applicable caller guidance, including this library in caller order. Pass relevant resolved paths, workspace/source state, run directory and scoped model/effort settings to assignments.
 

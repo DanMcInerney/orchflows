@@ -3,4 +3,4 @@ interface:
   short_description: "Acquire bounded keyless public records through discovery,..."
 
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

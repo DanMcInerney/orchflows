@@ -1,6 +1,6 @@
 # Library context
 
-Require core 0.10.0+; apply its `docs/architecture.md` and `docs/hosts.md`. At any entrypoint, resolve core primitives through native skills, supplied roots or core's `resolve` CLI; reuse paths and extend dependencies for new work. Include this library and caller-supplied libraries in order.
+Require core; apply its `docs/architecture.md` and `docs/hosts.md`. At any entrypoint, resolve core primitives through native skills, supplied roots or core's `resolve` CLI; reuse paths and extend dependencies for new work. Include this library and caller-supplied libraries in order.
 
 | Work | Guidance |
 | --- | --- |

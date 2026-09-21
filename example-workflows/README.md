@@ -8,11 +8,11 @@ From an Orchflows checkout:
 python scripts/orchflows.py setup --example social-search
 ```
 
-Start a new agent session, then ask:
+Start a new agent session and invoke `social-search:social-search` explicitly (Claude Code `/social-search:social-search`, Codex `$social-search:social-search`; [other hosts](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#invocation-policy)) with:
 
-> Use social-search:social-search to investigate how developers handle flaky browser tests. Compare the evidence and give me a source-linked brief.
+> Investigate how developers handle flaky browser tests. Compare the evidence and give me a source-linked brief.
 
-Each library below explains its inputs, dependencies, bounds and current limits. All example entrypoints require explicit selection; installing one does not make it the default for ordinary requests.
+Each library below explains its inputs, dependencies, bounds and current limits. Example entrypoints require explicit selection; installing one does not make it the default for ordinary requests. Shared components and Research Acquire allow model invocation because other workflows load them by name.
 
 ## Pick a process
 

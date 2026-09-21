@@ -53,6 +53,6 @@ python scripts/orchflows.py setup --example shared
 python scripts/orchflows.py setup --example benchmaker
 ```
 
-Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.12.0+, shared 0.6.0+** and native child delegation; [library context](references/library-context.md) lists components and task-specific tools. Setup preserves existing library copies and does not install transitive dependencies; update an older shared copy before refreshing host registration. No paid judge, Docker or additional benchmark runtime is required.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows, shared** and native child delegation; [library context](references/library-context.md) lists components and task-specific tools. Setup preserves existing library copies and does not install transitive dependencies; update an older shared copy before refreshing host registration. No paid judge, Docker or additional benchmark runtime is required.
 
 **Validation limit:** the [trial catalog](trials/README.md) specifies research, stateful, artifact, coding and failure scenarios. Full current authoring/pilot execution, held-out semantic calibration, interruption/cleanup and protected evaluator access remain unverified. No cross-domain readiness is claimed.
