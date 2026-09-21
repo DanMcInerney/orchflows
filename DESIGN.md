@@ -38,16 +38,16 @@ flowchart LR
 
 There are **four built-ins: two primitives and two workflows**.
 
-| Built-in | Contract | Model-selected automatically? |
+| Built-in | Contract | Model can invoke? |
 | --- | --- | --- |
-| [`orch-work`](skills/orch-work/SKILL.md) | Launch a fresh maker with an assignment and applicable guidance. | No |
-| [`orch-review`](skills/orch-review/SKILL.md) | Launch a fresh reviewer who made none of the candidate; review without repairing. | No |
+| [`orch-work`](skills/orch-work/SKILL.md) | Launch a fresh maker with an assignment and applicable guidance. | When a workflow names it or the user selects it |
+| [`orch-review`](skills/orch-review/SKILL.md) | Launch a fresh reviewer who made none of the candidate; review without repairing. | When a workflow names it or the user selects it |
 | [`orch-build-workflow`](skills/orch-build-workflow/SKILL.md) | Author, rehearse with fixtures, independently review, repair and deliver a reusable workflow or guidance. | No |
-| [`orch-dynamic-workflow`](skills/orch-dynamic-workflow/SKILL.md) | Form and execute an ad hoc plan for a top-level task. | Eligible |
+| [`orch-dynamic-workflow`](skills/orch-dynamic-workflow/SKILL.md) | Form and execute an ad hoc plan for a top-level task. | Eligible for automatic selection |
 
-All four support explicit selection. Other shipped library skills request manual invocation. Codex uses native `allow_implicit_invocation` metadata; Claude-compatible hosts use `disable-model-invocation`. ZCode cannot enforce manual-only selection; Antigravity's enforcement is unverified.
+All four support explicit selection. Codex uses native `allow_implicit_invocation` metadata; Claude-compatible hosts use `disable-model-invocation`. ZCode and Antigravity document no manual-only setting, so their entrypoints rely on descriptions.
 
-Manual invocation and composition are different operations. A coordinator can apply declared dependencies by reading their files; it need not invoke a native skill tool at every step. A host rejection is not permission to bypass its controls.
+Hosts that enforce manual-only invocation treat a workflow loading a skill by name the same as the model choosing it, so a manual-only skill cannot be a named dependency. Skills that workflows name as dependencies (the primitives, Shared components, Research Acquire) therefore allow model invocation; their descriptions limit selection to workflows that name them and explicit user requests. Entrypoints stay manual, so costly workflows never start unasked. Steps within one package compose through relative links and can stay manual. A host rejection is not permission to bypass its controls.
 
 ## How is a task routed?
 
@@ -183,7 +183,7 @@ Apply settings through actual host controls, including repairs. Direct work or r
 
 ## What else ships?
 
-Eleven optional [example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows) provide 27 additional, manual-only entrypoints: social search, research acquisition, short video, browser games, candidate comparison and revision, software delivery, design loops, benchmark building, evolution, self-improvement and standalone export. They consume core; they are not extra primitives. Each declares dependencies and validation status. Setup does not install transitive library dependencies.
+Eleven optional [example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows) provide 27 additional entrypoints, manual-only except the named dependencies in Shared and Research Acquire: social search, research acquisition, short video, browser games, candidate comparison and revision, software delivery, design loops, benchmark building, evolution, self-improvement and standalone export. They consume core; they are not extra primitives. Each declares dependencies and validation status. Setup does not install transitive library dependencies.
 
 | Location | Owner and purpose |
 | --- | --- |

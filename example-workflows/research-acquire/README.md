@@ -77,7 +77,7 @@ Run from an Orchflows checkout with Python 3.11+:
 python scripts/orchflows.py setup --example research-acquire
 ```
 
-Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned copies and installs no runtime dependencies. The skill is manual-only by default.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned copies and installs no runtime dependencies. The skill allows model invocation so workflows such as Social Search can load it by name; its description limits selection to workflows that name it and explicit user requests.
 
 The backend needs **Python 3.9+ and standard library**. Optional captions need `yt-dlp` in the same interpreter:
 

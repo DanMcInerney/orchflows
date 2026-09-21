@@ -33,7 +33,7 @@ CLI: `python <core>/scripts/orchflows.py COMMAND`; Python 3.11+, no dependencies
 - Preserves concurrency unless `--concurrency N` requests supported limits for detected, selected hosts; [hosts.md](hosts.md#concurrency) owns keys, scopes and prerequisites. Invalid configuration, conflicting environment overrides or unsupported hosts leave files unchanged and report issues. Changed files get `<file>.orchflows-<id>.bak`; failures or unsupported tuning return `host_config_status: partial`. `--host none` skips integration and cannot combine with `--concurrency`.
 - `.local/packages/.setup.lock` covers every setup write, including host updates and core reuse; host files use `<file>.orchflows.lock`. Check for active installers before removing leftover locks.
 
-Result: `status`, `home`, `files`, `runtime_python`, `core` (`status`, `package_root`, `name`, `version`), `runtime`, `example`, `git`, `host_configs`, `host_config_status`, `hosts`, `issues`. Host status: `ready`, `updated`, `needs_action`, `not_detected` or `failed`, with relevant package details and next steps. `needs_action`/`failed` cause exit 1. Readiness verifies installation, not authenticated execution. Antigravity's unverified manual-only policy warns without blocking installation.
+Result: `status`, `home`, `files`, `runtime_python`, `core` (`status`, `package_root`, `name`, `version`), `runtime`, `example`, `git`, `host_configs`, `host_config_status`, `hosts`, `issues`. Host status: `ready`, `updated`, `needs_action`, `not_detected` or `failed`, with relevant package details and next steps. `needs_action`/`failed` cause exit 1. Readiness verifies installation, not authenticated execution. Antigravity's missing manual-only setting warns without blocking installation.
 
 ## doctor
 

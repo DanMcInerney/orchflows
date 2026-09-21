@@ -1,7 +1,7 @@
 ---
 name: research-acquire
-description: Acquire bounded keyless public records through discovery, semantic candidate selection and resumed depth reads.
-disable-model-invocation: true
+description: Acquire bounded keyless public records through discovery, semantic candidate selection and resumed depth reads. Use when a workflow names it or the user selects it.
+disable-model-invocation: false
 ---
 
 Acquire evidence in the current context; launch no agents. Follow the [acquisition method](references/acquisition.md) and the selected sources' [route guidance](references/selection-routes.md). Read the [protocol](references/protocol.md) only for direct runner APIs or manual manifests.

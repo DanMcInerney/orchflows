@@ -54,6 +54,6 @@ From the Orchflows **source checkout**, with Python 3.11+:
 python scripts/orchflows.py setup --example evolve
 ```
 
-Setup preserves existing library copies. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows 0.12.0+**, native child delegation and task-specific creation/inspection tools; see [library context](references/library-context.md). No scoring service is required.
+Setup preserves existing library copies. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows**, native child delegation and task-specific creation/inspection tools; see [library context](references/library-context.md). No scoring service is required.
 
 **Validation limit:** bundled [trials](trials/) specify expected behavior, not observed results. [Research lessons](references/research.md) do not validate this implementation. Sustained gains on unseen tasks at matched cost remain unestablished.

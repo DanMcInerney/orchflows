@@ -2,7 +2,7 @@
 
 Checked 2026-09-16: Codex 0.144.0 and Claude Code 2.1.270 installer commands. Host behavior varies by version.
 
-Official documentation checked that day for Google Antigravity (`agy`), Kimi Code, Grok Build and Z.ai's ZCode. Antigravity CLI 1.0.14 and Grok 1.0.5 passed local installation/discovery checks. Installed Kimi 0.29.0 predates documented plugin/model-pool support; native loading is unverified. ZCode registration and agent behavior are documentation-verified only. None establishes authenticated workflow execution.
+Official documentation checked that day for Google Antigravity (`agy`), Kimi Code, Grok Build and Z.ai's ZCode. Antigravity CLI 1.0.14 and Grok 1.0.5 passed local installation/discovery checks. Installed Kimi 0.29.0 predates documented plugin/model-pool support; native loading is unverified. ZCode registration and agent behavior are documentation-verified only. None establishes authenticated workflow execution. Skill invocation and delegation documentation was rechecked 2026-09-21 for Codex, Kimi Code 2.0.2, Antigravity CLI 1.2.6 and ZCode 3.14.1; Claude Code loading by name was verified in native trials.
 
 ## Register and refresh
 
@@ -37,7 +37,7 @@ CLI 1.0.14 installs into `~/.gemini/config/plugins/<name>/`, also documented for
 
 Setup records installations in home's `.local/agy-installs.json`. It refreshes only enabled copies owned by that home with cached contents matching the previous receipt. Disabled, changed or untracked copies remain untouched and require action. Setup refreshes owned copies through native uninstall/install, then verifies files. Never register by editing caches or import registry.
 
-Invoke through `/skills` and its displayed command. Manual-only enforcement is unverified; setup warns. Documentation covers releases newer than tested 1.0.14, including Markdown custom agents added in 1.1.6. Check installed tools before relying on delegation controls below. [Skills](https://www.agy.dev/docs/skills/), [CLI changelog](https://www.agy.dev/changelog?tab=cli).
+Invoke through `/skills` and its displayed command. Antigravity documents no manual-only setting; setup warns. Documentation covers releases newer than tested 1.0.14, including Markdown custom agents added in 1.1.6. Check installed tools before relying on delegation controls below. [Skills](https://www.agy.dev/docs/skills/), [CLI changelog](https://www.agy.dev/changelog?tab=cli).
 
 ### Kimi Code
 
@@ -45,7 +45,7 @@ Detected Kimi reports `needs_action` with a resolved command. Inside Kimi, run `
 
 Kimi requires `.kimi-plugin/plugin.json` or `kimi.plugin.json`, supplied for core/examples, with `name`, `version` and `skills: "./skills/"`; it ignores Claude's manifest. Local installation copies the complete package into `$KIMI_CODE_HOME/plugins/managed/`. Default user configuration: `~/.kimi-code/config.toml`. [Plugins](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/plugins), [manifest parser](https://github.com/MoonshotAI/kimi-code/blob/main/packages/agent-core-v2/src/app/plugin/manifest.ts).
 
-Skills retain unqualified frontmatter names, e.g. `/skill:orch-build-workflow`. Keep installed names unique across libraries; otherwise report ambiguity and resolve the intended package by absolute path. [Skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html), [registry](https://github.com/MoonshotAI/kimi-code/blob/main/packages/agent-core-v2/src/features/skill/catalog/registry.ts).
+Skills retain unqualified frontmatter names, e.g. `/skill:orch-build-workflow`; the model's `Skill` tool rejects qualified names. User, project and later sources silently shadow a same-named plugin skill, so keep installed names unique across libraries and resolve an intended package by absolute path. [Skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html), [registry](https://github.com/MoonshotAI/kimi-code/blob/main/packages/agent-core-v2/src/features/skill/catalog/registry.ts).
 
 ### Grok Build
 
@@ -88,13 +88,13 @@ Conflicting ZCode, Kimi background or Grok environment overrides leave files unt
 
 ## Invocation policy
 
-Apply [invocation policy](architecture.md#invocation) per skill, not library manifest. `orch-dynamic-workflow` uses `disable-model-invocation: false` and Codex `policy.allow_implicit_invocation: true` for top-level tasks without explicit workflow/primitive selection. Other shipped skills use manual-only settings below. Automatic selection is a host/model decision, not deterministic routing or permission for child workflows.
+Apply [invocation policy](architecture.md#invocation) per skill, not library manifest. `orch-dynamic-workflow` (for top-level tasks without explicit workflow/primitive selection) and named dependencies such as `orch-work`, `orch-review` and shared components use `disable-model-invocation: false` and Codex `policy.allow_implicit_invocation: true`. Other shipped skills use manual-only settings below. Automatic selection is a host/model decision, not deterministic routing or permission for child workflows.
 
 | Host | Manual-only setting | Explicit invocation |
 | --- | --- | --- |
 | Codex | `policy.allow_implicit_invocation: false` in `skills/<skill>/agents/openai.yaml` | `$<library>:<skill>` or the skill picker |
 | Claude Code | `disable-model-invocation: true` in `SKILL.md` frontmatter | `/<library>:<skill>` |
-| Antigravity | Unverified: no documented manual-only setting | `/skills` and its displayed command |
+| Antigravity | None documented: skills remain model-visible | `/skills` and its displayed command |
 | Kimi Code | `disable-model-invocation: true` in `SKILL.md` frontmatter | `/skill:<skill>` |
 | Grok Build | `disable-model-invocation: true` in `SKILL.md` frontmatter | `/<skill>` or the displayed qualified command |
 | ZCode | Unsupported: enabled skill metadata remains model-visible | `$<skill>` or the slash picker |
@@ -103,9 +103,9 @@ Keep skills enabled and user-invocable; include Codex `interface.display_name` a
 
 ZCode ignores unsupported frontmatter and cannot disable automatic skill selection; explicit invocation works. Report the gap; use Claude Code with Z.ai when enforcement is required. Never claim equivalent enforcement or label the skill disabled. [Skills](https://zcode.z.ai/en/docs/skill).
 
-Antigravity documents automatic discovery, not `disable-model-invocation` support. Keep the field for other hosts and report unverified enforcement. `disable-slash-command` hides explicit invocation but permits model invocation, so cannot enforce this contract. [Skills](https://www.agy.dev/docs/skills/), [CLI changelog](https://www.agy.dev/changelog?tab=cli).
+Antigravity documents automatic discovery, not `disable-model-invocation` support. Keep the field for other hosts and report missing enforcement. `disable-slash-command` hides explicit invocation but permits model invocation, so cannot enforce this contract. [Skills](https://www.agy.dev/docs/skills/), [CLI changelog](https://www.agy.dev/changelog?tab=cli).
 
-These settings govern native invocation. Composition applies workflow files in the coordinator without native skill calls for every nested step. Read supplied paths directly where permitted. Claude blocks model calls and subagent preloading for manual-only skills; never bypass rejection. Report blocked required native calls as capability gaps. [Codex policy](https://learn.chatgpt.com/docs/build-skills#optional-metadata), [Claude control](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill).
+These settings also govern loading by name: Claude and Kimi hide manual-only skills from the model and refuse its calls (Claude also blocks subagent preloading); Codex omits them from the model's skill list. ZCode and Antigravity cannot hide skills, so dependencies load there regardless. Codex and Claude-compatible hosts expose plugin skills as `<library>:<skill>`; Kimi, ZCode and Antigravity use bare skill names, so load a named dependency by its bare name there. Composition applies loaded workflow files in the coordinator; same-package steps follow relative links, and supplied paths may be read directly where permitted. A refused or missing named dependency is a packaging defect: never bypass the rejection; report it as a capability gap. [Codex policy](https://learn.chatgpt.com/docs/build-skills#optional-metadata), [Claude control](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill), [Kimi skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html).
 
 ## Loading
 
@@ -115,7 +115,7 @@ Install complete packages on every host. Kimi exposes `${KIMI_SKILL_DIR}`, but s
 
 ## Delegation
 
-Use a fresh native child per primitive. Kimi `Agent` supports fresh `coder` children; built-in children cannot delegate, while custom agents may declare subagents. ZCode `Agent` has independent context and cannot spawn grandchildren. Compose and dispatch leaves in the top-level coordinator; report workflows requiring nested coordinators as a gap. [Kimi agents](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
+Use a fresh native child per primitive. Kimi `Agent` supports fresh `coder` children; built-in children cannot delegate, while custom agents may declare subagents. ZCode `Agent` has independent context and cannot spawn grandchildren. Codex multi-agent V2 and Antigravity let children spawn children; there the assignment's no-delegation rule is the control. Compose and dispatch leaves in the top-level coordinator; report workflows requiring nested coordinators as a gap. [Kimi agents](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
 
 Grok's full-capability type is `general-purpose`; `explore`/`plan` cannot run shell commands or edit. Review tests require a fresh full-capability reviewer bound by the no-repair contract. Ensure subagents are enabled. [Grok subagents](https://docs.x.ai/build/features/subagents).
 
@@ -123,7 +123,7 @@ Antigravity documents `invoke_subagent` with fresh context; `self` retains paren
 
 ## Workflow trials
 
-Use a disposable workspace and realistic synthetic fixtures covering relevant formats and failures. Supplied documents inform fixtures and remain read-only. Point mutable workflow inputs at disposable synthetic copies; execute required mutations there. Copy real content only when essential and authorized for that trial; never transform originals.
+Manual trial requests write `[invoke <library>:<skill>]` where the tester types the host's [explicit invocation](#invocation-policy); plain-text names cannot start manual-only skills. Use a disposable workspace and realistic synthetic fixtures covering relevant formats and failures. Supplied documents inform fixtures and remain read-only. Point mutable workflow inputs at disposable synthetic copies; execute required mutations there. Copy real content only when essential and authorized for that trial; never transform originals.
 
 Replace external reads with fixtures where possible and external writes with local fakes capturing proposed payloads. Email/calendar trials produce drafts and fake receipts, never real messages/invitations. Verify service sandboxes or dry-runs cannot reach live resources; withhold production credentials and disable outbound access where available. Directories alone do not isolate APIs. Skip uncontainable branches and report gaps. Authoring does not authorize live execution; live trials require an explicit request covering those effects.
 
@@ -144,7 +144,7 @@ Apply [resolved assignment choices](architecture.md#model-and-effort) through ex
 | Grok Build | Exposed child controls or existing agent type with requested routing (`[subagents.models]`). Skill-frontmatter `model`/`effort` and top-level CLI flags are not child overrides; report absent controls. |
 | ZCode | Existing definitions in `~/.zcode/agents/` set `model`/`thoughtLevel` and reload in new sessions. `thoughtLevel` requires explicit model; inherited models inherit effort. |
 
-Kimi model pools became generally available in 0.42.0; installed 0.29.0 does not establish support. [Kimi configuration](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files.html), [changelog](https://www.kimi.com/code/docs/en/kimi-code-cli/release-notes/changelog.html), [Grok settings](https://docs.x.ai/build/settings/reference), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
+Kimi model pools became generally available in 0.42.0; installed 0.29.0 does not establish support. [Kimi configuration](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files.html), [changelog](https://www.kimi.com/code/docs/en/kimi-code-cli/changelog), [Grok settings](https://docs.x.ai/build/settings/reference), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
 
 Never silently map requested model identifiers to Antigravity tiers. [Custom subagents](https://www.agy.dev/docs/subagents/), [CLI model/effort flags](https://antigravity.google/docs/cli/headless/).
 

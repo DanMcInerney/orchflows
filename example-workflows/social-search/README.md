@@ -60,8 +60,8 @@ Run from a complete Orchflows checkout with Python 3.11+:
 python scripts/orchflows.py setup --example social-search
 ```
 
-Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies and installs no runtime dependencies. Skills are manual-only by default. Requires **core 0.11.0+, native child delegation and public search/read tools**.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies and installs no runtime dependencies. Skills are manual-only by default. Requires **core, native child delegation and public search/read tools**.
 
-Optionally run `python scripts/orchflows.py setup --example research-acquire` for bounded acquisition and optional YouTube captions; register that library too. It owns its runtime requirements; generic feeds require 0.4.0+.
+Optionally run `python scripts/orchflows.py setup --example research-acquire` for bounded acquisition and optional YouTube captions; register that library too. It owns its runtime requirements.
 
 [Trial specifications](trials/request.md), including [web/feeds/Lemmy](trials/web-feeds-lemmy/request.md) and [papers/discussion](trials/papers-and-discussion/request.md), describe expected behavior, not observed passes. Adapted from [recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under the retained [MIT license](LICENSE).

@@ -3,4 +3,4 @@ interface:
   short_description: "Delegate independent review of identified work to a fresh..."
 
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

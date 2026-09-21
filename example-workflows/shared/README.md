@@ -65,6 +65,6 @@ Run from a complete Orchflows checkout with Python 3.11+:
 python scripts/orchflows.py setup --example shared
 ```
 
-Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies; update an existing copy from the source library before refreshing its host registration. Requires **core 0.12.0+ and native independent review**; see [library context](references/library-context.md). Both skills are manual-only by default. Shared 0.6.0+ supplies `review-revise-once`; core 0.15.0 removes `orch-review-revise-once`, with no compatibility alias.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies; update an existing copy from the source library before refreshing its host registration. Requires **core and native independent review**; see [library context](references/library-context.md). Both skills allow model invocation so other workflows can load them by name; their descriptions limit selection to workflows that name them and explicit user requests.
 
 [Trial scenarios](trials/README.md) exercise comparison through real consumers. The automated comparison pilot timed out before delivery; it is inconclusive. Executing supplied files does not establish native registration.

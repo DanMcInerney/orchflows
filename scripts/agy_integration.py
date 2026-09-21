@@ -11,7 +11,7 @@ import stat
 import tempfile
 
 
-POLICY_WARNING = "Antigravity manual-only skill enforcement is unverified; use /skills and its displayed commands."
+POLICY_WARNING = "Antigravity documents no manual-only skill setting; use /skills and its displayed commands."
 
 
 def _linked(path: Path) -> bool:

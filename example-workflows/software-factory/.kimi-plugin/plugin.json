@@ -1,6 +1,6 @@
 {
   "name": "software-factory",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Bounded software delivery, specialist review, observed rollout and production feedback.",
   "skills": "./skills/"
 }

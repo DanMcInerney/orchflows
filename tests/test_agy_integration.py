@@ -87,7 +87,7 @@ class AntigravityTests(unittest.TestCase):
         receipt = json.loads((self.home / ".local/agy-installs.json").read_text())["installs"][str(self.cache)]
         self.assertEqual(receipt["source"], str(self.source))
         self.assertEqual(receipt["record"], self.imports[0])
-        self.assertIn("unverified", result["warnings"][0])
+        self.assertIn("no manual-only", result["warnings"][0])
 
     def test_repeat_and_doctor_do_not_reinstall_or_rewrite_receipts(self):
         self.install()

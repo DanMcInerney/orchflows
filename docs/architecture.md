@@ -9,7 +9,9 @@ The host executes agents. The coordinator applies workflowsâ€”saved proceduresâ€
 
 ## Invocation
 
-An explicitly selected workflow or primitive owns the process. Otherwise, [orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) may be selected automatically for top-level tasks, using core operations and guidance with review proportional to the work. Children follow assignments without starting another dynamic workflow. Other shipped skills are manual-only. Write and verify [host invocation settings](hosts.md#invocation-policy); report unenforceable policies. Selection is native, with no separate routing runtime.
+An explicitly selected workflow or primitive owns the process. Otherwise, [orch-dynamic-workflow](../skills/orch-dynamic-workflow/SKILL.md) may be selected automatically for top-level tasks, using core operations and guidance with review proportional to the work. Children follow assignments without starting another dynamic workflow. Selection is native, with no separate routing runtime.
+
+Hosts that enforce manual-only invocation cannot load such skills by name, even for a workflow. Skills that other skills name as dependencies, including `orch-work`, `orch-review` and shared components, therefore allow model invocation; their descriptions limit selection to workflows that name them and explicit user selection. Other skills are manual-only unless the user opts in; same-package steps compose through relative links. Name dependencies as `<library>:<skill>`; where a host lacks qualified skill names, load the bare skill name ([hosts](hosts.md#invocation-policy)). Write and verify [host invocation settings](hosts.md#invocation-policy); report unenforceable policies.
 
 Workflows compose processes and primitives directly. Explicit caller amendments may change the process; state changed guarantees, preserve primitive meanings and honor actual permissions. Each operation has one public name. Removed interfaces fail clearly, without compatibility aliases, silent substitutions or automatic migrations.
 
