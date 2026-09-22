@@ -56,4 +56,4 @@ Setup preserves existing library copies and installs no media tools. Complete an
 
 Requires core, native child delegation, authoring/export tools and access to exported media. Optional [Remotion](references/remotion.md) requires Node.js/npm or Bun, React, compatible Remotion packages, renderer/browser/font/media dependencies and a lockfile in the caller workspace. Missing rendering blocks production; missing playback limits review.
 
-The native [corrupt-export pilot](trials/corrupt-export/request.md) timed out before a completed review. Full export review remains unverified. The broader [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) describe expected behavior, not observed quality or popularity.
+The native [corrupt-export pilot](trials/corrupt-export/request.md) timed out before a completed review. Full export review remains unverified. The broader [trial request](trials/request.md) and its evaluator-only acceptance criteria describe expected behavior, not observed quality or popularity.

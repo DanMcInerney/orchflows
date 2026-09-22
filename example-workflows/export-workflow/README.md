@@ -57,4 +57,4 @@ python scripts/orchflows.py setup --example export-workflow
 
 Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing library copies and installs no runtime dependencies. The skill is manual-only by default.
 
-Requires **core and shared**, native child delegation, filesystem access, source dependencies and bounded-trial tools. Setup does not install transitive dependencies; update an older shared copy before refreshing host registration. See [library context](references/library-context.md). The [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) are specifications, not observed passes.
+Requires **core and shared**, native child delegation, filesystem access, source dependencies and bounded-trial tools. Setup does not install transitive dependencies; update an older shared copy before refreshing host registration. See [library context](references/library-context.md). The [trial request](trials/request.md) and its evaluator-only acceptance criteria are specifications, not observed passes.
