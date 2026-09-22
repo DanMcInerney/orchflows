@@ -138,7 +138,7 @@ Apply [resolved assignment choices](architecture.md#model-and-effort) through ex
 | Host | Native controls |
 | --- | --- |
 | Codex | Exposed spawn model/effort fields, e.g. `model` and `reasoning_effort`. If full-history forks forbid overrides, use fresh or partial context. |
-| Claude Code | Agent model override; agent-definition `effort` when invocation has no effort field. Unset effort inherits the session. Forks ignore model overrides (documented for 2.1.280; not observed on installed 2.1.270). |
+| Claude Code | Agent model override; agent-definition `effort` when invocation has no effort field. Unset effort inherits the session. Opus 5.5 sessions default to `medium`; a top-level user `effortLevel` does not apply to it; `CLAUDE_CODE_EFFORT_LEVEL` overrides session effort (documented for 2.1.280; not observed on installed 2.1.270). Forks ignore model overrides (documented for 2.1.280; not observed on installed 2.1.270). |
 | Antigravity | Documented custom-agent tiers: `model: inherit`, `flash`, `pro`; use exposed child controls. No documented child effort field. CLI `--model`/`--effort` select the top-level session; report unsupported child requests. |
 | Kimi Code | With model pools, `Agent.model` selects a configured `[secondary_model]` alias or `primary`; otherwise inherits caller. No per-call effort field; check `default_effort`, pool overrides and `force`. Resumption cannot change model. |
 | Grok Build | Exposed child controls or existing agent type with requested routing (`[subagents.models]`). Skill-frontmatter `model`/`effort` and top-level CLI flags are not child overrides; report absent controls. |
@@ -148,7 +148,7 @@ Kimi model pools became generally available in 0.42.0; installed 0.29.0 does not
 
 Never silently map requested model identifiers to Antigravity tiers. [Custom subagents](https://www.agy.dev/docs/subagents/), [CLI model/effort flags](https://antigravity.google/docs/cli/headless/).
 
-Check configuration that may override launch choices. Codex custom-agent files can override explicit spawn values; absent explicit values, subagent defaults precede parent settings. Changing model without effort may select its default effort. Claude precedence also depends on environment and version. Use supported combinations; report unhonored requests before dependent work. Never create standing host configuration as an implicit fallback.
+Check configuration that may override launch choices. Codex custom-agent files can override explicit spawn values; absent explicit values, subagent defaults precede parent settings. Changing model without effort may select its default effort. Claude model precedence: per-call `model`, then agent-definition `model`, then `CLAUDE_CODE_SUBAGENT_MODEL`, then the main model; `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` forces one model (documented for 2.1.280; not observed on installed 2.1.270). Use supported combinations; report unhonored requests before dependent work. Never create standing host configuration as an implicit fallback.
 
 Reuse workers only if the host can honor repair settings. If continuation cannot change them, launch a fresh worker with the joined result and repair context. [Codex configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents), [Claude configuration](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields).
 
