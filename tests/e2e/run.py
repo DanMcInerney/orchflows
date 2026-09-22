@@ -13,7 +13,7 @@ from hosts import get_host
 from judging import aggregate, audit_run
 from scheduler import Scheduler
 from sealing import seal
-from trial import Trial
+from trial import Trial, observed
 
 
 async def run_case(case, number, root, host, scheduler, sources, audit_seconds):
@@ -58,13 +58,25 @@ async def run_case(case, number, root, host, scheduler, sources, audit_seconds):
     return result
 
 
+ASSESSMENTS = ('acceptable', 'material_failure', 'inconclusive')
+
+
+def per_case(results):
+    """Outcomes of every attempt of each case; all_acceptable is pass^k over its attempts."""
+    cases = {}
+    for r in results:
+        cases.setdefault(r['case'], []).append(r)
+    return {case: {'attempts': len(attempts), **{key: sum(r['assessment'] == key for r in attempts) for key in ASSESSMENTS},
+                   'all_acceptable': all(r['assessment'] == 'acceptable' for r in attempts),
+                   'observed': observed(r.get('observed', {}) for r in attempts)} for case, attempts in cases.items()}
+
+
 def summarize(results, scheduler):
-    counts = {key: sum(r['assessment'] == key for r in results)
-              for key in ('acceptable', 'material_failure', 'inconclusive')}
+    counts = {key: sum(r['assessment'] == key for r in results) for key in ASSESSMENTS}
     counts.update(selected=len(results), started=sum(r['started'] for r in results),
                   completed=sum(r['completed'] for r in results), audited=sum(r['audited'] for r in results),
                   not_started=sum(not r['started'] for r in results))
-    return {'counts': counts, 'seconds': round(time.monotonic() - scheduler.started, 2),
+    return {'counts': counts, 'cases': per_case(results), 'seconds': round(time.monotonic() - scheduler.started, 2),
             'peak_harness_sessions': scheduler.peak, 'results': results,
             'coverage_note': 'covers are declared claims; verified scope is limited to checks and cited audit evidence. '
                              'Lifecycle counts overlap; selected attempts are the denominator.'}
@@ -123,6 +135,11 @@ async def execute(args, selected, sources):
     lines = ['# Native trial results', '', f"{summary['seconds']} seconds; peak {scheduler.peak} harness sessions.", '',
              '| Case | Attempt | Assessment |', '| --- | --- | --- |']
     lines += [f"| {r['case']} | {r['attempt']} | {r['assessment']} |" for r in results]
+    lines += ['', '| Case | Attempts | Acceptable | Material failure | Inconclusive | All acceptable | Observed models |',
+              '| --- | --- | --- | --- | --- | --- | --- |']
+    lines += [f"| {case} | {c['attempts']} | {c['acceptable']} | {c['material_failure']} | {c['inconclusive']} | "
+              f"{'yes' if c['all_acceptable'] else 'no'} | {', '.join(sorted(c['observed']['models'])) or 'none recorded'} |"
+              for case, c in summary['cases'].items()]
     lines += ['', summary['coverage_note'], '', 'See each report.json and its cited evidence for findings and gaps.']
     (output / 'README.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     print(json.dumps(summary['counts']))
