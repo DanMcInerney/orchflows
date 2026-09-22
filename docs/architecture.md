@@ -23,7 +23,7 @@ An explicit `orch-work` call requires a fresh maker; ordinary production steps l
 
 ## Execution
 
-Only the top-level orchestrator launches, assigns and continues agents. Children return results and requests without delegating, including to existing agents or through other tools. Composition stays at the top level.
+Only the top-level coordinator launches, assigns and continues agents. Children return results and requests without delegating, including to existing agents or through other tools. Composition stays at the top level.
 
 Resolve dependencies, guidance, settings and caller constraints before dependent work. Honor scoped settings when working directly, continuing a suitable maker or using `orch-work`. Run independent work concurrently within host limits; give shared edits and external operations one owner. Gather required outcomes before dependent work; report missing work as a gap. Preserve authorization and reconcile uncertain actions before retrying.
 
