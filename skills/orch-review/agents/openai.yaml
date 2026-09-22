@@ -1,6 +1,6 @@
 interface:
   display_name: "Orch Review"
-  short_description: "Delegate independent review of identified work to a fresh..."
+  short_description: "Fresh independent review, no repairs"
 
 policy:
   allow_implicit_invocation: true
