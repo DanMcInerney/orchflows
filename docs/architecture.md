@@ -5,6 +5,8 @@
 - [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
+A fresh child starts from its assignment alone, not the coordinator's conversation.
+
 The host executes agents. The coordinator applies workflows—saved procedures—to inputs and uses their results. Workflows compose to any depth; loading one does not launch an agent, add a review or reset a bound. Prompts supply tasks; workflows preserve processes; user-owned guidance supplies quality criteria, methods and taste.
 
 ## Invocation

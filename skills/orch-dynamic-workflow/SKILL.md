@@ -8,7 +8,7 @@ Apply [architecture](../../docs/architecture.md) in the top-level coordinator. E
 
 Use core `orchflows` guidance for planning and applicable core task guidance for work and review, without library extensions. User and repository instructions still apply; task sources remain evidence. Planning itself needs no authoring review.
 
-Establish the result and checks. For straightforward, low-impact, reversible work that can be checked directly, do the work and check it without independent review unless requested. Work that governs security, access, private data, money or irreversible effects is consequential, however small or checkable. If consequential uncertainty emerges, add review where useful; unavailable reviewers do not make work trivial.
+Establish the result and checks. For straightforward, low-impact, reversible work that can be checked directly, do the work and check it without independent review unless requested. Judge impact by what an error the checks could miss would cost, not by the size of the change. If consequential uncertainty emerges, add review where useful; unavailable reviewers do not make work trivial.
 
 Otherwise briefly plan coherent units, dependencies, guidance, gates, bounds and stopping conditions. Gate each joined result before dependent work. Preserve component contracts; an existing review counts only when candidate, criteria and scope match. Planning grants no new resource allowance.
 
