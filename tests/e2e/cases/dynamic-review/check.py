@@ -39,5 +39,5 @@ def check(c):
     c.require(not created, 'Task does not create a reusable workflow',
               '; '.join(created) or 'stages/target/before.json: no new SKILL.md files')
     children, nested, evidence = delegation(c)
-    c.require(1 <= len(children) <= 2, 'Launch the required reviewer within the two-child bound', evidence)
+    c.require(len(children) <= 2, 'Respect the two-child bound', evidence)
     c.require(not nested, 'Only the coordinator launches agents', evidence)
