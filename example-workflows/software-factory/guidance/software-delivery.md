@@ -25,5 +25,3 @@ Judge requested behavior in actual project context; specialist labels alone prov
 Report actionable locations, consequences and evidence, missing context and lens-specific risk. Make no repairs; missing evidence is not a clean review. Correctness also inspects delivered identity/reconstruction: broken required handoffs block readiness despite passing workspace tests.
 
 Low risk requires bounded impact, understood behavior, passing checks, complete applicable reviews without blocking findings, supported recovery and no material uncertainty. Authorization/secrets changes, destructive data operations, public contracts and broad infrastructure require human review unless specific established policy covers the exact case. Disagreement/uncertainty also takes that path; small diffs alone are not low risk.
-
-Human judgment cannot turn failed checks or missing required evidence into success. Automatic review acceptance requires explicit project opt-in for the affected area. Release authority is separate.
