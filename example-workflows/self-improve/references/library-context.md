@@ -1,8 +1,6 @@
 # Library context
 
-Require core; apply its `docs/architecture.md`. Improvement passes also require shared; report-only requests do not.
-
-Resolve `docs/history.md` and `docs/architecture.md` through supplied roots or core's `resolve` CLI. Improvements also require `docs/libraries.md`, `orchflows:orch-work` and `shared:review-revise-once`, including its `orchflows:orch-review` dependency; resolve through native skills, roots or CLI. Reuse paths. Missing resources block dependent work.
+Require core. Resolve its `docs/architecture.md`, which applies, and `docs/history.md` through supplied roots or core's `resolve` CLI. Improvement passes also require shared, `docs/libraries.md`, `orchflows:orch-work` and `shared:review-revise-once`, including its `orchflows:orch-review` dependency, resolved through native skills, roots or CLI; report-only requests do not. Reuse paths. Missing resources block dependent work.
 
 For workflow/guidance fixes, also resolve core `docs/hosts.md` for its workflow-trial rules.
 
