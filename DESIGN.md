@@ -183,7 +183,7 @@ Apply settings through actual host controls, including repairs. Direct work or r
 
 ## What else ships?
 
-Eleven optional [example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows) provide 27 additional entrypoints, manual-only except the named dependencies in Shared and Research Acquire: social search, research acquisition, short video, browser games, candidate comparison and revision, software delivery, design loops, benchmark building, evolution, self-improvement and standalone export. They consume core; they are not extra primitives. Each declares dependencies and validation status. Setup does not install transitive library dependencies.
+Twelve optional [example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows) provide 28 additional entrypoints, manual-only except the named dependencies in Shared and Research Acquire: social search, research acquisition, short video, browser games, candidate comparison and revision, software delivery, design loops, gauntlet loops, benchmark building, evolution, self-improvement and standalone export. They consume core; they are not extra primitives. Each declares dependencies and validation status. Setup does not install transitive library dependencies.
 
 | Location | Owner and purpose |
 | --- | --- |

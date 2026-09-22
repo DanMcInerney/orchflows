@@ -1,0 +1,6 @@
+{
+  "name": "gauntlet-loop",
+  "version": "0.1.0",
+  "description": "Push a goal past a real-world bar with per-piece builder and blind-critic loops.",
+  "skills": "./skills/"
+}
