@@ -88,9 +88,10 @@ async def execute(args, selected, sources):
         raise ValueError('Use a new evidence directory outside the checkout')
     output.mkdir(parents=True)
     scheduler = Scheduler(args.jobs, args.deadline, output / 'schedule.jsonl')
-    host = get_host(args.host, args.executable)
+    host = get_host(args.host, args.executable, getattr(args, 'model', None), getattr(args, 'effort', None))
     write_json(output / 'plan.json', {'host': args.host, 'host_version': host.version, 'jobs': args.jobs,
         'deadline': args.deadline, 'audit_seconds': args.audit_seconds, 'repeat': args.repeat,
+        'model': getattr(args, 'model', None), 'effort': getattr(args, 'effort', None),
         'package_overrides': overrides(getattr(args, 'package_root', ())), 'cases': [{'id': c.id, **c.config, 'source': str(c.path)} for c in selected]})
     # A bounded case admission pool avoids starting every case deadline while queued.
     admission = asyncio.Semaphore(args.jobs)
@@ -156,6 +157,8 @@ def parser():
     p.add_argument('--package-root', type=Path, action='append', default=[])
     p.add_argument('--host', default='claude', choices=['claude', 'codex'])
     p.add_argument('--executable')
+    p.add_argument('--model', help='Model for every session; default: the user host configuration')
+    p.add_argument('--effort', help='Effort for every session; default: the user host configuration')
     p.add_argument('--jobs', type=int, default=3)
     p.add_argument('--deadline', type=float)
     p.add_argument('--audit-seconds', type=float, default=60)

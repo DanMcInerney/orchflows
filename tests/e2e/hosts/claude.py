@@ -15,8 +15,9 @@ class Claude:
     name = 'claude'
     capabilities = {'independent-review', 'local-exec', 'no-review', 'structured-audit'}
     model_settings = None
+    model = effort = None
 
-    def __init__(self, executable=None):
+    def __init__(self, executable=None, model=None, effort=None):
         self.executable = shutil.which(executable or 'claude')
         if not self.executable:
             raise ValueError('Claude CLI is unavailable')
@@ -29,10 +30,13 @@ class Claude:
                          {name: False for name in settings.get('enabledPlugins', {})}}
         self.settings.update({key: settings[key] for key in ('model', 'effortLevel') if key in settings})
         self.model_settings = settings.get('modelSettings')
+        self.model, self.effort = model, effort
 
     def requested_effort(self):
         """Effort sources as found; the host decides which applies, so these are requests."""
         found = {'effortLevel': self.settings['effortLevel']} if 'effortLevel' in self.settings else {}
+        if self.effort:
+            found['--effort'] = self.effort
         if self.model_settings is not None:
             found['modelSettings'] = self.model_settings
         if os.environ.get('CLAUDE_CODE_EFFORT_LEVEL'):
@@ -53,6 +57,10 @@ class Claude:
                    '--permission-mode', 'dontAsk', '--tools', tools, '--allowedTools', tools,
                    '--strict-mcp-config', '--setting-sources', 'user',
                    '--settings', json.dumps(self.settings)]
+        if self.model:
+            command += ['--model', self.model]
+        if self.effort:
+            command += ['--effort', self.effort]
         for path in packages.values():
             command += ['--plugin-dir', str(path)]
         if profile == 'audit':
@@ -86,7 +94,7 @@ class Claude:
                 gaps.append('Native transcript unavailable: ' + str(error))
         requested = launch.get('requested_effort', {})
         # The environment variable outranks settings; per-model modelSettings shapes are not interpreted.
-        wanted = requested.get('CLAUDE_CODE_EFFORT_LEVEL') or (
+        wanted = requested.get('--effort') or requested.get('CLAUDE_CODE_EFFORT_LEVEL') or (
             requested.get('effortLevel') if 'modelSettings' not in requested else None)
         ran = set(observed.get('efforts', {})) - {'unknown'}
         if wanted and ran and ran != {wanted}:

@@ -123,7 +123,7 @@ class CalibrationTests(unittest.TestCase):
         with patch('calibrate.get_host', return_value=SimpleNamespace(name='codex')) as selected, \
                 patch('calibrate.audit_run', side_effect=audit):
             self.assertEqual(asyncio.run(execute(args)), 0)
-        selected.assert_called_once_with('codex', 'configured-codex.exe')
+        selected.assert_called_once_with('codex', 'configured-codex.exe', None, None)
         self.assertTrue(all(r['matched'] for r in read_json(args.output / 'calibration.json')['results']))
         self.assertEqual(verify(source), [])
 
