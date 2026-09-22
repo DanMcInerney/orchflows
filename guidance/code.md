@@ -8,4 +8,4 @@ Design tests to run independently and in parallel, with isolated state and fixtu
 
 Look for coherent splits in oversized changed files, duplicated ownership, and tests coupled through shared state or execution order. Treat file size as a design preference, not an automatic refactoring requirement.
 
-Before reporting, enumerate all findings and make a second pass for shared causes. Report only high-impact findings or the smallest structural changes that resolve several findings together, supported by concrete consequences.
+Before reporting, enumerate all findings and make a second pass for shared causes. Report findings with severity, confidence and concrete consequences, leading with high-impact ones and the smallest structural changes that resolve several together.
