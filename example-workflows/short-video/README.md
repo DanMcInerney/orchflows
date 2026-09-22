@@ -32,7 +32,7 @@ flowchart TD
     class D result
 ```
 
-Each film gets separate outputs. Independent films may run concurrently; each film's review covers all placements and their coherence. A fresh nonmaker receives the original brief and stable exports identified by path and SHA-256. There is no research gate, outline review or repair loop. Further work needs another request; publishing is outside this workflow.
+Each film gets separate outputs. Independent films may run concurrently; each film's review covers all placements and their coherence. A fresh nonmaker receives the original brief and stable exports identified by path and byte size. There is no research gate, outline review or repair loop. Further work needs another request; publishing is outside this workflow.
 
 Delivery includes source/assets, playable exports, file identities, dependencies, reopen/render instructions and timestamped findings. Review covers opening and payoff, pacing, captions, sound and the brief's factual claims. It reports decoding, sampled frames, watched motion and heard audio separately. Full audiovisual acceptance requires motion viewing and listening when sound exists; unavailable playback leaves a partial review.
 

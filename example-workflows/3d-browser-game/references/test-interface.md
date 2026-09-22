@@ -20,11 +20,11 @@ Probe actual press/release, held action/movement, mouse/camera and pause/resume.
 
 ## Development adapter
 
-Provide a small versioned adapter, e.g. `window.__gameTest`, only in local development/test builds. When programmatic calls are unavailable, expose equivalent labeled DOM controls. Both call the same functions, never a second simulation. The panel must select scenario/seed, reset/release inputs, select live/manual mode, issue legal actions, advance bounded ticks and show status.
+Provide a small adapter, e.g. `window.__gameTest`, only in local development/test builds. When programmatic calls are unavailable, expose equivalent labeled DOM controls. Both call the same functions, never a second simulation. The panel must select scenario/seed, reset/release inputs, select live/manual mode, issue legal actions, advance bounded ticks and show status.
 
 | Operation | Contract |
 | --- | --- |
-| `describe()` | Version, actions/ranges, coordinate units, scenarios, fixed tick duration, build ID, readiness/errors |
+| `describe()` | Actions/ranges, coordinate units, scenarios, fixed tick duration, build ID, readiness/errors |
 | `snapshot()` | Serializable observable-state copy; no live references/setters |
 | `reset({seed, scenario})` | Clear queued/held input, timers, entities, outcome, random state and transient UI; load/render a legal fixture |
 | `setMode('live' \| 'manual')` | Choose clock owner; clear accumulated time and pending held input |
