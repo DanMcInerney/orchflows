@@ -1,8 +1,8 @@
 """Explicit native host adapters; unsupported hosts never substitute another."""
 
 
-# Trials default to cheap models; --model/--effort override. Haiku 4.5 accepts no effort setting.
-DEFAULTS = {'claude': ('claude-haiku-4-5', None), 'codex': ('gpt-5.6-luna', 'xhigh')}
+# Trials default to cheaper models; --model/--effort override.
+DEFAULTS = {'claude': ('claude-sonnet-5', 'high'), 'codex': ('gpt-5.6-luna', 'xhigh')}
 
 
 def get_host(name, executable=None, model=None, effort=None):
