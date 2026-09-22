@@ -59,7 +59,6 @@ REDDIT_PERMALINK = (
 FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id=UCharbourlight0000000000"
 ARTICLE_TITLE = "Rate_limiting"
 PROFILE_SLUG = "avery-lindqvist-8a41b207"
-INSTAGRAM_USERNAME = "harbourlight.optics"
 HN_STORY_ID = "44831234"
 YOUTUBE_VIDEO_ID = "ggdyD2Un5zo"
 GITHUB_TARGET = "harbourlight/gpu-bench"

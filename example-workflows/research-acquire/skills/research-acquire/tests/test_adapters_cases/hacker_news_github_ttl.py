@@ -10,10 +10,8 @@ class HackerNewsGithubRouteTtlTest(unittest.TestCase):
     and one outside it that goes back.
 
     The GitHub pair is the one where the argument is not only volatility.
-    The 2026-08-10 probes recorded the anonymous ceiling at 60/hr per bucket — the
-    tightest in the roster after Reddit's feed — so a repeat read there costs a
-    minute of the hour rather than a second of latency, and that is a different
-    kind of expensive from the 2.9 s Instagram profile.
+    Its anonymous ceiling is 60 reads an hour per bucket, so a repeat read
+    there costs a minute of the hour rather than a second of latency.
     """
 
     def _served(self, clock, route_id, body):
