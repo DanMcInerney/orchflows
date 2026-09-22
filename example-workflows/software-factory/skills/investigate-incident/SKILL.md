@@ -4,7 +4,7 @@ description: Investigate incidents and propose mitigations; execute only a speci
 disable-model-invocation: true
 ---
 
-Apply [library context](../../references/library-context.md) and [run contract](../../references/run-contract.md). Inputs: service, signal/question, telemetry/runbooks and incident window. Use `orch-work`; add no source repair loop or automatic deployment.
+Apply [library context](../../references/library-context.md) and [run contract](../../references/run-contract.md). Inputs: service, signal/question, telemetry/runbooks and incident window. Use `orchflows:orch-work`; add no source repair loop or automatic deployment.
 
 Supply context, release history, access, known actions and exact authorization. Assign one execution owner per authorized external operation; other investigation remains read-only. Reconstruct timeline/impact, test causal hypotheses, answer incident questions and rank mitigations by expected effect, scope, risk and recovery checks. Distinguish correlation from cause and unavailable telemetry from normal signals.
 

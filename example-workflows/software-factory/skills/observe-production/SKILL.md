@@ -4,7 +4,7 @@ description: Inspect a bounded production window, deduplicate regressions and pr
 disable-model-invocation: true
 ---
 
-Apply [library context](../../references/library-context.md) and [run contract](../../references/run-contract.md). Inputs: service/release, question, telemetry and time window. Infer the window from a deployment checkpoint or ask if unknown. Use `orch-work`; no automatic repair follows.
+Apply [library context](../../references/library-context.md) and [run contract](../../references/run-contract.md). Inputs: service/release, question, telemetry and time window. Infer the window from a deployment checkpoint or ask if unknown. Use `orchflows:orch-work`; no automatic repair follows.
 
 Supply release/baseline identities, signal definitions, access, prior checkpoint and fixed window. Assign read-only inspection of existing dashboards/metrics/logs/traces, like-for-like comparison and deduplication under delivery guidance. Missing access, stale data and insufficient traffic are gaps, not health.
 
