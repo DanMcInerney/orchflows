@@ -141,7 +141,7 @@ class AntigravityTests(unittest.TestCase):
         shutil.copytree(self.source, self.cache)
         result = self.integrate()
         self.assertEqual(result["status"], "needs_action")
-        self.assertIn("earlier setup format", result["packages"]["orchflows"]["message"])
+        self.assertIn("not tracked", result["packages"]["orchflows"]["message"])
         self.assert_read_only()
         self.assertFalse((self.home / ".local/agy-installs.json").exists())
 
