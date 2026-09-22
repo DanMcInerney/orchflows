@@ -10,7 +10,7 @@ python tests/e2e/run.py --suite authoring --output ../e2e-build
 python tests/e2e/run.py --case shared/compare-small --output ../e2e-shared
 ```
 
-Python 3.11+ is required. Native runs are opt-in and consume normal agent usage. Use an authenticated Claude Code or Codex CLI; `--host claude|codex` and `--executable PATH` select the host and executable. Preserve configured model/effort. Native controls need validation on the selected host/version; unsupported hosts never substitute another host.
+Python 3.11+ is required. Native runs are opt-in and consume normal agent usage. Use an authenticated Claude Code or Codex CLI; `--host claude|codex` and `--executable PATH` select the host and executable. Configured model/effort settings pass through unchanged, but the host decides what applies; evidence records the observed model and effort. Native controls need validation on the selected host/version; unsupported hosts never substitute another host.
 
 The [gate study](gate-study.md) proposes comparisons of work-unit boundaries and Build/Dynamic authoring paths across a 31-family development matrix. Its opt-in `gates` and `gates-authoring` suites add six executable diagnostics with offline scorer controls; `gates-regressions` adds the blocked-authoring prerequisite case and requested-review calibration source. See the [predictions](gate-predictions.md) and [native pilot results](gate-results.md) for the executed subset and limitations. Smoke membership is unchanged.
 
@@ -62,7 +62,7 @@ A driver exports `async run(trial)`. `await trial.invoke(name, request=..., entr
 
 ## Evidence and assessment
 
-Output must be a new directory outside the checkout. Each case attempt retains frozen scenario files and packages, requests, before/after hashes, native streams, descendant transcripts, artifacts, checks and audits. `summary.json` reports selected, started, completed, audited, not-started and verdict counts; lifecycle counts overlap. `completed` means all target sessions ended successfully, not that their outcomes passed. `audited` means a valid evaluator judgment completed, including an inconclusive judgment.
+Output must be a new directory outside the checkout. Each case attempt retains frozen scenario files and packages, requests, before/after hashes, native streams, descendant transcripts, artifacts, checks and audits. `summary.json` reports selected, started, completed, audited, not-started and verdict counts; lifecycle counts overlap. `completed` means all target sessions ended successfully, not that their outcomes passed. `audited` means a valid evaluator judgment completed, including an inconclusive judgment. Each `report.json` and summary result carries `observed` models and efforts, tallied from the native records of every target agent; audit packets show each agent's tallies.
 
 Audits receive indexed excerpts, actual files, selected contracts and private acceptance notes. Excerpts identify truncation and full source locations. Auditors must not repair, execute candidate code or delegate. Claude exposes read tools only; Codex uses a read-only sandbox with shell reads available and native delegation disabled. Required material findings cite evidence and consequences. The aggregator cannot overrule objective failures with evaluator approval. Passing checks without sufficient audit evidence remains inconclusive. No private chain of thought is required or inferred.
 
@@ -75,7 +75,7 @@ python tests/e2e/calibrate.py --source ../e2e-smoke/core/requested-review/1 --ou
 
 Calibration uses four explicitly labeled evaluator controls: a genuine successful trace, harmless verbosity, skipped required review and missing evidence. Altered controls are not target executions. Use intact sealed requested-review evidence whose baseline is accepted. Recalibrate after material evaluator/model changes; four controls do not establish universal judge accuracy.
 
-Claude loads frozen session-local plugins, disables user-configured plugin activations/hooks and MCP, and retains authentication/model defaults. Host built-in skills may remain advertised; inventory is recorded. Codex uses complete package copies under each workspace's `.agents/skills`, checks native discovery, and preserves configured model/effort without changing global registration. Its targets request workspace-write; audits request read-only and disable native delegation. Audit shell subprocess delegation is not independently filtered; sandbox enforcement needs a host-specific probe. Use `--host codex --executable <compatible-codex-executable>` when the CLI on PATH is older than the configured model requires.
+Claude loads frozen session-local plugins, disables user-configured plugin activations/hooks and MCP, and retains authentication and model/effort settings. It records the requested effort sources it finds (`CLAUDE_CODE_EFFORT_LEVEL`, `effortLevel`, `modelSettings`) and reports a gap when the root session's recorded effort differs from the applicable request; `modelSettings` is recorded but not interpreted. Host built-in skills may remain advertised; inventory is recorded. Codex uses complete package copies under each workspace's `.agents/skills`, checks native discovery, and passes configured model/effort through without changing global registration, reporting a gap when `turn_context` differs. Its targets request workspace-write; audits request read-only and disable native delegation. Audit shell subprocess delegation is not independently filtered; sandbox enforcement needs a host-specific probe. Use `--executable` when the CLI on PATH is older than the configured model requires; the observed models show which model actually ran.
 
 Targets receive only ordinary inputs, not acceptance/checks or reserved reuse data. This is context separation, not verified filesystem isolation. Targets with shell access and checks that execute generated programs are not security-sandboxed by this harness. Use synthetic inputs and local fake services; never attach live services or production data to these cases. Endpoint hashes alone cannot prove no temporary mutation occurred.
 
@@ -83,7 +83,7 @@ Native child trees are copied using the existing history reader. Separate CLI tr
 
 ## Validation, 2026-09-18
 
-Claude Code 2.1.270, configured model/effort, Windows. These observations apply to the recorded package snapshots, not every host or model.
+Claude Code 2.1.270, configured model/effort settings (observed values were not recorded then), Windows. These observations apply to the recorded package snapshots, not every host or model.
 
 | Pilot | Observed result |
 | --- | --- |

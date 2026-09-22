@@ -26,6 +26,8 @@ Page with `--after NEXT_CURSOR`, preserving selectors. Stop `find`/`inspect` at 
 
 `inspect` returns a descendant tree with per-agent counts, latest activity, errors, unmatched calls, gaps and source references. Wrapper calls and nested commands are separate categories. Rerun for new children.
 
+Per-agent `models` and `efforts` tally what records say ran: Claude assistant `message.model` and `effort`, Codex `turn_context` `model` and `effort`. A value a record omits counts as `unknown`. Requested settings and subagent metadata are requests, not evidence of what ran.
+
 `read` previews events in file order. Expand with `history read HOST ID --event BYTE_OFFSET:INDEX --field FIELD`; event IDs are transcript-local. Fields: `data` (input/message/metadata), `presented_output` (recorded tool response), `captured_output` (Codex stdout), `stderr`, `sidecar` (one available native-home spill file). Continue with `--offset NEXT_OFFSET` until `next_offset: null`. `--event` cannot combine with dates or `--after`.
 
 ## Limits

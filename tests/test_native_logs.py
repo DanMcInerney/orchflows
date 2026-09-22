@@ -85,6 +85,32 @@ class NativeHistoryTests(unittest.TestCase):
         self.assertIsNone(second["next_cursor"])
         self.assertEqual(before, {p: hashlib.sha256(p.read_bytes()).digest() for p in self.home.rglob("*") if p.is_file()})
 
+    def test_observed_models_and_efforts_come_from_records_not_requests(self):
+        def ran(model, effort, *blocks):
+            record = claude("assistant", *blocks)
+            record["message"]["model"] = model
+            return {**record, "effort": effort} if effort else record
+        root = self.home / "projects/project/session.jsonl"
+        transcript(root, [ran("claude-opus-5-5", "high", {"type": "text", "text": "a"}),
+                          ran("claude-opus-5-5", "high", {"type": "thinking", "thinking": ""}),
+                          claude("user", {"type": "text", "text": "not a model turn"})])
+        child = root.parent / "session/subagents/agent-child.jsonl"
+        transcript(child, [ran("claude-sonnet-5", "medium", {"type": "text", "text": "b"})])
+        write(child.with_suffix(".meta.json"), json.dumps({"model": "opus", "effort": "max"}))
+        grandchild = child.with_name("agent-grandchild.jsonl")
+        transcript(grandchild, [ran("claude-haiku-5", None, {"type": "text", "text": "c"})])
+        write(grandchild.with_suffix(".meta.json"), json.dumps({"parentAgentId": "child"}))
+        agents = logs.inspect("claude", "session", self.home)["agents"]
+        self.assertEqual([(a["models"], a["efforts"]) for a in agents],
+                         [({"claude-opus-5-5": 2}, {"high": 2}), ({"claude-sonnet-5": 1}, {"medium": 1}),
+                          ({"claude-haiku-5": 1}, {"unknown": 1})])
+        self.codex("root", [{"type": "turn_context", "payload": {"model": "gpt-root", "effort": "xhigh"}},
+                            {"type": "turn_context", "payload": {"model": "gpt-root"}}])
+        self.codex("spawned", [{"type": "turn_context", "payload": {"model": "gpt-child", "effort": "low"}}], parent="root")
+        agents = logs.inspect("codex", "root", self.home)["agents"]
+        self.assertEqual([(a["models"], a["efforts"]) for a in agents],
+                         [({"gpt-root": 2}, {"xhigh": 1, "unknown": 1}), ({"gpt-child": 1}, {"low": 1})])
+
     def test_claude_agent_without_metadata_is_a_visible_gap(self):
         _, child, _ = self.claude_tree()
         child.with_suffix(".meta.json").unlink()

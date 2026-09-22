@@ -350,12 +350,30 @@ def _preview(event, size=600):
     return result
 
 
+def _runtime(host, record):
+    """Model and effort a record says ran; launch requests and subagent metadata are not evidence."""
+    if host == "claude":
+        message = record.get("message")
+        if record.get("type") != "assistant" or not isinstance(message, dict):
+            return None
+        return message.get("model") or "unknown", record.get("effort") or "unknown"
+    payload = record.get("payload")
+    if record.get("type") != "turn_context" or not isinstance(payload, dict):
+        return None
+    return payload.get("model") or "unknown", payload.get("effort") or "unknown"
+
+
+def _record_events(path, host, start, number, record):
+    for index, event in enumerate(_events(host, record)):
+        event["event_id"] = f"{start}:{index}"
+        event["source"] = {"path": str(path), "line": number, "byte_offset": start}
+        event["flags"] = _flags(event)
+        yield event, index
+
+
 def _located_events(path, host, offset=0, line=1):
     for start, number, raw, record in _records(path, offset, line):
-        for index, event in enumerate(_events(host, record)):
-            event["event_id"] = f"{start}:{index}"
-            event["source"] = {"path": str(path), "line": number, "byte_offset": start}
-            event["flags"] = _flags(event)
+        for event, index in _record_events(path, host, start, number, record):
             yield event, raw, index
 
 
@@ -382,38 +400,45 @@ def inspect(host, identifier, home, limit=30, after=None):
     agents = []
     for current in selected_page:
         entry = entries[current].copy()
-        counts, tools, flags = Counter(), Counter(), Counter()
+        counts, tools, flags, models, efforts = Counter(), Counter(), Counter(), Counter(), Counter()
         calls, results, errors, gap_events = {}, set(), [], []
         latest = None
+        path = Path(entry["path"])
         try:
-            for event, _, _ in _located_events(Path(entry["path"]), host):
-                counts[event["kind"]] += 1
-                flags.update(event["flags"])
-                latest = _preview(event, 180)
-                if event["kind"] == "tool_call":
-                    calls[event["call_id"]] = {k: event.get(k) for k in ("call_id", "tool", "event_id", "source")}
-                    tools[event["tool"]] += 1
-                elif event["kind"] == "tool_result":
-                    results.add(event["call_id"])
-                sidecars = _sidecars(event, home)
-                for sidecar in sidecars:
-                    if sidecar["state"] != "available":
-                        flags[sidecar["state"]] += 1
-                if event.get("is_error") or event.get("exit_code") not in {None, 0} or event.get("record_type") == "error":
-                    errors.append(_preview(event, 160))
-                if event["kind"] in {"gap", "unsupported"}:
-                    gap_events.append(_preview(event, 160))
+            for start, number, _, record in _records(path):
+                runtime = _runtime(host, record)
+                if runtime:
+                    models[runtime[0]] += 1
+                    efforts[runtime[1]] += 1
+                for event, _ in _record_events(path, host, start, number, record):
+                    counts[event["kind"]] += 1
+                    flags.update(event["flags"])
+                    latest = _preview(event, 180)
+                    if event["kind"] == "tool_call":
+                        calls[event["call_id"]] = {k: event.get(k) for k in ("call_id", "tool", "event_id", "source")}
+                        tools[event["tool"]] += 1
+                    elif event["kind"] == "tool_result":
+                        results.add(event["call_id"])
+                    for sidecar in _sidecars(event, home):
+                        if sidecar["state"] != "available":
+                            flags[sidecar["state"]] += 1
+                    if event.get("is_error") or event.get("exit_code") not in {None, 0} or event.get("record_type") == "error":
+                        errors.append(_preview(event, 160))
+                    if event["kind"] in {"gap", "unsupported"}:
+                        gap_events.append(_preview(event, 160))
         except OSError as exc:
             entry["read_gap"] = str(exc)
         unmatched = [v for k, v in calls.items() if k not in results]
-        entry.update(events=dict(counts), tools=dict(tools), flags=dict(flags), latest_recorded=latest,
+        entry.update(events=dict(counts), tools=dict(tools), models=dict(models), efforts=dict(efforts),
+                     flags=dict(flags), latest_recorded=latest,
                      calls_without_recorded_results=unmatched[:20], unmatched_count=len(unmatched),
                      errors=errors[-5:], error_count=len(errors), gaps=gap_events[:5], gap_count=len(gap_events))
         agents.append(entry)
     return {"host": host, "root_id": identifier, "native_home": str(home), "agents": agents,
             "agent_count": len(selected), "discovery_gaps": gaps[:20], "discovery_gap_count": len(gaps),
             "next_cursor": selected_page[-1] if selected_page and selected_page[-1] != selected[-1] else None,
-            "note": "Recorded activity is not proof of current process state or workflow success. Rerun inspect to discover newly spawned agents."}
+            "note": "Recorded activity is not proof of current process state or workflow success. Rerun inspect to discover newly spawned agents. "
+                    "models/efforts tally what native records say ran; unknown means the record omitted it."}
 
 
 def _cursor(path, event, raw, index):
