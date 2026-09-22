@@ -1,0 +1,18 @@
+{
+  "name": "gauntlet-loop",
+  "version": "0.1.0",
+  "description": "Push a goal past a real-world bar with per-piece builder and blind-critic loops.",
+  "skills": "./skills/",
+  "author": {
+    "name": "orchflows"
+  },
+  "interface": {
+    "displayName": "Gauntlet Loop",
+    "shortDescription": "Loop every piece until it beats a real reference blind.",
+    "longDescription": "Matt Shumer's Gauntlet Loop: set a concrete bar, split the goal, and run each piece through a builder and a fresh, harsh, blind critic until ours wins or you stop it.",
+    "defaultPrompt": "Build the supplied goal and keep improving each piece until it beats the bar in a blind comparison.",
+    "developerName": "orchflows",
+    "category": "Productivity",
+    "capabilities": []
+  }
+}

@@ -1,6 +1,6 @@
 # Stop starting every agent workflow from scratch
 
-**Save the process that worked. Use it inside the next one.** These eleven libraries show how small Markdown workflows compose into research, software, films and improvement loops. Run one whole, borrow a component or reuse its guidance.
+**Save the process that worked. Use it inside the next one.** These twelve libraries show how small Markdown workflows compose into research, software, films and improvement loops. Run one whole, borrow a component or reuse its guidance.
 
 From an Orchflows checkout:
 
@@ -24,6 +24,7 @@ Each library below explains its inputs, dependencies, bounds and current limits.
 | [Short video](short-video/README.md) | Make a film; review exact exports; coordinate independent films |
 | [Browser game](3d-browser-game/README.md) | Make Blender assets; independently playtest; coordinate game production |
 | [Design loop](design-loop/README.md) | Brainstorm, research, design, implement, compare and analyze bounded cycles; uses shared comparison |
+| [Gauntlet loop](gauntlet-loop/README.md) | Loop each piece through a builder and a fresh blind critic until it beats a real reference; uses shared comparison |
 | [Evolve](evolve/README.md) | Improve and retain artifacts with its own evaluation and confirmation policy |
 | [Software factory](software-factory/README.md) | Deliver software; observe production; investigate incidents |
 | [Benchmaker](benchmaker/README.md) | Construct and independently pilot benchmarks; review and repair using Shared |
