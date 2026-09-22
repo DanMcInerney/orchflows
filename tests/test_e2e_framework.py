@@ -2,6 +2,7 @@
 import asyncio
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import time
@@ -9,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tests/e2e'))
-from catalog import discover, packages_for, select
+from catalog import discover, overrides, packages_for, select
 from common import copy_package, read_json, snapshot, write_json
 from judging import aggregate, validate
 from scheduler import Scheduler
@@ -48,6 +49,25 @@ class CatalogTests(unittest.TestCase):
             packages_for(bad)
         with self.assertRaisesRegex(ValueError, 'Unknown cases'):
             select(discover(), identifiers=['core/nonexistent'])
+
+    def test_explicit_package_root_replaces_default_and_plan_shows_it(self):
+        case = select(discover(), 'smoke')[0]
+        with tempfile.TemporaryDirectory(prefix='e2e-baseline-') as folder:
+            copy = Path(folder) / 'orchflows'
+            write_json(copy / 'plugin.json', read_json(ROOT / 'plugin.json'))
+            self.assertEqual(packages_for(case, [copy])['orchflows'], copy.resolve())
+            self.assertEqual(packages_for(case)['orchflows'], ROOT.resolve())
+            self.assertEqual(overrides([copy]), {'orchflows': {'default': str(ROOT.resolve()), 'explicit': str(copy.resolve())}})
+            self.assertEqual(overrides([ROOT]), {})
+            plan = subprocess.run([sys.executable, '-B', str(ROOT / 'tests/e2e/run.py'), '--plan', '--case', case.id,
+                                   '--package-root', str(copy)], capture_output=True, text=True, check=True)
+            printed = json.loads(plan.stdout)
+            self.assertEqual(printed['package_overrides']['orchflows']['explicit'], str(copy.resolve()))
+            self.assertEqual(printed['cases'][0]['sources']['orchflows'], str(copy.resolve()))
+            second = Path(folder) / 'other' / 'orchflows'
+            write_json(second / 'plugin.json', read_json(ROOT / 'plugin.json'))
+            with self.assertRaisesRegex(ValueError, 'Duplicate package source: orchflows'):
+                packages_for(case, [copy, second])
 
     def test_runtime_copy_excludes_evaluator_and_preserves_source(self):
         with tempfile.TemporaryDirectory() as folder:

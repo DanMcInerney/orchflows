@@ -125,7 +125,7 @@ async def run(t):
                 return native
         output = self.root/'repeated'
         args = SimpleNamespace(output=output, host='fake', executable=None, jobs=1,
-                               deadline=30, audit_seconds=5, repeat=2)
+                               deadline=30, audit_seconds=5, repeat=2, package_root=[])
         with patch('run.get_host', return_value=FlakyHost()):
             self.assertEqual(await execute(args, [self.case], {self.case.id: self.sources}), 1)
         summary = read_json(output/'summary.json')
@@ -142,7 +142,7 @@ async def run(t):
                 return [sys.executable, '-u', '-c', 'import time; print("partial", flush=True); time.sleep(30)']
         output = self.root/'interrupted'
         args = SimpleNamespace(output=output, host='fake', executable=None, jobs=1,
-                               deadline=15, audit_seconds=5, repeat=2)
+                               deadline=15, audit_seconds=5, repeat=2, package_root=[])
         with patch('run.get_host', return_value=SlowHost()):
             task = asyncio.create_task(execute(args, [self.case], {self.case.id: self.sources}))
             while not (output/'schedule.jsonl').exists():
