@@ -51,7 +51,7 @@ Supplied roots and native skills need no home or its runtime; missing capabiliti
 
 ## Libraries
 
-Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique within home and cannot be `orchflows`. After adding a library, rerun setup for catalogs, then [install in intended hosts](hosts.md#register-and-refresh). Later setup refreshes existing Codex, Claude Code and Grok Build installations and this home's Antigravity copies. Bump manifest versions before refreshing changes; Claude may retain stale same-version caches.
+Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique within home and cannot be `orchflows`. After adding a library, rerun setup for catalogs, then [install in intended hosts](hosts.md#register-and-refresh). Later setup [refreshes](hosts.md#register-and-refresh) existing Codex, Claude Code and Grok Build installations and this home's Antigravity copies without manifest version changes.
 
 ## Another computer
 

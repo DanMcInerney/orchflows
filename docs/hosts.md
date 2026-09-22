@@ -16,14 +16,14 @@ Use these native commands for optional libraries, development and manual recover
 | --- | --- | --- |
 | Register home | `codex plugin marketplace add <home>` | `claude plugin marketplace add <home>` |
 | Install | `codex plugin add <lib>@orchflows-home` | `claude plugin install <lib>@orchflows-home --scope user` |
-| After editing a library | bump manifest versions; `codex plugin add <lib>@orchflows-home` | bump manifest versions; `claude plugin marketplace update orchflows-home`; `claude plugin update <lib>@orchflows-home` |
+| After editing a library | rerun setup (see below), or `codex plugin add <lib>@orchflows-home` | rerun setup (see below), or `claude plugin marketplace update orchflows-home`; `claude plugin uninstall <lib>@orchflows-home --keep-data`; `claude plugin install <lib>@orchflows-home --scope user` |
 | Invoke | `$<lib>:<skill>` or `/skills` | `/<lib>:<skill>` |
 | Core development | register the checkout's `orchflows-local` catalog; install `orchflows@orchflows-local` | same, or `claude --plugin-dir <checkout>` |
 | Custom agent definitions | `.codex/agents/*.toml`, `~/.codex/agents/` | `.claude/agents/*.md`, `~/.claude/agents/` |
 
 Concurrency changes only on request; see [limits and supported hosts](#concurrency).
 
-For stale installations, bump all manifest versions and rerun setup. Claude may reuse same-version caches. Setup reports mismatched files without editing private host caches.
+After editing a library, rerun setup; leave manifest versions unchanged. Setup refreshes each installed package natively, then compares installed files with the source. Claude Code installs versioned cache copies that `plugin update` leaves stale at an unchanged version (observed on 2.1.280), so setup uninstalls and reinstalls a Claude package whose installed files differ. Files that still differ are reported; setup never edits private host caches. Kimi Code and ZCode refresh through the in-app steps below.
 
 Setup verifies installed contents. Read-only Codex checks verify source, enabled registration and version; inventory omits the cache path, so `doctor` cannot detect same-version cache changes. Rerun setup to refresh and verify them.
 
@@ -49,7 +49,7 @@ Skills retain unqualified frontmatter names, e.g. `/skill:orch-build-workflow`; 
 
 ### Grok Build
 
-Before installing core, setup checks `grok inspect --json` for effective installations, including Claude-compatible copies. Manually install with `grok plugin install <absolute-package-root>`; use the checkout for development. Verify with `grok plugin validate <package-root>` and workspace-local `grok inspect --json`; after edits, run `grok plugin update` and verify loaded paths. `grok plugin marketplace add <home>` registers the Claude-compatible catalog for `/plugins`. [CLI reference](https://docs.x.ai/build/cli/reference).
+Before installing core, setup checks `grok inspect --json` for effective installations, including Claude-compatible copies. Manually install with `grok plugin install <absolute-package-root>`; use the checkout for development. Verify with `grok plugin validate <package-root>` and workspace-local `grok inspect --json`; after edits, rerun setup, which reinstalls stale copies as described below, and verify loaded paths. `grok plugin marketplace add <home>` registers the Claude-compatible catalog for `/plugins`. [CLI reference](https://docs.x.ai/build/cli/reference).
 
 Grok reads `.claude-plugin` packages and can discover Claude installations automatically. Check for stale compatible copies and keep one core enabled. Skills appear in `/skills` and as `/<skill-name>`; use displayed qualified names for collisions. Grok honors `disable-model-invocation`; skill-frontmatter `model`/`effort` do not select agent settings. [Skills and plugins](https://docs.x.ai/build/features/skills-plugins-marketplaces).
 
@@ -59,7 +59,7 @@ Grok 1.0.5 can copy Windows local plugins while `plugin update` reports live lin
 
 Detected ZCode reports `needs_action` with the resolved home path. With a workspace open, use **Settings → Plugins → Create → Add marketplace**, choose home, and install `orchflows` and wanted libraries. Setup generates root `marketplace.json` with package paths/versions. ZCode reads `.claude-plugin/plugin.json`; no extra manifest. For development, add the checkout's root marketplace. Setup/doctor cannot verify this in-app step through a supported shell command.
 
-After edits, bump versions, rerun setup, refresh the marketplace and check for updates. ZCode compares catalog and installed-manifest versions. Registration is documented through UI; do not assume a `zcode plugin` shell command. [Plugins](https://zcode.z.ai/en/docs/plugin).
+After edits, rerun setup, then uninstall and reinstall the edited library in the app. ZCode compares catalog and installed-manifest versions, so same-version edits do not appear as updates. Registration is documented through UI; do not assume a `zcode plugin` shell command. [Plugins](https://zcode.z.ai/en/docs/plugin).
 
 Z.ai can supply Claude Code's model while retaining Claude's registration/invocation. Follow [provider setup](https://docs.z.ai/devpack/tool/claude), then the Claude installation above. Documented Anthropic-compatible endpoint: `https://api.z.ai/api/anthropic`; credentials and model mappings remain user-owned.
 
