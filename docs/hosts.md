@@ -1,8 +1,17 @@
 # Hosts
 
-Checked 2026-09-16: Codex 0.144.0 and Claude Code 2.1.270 installer commands. Host behavior varies by version.
+Host behavior varies by version. No check below establishes authenticated workflow execution.
 
-Official documentation checked that day for Google Antigravity (`agy`), Kimi Code, Grok Build and Z.ai's ZCode. Antigravity CLI 1.0.14 and Grok 1.0.5 passed local installation/discovery checks. Installed Kimi 0.29.0 predates documented plugin/model-pool support; native loading is unverified. ZCode registration and agent behavior are documentation-verified only. None establishes authenticated workflow execution. Skill invocation and delegation documentation was rechecked 2026-09-21 for Codex, Kimi Code 2.0.2, Antigravity CLI 1.2.6 and ZCode 3.14.1; Claude Code loading by name was verified in native trials. Documentation rechecked 2026-09-22 for Claude Code 2.1.280 (required for Opus 5.5) and Codex 0.155.1; installed CLIs remained Claude Code 2.1.270 and Codex 0.144.0, so facts added that day are documentation-verified only.
+| Host | Last verified locally | Documentation last checked |
+| --- | --- | --- |
+| Codex | 0.144.0 installer commands, 2026-09-16 | Skills and delegation 2026-09-21; 0.155.1 on 2026-09-22 |
+| Claude Code | 2.1.270 installer commands, 2026-09-16; loading by name in native trials; 2.1.280, installed after the recheck below, for same-version plugin refresh only, 2026-09-22 | 2.1.280 (required for Opus 5.5), 2026-09-22 |
+| Antigravity (`agy`) | CLI 1.0.14 installation and discovery, 2026-09-16 | CLI 1.2.6, 2026-09-21 |
+| Kimi Code | Installed 0.29.0 predates documented plugin and model-pool support; native loading unverified | 2.0.2, 2026-09-21 |
+| Grok Build | 1.0.5 installation and discovery, 2026-09-16 | 2026-09-16 |
+| ZCode | Registration and agent behavior documentation-verified only | 3.14.1, 2026-09-21 |
+
+Documentation rechecked 2026-09-22 for Claude Code 2.1.280 (required for Opus 5.5) and Codex 0.155.1; installed CLIs remained Claude Code 2.1.270 and Codex 0.144.0, so facts added that day are documentation-verified only.
 
 ## Register and refresh
 
