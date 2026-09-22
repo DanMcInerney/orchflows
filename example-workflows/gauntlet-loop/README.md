@@ -62,4 +62,4 @@ python scripts/orchflows.py setup --example gauntlet-loop
 
 Setup does not install dependencies transitively, so install `shared` too. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows**, native child delegation and independent review, plus tools to render, run and inspect the artifact and to fetch references; see [library context](references/library-context.md). [Gauntlet guidance](guidance/gauntlet.md) supplies the builder's and critic's criteria.
 
-**Validation limit:** the [trials](trials/) specify expected behavior, not observed results. This workflow has not been run end to end. Shumer's published results come from his own prompt, not from this packaging.
+**Validation limit:** the [trials](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/gauntlet-loop/trials/) specify expected behavior, not observed results. This workflow has not been run end to end. Shumer's published results come from his own prompt, not from this packaging.
