@@ -4,28 +4,39 @@ Run ordinary requests through a native agent, preserve the execution, then have 
 
 ```powershell
 python tests/e2e/run.py --list
-python tests/e2e/run.py --suite smoke --plan
-python tests/e2e/run.py --suite smoke --jobs 3 --output ../e2e-smoke
+python tests/e2e/run.py --host codex --plan                              # smoke by default; launches nothing
+python tests/e2e/run.py --host codex --case core/routing --output ../e2e-check   # one trivial attempt, a few minutes
+python tests/e2e/run.py --host codex --output ../e2e-codex-smoke         # smoke: 4 attempts at once, 5-10 minutes
+python tests/e2e/run.py --host claude --output ../e2e-claude-smoke
 python tests/e2e/run.py --suite authoring --output ../e2e-build
-python tests/e2e/run.py --case shared/compare-small --output ../e2e-shared
 ```
 
-Python 3.11+ is required. Native runs are opt-in and consume normal agent usage. Use an authenticated Claude Code or Codex CLI; `--host claude|codex` and `--executable PATH` select the host and executable; trials run on cheap models by default (Claude `claude-sonnet-5` at `high`; Codex `gpt-5.6-luna` at `xhigh`), and `--model`/`--effort` override that for every session. Configured model/effort settings pass through unchanged, but the host decides what applies; evidence records the observed model and effort. Native controls need validation on the selected host/version; unsupported hosts never substitute another host.
+Python 3.11+ is required. Native runs are opt-in and consume normal agent usage. Use an authenticated Claude Code or Codex CLI; `--host claude|codex` and `--executable PATH` select the host and executable; trials run on cheap models by default (Claude `claude-sonnet-5` at `high`; Codex `gpt-5.6-luna` at `xhigh`), and `--model`/`--effort` override that for every session. Configured model/effort settings pass through unchanged, but the host decides what applies; evidence records the observed model and effort. Native controls need validation on the selected host/version; unsupported hosts never substitute another host. Check `--plan` before a long run: it prints the model, effort, jobs, attempts and deadline.
 
 Opt-in development suites: `gates` and `gates-authoring` diagnose work-unit boundaries and Build/Dynamic authoring; `gates-regressions` holds the blocked-authoring prerequisite case and the requested-review calibration source; `next-stage` covers joined multi-guidance review, ordinary research/code and survey requests, a compatible API change, and direct versus saved release briefs. `python -B tests/e2e/next_stage.py --suite next-stage --output ../next-stage-prepared` freezes predictions, cases and runtime packages without model calls; its native execution is explicit and needs `CODEX_API_KEY` or `OPENAI_API_KEY`. These suites have offline scorer controls. Smoke membership is unchanged.
 
-| Selection | Suite deadline | Cases |
-| --- | --- | --- |
-| `smoke` (default) | 300s | Trivial Dynamic; explicitly requested review; nested composition with scoped guidance and a fresh maker; required review unavailable |
-| `authoring` | 600s | Build a personal library, freeze it, then run its larger workflow and reusable component on unseen inputs in parallel |
-| `examples` | 300s | Shared comparison; Short Video review of a corrupt export |
-| Explicit `--case ID` | 300s | Selected cases only; repeat the flag to select more |
+| Selection | Cases |
+| --- | --- |
+| `smoke` (default) | Trivial Dynamic; explicitly requested review; nested composition with scoped guidance and a fresh maker; required review unavailable |
+| `authoring` | Build a personal library, freeze it, then run its larger workflow and reusable component on unseen inputs in parallel |
+| `examples` | Shared comparison; Short Video review of a corrupt export |
+| Explicit `--case ID` | Selected cases only; repeat the flag to select more |
 
 Repeat `--suite` to combine suites; `--case` adds cases to them.
 
-Use `--deadline`, `--audit-seconds` (default 60), `--jobs` (default 3) and `--repeat` (default 1) deliberately. With `--repeat k`, `summary.json` `cases` gives each case's attempts, assessment counts and `all_acceptable` (pass^k), and the evidence README adds a line per case; single attempts are weak evidence of reliability. Case deadlines include preparation and stage waits; suite deadlines also include checks and audits. Cleanup may take up to 15 additional seconds. Deadlines bound waiting, not successful completion. The longer `core/dynamic-review`, `core/research-code` and `core/safe-authoring` cases need explicitly suitable suite budgets.
+### Budgets and concurrency
 
-One shared pool bounds harness-launched target and evaluator sessions. Target-owned subagents and Build's inner trial sessions are additional activity; this is not a global agent/cost cap. Independent cases and ready journey stages overlap. Dependent stages wait for frozen inputs. Each attempt gets distinct files, homes and native session IDs; there are no automatic retries or cached successes.
+- **Case timeout** (`timeout_seconds`) bounds one attempt's target work, including preparation and stage waits. The smoke and examples cases, `core/research-code`, `core/dynamic-review` and `core/routing` were checked against the 2026-09-22 Codex Luna medium runs and allow at least 1.3 times their slowest observed or estimated completion; other cases have no recent timing. Raise a timeout when a case times out while still making progress.
+- **`--audit-seconds`** (default 600) bounds each evaluator. Medium-effort audits took 23-190 seconds; the one xhigh audit took about three times its medium counterparts.
+- **Suite deadline.** By default it is derived from the selection: per-attempt budgets (case timeout + audit seconds + 60 seconds of checks, collection and cleanup), summed over `--jobs`, plus the largest budget. A normal run admits every attempt before it. An explicit `--deadline` wins; `--plan` notes when it is below the derived value. Attempts it leaves unadmitted report `Suite deadline before admission` and are counted in the evidence README.
+- **`--jobs`** (default 5) bounds concurrent harness sessions, targets and evaluators together. Hosts cap children per session (Claude 20 running subagents; Codex `agents.max_threads`), not sessions per account, so the harness bounds the total. A target plus its children is about four agents: the 2026-09-22 Codex targets never ran more than three children at once, and case requests allow six in all. Audits delegate nothing. Five sessions therefore stay near 20 agents. Build's inner trial sessions are additional. Raise `--jobs` only with account headroom; it shortens wall clock until the longest attempt dominates.
+- **`--repeat`** (default 1). Use more only to claim reliability, for example `--repeat 5` on the cases in question. The runner admits the longest cases first, with all their repeats together.
+
+Deadlines bound waiting, not successful completion. Audits start as soon as their own target and checks finish. Dependent stages wait for frozen inputs. Each attempt gets distinct files, homes and native session IDs; there are no automatic retries or cached successes. `schedule.jsonl` logs admission, release, and each session's start and finish.
+
+### Reading results
+
+The evidence README opens with wall-clock seconds, peak sessions and unadmitted attempts, then a row per attempt and a row per case. In `summary.json`, `cases` gives each case's attempts, assessment counts, `all_acceptable` (true only if every attempt passed, pass^k) and observed models. A single attempt is weak evidence either way. For any row that is not acceptable, open `<case>/<attempt>/report.json`: `findings` cite the failed requirement and evidence, `gaps` say what blocked a verdict, such as a stage timeout or an audit that did not finish, and `audit_path` leads to the evaluator's packet and assessment.
 
 ## Add a case
 
@@ -69,7 +80,7 @@ Audits receive indexed excerpts, actual files, selected contracts and private ac
 Frozen execution hashes are checked before and after auditing. Re-audit appends a new verdict and preserves the current evaluator brief/schema and native settings; it never changes the original report or resumes a target:
 
 ```powershell
-python tests/e2e/audit.py ../e2e-smoke --jobs 2 --deadline 150
+python tests/e2e/audit.py ../e2e-smoke --jobs 5 --audit-seconds 600 --deadline 1800
 python tests/e2e/calibrate.py --source ../e2e-smoke/core/requested-review/1 --output ../e2e-calibration
 ```
 
@@ -87,6 +98,7 @@ Native child trees are copied using the existing history reader. Separate CLI tr
 - Historical, Claude trials recorded before 2026-09-22: automatic selection chose Dynamic for a research-to-code request but skipped it for a trivial file-writing request; explicit invocation worked.
 - 2026-09-20, Codex gate pilot: host transport failures, timeouts and the account usage limit interrupted it, and the native Codex calibration did not run. Its native gate cases on Codex 0.154.0-alpha found four acceptable (research to code, missing vendor evidence, mixed-guidance page, review then single repair) and two Build/Dynamic save-and-reuse journeys judged material process failures after inner-trial transport blocks; the next-stage suite has offline scorer controls only.
 - 2026-09-22, Claude Code 2.1.280: a baseline of five cases was inconclusive for every attempt because the account had reached its usage limit.
+- 2026-09-22, Codex 0.156.0 at `gpt-5.6-luna` medium: two arms of 9 cases × 3 took 25-29 minutes at 3 jobs, with all three slots busy 94% of the time; replaying those durations gives about 15 minutes at 5 jobs. Their timings set the current case and audit budgets.
 - Gaps: single attempts are not reliability estimates; Build's trial-before-review sequence needs a completed run that captures its inner trial identities.
 
 Offline regression tests run without a model:
@@ -96,4 +108,4 @@ python -m unittest discover -s tests -v
 python -m unittest discover -s tests -p "test_e2e*.py" -v
 ```
 
-The offline tests cover discovery without registry changes, frozen inputs/drivers, parallel dependent stages, bounded sessions, cancellation with complete attempt accounting, partial outputs, objective versus evaluator judgments, changed-evidence rejection, Codex launch/discovery controls, calibration fixtures and the next-stage scorer/policy controls. Local fake agents test the harness, not LLM ability. The [upgrade tests](../test_upgrade_e2e.py) exercise real installation and upgrade from a fixed old main commit; unavailable Git history is a skip, not a pass.
+The offline tests cover discovery without registry changes, frozen inputs/drivers, parallel dependent stages, bounded sessions, cancellation with complete attempt accounting, partial outputs, objective versus evaluator judgments, changed-evidence rejection, the derived suite deadline, the full Claude launch line, Codex launch/discovery controls, calibration fixtures and the next-stage scorer/policy controls. Local fake agents test the harness, not LLM ability. The [upgrade tests](../test_upgrade_e2e.py) exercise real installation and upgrade from a fixed old main commit; unavailable Git history is a skip, not a pass.
