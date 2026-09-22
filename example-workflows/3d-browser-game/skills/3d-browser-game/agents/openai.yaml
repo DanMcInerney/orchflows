@@ -1,6 +1,6 @@
 interface:
   display_name: "3D Browser Game"
-  short_description: "Build substantial Three.js browser games from mechanics..."
+  short_description: "Build a Three.js game through experiments and playtests"
 
 policy:
   allow_implicit_invocation: false

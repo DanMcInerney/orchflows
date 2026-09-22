@@ -1,6 +1,6 @@
 interface:
   display_name: "Short Video"
-  short_description: "Create short videos for any genre or placement, then..."
+  short_description: "Create short videos and review their exports"
 
 policy:
   allow_implicit_invocation: false

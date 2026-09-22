@@ -1,6 +1,6 @@
 interface:
   display_name: "Make Short Video"
-  short_description: "Make an original short video through an editable project and..."
+  short_description: "Make an original short video and its exports"
 
 policy:
   allow_implicit_invocation: false
