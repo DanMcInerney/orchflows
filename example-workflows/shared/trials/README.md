@@ -8,7 +8,7 @@ These scenarios test whether reusable procedures still work when called alone, n
 | [Nested composition](composition/request.md) | One coordinator, one brief review and separate internal/campaign guidance | Manual trial |
 | [Build a personal library](build-personal/request.md) | Component discovery, fresh reuse, native entrypoint loading and independent guidance reuse | Manual trial |
 | [Design comparison](design-comparison/request.md) | A design-loop component consumes comparison without extra review or adoption | Manual trial |
-| [Office decision](office/request.md) | Personal guidance, comparison, bounded revision and a shared resource allowance | Manual trial |
+| [Office decision](office/request.md) | Personal guidance, comparison and bounded revision | Manual trial |
 
 ```mermaid
 flowchart TB
