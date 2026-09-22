@@ -2,7 +2,7 @@
 
 Checked 2026-09-16: Codex 0.144.0 and Claude Code 2.1.270 installer commands. Host behavior varies by version.
 
-Official documentation checked that day for Google Antigravity (`agy`), Kimi Code, Grok Build and Z.ai's ZCode. Antigravity CLI 1.0.14 and Grok 1.0.5 passed local installation/discovery checks. Installed Kimi 0.29.0 predates documented plugin/model-pool support; native loading is unverified. ZCode registration and agent behavior are documentation-verified only. None establishes authenticated workflow execution. Skill invocation and delegation documentation was rechecked 2026-09-21 for Codex, Kimi Code 2.0.2, Antigravity CLI 1.2.6 and ZCode 3.14.1; Claude Code loading by name was verified in native trials.
+Official documentation checked that day for Google Antigravity (`agy`), Kimi Code, Grok Build and Z.ai's ZCode. Antigravity CLI 1.0.14 and Grok 1.0.5 passed local installation/discovery checks. Installed Kimi 0.29.0 predates documented plugin/model-pool support; native loading is unverified. ZCode registration and agent behavior are documentation-verified only. None establishes authenticated workflow execution. Skill invocation and delegation documentation was rechecked 2026-09-21 for Codex, Kimi Code 2.0.2, Antigravity CLI 1.2.6 and ZCode 3.14.1; Claude Code loading by name was verified in native trials. Documentation rechecked 2026-09-22 for Claude Code 2.1.280 (required for Opus 5.5) and Codex 0.155.1; installed CLIs remained Claude Code 2.1.270 and Codex 0.144.0, so facts added that day are documentation-verified only.
 
 ## Register and refresh
 
@@ -109,7 +109,7 @@ These settings also govern loading by name: Claude and Kimi hide manual-only ski
 
 ## Loading
 
-Resolve links from their containing file, scripts from the loaded skill directory, and inputs/outputs from the assignment workspace. Skill-only copies break links such as `../../guidance/`. `${CLAUDE_SKILL_DIR}` is Claude-only; `context: fork` creates child context without filesystem isolation. Built-ins use current context. [Codex skills](https://developers.openai.com/codex/skills), [Claude skills](https://code.claude.com/docs/en/skills).
+Resolve links from their containing file, scripts from the loaded skill directory, and inputs/outputs from the assignment workspace. Skill-only copies break links such as `../../guidance/`. `${CLAUDE_SKILL_DIR}` is Claude-only; `context: fork` creates child context without filesystem isolation. Built-ins use current context. [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Claude skills](https://code.claude.com/docs/en/skills).
 
 Install complete packages on every host. Kimi exposes `${KIMI_SKILL_DIR}`, but shared instructions use package-relative links and require the package root.
 
