@@ -16,7 +16,7 @@ from run import execute
 
 DIRECT_CHECK = (
     'Establish the result and checks. When a mistake would be cheap to undo and direct checks would catch it, '
-    'do the work and check it without independent review unless requested. If consequential uncertainty emerges, '
+    'do the work and check it without independent review unless requested. Checks the maker writes share the maker's reading of the requirements, so they cannot stand in for review when a misreading would be costly. If consequential uncertainty emerges, '
     'add review where useful; unavailable reviewers do not make work trivial.\n\nOtherwise briefly plan'
 )
 
