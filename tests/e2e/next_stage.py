@@ -15,8 +15,8 @@ from common import ROOT, copy_package, files_under, snapshot, write_json
 from run import execute
 
 DIRECT_CHECK = (
-    'Establish the result and checks. For straightforward, low-impact, reversible work that can be checked directly, '
-    'do the work and check it without independent review unless requested. Judge impact by what an error the checks could miss would cost, not by the size of the change. If consequential uncertainty emerges, '
+    'Establish the result and checks. When a mistake would be cheap to undo and direct checks would catch it, '
+    'do the work and check it without independent review unless requested. If consequential uncertainty emerges, '
     'add review where useful; unavailable reviewers do not make work trivial.\n\nOtherwise briefly plan'
 )
 
