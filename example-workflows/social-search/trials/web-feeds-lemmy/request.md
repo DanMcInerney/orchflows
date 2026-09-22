@@ -2,7 +2,7 @@
 
 Run a stable candidate from an unrelated project using installed libraries or explicitly resolved candidate package roots. Use the ordinary request below; the skill supplies its own agent composition.
 
-> Use social-search to assess which recent quantum-computing research advances have the strongest evidence and how people are discussing them. Include material published from 2026-08-13T00:00:00Z through 2026-09-12T23:59:59Z, preserving older context separately.
+> [invoke `social-search:social-search`] Assess which recent quantum-computing research advances have the strongest evidence and how people are discussing them. Include material published from 2026-08-13T00:00:00Z through 2026-09-12T23:59:59Z, preserving older context separately.
 >
 > Collect from three source scopes: web discovery on arxiv.org and nature.com; the feed set https://rss.arxiv.org/rss/quant-ph and https://www.sciencedaily.com/rss/computers_math/quantum_computers.xml; and public discussions visible through https://lemmy.world. Distinguish experimental results, theoretical proposals, publisher summaries and participant reactions. Return a concise globally ranked, cited assessment with coverage limits.
 >
