@@ -1,6 +1,9 @@
 from pathlib import Path
 import re
 
+from common import read_json
+
+
 FIXTURE = Path(__file__).resolve().parent / 'fixtures' / 'export.mp4'
 EXPORT = re.compile(r'(?<![\w.-])export\.mp4(?![\w.-])')
 HEADING = re.compile(r'\s*#{1,6}\s[^\n]*')
@@ -28,6 +31,17 @@ def states_identity(text, size):
                for block in blocks(text))
 
 
+def delegation(c):
+    """Target-stage agents from the harness evidence index: the root's children, and any deeper agents."""
+    index = read_json(c.stage().parent / 'evidence/index.json')
+    if index.get('gaps'):
+        raise RuntimeError('Native agent discovery incomplete: ' + str(index['gaps']))
+    root = index['root_id']
+    children = [a['id'] for a in index['agents'] if a.get('parent_id') == root]
+    nested = [a['id'] for a in index['agents'] if a['id'] != root and a.get('parent_id') != root]
+    return children, nested, f'stages/target/evidence/index.json: children {len(children)}, nested {nested}'
+
+
 def check(c):
     export, review = c.stage()/'export.mp4', c.stage()/'review.md'
     c.require(export.is_file() and export.read_bytes() == FIXTURE.read_bytes(),
@@ -37,3 +51,6 @@ def check(c):
     size = FIXTURE.stat().st_size
     c.require(states_identity(text, size),
               f'State the inspected export path and byte size ({size} bytes) together as its identity', 'review.md')
+    children, nested, evidence = delegation(c)
+    c.require(len(children) == 1, 'The named workflow launches exactly one reviewer', evidence)
+    c.require(not nested, 'Only the coordinator launches agents', evidence)

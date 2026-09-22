@@ -23,6 +23,7 @@ class CaseCheckTests(unittest.TestCase):
         self.workspace = self.root / 'stages/target/workspace'
         self.workspace.mkdir(parents=True)
         write_json(self.root / 'target.json', {'completed': True})
+        self.agents('root')
 
     def results(self, hook):
         result = run(self.root, hook)
@@ -72,6 +73,35 @@ class MissingReviewConditionTests(CaseCheckTests):
                 self.assertTrue(all(c['passed'] for c in result['checks']), result['checks'])
                 self.assertNotIn(self.CONDITION, [c['requirement'] for c in result['checks']])
                 self.assertIn('No-review test condition not established', result['gaps'][0])
+
+
+class DelegationTests(CaseCheckTests):
+    """Both host adapters index agents by parent: Claude children name the session, grandchildren parentAgentId."""
+    HOOK = ROOT / 'example-workflows/shared/trials/compare-small/check.py'
+    ONE = 'The named workflow launches exactly one comparer'
+    ONLY_ROOT = 'Only the coordinator launches agents'
+
+    def setUp(self):
+        super().setUp()
+        write_json(self.workspace / 'result.json', {'preferred_id': 'oak', 'annual_cost': 700, 'gaps': []})
+
+    def test_child_counts_and_nesting(self):
+        for parents, one, only_root in ((('root',), True, True), ((), False, True),
+                                        (('root', 'root'), False, True), (('root', 'agent-0'), True, False)):
+            with self.subTest(parents=parents):
+                self.agents(*parents)
+                results = self.results(self.HOOK)
+                self.assertEqual((results[self.ONE], results[self.ONLY_ROOT]), (one, only_root))
+
+    def test_incomplete_agent_discovery_is_a_gap(self):
+        for gaps, remove in (([{'kind': 'missing_child_record', 'id': 'lost', 'parent_id': 'root'}], False), ([], True)):
+            with self.subTest(gaps=gaps, remove=remove):
+                self.agents('root', gaps=gaps)
+                if remove:
+                    (self.root / 'stages/target/evidence/index.json').unlink()
+                result = run(self.root, self.HOOK)
+                self.assertEqual(len(result['gaps']), 1)
+                self.assertNotIn(self.ONE, [c['requirement'] for c in result['checks']])
 
 
 class NewWorkflowTests(CaseCheckTests):
