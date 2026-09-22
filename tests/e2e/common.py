@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import re
 import shutil
 import sys
 
@@ -60,7 +61,7 @@ def copy_package(source, destination):
 
 def load_hook(path):
     path = Path(path)
-    name = 'e2e_hook_' + hashlib.sha256(str(path).encode()).hexdigest()[:16]
+    name = 'e2e_hook_' + re.sub(r'\W', '_', '_'.join(path.parts[-3:]))
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

@@ -6,7 +6,6 @@ import base64
 from collections import Counter
 from contextlib import closing
 from datetime import datetime, timezone
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -442,7 +441,7 @@ def inspect(host, identifier, home, limit=30, after=None):
 
 
 def _cursor(path, event, raw, index):
-    data = [str(path), event["source"]["byte_offset"], event["source"]["line"], index + 1, hashlib.sha256(raw).hexdigest()]
+    data = [str(path), event["source"]["byte_offset"], event["source"]["line"], index + 1, len(raw)]
     return base64.urlsafe_b64encode(_json(data).encode()).decode()
 
 
@@ -454,12 +453,16 @@ def read(host, identifier, home, limit=30, after=None, event_id=None, field="dat
     start, line, skip = 0, 1, 0
     if after:
         try:
-            old_path, start, line, skip, digest = json.loads(base64.urlsafe_b64decode(after))
-            if old_path != str(path) or not all(type(x) is int and x >= 0 for x in (start, line, skip)) or line < 1:
+            old_path, start, line, skip, length = json.loads(base64.urlsafe_b64decode(after))
+            if (old_path != str(path) or not all(type(x) is int and x >= 0 for x in (start, line, skip, length))
+                    or line < 1):
                 raise ValueError()
+            # The cursor's record must still start a line and keep its length.
             with path.open("rb") as stream:
-                stream.seek(start)
-                if hashlib.sha256(stream.readline()).hexdigest() != digest:
+                stream.seek(max(start - 1, 0))
+                if start and stream.read(1) != b"\n":
+                    raise ValueError()
+                if len(stream.readline()) != length:
                     raise ValueError()
         except (ValueError, TypeError) as exc:
             raise ValueError("Invalid cursor or changed/truncated source; read from the start") from exc

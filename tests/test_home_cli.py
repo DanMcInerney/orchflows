@@ -1,6 +1,5 @@
 """The actual shipped core must work after setup from an unrelated project."""
 
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -37,7 +36,7 @@ class InstalledCliTests(unittest.TestCase):
             ]}}) + "\n", encoding="utf-8")
 
             def files():
-                return {item.relative_to(outside).as_posix(): hashlib.sha256(item.read_bytes()).hexdigest()
+                return {item.relative_to(outside).as_posix(): item.read_bytes()
                         for item in outside.rglob("*") if item.is_file()}
 
             before = files()
@@ -109,7 +108,7 @@ class InstalledCliTests(unittest.TestCase):
                 self.assertEqual(Path(resolved_core["skill_path"]), core / "skills" / skill.name / "SKILL.md")
 
             def files(path):
-                return {item.relative_to(path).as_posix(): hashlib.sha256(item.read_bytes()).hexdigest()
+                return {item.relative_to(path).as_posix(): item.read_bytes()
                         for item in path.rglob("*") if item.is_file()
                         and "__pycache__" not in item.parts and item.suffix not in {".pyc", ".pyo"}}
 
