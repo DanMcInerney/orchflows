@@ -24,7 +24,7 @@ Page with `--after NEXT_CURSOR`, preserving selectors. Stop `find`/`inspect` at 
 
 ## Reading
 
-`inspect` returns a descendant tree with per-agent counts, latest activity, errors, unmatched calls, gaps and source references. Wrapper calls and nested commands are separate categories. Rerun for new children.
+`inspect` returns a descendant tree with per-agent counts, latest activity, errors, unmatched calls, gaps and source references. Wrapper calls and nested commands are separate categories. Agents also report observed `models` and `efforts`; children report `launch_context` (`fresh`, `inherited` or `unknown`) with the records behind it, and `unlinked_spawns` lists spawn calls no recorded child could be tied to. Rerun for new children.
 
 Per-agent `models` and `efforts` tally what records say ran: Claude assistant `message.model` and `effort`, Codex `turn_context` `model` and `effort`. A value a record omits counts as `unknown`. Requested settings and subagent metadata are requests, not evidence of what ran.
 
