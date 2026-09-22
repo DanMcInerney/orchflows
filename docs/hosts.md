@@ -154,7 +154,7 @@ Reuse workers only if the host can honor repair settings. If continuation cannot
 
 ## Isolation
 
-When children need isolation, use worktrees at the intended revision. Claude's `isolation: worktree` may start at the remote default branch; confirm the commit. If Codex's child tool lacks a workspace argument, create a worktree and direct all child operations there:
+When children need isolation, use worktrees at the intended revision. Claude's `isolation: worktree` branches from the remote default branch unless the user sets `worktree.baseRef: "head"`, and copies tracked files only (`.worktreeinclude` adds ignored files; documented for 2.1.280, not observed on installed 2.1.270); confirm the commit. If Codex's child tool lacks a workspace argument, create a worktree and direct all child operations there:
 
 ```sh
 git worktree add -b codex/task-candidate ../task-candidate <commit>
