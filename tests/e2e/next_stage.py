@@ -16,7 +16,7 @@ from run import execute
 
 DIRECT_CHECK = (
     'Establish the result and checks. For straightforward, low-impact, reversible work that can be checked directly, '
-    'do the work and check it without independent review unless requested. If consequential uncertainty emerges, '
+    'do the work and check it without independent review unless requested. Work that governs security, access, private data, money or irreversible effects is consequential, however small or checkable. If consequential uncertainty emerges, '
     'add review where useful; unavailable reviewers do not make work trivial.\n\nOtherwise briefly plan'
 )
 

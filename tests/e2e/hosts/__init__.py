@@ -2,7 +2,7 @@
 
 
 # Trials default to cheaper models; --model/--effort override.
-DEFAULTS = {'claude': ('claude-sonnet-5', 'high'), 'codex': ('gpt-5.6-luna', 'xhigh')}
+DEFAULTS = {'claude': ('claude-sonnet-5', 'high'), 'codex': ('gpt-5.6-luna', 'medium')}
 
 # Concurrent harness sessions (--jobs). Hosts cap children per session (Claude runs up to 20
 # subagents; Codex agents.max_threads), not sessions per account, so the harness bounds the total.

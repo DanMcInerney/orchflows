@@ -134,7 +134,7 @@ class SuitePlanTests(unittest.TestCase):
         derived = self.plan('--host', 'codex', '--repeat', '3')
         self.assertEqual((derived['jobs'], derived['attempts'], derived['deadline_source']), (JOBS, 12, 'derived'))
         self.assertEqual(derived['deadline'], suite_deadline(select(discover(), ['smoke']), JOBS, derived['audit_seconds'], 3))
-        self.assertEqual((derived['model'], derived['effort']), ('gpt-5.6-luna', 'xhigh'))
+        self.assertEqual((derived['model'], derived['effort']), ('gpt-5.6-luna', 'medium'))
         self.assertNotIn('deadline_note', derived)
         explicit = self.plan('--host', 'claude', '--deadline', '300')
         self.assertEqual((explicit['deadline'], explicit['deadline_source']), (300, 'explicit'))
