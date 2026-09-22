@@ -96,6 +96,52 @@ class CatalogTests(unittest.TestCase):
             self.assertIn('trials/expected-behavior.md', result['excluded'])
 
 
+class SuitePlanTests(unittest.TestCase):
+    def cases(self, *timeouts):
+        from catalog import Case
+        return [Case(f'core/c{n}', ROOT, {'timeout_seconds': t}) for n, t in enumerate(timeouts)]
+
+    def test_derived_deadline_admits_every_attempt_under_any_admission_order(self):
+        import itertools
+        from run import ATTEMPT_OVERHEAD, attempts, suite_deadline
+        selected = self.cases(600, 300, 120, 45)
+        for jobs, repeat in itertools.product((1, 2, 5, 12), (1, 3)):
+            with self.subTest(jobs=jobs, repeat=repeat):
+                deadline = suite_deadline(selected, jobs, 400, repeat)
+                budgets = [c.timeout + 400 + ATTEMPT_OVERHEAD for c, _ in attempts(selected, repeat)]
+                for order in (budgets, sorted(budgets), sorted(budgets, reverse=True)):
+                    slots = [0] * jobs
+                    for budget in order:
+                        slot = slots.index(min(slots))
+                        slots[slot] += budget
+                    self.assertLessEqual(max(slots), deadline)
+
+    def test_attempts_put_longest_cases_first_with_their_repeats(self):
+        from run import attempts
+        selected = select(discover(), ['smoke'])
+        ordered = attempts(selected, 2)
+        self.assertEqual([c.id for c, _ in ordered[:2]], [selected[0].id] * 2)
+        self.assertEqual([n for _, n in ordered[:2]], [1, 2])
+        self.assertEqual([c.timeout for c, _ in ordered], sorted((c.timeout for c, _ in ordered), reverse=True))
+
+    def plan(self, *arguments):
+        return json.loads(subprocess.run([sys.executable, '-B', str(ROOT / 'tests/e2e/run.py'), '--plan', *arguments],
+                                         capture_output=True, text=True, check=True).stdout)
+
+    def test_plan_derives_the_deadline_and_an_explicit_deadline_wins_visibly(self):
+        from hosts import JOBS
+        from run import suite_deadline
+        derived = self.plan('--host', 'codex', '--repeat', '3')
+        self.assertEqual((derived['jobs'], derived['attempts'], derived['deadline_source']), (JOBS, 12, 'derived'))
+        self.assertEqual(derived['deadline'], suite_deadline(select(discover(), ['smoke']), JOBS, derived['audit_seconds'], 3))
+        self.assertEqual((derived['model'], derived['effort']), ('gpt-5.6-luna', 'xhigh'))
+        self.assertNotIn('deadline_note', derived)
+        explicit = self.plan('--host', 'claude', '--deadline', '300')
+        self.assertEqual((explicit['deadline'], explicit['deadline_source']), (300, 'explicit'))
+        self.assertIn('may not be admitted', explicit['deadline_note'])
+        self.assertEqual((explicit['model'], explicit['effort']), ('claude-sonnet-5', 'high'))
+
+
 class AssessmentTests(unittest.TestCase):
     def setUp(self):
         self.acceptable = {'assessment': 'acceptable', 'findings': [], 'observations': ['Different valid approach'], 'gaps': []}
