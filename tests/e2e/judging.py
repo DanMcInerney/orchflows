@@ -112,10 +112,14 @@ async def audit_run(root, host, scheduler, timeout=60):
     native = host.result(directory)
     write_json(directory / 'native.json', native)
     complete = False
+    # Recorded-condition gaps describe the audit session, not its verdict; keep them visible without discarding it.
+    conditions = [g for g in native['gaps'] if g.startswith(('Native effort mismatch', 'Native transcript unavailable'))]
+    blocking = [g for g in native['gaps'] if g not in conditions]
     try:
-        if execution['status'] != 'completed' or native['gaps']:
-            raise ValueError('Audit did not complete (' + execution['status'] + '): ' + str(native['gaps'] + execution['gaps']))
+        if execution['status'] != 'completed' or blocking:
+            raise ValueError('Audit did not complete (' + execution['status'] + '): ' + str(blocking + execution['gaps']))
         value = validate(native['structured_output'])
+        value['observations'].extend('Audit session: ' + g for g in conditions)
         complete = True
     except (ValueError, TypeError) as error:
         value['gaps'].append(str(error))

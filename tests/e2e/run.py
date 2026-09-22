@@ -91,7 +91,7 @@ async def execute(args, selected, sources):
     host = get_host(args.host, args.executable)
     write_json(output / 'plan.json', {'host': args.host, 'host_version': host.version, 'jobs': args.jobs,
         'deadline': args.deadline, 'audit_seconds': args.audit_seconds, 'repeat': args.repeat,
-        'package_overrides': overrides(args.package_root), 'cases': [{'id': c.id, **c.config, 'source': str(c.path)} for c in selected]})
+        'package_overrides': overrides(getattr(args, 'package_root', ())), 'cases': [{'id': c.id, **c.config, 'source': str(c.path)} for c in selected]})
     # A bounded case admission pool avoids starting every case deadline while queued.
     admission = asyncio.Semaphore(args.jobs)
     async def admitted(case, number):
@@ -178,10 +178,10 @@ def main():
                 print(json.dumps({'id': case.id, **case.config}))
             return 0
         selected = select(cases, args.suite, args.case)
-        sources = {case.id: packages_for(case, args.package_root) for case in selected}
+        sources = {case.id: packages_for(case, getattr(args, 'package_root', ())) for case in selected}
         if args.plan:
             print(json.dumps({'host': args.host, 'jobs': args.jobs, 'deadline': args.deadline,
-                'package_overrides': overrides(args.package_root), 'cases': [{'id': c.id, **c.config, 'sources': {k: str(v) for k, v in sources[c.id].items()}}
+                'package_overrides': overrides(getattr(args, 'package_root', ())), 'cases': [{'id': c.id, **c.config, 'sources': {k: str(v) for k, v in sources[c.id].items()}}
                           for c in selected]}, indent=2))
             return 0
         if not args.output:
