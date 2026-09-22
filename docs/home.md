@@ -47,7 +47,7 @@ Read-only checks: core manifest/required files, runtime files, library manifests
 
 Returns `name`, `version`, `package_root`, optional `skill_path`/`resource_path` and unverified `runtime_python`; launches nothing. `orchflows` selects managed core; other names match root `plugin.json` under `libraries/`. Rejects duplicate names and absolute or escaping resources.
 
-Supplied roots and native skills need no home or its runtime. Missing capabilities block only dependent work; unavailable native delegation blocks required child calls, not unrelated authorized work.
+Supplied roots and native skills need no home or its runtime; missing capabilities follow [execution](architecture.md#execution).
 
 ## Libraries
 

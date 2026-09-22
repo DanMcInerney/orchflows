@@ -1,5 +1,5 @@
 interface:
   display_name: "Orch Dynamic Workflow"
-  short_description: "Compose and execute a workflow for this task"
+  short_description: "Plan and complete this task with proportionate review"
 policy:
   allow_implicit_invocation: true

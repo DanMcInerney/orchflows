@@ -2,7 +2,7 @@
 
 Checked 2026-09-16: Codex 0.144.0 and Claude Code 2.1.270 installer commands. Host behavior varies by version.
 
-Official documentation checked that day for Google Antigravity (`agy`), Kimi Code, Grok Build and Z.ai's ZCode. Antigravity CLI 1.0.14 and Grok 1.0.5 passed local installation/discovery checks. Installed Kimi 0.29.0 predates documented plugin/model-pool support; native loading is unverified. ZCode registration and agent behavior are documentation-verified only. None establishes authenticated workflow execution. Skill invocation and delegation documentation was rechecked 2026-09-21 for Codex, Kimi Code 2.0.2, Antigravity CLI 1.2.6 and ZCode 3.14.1; Claude Code loading by name was verified in native trials.
+Official documentation checked that day for Google Antigravity (`agy`), Kimi Code, Grok Build and Z.ai's ZCode. Antigravity CLI 1.0.14 and Grok 1.0.5 passed local installation/discovery checks. Installed Kimi 0.29.0 predates documented plugin/model-pool support; native loading is unverified. ZCode registration and agent behavior are documentation-verified only. None establishes authenticated workflow execution. Skill invocation and delegation documentation was rechecked 2026-09-21 for Codex, Kimi Code 2.0.2, Antigravity CLI 1.2.6 and ZCode 3.14.1; Claude Code loading by name was verified in native trials. Documentation rechecked 2026-09-22 for Claude Code 2.1.280 (required for Opus 5.5) and Codex 0.155.1; installed CLIs remained Claude Code 2.1.270 and Codex 0.144.0, so facts added that day are documentation-verified only.
 
 ## Register and refresh
 
@@ -70,7 +70,7 @@ Z.ai can supply Claude Code's model while retaining Claude's registration/invoca
 | Host | User configuration | Limit changed |
 | --- | --- | --- |
 | Codex | `$CODEX_HOME/config.toml`, default `~/.codex/config.toml` | `[agents] max_threads`: open spawned threads, primary excluded |
-| Claude Code | `$CLAUDE_CONFIG_DIR/settings.json`, default `~/.claude/settings.json` | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY`: shared parallel read-only tools and subagents |
+| Claude Code | `$CLAUDE_CONFIG_DIR/settings.json`, default `~/.claude/settings.json` | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY`: shared parallel read-only tools and subagents; running subagents are also capped by `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (default 20, 2.1.217+; setup does not change it; ultracode sessions are exempt; documented for 2.1.280, not observed on installed 2.1.270) |
 | ZCode | `~/.zcode/cli/config.json` | `toolConcurrency.maxConcurrency`: parallel tool batches, including subagent calls |
 | Kimi Code | `$KIMI_CODE_HOME/config.toml`, default `~/.kimi-code/config.toml` | `[background] max_running_tasks`: running background Bash tasks and background Agent calls |
 | Grok Build | `$GROK_HOME/config.toml`, default `~/.grok/config.toml` | `[subagents] max_concurrent`: admitted subagents in a session |
@@ -109,13 +109,13 @@ These settings also govern loading by name: Claude and Kimi hide manual-only ski
 
 ## Loading
 
-Resolve links from their containing file, scripts from the loaded skill directory, and inputs/outputs from the assignment workspace. Skill-only copies break links such as `../../guidance/`. `${CLAUDE_SKILL_DIR}` is Claude-only; `context: fork` creates child context without filesystem isolation. Built-ins use current context. [Codex skills](https://developers.openai.com/codex/skills), [Claude skills](https://code.claude.com/docs/en/skills).
+Resolve links from their containing file, scripts from the loaded skill directory, and inputs/outputs from the assignment workspace. Skill-only copies break links such as `../../guidance/`. `${CLAUDE_SKILL_DIR}` is Claude-only; `context: fork` creates child context without filesystem isolation. Built-ins use current context. [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Claude skills](https://code.claude.com/docs/en/skills).
 
 Install complete packages on every host. Kimi exposes `${KIMI_SKILL_DIR}`, but shared instructions use package-relative links and require the package root.
 
 ## Delegation
 
-Use a fresh native child per primitive. Kimi `Agent` supports fresh `coder` children; built-in children cannot delegate, while custom agents may declare subagents. ZCode `Agent` has independent context and cannot spawn grandchildren. Codex multi-agent V2 and Antigravity let children spawn children; there the assignment's no-delegation rule is the control. Compose and dispatch leaves in the top-level coordinator; report workflows requiring nested coordinators as a gap. [Kimi agents](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
+Use a fresh native child per primitive. On Claude Code the `fork` subagent type inherits the conversation and main model, so it is not a fresh child (documented for 2.1.280; not observed on installed 2.1.270); launch primitives with a non-fork type. Skill `context: fork` is separate. Kimi `Agent` supports fresh `coder` children; built-in children cannot delegate, while custom agents may declare subagents. ZCode `Agent` has independent context and cannot spawn grandchildren. Claude Code (three layers by default; documented for 2.1.280, not observed on installed 2.1.270), Codex and Antigravity let children spawn children; there the assignment's no-delegation rule is the control. Compose and dispatch leaves in the top-level coordinator; report workflows requiring nested coordinators as a gap. [Kimi agents](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
 
 Grok's full-capability type is `general-purpose`; `explore`/`plan` cannot run shell commands or edit. Review tests require a fresh full-capability reviewer bound by the no-repair contract. Ensure subagents are enabled. [Grok subagents](https://docs.x.ai/build/features/subagents).
 
@@ -127,7 +127,7 @@ Manual trial requests write `[invoke <library>:<skill>]` where the tester types 
 
 Replace external reads with fixtures where possible and external writes with local fakes capturing proposed payloads. Email/calendar trials produce drafts and fake receipts, never real messages/invitations. Verify service sandboxes or dry-runs cannot reach live resources; withhold production credentials and disable outbound access where available. Directories alone do not isolate APIs. Skip uncontainable branches and report gaps. Authoring does not authorize live execution; live trials require an explicit request covering those effects.
 
-Trial composing workflows in a fresh separate top-level session with its own orchestrator, ordinary inputs and declared dependencies; exclude authoring history and expected answers. Only the authoring orchestrator launches it; workers must not launch trials or become nested coordinators. Nondelegating leaves may be trialed through `orch-work`. Report unavailable required independent sessions as validation gaps.
+Trial composing workflows in a fresh separate top-level session with its own coordinator, ordinary inputs and declared dependencies; exclude authoring history and expected answers. Only the authoring coordinator launches it; workers must not launch trials or become nested coordinators. Nondelegating leaves may be trialed through `orch-work`. Report unavailable required independent sessions as validation gaps.
 
 Keep outputs outside packages. Required independent judgments need real reviewers, never service fakes. Record fixture/source identities, preparation, interventions, simulated effects and untested integrations. Verify unchanged references, required fixture mutations and captured outbound effects. Audit native launches, assignments and continuations; only the trial coordinator directs agents. Verify model/effort in native metadata and guidance in assignment context. Simulation establishes local behavior, not live integration.
 
@@ -138,7 +138,7 @@ Apply [resolved assignment choices](architecture.md#model-and-effort) through ex
 | Host | Native controls |
 | --- | --- |
 | Codex | Exposed spawn model/effort fields, e.g. `model` and `reasoning_effort`. If full-history forks forbid overrides, use fresh or partial context. |
-| Claude Code | Agent model override; agent-definition `effort` when invocation has no effort field. Unset effort inherits the session. |
+| Claude Code | Agent model override; agent-definition `effort` when invocation has no effort field. Unset effort inherits the session. Opus 5.5 sessions default to `medium`; a top-level user `effortLevel` does not apply to it; `CLAUDE_CODE_EFFORT_LEVEL` overrides session effort (documented for 2.1.280; not observed on installed 2.1.270). Forks ignore model overrides (documented for 2.1.280; not observed on installed 2.1.270). |
 | Antigravity | Documented custom-agent tiers: `model: inherit`, `flash`, `pro`; use exposed child controls. No documented child effort field. CLI `--model`/`--effort` select the top-level session; report unsupported child requests. |
 | Kimi Code | With model pools, `Agent.model` selects a configured `[secondary_model]` alias or `primary`; otherwise inherits caller. No per-call effort field; check `default_effort`, pool overrides and `force`. Resumption cannot change model. |
 | Grok Build | Exposed child controls or existing agent type with requested routing (`[subagents.models]`). Skill-frontmatter `model`/`effort` and top-level CLI flags are not child overrides; report absent controls. |
@@ -148,13 +148,13 @@ Kimi model pools became generally available in 0.42.0; installed 0.29.0 does not
 
 Never silently map requested model identifiers to Antigravity tiers. [Custom subagents](https://www.agy.dev/docs/subagents/), [CLI model/effort flags](https://antigravity.google/docs/cli/headless/).
 
-Check configuration that may override launch choices. Codex custom-agent files can override explicit spawn values; absent explicit values, subagent defaults precede parent settings. Changing model without effort may select its default effort. Claude precedence also depends on environment and version. Use supported combinations; report unhonored requests before dependent work. Never create standing host configuration as an implicit fallback.
+Check configuration that may override launch choices. Codex custom-agent files can override explicit spawn values; absent explicit values, subagent defaults precede parent settings. Changing model without effort may select its default effort. Claude model precedence: per-call `model`, then agent-definition `model`, then `CLAUDE_CODE_SUBAGENT_MODEL`, then the main model; `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` forces one model (documented for 2.1.280; not observed on installed 2.1.270). Use supported combinations; report unhonored requests before dependent work. Never create standing host configuration as an implicit fallback.
 
 Reuse workers only if the host can honor repair settings. If continuation cannot change them, launch a fresh worker with the joined result and repair context. [Codex configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents), [Claude configuration](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields).
 
 ## Isolation
 
-When children need isolation, use worktrees at the intended revision. Claude's `isolation: worktree` may start at the remote default branch; confirm the commit. If Codex's child tool lacks a workspace argument, create a worktree and direct all child operations there:
+When children need isolation, use worktrees at the intended revision. Claude's `isolation: worktree` branches from the remote default branch unless the user sets `worktree.baseRef: "head"`, and copies tracked files only (`.worktreeinclude` adds ignored files; documented for 2.1.280, not observed on installed 2.1.270); confirm the commit. If Codex's child tool lacks a workspace argument, create a worktree and direct all child operations there:
 
 ```sh
 git worktree add -b codex/task-candidate ../task-candidate <commit>
