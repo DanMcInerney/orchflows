@@ -70,7 +70,7 @@ Z.ai can supply Claude Code's model while retaining Claude's registration/invoca
 | Host | User configuration | Limit changed |
 | --- | --- | --- |
 | Codex | `$CODEX_HOME/config.toml`, default `~/.codex/config.toml` | `[agents] max_threads`: open spawned threads, primary excluded |
-| Claude Code | `$CLAUDE_CONFIG_DIR/settings.json`, default `~/.claude/settings.json` | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY`: shared parallel read-only tools and subagents |
+| Claude Code | `$CLAUDE_CONFIG_DIR/settings.json`, default `~/.claude/settings.json` | `env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY`: shared parallel read-only tools and subagents; running subagents are also capped by `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (default 20, 2.1.217+; setup does not change it; ultracode sessions are exempt; documented for 2.1.280, not observed on installed 2.1.270) |
 | ZCode | `~/.zcode/cli/config.json` | `toolConcurrency.maxConcurrency`: parallel tool batches, including subagent calls |
 | Kimi Code | `$KIMI_CODE_HOME/config.toml`, default `~/.kimi-code/config.toml` | `[background] max_running_tasks`: running background Bash tasks and background Agent calls |
 | Grok Build | `$GROK_HOME/config.toml`, default `~/.grok/config.toml` | `[subagents] max_concurrent`: admitted subagents in a session |
