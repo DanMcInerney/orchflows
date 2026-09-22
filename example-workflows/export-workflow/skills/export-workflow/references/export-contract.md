@@ -22,9 +22,9 @@ Preserve source defaults. Authoring/trial settings become runtime defaults only 
 | --- | --- |
 | `orch-work` | Fresh native maker with assignment, workspace/input state, applicable common/Make guidance and scoped choices |
 | `orch-review` | Fresh nonmaker with applicable common/Review guidance; no repairs or repair delegation |
-| Composition, parallelism, joins/handoffs | Same coordinator, scoped inputs/guidance; references add no agents/reviews or reset bounds. Only top-level orchestrator launches, assigns and continues agents; children return results/requests. Preserve dependencies, ownership, counts, caller constraints, outputs, bounds and partial results through native tools. |
+| Composition, parallelism, joins/handoffs | Same coordinator, scoped inputs/guidance; references add no agents/reviews or reset bounds. Carry core Execution rules verbatim. Preserve dependencies, ownership, counts, caller constraints, outputs, bounds and partial results through native tools. |
 | Repairs/loops/checkpoints/continuous runs | Preserve stopping/promotion rules and consumed attempts through resume; host execution/resume remains necessary. A skill adds no scheduler. |
-| Model/effort | Resolve fields separately: caller over saved; within each, named assignment over stage over operation default. Runtime assignments inherit stages; unspecified fields stay unset. Apply supported native controls, not prompt-only names. Reuse only compatible workers; unsupported controls are gaps. |
+| Model/effort | Carry core Model and effort rules verbatim. |
 | Isolation | Preserve workspace/revision and required uncommitted inputs through native isolation or explicit worktrees. Missing required isolation blocks that step. |
 | Guidance/corrections | Snapshot precedence, roles and removable layers. Upstream refresh/new-library discovery requires re-export. |
 | Home/helpers | Bundle dependencies; require no Orchflows runtime/resolver. |
