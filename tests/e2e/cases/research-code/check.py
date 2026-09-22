@@ -1,6 +1,8 @@
 import subprocess
 import sys
 
+from common import read_json
+
 PROGRAM = """
 from vendor_a import normalize as a
 from vendor_b import normalize as b
@@ -31,7 +33,8 @@ print('19 independent adapter cases passed')
 def check(c):
     checked = subprocess.run([sys.executable, '-B', '-c', PROGRAM], cwd=c.stage(), capture_output=True, text=True, timeout=20)
     c.require(checked.returncode == 0, 'Independent behavior cases', checked.stdout + checked.stderr)
-    before = c.json(c.root / 'stages/target/before.json')['inputs']
+    # Supplied inputs, including Codex's package copies under .agents/, are in the pre-run snapshot.
+    before = read_json(c.stage().parent / 'before.json')['inputs']
     created = sorted(path.relative_to(c.stage()).as_posix() for path in c.stage().rglob('SKILL.md')
                      if path.is_file() and path.relative_to(c.stage()).as_posix() not in before)
     c.require(not created, 'Task does not create a reusable workflow',

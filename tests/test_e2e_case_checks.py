@@ -8,8 +8,9 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tests/e2e'))
 from checks import run
-from common import write_json
+from common import snapshot, write_json
 
+CASES = ROOT / 'tests/e2e/cases'
 CORRUPT_EXPORT = ROOT / 'example-workflows/short-video/trials/corrupt-export'
 EXPORT_SIZE = (CORRUPT_EXPORT / 'fixtures/export.mp4').stat().st_size
 
@@ -27,6 +28,67 @@ class CaseCheckTests(unittest.TestCase):
         result = run(self.root, hook)
         self.assertEqual(result['gaps'], [])
         return {c['requirement']: c['passed'] for c in result['checks']}
+
+    def agents(self, *parents, gaps=()):
+        """Record a native agent tree: the root plus one agent per given parent id."""
+        agents = [{'id': 'root', 'parent_id': None}]
+        agents += [{'id': f'agent-{n}', 'parent_id': parent} for n, parent in enumerate(parents)]
+        write_json(self.root / 'stages/target/evidence/index.json',
+                   {'root_id': 'root', 'agents': agents, 'gaps': list(gaps)})
+
+    def native(self, host, tools=None, profile='local'):
+        """Record what each host adapter writes: Claude's tool list, or Codex's null tools and launch profile."""
+        native = {'tools': tools} if host == 'claude' else {'tools': None}
+        if host == 'codex':
+            write_json(self.root / 'stages/target/codex-launch.json', {'profile': profile})
+        write_json(self.root / 'target.json', {'completed': True, 'stages': [{'name': 'target', 'native': native}]})
+
+
+class MissingReviewConditionTests(CaseCheckTests):
+    HOOK = CASES / 'missing-review/check.py'
+    CONDITION = 'No-review condition: no delegation capability and no delegated agents'
+
+    def setUp(self):
+        super().setUp()
+        write_json(self.workspace / 'invoice.json', {'total': 253})
+        for name in ('review.md', 'handoff.md'):
+            (self.workspace / name).write_text('Independent review unavailable; repair blocked. ❌\n', encoding='utf-8')
+
+    def test_restriction_established_on_both_hosts(self):
+        for host, tools in (('claude', ['Read', 'Write', 'Edit', 'Skill', 'Glob', 'Grep']), ('codex', None)):
+            with self.subTest(host=host):
+                self.native(host, tools, 'no-review')
+                self.agents()
+                self.assertTrue(all(self.results(self.HOOK).values()))
+
+    def test_unestablished_restriction_is_a_gap_not_a_failure(self):
+        for host, tools, profile, parents in (('claude', ['Read', 'Agent'], 'no-review', ()),
+                                              ('codex', None, 'local', ()),
+                                              ('codex', None, 'no-review', ('root',))):
+            with self.subTest(host=host, tools=tools, profile=profile, parents=parents):
+                self.native(host, tools, profile)
+                self.agents(*parents)
+                result = run(self.root, self.HOOK)
+                self.assertTrue(all(c['passed'] for c in result['checks']), result['checks'])
+                self.assertNotIn(self.CONDITION, [c['requirement'] for c in result['checks']])
+                self.assertIn('No-review test condition not established', result['gaps'][0])
+
+
+class NewWorkflowTests(CaseCheckTests):
+    def test_supplied_package_copies_pass_and_new_skills_fail(self):
+        supplied = self.workspace / '.agents/skills/orchflows/skills/orch-work/SKILL.md'
+        supplied.parent.mkdir(parents=True)
+        supplied.write_text('Supplied runtime instructions.', encoding='utf-8')
+        write_json(self.root / 'stages/target/before.json', {'inputs': snapshot(self.workspace), 'packages': {}})
+        (self.workspace / 'authorize.py').write_text(
+            'def can_export(role, authenticated, suspended):\n'
+            '    return role in ("owner", "analyst") and authenticated is True and suspended is False\n', encoding='utf-8')
+        hook = CASES / 'dynamic-review/check.py'
+        self.assertTrue(self.results(hook)['Task does not create a reusable workflow'])
+        created = self.workspace / '.agents/skills/new-workflow/SKILL.md'
+        created.parent.mkdir(parents=True)
+        created.write_text('New reusable workflow.', encoding='utf-8')
+        self.assertFalse(self.results(hook)['Task does not create a reusable workflow'])
 
 
 class CorruptExportIdentityTests(CaseCheckTests):
