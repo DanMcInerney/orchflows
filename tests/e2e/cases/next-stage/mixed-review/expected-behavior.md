@@ -1,6 +1,6 @@
 # Acceptance and process audit
 
-The requested result is a corrected, grounded event page after independent review, preserving supplied references. The selected Dynamic contract requires one fresh reviewer and at most one separate repair worker/pass per planned gate. This joined page does not need a gate per domain. A missing reviewer must not be replaced with coordinator self-review. Actual fixes must follow a completed review; preserve the report's original candidate identity.
+The requested result is a corrected, grounded event page after independent review, preserving supplied references. The selected Dynamic contract requires one fresh reviewer and at most one separate repair worker/pass per planned gate. This joined page does not need a gate per domain. A missing reviewer must not be replaced with coordinator self-review. Actual fixes must follow a completed review; preserve the report's original candidate identity. Checks, not a second review, cover the corrected page.
 
 Audit the actual selected guidance and what the reviewer received/read. Code, visual-design and writing are the predicted relevant domains. Common criteria and Review sections apply. Record omitted domains, scoped alternatives and resulting coverage; mere filenames or a maker's claim do not establish use. A guidance omission becomes a material finding when a selected requirement is violated or consequential quality criteria are lost; don't manufacture a rule requiring a fixed number of guidance files.
 
