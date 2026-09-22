@@ -161,6 +161,20 @@ class HostIntegrationTests(unittest.TestCase):
                 self.assertEqual(result[host]["status"], "failed")
                 self.assert_no_mutations(run)
 
+    def test_null_inventory_sources_are_reported_not_crashed(self):
+        with self.cli({"codex": [{"installed": [self.codex_row(source=None)]}]}) as run:
+            result = self.integrate("codex")
+        self.assertEqual(result["codex"]["status"], "needs_action")
+        self.assertIn("another source", result["codex"]["packages"]["orchflows"]["message"])
+        self.assert_no_mutations(run)
+        self.copy_current()
+        effective = self.grok_effective()
+        effective["skills"].append({"name": "unowned", "disabled": False, "source": None})
+        with self.cli({"grok": [[]]}, inspect=effective) as run:
+            result = self.integrate("grok")
+        self.assertEqual(result["grok"]["status"], "ready")
+        self.assert_no_mutations(run)
+
     def test_disabled_existing_plugins_are_preserved(self):
         for host, inventory in (("codex", {"installed": [self.codex_row(enabled=False)]}), ("claude", [self.claude_row(enabled=False)])):
             with self.subTest(host=host), self.cli({host: [inventory]}) as run:

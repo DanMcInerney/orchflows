@@ -153,7 +153,7 @@ def _inventory(host: str, executable: str, cwd: Path) -> list[dict]:
         result = []
         for row in _rows(data.get("installed")):
             result.append({"name": row["name"], "enabled": row["enabled"], "version": row.get("version"),
-                           "marketplace": row["marketplaceName"], "source": row.get("source", {}).get("path"),
+                           "marketplace": row["marketplaceName"], "source": (row.get("source") or {}).get("path"),
                            "path": row.get("installedPath"), "scope": "user"})
         return result
     if host == "claude":
@@ -177,8 +177,8 @@ def _inventory(host: str, executable: str, cwd: Path) -> list[dict]:
                 if not any(item["name"] == row["name"] and _same_path(item["path"], Path(row["path"])) for item in own))
     result = []
     for row, inherited, source in rows:
-        matching_skills = [s for s in skills if s.get("source", {}).get("plugin_name") == row["name"]
-                           and Path(s["source"].get("path", "")).resolve().is_relative_to(Path(row["path"]).resolve())]
+        matching_skills = [s for s in skills if (s.get("source") or {}).get("plugin_name") == row["name"]
+                           and Path(s["source"].get("path") or "").resolve().is_relative_to(Path(row["path"]).resolve())]
         result.append({"name": row["name"], "enabled": row["enabled"] and any(not s.get("disabled", False) for s in matching_skills),
                        "path": row["path"], "scope": row["scope"], "inherited": inherited, "source": source})
     return result
