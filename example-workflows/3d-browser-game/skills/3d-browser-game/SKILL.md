@@ -4,7 +4,7 @@ description: Build a complete Three.js game or bounded production phase through 
 disable-model-invocation: true
 ---
 
-Apply [library context](../../references/library-context.md) in the caller. Inputs: player brief, existing project, target conditions, workspace and constraints. Choose and record unspecified creative details; ask only when a missing choice blocks progress. A bounded phase uses its prerequisites and returns reached work without claiming a finished game.
+The coordinator applies [library context](../../references/library-context.md). Inputs: player brief, existing project, target conditions, workspace and constraints. Choose and record unspecified creative details; ask only when a missing choice blocks progress. A bounded phase uses its prerequisites and returns reached work without claiming a finished game.
 
 Use shared creative direction and one integration owner. Production staffing follows core execution rules; only the two playtests require fresh independent reviewers. Missing capabilities block dependent work.
 
