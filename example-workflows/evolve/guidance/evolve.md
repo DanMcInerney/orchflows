@@ -11,5 +11,3 @@ Record what was tried, what happened and what to try next. Carry relevant eviden
 Trace harness proposals to recorded failures; prefer one minimal change in prompts, tools, memory selection, verification or search whose effect is observable in outputs. Better-looking instructions establish no gain.
 
 Reserve budget for comparison, required judges, confirmation and persistence before choosing width/repetitions. Favor confirmable experiments over unconfirmed candidates. Run independent candidates concurrently when resources permit; serialize measurements when contention distorts them. Screen cheaply before confirmation.
-
-Methods cannot relax the workflow's bounds, independence, versioning, promotion or continuation.

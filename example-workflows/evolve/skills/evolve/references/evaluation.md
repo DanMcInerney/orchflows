@@ -38,4 +38,4 @@ Enforce requirements before ranking. Repeat promising metrics under matched cond
 
 Stop evaluating disqualified candidates. Record both sides' evidence, failures and observable cost, including evaluation. Promote only when the frozen decision rule, requirements and confirmation pass within caller constraints; otherwise retain the incumbent. Check retained regression examples and original intent during long searches.
 
-Changed evaluation requires a new version and re-scoring the incumbent/contenders before promotion; retain old evidence. Candidate-controlled tests, cached scores and revised judges cannot silently redefine success.
+Changed evaluation requires a new revision and re-scoring the incumbent/contenders before promotion; retain old evidence. Candidate-controlled tests, cached scores and revised judges cannot silently redefine success.

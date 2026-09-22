@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Design loop (experimental)",
     "shortDescription": "Experimental project design cycles from reusable workflows.",
-    "longDescription": "Untested standalone example for bounded brainstorming, research, design, implementation, independent comparison and analysis.",
+    "longDescription": "Experimental standalone example for bounded brainstorming, research, design, implementation, independent comparison and analysis; full cycles are not validated end to end.",
     "defaultPrompt": "Use design-loop to develop this project through bounded design cycles, starting with a small working proof of concept.",
     "developerName": "orchflows",
     "category": "Productivity",

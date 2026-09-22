@@ -4,7 +4,7 @@
 
 Define observable acceptance and required checks before implementation; never weaken failures into passes. Bind builds, CI and performance results to the candidate. For performance-sensitive changes, compare equivalent baseline/candidate workloads and conditions, separating regressions from noise.
 
-Verify the delivered artifact, not only the workspace. A complete patch must reconstruct the candidate from its recorded clean baseline, including additions/deletions. Export bytes without shell text conversion; check/apply the actual saved patch in isolation and compare file set/content under project Git attributes. Record patch hash, baseline, candidate and reconstruction. Tracked-only diffs and `git diff --check` prove no complete handoff. For commits/other artifacts, verify the exact delivered object against the candidate.
+Verify the delivered artifact, not only the workspace. A complete patch must reconstruct the candidate from its recorded clean baseline, including additions/deletions. Export bytes without shell text conversion; check/apply the actual saved patch in isolation and compare file set/content under project Git attributes. Record the saved patch path, baseline commit, candidate and reconstruction result. Tracked-only diffs and `git diff --check` prove no complete handoff. For commits/other artifacts, verify the exact delivered object against the candidate.
 
 Prepare rollback/signals while building. Prefer existing rollout/telemetry; create a dashboard only for a specific visibility gap, defining queries/thresholds before external creation.
 
@@ -25,5 +25,3 @@ Judge requested behavior in actual project context; specialist labels alone prov
 Report actionable locations, consequences and evidence, missing context and lens-specific risk. Make no repairs; missing evidence is not a clean review. Correctness also inspects delivered identity/reconstruction: broken required handoffs block readiness despite passing workspace tests.
 
 Low risk requires bounded impact, understood behavior, passing checks, complete applicable reviews without blocking findings, supported recovery and no material uncertainty. Authorization/secrets changes, destructive data operations, public contracts and broad infrastructure require human review unless specific established policy covers the exact case. Disagreement/uncertainty also takes that path; small diffs alone are not low risk.
-
-Human judgment cannot turn failed checks or missing required evidence into success. Automatic review acceptance requires explicit project opt-in for the affected area. Release authority is separate.

@@ -25,16 +25,16 @@ The card records decision/claim, population, complete system boundary, capabilit
 
 | Record | Required information |
 | --- | --- |
-| Benchmark | Version; card; cases/splits/groups; metrics, weights and required constraints; scorer version; profiles; dependency/access requirements |
+| Benchmark | Identity; card; cases/splits/groups; metrics, weights and required constraints; scorer revision; profiles; dependency/access requirements |
 | Public case | Stable ID; task; inputs/assets; allowed environment/tools; visible deliverable requirements |
 | Evaluator case | Case ID; family; source/group identity; track/split; work dossier and feasibility evidence; criterion/scorer bindings; controls and expected outcomes |
 | Condition | Target revision/content identity; actual model/settings when observable, otherwise unknown; workflow/instructions; tool/network access; memory/reset policy; adapter and environment identity; budgets |
 | Attempt | Case/condition/repetition/retry IDs; start/end and phase timings; execution status/reason; artifacts or final state; transcript path; observed usage/cost, with unknowns explicit |
 | Score | Scorer identity; grading status/reason per metric; anchored dimension outcomes/evidence and weights; aggregate outcome credit or explicit unavailable reason; separate full success and critical failures; indeterminate or uncertainty information |
 
-Bind results to a digest of immutable manifest inputs: cases, public assets, references, graders and relevant adapter/runner files. Exclude runs/caches/outputs. Retain file inventory/hashes or a clean revision plus local changes; Git is optional. Bind condition identity separately, including target instructions/settings, environment and budgets. Redact credential values from records. A resumed run must reject incompatible identities, including scorer or profile/repetition changes; re-scoring saved outputs produces an explicitly new scorer result, not a fresh agent attempt.
+Bind results to the exact immutable manifest inputs: cases, public assets, references, graders and relevant adapter/runner files. Exclude runs/caches/outputs. Identify them by a clean revision plus local changes or a retained read-only copy compared by bytes; Git is optional. Bind condition identity separately, including target instructions/settings, environment and budgets. Redact credential values from records. A resumed run must reject incompatible identities, including scorer or profile/repetition changes; re-scoring saved outputs produces an explicitly new scorer result, not a fresh agent attempt.
 
-On resume, import and summary reads, validate: fixed membership, case/repetition/retry IDs, benchmark and condition bindings, legal execution transitions, artifact hashes and score provenance. Reject missing, extra, foreign or inconsistent records even when filenames and top-level digests match.
+On resume, import and summary reads, validate: fixed membership, case/repetition/retry IDs, benchmark and condition bindings, legal execution transitions, artifact identity (compare retained bytes) and score provenance. Reject missing, extra, foreign or inconsistent records even when filenames and top-level identity fields match.
 
 Only stage public case material into the solver's writable workspace. Pass no evaluator answers, controls or hidden rubric in the candidate prompt. Document actual filesystem/network access; this layout is not a security boundary.
 
@@ -67,7 +67,7 @@ Adjust these budgets to the task; record manifest membership and freeze comparab
 
 Within pilot bounds, exercise actual adapter/runner boundaries: changed plan membership and attempt/score identities, stale artifacts, invalid delivered output or known nondelivery, and applicable failed-dispatch, intermediate-preservation and overall-deadline transitions. Check budget enforcement under supported invocation modes. Include valid records and outcomes so rejecting everything cannot pass. Use stand-ins only at the actual execution boundary; retain unsupported properties as gaps rather than testing a substitute runner.
 
-Exercise score eligibility against execution and delivery evidence on import, resume and summary: ordinary infrastructure failures or unknown capture stay unscored, task-budget exhaustion defeats full success, and established nondelivery earns no progress. Change a stored success or credit while retaining its identity fields and artifact hashes; reject unsupported score content using bound authoritative judgments and deterministic recomputation where applicable. Matching provenance fields alone do not validate a score.
+Exercise score eligibility against execution and delivery evidence on import, resume and summary: ordinary infrastructure failures or unknown capture stay unscored, task-budget exhaustion defeats full success, and established nondelivery earns no progress. Change a stored success or credit while retaining its identity fields; reject unsupported score content using bound authoritative judgments and deterministic recomputation where applicable. Matching provenance fields alone do not validate a score.
 
 Include null or wrongly shaped nested target output, missing grading and a scorer interruption after delivery. Verify the status rules below: malformed delivered work is a task failure; unavailable capture or a scorer fault remains visibly unscored. Recover grading from retained evidence without relaunching the target, preserving prior failures and scorer identities.
 
