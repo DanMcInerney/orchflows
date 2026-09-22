@@ -33,7 +33,7 @@ Before launches freeze baseline model/settings, framework/instructions, tools/pe
 
 Inspect failures/partial outputs: distinguish capability, task defects, unfair grading, infrastructure and unknown observation. If development tasks are too easy, sample harder source work; do not tune individual cases to defeat a model, hide constraints or artificially shrink resources. Record development selection/exclusions.
 
-Freeze unseen groups before evaluation and publish out-of-band results without reshaping cases after answers. Harder later suites receive new versions; preserve prior results. Difficulty requires actual baseline execution, and challenge calibration stays provisional until validated.
+Freeze unseen groups before evaluation and publish out-of-band results without reshaping cases after answers. Harder later suites receive new identities; preserve prior results. Difficulty requires actual baseline execution, and challenge calibration stays provisional until validated.
 
 ## Acceptance evidence
 
