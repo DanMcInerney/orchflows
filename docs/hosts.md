@@ -115,7 +115,7 @@ Install complete packages on every host. Kimi exposes `${KIMI_SKILL_DIR}`, but s
 
 ## Delegation
 
-Use a fresh native child per primitive. Kimi `Agent` supports fresh `coder` children; built-in children cannot delegate, while custom agents may declare subagents. ZCode `Agent` has independent context and cannot spawn grandchildren. Codex multi-agent V2 and Antigravity let children spawn children; there the assignment's no-delegation rule is the control. Compose and dispatch leaves in the top-level coordinator; report workflows requiring nested coordinators as a gap. [Kimi agents](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
+Use a fresh native child per primitive. On Claude Code the `fork` subagent type inherits the conversation and main model, so it is not a fresh child (documented for 2.1.280; not observed on installed 2.1.270); launch primitives with a non-fork type. Skill `context: fork` is separate. Kimi `Agent` supports fresh `coder` children; built-in children cannot delegate, while custom agents may declare subagents. ZCode `Agent` has independent context and cannot spawn grandchildren. Claude Code (three layers by default; documented for 2.1.280, not observed on installed 2.1.270), Codex and Antigravity let children spawn children; there the assignment's no-delegation rule is the control. Compose and dispatch leaves in the top-level coordinator; report workflows requiring nested coordinators as a gap. [Kimi agents](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
 
 Grok's full-capability type is `general-purpose`; `explore`/`plan` cannot run shell commands or edit. Review tests require a fresh full-capability reviewer bound by the no-repair contract. Ensure subagents are enabled. [Grok subagents](https://docs.x.ai/build/features/subagents).
 
@@ -138,7 +138,7 @@ Apply [resolved assignment choices](architecture.md#model-and-effort) through ex
 | Host | Native controls |
 | --- | --- |
 | Codex | Exposed spawn model/effort fields, e.g. `model` and `reasoning_effort`. If full-history forks forbid overrides, use fresh or partial context. |
-| Claude Code | Agent model override; agent-definition `effort` when invocation has no effort field. Unset effort inherits the session. |
+| Claude Code | Agent model override; agent-definition `effort` when invocation has no effort field. Unset effort inherits the session. Forks ignore model overrides (documented for 2.1.280; not observed on installed 2.1.270). |
 | Antigravity | Documented custom-agent tiers: `model: inherit`, `flash`, `pro`; use exposed child controls. No documented child effort field. CLI `--model`/`--effort` select the top-level session; report unsupported child requests. |
 | Kimi Code | With model pools, `Agent.model` selects a configured `[secondary_model]` alias or `primary`; otherwise inherits caller. No per-call effort field; check `default_effort`, pool overrides and `force`. Resumption cannot change model. |
 | Grok Build | Exposed child controls or existing agent type with requested routing (`[subagents.models]`). Skill-frontmatter `model`/`effort` and top-level CLI flags are not child overrides; report absent controls. |
