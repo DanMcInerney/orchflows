@@ -7,13 +7,13 @@ import sys
 import time
 
 sys.dont_write_bytecode = True
-from catalog import discover, packages_for, select
+from catalog import discover, overrides, packages_for, select
 from common import HERE, ROOT, read_json, write_json
 from hosts import get_host
 from judging import aggregate, audit_run
 from scheduler import Scheduler
 from sealing import seal
-from trial import Trial
+from trial import Trial, observed
 
 
 async def run_case(case, number, root, host, scheduler, sources, audit_seconds):
@@ -52,19 +52,31 @@ async def run_case(case, number, root, host, scheduler, sources, audit_seconds):
     result = {'case': case.id, 'attempt': number, 'started': any(s['execution']['status'] != 'not_started' for s in stages),
               'completed': target['completed'], 'audited': audit.get('audit_complete', False),
               'covers': case.config.get('covers', []), 'audit_path': audit.get('audit_path'),
-              **aggregate(target, checks, audit)}
+              'observed': target.get('observed', {}), **aggregate(target, checks, audit)}
     write_json(path / 'report.json', result)
     print(json.dumps(result), flush=True)
     return result
 
 
+ASSESSMENTS = ('acceptable', 'material_failure', 'inconclusive')
+
+
+def per_case(results):
+    """Outcomes of every attempt of each case; all_acceptable is pass^k over its attempts."""
+    cases = {}
+    for r in results:
+        cases.setdefault(r['case'], []).append(r)
+    return {case: {'attempts': len(attempts), **{key: sum(r['assessment'] == key for r in attempts) for key in ASSESSMENTS},
+                   'all_acceptable': all(r['assessment'] == 'acceptable' for r in attempts),
+                   'observed': observed(r.get('observed', {}) for r in attempts)} for case, attempts in cases.items()}
+
+
 def summarize(results, scheduler):
-    counts = {key: sum(r['assessment'] == key for r in results)
-              for key in ('acceptable', 'material_failure', 'inconclusive')}
+    counts = {key: sum(r['assessment'] == key for r in results) for key in ASSESSMENTS}
     counts.update(selected=len(results), started=sum(r['started'] for r in results),
                   completed=sum(r['completed'] for r in results), audited=sum(r['audited'] for r in results),
                   not_started=sum(not r['started'] for r in results))
-    return {'counts': counts, 'seconds': round(time.monotonic() - scheduler.started, 2),
+    return {'counts': counts, 'cases': per_case(results), 'seconds': round(time.monotonic() - scheduler.started, 2),
             'peak_harness_sessions': scheduler.peak, 'results': results,
             'coverage_note': 'covers are declared claims; verified scope is limited to checks and cited audit evidence. '
                              'Lifecycle counts overlap; selected attempts are the denominator.'}
@@ -79,7 +91,7 @@ async def execute(args, selected, sources):
     host = get_host(args.host, args.executable)
     write_json(output / 'plan.json', {'host': args.host, 'host_version': host.version, 'jobs': args.jobs,
         'deadline': args.deadline, 'audit_seconds': args.audit_seconds, 'repeat': args.repeat,
-        'cases': [{'id': c.id, **c.config, 'source': str(c.path)} for c in selected]})
+        'package_overrides': overrides(args.package_root), 'cases': [{'id': c.id, **c.config, 'source': str(c.path)} for c in selected]})
     # A bounded case admission pool avoids starting every case deadline while queued.
     admission = asyncio.Semaphore(args.jobs)
     async def admitted(case, number):
@@ -123,6 +135,11 @@ async def execute(args, selected, sources):
     lines = ['# Native trial results', '', f"{summary['seconds']} seconds; peak {scheduler.peak} harness sessions.", '',
              '| Case | Attempt | Assessment |', '| --- | --- | --- |']
     lines += [f"| {r['case']} | {r['attempt']} | {r['assessment']} |" for r in results]
+    lines += ['', '| Case | Attempts | Acceptable | Material failure | Inconclusive | All acceptable | Observed models |',
+              '| --- | --- | --- | --- | --- | --- | --- |']
+    lines += [f"| {case} | {c['attempts']} | {c['acceptable']} | {c['material_failure']} | {c['inconclusive']} | "
+              f"{'yes' if c['all_acceptable'] else 'no'} | {', '.join(sorted(c['observed']['models'])) or 'none recorded'} |"
+              for case, c in summary['cases'].items()]
     lines += ['', summary['coverage_note'], '', 'See each report.json and its cited evidence for findings and gaps.']
     (output / 'README.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     print(json.dumps(summary['counts']))
@@ -164,7 +181,7 @@ def main():
         sources = {case.id: packages_for(case, args.package_root) for case in selected}
         if args.plan:
             print(json.dumps({'host': args.host, 'jobs': args.jobs, 'deadline': args.deadline,
-                'cases': [{'id': c.id, **c.config, 'sources': {k: str(v) for k, v in sources[c.id].items()}}
+                'package_overrides': overrides(args.package_root), 'cases': [{'id': c.id, **c.config, 'sources': {k: str(v) for k, v in sources[c.id].items()}}
                           for c in selected]}, indent=2))
             return 0
         if not args.output:

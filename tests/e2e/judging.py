@@ -68,7 +68,8 @@ def packet(root):
         evidence = read_json(index)
         pieces.append(json.dumps({'root_id': evidence['root_id'], 'gaps': evidence.get('gaps', [])}))
         for agent in evidence.get('agents', []):
-            pieces.append(f"### Agent {agent['id']}; parent {agent.get('parent_id')}; tools {agent.get('tools')}")
+            pieces.append(f"### Agent {agent['id']}; parent {agent.get('parent_id')}; tools {agent.get('tools')}; "
+                          f"models {agent.get('models')}; efforts {agent.get('efforts')}")
             pieces.append(json.dumps({key: agent.get(key) for key in
                 ('gaps', 'error_count', 'calls_without_recorded_results')}, ensure_ascii=False))
             event_path = Path(agent['events_path'])

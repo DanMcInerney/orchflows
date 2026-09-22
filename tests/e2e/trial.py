@@ -1,5 +1,6 @@
 """Case context: isolated files, explicit native stages, and evidence."""
 import asyncio
+from collections import Counter
 from dataclasses import replace
 import fnmatch
 import os
@@ -9,6 +10,15 @@ import sys
 import time
 
 from common import HERE, copy_package, files_under, load_hook, read_json, snapshot, write_json
+
+
+def observed(parts):
+    """Sum native model/effort tallies of agents, stages or attempts; requests are recorded elsewhere."""
+    tallies = {'models': Counter(), 'efforts': Counter()}
+    for part in parts:
+        for key, tally in tallies.items():
+            tally.update(part.get(key) or {})
+    return {key: dict(tally) for key, tally in tallies.items()}
 
 
 class Trial:
@@ -96,7 +106,8 @@ class Trial:
         if execution['status'] != 'completed':
             gaps.append('Stage execution: ' + execution['status'])
         record = {'name': name, 'execution': execution, 'native': native, 'violations': violations,
-                  'gaps': gaps, 'after': after, 'workspace': str(workspace)}
+                  'gaps': gaps, 'observed': observed(evidence.get('agents', [])), 'after': after,
+                  'workspace': str(workspace)}
         write_json(directory / 'stage.json', record)
         self.stages.append(record)
         return workspace
@@ -117,6 +128,7 @@ class Trial:
                 'host_version': self.host.version, 'stages': self.stages,
                 'completed': bool(self.stages) and not self.gaps and all(s['execution']['status'] == 'completed'
                     and s['native'].get('terminal_success') for s in self.stages), 'gaps': gaps,
+                'observed': observed(s['observed'] for s in self.stages),
                 'conditions': 'Package and fixture copies; evaluator inputs withheld from target context. '
                               'Filesystem/network confinement is not guaranteed by the harness.'}
 

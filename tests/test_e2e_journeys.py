@@ -107,13 +107,42 @@ async def run(t):
         self.assertEqual(result['checks'], [])
         self.assertIn('broken checker', result['gaps'][0])
 
+    async def test_repeat_reports_each_case_across_attempts_with_observed_models(self):
+        class FlakyHost(FakeHost):
+            targets = 0
+            def command(self, packages, profile='local', *args, **kwargs):
+                if profile != 'audit':
+                    self.targets += 1
+                    if self.targets == 2:
+                        return [sys.executable, '-c', 'from pathlib import Path; Path("answer.txt").write_text("wrong")']
+                return super().command(packages, profile, *args, **kwargs)
+            def result(self, directory):
+                native = super().result(directory)
+                events = Path(directory)/'evidence/agent.events.jsonl'
+                events.write_text('')
+                write_json(Path(directory)/'evidence/index.json', {'root_id': 'fake', 'gaps': [], 'agents': [
+                    {'id': 'agent', 'events_path': str(events), 'models': {'model-a': 2}, 'efforts': {'high': 2}}]})
+                return native
+        output = self.root/'repeated'
+        args = SimpleNamespace(output=output, host='fake', executable=None, jobs=1,
+                               deadline=30, audit_seconds=5, repeat=2, package_root=[])
+        with patch('run.get_host', return_value=FlakyHost()):
+            self.assertEqual(await execute(args, [self.case], {self.case.id: self.sources}), 1)
+        summary = read_json(output/'summary.json')
+        self.assertEqual(summary['cases'], {'core/control': {
+            'attempts': 2, 'acceptable': 1, 'material_failure': 1, 'inconclusive': 0, 'all_acceptable': False,
+            'observed': {'models': {'model-a': 4}, 'efforts': {'high': 4}}}})
+        self.assertEqual([r['observed']['models'] for r in summary['results']], [{'model-a': 2}] * 2)
+        self.assertEqual(read_json(output/'core/control/1/report.json')['observed']['efforts'], {'high': 2})
+        self.assertIn('| core/control | 2 | 1 | 1 | 0 | no | model-a |', (output/'README.md').read_text())
+
     async def test_suite_interrupt_keeps_selected_denominator_and_partial_records(self):
         class SlowHost(FakeHost):
             def command(self, *args, **kwargs):
                 return [sys.executable, '-u', '-c', 'import time; print("partial", flush=True); time.sleep(30)']
         output = self.root/'interrupted'
         args = SimpleNamespace(output=output, host='fake', executable=None, jobs=1,
-                               deadline=15, audit_seconds=5, repeat=2)
+                               deadline=15, audit_seconds=5, repeat=2, package_root=[])
         with patch('run.get_host', return_value=SlowHost()):
             task = asyncio.create_task(execute(args, [self.case], {self.case.id: self.sources}))
             while not (output/'schedule.jsonl').exists():
