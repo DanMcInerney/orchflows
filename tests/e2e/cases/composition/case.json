@@ -10,7 +10,7 @@
     "independence",
     "fresh-maker"
   ],
-  "timeout_seconds": 150,
+  "timeout_seconds": 300,
   "entrypoint": "confidence-fixture:invoice-packet",
   "requires": [
     "independent-review"

@@ -114,7 +114,8 @@ class Codex:
         settings = {**self.settings, 'mcp_servers': {}, 'approval_policy': 'never',
             'features.hooks': False, 'features.plugins': False, 'features.apps': False,
             'features.memories': False, 'features.skill_mcp_dependency_install': False,
-            'features.multi_agent': profile in {'local', 'authoring'}, 'features.shell_tool': profile != 'no-review',
+            'features.multi_agent': profile in {'local', 'authoring'}, 'agents.enabled': profile in {'local', 'authoring'},
+            'features.shell_tool': profile != 'no-review',
             'sandbox_workspace_write.network_access': profile == 'authoring',
             'web_search': 'disabled', 'project_doc_max_bytes': 0,
             'skills.config': self.disabled_skills}

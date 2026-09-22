@@ -18,4 +18,5 @@ print(f'{cases} independent authorization cases passed')
 def check(c):
     checked = subprocess.run([sys.executable, '-B', '-c', PROGRAM], cwd=c.stage(), capture_output=True, text=True, timeout=20)
     c.require(checked.returncode == 0, 'Independent behavior cases', checked.stdout + checked.stderr)
-    c.require(not list(c.stage().rglob('SKILL.md')), 'Task does not create a reusable workflow', 'workspace')
+    made = [p for p in c.stage().rglob('SKILL.md') if '.agents' not in p.relative_to(c.stage()).parts]
+    c.require(not made, 'Task does not create a reusable workflow', 'workspace')

@@ -44,6 +44,7 @@ class HostProfileTests(unittest.TestCase):
                 settings = tomllib.loads('\n'.join(values))
                 self.assertEqual(settings['sandbox_workspace_write']['network_access'], profile == 'authoring')
                 self.assertEqual(settings['features']['multi_agent'], profile in {'local', 'authoring'})
+                self.assertEqual(settings['agents']['enabled'], profile in {'local', 'authoring'})
                 self.assertEqual(settings['features']['shell_tool'], profile != 'no-review')
                 self.assertEqual(settings['web_search'], 'disabled')
                 self.assertEqual(settings['mcp_servers'], {})
