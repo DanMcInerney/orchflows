@@ -1,6 +1,6 @@
 # Request
 
-Use Benchmaker to begin a substantial challenge benchmark for operational scheduling recovery. I ultimately want a calibrated pilot, then an unseen evaluation suite. In this authoring trial, create two development cases and execute one representative natively once. No paid judge or API calls, no installations. Allow up to ten minutes for the target attempt; declare other bounds before work starts.
+[invoke `benchmaker:benchmaker`] Begin a substantial challenge benchmark for operational scheduling recovery. I ultimately want a calibrated pilot, then an unseen evaluation suite. In this authoring trial, create two development cases and execute one representative natively once. No paid judge or API calls, no installations. Allow up to ten minutes for the target attempt; declare other bounds before work starts.
 
 Use this explicitly synthetic work brief: a venue change disrupts four sessions in a twelve-session training day. Six rooms have differing equipment and accessibility; instructors and attendees have overlapping commitments. Restore a compatible set of affected sessions through a resettable local service, preserve unaffected commitments, verify and record each affected session's final status, and prepare accurate notices inside the sandbox. Observable authority limits must govern any changes. An infeasible variant should permit supported escalation. Build the input snapshot and establish feasibility, accepting alternative valid assignments. Do not claim practitioner validation or independent source diversity for this invented scenario.
 
