@@ -66,7 +66,7 @@ class HomeSetupTests(unittest.TestCase):
         write(self.source / "docs/hosts.md", "Fixture host docs.\n")
         write(self.source / "README.md", "Fixture core.\n")
         (self.source / "scripts").mkdir()
-        for name in ("orchflows.py", "host_config.py", "host_integration.py", "agy_integration.py", "native_logs.py"):
+        for name in ("orchflows.py", "host_config.py", "host_integration.py", "agy_integration.py", "native_logs.py", "package_files.py"):
             shutil.copy2(SCRIPT.with_name(name), self.source / "scripts" / name)
         self.example = self.source / "example-workflows/social-search"
         package(self.example, "social-search")

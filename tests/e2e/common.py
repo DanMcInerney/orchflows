@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'scripts'))
 import orchflows
+import package_files
 
 
 def read_json(path):
@@ -33,7 +34,7 @@ def snapshot(root):
     root = Path(root)
     result = {}
     for path in sorted(root.rglob('*')):
-        if orchflows._is_link(path):
+        if package_files.is_link(path):
             raise ValueError(f'Evidence must not follow links: {path}')
         if path.is_file() and '__pycache__' not in path.parts:
             result[path.relative_to(root).as_posix()] = digest(path)

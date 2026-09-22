@@ -9,7 +9,6 @@ import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import shutil
-import stat
 import subprocess
 import sys
 import uuid
@@ -21,6 +20,7 @@ if __name__ == "__main__":
 import host_config
 import host_integration
 import native_logs
+import package_files
 
 
 CORE_NAME = "orchflows"
@@ -71,32 +71,11 @@ def _manifest(root: Path) -> dict:
     return {"name": _name(manifest["name"]), "version": manifest["version"]}
 
 
-def _is_link(path: Path) -> bool:
-    try:
-        return path.is_symlink() or bool(getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
-    except FileNotFoundError:
-        return False
-
-
 def _files(root: Path, *, core: bool) -> list[Path]:
     """Enumerate deployable bytes without following links or copying caches."""
-    paths = []
-
-    def visit(path: Path) -> None:
-        if path.name in {".git", "__pycache__"} or (core and path.name in {"tests", "example-workflows"}):
-            return
-        if _is_link(path):
-            raise ValueError(f"Package copy does not follow links: {path}")
-        if path.is_dir():
-            for child in sorted(path.iterdir()):
-                visit(child)
-        elif path.is_file():
-            paths.append(path)
-
-    for entry in ([root / entry for entry in CORE_ENTRIES] if core else sorted(root.iterdir())):
-        if entry.exists() or _is_link(entry):
-            visit(entry)
-    return sorted(paths, key=lambda path: path.relative_to(root).as_posix())
+    if core:
+        return package_files.files(root, entries=CORE_ENTRIES, skip={"tests", "example-workflows"})
+    return package_files.files(root)
 
 
 def _validate_core(root: Path) -> dict:
@@ -139,7 +118,7 @@ def _install(source: Path, destination: Path, *, core: bool) -> bool:
 
 
 def _seed_text(path: Path, contents: str) -> str:
-    if _is_link(path) or path.exists():
+    if package_files.is_link(path) or path.exists():
         return "preserved"
     path.write_text(contents, encoding="utf-8", newline="\n")
     return "created"
@@ -203,7 +182,7 @@ def _install_runtime(home: Path) -> tuple[str, list[str]]:
 def _example_plan(home: Path, source: Path, example: str) -> str:
     _name(example, "example")
     destination, example_source = home / "libraries" / example, source / "example-workflows" / example
-    if _is_link(destination):
+    if package_files.is_link(destination):
         raise ValueError(f"Setup does not write through links: {destination}")
     if destination.exists():
         return "preserved"
@@ -238,7 +217,7 @@ def setup(home: Path, source: Path, example: str | None = None, *,
         raise ValueError("--concurrency requires selected hosts")
     for relative in ("libraries", ".local", ".local/packages", f".local/packages/{CORE_NAME}", ".local/runtime",
                      ".agents", ".agents/plugins", ".claude-plugin", ".git"):
-        if _is_link(home / relative):
+        if package_files.is_link(home / relative):
             raise ValueError(f"Setup does not write through links: {home / relative}")
     if example is not None:
         _example_plan(home, source, example)
