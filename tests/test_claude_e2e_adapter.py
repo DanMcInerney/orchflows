@@ -94,6 +94,48 @@ class ClaudeAdapterTests(unittest.TestCase):
                     self.assertIn(expected, mismatches[0])
                     self.assertIn("['high']", mismatches[0])
 
+    def test_default_command_line_per_profile(self):
+        """The whole launch line: a change here changes every Claude trial."""
+        import hosts
+        self.enterContext(patch.dict(os.environ))
+        os.environ.pop('CLAUDE_CODE_EFFORT_LEVEL', None)
+        home = self.root / 'user-home'
+        write_json(home / 'settings.json', {'enabledPlugins': {'orchflows@local': True, 'other@market': True},
+                                            'model': 'opus', 'effortLevel': 'xhigh', 'hooks': {'Stop': []},
+                                            'modelSettings': {'opus': {'effort': 'high'}}})
+        with patch('hosts.claude.shutil.which', return_value='claude-native'), \
+                patch('hosts.claude.subprocess.check_output', return_value='2.1.280 (Claude Code)\n'), \
+                patch('hosts.claude.native_logs.native_home', return_value=home):
+            host = hosts.get_host('claude')
+        self.assertEqual((host.version, host.model, host.effort), ('2.1.280 (Claude Code)', 'claude-sonnet-5', 'high'))
+        settings = {'disableAllHooks': True, 'syncClaudeAiSkills': False, 'syncClaudeAiPlugins': False,
+                    'enabledPlugins': {'orchflows@local': False, 'other@market': False},
+                    'model': 'opus', 'effortLevel': 'xhigh'}
+        packages = {'orchflows': self.root / 'packages/orchflows', 'shared': self.root / 'packages/shared'}
+        schema = {'type': 'object'}
+        tools = {'local': 'Read,Write,Edit,Bash,Agent,Skill,Glob,Grep', 'authoring': 'Read,Write,Edit,Bash,Agent,Skill,Glob,Grep',
+                 'no-review': 'Read,Write,Edit,Skill,Glob,Grep', 'audit': 'Read,Glob,Grep'}
+        for profile, toolset in tools.items():
+            with self.subTest(profile=profile):
+                audit = profile == 'audit'
+                command = host.command({} if audit else packages, profile, schema if audit else None,
+                                       self.root if audit else None, directory=self.stage / profile)
+                session = command[command.index('--session-id') + 1]
+                self.assertEqual(json.loads(command[command.index('--settings') + 1]), settings)
+                expected = ['claude-native', '-p', '--verbose', '--output-format', 'stream-json',
+                            '--forward-subagent-text', '--session-id', session, '--permission-mode', 'dontAsk',
+                            '--tools', toolset, '--allowedTools', toolset, '--strict-mcp-config',
+                            '--setting-sources', 'user', '--settings', json.dumps(settings),
+                            '--model', 'claude-sonnet-5', '--effort', 'high']
+                if audit:
+                    expected += ['--restricted', '--add-dir', str(self.root), '--json-schema', json.dumps(schema)]
+                else:
+                    expected += ['--plugin-dir', str(packages['orchflows']), '--plugin-dir', str(packages['shared'])]
+                self.assertEqual(command, expected)
+                self.assertEqual(read_json(self.stage / profile / 'claude-launch.json'),
+                                 {'profile': profile, 'requested_effort': {'effortLevel': 'xhigh', '--effort': 'high',
+                                                                           'modelSettings': {'opus': {'effort': 'high'}}}})
+
     def test_command_records_requested_effort_without_changing_settings(self):
         self.host.settings = {'disableAllHooks': True, 'effortLevel': 'xhigh'}
         self.host.model_settings = {'opus': {'effort': 'high'}}
