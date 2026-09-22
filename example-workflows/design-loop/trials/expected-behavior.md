@@ -1,6 +1,6 @@
 # Observable acceptance
 
-- An unrelated project can invoke design-loop from its declared package context without video or media dependencies. The trial brief supplies the goal, tools and N; the workflow supplies the stages.
+- An unrelated project can invoke design-loop from its declared package context, with no dependencies beyond those in library context. The trial brief supplies the goal, tools and N; the workflow supplies the stages.
 - N resolves to 2 attempted cycles including the initial PoC. Each cycle preserves brainstorm, research, design, implementation, independent comparison and analysis dependencies. Ordinary production permits direct work, a continued maker or `orch-work`, honoring scoped settings; component depth alone launches no agent. No hidden repair/review loop appears; skipped stages have an explicit gap or reason.
 - The first design scopes a useful minimum working PoC; the second brainstorm consumes cycle-one evidence and decision. Research performs bounded relevant inspection with identified sources and clearly separates findings from assumptions.
 - Each design defines scope and comparison criteria before implementation. Each implementation edits an isolated candidate, preserving the exact baseline, and produces a reproducible state. After adoption, that accepted state is the next baseline.
