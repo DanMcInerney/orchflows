@@ -32,7 +32,7 @@ Use these native commands for optional libraries, development and manual recover
 
 Concurrency changes only on request; see [limits and supported hosts](#concurrency).
 
-After editing a library, rerun setup; leave manifest versions unchanged. Setup refreshes each installed package natively, then compares installed files with the source. Claude Code installs versioned cache copies that `plugin update` leaves stale at an unchanged version (observed on 2.1.280), so setup uninstalls and reinstalls a Claude package whose installed files differ. Files that still differ are reported; setup never edits private host caches. Kimi Code and ZCode refresh through the in-app steps below.
+After editing a library, rerun setup; leave manifest versions unchanged. Setup refreshes each installed package natively, then compares installed files with the source. Claude Code installs versioned cache copies that `plugin update` leaves stale at an unchanged version (observed on 2.1.280), so setup uninstalls and reinstalls a Claude package whose installed files differ (reinstall while a session has the plugin loaded is untested). Files that still differ are reported; setup never edits private host caches. Kimi Code and ZCode refresh through the in-app steps below.
 
 Setup verifies installed contents. Read-only Codex checks verify source, enabled registration and version; inventory omits the cache path, so `doctor` cannot detect same-version cache changes. Rerun setup to refresh and verify them.
 
@@ -68,7 +68,7 @@ Grok 1.0.5 can copy Windows local plugins while `plugin update` reports live lin
 
 Detected ZCode reports `needs_action` with the resolved home path. With a workspace open, use **Settings → Plugins → Create → Add marketplace**, choose home, and install `orchflows` and wanted libraries. Setup generates root `marketplace.json` with package paths/versions. ZCode reads `.claude-plugin/plugin.json`; no extra manifest. For development, add the checkout's root marketplace. Setup/doctor cannot verify this in-app step through a supported shell command.
 
-After edits, rerun setup, then uninstall and reinstall the edited library in the app. ZCode compares catalog and installed-manifest versions, so same-version edits do not appear as updates. Registration is documented through UI; do not assume a `zcode plugin` shell command. [Plugins](https://zcode.z.ai/en/docs/plugin).
+After edits, rerun setup, then uninstall and reinstall the edited library in the app (untested). ZCode compares catalog and installed-manifest versions, so same-version edits do not appear as updates. Registration is documented through UI; do not assume a `zcode plugin` shell command. [Plugins](https://zcode.z.ai/en/docs/plugin).
 
 Z.ai can supply Claude Code's model while retaining Claude's registration/invocation. Follow [provider setup](https://docs.z.ai/devpack/tool/claude), then the Claude installation above. Documented Anthropic-compatible endpoint: `https://api.z.ai/api/anthropic`; credentials and model mappings remain user-owned.
 

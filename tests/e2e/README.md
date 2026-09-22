@@ -85,7 +85,7 @@ Native child trees are copied using the existing history reader. Separate CLI tr
 
 - 2026-09-18, Claude Code 2.1.270 on Windows (observed models and efforts were not recorded then): smoke 4/4 acceptable and independently audited in one sample; evaluator calibration matched its four controls. Build's authoring and both example cases timed out, so full authoring and the examples have no behavioral pass.
 - Historical, Claude trials recorded before 2026-09-22: automatic selection chose Dynamic for a research-to-code request but skipped it for a trivial file-writing request; explicit invocation worked.
-- 2026-09-20, Codex gate pilot: host transport failures, timeouts and the account usage limit interrupted it, and the native Codex calibration did not run. The gate and next-stage suites have offline scorer controls only.
+- 2026-09-20, Codex gate pilot: host transport failures, timeouts and the account usage limit interrupted it, and the native Codex calibration did not run. Its native gate cases on Codex 0.154.0-alpha found four acceptable (research to code, missing vendor evidence, mixed-guidance page, review then single repair) and two Build/Dynamic save-and-reuse journeys judged material process failures after inner-trial transport blocks; the next-stage suite has offline scorer controls only.
 - 2026-09-22, Claude Code 2.1.280: a baseline of five cases was inconclusive for every attempt because the account had reached its usage limit.
 - Gaps: single attempts are not reliability estimates; Build's trial-before-review sequence needs a completed run that captures its inner trial identities.
 

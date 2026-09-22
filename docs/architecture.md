@@ -27,7 +27,7 @@ Only the top-level coordinator launches, assigns and continues agents. Children 
 
 Resolve dependencies, guidance, settings and caller constraints before dependent work. Honor scoped settings when working directly, continuing a suitable maker or using `orch-work`. Run independent work concurrently within host limits; give shared edits and external operations one owner. Gather required outcomes before dependent work; report missing work as a gap. Preserve authorization and reconcile uncertain actions before retrying.
 
-Return results, evidence and unresolved gaps. Keep durable state when needed by consumers or resumption; short tasks need no checkpoint protocol. Preserve workflow repetition, stopping rules and caller limits. Missing capabilities block only dependent work. Report unsupported controls; never replace required independent review with self-review.
+Return results, evidence and unresolved gaps. Keep outputs and durable state outside packages, which setup may replace; keep state only when consumers or resumption need it; short tasks need no checkpoint protocol. Preserve workflow repetition, stopping rules and caller limits. Missing capabilities block only dependent work. Report unsupported controls; never replace required independent review with self-review.
 
 ## Iteration bounds
 

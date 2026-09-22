@@ -103,6 +103,8 @@ def package(executable: str, home: Path, package: dict, existing: dict | None, *
     key = str(cache)
     receipt = receipts["installs"].get(key)
     if existing:
+        if isinstance(receipt, dict) and isinstance(receipt.get("files"), dict) and any(isinstance(facts, str) for facts in receipt["files"].values()):
+            return {"status": "needs_action", "message": "Antigravity receipt uses an earlier setup format; preserved. Uninstall the plugin with agy, then rerun setup"}
         if (not isinstance(receipt, dict) or not isinstance(receipt.get("source"), str)
                 or Path(receipt["source"]).resolve() != source.resolve()
                 or receipt.get("record") != existing.get("record")
