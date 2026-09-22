@@ -70,7 +70,7 @@ flowchart TB
 
 This describes host/model selection, not a routing engine. Named workflows keep their process; a missing named workflow remains a gap rather than silently becoming dynamic. Dynamic does not wrap selected primitives or restart inside children.
 
-Automatic selection is best-effort. Recorded Claude trials selected dynamic for research-to-code but skipped it for a trivial file-writing request. Explicit invocation worked. Select it explicitly when the process matters.
+Automatic selection is best-effort and varies by host and model; select a workflow explicitly when the process matters.
 
 ## What does dynamic decide?
 
