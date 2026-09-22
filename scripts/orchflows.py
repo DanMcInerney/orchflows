@@ -72,10 +72,10 @@ def _manifest(root: Path) -> dict:
 
 
 def _files(root: Path, *, core: bool) -> list[Path]:
-    """Enumerate deployable bytes without following links or copying caches."""
+    """Enumerate deployable bytes without following links, caches, tests or evaluator-only trials."""
     if core:
         return package_files.files(root, entries=CORE_ENTRIES, skip={"tests", "example-workflows"})
-    return package_files.files(root)
+    return package_files.files(root, skip={"trials"})
 
 
 def _validate_core(root: Path) -> dict:

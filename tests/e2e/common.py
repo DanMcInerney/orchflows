@@ -47,9 +47,11 @@ def copy_package(source, destination):
     identity = orchflows._manifest(source)
     destination.mkdir(parents=True, exist_ok=False)
     excluded = []
-    for path in orchflows._files(source, core=identity['name'] == 'orchflows'):
+    # Enumerate libraries whole so withheld evaluator material is recorded as excluded.
+    core = identity['name'] == 'orchflows'
+    for path in orchflows._files(source, core=True) if core else package_files.files(source):
         relative = path.relative_to(source)
-        if any(part in {'trials', 'tests', 'node_modules', '.venv'} for part in relative.parts):
+        if any(part in {'trials', 'tests'} for part in relative.parts):
             excluded.append(relative.as_posix())
             continue
         target = destination / relative

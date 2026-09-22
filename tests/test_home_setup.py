@@ -90,6 +90,7 @@ class HomeSetupTests(unittest.TestCase):
         write(self.source / ".git/config", "never copy source git")
         write(self.source / "tests/large-output.json", "never copy root tests")
         write(self.source / "scripts/__pycache__/discard.pyc", "never copy cache")
+        write(self.example / "trials/case/expected-behavior.md", "Evaluator-only; never install.\n")
         result = self.install(example=True)
         core = Path(result["core"]["package_root"])
         self.assertEqual(result["core"]["status"], "installed")
@@ -103,7 +104,10 @@ class HomeSetupTests(unittest.TestCase):
                          (self.source / ".kimi-plugin/plugin.json").read_bytes())
         for relative in (".git", "tests", "example-workflows", "scripts/__pycache__"):
             self.assertFalse((core / relative).exists(), relative)
-        self.assertEqual(snapshot(self.example), snapshot(self.home / "libraries/social-search"))
+        installed = self.home / "libraries/social-search"
+        self.assertFalse((installed / "trials").exists())
+        shutil.rmtree(self.example / "trials")
+        self.assertEqual(snapshot(self.example), snapshot(installed))
         self.assertEqual(orchflows.doctor(self.home)["checks"]["core"]["version"], "7.8.9")
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
         probe = subprocess.run([result["runtime_python"], "-I", "-c", "import importlib.util; print(importlib.util.find_spec('pip'))"], text=True, capture_output=True, check=True)
