@@ -83,12 +83,12 @@ class GateStudyTests(unittest.TestCase):
 
     def test_opt_in_suites_resolve_and_smoke_is_unchanged(self):
         cases = discover()
-        diagnostic = select(cases, 'gates')
-        authoring = select(cases, 'gates-authoring')
+        diagnostic = select(cases, ['gates'])
+        authoring = select(cases, ['gates-authoring'])
         self.assertEqual(len(diagnostic), 4)
         self.assertEqual(len(authoring), 2)
         self.assertFalse({c.id for c in diagnostic + authoring} &
-                         {c.id for c in select(cases, 'smoke')})
+                         {c.id for c in select(cases, ['smoke'])})
         for case in diagnostic + authoring:
             self.assertEqual(set(packages_for(case)), {'orchflows'})
 

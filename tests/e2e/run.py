@@ -150,7 +150,7 @@ def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--list', action='store_true')
     p.add_argument('--plan', action='store_true')
-    p.add_argument('--suite')
+    p.add_argument('--suite', action='append', default=[], help='Suite to run; repeat to combine suites (default: smoke)')
     p.add_argument('--case', action='append', default=[])
     p.add_argument('--case-root', type=Path, action='append', default=[])
     p.add_argument('--package-root', type=Path, action='append', default=[])
@@ -168,7 +168,7 @@ def main():
     p = parser()
     args = p.parse_args()
     if args.deadline is None:
-        args.deadline = 600 if args.suite == 'authoring' else 300
+        args.deadline = 600 if 'authoring' in args.suite else 300
     if min(args.jobs, args.deadline, args.audit_seconds, args.repeat) <= 0:
         p.error('Budgets and concurrency must be positive')
     try:

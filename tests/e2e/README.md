@@ -21,6 +21,8 @@ Opt-in development suites: `gates` and `gates-authoring` diagnose work-unit boun
 | `examples` | 300s | Shared comparison; Short Video review of a corrupt export |
 | Explicit `--case ID` | 300s | Selected cases only; repeat the flag to select more |
 
+Repeat `--suite` to combine suites; `--case` adds cases to them.
+
 Use `--deadline`, `--audit-seconds` (default 60), `--jobs` (default 3) and `--repeat` (default 1) deliberately. With `--repeat k`, `summary.json` `cases` gives each case's attempts, assessment counts and `all_acceptable` (pass^k), and the evidence README adds a line per case; single attempts are weak evidence of reliability. Case deadlines include preparation and stage waits; suite deadlines also include checks and audits. Cleanup may take up to 15 additional seconds. Deadlines bound waiting, not successful completion. The longer `core/dynamic-review`, `core/research-code` and `core/safe-authoring` cases need explicitly suitable suite budgets.
 
 One shared pool bounds harness-launched target and evaluator sessions. Target-owned subagents and Build's inner trial sessions are additional activity; this is not a global agent/cost cap. Independent cases and ready journey stages overlap. Dependent stages wait for frozen inputs. Each attempt gets distinct files, homes and native session IDs; there are no automatic retries or cached successes.

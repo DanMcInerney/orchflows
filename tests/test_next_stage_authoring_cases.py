@@ -102,7 +102,7 @@ class ReleaseAuthoringCasesTests(unittest.TestCase):
             self.assertEqual(set(packages_for(case)), {'orchflows'})
             self.assertEqual(case.timeout, deadline)
             self.assertEqual(case.config['profile'], 'local')
-            self.assertNotIn(case.id, {entry.id for entry in select(cases, 'smoke')})
+            self.assertNotIn(case.id, {entry.id for entry in select(cases, ['smoke'])})
         self.assertNotIn('entrypoint', cases['core/next-stage/release-direct'].config)
         self.assertEqual(cases['core/next-stage/release-build'].config['entrypoint'],
                          'orchflows:orch-build-workflow')
