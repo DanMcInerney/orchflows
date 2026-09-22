@@ -20,6 +20,6 @@ Provide named hard-to-reach scenarios, feasible seeds and explanatory snapshots.
 
 ## Review
 
-Begin with public instructions only; attempt goal discovery, start, action and consequence interpretation before maker explanations/solutions. Then complete adaptive play under the common criteria.
+Begin with public instructions only; attempt goal discovery, start, action and consequence interpretation before maker explanations/solutions, recording comprehension, time to meaningful action, control/camera and setback clarity, and uncertainty. Then complete adaptive play under the common criteria.
 
 After first play, use design notes, scenarios and summaries diagnostically. Waste/hoard resources, test boundaries and try to defeat tradeoffs. Support judgments with observed episodes and preserve the distinction between uninformed play and later diagnostics.

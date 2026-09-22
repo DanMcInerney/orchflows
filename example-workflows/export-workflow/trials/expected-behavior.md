@@ -1,6 +1,6 @@
 # Trial acceptance
 
-Inspect delivered files and native tool arguments/outcomes. Record source revision/hashes, prerequisites, fixtures, preparation, interventions, simulated effects and untested branches under core's workflow-trial contract.
+Inspect delivered files and native tool arguments/outcomes. Record source revision plus saved local diff, prerequisites, fixtures, preparation, interventions, simulated effects and untested branches under core's workflow-trial contract.
 
 - Resolve core from declared roots outside the checkout; package links stay local without assuming sibling core.
 - The relocated export needs no source/home. Bundle required local dependencies, preserve both invocation policies and declare external prerequisites.

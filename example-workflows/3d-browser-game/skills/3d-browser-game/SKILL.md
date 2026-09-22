@@ -4,7 +4,7 @@ description: Build a complete Three.js game or bounded production phase through 
 disable-model-invocation: true
 ---
 
-Apply [library context](../../references/library-context.md) in the caller. Inputs: player brief, existing project, target conditions, workspace and constraints. Choose and record unspecified creative details; ask only when a missing choice blocks progress. A bounded phase uses its prerequisites and returns reached work without claiming a finished game.
+The coordinator applies [library context](../../references/library-context.md). Inputs: player brief, existing project, target conditions, workspace and constraints. Choose and record unspecified creative details; ask only when a missing choice blocks progress. A bounded phase uses its prerequisites and returns reached work without claiming a finished game.
 
 Use shared creative direction and one integration owner. Production staffing follows core execution rules; only the two playtests require fresh independent reviewers. Missing capabilities block dependent work.
 
@@ -14,7 +14,7 @@ Use [evidence](../../references/evidence.md) for candidate identities and `ready
 
 Each checkpoint permits at most one necessary repair pass: reproduce material findings, fix shared causes, rebuild and replay affected situations plus start–play–outcome–retry. Recapture changed visuals and remeasure affected performance. Preserve the original report and identify the delivered revision; subsequent checks are maker verification, not renewed independent acceptance. Honor scoped repair settings.
 
-An unchanged ready candidate needs no repair, rebuild or replay. Pre-checkpoint QA/tuning is ordinary production. No second independent review is included; extra review/repair rounds require a caller request. If a checkpoint remains needs change or unverified, stop dependent production and return the best runnable state, findings and precise next action.
+An unchanged ready candidate needs no repair, rebuild or replay. Pre-checkpoint QA/tuning is ordinary production. If a checkpoint remains needs change or unverified, stop dependent production and return the best runnable state, findings and precise next action.
 
 ## 1. Establish scope and capabilities
 
@@ -28,7 +28,7 @@ Compare at least three materially different mechanics; choose rules, controls, t
 
 Build a Three.js graybox under the [test interface](../../references/test-interface.md) and [Three.js reference](../../references/threejs.md). Complete the session with responsive controls, readable placeholders, real collision/progression, an outcome and ordinary-input restart. Verify rule behavior, interface and production boot before experiments; control defects must not distort them.
 
-Run **two focused mechanics experiments**. Each predicts how one rule/parameter change affects decisions, compares observed baseline and changed behavior in the same scenario, and records the chosen setting and contrary evidence. Include alternate strategies, misuse and recovery. If meaningful decisions remain absent, report needs change before independent review.
+Run two focused mechanics experiments. Each predicts how one rule/parameter change affects decisions, compares observed baseline and changed behavior in the same scenario, and records the chosen setting and contrary evidence. Include alternate strategies, misuse and recovery. If meaningful decisions remain absent, report needs change before independent review.
 
 The core handoff includes the runnable graybox, mechanics comparison/choice, scenario predictions, two observed before/after experiments, verified controls/interface and a complete ordinary session. Final assets wait for the core checkpoint.
 
@@ -36,7 +36,7 @@ The core handoff includes the runnable graybox, mechanics comparison/choice, sce
 
 Apply [playtest-3d-browser-game](../playtest-3d-browser-game/SKILL.md) in `core` mode to the frozen candidate with its required inputs and evidence. Missing uncoached/adaptive browser play is unverified. Apply the checkpoint rule after the completed report.
 
-Only a ready core advances. Record established rules, camera, timing and collider contracts for art/content; later changes require affected gameplay checks. After repair, maker verification establishes the delivered baseline without a second independent acceptance.
+Only a ready core advances. Record established rules, camera, timing and collider contracts for art/content; later changes require affected gameplay checks.
 
 ## 4. Produce and integrate
 

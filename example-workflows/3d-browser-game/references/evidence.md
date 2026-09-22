@@ -12,7 +12,7 @@ Keep reproducible findings and distinguishable candidates in the project. Use re
 
 ## Identity and conditions
 
-Use a full commit only if it identifies all tested source. Otherwise hash relevant source/configuration/lockfile/assets and built files, excluding dependencies, caches and evidence. Embed source identity in the running build; record the served production directory or immutable preview URL. Commits alone omit dirty changes; screenshot names do not identify builds.
+Use a full commit only if it identifies all tested source. Otherwise record the commit plus a saved diff of relevant uncommitted source/configuration/lockfile changes and the paths and byte sizes of changed assets and built files, or keep an exact copy; exclude dependencies, caches and evidence. Embed source identity in the running build; record the served production directory or immutable preview URL. Commits alone omit dirty changes; screenshot names do not identify builds.
 
 Freeze edits or give reviewers an exact copy and isolated server. Record browser, renderer/backend, viewport, pixel ratio, quality, seed/scenario, mode, throttling and assistance. Preserve original review identity after repairs; identify delivered-revision maker verification separately.
 

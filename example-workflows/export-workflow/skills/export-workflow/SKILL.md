@@ -18,4 +18,4 @@ Run one bounded representative trial under core `docs/hosts.md#workflow-trials` 
 
 After the trial and its required judgments complete, apply `shared:review-revise-once` to the stable export, source, requirements, author guidance and trial evidence. Scope repairs to export/portability checks. If repairs change trial behavior, repeat affected trial once under the same contract. Missing prerequisites block dependent trials, not gap disclosure.
 
-Deliver folder and sibling report: source revision plus local changes or hashes; libraries/guidance order; host; bundled dependencies; external tools; behavior changes; original review/delivered revision; checks/trial limits. Source updates require re-export. Claim native availability only after separate verified registration.
+Deliver folder and sibling report: source revision plus a saved diff of local changes; libraries/guidance order; host; bundled dependencies; external tools; behavior changes; original review/delivered revision; checks/trial limits. Source updates require re-export. Claim native availability only after separate verified registration.

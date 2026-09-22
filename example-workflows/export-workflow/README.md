@@ -42,7 +42,7 @@ The relocated copy runs in a fresh top-level session with only the export, ordin
 
 ## What you receive
 
-The installable folder has `SKILL.md` and its required resources. A sibling report records source revision/hashes, library and guidance order, target host, bundled dependencies, external prerequisites, behavior changes, reviewed/delivered identities and validation limits. Trial outputs stay outside the installable folder.
+The installable folder has `SKILL.md` and its required resources. A sibling report records source revision plus a saved diff of local changes, library and guidance order, target host, bundled dependencies, external prerequisites, behavior changes, reviewed/delivered identities and validation limits. Trial outputs stay outside the installable folder.
 
 Tools, runtimes and authentication remain prerequisites; export provisions none. Single-file or single-agent requests can require disclosed losses. Missing required behavior makes the export incomplete. Simulated trials establish local behavior, not live integration. Source changes require re-export; installation and verified native registration are separate steps. The [export contract](skills/export-workflow/references/export-contract.md) defines fidelity and these limits.
 
@@ -57,4 +57,4 @@ python scripts/orchflows.py setup --example export-workflow
 
 Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing library copies and installs no runtime dependencies. The skill is manual-only by default.
 
-Requires **core and shared**, native child delegation, filesystem access, source dependencies and bounded-trial tools. Setup does not install transitive dependencies; update an older shared copy before refreshing host registration. See [library context](references/library-context.md). The [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) are specifications, not observed passes.
+Requires **core and shared**, native child delegation, filesystem access, source dependencies and bounded-trial tools. Setup does not install transitive dependencies; update an older shared copy before refreshing host registration. See [library context](references/library-context.md). The [trial request](trials/request.md) and its evaluator-only acceptance criteria are specifications, not observed passes.

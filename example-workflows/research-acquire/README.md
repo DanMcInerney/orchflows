@@ -96,6 +96,6 @@ python -m unittest discover -s tests -t .
 python scripts/acquire_fixture.py --output <scratch>
 ```
 
-The fixture exercises parsing, selected depth and resume without live access. These checks establish neither live availability nor research quality.
+The fixture exercises parsing, selected depth and resume without live access. These checks establish neither live availability nor research quality. The manual [trial request](trials/hacker-news-resume/request.md) exercises live Hacker News selection and resume; it and its evaluator-only acceptance criteria are specifications, not observed passes. [Library context](references/library-context.md) states dependencies for agents.
 
 Backend adapted from [recent-search](https://github.com/DanMcInerney/orchflows/tree/945546721732aa564a086ee9543803b38017e1c3/example-workflows/recent-search) under its [MIT license](LICENSE).
