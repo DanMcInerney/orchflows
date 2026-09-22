@@ -51,7 +51,7 @@ Honor settings for every assignment, including repairs. Work directly or reuse a
 
 ## Guidance selection
 
-Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Keep temporary model corrections separately removable; role-only files remain valid. Select `orchflows` for process design and authoring; the domain being extended is source material for its author. A coordinator's planning guidance does not become task-worker guidance or add a review gate. Workflow/guidance authors and their reviewers use `orchflows`; task makers and reviewers receive the guidance for their actual results.
+Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Role-only files remain valid. Select `orchflows` for process design and authoring; the domain being extended is source material for its author. A coordinator's planning guidance does not become task-worker guidance or add a review gate. Workflow/guidance authors and their reviewers use `orchflows`; task makers and reviewers receive the guidance for their actual results.
 
 Brevity, style and approximate file size are preferences, not acceptance gates unless the user or output contract makes them strict. Correctness, allowed effects and explicit resource bounds remain binding.
 

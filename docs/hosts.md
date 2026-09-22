@@ -1,8 +1,17 @@
 # Hosts
 
-Checked 2026-09-16: Codex 0.144.0 and Claude Code 2.1.270 installer commands. Host behavior varies by version.
+Host behavior varies by version. No check below establishes authenticated workflow execution.
 
-Official documentation checked that day for Google Antigravity (`agy`), Kimi Code, Grok Build and Z.ai's ZCode. Antigravity CLI 1.0.14 and Grok 1.0.5 passed local installation/discovery checks. Installed Kimi 0.29.0 predates documented plugin/model-pool support; native loading is unverified. ZCode registration and agent behavior are documentation-verified only. None establishes authenticated workflow execution. Skill invocation and delegation documentation was rechecked 2026-09-21 for Codex, Kimi Code 2.0.2, Antigravity CLI 1.2.6 and ZCode 3.14.1; Claude Code loading by name was verified in native trials. Documentation rechecked 2026-09-22 for Claude Code 2.1.280 (required for Opus 5.5) and Codex 0.155.1; installed CLIs remained Claude Code 2.1.270 and Codex 0.144.0, so facts added that day are documentation-verified only.
+| Host | Last verified locally | Documentation last checked |
+| --- | --- | --- |
+| Codex | 0.144.0 installer commands, 2026-09-16 | Skills and delegation 2026-09-21; 0.155.1 on 2026-09-22 |
+| Claude Code | 2.1.270 installer commands, 2026-09-16; loading by name in native trials; 2.1.280, installed after the recheck below, for same-version plugin refresh only, 2026-09-22 | 2.1.280 (required for Opus 5.5), 2026-09-22 |
+| Antigravity (`agy`) | CLI 1.0.14 installation and discovery, 2026-09-16 | CLI 1.2.6, 2026-09-21 |
+| Kimi Code | Installed 0.29.0 predates documented plugin and model-pool support; native loading unverified | 2.0.2, 2026-09-21 |
+| Grok Build | 1.0.5 installation and discovery, 2026-09-16 | 2026-09-16 |
+| ZCode | Registration and agent behavior documentation-verified only | 3.14.1, 2026-09-21 |
+
+Documentation rechecked 2026-09-22 for Claude Code 2.1.280 (required for Opus 5.5) and Codex 0.155.1; installed CLIs remained Claude Code 2.1.270 and Codex 0.144.0, so facts added that day are documentation-verified only.
 
 ## Register and refresh
 
@@ -16,14 +25,14 @@ Use these native commands for optional libraries, development and manual recover
 | --- | --- | --- |
 | Register home | `codex plugin marketplace add <home>` | `claude plugin marketplace add <home>` |
 | Install | `codex plugin add <lib>@orchflows-home` | `claude plugin install <lib>@orchflows-home --scope user` |
-| After editing a library | bump manifest versions; `codex plugin add <lib>@orchflows-home` | bump manifest versions; `claude plugin marketplace update orchflows-home`; `claude plugin update <lib>@orchflows-home` |
+| After editing a library | rerun setup (see below), or `codex plugin add <lib>@orchflows-home` | rerun setup (see below), or `claude plugin marketplace update orchflows-home`; `claude plugin uninstall <lib>@orchflows-home --keep-data`; `claude plugin install <lib>@orchflows-home --scope user` |
 | Invoke | `$<lib>:<skill>` or `/skills` | `/<lib>:<skill>` |
 | Core development | register the checkout's `orchflows-local` catalog; install `orchflows@orchflows-local` | same, or `claude --plugin-dir <checkout>` |
 | Custom agent definitions | `.codex/agents/*.toml`, `~/.codex/agents/` | `.claude/agents/*.md`, `~/.claude/agents/` |
 
 Concurrency changes only on request; see [limits and supported hosts](#concurrency).
 
-For stale installations, bump all manifest versions and rerun setup. Claude may reuse same-version caches. Setup reports mismatched files without editing private host caches.
+After editing a library, rerun setup; leave manifest versions unchanged. Setup refreshes each installed package natively, then compares installed files with the source. Claude Code installs versioned cache copies that `plugin update` leaves stale at an unchanged version (observed on 2.1.280), so setup uninstalls and reinstalls a Claude package whose installed files differ. Files that still differ are reported; setup never edits private host caches. Kimi Code and ZCode refresh through the in-app steps below.
 
 Setup verifies installed contents. Read-only Codex checks verify source, enabled registration and version; inventory omits the cache path, so `doctor` cannot detect same-version cache changes. Rerun setup to refresh and verify them.
 
@@ -49,7 +58,7 @@ Skills retain unqualified frontmatter names, e.g. `/skill:orch-build-workflow`; 
 
 ### Grok Build
 
-Before installing core, setup checks `grok inspect --json` for effective installations, including Claude-compatible copies. Manually install with `grok plugin install <absolute-package-root>`; use the checkout for development. Verify with `grok plugin validate <package-root>` and workspace-local `grok inspect --json`; after edits, run `grok plugin update` and verify loaded paths. `grok plugin marketplace add <home>` registers the Claude-compatible catalog for `/plugins`. [CLI reference](https://docs.x.ai/build/cli/reference).
+Before installing core, setup checks `grok inspect --json` for effective installations, including Claude-compatible copies. Manually install with `grok plugin install <absolute-package-root>`; use the checkout for development. Verify with `grok plugin validate <package-root>` and workspace-local `grok inspect --json`; after edits, rerun setup, which reinstalls stale copies as described below, and verify loaded paths. `grok plugin marketplace add <home>` registers the Claude-compatible catalog for `/plugins`. [CLI reference](https://docs.x.ai/build/cli/reference).
 
 Grok reads `.claude-plugin` packages and can discover Claude installations automatically. Check for stale compatible copies and keep one core enabled. Skills appear in `/skills` and as `/<skill-name>`; use displayed qualified names for collisions. Grok honors `disable-model-invocation`; skill-frontmatter `model`/`effort` do not select agent settings. [Skills and plugins](https://docs.x.ai/build/features/skills-plugins-marketplaces).
 
@@ -59,7 +68,7 @@ Grok 1.0.5 can copy Windows local plugins while `plugin update` reports live lin
 
 Detected ZCode reports `needs_action` with the resolved home path. With a workspace open, use **Settings → Plugins → Create → Add marketplace**, choose home, and install `orchflows` and wanted libraries. Setup generates root `marketplace.json` with package paths/versions. ZCode reads `.claude-plugin/plugin.json`; no extra manifest. For development, add the checkout's root marketplace. Setup/doctor cannot verify this in-app step through a supported shell command.
 
-After edits, bump versions, rerun setup, refresh the marketplace and check for updates. ZCode compares catalog and installed-manifest versions. Registration is documented through UI; do not assume a `zcode plugin` shell command. [Plugins](https://zcode.z.ai/en/docs/plugin).
+After edits, rerun setup, then uninstall and reinstall the edited library in the app. ZCode compares catalog and installed-manifest versions, so same-version edits do not appear as updates. Registration is documented through UI; do not assume a `zcode plugin` shell command. [Plugins](https://zcode.z.ai/en/docs/plugin).
 
 Z.ai can supply Claude Code's model while retaining Claude's registration/invocation. Follow [provider setup](https://docs.z.ai/devpack/tool/claude), then the Claude installation above. Documented Anthropic-compatible endpoint: `https://api.z.ai/api/anthropic`; credentials and model mappings remain user-owned.
 
@@ -105,7 +114,7 @@ ZCode ignores unsupported frontmatter and cannot disable automatic skill selecti
 
 Antigravity documents automatic discovery, not `disable-model-invocation` support. Keep the field for other hosts and report missing enforcement. `disable-slash-command` hides explicit invocation but permits model invocation, so cannot enforce this contract. [Skills](https://www.agy.dev/docs/skills/), [CLI changelog](https://www.agy.dev/changelog?tab=cli).
 
-These settings also govern loading by name: Claude and Kimi hide manual-only skills from the model and refuse its calls (Claude also blocks subagent preloading); Codex omits them from the model's skill list. ZCode and Antigravity cannot hide skills, so dependencies load there regardless. Codex and Claude-compatible hosts expose plugin skills as `<library>:<skill>`; Kimi, ZCode and Antigravity use bare skill names, so load a named dependency by its bare name there. Composition applies loaded workflow files in the coordinator; same-package steps follow relative links, and supplied paths may be read directly where permitted. A refused or missing named dependency is a packaging defect: never bypass the rejection; report it as a capability gap. [Codex policy](https://learn.chatgpt.com/docs/build-skills#optional-metadata), [Claude control](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill), [Kimi skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html).
+These settings also govern loading by name: Claude and Kimi hide manual-only skills from the model and refuse its calls (Claude also blocks subagent preloading); Codex omits them from the model's skill list. ZCode and Antigravity cannot hide skills, so dependencies load there regardless. Codex and Claude Code expose plugin skills as `<library>:<skill>`. Grok uses bare skill names, qualified only when names collide; Kimi, ZCode and Antigravity use bare skill names. Load a named dependency by the name its host exposes. Composition applies loaded workflow files in the coordinator; same-package steps follow relative links, and supplied paths may be read directly where permitted. A refused or missing named dependency is a packaging defect: never bypass the rejection; report it as a capability gap. [Codex policy](https://learn.chatgpt.com/docs/build-skills#optional-metadata), [Claude control](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill), [Kimi skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html).
 
 ## Loading
 
