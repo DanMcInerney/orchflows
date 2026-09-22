@@ -61,4 +61,4 @@ python scripts/orchflows.py setup --example design-loop
 
 Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh) for both packages, then start a new session. Setup preserves copies; it installs neither transitive dependencies nor project tools. Requires **Orchflows**; full cycles and standalone testing also require **shared** and native independent review. [Library context](references/library-context.md) covers task tools, snapshots and guidance.
 
-**Validation limit:** a standalone testing trial separated an intended improvement from a regression without repair or adoption. It tested resolved-file composition, not full cycles or skill-name registration. The [full-loop trial](trials/request.md) remains a specification.
+**Validation limit:** a standalone testing trial separated an intended improvement from a regression without repair or adoption. It tested resolved-file composition, not full cycles or skill-name registration. The [full-loop trial](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/design-loop/trials/request.md) remains a specification.

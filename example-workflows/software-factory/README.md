@@ -65,4 +65,4 @@ Setup preserves existing library copies and installs no project tools. Complete 
 
 Requires core, native children and project build/check tools. CI, release, flags and telemetry are needed by dependent stages; no scheduler, service adapters or production access are bundled. See [library context](references/library-context.md).
 
-Inspired by [The Pragmatic Engineer's software-factory account](https://newsletter.pragmaticengineer.com/p/openai-software-factory). The [portable trial request](trials/request.md) specifies a local trial of all three entry points.
+Inspired by [The Pragmatic Engineer's software-factory account](https://newsletter.pragmaticengineer.com/p/openai-software-factory). The [portable trial request](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/software-factory/trials/request.md) specifies a local trial of all three entry points.

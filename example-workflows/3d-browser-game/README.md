@@ -57,4 +57,4 @@ Setup preserves existing copies and installs no runtimes. Complete any reported 
 
 Requires core, native children, JavaScript/package tools, browser rendering/input and Blender with Python/glTF export. Declare Three.js, build and optional physics/test dependencies in the project lockfile. Image generation is optional; [library context](references/library-context.md) defines capability probes.
 
-Actual play and target-device performance remain unverified when the necessary tools or hardware are missing. Public deployment needs a hosting request. The [trial request](trials/request.md) and its evaluator-only acceptance criteria specify expected behavior; they do not establish complete native validation or game quality.
+Actual play and target-device performance remain unverified when the necessary tools or hardware are missing. Public deployment needs a hosting request. The [trial request](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/3d-browser-game/trials/request.md) and its evaluator-only acceptance criteria specify expected behavior; they do not establish complete native validation or game quality.

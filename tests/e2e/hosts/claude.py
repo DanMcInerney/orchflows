@@ -24,7 +24,8 @@ class Claude:
         self.home = native_logs.native_home('claude')
         settings = read_json(self.home / 'settings.json') if (self.home / 'settings.json').exists() else {}
         # Disable ambient plugin activation and hooks for this invocation only.
-        self.settings = {'disableAllHooks': True, 'enabledPlugins':
+        # Account-synced claude.ai skills and plugins would join the frozen packages (probe 2026-09-22).
+        self.settings = {'disableAllHooks': True, 'syncClaudeAiSkills': False, 'syncClaudeAiPlugins': False, 'enabledPlugins':
                          {name: False for name in settings.get('enabledPlugins', {})}}
         self.settings.update({key: settings[key] for key in ('model', 'effortLevel') if key in settings})
         self.model_settings = settings.get('modelSettings')
