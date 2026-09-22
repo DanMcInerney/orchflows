@@ -118,7 +118,7 @@ class AntigravityTests(unittest.TestCase):
         self.assertIn(("plugin", "uninstall", "orchflows"), self.actions)
         self.assertTrue(package_files.same(self.source, self.cache))
 
-    def test_digest_receipts_from_before_plain_facts_are_untracked(self):
+    def test_digest_receipts_from_before_plain_facts_ask_for_reinstall(self):
         self.install()
         path = self.home / ".local/agy-installs.json"
         receipts = json.loads(path.read_text())
@@ -127,7 +127,7 @@ class AntigravityTests(unittest.TestCase):
         path.write_text(json.dumps({"version": 1, **receipts}))
         result = self.integrate()
         self.assertEqual(result["status"], "needs_action")
-        self.assertIn("not tracked", result["packages"]["orchflows"]["message"])
+        self.assertIn("earlier setup format", result["packages"]["orchflows"]["message"])
         self.assert_read_only()
 
     def test_disabled_owned_installation_is_preserved(self):
@@ -141,7 +141,7 @@ class AntigravityTests(unittest.TestCase):
         shutil.copytree(self.source, self.cache)
         result = self.integrate()
         self.assertEqual(result["status"], "needs_action")
-        self.assertIn("not tracked", result["packages"]["orchflows"]["message"])
+        self.assertIn("earlier setup format", result["packages"]["orchflows"]["message"])
         self.assert_read_only()
         self.assertFalse((self.home / ".local/agy-installs.json").exists())
 
