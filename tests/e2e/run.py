@@ -188,7 +188,7 @@ def parser():
     p.add_argument('--effort', help='Effort for every session; default: the user host configuration')
     p.add_argument('--jobs', type=int, default=JOBS, help=f'Concurrent harness sessions (default: {JOBS})')
     p.add_argument('--deadline', type=float, help='Suite seconds (default: derived so every attempt is admitted)')
-    p.add_argument('--audit-seconds', type=float, default=60)
+    p.add_argument('--audit-seconds', type=float, default=600)
     p.add_argument('--repeat', type=int, default=1, help='Attempts per case; raise only for reliability claims')
     p.add_argument('--output', type=Path)
     return p

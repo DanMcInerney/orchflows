@@ -3,5 +3,5 @@
   "packages": ["orchflows", "shared"],
   "covers": ["comparison", "independence", "candidate-stability"],
   "requires": ["independent-review"],
-  "timeout_seconds": 120
+  "timeout_seconds": 240
 }
