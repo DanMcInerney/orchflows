@@ -95,6 +95,14 @@ class HostProfileTests(unittest.TestCase):
         self.assertEqual(command[command.index('--effort') + 1], 'low')
         self.assertEqual(read_json(self.root / 'claude-override' / 'claude-launch.json')['requested_effort']['--effort'], 'low')
 
+    def test_trials_default_to_cheap_models(self):
+        import hosts
+        with mock.patch('hosts.codex.Codex', side_effect=lambda *a: a), mock.patch('hosts.claude.Claude', side_effect=lambda *a: a):
+            self.assertEqual(hosts.get_host('codex'), (None, 'gpt-5.6-luna', 'xhigh'))
+            self.assertEqual(hosts.get_host('claude'), (None, 'claude-haiku-4-5', None))
+            self.assertEqual(hosts.get_host('codex', None, 'gpt-5.5'), (None, 'gpt-5.5', None))
+            self.assertEqual(hosts.get_host('codex', None, None, 'medium'), (None, 'gpt-5.6-luna', 'medium'))
+
 
 if __name__ == '__main__':
     unittest.main()

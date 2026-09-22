@@ -91,7 +91,7 @@ async def execute(args, selected, sources):
     host = get_host(args.host, args.executable, getattr(args, 'model', None), getattr(args, 'effort', None))
     write_json(output / 'plan.json', {'host': args.host, 'host_version': host.version, 'jobs': args.jobs,
         'deadline': args.deadline, 'audit_seconds': args.audit_seconds, 'repeat': args.repeat,
-        'model': getattr(args, 'model', None), 'effort': getattr(args, 'effort', None),
+        'model': getattr(host, 'model', None), 'effort': getattr(host, 'effort', None),
         'package_overrides': overrides(getattr(args, 'package_root', ())), 'cases': [{'id': c.id, **c.config, 'source': str(c.path)} for c in selected]})
     # A bounded case admission pool avoids starting every case deadline while queued.
     admission = asyncio.Semaphore(args.jobs)

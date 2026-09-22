@@ -98,6 +98,7 @@ class Codex:
         self.settings = {key: settings[key] for key in
             ('model', 'model_reasoning_effort', 'model_provider', 'model_providers', 'service_tier', 'windows')
             if key in settings}
+        self.model, self.effort = model, effort
         if model:
             self.settings['model'] = model
         if effort:
