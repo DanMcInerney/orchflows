@@ -139,14 +139,18 @@ def runtime_python(home: Path) -> Path:
     return home / ".local/runtime" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
+def _registrable(libraries: list[dict]) -> list[dict]:
+    """Home libraries that catalogs and hosts may register: unique names other than core."""
+    names = [entry["name"] for entry in libraries]
+    return [entry for entry in libraries if entry["name"] != CORE_NAME and names.count(entry["name"]) == 1]
+
+
 def _catalog_texts(home: Path, libraries: list[dict], core_version: str | None = None) -> dict[str, str]:
     sources = {CORE_NAME: f"./.local/packages/{CORE_NAME}"}
     versions = {CORE_NAME: core_version}
-    names = [entry["name"] for entry in libraries]
-    for entry in libraries:
-        if entry["name"] != CORE_NAME and names.count(entry["name"]) == 1:
-            sources[entry["name"]] = "./" + Path(entry["package_root"]).relative_to(home).as_posix()
-            versions[entry["name"]] = entry["version"]
+    for entry in _registrable(libraries):
+        sources[entry["name"]] = "./" + Path(entry["package_root"]).relative_to(home).as_posix()
+        versions[entry["name"]] = entry["version"]
     catalogs = {
         ".agents/plugins/marketplace.json": {
             "name": "orchflows-home",
@@ -273,9 +277,7 @@ def setup(home: Path, source: Path, example: str | None = None, *,
         host_configs, host_issues = host_config.apply_host_configs(host_plans)
         host_configs.update(config_failures)
         issues.extend(config_issues + host_issues)
-        packages = [{**manifest, "package_root": str(core_path)},
-                    *[entry for entry in libraries if entry["name"] != CORE_NAME
-                      and sum(other["name"] == entry["name"] for other in libraries) == 1]]
+        packages = [{**manifest, "package_root": str(core_path)}, *_registrable(libraries)]
         registrations = host_integration.integrate(home, packages, detected, install=True,
                                                   requested=(CORE_NAME, example) if example else (CORE_NAME,))
         issues.extend(host_integration.issues(registrations))
@@ -373,8 +375,7 @@ def doctor(home: Path, hosts: list[str] | tuple[str, ...] | None = None) -> dict
         if stale:
             issues.append(f"Catalog {relative} does not match the installed libraries; rerun setup")
     packages = [checks["core"]] if isinstance(checks["core"], dict) else []
-    packages.extend(entry for entry in entries if entry["name"] != CORE_NAME
-                    and sum(other["name"] == entry["name"] for other in entries) == 1)
+    packages.extend(_registrable(entries))
     registrations = host_integration.integrate(home, packages, host_integration.detect(hosts)) if home.is_dir() else {}
     issues.extend(host_integration.issues(registrations))
     return {"status": "incomplete" if issues else "ready", "home": str(home), "checks": checks, "hosts": registrations,
