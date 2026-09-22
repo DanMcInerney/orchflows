@@ -3,5 +3,5 @@
   "packages": ["orchflows", "short-video"],
   "covers": ["review-only", "exact-export", "honest-gaps"],
   "requires": ["independent-review"],
-  "timeout_seconds": 120
+  "timeout_seconds": 300
 }

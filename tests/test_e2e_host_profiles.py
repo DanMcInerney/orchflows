@@ -5,6 +5,7 @@ import sys
 import tempfile
 import tomllib
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tests/e2e'))
 from catalog import discover
@@ -43,6 +44,7 @@ class HostProfileTests(unittest.TestCase):
                 settings = tomllib.loads('\n'.join(values))
                 self.assertEqual(settings['sandbox_workspace_write']['network_access'], profile == 'authoring')
                 self.assertEqual(settings['features']['multi_agent'], profile in {'local', 'authoring'})
+                self.assertEqual(settings['agents']['enabled'], profile in {'local', 'authoring'})
                 self.assertEqual(settings['features']['shell_tool'], profile != 'no-review')
                 self.assertEqual(settings['web_search'], 'disabled')
                 self.assertEqual(settings['mcp_servers'], {})
@@ -74,6 +76,33 @@ class HostProfileTests(unittest.TestCase):
         self.assertEqual(toolsets['authoring'], toolsets['local'])
         self.assertEqual(toolsets['audit'], {'Read', 'Glob', 'Grep'})
         self.assertFalse({'Agent', 'Bash'} & toolsets['no-review'])
+
+    def test_requested_model_and_effort_replace_user_configuration(self):
+        home = self.root / 'codex-home'
+        home.mkdir()
+        (home / 'config.toml').write_text('model = "expensive"\nmodel_reasoning_effort = "xhigh"\n')
+        with mock.patch('hosts.codex.launcher', return_value=['codex-native']), \
+                mock.patch('hosts.codex.subprocess.check_output', return_value='codex 1.0'), \
+                mock.patch('hosts.codex.native_logs.native_home', return_value=home):
+            codex = Codex(None, 'cheap', 'low')
+        values = [v for i, v in enumerate(codex.options('local')) if i % 2]
+        settings = tomllib.loads('\n'.join(values))
+        self.assertEqual((settings['model'], settings['model_reasoning_effort']), ('cheap', 'low'))
+        claude = Claude.__new__(Claude)
+        claude.executable, claude.settings = 'claude-native', {'model': 'expensive'}
+        claude.model, claude.effort = 'haiku', 'low'
+        command = claude.command({}, 'local', directory=self.root / 'claude-override')
+        self.assertEqual(command[command.index('--model') + 1], 'haiku')
+        self.assertEqual(command[command.index('--effort') + 1], 'low')
+        self.assertEqual(read_json(self.root / 'claude-override' / 'claude-launch.json')['requested_effort']['--effort'], 'low')
+
+    def test_trials_default_to_cheap_models(self):
+        import hosts
+        with mock.patch('hosts.codex.Codex', side_effect=lambda *a: a), mock.patch('hosts.claude.Claude', side_effect=lambda *a: a):
+            self.assertEqual(hosts.get_host('codex'), (None, 'gpt-5.6-luna', 'medium'))
+            self.assertEqual(hosts.get_host('claude'), (None, 'claude-sonnet-5', 'high'))
+            self.assertEqual(hosts.get_host('codex', None, 'gpt-5.5'), (None, 'gpt-5.5', None))
+            self.assertEqual(hosts.get_host('codex', None, None, 'medium'), (None, 'gpt-5.6-luna', 'medium'))
 
 
 if __name__ == '__main__':

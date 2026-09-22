@@ -4,7 +4,7 @@ description: Research bounded public source scopes, then return one independent 
 disable-model-invocation: true
 ---
 
-Coordinate in the caller; establish [library context](../../references/library-context.md).
+The coordinator applies this workflow; establish [library context](../../references/library-context.md).
 
 Reuse supplied evidence under the [evidence contract](../../references/evidence.md). Collect only unmet scope, preserving requested sources/dates and prioritizing contribution to the question. Group overlapping investigations. Give shared original-source checks one owner; others collect distinct evidence, pass canonical leads to that owner and reuse its support.
 

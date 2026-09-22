@@ -8,4 +8,4 @@ Use the [handoff contract](../../references/design-loop-contract.md). Inputs: re
 
 For assignment `analyze-iteration`, explain changes, supported criteria and goal progress, failures and uncertainties. Apply the adoption criteria; recommend adopt or retain with exact candidate and evidence links.
 
-Return the recommendation, confidence limits, lessons and next-brainstorm problems, opportunities and questions. Change no project state; perform no repairs or additional review. The caller checks and records adoption.
+Return the recommendation, confidence limits, lessons and next-brainstorm problems, opportunities and questions. Change no project state; perform no repairs or additional review. The coordinator checks and records adoption.

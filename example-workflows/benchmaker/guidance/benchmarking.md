@@ -6,7 +6,7 @@ A benchmark estimates performance on defined user work under stated conditions. 
 
 Prefer narrow claims and staged feedback. Ground substantial tasks in source work and feasible outcomes per the [quality profile](../references/quality-profile.md). Label synthetic scenarios and adversarial oversampling. Families must differ in required work. Vary constraints, ambiguity, information location, state transitions and valid strategies. Retain source/group identity, provenance, capture dates, transformations and reuse constraints. Verify facts and feasibility; plausible prose or low success establishes neither.
 
-Split development/held-out work before tuning. Group related variants, shared source documents and templates where separation would leak generalization. Hold out domains/workflows when the claim concerns them. Without a defensible holdout, label the suite a development instrument. Freeze cases, references, scorer, weights and conditions; changed definitions require a new version.
+Split development/held-out work before tuning. Group related variants, shared source documents and templates where separation would leak generalization. Hold out domains/workflows when the claim concerns them. Without a defensible holdout, label the suite a development instrument. Freeze cases, references, scorer, weights and conditions; changed definitions require a new identity.
 
 Grade observable outcomes with the cheapest valid method: deterministic checks for executable behavior, constraints and state; anchored human/model rubrics otherwise. Accept alternatives; require trajectories only when tested. Stateful tasks need changes, preservation and required explanations; inertia cannot satisfy required explanation.
 

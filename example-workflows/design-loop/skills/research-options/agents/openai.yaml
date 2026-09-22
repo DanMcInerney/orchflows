@@ -1,6 +1,6 @@
 interface:
   display_name: "Research Options"
-  short_description: "Investigate bounded uncertainties in proposed project..."
+  short_description: "Research uncertainties in proposed increments"
 
 policy:
   allow_implicit_invocation: false

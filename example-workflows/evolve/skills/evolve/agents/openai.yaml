@@ -1,6 +1,6 @@
 interface:
   display_name: "Evolve"
-  short_description: "Iteratively improve any artifact and its improvement..."
+  short_description: "Iteratively improve any artifact and its harness"
 
 policy:
   allow_implicit_invocation: false

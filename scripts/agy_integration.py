@@ -2,25 +2,21 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 from pathlib import Path
 import re
-import stat
 import tempfile
+
+import package_files
 
 
 POLICY_WARNING = "Antigravity documents no manual-only skill setting; use /skills and its displayed commands."
 
 
-def _linked(path: Path) -> bool:
-    return path.is_symlink() or bool(path.exists() and getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
-
-
 def _safe(path: Path, root: Path) -> None:
     for part in (path, *path.parents):
-        if _linked(part):
+        if package_files.is_link(part):
             raise ValueError(f"Antigravity path is a link; preserved: {part}")
         if part == root:
             break
@@ -49,7 +45,7 @@ def inventory(executable: str, home: Path, run) -> list[dict]:
     records = [(row["name"], row) for row in imports]
     if roots.is_dir():
         records.extend((path.name, None) for path in roots.iterdir()
-                       if (path.is_dir() or _linked(path)) and not any(row["name"] == path.name for row in imports))
+                       if (path.is_dir() or package_files.is_link(path)) and not any(row["name"] == path.name for row in imports))
     result = []
     for name, record in records:
         path = roots / name
@@ -63,24 +59,23 @@ def inventory(executable: str, home: Path, run) -> list[dict]:
     return result
 
 
-def _snapshot(root: Path) -> dict[str, str]:
+def _facts(root: Path) -> dict[str, dict]:
+    """Plain facts that reveal edits to an installed copy after setup recorded it."""
     result = {}
-    for path in root.rglob("*"):
-        if any(part in {".git", "__pycache__"} for part in path.relative_to(root).parts) or path.suffix in {".pyc", ".pyo"}:
-            continue
-        if _linked(path):
-            raise ValueError(f"Antigravity package contains a link; preserved: {path}")
-        if path.is_file():
-            result[path.relative_to(root).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    for path in package_files.files(root):
+        status = path.stat()
+        result[path.relative_to(root).as_posix()] = {"size": status.st_size, "mtime_ns": status.st_mtime_ns}
     return result
 
 
 def _receipts(home: Path) -> tuple[Path, dict]:
     path = home / ".local/agy-installs.json"
     _safe(path, home)
-    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"version": 1, "installs": {}}
-    if not isinstance(data, dict) or data.get("version") != 1 or not isinstance(data.get("installs"), dict):
+    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"installs": {}}
+    if not isinstance(data, dict) or not isinstance(data.get("installs"), dict):
         raise ValueError(f"Unsupported Antigravity install receipts; preserved: {path}")
+    # Receipts from before plain facts carry digests; they no longer track an install.
+    data.pop("version", None)
     return path, data
 
 
@@ -107,17 +102,19 @@ def package(executable: str, home: Path, package: dict, existing: dict | None, *
     receipt_path, receipts = _receipts(home)
     key = str(cache)
     receipt = receipts["installs"].get(key)
-    expected = _snapshot(source)
     if existing:
+        if isinstance(receipt, dict) and isinstance(receipt.get("files"), dict) and any(isinstance(facts, str) for facts in receipt["files"].values()):
+            return {"status": "needs_action", "message": "Antigravity receipt uses an earlier setup format; preserved. Uninstall the plugin with agy, then rerun setup"}
         if (not isinstance(receipt, dict) or not isinstance(receipt.get("source"), str)
                 or Path(receipt["source"]).resolve() != source.resolve()
                 or receipt.get("record") != existing.get("record")
-                or not existing.get("record") or existing["record"].get("source") != "antigravity"):
+                or not existing.get("record") or existing["record"].get("source") != "antigravity"
+                or not isinstance(receipt.get("files"), dict)
+                or not all(isinstance(facts, dict) for facts in receipt["files"].values())):
             return {"status": "needs_action", "message": "Existing Antigravity plugin is not tracked by this home; preserved. Keep it or uninstall it with agy before retrying"}
-        actual = _snapshot(cache)
-        if actual != receipt.get("files"):
+        if _facts(cache) != receipt["files"]:
             return {"status": "needs_action", "message": "Installed Antigravity files changed outside setup; preserved. Resolve the edits before retrying"}
-        if actual == expected:
+        if package_files.same(source, cache):
             return {"status": "ready", "message": "Already installed", "path": str(cache)}
     if not install:
         return {"status": "needs_action", "message": "Antigravity plugin is absent or stale; rerun setup"}
@@ -131,9 +128,8 @@ def package(executable: str, home: Path, package: dict, existing: dict | None, *
     if (len(verified) != 1 or not verified[0]["enabled"] or not verified[0].get("record")
             or verified[0]["record"].get("source") != "antigravity"):
         raise ValueError("Antigravity install completed but a single enabled registration could not be verified")
-    actual = _snapshot(cache)
-    if not expected or actual != expected:
+    if not package_files.same(source, cache):
         raise ValueError("Antigravity installed files differ from the complete source package; inspect the native installation")
-    receipts["installs"][key] = {"source": str(source.resolve()), "record": verified[0]["record"], "files": actual}
+    receipts["installs"][key] = {"source": str(source.resolve()), "record": verified[0]["record"], "files": _facts(cache)}
     _write_receipts(receipt_path, receipts)
     return {"status": "updated" if existing else "ready", "message": "Installation verified; start a new session", "path": str(cache)}

@@ -1,6 +1,6 @@
 """Native history is evidence, not a replay engine. Fixtures contain no user data."""
 
-import hashlib
+import base64
 from contextlib import closing
 import importlib.util
 import json
@@ -72,7 +72,7 @@ class NativeHistoryTests(unittest.TestCase):
 
     def test_claude_tree_errors_unknown_outcomes_and_read_only(self):
         self.claude_tree()
-        before = {p: hashlib.sha256(p.read_bytes()).digest() for p in self.home.rglob("*") if p.is_file()}
+        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
         summary = logs.inspect("claude", "session", self.home)
         self.assertEqual([a["id"] for a in summary["agents"]], ["session", "child", "grandchild"])
         self.assertEqual(summary["agents"][1]["error_count"], 1)
@@ -83,7 +83,33 @@ class NativeHistoryTests(unittest.TestCase):
         second = logs.inspect("claude", "session", self.home, limit=2, after=first["next_cursor"])
         self.assertEqual([a["id"] for a in second["agents"]], ["child", "grandchild"])
         self.assertIsNone(second["next_cursor"])
-        self.assertEqual(before, {p: hashlib.sha256(p.read_bytes()).digest() for p in self.home.rglob("*") if p.is_file()})
+        self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+
+    def test_observed_models_and_efforts_come_from_records_not_requests(self):
+        def ran(model, effort, *blocks):
+            record = claude("assistant", *blocks)
+            record["message"]["model"] = model
+            return {**record, "effort": effort} if effort else record
+        root = self.home / "projects/project/session.jsonl"
+        transcript(root, [ran("claude-opus-5-5", "high", {"type": "text", "text": "a"}),
+                          ran("claude-opus-5-5", "high", {"type": "thinking", "thinking": ""}),
+                          claude("user", {"type": "text", "text": "not a model turn"})])
+        child = root.parent / "session/subagents/agent-child.jsonl"
+        transcript(child, [ran("claude-sonnet-5", "medium", {"type": "text", "text": "b"})])
+        write(child.with_suffix(".meta.json"), json.dumps({"model": "opus", "effort": "max"}))
+        grandchild = child.with_name("agent-grandchild.jsonl")
+        transcript(grandchild, [ran("claude-haiku-5", None, {"type": "text", "text": "c"})])
+        write(grandchild.with_suffix(".meta.json"), json.dumps({"parentAgentId": "child"}))
+        agents = logs.inspect("claude", "session", self.home)["agents"]
+        self.assertEqual([(a["models"], a["efforts"]) for a in agents],
+                         [({"claude-opus-5-5": 2}, {"high": 2}), ({"claude-sonnet-5": 1}, {"medium": 1}),
+                          ({"claude-haiku-5": 1}, {"unknown": 1})])
+        self.codex("root", [{"type": "turn_context", "payload": {"model": "gpt-root", "effort": "xhigh"}},
+                            {"type": "turn_context", "payload": {"model": "gpt-root"}}])
+        self.codex("spawned", [{"type": "turn_context", "payload": {"model": "gpt-child", "effort": "low"}}], parent="root")
+        agents = logs.inspect("codex", "root", self.home)["agents"]
+        self.assertEqual([(a["models"], a["efforts"]) for a in agents],
+                         [({"gpt-root": 2}, {"xhigh": 1, "unknown": 1}), ({"gpt-child": 1}, {"low": 1})])
 
     def test_claude_agent_without_metadata_is_a_visible_gap(self):
         _, child, _ = self.claude_tree()
@@ -153,6 +179,11 @@ class NativeHistoryTests(unittest.TestCase):
         write(path, "{}\n")
         with self.assertRaisesRegex(ValueError, "changed/truncated"):
             logs.read("claude", "child", self.home, after=page["next_cursor"])
+        session = self.home / "projects/project/session.jsonl"
+        first = session.read_bytes().split(b"\n")[0]
+        inside = base64.urlsafe_b64encode(json.dumps([str(session), 1, 1, 0, len(first)]).encode()).decode()
+        with self.assertRaisesRegex(ValueError, "changed/truncated"):
+            logs.read("claude", "session", self.home, after=inside)
         with self.assertRaisesRegex(ValueError, "record boundary"):
             logs.read("claude", "session", self.home, event_id="3:0")
         with self.assertRaises(ValueError):

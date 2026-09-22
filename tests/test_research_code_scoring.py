@@ -35,6 +35,8 @@ class ResearchCodeScoringTests(unittest.TestCase):
             supplied.write_text('Supplied runtime instructions.')
             write_json(stage / 'before.json', {'inputs': snapshot(workspace), 'packages': {}})
             write_json(root / 'target.json', {'completed': True})
+            write_json(stage / 'evidence/index.json', {'root_id': 'root', 'gaps': [], 'agents': [
+                {'id': 'root', 'parent_id': None}, {'id': 'reviewer', 'parent_id': 'root'}]})
             (workspace / 'vendor_a.py').write_text(VENDOR_A)
             (workspace / 'vendor_b.py').write_text(VENDOR_B)
             if new_skill:

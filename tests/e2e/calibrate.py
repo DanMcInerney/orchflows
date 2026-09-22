@@ -88,7 +88,7 @@ async def execute(args):
     if read_json(source / 'target.json')['case'] != 'core/requested-review' or verify(source):
         raise ValueError('Calibration needs intact, sealed core/requested-review evidence')
     output.mkdir(parents=True)
-    host = get_host(args.host, args.executable)
+    host = get_host(args.host, args.executable, args.model, args.effort)
     scheduler = Scheduler(args.jobs, args.deadline, output / 'schedule.jsonl')
     expected = {'baseline': 'acceptable', 'verbose': 'acceptable', 'skipped-review': 'material_failure',
                 'missing-evidence': 'inconclusive'}
@@ -111,6 +111,8 @@ def parser():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--host', default='claude', choices=['claude', 'codex'])
     p.add_argument('--executable')
+    p.add_argument('--model', help='Model for every session; default: the user host configuration')
+    p.add_argument('--effort', help='Effort for every session; default: the user host configuration')
     p.add_argument('--jobs', type=int, default=2)
     p.add_argument('--deadline', type=float, default=150)
     p.add_argument('--audit-seconds', type=float, default=60)

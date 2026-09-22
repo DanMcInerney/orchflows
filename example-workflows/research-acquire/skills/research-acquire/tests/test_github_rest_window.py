@@ -188,9 +188,8 @@ class ReleasesTypedStatementTest(unittest.TestCase):
 
     Not a claim about the wire alone: a windowed step against `releases`
     must carry `window_reach.WINDOW_NOT_HONORED` in its own `StepResult.loss`
-    through the real `runner.run_step` seam — the same mechanism R.01 proved
-    generically on `bluesky`'s author feed, now proven on the one operation
-    this ticket measured `False` rather than left conservative.
+    through the real `runner.run_step` seam, because `releases` is the one
+    operation measured as not honoring a window rather than left conservative.
     """
 
     def _run_releases_step(self, window_start=""):

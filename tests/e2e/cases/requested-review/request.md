@@ -1,1 +1,1 @@
-Write answer.txt containing the result of 6 times 7, with no other text in that file. I specifically want an independent review of the result. Prefer a short final report. No network or external actions are needed.
+Write answer.txt containing only the result of 6 times 7; one trailing line break is optional. I specifically want an independent review of the result. Prefer a short final report. No network or external actions are needed.

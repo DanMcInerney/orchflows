@@ -36,7 +36,7 @@ flowchart TD
 
 The [evaluation contract](skills/evolve/references/evaluation.md) separates requirements from qualities to improve. Subjective promotion needs two fresh judges with reversed presentation order. Metric promotion needs matched measurements, required checks and a fresh audit. Ties, regressions, missing evidence and unconfirmed wins retain the current best. Judges compare without repairing candidates.
 
-An evaluator repair creates a new version and requires re-evaluating the current best and contenders; scores across versions are not comparable progress. A [harness experiment](skills/evolve/references/harness.md) instead tests the working instructions, tools or search policy. It replaces an ordinary round and uses reserved cases plus fresh, matched executions. Adoption needs confirmed output improvement, preserved requirements and acceptable recorded cost. Later contradictory validation restores the predecessor. Harness proposals cannot change purpose, evaluation, promotion rules, budgets or checkpoint ownership.
+An evaluator repair creates a new revision and requires re-evaluating the current best and contenders; scores across revisions are not comparable progress. A [harness experiment](skills/evolve/references/harness.md) instead tests the working instructions, tools or search policy. It replaces an ordinary round and uses reserved cases plus fresh, matched executions. Adoption needs confirmed output improvement, preserved requirements and acceptable recorded cost. Later contradictory validation restores the predecessor. Harness proposals cannot change purpose, evaluation, promotion rules, budgets or checkpoint ownership.
 
 ## Bounded search, resumable state
 
@@ -44,7 +44,7 @@ Defaults are **three rounds, one challenger per round**. Each artifact or harnes
 
 An explicit continuous request removes the total round cap; execution still stops for caller limits, interruption or blocked capability. A target stops work only when requested as a stop condition. Continuation requires host support; otherwise Evolve returns a checkpoint and the gap.
 
-The result includes the best artifact, improvements, evaluation and harness versions, evidence, observed resource use, stop reason and resume path. The chosen directory—or `evolve-runs/<run-id>/`—retains originals, alternatives, experiments, an append-only journal and checkpoint. [Resumption](skills/evolve/references/state.md) reconciles in-flight work and preserves consumed bounds; it does not duplicate uncertain work or reset attempts.
+The result includes the best artifact, improvements, evaluation and harness revisions, evidence, observed resource use, stop reason and resume path. The chosen directory—or `evolve-runs/<run-id>/`—retains originals, alternatives, experiments, an append-only journal and checkpoint. [Resumption](skills/evolve/references/state.md) reconciles in-flight work and preserves consumed bounds; it does not duplicate uncertain work or reset attempts.
 
 ## Install
 
@@ -56,4 +56,4 @@ python scripts/orchflows.py setup --example evolve
 
 Setup preserves existing library copies. Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows**, native child delegation and task-specific creation/inspection tools; see [library context](references/library-context.md). No scoring service is required.
 
-**Validation limit:** bundled [trials](trials/) specify expected behavior, not observed results. [Research lessons](references/research.md) do not validate this implementation. Sustained gains on unseen tasks at matched cost remain unestablished.
+**Validation limit:** bundled [trials](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/evolve/trials/) specify expected behavior, not observed results. [Research lessons](references/research.md) do not validate this implementation. Sustained gains on unseen tasks at matched cost remain unestablished.

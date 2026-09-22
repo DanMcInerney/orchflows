@@ -1,6 +1,6 @@
 interface:
   display_name: "Orch Work"
-  short_description: "Delegate a requested result to a fresh native child agent..."
+  short_description: "Fresh maker for a requested result"
 
 policy:
   allow_implicit_invocation: true

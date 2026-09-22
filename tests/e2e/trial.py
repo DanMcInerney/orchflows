@@ -1,7 +1,9 @@
 """Case context: isolated files, explicit native stages, and evidence."""
 import asyncio
+from collections import Counter
 from dataclasses import replace
 import fnmatch
+import json
 import os
 from pathlib import Path
 import shutil
@@ -9,6 +11,34 @@ import sys
 import time
 
 from common import HERE, copy_package, files_under, load_hook, read_json, snapshot, write_json
+
+
+def observed(parts):
+    """Sum native model/effort tallies of agents, stages or attempts; requests are recorded elsewhere."""
+    tallies = {'models': Counter(), 'efforts': Counter()}
+    for part in parts:
+        for key, tally in tallies.items():
+            tally.update(part.get(key) or {})
+    return {key: dict(tally) for key, tally in tallies.items()}
+
+
+def launch_checks(name, evidence):
+    """Trials delegate through Orchflows primitives, which require fresh children: recorded inherited history
+    breaks that contract. Launches the records cannot settle are gaps, since independence is then unverified."""
+    violations, gaps, source = [], [], f'stages/{name}/evidence/index.json'
+    for agent in evidence.get('agents', []):
+        where = f"{source}: agent {agent['id']} (parent {agent.get('parent_id')})"
+        if agent.get('launch_context') == 'inherited':
+            calls = [f"{e['tool']} line {e['line']} {json.dumps(e['arguments'])}"
+                     for e in agent.get('launch_evidence', []) if e.get('source') == 'spawn_call']
+            violations.append({'passed': False, 'invariant': True,
+                               'requirement': 'Launch delegated children fresh, without inherited parent history',
+                               'evidence': where + ' launch_context inherited' + (': ' + '; '.join(calls) if calls else '')})
+        elif agent.get('launch_context') == 'unknown':
+            gaps.append(f'Child launch context unrecorded: {where}')
+        gaps += [f"Spawn requested inherited history but no recorded child is linked: {source}: agent {agent['id']} line {item['line']}"
+                 for item in agent.get('unlinked_spawns', []) if item.get('indicates') == 'inherited']
+    return violations, gaps
 
 
 class Trial:
@@ -89,14 +119,17 @@ class Trial:
             if snapshot(path) != package_before[key]:
                 violations.append({'passed': False, 'invariant': True, 'requirement': 'Preserve runtime packages',
                                    'evidence': f'stages/{name}/before.json: {key}'})
+        launch_violations, launch_gaps = launch_checks(name, evidence)
+        violations += launch_violations
         registration = self.host.registration_gaps(native, chosen)
-        gaps = [*execution['gaps'], *native['gaps'], *evidence.get('gaps', [])]
+        gaps = [*execution['gaps'], *native['gaps'], *evidence.get('gaps', []), *launch_gaps]
         if registration:
             gaps.append('Native package registration not established: ' + ', '.join(registration))
         if execution['status'] != 'completed':
             gaps.append('Stage execution: ' + execution['status'])
         record = {'name': name, 'execution': execution, 'native': native, 'violations': violations,
-                  'gaps': gaps, 'after': after, 'workspace': str(workspace)}
+                  'gaps': gaps, 'observed': observed(evidence.get('agents', [])), 'after': after,
+                  'workspace': str(workspace)}
         write_json(directory / 'stage.json', record)
         self.stages.append(record)
         return workspace
@@ -117,6 +150,7 @@ class Trial:
                 'host_version': self.host.version, 'stages': self.stages,
                 'completed': bool(self.stages) and not self.gaps and all(s['execution']['status'] == 'completed'
                     and s['native'].get('terminal_success') for s in self.stages), 'gaps': gaps,
+                'observed': observed(s['observed'] for s in self.stages),
                 'conditions': 'Package and fixture copies; evaluator inputs withheld from target context. '
                               'Filesystem/network confinement is not guaranteed by the harness.'}
 

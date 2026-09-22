@@ -13,6 +13,11 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import agy_integration as agy
 import host_integration as hosts
+import package_files
+
+
+def contents(root):
+    return {path.relative_to(root).as_posix(): path.read_bytes() for path in package_files.files(root)}
 
 
 class AntigravityTests(unittest.TestCase):
@@ -83,9 +88,14 @@ class AntigravityTests(unittest.TestCase):
     def test_install_preserves_complete_package_and_records_ownership(self):
         result = self.integrate()
         self.assertEqual(result["status"], "ready", result)
-        self.assertEqual(agy._snapshot(self.source), agy._snapshot(self.cache))
-        receipt = json.loads((self.home / ".local/agy-installs.json").read_text())["installs"][str(self.cache)]
+        self.assertTrue(package_files.same(self.source, self.cache))
+        receipts = json.loads((self.home / ".local/agy-installs.json").read_text())
+        self.assertNotIn("version", receipts)
+        receipt = receipts["installs"][str(self.cache)]
         self.assertEqual(receipt["source"], str(self.source))
+        skill = self.cache / "skills/orch-work/SKILL.md"
+        self.assertEqual(receipt["files"]["skills/orch-work/SKILL.md"],
+                         {"size": skill.stat().st_size, "mtime_ns": skill.stat().st_mtime_ns})
         self.assertEqual(receipt["record"], self.imports[0])
         self.assertIn("no manual-only", result["warnings"][0])
 
@@ -106,7 +116,19 @@ class AntigravityTests(unittest.TestCase):
         self.assertEqual(result["status"], "updated", result)
         self.assertFalse((self.cache / "references/context.md").exists())
         self.assertIn(("plugin", "uninstall", "orchflows"), self.actions)
-        self.assertEqual(agy._snapshot(self.source), agy._snapshot(self.cache))
+        self.assertTrue(package_files.same(self.source, self.cache))
+
+    def test_digest_receipts_from_before_plain_facts_ask_for_reinstall(self):
+        self.install()
+        path = self.home / ".local/agy-installs.json"
+        receipts = json.loads(path.read_text())
+        receipt = receipts["installs"][str(self.cache)]
+        receipt["files"] = {name: "0" * 64 for name in receipt["files"]}
+        path.write_text(json.dumps({"version": 1, **receipts}))
+        result = self.integrate()
+        self.assertEqual(result["status"], "needs_action")
+        self.assertIn("earlier setup format", result["packages"]["orchflows"]["message"])
+        self.assert_read_only()
 
     def test_disabled_owned_installation_is_preserved(self):
         self.install()
@@ -126,12 +148,12 @@ class AntigravityTests(unittest.TestCase):
     def test_occupied_destination_without_matching_inventory_is_preserved(self):
         shutil.copytree(self.source, self.cache)
         (self.cache / "skills/orch-work/SKILL.md").write_text("Foreign user instructions")
-        before = agy._snapshot(self.cache)
+        before = contents(self.cache)
         with patch.object(agy, "inventory", return_value=[]):
             result = self.integrate()
         self.assertEqual(result["status"], "needs_action")
         self.assertIn("destination already exists", result["packages"]["orchflows"]["message"])
-        self.assertEqual(before, agy._snapshot(self.cache))
+        self.assertEqual(before, contents(self.cache))
         self.assert_read_only()
 
     def test_case_colliding_native_plugin_is_preserved(self):
@@ -142,10 +164,10 @@ class AntigravityTests(unittest.TestCase):
         (foreign / "plugin.json").write_text(json.dumps({"name": "Orchflows"}))
         (foreign / "skills/orch-work/SKILL.md").write_text("Foreign user instructions")
         self.imports = [{"name": "Orchflows", "source": "antigravity", "components": ["skills"]}]
-        before = agy._snapshot(foreign)
+        before = contents(foreign)
         result = self.integrate()
         self.assertEqual(result["status"], "needs_action")
-        self.assertEqual(before, agy._snapshot(foreign))
+        self.assertEqual(before, contents(foreign))
         self.assert_read_only()
 
     def test_foreign_native_registration_and_external_edits_are_preserved(self):

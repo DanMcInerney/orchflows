@@ -14,7 +14,7 @@ Write reusable quality criteria, methods and taste for a recurring kind of work,
 
 Put shared criteria in the common body. Use optional Make and Review sections for role-specific methods without duplicating those criteria. Keep task details in prompts, process obligations in workflows and supporting knowledge in references. Use subject guidance as source material when authoring it.
 
-Keep temporary model corrections identifiable and separately removable. Distinguish observed failures from deliberate policy.
+Keep temporary model corrections separately removable, each naming the failure it corrects and the model it was observed on. Distinguish observed failures from deliberate policy.
 
 ## Review
 

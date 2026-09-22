@@ -161,6 +161,20 @@ class HostIntegrationTests(unittest.TestCase):
                 self.assertEqual(result[host]["status"], "failed")
                 self.assert_no_mutations(run)
 
+    def test_null_inventory_sources_are_reported_not_crashed(self):
+        with self.cli({"codex": [{"installed": [self.codex_row(source=None)]}]}) as run:
+            result = self.integrate("codex")
+        self.assertEqual(result["codex"]["status"], "needs_action")
+        self.assertIn("another source", result["codex"]["packages"]["orchflows"]["message"])
+        self.assert_no_mutations(run)
+        self.copy_current()
+        effective = self.grok_effective()
+        effective["skills"].append({"name": "unowned", "disabled": False, "source": None})
+        with self.cli({"grok": [[]]}, inspect=effective) as run:
+            result = self.integrate("grok")
+        self.assertEqual(result["grok"]["status"], "ready")
+        self.assert_no_mutations(run)
+
     def test_disabled_existing_plugins_are_preserved(self):
         for host, inventory in (("codex", {"installed": [self.codex_row(enabled=False)]}), ("claude", [self.claude_row(enabled=False)])):
             with self.subTest(host=host), self.cli({host: [inventory]}) as run:
@@ -235,31 +249,50 @@ class HostIntegrationTests(unittest.TestCase):
         self.assertEqual(result["codex"]["status"], "ready")
         self.assertEqual(len(actions), 2)
 
-    def test_claude_native_success_with_stale_same_version_is_action_required(self):
+    def test_claude_stale_same_version_update_is_reinstalled_then_verified(self):
         self.stale_cache()
         actions = []
 
-        def unchanged(executable, arguments):
-            actions.append(arguments)
-            return "Already at latest version (1.0.0)"
-
-        with self.cli({"claude": [[self.claude_row()]]}, mutate=unchanged):
-            result = self.integrate("claude")
-        self.assertEqual(result["claude"]["status"], "needs_action")
-        self.assertIn("manifest versions", result["claude"]["packages"]["orchflows"]["message"])
-        self.assertTrue(any(command[:2] == ("plugin", "update") for command in actions))
-
-    def test_claude_refresh_verifies_actual_updated_payload(self):
-        self.stale_cache()
-
         def refresh(executable, arguments):
-            if arguments[:2] == ("plugin", "update"):
+            actions.append(arguments)
+            if arguments[:2] == ("plugin", "install"):
                 self.copy_current()
             return "Success"
 
         with self.cli({"claude": [[self.claude_row()]]}, mutate=refresh):
             result = self.integrate("claude")
-        self.assertEqual(result["claude"]["status"], "updated")
+        self.assertEqual(result["claude"]["status"], "updated", result)
+        plugin = "orchflows@orchflows-home"
+        self.assertEqual(actions, [("plugin", "marketplace", "update", "orchflows-home"),
+                                   ("plugin", "uninstall", plugin, "--scope", "user", "--keep-data"),
+                                   ("plugin", "install", plugin, "--scope", "user")])
+
+    def test_claude_copy_still_stale_after_reinstall_requires_action_without_a_version_bump(self):
+        self.stale_cache()
+        with self.cli({"claude": [[self.claude_row()]]}, mutate=lambda *args: "Success"):
+            result = self.integrate("claude")
+        self.assertEqual(result["claude"]["status"], "needs_action")
+        message = result["claude"]["packages"]["orchflows"]["message"]
+        self.assertIn("still differ", message)
+        self.assertNotIn("version", message.lower())
+
+    def test_payload_compares_every_package_file_but_ignores_host_markers_and_caches(self):
+        self.copy_current()
+        (self.cache / ".in_use").mkdir()
+        (self.cache / ".in_use/4242").write_text("")
+        (self.cache / ".orphaned_at").write_text("1758000000000")
+        (self.cache / "skills/orch-work/__pycache__").mkdir()
+        (self.cache / "skills/orch-work/__pycache__/cached.pyc").write_bytes(b"cache")
+        self.assertTrue(hosts._matches(self.source, str(self.cache)))
+        for relative in ("assets/diagram.png", "LICENSE", "DESIGN.md", ".kimi-plugin/plugin.json"):
+            with self.subTest(relative=relative):
+                path = self.source / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("new source file\n")
+                self.assertFalse(hosts._matches(self.source, str(self.cache)))
+                path.unlink()
+        (self.cache / "skills/orch-work/obsolete.md").write_text("removed from source\n")
+        self.assertFalse(hosts._matches(self.source, str(self.cache)))
 
     def test_native_success_without_enabled_inventory_is_failure(self):
         self.copy_current()
@@ -369,6 +402,7 @@ class HostIntegrationTests(unittest.TestCase):
         self.assertIn(self.source.as_posix(), " ".join(result["kimi"]["next_steps"]))
         self.assertIn(str(self.home), " ".join(result["zcode"]["next_steps"]))
         self.assertIn("orchflows", " ".join(result["zcode"]["next_steps"]))
+        self.assertIn("uninstall and reinstall", " ".join(result["zcode"]["next_steps"]))
         run.assert_not_called()
 
     def test_existing_optional_libraries_refresh_without_installing_unrequested_ones(self):

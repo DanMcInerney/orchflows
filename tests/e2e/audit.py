@@ -11,7 +11,7 @@ from scheduler import Scheduler
 
 async def execute(args):
     roots = [args.root] if (args.root / 'target.json').exists() else sorted(p.parent for p in args.root.rglob('target.json'))
-    host = get_host(args.host, args.executable)
+    host = get_host(args.host, args.executable, args.model, args.effort)
     scheduler = Scheduler(args.jobs, args.deadline)
     async def one(root):
         audit = await audit_run(root, host, scheduler, args.audit_seconds)
@@ -28,6 +28,8 @@ if __name__ == '__main__':
     p.add_argument('root', type=Path)
     p.add_argument('--host', default='claude', choices=['claude', 'codex'])
     p.add_argument('--executable')
+    p.add_argument('--model', help='Model for every session; default: the user host configuration')
+    p.add_argument('--effort', help='Effort for every session; default: the user host configuration')
     p.add_argument('--jobs', type=int, default=2)
     p.add_argument('--deadline', type=float, default=120)
     p.add_argument('--audit-seconds', type=float, default=60)

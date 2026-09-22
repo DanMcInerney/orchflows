@@ -1,6 +1,6 @@
 interface:
   display_name: "Brainstorm Research"
-  short_description: "Generate project improvement options, then research their..."
+  short_description: "Brainstorm options, then research their uncertainties"
 
 policy:
   allow_implicit_invocation: false

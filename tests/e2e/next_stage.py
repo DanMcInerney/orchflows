@@ -15,8 +15,8 @@ from common import ROOT, copy_package, files_under, snapshot, write_json
 from run import execute
 
 DIRECT_CHECK = (
-    'Establish the result and checks. For straightforward, low-impact, reversible work that can be checked directly, '
-    'do the work and check it without independent review unless requested. If consequential uncertainty emerges, '
+    'Establish the result and checks. When a mistake would be cheap to undo and direct checks would catch it, '
+    "do the work and check it without independent review unless requested. Checks the maker writes share the maker's reading of the requirements, so they cannot stand in for review when a misreading would be costly. If consequential uncertainty emerges, "
     'add review where useful; unavailable reviewers do not make work trivial.\n\nOtherwise briefly plan'
 )
 
@@ -73,7 +73,7 @@ def main():
     args = parser.parse_args()
     if args.jobs < 1 or args.deadline <= 0 or args.audit_seconds <= 0:
         parser.error('Use positive jobs, deadline and audit-seconds')
-    selected = select(discover(), None if args.case else args.suite, args.case)
+    selected = select(discover(), [] if args.case else [args.suite], args.case)
     sources = {case.id: packages_for(case) for case in selected}
     key = os.environ.get('CODEX_API_KEY') or os.environ.get('OPENAI_API_KEY')
     if args.execute and not key:

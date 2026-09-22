@@ -70,13 +70,13 @@ flowchart TB
 
 This describes host/model selection, not a routing engine. Named workflows keep their process; a missing named workflow remains a gap rather than silently becoming dynamic. Dynamic does not wrap selected primitives or restart inside children.
 
-Automatic selection is best-effort. Recorded Claude trials selected dynamic for research-to-code but skipped it for a trivial file-writing request. Explicit invocation worked. Select it explicitly when the process matters.
+Automatic selection is best-effort and varies by host and model; select a workflow explicitly when the process matters.
 
 ## What does dynamic decide?
 
 It establishes the result and checks, composing core workflows and primitives. Core `orchflows` guidance helps shape the process; applicable task-domain guidance guides makers and reviewers. Planning does not add an authoring review. Dynamic uses core guidance, including core specializations, without personal or library extensions. User and repository instructions still apply; task sources remain evidence. A request to create or save a reusable process invokes Build. Named workflows remain the route to optional library processes and extensions.
 
-Straightforward, low-impact, reversible work that can be checked directly needs no independent review unless requested. Otherwise, plan coherent units around results and real dependencies, with a gate on each joined result before dependent work. Top-level domains suggest boundaries; supporting guidance does not add units, and consequential handoffs can separate units within one domain. New uncertainty can warrant review; missing reviewer capability does not make consequential work trivial. This policy applies to both automatic and explicit dynamic invocation.
+Work whose mistakes would be cheap to undo and caught by direct checks needs no independent review unless requested; checks the maker writes share its reading of the requirements, so they cannot replace review when a misreading would be costly. Otherwise, plan coherent units around results and real dependencies, with a gate on each joined result before dependent work. Top-level domains suggest boundaries; supporting guidance does not add units, and consequential handoffs can separate units within one domain. New uncertainty can warrant review; missing reviewer capability does not make consequential work trivial. This policy applies to both automatic and explicit dynamic invocation.
 
 A research-to-code task can use parallel research → joined research review/fix → parallel coding → joined code review/fix. A typo fix can use direct work and a check. Each gate gets one independent reviewer and one worker for at most one repair pass when needed, followed by required checks. Other staffing is flexible; an explicit `orch-work` call always requires a fresh maker.
 

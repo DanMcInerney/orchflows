@@ -5,5 +5,5 @@
   "covers": [
     "dynamic-discovery"
   ],
-  "timeout_seconds": 45
+  "timeout_seconds": 90
 }

@@ -32,7 +32,7 @@ flowchart TD
     class D result
 ```
 
-Each film gets separate outputs. Independent films may run concurrently; each film's review covers all placements and their coherence. A fresh nonmaker receives the original brief and stable exports identified by path and SHA-256. There is no research gate, outline review or repair loop. Further work needs another request; publishing is outside this workflow.
+Each film gets separate outputs. Independent films may run concurrently; each film's review covers all placements and their coherence. A fresh nonmaker receives the original brief and stable exports identified by path and byte size. There is no research gate, outline review or repair loop. Further work needs another request; publishing is outside this workflow.
 
 Delivery includes source/assets, playable exports, file identities, dependencies, reopen/render instructions and timestamped findings. Review covers opening and payoff, pacing, captions, sound and the brief's factual claims. It reports decoding, sampled frames, watched motion and heard audio separately. Full audiovisual acceptance requires motion viewing and listening when sound exists; unavailable playback leaves a partial review.
 
@@ -56,4 +56,4 @@ Setup preserves existing library copies and installs no media tools. Complete an
 
 Requires core, native child delegation, authoring/export tools and access to exported media. Optional [Remotion](references/remotion.md) requires Node.js/npm or Bun, React, compatible Remotion packages, renderer/browser/font/media dependencies and a lockfile in the caller workspace. Missing rendering blocks production; missing playback limits review.
 
-The native [corrupt-export pilot](trials/corrupt-export/request.md) timed out before a completed review. Full export review remains unverified. The broader [trial request](trials/request.md) and [acceptance criteria](trials/expected-behavior.md) describe expected behavior, not observed quality or popularity.
+The native [corrupt-export pilot](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/short-video/trials/corrupt-export/request.md) timed out before a completed review. Full export review remains unverified. The broader [trial request](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/short-video/trials/request.md) and its evaluator-only acceptance criteria describe expected behavior, not observed quality or popularity.

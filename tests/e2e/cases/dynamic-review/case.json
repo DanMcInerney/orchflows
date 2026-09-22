@@ -5,7 +5,7 @@
   ],
   "covers": [
     "core-guidance",
-    "consequential-review"
+    "proportional-review"
   ],
   "timeout_seconds": 420,
   "entrypoint": "orchflows:orch-dynamic-workflow",

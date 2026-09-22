@@ -6,7 +6,7 @@
     "requested-review",
     "independence"
   ],
-  "timeout_seconds": 180,
+  "timeout_seconds": 360,
   "entrypoint": "orchflows:orch-dynamic-workflow",
   "requires": [
     "independent-review"

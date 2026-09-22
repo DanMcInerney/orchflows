@@ -5,6 +5,8 @@
 - [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
+A fresh child starts from its assignment alone, not the coordinator's conversation.
+
 The host executes agents. The coordinator applies workflows—saved procedures—to inputs and uses their results. Workflows compose to any depth; loading one does not launch an agent, add a review or reset a bound. Prompts supply tasks; workflows preserve processes; user-owned guidance supplies quality criteria, methods and taste.
 
 ## Invocation
@@ -23,11 +25,11 @@ An explicit `orch-work` call requires a fresh maker; ordinary production steps l
 
 ## Execution
 
-Only the top-level orchestrator launches, assigns and continues agents. Children return results and requests without delegating, including to existing agents or through other tools. Composition stays at the top level.
+Only the top-level coordinator launches, assigns and continues agents. Children return results and requests without delegating, including to existing agents or through other tools. Composition stays at the top level.
 
 Resolve dependencies, guidance, settings and caller constraints before dependent work. Honor scoped settings when working directly, continuing a suitable maker or using `orch-work`. Run independent work concurrently within host limits; give shared edits and external operations one owner. Gather required outcomes before dependent work; report missing work as a gap. Preserve authorization and reconcile uncertain actions before retrying.
 
-Return results, evidence and unresolved gaps. Keep durable state when needed by consumers or resumption; short tasks need no checkpoint protocol. Preserve workflow repetition, stopping rules and caller limits. Missing capabilities block only dependent work. Report unsupported controls; never replace required independent review with self-review.
+Return results, evidence and unresolved gaps. Keep outputs and durable state outside packages, which setup may replace; keep state only when consumers or resumption need it; short tasks need no checkpoint protocol. Preserve workflow repetition, stopping rules and caller limits. Missing capabilities block only dependent work. Report unsupported controls; never replace required independent review with self-review.
 
 ## Iteration bounds
 
@@ -51,7 +53,7 @@ Honor settings for every assignment, including repairs. Work directly or reuse a
 
 ## Guidance selection
 
-Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Keep temporary model corrections separately removable; role-only files remain valid. Select `orchflows` for process design and authoring; the domain being extended is source material for its author. A coordinator's planning guidance does not become task-worker guidance or add a review gate. Workflow/guidance authors and their reviewers use `orchflows`; task makers and reviewers receive the guidance for their actual results.
+Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Role-only files remain valid. Select `orchflows` for process design and authoring; the domain being extended is source material for its author. A coordinator's planning guidance does not become task-worker guidance or add a review gate. Workflow/guidance authors and their reviewers use `orchflows`; task makers and reviewers receive the guidance for their actual results.
 
 Brevity, style and approximate file size are preferences, not acceptance gates unless the user or output contract makes them strict. Correctness, allowed effects and explicit resource bounds remain binding.
 

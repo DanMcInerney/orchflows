@@ -25,7 +25,7 @@ CLI: `python <core>/scripts/orchflows.py COMMAND`; Python 3.11+, no dependencies
 `setup [--home PATH] [--source CORE] [--example NAME] [--host HOST] [--concurrency N] [--json]`
 
 - Creates the tree, dependency-free venv and native `orchflows-home` catalogs; runs available `git init`, never commits. Preserves seeded files and runtime contents; reports incomplete runtimes. Root `marketplace.json` gives ZCode relative package paths and current versions; `doctor` detects stale catalogs.
-- Source defaults to the running CLI's core. `--example NAME` copies `<source>/example-workflows/NAME` to `libraries/NAME/` only if absent. Supply a checkout; installed cores omit examples.
+- Source defaults to the running CLI's core. `--example NAME` copies `<source>/example-workflows/NAME` to `libraries/NAME/` only if absent, leaving out `trials/`, which stay in the checkout for maintainers. Supply a checkout; installed cores omit examples.
 - Rerun to update managed core and catalogs. Core updates stage and swap; running from installed core reuses it. Failed swaps restore the previous copy. If restoration fails, the error identifies the retained backup; later setup preserves it.
 - Default `--host auto` checks executables on `PATH` and common installation paths; configuration folders do not establish availability. Select hosts with repeated `--host codex`, `claude`, `agy`, `grok`, `kimi` or `zcode`; `--host none` prepares only home. Neither `auto` nor `none` combines with other selections. Missing explicit hosts are issues; undetected automatic hosts are not.
 - Registers and verifies core and the requested example through detected Codex, Claude Code, Antigravity and Grok Build CLIs; refreshes installed home libraries without installing others. First checks Grok's effective inventory, including Claude-compatible discovery. Preserves disabled, foreign and ambiguous multiple installations, reporting required action. Antigravity refresh requires this home's receipt and an unchanged cached copy.
@@ -47,11 +47,11 @@ Read-only checks: core manifest/required files, runtime files, library manifests
 
 Returns `name`, `version`, `package_root`, optional `skill_path`/`resource_path` and unverified `runtime_python`; launches nothing. `orchflows` selects managed core; other names match root `plugin.json` under `libraries/`. Rejects duplicate names and absolute or escaping resources.
 
-Supplied roots and native skills need no home or its runtime. Missing capabilities block only dependent work; unavailable native delegation blocks required child calls, not unrelated authorized work.
+Supplied roots and native skills need no home or its runtime; missing capabilities follow [execution](architecture.md#execution).
 
 ## Libraries
 
-Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique within home and cannot be `orchflows`. After adding a library, rerun setup for catalogs, then [install in intended hosts](hosts.md#register-and-refresh). Later setup refreshes existing Codex, Claude Code and Grok Build installations and this home's Antigravity copies. Bump manifest versions before refreshing changes; Claude may retain stale same-version caches.
+Edit `libraries/<name>/`, never `.local/packages/`. Names must be unique within home and cannot be `orchflows`. After adding a library, rerun setup for catalogs, then [install in intended hosts](hosts.md#register-and-refresh). Later setup [refreshes](hosts.md#register-and-refresh) existing Codex, Claude Code and Grok Build installations and this home's Antigravity copies without manifest version changes.
 
 ## Another computer
 

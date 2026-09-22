@@ -2,6 +2,7 @@
 import asyncio
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import time
@@ -9,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tests/e2e'))
-from catalog import discover, packages_for, select
+from catalog import discover, overrides, packages_for, select
 from common import copy_package, read_json, snapshot, write_json
 from judging import aggregate, validate
 from scheduler import Scheduler
@@ -18,10 +19,19 @@ from scheduler import Scheduler
 class CatalogTests(unittest.TestCase):
     def test_default_suite_is_curated_and_resolves(self):
         cases = discover()
-        selected = select(cases, 'smoke')
+        selected = select(cases, ['smoke'])
         self.assertEqual(len(selected), 4)
         for case in selected:
             self.assertIn('orchflows', packages_for(case))
+
+    def test_repeated_suites_combine(self):
+        from run import parser
+        cases = discover()
+        args = parser().parse_args(['--suite', 'smoke', '--suite', 'examples', '--plan'])
+        self.assertEqual(args.suite, ['smoke', 'examples'])
+        combined = {c.id for c in select(cases, args.suite)}
+        self.assertEqual(combined, {c.id for c in select(cases, ['smoke'])} | {c.id for c in select(cases, ['examples'])})
+        self.assertEqual(parser().parse_args([]).suite, [])
 
     def test_new_external_case_requires_no_registry_change(self):
         with tempfile.TemporaryDirectory(prefix='e2e-external-') as folder:
@@ -34,7 +44,7 @@ class CatalogTests(unittest.TestCase):
             cases = discover([root])
             identifier = root.name + '/new-case'
             self.assertIn(identifier, cases)
-            self.assertNotIn(identifier, [c.id for c in select(cases, 'smoke')])
+            self.assertNotIn(identifier, [c.id for c in select(cases, ['smoke'])])
             self.assertEqual(select(cases, identifiers=[identifier])[0].id, identifier)
             write_json(case / 'case.json', {'packages': ['orchflows'], 'steps': []})
             with self.assertRaises(ValueError):
@@ -48,6 +58,25 @@ class CatalogTests(unittest.TestCase):
             packages_for(bad)
         with self.assertRaisesRegex(ValueError, 'Unknown cases'):
             select(discover(), identifiers=['core/nonexistent'])
+
+    def test_explicit_package_root_replaces_default_and_plan_shows_it(self):
+        case = select(discover(), ['smoke'])[0]
+        with tempfile.TemporaryDirectory(prefix='e2e-baseline-') as folder:
+            copy = Path(folder) / 'orchflows'
+            write_json(copy / 'plugin.json', read_json(ROOT / 'plugin.json'))
+            self.assertEqual(packages_for(case, [copy])['orchflows'], copy.resolve())
+            self.assertEqual(packages_for(case)['orchflows'], ROOT.resolve())
+            self.assertEqual(overrides([copy]), {'orchflows': {'default': str(ROOT.resolve()), 'explicit': str(copy.resolve())}})
+            self.assertEqual(overrides([ROOT]), {})
+            plan = subprocess.run([sys.executable, '-B', str(ROOT / 'tests/e2e/run.py'), '--plan', '--case', case.id,
+                                   '--package-root', str(copy)], capture_output=True, text=True, check=True)
+            printed = json.loads(plan.stdout)
+            self.assertEqual(printed['package_overrides']['orchflows']['explicit'], str(copy.resolve()))
+            self.assertEqual(printed['cases'][0]['sources']['orchflows'], str(copy.resolve()))
+            second = Path(folder) / 'other' / 'orchflows'
+            write_json(second / 'plugin.json', read_json(ROOT / 'plugin.json'))
+            with self.assertRaisesRegex(ValueError, 'Duplicate package source: orchflows'):
+                packages_for(case, [copy, second])
 
     def test_runtime_copy_excludes_evaluator_and_preserves_source(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -65,6 +94,52 @@ class CatalogTests(unittest.TestCase):
             self.assertFalse((root / 'copy/trials').exists())
             self.assertEqual((root / 'copy/skills/SKILL.md').read_text(), 'Instructions')
             self.assertIn('trials/expected-behavior.md', result['excluded'])
+
+
+class SuitePlanTests(unittest.TestCase):
+    def cases(self, *timeouts):
+        from catalog import Case
+        return [Case(f'core/c{n}', ROOT, {'timeout_seconds': t}) for n, t in enumerate(timeouts)]
+
+    def test_derived_deadline_admits_every_attempt_under_any_admission_order(self):
+        import itertools
+        from run import ATTEMPT_OVERHEAD, attempts, suite_deadline
+        selected = self.cases(600, 300, 120, 45)
+        for jobs, repeat in itertools.product((1, 2, 5, 12), (1, 3)):
+            with self.subTest(jobs=jobs, repeat=repeat):
+                deadline = suite_deadline(selected, jobs, 400, repeat)
+                budgets = [c.timeout + 400 + ATTEMPT_OVERHEAD for c, _ in attempts(selected, repeat)]
+                for order in (budgets, sorted(budgets), sorted(budgets, reverse=True)):
+                    slots = [0] * jobs
+                    for budget in order:
+                        slot = slots.index(min(slots))
+                        slots[slot] += budget
+                    self.assertLessEqual(max(slots), deadline)
+
+    def test_attempts_put_longest_cases_first_with_their_repeats(self):
+        from run import attempts
+        selected = select(discover(), ['smoke'])
+        ordered = attempts(selected, 2)
+        self.assertEqual([c.id for c, _ in ordered[:2]], [selected[0].id] * 2)
+        self.assertEqual([n for _, n in ordered[:2]], [1, 2])
+        self.assertEqual([c.timeout for c, _ in ordered], sorted((c.timeout for c, _ in ordered), reverse=True))
+
+    def plan(self, *arguments):
+        return json.loads(subprocess.run([sys.executable, '-B', str(ROOT / 'tests/e2e/run.py'), '--plan', *arguments],
+                                         capture_output=True, text=True, check=True).stdout)
+
+    def test_plan_derives_the_deadline_and_an_explicit_deadline_wins_visibly(self):
+        from hosts import JOBS
+        from run import suite_deadline
+        derived = self.plan('--host', 'codex', '--repeat', '3')
+        self.assertEqual((derived['jobs'], derived['attempts'], derived['deadline_source']), (JOBS, 12, 'derived'))
+        self.assertEqual(derived['deadline'], suite_deadline(select(discover(), ['smoke']), JOBS, derived['audit_seconds'], 3))
+        self.assertEqual((derived['model'], derived['effort']), ('gpt-5.6-luna', 'medium'))
+        self.assertNotIn('deadline_note', derived)
+        explicit = self.plan('--host', 'claude', '--deadline', '300')
+        self.assertEqual((explicit['deadline'], explicit['deadline_source']), (300, 'explicit'))
+        self.assertIn('may not be admitted', explicit['deadline_note'])
+        self.assertEqual((explicit['model'], explicit['effort']), ('claude-sonnet-5', 'high'))
 
 
 class AssessmentTests(unittest.TestCase):

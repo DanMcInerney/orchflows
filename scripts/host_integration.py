@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -11,6 +10,7 @@ import subprocess
 import sys
 
 import agy_integration
+import package_files
 
 
 HOSTS = ("codex", "claude", "grok", "kimi", "zcode", "agy")
@@ -18,6 +18,8 @@ MARKETPLACE = "orchflows-home"
 NATIVE_HOMES = {"codex": ("CODEX_HOME", ".codex"), "claude": ("CLAUDE_CONFIG_DIR", ".claude"),
                 "grok": ("GROK_HOME", ".grok"), "kimi": ("KIMI_CODE_HOME", ".kimi-code"),
                 "zcode": ("ZCODE_HOME", ".zcode")}
+# Claude Code writes these usage markers into its installed plugin copies.
+HOST_MARKERS = (".in_use", ".orphaned_at")
 
 
 def select_hosts(hosts: list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
@@ -123,24 +125,10 @@ def _same_path(left: str | None, right: Path) -> bool:
     return Path(value).expanduser().resolve() == right.resolve()
 
 
-def _payload(root: Path) -> dict[str, str]:
-    """Compare runnable instructions/resources, excluding caches and host-specific metadata."""
-    result = {}
-    for entry in ("skills", "guidance", "references", "scripts", "docs", "plugin.json", "README.md", "AGENTS.md", "CLAUDE.md"):
-        base = root / entry
-        paths = base.rglob("*") if base.is_dir() else (base,)
-        for path in paths:
-            if path.is_file() and not any(part in {"__pycache__", "node_modules", ".git", ".venv"} for part in path.relative_to(root).parts):
-                if path.suffix not in {".pyc", ".pyo"}:
-                    result[path.relative_to(root).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
-    return result
-
-
 def _matches(source: Path, installed: str | None) -> bool:
     if not installed or not Path(installed).is_dir():
         return False
-    expected = _payload(source)
-    return bool(expected) and expected == _payload(Path(installed))
+    return package_files.same(source, Path(installed), skip=HOST_MARKERS)
 
 
 def _markets(host: str, executable: str, cwd: Path) -> list[dict]:
@@ -165,7 +153,7 @@ def _inventory(host: str, executable: str, cwd: Path) -> list[dict]:
         result = []
         for row in _rows(data.get("installed")):
             result.append({"name": row["name"], "enabled": row["enabled"], "version": row.get("version"),
-                           "marketplace": row["marketplaceName"], "source": row.get("source", {}).get("path"),
+                           "marketplace": row["marketplaceName"], "source": (row.get("source") or {}).get("path"),
                            "path": row.get("installedPath"), "scope": "user"})
         return result
     if host == "claude":
@@ -189,8 +177,8 @@ def _inventory(host: str, executable: str, cwd: Path) -> list[dict]:
                 if not any(item["name"] == row["name"] and _same_path(item["path"], Path(row["path"])) for item in own))
     result = []
     for row, inherited, source in rows:
-        matching_skills = [s for s in skills if s.get("source", {}).get("plugin_name") == row["name"]
-                           and Path(s["source"].get("path", "")).resolve().is_relative_to(Path(row["path"]).resolve())]
+        matching_skills = [s for s in skills if (s.get("source") or {}).get("plugin_name") == row["name"]
+                           and Path(s["source"].get("path") or "").resolve().is_relative_to(Path(row["path"]).resolve())]
         result.append({"name": row["name"], "enabled": row["enabled"] and any(not s.get("disabled", False) for s in matching_skills),
                        "path": row["path"], "scope": row["scope"], "inherited": inherited, "source": source})
     return result
@@ -203,7 +191,8 @@ def _manual(host: str, home: Path, packages: list[dict]) -> dict:
     else:
         steps = [f"In ZCode: Settings > Plugins > Create > Add marketplace > choose {home}; install "
                  + ", ".join(package["name"] for package in packages) + ".",
-                 "Refresh the marketplace and check for updates if already installed. ZCode cannot enforce manual-only skill invocation."]
+                 "After editing an installed library, uninstall and reinstall it in ZCode; same-version edits do not appear as updates. "
+                 "ZCode cannot enforce manual-only skill invocation."]
     return {"status": "needs_action", "message": "Native in-app installation/verification required", "next_steps": steps}
 
 
@@ -255,9 +244,13 @@ def _package(host: str, executable: str, home: Path, package: dict, inventory: l
             raise ValueError("Unsupported Codex installation result")
         installed_path = result.get("installedPath")
     elif host == "claude":
+        plugin = f"{name}@{MARKETPLACE}"
         if existing:
+            # Claude's same-version update keeps its stale cached copy. Reinstall
+            # only this verified home-owned package, keeping its data.
             _run(executable, "plugin", "marketplace", "update", MARKETPLACE, cwd=home)
-        _run(executable, "plugin", "update" if existing else "install", f"{name}@{MARKETPLACE}", "--scope", "user", cwd=home)
+            _run(executable, "plugin", "uninstall", plugin, "--scope", "user", "--keep-data", cwd=home)
+        _run(executable, "plugin", "install", plugin, "--scope", "user", cwd=home)
     else:
         if existing:
             # Local installs can be copies on Windows, but Grok's update assumes
@@ -275,7 +268,7 @@ def _package(host: str, executable: str, home: Path, package: dict, inventory: l
         raise ValueError("Native install completed but the expected user registration/source could not be verified")
     installed_path = installed_path or verified[0].get("path")
     if not _matches(source, installed_path):
-        return {"status": "needs_action", "message": "Installed files differ from source. Bump the package's manifest versions, then rerun setup (some hosts cache by version)"}
+        return {"status": "needs_action", "message": "Installed files still differ from source after the native reinstall; setup does not edit host caches. Inspect the installed copy in the host, then rerun setup"}
     return {"status": "updated" if existing else "ready", "message": "Installation verified; start a new session", "path": installed_path}
 
 

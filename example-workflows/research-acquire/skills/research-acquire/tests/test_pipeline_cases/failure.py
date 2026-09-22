@@ -167,37 +167,6 @@ class OracleCanFailTest(unittest.TestCase):
         )
 
 
-GUEST_HYDRATION_MANIFEST = {
-    "manifest_id": "pipeline-guest",
-    "as_of": "2026-08-10T00:00:00Z",
-    "steps": [
-        {
-            "step_id": "s1-guest",
-            "kind": "hydration",
-            "adapter_id": "x_guest",
-            "prior_step_id": "",
-            "selected_hits": [
-                {"discovery_locator": "https://x.com/a", "target_id": "user:a"},
-                {"discovery_locator": "https://x.com/b", "target_id": "user:b"},
-            ],
-            "max_items": 1,
-        }
-    ],
-}
-
-
-def refused_mint_run():
-    """Two guest reads whose activation the origin refuses: one answered call between them."""
-
-    clock = helpers.FakeClock()
-    carrier, opener = helpers.offline_transport(clock, {
-        transport.X_GUEST_ACTIVATE_ROUTE: (401, "unauthorized", "application/json"),
-        transport.X_GUEST_GRAPHQL_ROUTE: OK_JSON,
-    })
-    governor = real_governor(carrier, None, clock)
-    return run_on(clock, governor, GUEST_HYDRATION_MANIFEST), opener, governor
-
-
 class AStepWithNoCallIsEmptyTest(unittest.TestCase):
     def test_a_hydration_selecting_nothing_is_empty_on_the_route_it_was_admitted_to(self):
         clock = helpers.FakeClock()

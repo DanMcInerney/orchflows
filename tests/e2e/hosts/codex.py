@@ -89,7 +89,7 @@ class Codex:
     name = 'codex'
     capabilities = {'independent-review', 'local-exec', 'no-review', 'structured-audit'}
 
-    def __init__(self, executable=None):
+    def __init__(self, executable=None, model=None, effort=None):
         self.launcher = launcher(executable)
         self.version = subprocess.check_output([*self.launcher, '--version'], text=True, timeout=10).strip()
         self.home = native_logs.native_home('codex')
@@ -98,6 +98,11 @@ class Codex:
         self.settings = {key: settings[key] for key in
             ('model', 'model_reasoning_effort', 'model_provider', 'model_providers', 'service_tier', 'windows')
             if key in settings}
+        self.model, self.effort = model, effort
+        if model:
+            self.settings['model'] = model
+        if effort:
+            self.settings['model_reasoning_effort'] = effort
         if 'max_threads' in settings.get('agents', {}):
             self.settings['agents.max_threads'] = settings['agents']['max_threads']
         # Keep ambient skills out of the experiment; the selected package copies
@@ -109,7 +114,8 @@ class Codex:
         settings = {**self.settings, 'mcp_servers': {}, 'approval_policy': 'never',
             'features.hooks': False, 'features.plugins': False, 'features.apps': False,
             'features.memories': False, 'features.skill_mcp_dependency_install': False,
-            'features.multi_agent': profile in {'local', 'authoring'}, 'features.shell_tool': profile != 'no-review',
+            'features.multi_agent': profile in {'local', 'authoring'}, 'agents.enabled': profile in {'local', 'authoring'},
+            'features.shell_tool': profile != 'no-review',
             'sandbox_workspace_write.network_access': profile == 'authoring',
             'web_search': 'disabled', 'project_doc_max_bytes': 0,
             'skills.config': self.disabled_skills}

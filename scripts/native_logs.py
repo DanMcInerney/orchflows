@@ -6,7 +6,6 @@ import base64
 from collections import Counter
 from contextlib import closing
 from datetime import datetime, timezone
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -84,6 +83,7 @@ def _catalog(host, home, identifier=None):
                 meta = json.loads(path.with_suffix(".meta.json").read_text(encoding="utf-8"))
                 entry["parent_id"] = meta.get("parentAgentId") or entry["parent_id"]
                 entry["name"] = meta.get("name") or meta.get("description") or meta.get("agentType")
+                entry["agent_type"], entry["spawn_call_id"] = meta.get("agentType"), meta.get("toolUseId")
             except (OSError, ValueError, AttributeError) as exc:
                 gaps.append({"kind": "metadata_unavailable", "id": child, "detail": str(exc)})
             if child in entries:
@@ -350,12 +350,200 @@ def _preview(event, size=600):
     return result
 
 
+def _runtime(host, record):
+    """Model and effort a record says ran; launch requests and subagent metadata are not evidence."""
+    if host == "claude":
+        message = record.get("message")
+        if record.get("type") != "assistant" or not isinstance(message, dict):
+            return None
+        return message.get("model") or "unknown", record.get("effort") or "unknown"
+    payload = record.get("payload")
+    if record.get("type") != "turn_context" or not isinstance(payload, dict):
+        return None
+    return payload.get("model") or "unknown", payload.get("effort") or "unknown"
+
+
+# A child is fresh when it starts from only its assignment and inherited when it starts with parent history.
+# Omitted arguments take each host's own declared default: Codex multi-agent v1 declares that `fork_context`
+# false or omitted starts with only the initial prompt; v2 declares that omitted or "all" `fork_turns` is a
+# full-history fork; Claude Code's built-in `fork` type is selected only explicitly and is never the default.
+_OMITTED_DEFAULT = {"codex-v1": "fresh", "codex-v2": "inherited", "claude": "fresh"}
+
+
+def _js_code(source):
+    """Blank string, template and comment contents so brackets and keys reflect code only."""
+    chars, index, size = list(source), 0, len(source)
+    while index < size:
+        char = source[index]
+        if char in "\"'`":
+            end = index + 1
+            while end < size and source[end] != char:
+                end += 2 if source[end] == "\\" else 1
+            start, stop, index = index + 1, min(end, size), end + 1
+        elif source.startswith(("//", "/*"), index):
+            close = "\n" if source[index + 1] == "/" else "*/"
+            found = source.find(close, index + 2)
+            start, stop = index, size if found < 0 else found
+            index = stop + len(close)
+        else:
+            index += 1
+            continue
+        chars[start:stop] = " " * (stop - start)
+    return "".join(chars)
+
+
+def _v1_forks(source):
+    """`fork_context` of each multi-agent v1 spawn site in exec code: true, false, omitted or expression."""
+    code, sites = _js_code(source), []
+    for match in re.finditer(r"\bmulti_agent_v1__spawn_agent\s*\(\s*", code):
+        depth, top = 0, []
+        for char in code[match.end():]:
+            depth += (char in "{[(") - (char in "}])")
+            if depth <= 0:
+                break
+            top.append(char if depth == 1 else " ")
+        text = "".join(top)
+        value = re.search(r"\bfork_context\s*:\s*(true|false)\b", text)
+        if not text.startswith("{") or (not value and re.search(r"\bfork_context\b|\.\.\.", text)):
+            sites.append("expression")
+        else:
+            sites.append(value.group(1) == "true" if value else "omitted")
+    return sites
+
+
+def _indicates(api, arguments):
+    """Launch context one spawn site's arguments select, or None when they do not determine it."""
+    key = {"codex-v1": "fork_context", "codex-v2": "fork_turns", "claude": "subagent_type"}.get(api)
+    value = arguments.get(key, "omitted")
+    if key is None or value == "omitted":
+        return _OMITTED_DEFAULT.get(api)
+    if api == "codex-v1":
+        return "inherited" if value is True else "fresh" if value is False else None
+    if api == "codex-v2":
+        return "fresh" if value == "none" else "inherited" if value == "all" or str(value).isdigit() else None
+    return ("inherited" if value == "fork" else "fresh") if isinstance(value, str) else None
+
+
+def _item_indicates(item, version):
+    api = item["api"] or (f"codex-{version}" if version in {"v1", "v2"} else None)
+    options = {_indicates(api, arguments) for arguments in item["arguments"]}
+    return options.pop() if len(options) == 1 else None
+
+
+class _Spawns:
+    """Spawn calls in one transcript, each linked to the child it created where the records name it."""
+
+    def __init__(self, host):
+        self.host, self.items, self.exec_calls, self.pending = host, [], {}, {}
+
+    def _add(self, call_id, line, api, tool, arguments, pending=True, **extra):
+        item = {"source": "spawn_call", "api": api, "tool": tool, "call_id": call_id, "line": line,
+                "arguments": arguments, **extra}
+        self.items.append(item)
+        if pending and call_id:
+            self.pending[call_id] = item
+
+    def feed(self, record, line):
+        if self.host == "claude":
+            message = record.get("message")
+            blocks = message.get("content") if isinstance(message, dict) else None
+            blocks = [b for b in blocks if isinstance(b, dict)] if isinstance(blocks, list) else []
+            for block in blocks:
+                if block.get("type") == "tool_use" and block.get("name") in {"Agent", "Task"}:
+                    data = block.get("input") if isinstance(block.get("input"), dict) else {}
+                    self._add(block.get("id"), line, "claude", block.get("name"),
+                              [{"subagent_type": data.get("subagent_type", "omitted")}])
+            results = [b.get("tool_use_id") for b in blocks if b.get("type") == "tool_result"]
+            outcome = record.get("toolUseResult")
+            # One toolUseResult per record, so only a single-result record names its child.
+            if len(results) == 1 and results[0] in self.pending and isinstance(outcome, dict) and outcome.get("agentId"):
+                self.pending.pop(results[0])["child_id"] = outcome["agentId"]
+            return
+        payload = record.get("payload")
+        if not isinstance(payload, dict):
+            return
+        kind, call = payload.get("type"), payload.get("call_id")
+        if record.get("type") == "response_item":
+            if kind == "custom_tool_call" and payload.get("name") == "exec":
+                source = payload.get("input")
+                self.exec_calls[call] = (line, _v1_forks(source) if isinstance(source, str) else [])
+            elif kind == "custom_tool_call_output":
+                self.exec_calls.pop(call, None)
+            elif kind == "function_call" and payload.get("name") == "spawn_agent":
+                data = _decoded(payload.get("arguments"))
+                data = data if isinstance(data, dict) else {}
+                api = "codex-v1" if "fork_context" in data else "codex-v2" if "fork_turns" in data else None
+                self._add(call, line, api, "spawn_agent",
+                          [{k: data[k] for k in ("fork_context", "fork_turns") if k in data}])
+            elif kind == "function_call_output" and call in self.pending:
+                output, item = _decoded(payload.get("output")), self.pending.pop(call)
+                if isinstance(output, dict):
+                    item.update(child_id=output.get("agent_id"), agent_path=output.get("task_name"))
+            return
+        item = payload.get("item")
+        if not (record.get("type") == "event_msg" and kind == "item_completed" and isinstance(item, dict)
+                and item.get("type") == "CollabAgentToolCall" and item.get("tool") == "spawn_agent"):
+            return
+        for child in item.get("receiver_thread_ids") or []:
+            if len(self.exec_calls) == 1:
+                call, (call_line, sites) = next(iter(self.exec_calls.items()))
+                self._add(call, call_line, "codex-v1", "exec", [{"fork_context": s} for s in sites],
+                          pending=False, child_id=child)
+            elif self.exec_calls:
+                self._add(None, line, "codex-v1", "exec", [], pending=False, child_id=child,
+                          detail=f"spawned while {len(self.exec_calls)} exec calls were open")
+            elif len(self.pending) == 1:
+                next(iter(self.pending.values())).setdefault("child_id", child)
+
+
+def _child_record(host, entry):
+    """What a child's own records say about its start, with its multi-agent version and path (Codex)."""
+    if host == "claude":
+        kind = entry.get("agent_type")
+        return {"source": "child_record", "agent_type": kind,
+                "indicates": None if kind is None else "inherited" if kind == "fork" else "fresh"}, None, None
+    meta = {}
+    try:
+        for _, line, _, record in _records(Path(entry["path"])):
+            if record.get("type") == "session_meta" and isinstance(record.get("payload"), dict):
+                meta = record["payload"]
+            if meta or line >= 5:
+                break
+    except OSError:
+        pass
+    forked = meta.get("forked_from_id")
+    # Absent fork markers are not proof of a fresh start; only the spawn call can show that.
+    return {"source": "child_record", "forked_from_id": forked,
+            "history_start_ordinal": meta.get("subagent_history_start_ordinal"),
+            "multi_agent_version": meta.get("multi_agent_version"),
+            "indicates": "inherited" if forked else None}, meta.get("multi_agent_version"), meta.get("agent_path")
+
+
+def _links(item, entry, agent_path):
+    return (item.get("child_id") == entry["id"] or bool(item["call_id"] and item["call_id"] == entry.get("spawn_call_id"))
+            or bool(agent_path and item.get("agent_path") == agent_path))
+
+
+def _launch(entry, header, spawns):
+    """Launch context from the child's records and linked spawn calls; any inherited evidence wins."""
+    record, version, agent_path = header
+    evidence = [record] + [{**item, "indicates": _item_indicates(item, version)}
+                           for item in spawns if _links(item, entry, agent_path)]
+    says = {item["indicates"] for item in evidence}
+    return ("inherited" if "inherited" in says else "fresh" if "fresh" in says else "unknown"), evidence
+
+
+def _record_events(path, host, start, number, record):
+    for index, event in enumerate(_events(host, record)):
+        event["event_id"] = f"{start}:{index}"
+        event["source"] = {"path": str(path), "line": number, "byte_offset": start}
+        event["flags"] = _flags(event)
+        yield event, index
+
+
 def _located_events(path, host, offset=0, line=1):
     for start, number, raw, record in _records(path, offset, line):
-        for index, event in enumerate(_events(host, record)):
-            event["event_id"] = f"{start}:{index}"
-            event["source"] = {"path": str(path), "line": number, "byte_offset": start}
-            event["flags"] = _flags(event)
+        for event, index in _record_events(path, host, start, number, record):
             yield event, raw, index
 
 
@@ -379,45 +567,82 @@ def inspect(host, identifier, home, limit=30, after=None):
         selected_page = selected[selected.index(after) + 1:][:limit]
     else:
         selected_page = selected[:limit]
+    spawn_cache, header_cache = {}, {}
+
+    def spawns_of(agent):
+        if agent not in spawn_cache:
+            collector = _Spawns(host)
+            try:
+                for _, number, _, record in _records(Path(entries[agent]["path"])):
+                    collector.feed(record, number)
+            except OSError:
+                pass
+            spawn_cache[agent] = collector.items
+        return spawn_cache[agent]
+
+    def header_of(agent):
+        if agent not in header_cache:
+            header_cache[agent] = _child_record(host, entries[agent])
+        return header_cache[agent]
+
     agents = []
     for current in selected_page:
         entry = entries[current].copy()
-        counts, tools, flags = Counter(), Counter(), Counter()
+        counts, tools, flags, models, efforts = Counter(), Counter(), Counter(), Counter(), Counter()
         calls, results, errors, gap_events = {}, set(), [], []
         latest = None
+        path = Path(entry["path"])
+        collector = _Spawns(host)
         try:
-            for event, _, _ in _located_events(Path(entry["path"]), host):
-                counts[event["kind"]] += 1
-                flags.update(event["flags"])
-                latest = _preview(event, 180)
-                if event["kind"] == "tool_call":
-                    calls[event["call_id"]] = {k: event.get(k) for k in ("call_id", "tool", "event_id", "source")}
-                    tools[event["tool"]] += 1
-                elif event["kind"] == "tool_result":
-                    results.add(event["call_id"])
-                sidecars = _sidecars(event, home)
-                for sidecar in sidecars:
-                    if sidecar["state"] != "available":
-                        flags[sidecar["state"]] += 1
-                if event.get("is_error") or event.get("exit_code") not in {None, 0} or event.get("record_type") == "error":
-                    errors.append(_preview(event, 160))
-                if event["kind"] in {"gap", "unsupported"}:
-                    gap_events.append(_preview(event, 160))
+            for start, number, _, record in _records(path):
+                collector.feed(record, number)
+                runtime = _runtime(host, record)
+                if runtime:
+                    models[runtime[0]] += 1
+                    efforts[runtime[1]] += 1
+                for event, _ in _record_events(path, host, start, number, record):
+                    counts[event["kind"]] += 1
+                    flags.update(event["flags"])
+                    latest = _preview(event, 180)
+                    if event["kind"] == "tool_call":
+                        calls[event["call_id"]] = {k: event.get(k) for k in ("call_id", "tool", "event_id", "source")}
+                        tools[event["tool"]] += 1
+                    elif event["kind"] == "tool_result":
+                        results.add(event["call_id"])
+                    for sidecar in _sidecars(event, home):
+                        if sidecar["state"] != "available":
+                            flags[sidecar["state"]] += 1
+                    if event.get("is_error") or event.get("exit_code") not in {None, 0} or event.get("record_type") == "error":
+                        errors.append(_preview(event, 160))
+                    if event["kind"] in {"gap", "unsupported"}:
+                        gap_events.append(_preview(event, 160))
         except OSError as exc:
             entry["read_gap"] = str(exc)
+        spawn_cache[current] = collector.items
         unmatched = [v for k, v in calls.items() if k not in results]
-        entry.update(events=dict(counts), tools=dict(tools), flags=dict(flags), latest_recorded=latest,
+        entry.update(events=dict(counts), tools=dict(tools), models=dict(models), efforts=dict(efforts),
+                     flags=dict(flags), latest_recorded=latest,
                      calls_without_recorded_results=unmatched[:20], unmatched_count=len(unmatched),
                      errors=errors[-5:], error_count=len(errors), gaps=gap_events[:5], gap_count=len(gap_events))
+        if entry["parent_id"] is not None:
+            parent = entry["parent_id"]
+            entry["launch_context"], entry["launch_evidence"] = _launch(
+                entry, header_of(current), spawns_of(parent) if parent in entries else [])
+        unlinked = [{**item, "indicates": _item_indicates(item, None)} for item in collector.items
+                    if not any(_links(item, entries[child], header_of(child)[2]) for child in children.get(current, []))]
+        entry.update(spawn_count=len(collector.items), unlinked_spawns=unlinked[:10], unlinked_spawn_count=len(unlinked))
         agents.append(entry)
     return {"host": host, "root_id": identifier, "native_home": str(home), "agents": agents,
             "agent_count": len(selected), "discovery_gaps": gaps[:20], "discovery_gap_count": len(gaps),
             "next_cursor": selected_page[-1] if selected_page and selected_page[-1] != selected[-1] else None,
-            "note": "Recorded activity is not proof of current process state or workflow success. Rerun inspect to discover newly spawned agents."}
+            "note": "Recorded activity is not proof of current process state or workflow success. Rerun inspect to discover newly spawned agents. "
+                    "models/efforts tally what native records say ran; unknown means the record omitted it. "
+                    "launch_context is fresh (assignment only), inherited (parent history) or unknown, from the child's records "
+                    "and the linked spawn call; unlinked_spawns are spawn calls no recorded child could be tied to."}
 
 
 def _cursor(path, event, raw, index):
-    data = [str(path), event["source"]["byte_offset"], event["source"]["line"], index + 1, hashlib.sha256(raw).hexdigest()]
+    data = [str(path), event["source"]["byte_offset"], event["source"]["line"], index + 1, len(raw)]
     return base64.urlsafe_b64encode(_json(data).encode()).decode()
 
 
@@ -429,12 +654,16 @@ def read(host, identifier, home, limit=30, after=None, event_id=None, field="dat
     start, line, skip = 0, 1, 0
     if after:
         try:
-            old_path, start, line, skip, digest = json.loads(base64.urlsafe_b64decode(after))
-            if old_path != str(path) or not all(type(x) is int and x >= 0 for x in (start, line, skip)) or line < 1:
+            old_path, start, line, skip, length = json.loads(base64.urlsafe_b64decode(after))
+            if (old_path != str(path) or not all(type(x) is int and x >= 0 for x in (start, line, skip, length))
+                    or line < 1):
                 raise ValueError()
+            # The cursor's record must still start a line and keep its length.
             with path.open("rb") as stream:
-                stream.seek(start)
-                if hashlib.sha256(stream.readline()).hexdigest() != digest:
+                stream.seek(max(start - 1, 0))
+                if start and stream.read(1) != b"\n":
+                    raise ValueError()
+                if len(stream.readline()) != length:
                     raise ValueError()
         except (ValueError, TypeError) as exc:
             raise ValueError("Invalid cursor or changed/truncated source; read from the start") from exc

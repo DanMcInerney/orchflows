@@ -68,9 +68,11 @@ def packet(root):
         evidence = read_json(index)
         pieces.append(json.dumps({'root_id': evidence['root_id'], 'gaps': evidence.get('gaps', [])}))
         for agent in evidence.get('agents', []):
-            pieces.append(f"### Agent {agent['id']}; parent {agent.get('parent_id')}; tools {agent.get('tools')}")
+            pieces.append(f"### Agent {agent['id']}; parent {agent.get('parent_id')}; launch {agent.get('launch_context')}; "
+                          f"tools {agent.get('tools')}; models {agent.get('models')}; efforts {agent.get('efforts')}")
             pieces.append(json.dumps({key: agent.get(key) for key in
-                ('gaps', 'error_count', 'calls_without_recorded_results')}, ensure_ascii=False))
+                ('gaps', 'error_count', 'calls_without_recorded_results', 'launch_evidence', 'unlinked_spawns')},
+                ensure_ascii=False))
             event_path = Path(agent['events_path'])
             for line, text in enumerate(event_path.read_text(encoding='utf-8').splitlines(), 1):
                 event = json.loads(text)
@@ -111,10 +113,14 @@ async def audit_run(root, host, scheduler, timeout=60):
     native = host.result(directory)
     write_json(directory / 'native.json', native)
     complete = False
+    # Recorded-condition gaps describe the audit session, not its verdict; keep them visible without discarding it.
+    conditions = [g for g in native['gaps'] if g.startswith(('Native effort mismatch', 'Native transcript unavailable'))]
+    blocking = [g for g in native['gaps'] if g not in conditions]
     try:
-        if execution['status'] != 'completed' or native['gaps']:
-            raise ValueError('Audit did not complete (' + execution['status'] + '): ' + str(native['gaps'] + execution['gaps']))
+        if execution['status'] != 'completed' or blocking:
+            raise ValueError('Audit did not complete (' + execution['status'] + '): ' + str(blocking + execution['gaps']))
         value = validate(native['structured_output'])
+        value['observations'].extend('Audit session: ' + g for g in conditions)
         complete = True
     except (ValueError, TypeError) as error:
         value['gaps'].append(str(error))

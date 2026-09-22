@@ -56,10 +56,10 @@ def discover(extra_roots=()):
     return cases
 
 
-def select(cases, suite=None, identifiers=()):
+def select(cases, suites=(), identifiers=()):
+    """Cases named by every listed suite and identifier; smoke when neither is given."""
     names = list(identifiers)
-    if suite or not names:
-        suite = suite or 'smoke'
+    for suite in suites or ([] if names else ['smoke']):
         if not re.fullmatch(r'[\w-]+', suite):
             raise ValueError('Invalid suite name')
         for line in (HERE / 'suites' / (suite + '.txt')).read_text().splitlines():
@@ -72,17 +72,33 @@ def select(cases, suite=None, identifiers=()):
     return sorted((cases[n] for n in dict.fromkeys(names)), key=lambda c: (-c.timeout, c.id))
 
 
-def packages_for(case, extra_roots=()):
-    sources = {}
-    candidates = [ROOT, *sorted((ROOT / 'example-workflows').iterdir()), *map(Path, extra_roots)]
-    if (case.path / 'packages').is_dir():
-        candidates += sorted((case.path / 'packages').iterdir())
-    for path in candidates:
+def _named(paths, sources=None):
+    sources = {} if sources is None else sources
+    for path in paths:
         if path.is_dir() and (path / 'plugin.json').is_file():
             name = orchflows._manifest(path)['name']
-            if name in sources and sources[name].resolve() != path.resolve():
+            if name in sources and sources[name] != path.resolve():
                 raise ValueError(f'Duplicate package source: {name}')
             sources[name] = path.resolve()
+    return sources
+
+
+def _defaults():
+    return _named([ROOT, *sorted((ROOT / 'example-workflows').iterdir())])
+
+
+def overrides(extra_roots=()):
+    """Default package roots that an explicit --package-root with the same name replaces."""
+    defaults = _defaults()
+    return {name: {'default': str(defaults[name]), 'explicit': str(path)}
+            for name, path in _named(map(Path, extra_roots)).items() if name in defaults and defaults[name] != path}
+
+
+def packages_for(case, extra_roots=()):
+    # Explicit roots win over defaults so matched trials can run old and new packages from one harness.
+    sources = {**_defaults(), **_named(map(Path, extra_roots))}
+    if (case.path / 'packages').is_dir():
+        _named(sorted((case.path / 'packages').iterdir()), sources)
     missing = set(case.config['packages']) - sources.keys()
     if missing:
         raise ValueError('Missing package roots: ' + ', '.join(sorted(missing)))

@@ -4,7 +4,7 @@ description: Develop a project endgoal through N bounded cycles of brainstorm an
 disable-model-invocation: true
 ---
 
-Use the [handoff contract](../../references/design-loop-contract.md). Inputs: endgoal, starting workspace/artifacts, output directory and optional N, criteria, constraints, domains and scoped model/effort choices. Coordinate in the caller; reuse context and extend it for new work.
+Use the [handoff contract](../../references/design-loop-contract.md). Inputs: endgoal, starting workspace/artifacts, output directory and optional N, criteria, constraints, domains and scoped model/effort choices. Reuse context and extend it for new work.
 
 ## Bounds
 
@@ -28,7 +28,7 @@ On failure, retain evidence and mark dependent stages unexecuted. Run scheduled 
 
 For no justified change, mark implementation/testing inapplicable, analyze the evidence and record retain. The attempt counts; normal early-stop rules apply.
 
-To resume, read checkpoint and attempt-start records; verify state/artifact identities and remaining bounds. Reconcile uncheckpointed starts or completed work; stale checkpoints erase no attempts. Continue the same attempt's first unfinished stage, reusing valid work. Recover completed work or rejoin live assignments before replacements. Changed inputs make affected downstream evidence stale; repeating completed stages requires a new or extended caller run. Never reset N or caller constraints on resume.
+To resume, read checkpoint and attempt-start records and verify state/artifact identities. Continue the same attempt's first unfinished stage, reusing valid work and rejoining live assignments before replacements. Changed inputs make affected downstream evidence stale; repeating completed stages requires a new or extended caller run.
 
 ## Return
 

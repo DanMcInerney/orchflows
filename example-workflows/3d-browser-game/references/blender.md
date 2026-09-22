@@ -1,6 +1,6 @@
 # Blender production and handoff
 
-Record Blender/exporter versions and inspect available operators/settings. Use matching official documentation for release-sensitive options. The [glTF manual](https://docs.blender.org/manual/en/3.6/addons/import_export/scene_gltf2.html) explains portable mesh/material/animation channels. Newer action slots affect clip grouping; verify exported clips instead of copying old NLA naming recipes. [Blender 5.2 exporter](https://docs.blender.org/manual/id/5.2/addons/scene_gltf2.html).
+Record Blender/exporter versions and inspect available operators/settings. Use matching official documentation for release-sensitive options. The [glTF manual](https://docs.blender.org/manual/en/3.6/addons/import_export/scene_gltf2.html) explains portable mesh/material/animation channels. Newer action slots affect clip grouping; verify exported clips instead of copying old NLA naming recipes. [Blender 5.2 exporter](https://docs.blender.org/manual/en/5.2/addons/scene_gltf2.html).
 
 ## Asset brief
 
@@ -36,4 +36,4 @@ For repeatable production, use a project-owned script, e.g. `blender --backgroun
 
 Validate GLB structure when a validator is available, then inspect through the game's actual loader/settings. Check bounds, transforms, material slots, texture resolution, transparency and clip names/durations. Inspect idle/action poses at gameplay distance in normal and busy lighting. Deliver filenames/IDs, measured costs, dependencies, source/export commands and deviations; source images cannot replace runtime inspection.
 
-Use a project-local neutral preview for early work; integrated camera/lighting are final. Continue suitable asset makers for production feedback or a caller-allocated repair pass; add no hidden review loop.
+Use a project-local neutral preview for early work; integrated camera/lighting are final.

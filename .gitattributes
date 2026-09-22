@@ -1,0 +1,2 @@
+# Fixtures compared byte-for-byte must not be line-ending converted.
+*.mp4 binary
