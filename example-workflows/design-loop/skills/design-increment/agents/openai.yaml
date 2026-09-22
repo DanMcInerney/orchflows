@@ -1,6 +1,6 @@
 interface:
   display_name: "Design Increment"
-  short_description: "Turn a project goal, options and research into one scoped..."
+  short_description: "Design one increment and its old/new evaluation plan"
 
 policy:
   allow_implicit_invocation: false

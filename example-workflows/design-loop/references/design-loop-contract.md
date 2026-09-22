@@ -1,6 +1,6 @@
 # Design iteration handoff
 
-The [design-loop](../skills/design-loop/SKILL.md) coordinator owns cycles and checkpoints. Establish [library context](library-context.md). Each component performs only its stage from this context and its declared inputs. Composition stays in the caller; production may run directly, continue a suitable maker or use `orch-work`, honoring named-assignment settings and common plus Make guidance. Shared comparison uses `orch-review`.
+The [design-loop](../skills/design-loop/SKILL.md) coordinator owns cycles and checkpoints. Establish [library context](library-context.md). Each component performs only its stage from this context and its declared inputs. Composition stays in the caller; production may run directly, continue a suitable maker or use `orchflows:orch-work`, honoring named-assignment settings and common plus Make guidance. Shared comparison uses `orchflows:orch-review`.
 
 ## Request context
 

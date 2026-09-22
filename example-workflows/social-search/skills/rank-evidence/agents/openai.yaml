@@ -1,6 +1,6 @@
 interface:
   display_name: "Rank Evidence"
-  short_description: "Delegate one independent review of supplied evidence into a..."
+  short_description: "Independently rank supplied evidence with citations"
 
 policy:
   allow_implicit_invocation: false

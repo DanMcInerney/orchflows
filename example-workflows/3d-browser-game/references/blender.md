@@ -1,6 +1,6 @@
 # Blender production and handoff
 
-Record Blender/exporter versions and inspect available operators/settings. Use matching official documentation for release-sensitive options. The [glTF manual](https://docs.blender.org/manual/en/3.6/addons/import_export/scene_gltf2.html) explains portable mesh/material/animation channels. Newer action slots affect clip grouping; verify exported clips instead of copying old NLA naming recipes. [Blender 5.2 exporter](https://docs.blender.org/manual/id/5.2/addons/scene_gltf2.html).
+Record Blender/exporter versions and inspect available operators/settings. Use matching official documentation for release-sensitive options. The [glTF manual](https://docs.blender.org/manual/en/3.6/addons/import_export/scene_gltf2.html) explains portable mesh/material/animation channels. Newer action slots affect clip grouping; verify exported clips instead of copying old NLA naming recipes. [Blender 5.2 exporter](https://docs.blender.org/manual/en/5.2/addons/scene_gltf2.html).
 
 ## Asset brief
 
