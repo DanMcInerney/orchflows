@@ -1,0 +1,6 @@
+interface:
+  display_name: "Gauntlet Loop"
+  short_description: "Loop each piece through a builder and a blind critic..."
+
+policy:
+  allow_implicit_invocation: false
