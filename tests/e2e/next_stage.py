@@ -73,7 +73,7 @@ def main():
     args = parser.parse_args()
     if args.jobs < 1 or args.deadline <= 0 or args.audit_seconds <= 0:
         parser.error('Use positive jobs, deadline and audit-seconds')
-    selected = select(discover(), None if args.case else args.suite, args.case)
+    selected = select(discover(), [] if args.case else [args.suite], args.case)
     sources = {case.id: packages_for(case) for case in selected}
     key = os.environ.get('CODEX_API_KEY') or os.environ.get('OPENAI_API_KEY')
     if args.execute and not key:

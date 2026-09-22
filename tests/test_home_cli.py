@@ -1,6 +1,5 @@
 """The actual shipped core must work after setup from an unrelated project."""
 
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -37,7 +36,7 @@ class InstalledCliTests(unittest.TestCase):
             ]}}) + "\n", encoding="utf-8")
 
             def files():
-                return {item.relative_to(outside).as_posix(): hashlib.sha256(item.read_bytes()).hexdigest()
+                return {item.relative_to(outside).as_posix(): item.read_bytes()
                         for item in outside.rglob("*") if item.is_file()}
 
             before = files()
@@ -109,8 +108,9 @@ class InstalledCliTests(unittest.TestCase):
                 self.assertEqual(Path(resolved_core["skill_path"]), core / "skills" / skill.name / "SKILL.md")
 
             def files(path):
-                return {item.relative_to(path).as_posix(): hashlib.sha256(item.read_bytes()).hexdigest()
-                        for item in path.rglob("*") if item.is_file()
+                # Trials are evaluator material kept in the source, not installed.
+                return {item.relative_to(path).as_posix(): item.read_bytes()
+                        for item in path.rglob("*") if item.is_file() and "trials" not in item.relative_to(path).parts
                         and "__pycache__" not in item.parts and item.suffix not in {".pyc", ".pyo"}}
 
             self.assertEqual(files(ROOT / "example-workflows/social-search"), files(home / "libraries/social-search"))
@@ -152,6 +152,9 @@ class InstalledCliTests(unittest.TestCase):
                         linked = (document.parent / relative).resolve() if relative else document
                         with self.subTest(package=package.name, document=document.relative_to(package), target=target):
                             self.assertTrue(linked.is_relative_to(package), "Link escapes the installed package")
+                            if "trials" in linked.relative_to(package).parts and package in example_libraries:
+                                # Trials stay in the source checkout; the link must resolve there.
+                                linked = ROOT / "example-workflows" / package.name / linked.relative_to(package)
                             self.assertTrue(linked.exists(), "Link target is absent from the installed package")
 
 

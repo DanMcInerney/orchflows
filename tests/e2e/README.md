@@ -12,9 +12,7 @@ python tests/e2e/run.py --case shared/compare-small --output ../e2e-shared
 
 Python 3.11+ is required. Native runs are opt-in and consume normal agent usage. Use an authenticated Claude Code or Codex CLI; `--host claude|codex` and `--executable PATH` select the host and executable. Configured model/effort settings pass through unchanged, but the host decides what applies; evidence records the observed model and effort. Native controls need validation on the selected host/version; unsupported hosts never substitute another host.
 
-The [gate study](gate-study.md) proposes comparisons of work-unit boundaries and Build/Dynamic authoring paths across a 31-family development matrix. Its opt-in `gates` and `gates-authoring` suites add six executable diagnostics with offline scorer controls; `gates-regressions` adds the blocked-authoring prerequisite case and requested-review calibration source. See the [predictions](gate-predictions.md) and [native pilot results](gate-results.md) for the executed subset and limitations. Smoke membership is unchanged.
-
-The [next-stage study](next-stage-study.md) adds six cases for joined multi-guidance review, ordinary research/code and survey requests, a compatible API change, and direct versus saved release briefs. A separate two-case probe compares the current Dynamic exception with review for every unit. `python -B tests/e2e/next_stage.py --suite next-stage --output ../next-stage-prepared` freezes predictions, cases and runtime packages without model calls. Native execution is explicit and API-only; see the study for bounds and authentication. These cases have offline scorer controls, **not new native results**.
+Opt-in development suites: `gates` and `gates-authoring` diagnose work-unit boundaries and Build/Dynamic authoring; `gates-regressions` holds the blocked-authoring prerequisite case and the requested-review calibration source; `next-stage` covers joined multi-guidance review, ordinary research/code and survey requests, a compatible API change, and direct versus saved release briefs. `python -B tests/e2e/next_stage.py --suite next-stage --output ../next-stage-prepared` freezes predictions, cases and runtime packages without model calls; its native execution is explicit and needs `CODEX_API_KEY` or `OPENAI_API_KEY`. These suites have offline scorer controls. Smoke membership is unchanged.
 
 | Selection | Suite deadline | Cases |
 | --- | --- | --- |
@@ -22,6 +20,8 @@ The [next-stage study](next-stage-study.md) adds six cases for joined multi-guid
 | `authoring` | 600s | Build a personal library, freeze it, then run its larger workflow and reusable component on unseen inputs in parallel |
 | `examples` | 300s | Shared comparison; Short Video review of a corrupt export |
 | Explicit `--case ID` | 300s | Selected cases only; repeat the flag to select more |
+
+Repeat `--suite` to combine suites; `--case` adds cases to them.
 
 Use `--deadline`, `--audit-seconds` (default 60), `--jobs` (default 3) and `--repeat` (default 1) deliberately. With `--repeat k`, `summary.json` `cases` gives each case's attempts, assessment counts and `all_acceptable` (pass^k), and the evidence README adds a line per case; single attempts are weak evidence of reliability. Case deadlines include preparation and stage waits; suite deadlines also include checks and audits. Cleanup may take up to 15 additional seconds. Deadlines bound waiting, not successful completion. The longer `core/dynamic-review`, `core/research-code` and `core/safe-authoring` cases need explicitly suitable suite budgets.
 
@@ -81,18 +81,13 @@ Targets receive only ordinary inputs, not acceptance/checks or reserved reuse da
 
 Native child trees are copied using the existing history reader. Separate CLI trials launched by Build are not native descendants and need their own recorded session IDs; the evaluator must leave missing trial evidence as a gap. Timeout stops the owned local process tree; remote continuation cannot be independently guaranteed. Available model, token and cost records stay in each `native.json`; missing usage is not zero cost.
 
-## Validation, 2026-09-18
+## Current evidence and gaps
 
-Claude Code 2.1.270, configured model/effort settings (observed values were not recorded then), Windows. These observations apply to the recorded package snapshots, not every host or model.
-
-| Pilot | Observed result |
-| --- | --- |
-| Revised smoke | **4/4 acceptable, all completed and independently audited in 175.5s; peak 3 harness sessions.** Composition exercised nested procedures, independent invoice review, a separate public-summary maker and scoped guidance. |
-| Evaluator calibration | **4/4 matched:** accepted baseline/verbosity, rejected skipped review, marked missing evidence inconclusive. |
-| Build → fresh reuse | Authoring timed out at 360.8s. Generated workflow and standalone component then completed in 148.2s and 55.1s on unseen inputs; all 10 artifact checks passed. Journey audit timed out; **full authoring contract remains inconclusive**. |
-| Example cases | Both reached fresh reviewer dispatch but timed out at 120s before deliverables. Audits preserved partial evidence; **neither example is a behavioral pass**. |
-
-The successful smoke is one sample, not a reliability estimate. Its observed duration was about three minutes within a five-minute cap. Keep full authoring and larger examples opt-in: their tested budgets yielded partial evidence without establishing reliable completion. Build's complete trial-before-review sequence needs a completed run with its inner trial identities captured. Those September 18 trials did not test Codex. The subsequent [Codex gate pilot](gate-results.md) records its own conditions, failures and evidence.
+- 2026-09-18, Claude Code 2.1.270 on Windows (observed models and efforts were not recorded then): smoke 4/4 acceptable and independently audited in one sample; evaluator calibration matched its four controls. Build's authoring and both example cases timed out, so full authoring and the examples have no behavioral pass.
+- Historical, Claude trials recorded before 2026-09-22: automatic selection chose Dynamic for a research-to-code request but skipped it for a trivial file-writing request; explicit invocation worked.
+- 2026-09-20, Codex gate pilot: host transport failures, timeouts and the account usage limit interrupted it, and the native Codex calibration did not run. The gate and next-stage suites have offline scorer controls only.
+- 2026-09-22, Claude Code 2.1.280: a baseline of five cases was inconclusive for every attempt because the account had reached its usage limit.
+- Gaps: single attempts are not reliability estimates; Build's trial-before-review sequence needs a completed run that captures its inner trial identities.
 
 Offline regression tests run without a model:
 
@@ -101,4 +96,4 @@ python -m unittest discover -s tests -v
 python -m unittest discover -s tests -p "test_e2e*.py" -v
 ```
 
-On September 20 the latest full offline suite ran 211 tests in 38.2s after the [structure review](structure-review.md): 210 passed, one platform skip. They cover discovery without registry changes, frozen inputs/drivers, parallel dependent stages, bounded sessions, cancellation with complete attempt accounting, partial outputs, objective versus evaluator judgments, changed-evidence rejection, Codex launch/discovery controls, calibration fixtures and the next-stage scorer/policy controls. Local fake agents test the harness, not LLM ability. Existing [upgrade tests](../test_upgrade_e2e.py) still exercise real installation/upgrade from pinned main `16d2644ba25562d66af5648a7dfed8ebde1cfe90`; unavailable Git history is a skip, not a pass.
+The offline tests cover discovery without registry changes, frozen inputs/drivers, parallel dependent stages, bounded sessions, cancellation with complete attempt accounting, partial outputs, objective versus evaluator judgments, changed-evidence rejection, Codex launch/discovery controls, calibration fixtures and the next-stage scorer/policy controls. Local fake agents test the harness, not LLM ability. The [upgrade tests](../test_upgrade_e2e.py) exercise real installation and upgrade from a fixed old main commit; unavailable Git history is a skip, not a pass.

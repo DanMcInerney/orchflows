@@ -1,6 +1,5 @@
 """Real main installer -> current installer -> installed CLI, without mocks/network."""
 
-import hashlib
 import io
 import json
 import os
@@ -14,24 +13,23 @@ import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-# The main snapshot used for the original upgrade comparison; immutable.
+# Fixture identity: the old main commit this upgrade starts from.
 MAIN = "16d2644ba25562d66af5648a7dfed8ebde1cfe90"
 
 
 def snapshot(root):
-    return {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in root.rglob("*") if p.is_file()}
+    return {p.relative_to(root).as_posix(): p.read_bytes() for p in root.rglob("*") if p.is_file()}
 
 
 class MainUpgradeEndToEndTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not shutil.which("git"):
-            raise unittest.SkipTest("Main-upgrade E2E needs git and the pinned main commit")
+            raise unittest.SkipTest("Main-upgrade E2E needs git and the fixture main commit")
         archive = subprocess.run(["git", "archive", "--format=zip", MAIN], cwd=ROOT,
                                  capture_output=True, timeout=20)
         if archive.returncode:
-            raise unittest.SkipTest(f"Pinned main {MAIN} is absent; fetch repository history to run this E2E")
+            raise unittest.SkipTest(f"Fixture main {MAIN} is absent; fetch repository history to run this E2E")
         cls.archive = archive.stdout
 
     def setUp(self):
@@ -41,6 +39,7 @@ class MainUpgradeEndToEndTests(unittest.TestCase):
         self.main = self.root / "main"
         with zipfile.ZipFile(io.BytesIO(self.archive)) as archive:
             archive.extractall(self.main)
+        self.main_version = json.loads((self.main / "plugin.json").read_text(encoding="utf-8"))["version"]
         self.project = self.root / "unrelated project"
         self.project.mkdir()
         self.home = self.root / "home"
@@ -62,7 +61,7 @@ class MainUpgradeEndToEndTests(unittest.TestCase):
         self.python = installed["runtime_python"]
         self.core = Path(installed["core"]["package_root"])
         self.script = self.core / "scripts/orchflows.py"
-        self.assertEqual(installed["core"]["version"], "0.7.1")
+        self.assertEqual(installed["core"]["version"], self.main_version)
         self.assertTrue(Path(self.cli(self.script, "resolve", "orchflows", "--skill",
                                       "orch-dynamic-workflow")["skill_path"]).is_file())
         personal = self.home / "libraries/personal"
@@ -118,7 +117,7 @@ class MainUpgradeEndToEndTests(unittest.TestCase):
         self.assertIn("Core source must identify as orchflows", failure["error"])
         self.assertEqual(snapshot(self.home), before)
         resolved = self.cli(self.script, "resolve", "orchflows", "--skill", "orch-dynamic-workflow")
-        self.assertEqual(resolved["version"], "0.7.1")
+        self.assertEqual(resolved["version"], self.main_version)
         self.assertTrue(Path(resolved["skill_path"]).is_file())
         self.assertEqual({name: snapshot(self.root / name) for name in self.host_before}, self.host_before)
 

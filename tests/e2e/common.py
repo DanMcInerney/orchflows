@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import re
 import shutil
 import sys
 
@@ -10,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'scripts'))
 import orchflows
+import package_files
 
 
 def read_json(path):
@@ -33,7 +35,7 @@ def snapshot(root):
     root = Path(root)
     result = {}
     for path in sorted(root.rglob('*')):
-        if orchflows._is_link(path):
+        if package_files.is_link(path):
             raise ValueError(f'Evidence must not follow links: {path}')
         if path.is_file() and '__pycache__' not in path.parts:
             result[path.relative_to(root).as_posix()] = digest(path)
@@ -45,9 +47,11 @@ def copy_package(source, destination):
     identity = orchflows._manifest(source)
     destination.mkdir(parents=True, exist_ok=False)
     excluded = []
-    for path in orchflows._files(source, core=identity['name'] == 'orchflows'):
+    # Enumerate libraries whole so withheld evaluator material is recorded as excluded.
+    core = identity['name'] == 'orchflows'
+    for path in orchflows._files(source, core=True) if core else package_files.files(source):
         relative = path.relative_to(source)
-        if any(part in {'trials', 'tests', 'node_modules', '.venv'} for part in relative.parts):
+        if any(part in {'trials', 'tests'} for part in relative.parts):
             excluded.append(relative.as_posix())
             continue
         target = destination / relative
@@ -59,7 +63,7 @@ def copy_package(source, destination):
 
 def load_hook(path):
     path = Path(path)
-    name = 'e2e_hook_' + hashlib.sha256(str(path).encode()).hexdigest()[:16]
+    name = 'e2e_hook_' + re.sub(r'\W', '_', '_'.join(path.parts[-3:]))
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

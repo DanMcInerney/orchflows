@@ -19,10 +19,19 @@ from scheduler import Scheduler
 class CatalogTests(unittest.TestCase):
     def test_default_suite_is_curated_and_resolves(self):
         cases = discover()
-        selected = select(cases, 'smoke')
+        selected = select(cases, ['smoke'])
         self.assertEqual(len(selected), 4)
         for case in selected:
             self.assertIn('orchflows', packages_for(case))
+
+    def test_repeated_suites_combine(self):
+        from run import parser
+        cases = discover()
+        args = parser().parse_args(['--suite', 'smoke', '--suite', 'examples', '--plan'])
+        self.assertEqual(args.suite, ['smoke', 'examples'])
+        combined = {c.id for c in select(cases, args.suite)}
+        self.assertEqual(combined, {c.id for c in select(cases, ['smoke'])} | {c.id for c in select(cases, ['examples'])})
+        self.assertEqual(parser().parse_args([]).suite, [])
 
     def test_new_external_case_requires_no_registry_change(self):
         with tempfile.TemporaryDirectory(prefix='e2e-external-') as folder:
@@ -35,7 +44,7 @@ class CatalogTests(unittest.TestCase):
             cases = discover([root])
             identifier = root.name + '/new-case'
             self.assertIn(identifier, cases)
-            self.assertNotIn(identifier, [c.id for c in select(cases, 'smoke')])
+            self.assertNotIn(identifier, [c.id for c in select(cases, ['smoke'])])
             self.assertEqual(select(cases, identifiers=[identifier])[0].id, identifier)
             write_json(case / 'case.json', {'packages': ['orchflows'], 'steps': []})
             with self.assertRaises(ValueError):
@@ -51,7 +60,7 @@ class CatalogTests(unittest.TestCase):
             select(discover(), identifiers=['core/nonexistent'])
 
     def test_explicit_package_root_replaces_default_and_plan_shows_it(self):
-        case = select(discover(), 'smoke')[0]
+        case = select(discover(), ['smoke'])[0]
         with tempfile.TemporaryDirectory(prefix='e2e-baseline-') as folder:
             copy = Path(folder) / 'orchflows'
             write_json(copy / 'plugin.json', read_json(ROOT / 'plugin.json'))

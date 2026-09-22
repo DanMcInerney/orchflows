@@ -56,10 +56,10 @@ def discover(extra_roots=()):
     return cases
 
 
-def select(cases, suite=None, identifiers=()):
+def select(cases, suites=(), identifiers=()):
+    """Cases named by every listed suite and identifier; smoke when neither is given."""
     names = list(identifiers)
-    if suite or not names:
-        suite = suite or 'smoke'
+    for suite in suites or ([] if names else ['smoke']):
         if not re.fullmatch(r'[\w-]+', suite):
             raise ValueError('Invalid suite name')
         for line in (HERE / 'suites' / (suite + '.txt')).read_text().splitlines():
