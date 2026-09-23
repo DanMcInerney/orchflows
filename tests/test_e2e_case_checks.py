@@ -9,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tests/e2e'))
 from checks import run
-from common import snapshot, write_json
+from common import digest, snapshot, write_json
 
 CASES = ROOT / 'tests/e2e/cases'
 CORRUPT_EXPORT = ROOT / 'example-workflows/short-video/trials/corrupt-export'
@@ -145,6 +145,57 @@ class ResearchGuidanceTests(CaseCheckTests):
                          ()):
             with self.subTest(messages=messages):
                 self.assertFalse(self.child(*messages))
+
+
+class VerifierReceiptTests(CaseCheckTests):
+    HOOK = CASES / 'composition/check.py'
+    RAN = 'The required check ran: verify_invoice.py reported success in a recorded command'
+    SOURCE = (CASES / 'composition/fixtures/verify_invoice.py').read_text(encoding='utf-8')
+
+    def setUp(self):
+        super().setUp()
+        invoice = {'audience': 'internal', 'title': 'Invoice record', 'total': 273, 'currency': 'USD'}
+        write_json(self.workspace / 'invoice.json', invoice)
+        write_json(self.workspace / 'public.json', {**invoice, 'audience': 'public', 'title': 'Invoice summary'})
+        write_json(self.workspace / 'checks.json', {'passed': True, 'sha256': digest(self.workspace / 'invoice.json')})
+        for name in ('review.md', 'handoff.md'):
+            (self.workspace / name).write_text('Done.', encoding='utf-8')
+
+    def events(self, *records):
+        path = self.root / 'stages/target/evidence/agent.events.jsonl'
+        path.write_text(''.join(json.dumps(r) + '\n' for r in records), encoding='utf-8')
+        results = self.results(self.HOOK)
+        self.assertTrue(results['Required check matches candidate'])
+        return results[self.RAN]
+
+    @staticmethod
+    def call(tool, arguments, result, **extra):
+        return ({'kind': 'tool_call', 'call_id': tool + '-1', 'tool': tool, 'data': arguments},
+                {'kind': 'tool_result', 'call_id': tool + '-1', 'presented_output': result, **extra})
+
+    def test_a_recorded_successful_run_passes(self):
+        claude = self.call('Bash', {'command': 'cd "W" && python verify_invoice.py invoice.json checks.json'},
+                           'Invoice checks passed', is_error=False, data={'stdout': 'Invoice checks passed', 'stderr': ''})
+        codex = self.call('exec', 'await tools.exec_command({cmd:"py -3 verify_invoice.py invoice.json checks.json"})',
+                          [{'type': 'input_text', 'text': 'Script completed\nOutput:\n'},
+                           {'type': 'input_text', 'text': 'Invoice checks passed\r\n'}])
+        for records in (claude, codex):
+            with self.subTest(tool=records[0]['tool']):
+                self.assertTrue(self.events(*records))
+
+    def test_a_hand_written_receipt_fails(self):
+        missing = "python : The term 'python' is not recognized as the name of a cmdlet"
+        for records in (self.call('exec', 'await tools.exec_command({cmd:"python verify_invoice.py invoice.json checks.json"})',
+                                  [{'type': 'input_text', 'text': missing}]),
+                        self.call('Bash', {'command': 'python verify_invoice.py invoice.json checks.json'},
+                                  'Invoice checks passed', is_error=True),
+                        self.call('Bash', {'command': 'cat verify_invoice.py'}, self.SOURCE),
+                        self.call('exec', 'python -c "print(open(\'verify_invoice.py\').read())"', self.SOURCE),
+                        self.call('Agent', {'prompt': 'Run `python verify_invoice.py invoice.json checks.json`.'},
+                                  'Review done.\nInvoice checks passed\n'),
+                        ()):
+            with self.subTest(records=records):
+                self.assertFalse(self.events(*records))
 
 
 class NewWorkflowTests(CaseCheckTests):
