@@ -98,6 +98,32 @@ class HostConfigTests(unittest.TestCase):
         self.assertEqual(tomllib.loads(self.codex.read_text(encoding="utf-8"))["agents"]["max_threads"], 7)
         self.assertEqual(json.loads(self.claude.read_text(encoding="utf-8"))["env"][host_config.CLAUDE_KEY], "7")
 
+    def test_already_correct_files_with_byte_order_marks_are_not_rewritten(self):
+        self.write(self.codex, "﻿[agents]\nmax_threads = 7\n")
+        self.write(self.claude, '﻿{"env":{"CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY":"7"}}\n')
+        before = {path: path.read_bytes() for path in (self.codex, self.claude)}
+        results = self.apply(7)
+        self.assertEqual({host: value["status"] for host, value in results.items()}, {"codex": "unchanged", "claude": "unchanged"})
+        self.assertEqual({path: path.read_bytes() for path in before}, before)
+        self.assertEqual(list(self.root.rglob("*.bak")), [])
+
+    def test_out_of_range_json_numbers_preserve_the_file_with_an_issue(self):
+        original = '{"env":{},"limit":1e400}\n'
+        self.write(self.claude, original)
+        with self.assertRaisesRegex(ValueError, "Host configuration preserved at .*settings.json"):
+            host_config.prepare_host_configs(7, ("claude",))
+        self.assertEqual(self.claude.read_text(encoding="utf-8"), original)
+
+    def test_a_stale_lock_names_the_next_step(self):
+        self.write(self.codex, 'model = "x"\n')
+        lock = self.codex.with_name("config.toml.orchflows.lock")
+        lock.write_text("")
+        results, issues = host_config.apply_host_configs(host_config.prepare_host_configs(7, ("codex",)))
+        self.assertEqual(results["codex"]["status"], "unavailable")
+        self.assertRegex(issues[0], r"Lock exists: .*config\.toml\.orchflows\.lock; if no setup is running, remove it")
+        self.assertTrue(lock.exists())
+        self.assertEqual(self.codex.read_text(encoding="utf-8"), 'model = "x"\n')
+
     def test_equal_boolean_or_float_is_replaced_without_changing_other_tables(self):
         for value in ("true", "1.0"):
             original = f"[other]\nmax_threads = 1\n[agents]\nmax_threads = {value}\n"
