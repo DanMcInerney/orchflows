@@ -22,7 +22,7 @@ flowchart TD
     M --> C["Fresh critic compares ours and the bar blind"]
     C -->|Falls short| X["Name the largest gap"]
     X --> M
-    C -->|Reaches the bar| R["Fresh critic confirms"]
+    C -->|Reaches the bar| R["Confirm where noise or bias could flip it"]
     R -->|Disagrees| X
     R -->|Agrees| W["Piece confirmed"]
     W --> O["Smooth clashing pieces; changed pieces re-enter"]
