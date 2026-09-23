@@ -6,6 +6,7 @@ import fnmatch
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 import time
@@ -24,10 +25,15 @@ def observed(parts):
 
 def launch_checks(name, evidence):
     """Trials delegate through Orchflows primitives, which require fresh children: recorded inherited history
-    breaks that contract. Launches the records cannot settle are gaps, since independence is then unverified."""
+    breaks that contract. Only the top-level coordinator launches agents, so a recorded parent other than the
+    root breaks it too. Launches the records cannot settle are gaps, since independence is then unverified."""
     violations, gaps, source = [], [], f'stages/{name}/evidence/index.json'
+    root = evidence.get('root_id')
     for agent in evidence.get('agents', []):
         where = f"{source}: agent {agent['id']} (parent {agent.get('parent_id')})"
+        if root is not None and agent.get('parent_id') not in (None, root):
+            violations.append({'passed': False, 'invariant': True, 'requirement': 'Only the coordinator launches agents',
+                               'evidence': where + ' was launched by a child'})
         if agent.get('launch_context') == 'inherited':
             calls = [f"{e['tool']} line {e['line']} {json.dumps(e['arguments'])}"
                      for e in agent.get('launch_evidence', []) if e.get('source') == 'spawn_call']
@@ -41,6 +47,41 @@ def launch_checks(name, evidence):
     return violations, gaps
 
 
+# PowerShell, cmd.exe, POSIX shells and the Windows Store alias, when the command cannot start Python.
+MISSING_PYTHON = re.compile(r"The term '(?:python3?|py)(?:\.exe)?' is not recognized"
+                            r"|'(?:python3?|py)(?:\.exe)?' is not recognized as an internal or external command"
+                            r"|\b(?:python3?|py): (?:command )?not found|Python was not found")
+
+
+def strings(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from strings(item)
+
+
+def interpreter_conditions(name, evidence, directory):
+    """Recorded command results showing that an agent could not start Python. A condition, not a gap:
+    it describes the environment and leaves the verdict to checks and the audit."""
+    found = []
+    for agent in evidence.get('agents', []):
+        events = Path(directory) / 'evidence' / Path(agent.get('events_path', '')).name
+        if not events.is_file():
+            continue
+        for line, text in enumerate(events.read_text(encoding='utf-8').splitlines(), 1):
+            event = json.loads(text)
+            if event.get('kind') == 'tool_result' and any(
+                    MISSING_PYTHON.search(s) for s in strings([event.get('presented_output'), event.get('data')])):
+                found.append(f'stages/{name}/evidence/{events.name}:{line}')
+    if not found:
+        return []
+    return [f'Target could not run python: first failed command result at {found[0]} ({len(found)} in all)']
+
+
 class Trial:
     def __init__(self, case, root, host, scheduler, sources):
         self.root, self.host, self.scheduler = Path(root), host, scheduler
@@ -51,6 +92,7 @@ class Trial:
         shutil.copytree(files_under(case.path), evaluation,
                         ignore=shutil.ignore_patterns('packages', '__pycache__'))
         self.case = replace(case, path=evaluation)
+        self.label = f'{case.id}#{self.root.name}'  # case and attempt, as run.py admits them
         shutil.copy2(HERE / 'review.md', evaluation / 'review.md')
         for name, source in sources.items():
             self.package_records[name] = copy_package(source, self.root / 'packages' / name)
@@ -98,14 +140,14 @@ class Trial:
         env = dict(os.environ, ORCHFLOWS_HOME=str(orch_home), PYTHONDONTWRITEBYTECODE='1')
         execution = await self.scheduler.process(command, cwd=workspace, directory=directory,
             prompt=prompt, timeout=timeout or self.case.timeout, until=self.end, env=env,
-            label=self.case.id + ':' + name)
+            label=self.label + ':' + name)
         native = self.host.result(directory)
         write_json(directory / 'native.json', native)
         if native.get('session_id'):
             await self.scheduler.process([sys.executable, '-B', str(HERE / 'evidence.py'), self.host.name,
                 native['session_id'], str(directory / 'evidence')], cwd=workspace,
                 directory=directory / 'collection', timeout=15, native=False,
-                label='collect:' + name)
+                label='collect:' + self.label + ':' + name)
         evidence_path = directory / 'evidence/index.json'
         evidence = read_json(evidence_path) if evidence_path.exists() else {'gaps': ['Native evidence unavailable']}
         after = snapshot(workspace)
@@ -128,7 +170,8 @@ class Trial:
         if execution['status'] != 'completed':
             gaps.append('Stage execution: ' + execution['status'])
         record = {'name': name, 'execution': execution, 'native': native, 'violations': violations,
-                  'gaps': gaps, 'observed': observed(evidence.get('agents', [])), 'after': after,
+                  'gaps': gaps, 'conditions': interpreter_conditions(name, evidence, directory),
+                  'observed': observed(evidence.get('agents', [])), 'after': after,
                   'workspace': str(workspace)}
         write_json(directory / 'stage.json', record)
         self.stages.append(record)
@@ -136,7 +179,7 @@ class Trial:
 
     async def local(self, command, *, cwd, name, timeout=20):
         return await self.scheduler.process(command, cwd=cwd, directory=self.root / 'local' / name,
-            timeout=timeout, until=self.end, native=False, label='local:' + name)
+            timeout=timeout, until=self.end, native=False, label='local:' + self.label + ':' + name)
 
     def freeze(self, source, name):
         destination = self.root / 'generated' / name

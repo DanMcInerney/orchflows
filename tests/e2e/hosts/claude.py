@@ -24,9 +24,11 @@ class Claude:
         self.version = subprocess.check_output([self.executable, '--version'], text=True, timeout=10).strip()
         self.home = native_logs.native_home('claude')
         settings = read_json(self.home / 'settings.json') if (self.home / 'settings.json').exists() else {}
-        # Disable ambient plugin activation and hooks for this invocation only.
+        # Disable ambient plugin activation, hooks and auto-memory for this invocation only.
         # Account-synced claude.ai skills and plugins would join the frozen packages (probe 2026-09-22).
-        self.settings = {'disableAllHooks': True, 'syncClaudeAiSkills': False, 'syncClaudeAiPlugins': False, 'enabledPlugins':
+        # Auto-memory is keyed to the enclosing git root, which can be the owner's real project memory.
+        self.settings = {'disableAllHooks': True, 'syncClaudeAiSkills': False, 'syncClaudeAiPlugins': False,
+                         'autoMemoryEnabled': False, 'enabledPlugins':
                          {name: False for name in settings.get('enabledPlugins', {})}}
         self.settings.update({key: settings[key] for key in ('model', 'effortLevel') if key in settings})
         self.model_settings = settings.get('modelSettings')
@@ -85,6 +87,9 @@ class Claude:
             gaps.append('Missing native initialization record')
         if not final or final.get('is_error'):
             gaps.append('Missing successful native terminal record')
+        # 2.1.280 lists memory_paths in its init record only while auto-memory is enabled.
+        if init.get('memory_paths'):
+            gaps.append('Native auto-memory enabled: ' + json.dumps(init['memory_paths']))
         observed = {}
         if init.get('session_id'):
             try:
@@ -108,7 +113,7 @@ class Claude:
                 'cost_usd': final.get('total_cost_usd'), 'gaps': gaps, 'launch_profile': launch.get('profile'),
                 'conditions': 'Session-local packages; user model and effort settings passed through, which the host may not apply; '
                               'observed model/effort are tallied from native transcript records. '
-                              'User-configured plugin activations and hooks disabled. '
+                              'User-configured plugin activations, hooks and auto-memory disabled. '
                               'Host built-in skills may remain advertised in native inventory. '
                               'Local and authoring targets have the same tools; their shell/filesystem and network are not sandboxed by this harness. '
                               'Authoring permits nested host inference; trial requests still constrain task-facing effects to local fakes. '

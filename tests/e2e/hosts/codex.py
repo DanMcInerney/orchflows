@@ -105,6 +105,9 @@ class Codex:
             self.settings['model_reasoning_effort'] = effort
         if 'max_threads' in settings.get('agents', {}):
             self.settings['agents.max_threads'] = settings['agents']['max_threads']
+        # Probe 2026-09-22, Codex 0.156.0: the elevated Windows sandbox cannot start the per-user Python and the
+        # unelevated one can, so every invocation requests unelevated; the user's standing configuration is unchanged.
+        self.settings['windows'] = {**settings.get('windows', {}), 'sandbox': 'unelevated'}
         # Keep ambient skills out of the experiment; the selected package copies
         # are discovered natively as repo skills, with their invocation metadata.
         self.disabled_skills = [{'path': str(p), 'enabled': False}
@@ -155,7 +158,8 @@ class Codex:
         metadata = {'profile': profile, 'workspace_shell_network_access': profile == 'authoring',
                     **preparation, 'inventory': registered,
                     'configured_model': self.settings.get('model'),
-                    'configured_effort': self.settings.get('model_reasoning_effort'), 'gaps': gaps}
+                    'configured_effort': self.settings.get('model_reasoning_effort'),
+                    'windows_sandbox': self.settings.get('windows', {}).get('sandbox'), 'gaps': gaps}
         write_json(directory / 'codex-launch.json', metadata)
         command = [*self.launcher, 'exec', '--json', '--ignore-user-config', '--ignore-rules',
                    '--skip-git-repo-check', '--color', 'never', '--sandbox',
@@ -246,4 +250,5 @@ class Codex:
                     'Native history remains in the existing Codex home; exact thread IDs drive descendant collection. '
                     'Targets request workspace-write; audits request read-only with native delegation disabled. ' + network_condition +
                     'Audit shell reads remain enabled; arbitrary subprocess delegation is not independently tool-filtered. '
+                    f"Requested windows.sandbox: {launch.get('windows_sandbox') or 'host default'}. "
                     'Sandbox enforcement requires a host-specific probe. No claim of complete credential isolation.'}

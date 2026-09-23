@@ -58,7 +58,7 @@ def packet(root):
     for stage in target.get('stages', []):
         directory = root / 'stages' / stage['name']
         pieces += ['## Stage ' + stage['name'], (directory / 'request.txt').read_text(encoding='utf-8'),
-                   json.dumps({'execution': stage['execution'], 'gaps': stage['gaps'],
+                   json.dumps({'execution': stage['execution'], 'gaps': stage['gaps'], 'conditions': stage.get('conditions', []),
                                'model': stage['native'].get('model'), 'tools': stage['native'].get('tools'),
                                'workspace': stage['workspace']}, ensure_ascii=False)]
         index = directory / 'evidence/index.json'
@@ -108,8 +108,9 @@ async def audit_run(root, host, scheduler, timeout=60):
     request += evidence_packet
     (directory / 'request.txt').write_text(request, encoding='utf-8')
     command = host.command({}, 'audit', SCHEMA, root, directory=directory)
+    label = f"audit:{read_json(root / 'target.json').get('case')}#{root.name}"  # case and attempt
     execution = await scheduler.process(command, cwd=root, directory=directory, prompt=request,
-                                         timeout=timeout, label='audit:' + root.name)
+                                         timeout=timeout, label=label)
     native = host.result(directory)
     write_json(directory / 'native.json', native)
     complete = False

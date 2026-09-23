@@ -69,6 +69,16 @@ class ClaudeAdapterTests(unittest.TestCase):
         (self.stage / 'events.jsonl').unlink()
         self.assertIn('No native event stream', self.result()['gaps'])
 
+    def test_enabled_auto_memory_is_a_gap(self):
+        self.transcript('high')
+        memory = {'auto': 'C:\\Users\\someone\\.claude\\projects\\repo\\memory\\'}
+        for paths, gap in (({}, False), (memory, True)):
+            with self.subTest(paths=paths):
+                self.stream({'type': 'system', 'subtype': 'init', 'session_id': SESSION, **({'memory_paths': paths} if paths else {})},
+                            {'type': 'result', 'result': 'done'})
+                gaps = self.result()['gaps']
+                self.assertEqual(gaps, ['Native auto-memory enabled: ' + json.dumps(memory)] if gap else [])
+
     def test_unreadable_transcript_is_a_gap_not_a_tally(self):
         self.stream({'type': 'system', 'subtype': 'init', 'session_id': SESSION}, {'type': 'result'})
         result = self.result()
@@ -109,7 +119,7 @@ class ClaudeAdapterTests(unittest.TestCase):
             host = hosts.get_host('claude')
         self.assertEqual((host.version, host.model, host.effort), ('2.1.280 (Claude Code)', 'claude-sonnet-5', 'high'))
         settings = {'disableAllHooks': True, 'syncClaudeAiSkills': False, 'syncClaudeAiPlugins': False,
-                    'enabledPlugins': {'orchflows@local': False, 'other@market': False},
+                    'autoMemoryEnabled': False, 'enabledPlugins': {'orchflows@local': False, 'other@market': False},
                     'model': 'opus', 'effortLevel': 'xhigh'}
         packages = {'orchflows': self.root / 'packages/orchflows', 'shared': self.root / 'packages/shared'}
         schema = {'type': 'object'}
