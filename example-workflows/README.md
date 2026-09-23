@@ -1,6 +1,6 @@
 # Stop starting every agent workflow from scratch
 
-**Save the process that worked. Use it inside the next one.** These twelve libraries show how small Markdown workflows compose into research, software, films and improvement loops. Run one whole, borrow a component or reuse its guidance.
+**Save the process that worked. Use it inside the next one.** These thirteen libraries show how small Markdown workflows compose into research, software, films and improvement loops. Run one whole, borrow a component or reuse its guidance.
 
 From an Orchflows checkout:
 
@@ -30,6 +30,7 @@ Each library below explains its inputs, dependencies, bounds and current limits.
 | [Benchmaker](benchmaker/README.md) | Construct and independently pilot benchmarks; review and repair using Shared |
 | [Export workflow](export-workflow/README.md) | Export a standalone native skill and trial its behavior |
 | [Self-improve](self-improve/README.md) | Improve instructions from observed history and current evidence |
+| [Orchflows review](orchflows-review/README.md) | Review Orchflows' architecture, workflow design, wording and bugs against its purpose; apply reviewed findings on unmerged branches; uses Shared |
 
 ## Build your own workflow library
 

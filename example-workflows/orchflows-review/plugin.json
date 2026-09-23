@@ -1,0 +1,18 @@
+{
+  "name": "orchflows-review",
+  "version": "0.1.0",
+  "description": "Review Orchflows against its purpose and principles, then apply reviewed improvements on unmerged branches.",
+  "skills": "./skills/",
+  "author": {
+    "name": "orchflows"
+  },
+  "interface": {
+    "displayName": "Orchflows Review",
+    "shortDescription": "Review Orchflows and improve it on branches.",
+    "longDescription": "Understand Orchflows' purpose and design principles, review its architecture, workflow design and wording, find bugs by reading and running, and apply a reviewed findings list on unmerged branches checked on each host.",
+    "defaultPrompt": "Review Orchflows and my libraries and improve them.",
+    "developerName": "orchflows",
+    "category": "Productivity",
+    "capabilities": []
+  }
+}

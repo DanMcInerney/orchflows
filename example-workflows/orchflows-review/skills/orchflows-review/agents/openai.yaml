@@ -1,0 +1,6 @@
+interface:
+  display_name: "Orchflows Review"
+  short_description: "Review Orchflows and improve it on branches"
+
+policy:
+  allow_implicit_invocation: false
