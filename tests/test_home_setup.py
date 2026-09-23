@@ -254,6 +254,21 @@ class HomeSetupTests(unittest.TestCase):
                 self.assertIn("Needs action", output.getvalue())
                 self.assertIn("Install in Kimi", output.getvalue())
 
+    def test_explicit_empty_home_is_an_error_not_the_default_home(self) -> None:
+        # An unset shell variable expands to "", which must never select ~/.orchflows.
+        default = self.root / "userhome/.orchflows"
+        for arguments in (["doctor", "--home", ""], ["setup", "--home", "", "--source", str(self.source)],
+                          ["resolve", "--home", " ", "orchflows"]):
+            errors = io.StringIO()
+            with self.subTest(arguments=arguments), patch.dict(os.environ, {"ORCHFLOWS_HOME": ""}), \
+                    patch.object(sys, "stderr", errors), patch.object(sys, "stdout", io.StringIO()):
+                status = orchflows.main([*arguments, *(["--host", "none"] if arguments[0] != "resolve" else [])])
+            self.assertEqual(status, 2)
+            self.assertEqual(json.loads(errors.getvalue()), {"status": "error", "error": "Home path is empty"})
+            self.assertFalse(default.exists())
+        with patch.dict(os.environ, {"ORCHFLOWS_HOME": ""}):
+            self.assertEqual(orchflows.home_path(), default.resolve())
+
     def test_repeat_preserves_user_files_and_runtime_and_regenerates_owned_files(self) -> None:
         first = self.install(example=True)
         custom = self.home / "libraries/social-search/README.md"
@@ -278,6 +293,23 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual(json.loads(catalog.read_text())["name"], "orchflows-home")
         self.assertEqual((Path(first["core"]["package_root"]) / "guidance/code.md").read_text(), "Local coding guidance.\n")
         self.assertEqual(list((self.home / ".local/packages").iterdir()), [Path(first["core"]["package_root"])])
+
+    def test_preserved_example_reports_drift_from_source_without_overwriting(self) -> None:
+        self.assertNotIn("differs_from_source", self.install(example=True)["example"])
+        write(self.example / "trials/case/request.md", "Evaluator-only; never compared.\n")
+        self.assertIs(self.install(example=True)["example"]["differs_from_source"], False)
+        copy = self.home / "libraries/social-search/README.md"
+        for change in (lambda: write(copy, "Owner's edit.\n"), lambda: write(self.example / "skills/sample/NEW.md", "Newer source.\n")):
+            change()
+            before = snapshot(self.home / "libraries/social-search")
+            report = self.install(example=True)["example"]
+            self.assertEqual((report["status"], report["differs_from_source"]), ("preserved", True))
+            self.assertEqual(snapshot(self.home / "libraries/social-search"), before)
+        output = io.StringIO()
+        output.isatty = lambda: True
+        with patch.object(sys, "stdout", output):
+            orchflows.main(["setup", "--home", str(self.home), "--source", str(self.source), "--example", "social-search", "--host", "none"])
+        self.assertIn("Example social-search preserved; differs from source.", output.getvalue())
 
     def test_incomplete_existing_runtime_is_not_repaired(self) -> None:
         marker = self.home / ".local/runtime/my-environment.txt"
@@ -589,6 +621,18 @@ class HomeSetupTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Ambiguous library"):
             orchflows.resolve(self.home, "orchflows")
 
+    def test_resolve_returns_only_package_files_and_directories(self) -> None:
+        self.install()
+        self.assertEqual(Path(orchflows.resolve(self.home, "orchflows", resource="guidance")["resource_path"]),
+                         self.home / ".local/packages/orchflows/guidance")
+        # On Windows NUL and CON name devices that exist in every directory; elsewhere they are absent files.
+        for resource in ("NUL", "CON", "guidance/AUX", "COM1", "missing.md"):
+            with self.subTest(resource=resource), self.assertRaisesRegex(ValueError, "not a file or directory"):
+                orchflows.resolve(self.home, "orchflows", resource=resource)
+            errors = io.StringIO()
+            with patch.object(sys, "stderr", errors):
+                self.assertEqual(orchflows.main(["resolve", "--home", str(self.home), "orchflows", "--resource", resource]), 2)
+
     def test_links_are_never_copied_or_resolved_through(self) -> None:
         outside = self.root / "outside"
         outside.mkdir()
@@ -607,6 +651,28 @@ class HomeSetupTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "escapes"):
             orchflows.resolve(self.home, "orchflows", resource="guidance/escape")
         self.assertEqual(list(outside.iterdir()), [])
+
+    def test_doctor_reports_a_library_with_links_that_hosts_would_refuse(self) -> None:
+        self.install()
+        outside = self.root / "outside"
+        package(outside, "unused")
+        library = self.home / "libraries/mine"
+        package(library, "mine")
+        alias = library / "skills/alias"
+        try:
+            alias.symlink_to(outside / "skills/sample", target_is_directory=True)
+        except OSError:
+            try:
+                import _winapi
+                _winapi.CreateJunction(str(outside / "skills/sample"), str(alias))
+            except (ImportError, OSError) as exc:
+                self.skipTest(f"Neither symlinks nor junctions are available: {exc}")
+        report = orchflows.doctor(self.home, hosts=["none"])
+        self.assertEqual(report["status"], "incomplete")
+        self.assertTrue(any("does not follow links" in issue and "alias" in issue for issue in report["issues"]), report["issues"])
+        self.assertNotIn("mine", [entry["name"] for entry in report["checks"]["libraries"]])
+        with self.assertRaisesRegex(ValueError, "not installed.*does not follow links"):
+            orchflows.resolve(self.home, "mine", skill="alias")
 
     def test_setup_never_writes_through_links_in_the_home(self) -> None:
         outside = self.root / "outside"

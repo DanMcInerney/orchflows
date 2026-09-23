@@ -371,7 +371,9 @@ _OMITTED_DEFAULT = {"codex-v1": "fresh", "codex-v2": "inherited", "claude": "fre
 
 
 def _js_code(source):
-    """Blank string, template and comment contents so brackets and keys reflect code only."""
+    """Blank string, template and comment contents so brackets and keys reflect code only.
+
+    A quoted property name (`"fork_context": true`) keeps its identifier so the key stays visible."""
     chars, index, size = list(source), 0, len(source)
     while index < size:
         char = source[index]
@@ -380,6 +382,9 @@ def _js_code(source):
             while end < size and source[end] != char:
                 end += 2 if source[end] == "\\" else 1
             start, stop, index = index + 1, min(end, size), end + 1
+            if (char != "`" and re.fullmatch(r"[A-Za-z_$][\w$]*", source[start:stop])
+                    and re.match(r"\s*:", source[index:])):
+                continue
         elif source.startswith(("//", "/*"), index):
             close = "\n" if source[index + 1] == "/" else "*/"
             found = source.find(close, index + 2)
@@ -403,7 +408,7 @@ def _v1_forks(source):
                 break
             top.append(char if depth == 1 else " ")
         text = "".join(top)
-        value = re.search(r"\bfork_context\s*:\s*(true|false)\b", text)
+        value = re.search(r"\bfork_context[\"']?\s*:\s*(true|false)\b", text)
         if not text.startswith("{") or (not value and re.search(r"\bfork_context\b|\.\.\.", text)):
             sites.append("expression")
         else:
@@ -519,6 +524,17 @@ def _child_record(host, entry):
             "indicates": "inherited" if forked else None}, meta.get("multi_agent_version"), meta.get("agent_path")
 
 
+def _own_history_line(record):
+    """First line of a forked Codex child's own records; earlier lines replay its parent's history.
+
+    Codex writes the child's session_meta on line 1 and counts `subagent_history_start_ordinal` from the
+    record after it, so the child's own history starts on line ordinal + 2."""
+    ordinal = record.get("history_start_ordinal")
+    if record.get("forked_from_id") and type(ordinal) is int and ordinal >= 0:
+        return ordinal + 2
+    return 1
+
+
 def _links(item, entry, agent_path):
     return (item.get("child_id") == entry["id"] or bool(item["call_id"] and item["call_id"] == entry.get("spawn_call_id"))
             or bool(agent_path and item.get("agent_path") == agent_path))
@@ -593,10 +609,11 @@ def inspect(host, identifier, home, limit=30, after=None):
         latest = None
         path = Path(entry["path"])
         collector = _Spawns(host)
+        own_from = _own_history_line(header_of(current)[0]) if host == "codex" else 1
         try:
             for start, number, _, record in _records(path):
                 collector.feed(record, number)
-                runtime = _runtime(host, record)
+                runtime = _runtime(host, record) if number >= own_from else None
                 if runtime:
                     models[runtime[0]] += 1
                     efforts[runtime[1]] += 1
@@ -717,14 +734,15 @@ def read(host, identifier, home, limit=30, after=None, event_id=None, field="dat
             if timestamp is None:
                 event["flags"].append("timestamp_unavailable")
             elif (window_start and timestamp < window_start) or (window_end and timestamp >= window_end):
-                cursor = _cursor(path, event, raw, index)
+                cursor = _cursor(path, event, raw, index) if raw.endswith(b"\n") else cursor
                 continue
         if len(events) == limit:
             has_more = True
             break
         event["sidecars"] = _sidecars(event, home)
         events.append(_preview(event))
-        cursor = _cursor(path, event, raw, index)
+        # A line still being written changes length when it completes, so the cursor stays before it.
+        cursor = _cursor(path, event, raw, index) if raw.endswith(b"\n") else cursor
     # Keep the last cursor even at EOF so a caller can poll an append-only transcript.
     return {"host": host, "id": identifier, "events": events, "next_cursor": cursor or after, "has_more": has_more,
             "since": window_start.isoformat() if window_start else None, "until": window_end.isoformat() if window_end else None,
