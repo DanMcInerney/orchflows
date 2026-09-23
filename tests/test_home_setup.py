@@ -254,6 +254,21 @@ class HomeSetupTests(unittest.TestCase):
                 self.assertIn("Needs action", output.getvalue())
                 self.assertIn("Install in Kimi", output.getvalue())
 
+    def test_explicit_empty_home_is_an_error_not_the_default_home(self) -> None:
+        # An unset shell variable expands to "", which must never select ~/.orchflows.
+        default = self.root / "userhome/.orchflows"
+        for arguments in (["doctor", "--home", ""], ["setup", "--home", "", "--source", str(self.source)],
+                          ["resolve", "--home", " ", "orchflows"]):
+            errors = io.StringIO()
+            with self.subTest(arguments=arguments), patch.dict(os.environ, {"ORCHFLOWS_HOME": ""}), \
+                    patch.object(sys, "stderr", errors), patch.object(sys, "stdout", io.StringIO()):
+                status = orchflows.main([*arguments, *(["--host", "none"] if arguments[0] != "resolve" else [])])
+            self.assertEqual(status, 2)
+            self.assertEqual(json.loads(errors.getvalue()), {"status": "error", "error": "Home path is empty"})
+            self.assertFalse(default.exists())
+        with patch.dict(os.environ, {"ORCHFLOWS_HOME": ""}):
+            self.assertEqual(orchflows.home_path(), default.resolve())
+
     def test_repeat_preserves_user_files_and_runtime_and_regenerates_owned_files(self) -> None:
         first = self.install(example=True)
         custom = self.home / "libraries/social-search/README.md"

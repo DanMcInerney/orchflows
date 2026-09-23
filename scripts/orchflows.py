@@ -39,6 +39,9 @@ HOME_GITIGNORE = """/.local/
 
 
 def home_path(value: str | Path | None = None) -> Path:
+    """An explicit home must name a path; an empty ORCHFLOWS_HOME counts as unset."""
+    if value is not None and not str(value).strip():
+        raise ValueError("Home path is empty")
     selected = value if value is not None else os.environ.get("ORCHFLOWS_HOME")
     return Path(selected).expanduser().resolve() if selected else (Path.home() / ".orchflows").resolve()
 
@@ -413,7 +416,7 @@ def _display(result: dict, *, as_json: bool) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    home_help = "Home directory (default: ORCHFLOWS_HOME or ~/.orchflows)"
+    home_help = "Home directory; must not be empty (default: ORCHFLOWS_HOME when set and non-empty, else ~/.orchflows)"
     setup_parser = commands.add_parser("setup", help="Install or update the managed core and initialize a portable home")
     setup_parser.add_argument("--home", help=home_help)
     setup_parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[1])
