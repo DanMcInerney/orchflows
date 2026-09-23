@@ -371,7 +371,9 @@ _OMITTED_DEFAULT = {"codex-v1": "fresh", "codex-v2": "inherited", "claude": "fre
 
 
 def _js_code(source):
-    """Blank string, template and comment contents so brackets and keys reflect code only."""
+    """Blank string, template and comment contents so brackets and keys reflect code only.
+
+    A quoted property name (`"fork_context": true`) keeps its identifier so the key stays visible."""
     chars, index, size = list(source), 0, len(source)
     while index < size:
         char = source[index]
@@ -380,6 +382,9 @@ def _js_code(source):
             while end < size and source[end] != char:
                 end += 2 if source[end] == "\\" else 1
             start, stop, index = index + 1, min(end, size), end + 1
+            if (char != "`" and re.fullmatch(r"[A-Za-z_$][\w$]*", source[start:stop])
+                    and re.match(r"\s*:", source[index:])):
+                continue
         elif source.startswith(("//", "/*"), index):
             close = "\n" if source[index + 1] == "/" else "*/"
             found = source.find(close, index + 2)
@@ -403,7 +408,7 @@ def _v1_forks(source):
                 break
             top.append(char if depth == 1 else " ")
         text = "".join(top)
-        value = re.search(r"\bfork_context\s*:\s*(true|false)\b", text)
+        value = re.search(r"\bfork_context[\"']?\s*:\s*(true|false)\b", text)
         if not text.startswith("{") or (not value and re.search(r"\bfork_context\b|\.\.\.", text)):
             sites.append("expression")
         else:
