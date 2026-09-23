@@ -524,6 +524,17 @@ def _child_record(host, entry):
             "indicates": "inherited" if forked else None}, meta.get("multi_agent_version"), meta.get("agent_path")
 
 
+def _own_history_line(record):
+    """First line of a forked Codex child's own records; earlier lines replay its parent's history.
+
+    Codex writes the child's session_meta on line 1 and counts `subagent_history_start_ordinal` from the
+    record after it, so the child's own history starts on line ordinal + 2."""
+    ordinal = record.get("history_start_ordinal")
+    if record.get("forked_from_id") and type(ordinal) is int and ordinal >= 0:
+        return ordinal + 2
+    return 1
+
+
 def _links(item, entry, agent_path):
     return (item.get("child_id") == entry["id"] or bool(item["call_id"] and item["call_id"] == entry.get("spawn_call_id"))
             or bool(agent_path and item.get("agent_path") == agent_path))
@@ -598,10 +609,11 @@ def inspect(host, identifier, home, limit=30, after=None):
         latest = None
         path = Path(entry["path"])
         collector = _Spawns(host)
+        own_from = _own_history_line(header_of(current)[0]) if host == "codex" else 1
         try:
             for start, number, _, record in _records(path):
                 collector.feed(record, number)
-                runtime = _runtime(host, record)
+                runtime = _runtime(host, record) if number >= own_from else None
                 if runtime:
                     models[runtime[0]] += 1
                     efforts[runtime[1]] += 1
