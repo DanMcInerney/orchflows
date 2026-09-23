@@ -61,7 +61,7 @@ driver.py                  optional async multi-session journey
 }
 ```
 
-Omit `entrypoint` to test ordinary discovery. The manifest contains launch metadata, no workflow language. `covers` declares intent, not verified coverage. `profile: "no-review"` excludes delegation and shell tools for an unavailable-review test. `writable_inputs` lists relative glob patterns for intentionally mutable fixtures; other inputs and runtime packages must retain their bytes.
+Omit `entrypoint` to test ordinary discovery. The manifest contains launch metadata, no workflow language. `covers` declares intent, not verified coverage. `profile: "no-review"` excludes delegation and shell tools for an unavailable-review test. On Codex the shell is the only file-read tool, so the profile also removes reads there; `apply_patch` can still write files. `writable_inputs` lists relative glob patterns for intentionally mutable fixtures; other inputs and runtime packages must retain their bytes.
 
 The default `local` profile gives Codex workspace-write access with shell network access disabled. Opt into `profile: "authoring"` when the target must launch a separate native CLI trial whose model calls require network access. Codex keeps the same tools and filesystem boundary, adding `sandbox_workspace_write.network_access=true` for that invocation. This grants general shell network permission, not an endpoint allowlist: trial requests must still forbid task-facing external effects and use local fakes. Claude's `authoring` profile has the same tools as `local`; neither profile adds a shell/network sandbox there. `no-review` does not enable network, and audits retain their separate restricted profile. No profile changes global settings or registration.
 
