@@ -40,7 +40,7 @@ An evaluator repair creates a new revision and requires re-evaluating the curren
 
 ## Bounded search, resumable state
 
-Defaults are **three rounds, one challenger per round**. Each artifact or harness attempt counts before proposal or production, including failures and interruptions. Seed creation, calibration and evaluator repair consume resources without adding or resetting rounds. After three informative rounds without promotion, the approach changes or the failure is investigated.
+Defaults are **three rounds, one challenger per round**. Each artifact or harness attempt counts before proposal or production, including failures and interruptions. Seed creation, calibration and evaluator repair consume resources without adding or resetting rounds. When informative rounds stop yielding promotions, the approach changes, the repeated failure is investigated or a harness change is tested.
 
 An explicit continuous request removes the total round cap; execution still stops for caller limits, interruption or blocked capability. A target stops work only when requested as a stop condition. Continuation requires host support; otherwise Evolve returns a checkpoint and the gap.
 
