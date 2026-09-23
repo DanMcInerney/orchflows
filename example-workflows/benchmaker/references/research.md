@@ -1,6 +1,6 @@
 # Research lessons
 
-Use these precedents to choose an approach, then inspect primary sources relevant to the target. Sources were checked September 16, 2026, without reproduction or independent validation. The similarly named BenchMaker project is separate from this workflow.
+Use these precedents to choose an approach, then inspect primary sources relevant to the target. Sources were checked September 16, 2026, without reproduction or independent validation.
 
 | Decision | Precedent and lesson |
 | --- | --- |
@@ -16,4 +16,4 @@ Useful implementation boundaries: [Inspect](https://inspect.aisi.org.uk/tasks.ht
 
 For domain design, inspect [AppWorld](https://github.com/StonyBrookNLP/appworld) for state and collateral-change evaluation, [TravelPlanner](https://github.com/OSU-NLP-Group/TravelPlanner) for resource-grounded constraints, [τ-bench](https://github.com/sierra-research/tau-bench) for complete interactive episodes, and [DeepResearch Bench](https://github.com/Ayanami0730/deep_research_bench) for distinguishing report quality from citation support. A small local fixture may borrow the boundary without claiming to reproduce the full benchmark.
 
-Bench-stack is not a runtime dependency or acceptance suite. Optional adapters must preserve upstream execution/scoring meaning and demonstrate outcome parity before claiming integration.
+Optional adapters must preserve upstream execution/scoring meaning and demonstrate outcome parity before claiming integration.

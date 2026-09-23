@@ -8,9 +8,9 @@ Apply [library context](../../references/library-context.md) and [run contract](
 
 ## Bounds
 
-State positive integer `P`, default `3` candidate passes including initial implementation. Each pass makes a candidate through `orchflows:orch-work`, then, once checks pass, uses `orchflows:orch-review` once per applicable delivery lens, always correctness. Use separate reviewers for specialist coverage; the coordinator chooses staffing/concurrency.
+State positive integer `P`, default `3` candidate passes including initial implementation. Each pass makes a candidate through `orchflows:orch-work`, then, once checks pass, uses `orchflows:orch-review` once per applicable delivery lens, always correctness. The coordinator chooses staffing/concurrency.
 
-Failed work/review leaves that pass incomplete; another candidate attempt consumes a remaining pass. Stop at requested endpoint, exhausted passes/constraints, caller stop or missing required capability/decision. Add no incident investigation or monitoring. Release requires request and eligibility.
+Failed work/review leaves that pass incomplete; another candidate attempt consumes a remaining pass. Stop at requested endpoint, exhausted passes/constraints, caller stop or missing required capability/decision.
 
 ## Delivery
 
@@ -18,8 +18,8 @@ Failed work/review leaves that pass incomplete; another candidate attempt consum
 2. **Build/check.** Record pass consumption before work. Use `orchflows:orch-work` for implementation, docs, tests and release preparation; later passes receive all joined failures/findings. The builder runs selected checks and authorized candidate/PR publication/required CI, returning identity, patch, command/CI evidence and rollout plan. It reports failures for the next pass without adding review/deployment. Freeze the result.
 3. **Review.** Failed checks feed the next remaining pass; unavailable checks block dependent work. After checks pass, dispatch fresh applicable reviewers with frozen candidate, actual domain context, acceptance, check evidence and guidance. Isolate test side effects with scratch/worktrees. Missing context limits review, never implies approval.
 4. **Join/repair.** Gather every reviewer, deduplicate findings and resolve factual conflicts from evidence. Review newly exposed affected lenses before deciding. Unresolved actionable findings feed the next pass; revised candidates repeat required checks and all applicable reviews. Do not edit during review. Exhaustion returns open work without readiness claims.
-5. **Risk.** Apply software-delivery guidance. Passing low-risk candidates satisfy the review gate automatically only under explicit project opt-in for the affected area. Otherwise prepare human handoff: exact diff, checks, findings, risk and rollout/rollback plan. Reuse valid decisions/permissions for this state. Unknown/high risk needs human review; human decisions cannot bypass failed checks. Distinguish readiness for review versus release.
-6. **Requested release.** Once review gate and release authority hold, use the release worker. If final approval is missing, complete authorized preparation and present the concrete release. Return under the run contract.
+5. **Risk.** Apply software-delivery guidance. Passing low-risk candidates satisfy the human-review gate automatically only under explicit project opt-in for the affected area. Otherwise prepare human handoff: exact diff, checks, findings, risk and rollout/rollback plan. Reuse valid decisions/permissions for this state. Unknown/high risk needs human review; human decisions cannot bypass failed checks. Distinguish readiness for review versus release.
+6. **Requested release.** Once the human-review gate and release authority hold, use the release worker. If final approval is missing, complete authorized preparation and present the concrete release. Return under the run contract.
 
 ## Release worker
 
