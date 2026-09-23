@@ -4,7 +4,7 @@ description: Drive an ambitious goal past a real-world quality bar by splitting 
 disable-model-invocation: true
 ---
 
-Apply [library context](../../references/library-context.md) in the caller, who is the lead. Inputs: goal, optional bar or candidate references, workspace and output location, optional caller bounds (time, cost, rounds) and scoped settings. Treat the goal as the destination and choose the route; add no architecture or workstreams the caller did not ask for.
+Apply [library context](../../references/library-context.md) as the coordinator (the lead). Inputs: goal, optional bar or candidate references, workspace and output location, optional caller bounds (time, cost, rounds) and scoped settings. Treat the goal as the destination: choose the architecture, pieces and order, adding no scope the caller did not ask for.
 
 ## Set the bar
 
