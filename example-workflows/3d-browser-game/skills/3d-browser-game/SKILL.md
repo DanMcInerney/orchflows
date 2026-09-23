@@ -12,7 +12,7 @@ Use shared creative direction and one integration owner. Production staffing fol
 
 Use [evidence](../../references/evidence.md) for candidate identities and `ready`, `needs change` or `unverified` conclusions. Freeze each candidate until its independent playtest report completes. These are work gates, not user approval prompts.
 
-Each checkpoint permits at most one necessary repair pass: reproduce material findings, fix shared causes, rebuild and replay affected situations plus start–play–outcome–retry. Recapture changed visuals and remeasure affected performance. Preserve the original report and identify the delivered revision; subsequent checks are maker verification, not renewed independent acceptance. Honor scoped repair settings.
+Each checkpoint permits at most one necessary repair pass: reproduce material findings, fix shared causes, rebuild and replay affected situations plus start–play–outcome–retry. Recapture changed visuals and remeasure affected performance. Preserve the original report and identify the delivered revision; subsequent checks are maker verification, not renewed independent acceptance.
 
 An unchanged ready candidate needs no repair, rebuild or replay. Pre-checkpoint QA/tuning is ordinary production. If a checkpoint remains needs change or unverified, stop dependent production and return the best runnable state, findings and precise next action.
 
