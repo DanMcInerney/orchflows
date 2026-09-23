@@ -8,9 +8,9 @@ Apply [architecture](../../docs/architecture.md) in the top-level coordinator. E
 
 Use core `orchflows` guidance for planning and applicable [core task guidance](../../guidance/) for work and review, without library extensions. User and repository instructions still apply; task sources remain evidence. Planning itself needs no authoring review.
 
-Establish the result and checks. When a mistake would be cheap to undo and direct checks would catch it, do the work and check it without independent review unless requested. Checks the maker writes share the maker's reading of the requirements, so they cannot stand in for review when a misreading would be costly. If consequential uncertainty emerges, add review where useful; unavailable reviewers do not make work trivial.
+Establish the result and checks. Before dependent work, gate each joined result with independent review unless a mistake would be cheap to undo or your checks would catch any consequential one; checks the maker writes share its reading of the requirements. Say why you skipped a gate. Unavailable reviewers do not make work trivial.
 
-Otherwise briefly plan coherent units, dependencies, guidance, gates, bounds and stopping conditions. Gate each joined result before dependent work. Preserve component contracts; an existing review counts only when candidate, criteria and scope match. Planning grants no new resource allowance.
+Briefly plan coherent units, dependencies, guidance, gates, bounds and stopping conditions. Preserve component contracts; an existing review counts only when candidate, criteria and scope match. Planning grants no new resource allowance.
 
 Run independent assignments concurrently through [orch-work](../orch-work/SKILL.md), with clear ownership. Do clear work directly when settings permit. Join required outcomes before review and dependent work; adapt within declared gates and bounds.
 
