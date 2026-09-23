@@ -1,6 +1,6 @@
 # Stop starting every agent workflow from scratch
 
-**Save the process that worked. Use it inside the next one.** These twelve libraries show how small Markdown workflows compose into research, software, films and improvement loops. Run one whole, borrow a component or reuse its guidance.
+**Save the process that worked. Use it inside the next one.** These eleven libraries show how small Markdown workflows compose into research, software, films and improvement loops. Run one whole, borrow a component or reuse its guidance.
 
 From an Orchflows checkout:
 
