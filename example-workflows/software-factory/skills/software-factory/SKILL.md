@@ -8,9 +8,9 @@ Apply [library context](../../references/library-context.md) and [run contract](
 
 ## Bounds
 
-State positive integer `P`, default `3` candidate passes including initial implementation. Each pass makes a candidate through `orchflows:orch-work`, then, once checks pass, uses `orchflows:orch-review` once per applicable delivery lens, always correctness. Use separate reviewers for specialist coverage; the coordinator chooses staffing/concurrency.
+State positive integer `P`, default `3` candidate passes including initial implementation. Each pass makes a candidate through `orchflows:orch-work`, then, once checks pass, uses `orchflows:orch-review` once per applicable delivery lens, always correctness. The coordinator chooses staffing/concurrency.
 
-Failed work/review leaves that pass incomplete; another candidate attempt consumes a remaining pass. Stop at requested endpoint, exhausted passes/constraints, caller stop or missing required capability/decision. Add no incident investigation or monitoring. Release requires request and eligibility.
+Failed work/review leaves that pass incomplete; another candidate attempt consumes a remaining pass. Stop at requested endpoint, exhausted passes/constraints, caller stop or missing required capability/decision.
 
 ## Delivery
 
