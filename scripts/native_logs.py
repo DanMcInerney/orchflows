@@ -722,14 +722,15 @@ def read(host, identifier, home, limit=30, after=None, event_id=None, field="dat
             if timestamp is None:
                 event["flags"].append("timestamp_unavailable")
             elif (window_start and timestamp < window_start) or (window_end and timestamp >= window_end):
-                cursor = _cursor(path, event, raw, index)
+                cursor = _cursor(path, event, raw, index) if raw.endswith(b"\n") else cursor
                 continue
         if len(events) == limit:
             has_more = True
             break
         event["sidecars"] = _sidecars(event, home)
         events.append(_preview(event))
-        cursor = _cursor(path, event, raw, index)
+        # A line still being written changes length when it completes, so the cursor stays before it.
+        cursor = _cursor(path, event, raw, index) if raw.endswith(b"\n") else cursor
     # Keep the last cursor even at EOF so a caller can poll an append-only transcript.
     return {"host": host, "id": identifier, "events": events, "next_cursor": cursor or after, "has_more": has_more,
             "since": window_start.isoformat() if window_start else None, "until": window_end.isoformat() if window_end else None,

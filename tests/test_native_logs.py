@@ -198,6 +198,18 @@ class NativeHistoryTests(unittest.TestCase):
         self.assertEqual(gaps, ["malformed_record", "incomplete_tail"])
         self.assertEqual(logs.inspect("codex", "root", self.home)["agents"][0]["unmatched_count"], 1)
 
+    def test_cursor_survives_a_poll_that_ends_mid_write(self):
+        root = self.home / "projects/project/session.jsonl"
+        first = json.dumps(claude("assistant", {"type": "text", "text": "done"})) + "\n"
+        second = json.dumps(claude("assistant", {"type": "text", "text": "later"}))
+        for written in (second[:20], second):  # a torn line, then valid JSON still awaiting its newline
+            write(root, first + written)
+            page = logs.read("claude", "session", self.home)
+            self.assertEqual([e["kind"] for e in page["events"]], ["message", "gap" if written != second else "message"])
+            write(root, first + second + "\n")
+            resumed = logs.read("claude", "session", self.home, after=page["next_cursor"])
+            self.assertEqual([e["data"]["text"] for e in resumed["events"]], ["later"])
+
     def test_captured_output_is_separate_from_presented_output(self):
         full = "x" * 40000 + "TAIL EVIDENCE"
         self.codex("root", [{"type": "event_msg", "payload": {"type": "item_completed", "item": {
