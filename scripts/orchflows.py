@@ -307,6 +307,7 @@ def _libraries(home: Path) -> tuple[list[dict], list[str]]:
             manifest = _manifest(root)
             if not (root / "skills").is_dir():
                 raise ValueError(f"Library lacks a skills directory: {root}")
+            package_files.files(root)  # host registration refuses what this refuses, such as links
             entries.append({**manifest, "package_root": str(root)})
         except (OSError, ValueError) as exc:
             issues.append(str(exc))

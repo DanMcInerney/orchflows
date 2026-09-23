@@ -635,6 +635,28 @@ class HomeSetupTests(unittest.TestCase):
             orchflows.resolve(self.home, "orchflows", resource="guidance/escape")
         self.assertEqual(list(outside.iterdir()), [])
 
+    def test_doctor_reports_a_library_with_links_that_hosts_would_refuse(self) -> None:
+        self.install()
+        outside = self.root / "outside"
+        package(outside, "unused")
+        library = self.home / "libraries/mine"
+        package(library, "mine")
+        alias = library / "skills/alias"
+        try:
+            alias.symlink_to(outside / "skills/sample", target_is_directory=True)
+        except OSError:
+            try:
+                import _winapi
+                _winapi.CreateJunction(str(outside / "skills/sample"), str(alias))
+            except (ImportError, OSError) as exc:
+                self.skipTest(f"Neither symlinks nor junctions are available: {exc}")
+        report = orchflows.doctor(self.home, hosts=["none"])
+        self.assertEqual(report["status"], "incomplete")
+        self.assertTrue(any("does not follow links" in issue and "alias" in issue for issue in report["issues"]), report["issues"])
+        self.assertNotIn("mine", [entry["name"] for entry in report["checks"]["libraries"]])
+        with self.assertRaisesRegex(ValueError, "not installed.*does not follow links"):
+            orchflows.resolve(self.home, "mine", skill="alias")
+
     def test_setup_never_writes_through_links_in_the_home(self) -> None:
         outside = self.root / "outside"
         outside.mkdir()
