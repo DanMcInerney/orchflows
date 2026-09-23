@@ -26,7 +26,7 @@ Each library below explains its inputs, dependencies, bounds and current limits.
 | [Design loop](design-loop/README.md) | Brainstorm, research, design, implement, compare and analyze bounded cycles; uses shared comparison |
 | [Gauntlet loop](gauntlet-loop/README.md) | Loop each piece through a builder and a fresh blind critic until it beats a real reference; uses shared comparison |
 | [Evolve](evolve/README.md) | Improve and retain artifacts with its own evaluation and confirmation policy |
-| [Benchmaker](benchmaker/README.md) | Construct and independently pilot benchmarks; review and repair using Shared |
+| [Benchmaker](benchmaker/README.md) | Build benchmarks of hard tasks that survive a blind audit, an adversary and calibration; measure how well they separate systems; review using Shared |
 | [Export workflow](export-workflow/README.md) | Export a standalone native skill and trial its behavior; uses Shared review |
 | [Self-improve](self-improve/README.md) | Improve instructions from observed history and current evidence |
 | [Orchflows review](orchflows-review/README.md) | Review Orchflows' architecture, workflow design, wording and bugs against its purpose; apply reviewed findings on unmerged branches; uses Shared |

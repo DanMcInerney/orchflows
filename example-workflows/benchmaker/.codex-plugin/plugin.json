@@ -1,18 +1,18 @@
 {
   "name": "benchmaker",
   "version": "0.4.6",
-  "description": "Build staged agent benchmarks with outcome credit and calibrated difficulty.",
+  "description": "Build benchmarks of hard agent tasks that admit only verified, shortcut-resistant tasks and measure how well the suite separates systems.",
   "skills": "./skills/",
   "author": {
     "name": "orchflows"
   },
   "interface": {
     "displayName": "Benchmaker",
-    "shortDescription": "Build benchmarks with tasks, graders and honest results.",
-    "longDescription": "Create task-specific benchmark packages, independently pilot their tasks and graders, and review evidence with explicit execution and measurement limits.",
+    "shortDescription": "Build hard-task benchmarks with measured quality.",
+    "longDescription": "Source hard tasks, admit only those that pass a blind audit, an adversary and calibration, measure the suite against comparison systems, and report a quality card with honest gaps.",
     "developerName": "orchflows",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Use benchmaker to build a staged benchmark for substantial agent work."
+    "defaultPrompt": "Use benchmaker to build a benchmark of hard tasks for my agent, skill or workflow."
   }
 }

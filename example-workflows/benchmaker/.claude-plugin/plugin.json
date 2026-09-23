@@ -1,7 +1,7 @@
 {
   "name": "benchmaker",
   "version": "0.4.6",
-  "description": "Build staged agent benchmarks with outcome credit and calibrated difficulty.",
+  "description": "Build benchmarks of hard agent tasks that admit only verified, shortcut-resistant tasks and measure how well the suite separates systems.",
   "skills": "./skills/",
   "author": {
     "name": "orchflows"
