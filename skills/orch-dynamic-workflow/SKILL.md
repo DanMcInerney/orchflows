@@ -14,6 +14,6 @@ Briefly plan coherent units, dependencies, guidance, gates, bounds and stopping 
 
 Run independent assignments concurrently through [orch-work](../orch-work/SKILL.md), with clear ownership. Do clear work directly when settings permit. Join required outcomes before review and dependent work; adapt within declared gates and bounds.
 
-At each gate, use [orch-review](../orch-review/SKILL.md) once on the stable joined candidate with requirements, sources and all applicable task guidance. After its completed report, assign one worker to at most one necessary repair pass, honoring settings and scope. The coordinator does not substitute for the fixer. Apply architecture's review, checks and handoff rules; add no second review or automatic approval pause.
+At each gate, use [orch-review](../orch-review/SKILL.md) once on the stable joined candidate with requirements, sources and all applicable task guidance. After its completed report, make at most one necessary repair pass, honoring settings and scope. Apply architecture's review, checks and handoff rules; add no second review or automatic approval pause.
 
 When asked to create or save reusable workflows or guidance, apply [orch-build-workflow](../orch-build-workflow/SKILL.md). Its authoring review satisfies that unit's gate without a wrapper review. Return results, checks and gaps, distinguishing reviewed from delivered states.

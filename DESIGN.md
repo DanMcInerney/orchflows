@@ -78,7 +78,7 @@ It establishes the result and checks, composing core workflows and primitives. C
 
 Dynamic plans coherent units around results and real dependencies. Before dependent work, each joined result gets independent review unless a mistake would be cheap to undo or the checks would catch any consequential one; checks the maker writes share its reading of the requirements. The coordinator says why it skipped a gate. Top-level domains suggest boundaries; supporting guidance does not add units, and consequential handoffs can separate units within one domain. Missing reviewer capability does not make consequential work trivial. This policy applies to both automatic and explicit dynamic invocation.
 
-A research-to-code task can use parallel research → joined research review/fix → parallel coding → joined code review/fix. A typo fix can use direct work and a check. Each gate gets one independent reviewer and one worker for at most one repair pass when needed, followed by required checks. Other staffing is flexible; an explicit `orch-work` call always requires a fresh maker.
+A research-to-code task can use parallel research → joined research review/fix → parallel coding → joined code review/fix. A typo fix can use direct work and a check. Each gate gets one independent reviewer and at most one repair pass when needed, followed by required checks. Other staffing is flexible; an explicit `orch-work` call always requires a fresh maker.
 
 ## How can workflows nest without nested orchestrators?
 
@@ -144,7 +144,7 @@ It supplies an independent judgment of an identified state and scope. The candid
 
 The optional shared library's `shared:review-revise-once` permits one coordinated repair pass after review, followed by affected and caller-required checks—even when no repair is needed. Missing or incomplete review blocks repair. The original verdict stays attached to the inspected state; a revision does not inherit it. There is no automatic second review or release authorization.
 
-Build and Dynamic use `orch-review` directly, with one reviewer and one worker for at most one repair pass when needed, without depending on shared. Build also uses this default for new production workflows while preserving explicit choices and selected component contracts. Dynamic counts an existing review only when candidate, criteria and scope match its planned gate. Build's completed authoring review satisfies the authoring unit when Dynamic composes it; no wrapper review is added.
+Build and Dynamic use `orch-review` directly, with one reviewer and at most one repair pass when needed, without depending on shared. Build also uses this default for new production workflows while preserving explicit choices and selected component contracts. Dynamic counts an existing review only when candidate, criteria and scope match its planned gate. Build's completed authoring review satisfies the authoring unit when Dynamic composes it; no wrapper review is added.
 
 ## How does workflow building avoid touching real data?
 
