@@ -108,8 +108,9 @@ async def audit_run(root, host, scheduler, timeout=60):
     request += evidence_packet
     (directory / 'request.txt').write_text(request, encoding='utf-8')
     command = host.command({}, 'audit', SCHEMA, root, directory=directory)
+    label = f"audit:{read_json(root / 'target.json').get('case')}#{root.name}"  # case and attempt
     execution = await scheduler.process(command, cwd=root, directory=directory, prompt=request,
-                                         timeout=timeout, label='audit:' + root.name)
+                                         timeout=timeout, label=label)
     native = host.result(directory)
     write_json(directory / 'native.json', native)
     complete = False

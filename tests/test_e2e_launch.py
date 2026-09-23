@@ -83,8 +83,8 @@ class FakeHost:
     """Local harness control: writes a synthetic native index and establishes no native/LLM behavior."""
     name, version, capabilities = 'fake', 'test', set()
 
-    def __init__(self, agents=AGENTS[:3], events=None, seconds=0):
-        self.agents, self.events, self.seconds = agents, events or {}, seconds
+    def __init__(self, agents=AGENTS[:3], events=None, seconds=0, session=None):
+        self.agents, self.events, self.seconds, self.session = agents, events or {}, seconds, session
 
     def invocation(self, entrypoint, request):
         return request
@@ -104,7 +104,7 @@ class FakeHost:
             events.write_text(''.join(json.dumps(e) + '\n' for e in self.events.get(agent['id'], [])), encoding='utf-8')
             agents.append({**agent, 'unlinked_spawns': [], 'events_path': str(events)})
         write_json(evidence / 'index.json', {'root_id': 'coordinator', 'agents': agents, 'gaps': []})
-        return {'session_id': None, 'terminal_success': True, 'gaps': [],
+        return {'session_id': self.session, 'terminal_success': True, 'gaps': [],
                 'structured_output': {'assessment': 'acceptable', 'findings': [], 'observations': [], 'gaps': []}}
 
 
@@ -145,6 +145,24 @@ class LaunchJourneyTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result['assessment'], 'material_failure')
             self.assertEqual([f['requirement'] for f in result['findings']], ['Only the coordinator launches agents'])
             self.assertIn('Stage execution: timeout', result['gaps'])
+
+    async def test_schedule_labels_name_the_case_and_attempt(self):
+        with tempfile.TemporaryDirectory(prefix='orchflows-launch-') as folder:
+            root = Path(folder)
+            source = root / 'case'
+            source.mkdir()
+            write_json(source / 'case.json', {'packages': []})
+            (source / 'request.md').write_text('write the answer', encoding='utf-8')
+            (source / 'expected-behavior.md').write_text('An answer.', encoding='utf-8')
+            (source / 'check.py').write_text('def check(c):\n    pass\n', encoding='utf-8')
+            case = Case('core/labels', source, {'packages': []})
+            scheduler = Scheduler(1, 30, root / 'schedule.jsonl')
+            await run_case(case, 2, root / 'run', FakeHost([{'id': 'coordinator', 'parent_id': None}], session='s'),
+                           scheduler, {}, 5)
+            started = [json.loads(line)['label'] for line in (root / 'schedule.jsonl').read_text().splitlines()
+                       if json.loads(line)['kind'] == 'started']
+            self.assertEqual(started, ['core/labels#2:target', 'collect:core/labels#2:target',
+                                       'checks:core/labels#2', 'audit:core/labels#2'])
 
     async def test_interpreter_condition_is_reported_without_changing_the_verdict(self):
         with tempfile.TemporaryDirectory(prefix='orchflows-launch-') as folder:

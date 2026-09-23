@@ -92,6 +92,7 @@ class Trial:
         shutil.copytree(files_under(case.path), evaluation,
                         ignore=shutil.ignore_patterns('packages', '__pycache__'))
         self.case = replace(case, path=evaluation)
+        self.label = f'{case.id}#{self.root.name}'  # case and attempt, as run.py admits them
         shutil.copy2(HERE / 'review.md', evaluation / 'review.md')
         for name, source in sources.items():
             self.package_records[name] = copy_package(source, self.root / 'packages' / name)
@@ -139,14 +140,14 @@ class Trial:
         env = dict(os.environ, ORCHFLOWS_HOME=str(orch_home), PYTHONDONTWRITEBYTECODE='1')
         execution = await self.scheduler.process(command, cwd=workspace, directory=directory,
             prompt=prompt, timeout=timeout or self.case.timeout, until=self.end, env=env,
-            label=self.case.id + ':' + name)
+            label=self.label + ':' + name)
         native = self.host.result(directory)
         write_json(directory / 'native.json', native)
         if native.get('session_id'):
             await self.scheduler.process([sys.executable, '-B', str(HERE / 'evidence.py'), self.host.name,
                 native['session_id'], str(directory / 'evidence')], cwd=workspace,
                 directory=directory / 'collection', timeout=15, native=False,
-                label='collect:' + name)
+                label='collect:' + self.label + ':' + name)
         evidence_path = directory / 'evidence/index.json'
         evidence = read_json(evidence_path) if evidence_path.exists() else {'gaps': ['Native evidence unavailable']}
         after = snapshot(workspace)
@@ -178,7 +179,7 @@ class Trial:
 
     async def local(self, command, *, cwd, name, timeout=20):
         return await self.scheduler.process(command, cwd=cwd, directory=self.root / 'local' / name,
-            timeout=timeout, until=self.end, native=False, label='local:' + name)
+            timeout=timeout, until=self.end, native=False, label='local:' + self.label + ':' + name)
 
     def freeze(self, source, name):
         destination = self.root / 'generated' / name

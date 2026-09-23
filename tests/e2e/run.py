@@ -37,7 +37,7 @@ async def run_case(case, number, root, host, scheduler, sources, audit_seconds):
         hook = path / 'evaluation/check.py'
         if hook.exists():
             execution = await scheduler.process([sys.executable, '-B', str(HERE / 'checks.py'), str(path), str(hook)],
-                cwd=path, directory=path / 'checking', timeout=20, native=False, label='checks:' + case.id)
+                cwd=path, directory=path / 'checking', timeout=20, native=False, label=f'checks:{case.id}#{number}')
             if (path / 'checks.json').exists():
                 observed = read_json(path / 'checks.json')
                 checks['checks'] += observed['checks']

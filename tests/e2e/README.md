@@ -32,7 +32,7 @@ Repeat `--suite` to combine suites; `--case` adds cases to them.
 - **`--jobs`** (default 5) bounds concurrent harness sessions, targets and evaluators together. Hosts cap children per session (Claude 20 running subagents; Codex `agents.max_threads`), not sessions per account, so the harness bounds the total. A target plus its children is about four agents: the 2026-09-22 Codex targets never ran more than three children at once, and case requests allow six in all. Audits delegate nothing. Five sessions therefore stay near 20 agents. Build's inner trial sessions are additional. Raise `--jobs` only with account headroom; it shortens wall clock until the longest attempt dominates.
 - **`--repeat`** (default 1). Use more only to claim reliability, for example `--repeat 5` on the cases in question. The runner admits the longest cases first, with all their repeats together.
 
-Deadlines bound waiting, not successful completion. Audits start as soon as their own target and checks finish. Dependent stages wait for frozen inputs. Each attempt gets distinct files, homes and native session IDs; there are no automatic retries or cached successes. `schedule.jsonl` logs admission, release, and each session's start and finish.
+Deadlines bound waiting, not successful completion. Audits start as soon as their own target and checks finish. Dependent stages wait for frozen inputs. Each attempt gets distinct files, homes and native session IDs; there are no automatic retries or cached successes. `schedule.jsonl` logs admission, release, and each session's start and finish; every label names the case and attempt (`core/routing#1`), so audits, collections and checks join to their cases.
 
 ### Reading results
 
