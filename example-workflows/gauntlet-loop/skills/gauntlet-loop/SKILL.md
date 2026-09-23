@@ -14,19 +14,19 @@ Reaching the bar means beating a reference, or matching a threshold bar such as 
 
 ## Split the work
 
-Divide the goal into the smallest pieces that can be improved and judged separately, each mapped to the part of the bar it must reach. A piece the bar does not cover, such as sound when the bar is screenshots, gets its own. Keep coupled parts together where judging them apart would mislead. Run independent pieces concurrently within host limits; give shared files one owner. Add, merge or split pieces as the artifact teaches you.
+Divide the goal into the smallest pieces that can be improved and judged separately, each mapped to the part of the bar it must reach. A piece the bar does not cover, such as sound when the bar is screenshots, gets its own bar. Keep coupled parts together where judging them apart would mislead. Run independent pieces concurrently within host limits; give shared files one owner. Add, merge or split pieces as the artifact teaches you.
 
 ## Run each piece through the gauntlet
 
 A round is one build and its judgment for one piece. Record it before the build starts; consumed rounds carry through smoothing, splits and merges. Caller round bounds apply per piece unless the caller says otherwise.
 
 1. **Build.** A builder makes or revises the piece from the goal, its slice of the bar, the latest gap and applicable guidance, and may study the bar. Continue a builder across rounds or replace it as useful.
-2. **Judge.** Freeze the piece and apply `shared:compare-candidates` to ours and its reference, with a comparer who has not judged this piece before. Supply the goal, bar, binding rules and the actual output to inspect: rendered, run, played or read. Never supply the builder's history, reasoning or summary. Blind the pair where possible, with anonymous labels and randomized order; for measurement bars the critic runs the measurement. Ask for the better side and the largest meaningful gap in the side not picked, or in each side on a tie.
+2. **Judge.** Freeze the piece and apply `shared:compare-candidates` to ours and its reference. Supply the goal, bar, caller constraints and the actual output to inspect: rendered, run, played or read. Never supply the builder's history, reasoning or summary. Blind the pair where possible, with anonymous labels and randomized order; for measurement bars the critic runs the measurement. Ask for the better side and the largest gap.
 3. **Close the gap or confirm.** When ours falls short, map the gap back to ours; the next round starts from it. When ours reaches the bar, confirm with another `shared:compare-candidates` call by a fresh critic, without the first verdict: reversed order for judged comparisons, a matched re-run for measurements. Disagreement is a loss.
 
 There is no fixed number of rounds. A piece that stops improving changes approach and shows the stall on the progress page; stalling is not completion.
 
-## Smooth between waves
+## Smooth clashing pieces
 
 When separately improved pieces start to clash, have one fresh maker, with the builders' guidance, inspect the whole result and reconcile conflicts without redesigning it. Pieces it changes lose their confirmations and re-enter the gauntlet.
 
