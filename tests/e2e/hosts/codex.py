@@ -106,12 +106,18 @@ class Codex:
         if 'max_threads' in settings.get('agents', {}):
             self.settings['agents.max_threads'] = settings['agents']['max_threads']
         # Probe 2026-09-22, Codex 0.156.0: the elevated Windows sandbox cannot start the per-user Python and the
-        # unelevated one can, so every invocation requests unelevated; the user's standing configuration is unchanged.
-        self.settings['windows'] = {**settings.get('windows', {}), 'sandbox': 'unelevated'}
+        # unelevated one can, so target invocations request unelevated; audits keep the user's sandbox, and the
+        # standing configuration is unchanged.
+        self.user_windows = settings.get('windows', {})
         # Keep ambient skills out of the experiment; the selected package copies
         # are discovered natively as repo skills, with their invocation metadata.
         self.disabled_skills = [{'path': str(p), 'enabled': False}
                                 for p in (self.home / 'skills').rglob('SKILL.md')]
+
+    user_windows = {}
+
+    def windows(self, profile):
+        return self.user_windows if profile == 'audit' else {**self.user_windows, 'sandbox': 'unelevated'}
 
     def options(self, profile):
         settings = {**self.settings, 'mcp_servers': {}, 'approval_policy': 'never',
@@ -121,7 +127,7 @@ class Codex:
             'features.shell_tool': profile != 'no-review',
             'sandbox_workspace_write.network_access': profile == 'authoring',
             'web_search': 'disabled', 'project_doc_max_bytes': 0,
-            'skills.config': self.disabled_skills}
+            'skills.config': self.disabled_skills, 'windows': self.windows(profile)}
         return [part for key, value in settings.items() for part in ('-c', key + '=' + toml(value))]
 
     def prepare(self, workspace, packages):
@@ -159,7 +165,7 @@ class Codex:
                     **preparation, 'inventory': registered,
                     'configured_model': self.settings.get('model'),
                     'configured_effort': self.settings.get('model_reasoning_effort'),
-                    'windows_sandbox': self.settings.get('windows', {}).get('sandbox'), 'gaps': gaps}
+                    'windows_sandbox': self.windows(profile).get('sandbox'), 'gaps': gaps}
         write_json(directory / 'codex-launch.json', metadata)
         command = [*self.launcher, 'exec', '--json', '--ignore-user-config', '--ignore-rules',
                    '--skip-git-repo-check', '--color', 'never', '--sandbox',
