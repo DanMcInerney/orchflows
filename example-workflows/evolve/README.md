@@ -34,7 +34,7 @@ flowchart TD
     class S,R,B,O state;
 ```
 
-The [evaluation contract](skills/evolve/references/evaluation.md) separates requirements from qualities to improve. Subjective promotion needs two fresh judges with reversed presentation order. Metric promotion needs matched measurements, required checks and a fresh audit. Ties, regressions, missing evidence and unconfirmed wins retain the current best. Judges compare without repairing candidates.
+The [evaluation contract](skills/evolve/references/evaluation.md) separates requirements from qualities to improve. Subjective promotion needs two fresh judges with reversed presentation order. Metric promotion needs matched measurements, required checks and, when candidates could influence the measurement, a fresh audit. Ties, regressions, missing evidence and unconfirmed wins retain the current best. Judges compare without repairing candidates.
 
 An evaluator repair creates a new revision and requires re-evaluating the current best and contenders; scores across revisions are not comparable progress. A [harness experiment](skills/evolve/references/harness.md) instead tests the working instructions, tools or search policy. It replaces an ordinary round and uses reserved cases plus fresh, matched executions. Adoption needs confirmed output improvement, preserved requirements and acceptable recorded cost. Later contradictory validation restores the predecessor. Harness proposals cannot change purpose, evaluation, promotion rules, budgets or checkpoint ownership.
 

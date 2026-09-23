@@ -34,7 +34,7 @@ Randomize initial order. A subjective winner requires a second fresh judge with 
 
 ## Promotion
 
-Enforce requirements before ranking. Repeat promising metrics under matched conditions with frozen aggregation/margin. A fresh reviewer audits exact artifacts, scoring code, workload inputs, commands/environment, raw samples and requirement checks; include a fresh confirmation case when applicable. Noise or incomplete comparison establishes no win. Two subjective preferences establish judged evidence, not statistical significance.
+Enforce requirements before ranking. Repeat promising metrics under matched conditions with frozen aggregation/margin. When candidates could influence the measurement, a fresh reviewer audits exact artifacts, scoring code, workload inputs, commands/environment, raw samples and requirement checks; otherwise an audit is the coordinator's reasoned choice. Include a fresh confirmation case when applicable. Noise or incomplete comparison establishes no win. Two subjective preferences establish judged evidence, not statistical significance.
 
 Stop evaluating disqualified candidates. Record both sides' evidence, failures and observable cost, including evaluation. Promote only when the frozen decision rule, requirements and confirmation pass within caller constraints; otherwise retain the incumbent. Check retained regression examples and original intent during long searches.
 
