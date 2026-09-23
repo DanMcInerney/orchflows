@@ -165,6 +165,8 @@ Reuse workers only if the host can honor repair settings. If continuation cannot
 
 When children need isolation, use worktrees at the intended revision. Claude's `isolation: worktree` branches from the remote default branch unless the user sets `worktree.baseRef: "head"`, and copies tracked files only (`.worktreeinclude` adds ignored files; documented for 2.1.280, not observed with the Claude Code on PATH, 2.1.270); confirm the commit. If Codex's child tool lacks a workspace argument, create a worktree and direct all child operations there:
 
+In a Claude Code desktop session running inside a worktree under `.claude/worktrees` (observed 2026-09-22), subagents could not edit files or run git in the repository's other worktrees under `.claude/worktrees`; worktrees created elsewhere, such as under an output location, were writable.
+
 ```sh
 git worktree add -b codex/task-candidate ../task-candidate <commit>
 git worktree add --detach ../task-review <candidate-commit>

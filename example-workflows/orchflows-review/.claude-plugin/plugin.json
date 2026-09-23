@@ -1,0 +1,9 @@
+{
+  "name": "orchflows-review",
+  "version": "0.1.0",
+  "description": "Review Orchflows against its purpose and principles, then apply reviewed improvements on unmerged branches.",
+  "skills": "./skills/",
+  "author": {
+    "name": "orchflows"
+  }
+}

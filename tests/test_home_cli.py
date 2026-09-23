@@ -129,6 +129,7 @@ class InstalledCliTests(unittest.TestCase):
             for name, skill_names in (
                 ("export-workflow", ("export-workflow",)),
                 ("self-improve", ("self-improve",)),
+                ("orchflows-review", ("orchflows-review",)),
                 ("shared", ("compare-candidates", "review-revise-once")),
                 ("design-loop", ("design-loop", "test-increment")),
                 ("benchmaker", ("benchmaker",)),
