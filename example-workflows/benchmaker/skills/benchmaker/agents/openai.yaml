@@ -1,5 +1,5 @@
 interface:
   display_name: "Benchmaker"
-  short_description: "Build staged benchmarks with outcome credit"
+  short_description: "Build hard-task benchmarks with measured quality"
 policy:
   allow_implicit_invocation: false

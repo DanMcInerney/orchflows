@@ -1,48 +1,59 @@
 # Benchmaker
 
-A benchmark can run perfectly and still measure the wrong thing. Benchmaker builds tasks around substantial user work, checks whether their graders recognize useful outcomes, and separates that validation from measurements of the agent. Each package reports the stage requested, the stage achieved and the evidence still missing.
+Most homemade agent benchmarks are unit tests in disguise: a handful of easy cases that every capable system passes, graded by checks an agent can game. Benchmaker builds the other kind. It sources hard, valuable tasks and admits only those that survive a blind audit, an agent told to cheat and repeated attempts by a capable calibration system. It then reports how well the finished suite actually separates the systems you care about.
 
-**Experimental:** cross-domain acceptance remains incomplete. After [installation](#install), try this in Codex:
+It works for agents, skills, workflows, harnesses and tool-calling models. For skills and workflows it asks by default whether they help at matched budget.
+
+**Experimental:** the redesigned process has not yet been exercised end to end. After [installation](#install), try this in Codex:
 
 ```text
-$benchmaker:benchmaker Compare the two research workflows in this workspace.
-Build a development prototype from representative source tasks. Allow at
-most two target launches, ten minutes each, with no retries. Save the
-package, reproducible commands, measurements and unmet quality gates in
-./benchmark-run/.
+$benchmaker:benchmaker Does the research workflow in this workspace beat
+the same model working alone? Build a development suite from real research
+questions in ./sources. Allow at most 40 target launches, fifteen minutes
+each, no retries. Save the suite, commands, quality card and rejection log
+in ./benchmark-run/.
 ```
 
-In Claude Code, use `/benchmaker:benchmaker`; invocation is manual. Supply a target path, callable, command, endpoint, native workflow or capability description, plus budget and output location. A description supports a draft; measurement requires actual execution.
+In Claude Code, use `/benchmaker:benchmaker`; invocation is manual. Supply a target (path, callable, command, endpoint, native workflow, skill or capability description), plus budget and output location. A description supports a draft; measurement requires actual execution.
 
-## Validate the ruler before trusting the score
+## Most tasks should not make it
 
 ```mermaid
 flowchart TD
-    A["Define claim, source work and budget"] --> B["Build and freeze tasks, graders and controls"]
-    B --> C["Fresh pilot solves public inputs first"]
-    C --> D["Audit grading; gather target measurements"]
-    D --> E["Separate independent package review"]
-    E --> F["At most one repair; affected checks"]
-    F --> G["Deliver achieved stage, results and gaps"]
+    A["Claim, comparison set and budget"] --> B["Source more candidate tasks than needed"]
+    B --> C["Build task: instruction, environment, reference, verifier"]
+    C --> D{"Admission"}
+    D -->|"fails, within revision limit"| C
+    D -->|"fails"| X["Rejection log"]
+    D -->|"passes"| E["Measure the admitted suite"]
+    E --> F["Quality card"]
+    F --> G["Independent review, at most one repair"]
+    G --> H["Deliver suite, card and gaps"]
     classDef work fill:#115e59,stroke:#134e4a,color:#ffffff;
     classDef evidence fill:#1e3a8a,stroke:#172554,color:#ffffff;
     classDef review fill:#6b21a8,stroke:#581c87,color:#ffffff;
-    class A,B,F work;
-    class C,E review;
-    class D,G evidence;
+    class A,B,C work;
+    class D,G review;
+    class E,F,H,X evidence;
 ```
 
-The pilot saves answers before seeing evaluator material. A different reviewer then inspects the frozen package and joined evidence through `shared:review-revise-once`. Repairs wait for that review; at most one pass follows, with affected independent checks within the remaining allowance. The original verdict applies only to the reviewed version.
+A task is admitted only when:
 
-The [quality profile](references/quality-profile.md) distinguishes **prototype**, **calibrated pilot** and **evaluation suite**. Smoke, quick and full select runs, not maturity. Broad claims plan around 40–60 independently sourced development cases and a later 150–300-case suite; these adjustable ranges are neither statistical minimums nor launch budgets. Smaller prototypes retain the larger request's unmet gates.
+- its reference solution passes and doing nothing does not;
+- a fresh auditor, who solves it before seeing the answers, finds every graded requirement in the instructions;
+- the verifier accepts a different valid solution and rejects plausible wrong ones;
+- an agent told to earn credit without doing the work fails;
+- repeated attempts by the calibration system meet the declared difficulty target, and failures show the claimed ability failing.
 
-Challenge tracks default to 30–50% full-task success for a named strong baseline on development cases. This is a calibration target, not an unseen-performance promise. Baselines, source-group splits and conditions freeze before measurement; semantic grading stays provisional until independent held-out calibration.
+Real benchmarks work this way. Terminal-Bench 2.0 kept 89 of 229 submitted tasks, and SWE-bench Verified discarded two thirds of its sample.
+
+The [quality card](references/quality-card.md) reports measured validity, headroom, discrimination, reliability, coverage, integrity, cost and yield. Stages follow the evidence. A **draft** is incomplete. A **development suite** has every task admitted and measured. An **evaluation suite** adds held-out tasks measured once. Smoke, quick and full select runs, not maturity. Unless you set a difficulty target, the calibration system should succeed on well under all tasks, typically a minority, leaving room for stronger systems to show. The card also says whether measured headroom and separation actually support your claim.
 
 ## What the package preserves
 
-Expect a benchmark card, cases and provenance, fixtures, adapters, graders, controls, reproducible commands, observed time/cost and raw evidence in your workspace. Results keep **full success, useful outcome credit and critical failures** separate, with denominators and per-family coverage. Harness checks, benchmark validation and fresh agent measurements remain distinct.
+Expect public tasks, environments, verifiers, reference solutions, admission evidence, the rejection log, adapters, reproducible commands, the quality card, observed time and cost, and raw transcripts in your workspace. Results keep **full success, useful partial credit and critical failures** separate, with denominators and per-family coverage. Harness checks, benchmark validation and agent measurements remain distinct.
 
-The [execution contract](references/benchmark-contract.md) bounds launches, retries, time and spend. Failed attempts consume limits; wrong answers are never transient retries. Resume requires matching benchmark and condition identities, reuses completed work, and reconciles uncertain execution before relaunch. Re-scoring retained outputs records a new scorer result, not a fresh agent attempt. Missing access or judgment leaves affected claims incomplete. Local folder separation does not enforce evaluator secrecy.
+The [execution contract](references/benchmark-contract.md) bounds launches, retries, time and spend. Failed attempts consume limits, and wrong answers are never retried. Resume refuses changed definitions and reuses completed work. Missing access or judgment leaves affected claims incomplete. A local folder does not keep answers secret from an agent that can read it; the card says which boundaries were enforced.
 
 ## Install
 
@@ -53,6 +64,8 @@ python scripts/orchflows.py setup --example shared
 python scripts/orchflows.py setup --example benchmaker
 ```
 
-Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows, shared** and native child delegation; [library context](references/library-context.md) lists components and task-specific tools. Setup preserves existing library copies and does not install transitive dependencies; update an older shared copy before refreshing host registration. No paid judge, Docker or additional benchmark runtime is required.
+Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Requires **Orchflows, shared** and native child delegation; [library context](references/library-context.md) lists components and task-specific tools. Setup preserves existing library copies and does not install transitive dependencies; update an older shared copy before refreshing host registration. No paid judge, Docker or additional benchmark runtime is required, though some tasks need them.
 
-**Validation limit:** the [trial catalog](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/benchmaker/trials/README.md) specifies research, stateful, artifact, coding and failure scenarios. Full current authoring/pilot execution, held-out semantic calibration, interruption/cleanup and protected evaluator access remain unverified. No cross-domain readiness is claimed.
+Admission multiplies agent runs, so real suites cost more than their task count suggests. Show the plan's estimate before launching and budget for it.
+
+**Validation limit:** the [trial catalog](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/benchmaker/trials/README.md) specifies how to exercise Benchmaker, including benchmarking it against hidden subject variants with a known order. None of these trials has run against the redesigned process. No cross-domain readiness is claimed.
