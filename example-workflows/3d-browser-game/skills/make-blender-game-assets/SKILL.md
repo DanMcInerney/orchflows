@@ -15,4 +15,4 @@ Use the actual game baseline and source assets. Production staffing is flexible 
 5. Inspect export structure, visuals and required clips; verify bounds, pivots/sockets, textures, collider fit and measured costs. Supply gameplay-camera and source contact views; identify remaining integrated-play checks.
 6. Return `.blend`, GLB, dependencies, scripts/settings, metadata, inspected views, reproduction commands and deviations.
 
-Own a separate asset directory for concurrent code/content work. Gather completed assets before returning them for caller integration and gameplay checks. Continue suitable makers for production feedback or a caller-allocated repair pass with its scoped settings; add no review or unbounded remake loop.
+Own a separate asset directory for concurrent code/content work. Gather completed assets before returning them for caller integration and gameplay checks. Continue suitable makers for production feedback or a caller-allocated repair pass; add no review or unbounded remake loop.
