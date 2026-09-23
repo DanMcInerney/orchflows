@@ -200,6 +200,19 @@ def _example_plan(home: Path, source: Path, example: str) -> str:
     return "installed"
 
 
+def _example_differs(home: Path, source: Path, example: str) -> bool | None:
+    """Whether a preserved example copy differs from its source, byte for byte; None when unknown.
+
+    Setup never overwrites a library: this only reports the drift so the owner can copy by hand."""
+    example_source = source / "example-workflows" / example
+    if not example_source.is_dir():
+        return None
+    try:
+        return not package_files.same(example_source, home / "libraries" / example, skip={"trials"})
+    except (OSError, ValueError):
+        return None
+
+
 def _init_git(home: Path) -> tuple[str, list[str]]:
     if (home / ".git").exists():
         return "preserved", []
@@ -271,6 +284,8 @@ def setup(home: Path, source: Path, example: str | None = None, *,
             elif plan == "unavailable":
                 issues.append(f"Example {example} is absent from this core source; supply a checkout containing it")
             example_info = {"name": example, "status": plan, "package_root": str(home / "libraries" / example)}
+            if plan == "preserved":
+                example_info["differs_from_source"] = _example_differs(home, source, example)
         libraries, library_issues = _libraries(home)
         issues.extend(library_issues)
         for relative, text in _catalog_texts(home, libraries, manifest["version"]).items():
@@ -407,6 +422,9 @@ def _display(result: dict, *, as_json: bool) -> None:
             print(f"  {step}")
     if reports and all(report["status"] == "not_detected" for report in reports.values()):
         print("Home prepared. Install a supported host, then rerun setup.")
+    example = result.get("example") or {}
+    if example.get("differs_from_source"):
+        print(f"Example {example['name']} preserved; differs from source. Setup never overwrites a library.")
     for issue in result.get("issues", []):
         print(f"Issue: {issue}")
     if result.get("host_config_status") == "configured":

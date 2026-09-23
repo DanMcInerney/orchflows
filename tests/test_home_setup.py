@@ -294,6 +294,23 @@ class HomeSetupTests(unittest.TestCase):
         self.assertEqual((Path(first["core"]["package_root"]) / "guidance/code.md").read_text(), "Local coding guidance.\n")
         self.assertEqual(list((self.home / ".local/packages").iterdir()), [Path(first["core"]["package_root"])])
 
+    def test_preserved_example_reports_drift_from_source_without_overwriting(self) -> None:
+        self.assertNotIn("differs_from_source", self.install(example=True)["example"])
+        write(self.example / "trials/case/request.md", "Evaluator-only; never compared.\n")
+        self.assertIs(self.install(example=True)["example"]["differs_from_source"], False)
+        copy = self.home / "libraries/social-search/README.md"
+        for change in (lambda: write(copy, "Owner's edit.\n"), lambda: write(self.example / "skills/sample/NEW.md", "Newer source.\n")):
+            change()
+            before = snapshot(self.home / "libraries/social-search")
+            report = self.install(example=True)["example"]
+            self.assertEqual((report["status"], report["differs_from_source"]), ("preserved", True))
+            self.assertEqual(snapshot(self.home / "libraries/social-search"), before)
+        output = io.StringIO()
+        output.isatty = lambda: True
+        with patch.object(sys, "stdout", output):
+            orchflows.main(["setup", "--home", str(self.home), "--source", str(self.source), "--example", "social-search", "--host", "none"])
+        self.assertIn("Example social-search preserved; differs from source.", output.getvalue())
+
     def test_incomplete_existing_runtime_is_not_repaired(self) -> None:
         marker = self.home / ".local/runtime/my-environment.txt"
         write(marker, "not a venv; leave this directory alone\n")
