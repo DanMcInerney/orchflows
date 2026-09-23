@@ -6,7 +6,7 @@ disable-model-invocation: false
 
 Apply [architecture](../../docs/architecture.md) in the top-level coordinator. Explicit workflow or primitive selections own the process; never wrap or replace them. Children follow their assignments without starting this workflow.
 
-Use core `orchflows` guidance for planning and applicable core task guidance for work and review, without library extensions. User and repository instructions still apply; task sources remain evidence. Planning itself needs no authoring review.
+Use core `orchflows` guidance for planning and applicable [core task guidance](../../guidance/) for work and review, without library extensions. User and repository instructions still apply; task sources remain evidence. Planning itself needs no authoring review.
 
 Establish the result and checks. When a mistake would be cheap to undo and direct checks would catch it, do the work and check it without independent review unless requested. Checks the maker writes share the maker's reading of the requirements, so they cannot stand in for review when a misreading would be costly. If consequential uncertainty emerges, add review where useful; unavailable reviewers do not make work trivial.
 
