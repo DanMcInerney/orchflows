@@ -18,7 +18,7 @@ Divide the goal into the smallest pieces that can be improved and judged separat
 
 ## Run each piece through the gauntlet
 
-A round is one build and its judgment for one piece. Record it before the build starts; it keeps counting when a piece re-enters after smoothing. Caller round bounds apply per piece unless the caller says otherwise.
+A round is one build and its judgment for one piece. Record it before the build starts; consumed rounds carry through smoothing, splits and merges. Caller round bounds apply per piece unless the caller says otherwise.
 
 1. **Build.** A builder makes or revises the piece from the goal, its slice of the bar, the latest gap and applicable guidance, and may study the bar. Continue a builder across rounds or replace it as useful.
 2. **Judge.** Freeze the piece and apply `shared:compare-candidates` to ours and its reference, with a comparer who has not judged this piece before. Supply the goal, bar, binding rules and the actual output to inspect: rendered, run, played or read. Never supply the builder's history, reasoning or summary. Blind the pair where possible, with anonymous labels and randomized order; for measurement bars the critic runs the measurement. Ask for the better side and the largest meaningful gap in the side not picked, or in each side on a tie.
