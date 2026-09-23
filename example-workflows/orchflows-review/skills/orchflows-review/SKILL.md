@@ -46,7 +46,7 @@ Apply `shared:review-revise-once` to the list with the brief and evidence. Recor
 
 Apply the list on a candidate branch in a writable, isolated worktree of each affected repository, one owner per area, through `orchflows:orch-work` as settings permit. Leave manifest versions unchanged.
 
-Run the deterministic checks. The coordinator reruns the E2E cases the changes affect on each host. These runs are matched to the baseline, differing only in the candidate packages. Revert a change when the evidence shows it regresses, and report changes left untested. Trials used as evidence stay at baseline; changes to them are separate items.
+Run the deterministic checks. On each host, the coordinator runs the E2E cases the changes affect on a fresh baseline alongside the candidate, from one harness (`--package-root`) at the same settings. Revert a change when the evidence shows it regresses, and report changes left untested. Trials used as evidence stay at baseline; changes to them are separate items.
 
 Apply `shared:review-revise-once` to the stable diffs. Repairs stay within the reviewed list, and the affected checks and E2E cases are required checks. Record each finding's fate in the brief.
 
