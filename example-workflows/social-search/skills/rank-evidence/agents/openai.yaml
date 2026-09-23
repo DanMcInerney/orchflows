@@ -1,6 +1,0 @@
-interface:
-  display_name: "Rank Evidence"
-  short_description: "Independently rank supplied evidence with citations"
-
-policy:
-  allow_implicit_invocation: false

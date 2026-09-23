@@ -503,15 +503,15 @@ class HomeSetupTests(unittest.TestCase):
         self.assertIn("absent from this core source", " ".join(repeat["issues"]))
 
     def test_cli_installs_any_named_example_and_catalogs_all_valid_libraries(self) -> None:
-        example = self.source / "example-workflows/research-acquire"
-        package(example, "research-acquire")
+        example = self.source / "example-workflows/sample-reader"
+        package(example, "sample-reader")
         package(self.home / "libraries/my-folder", "custom-research")
-        installed = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), "--example", "research-acquire")
+        installed = self.cli(SCRIPT, "setup", "--home", str(self.home), "--source", str(self.source), "--example", "sample-reader")
         self.assertEqual(installed.returncode, 0, installed.stdout + installed.stderr)
         self.assertEqual(json.loads(installed.stdout)["example"]["status"], "installed")
-        self.assertEqual(snapshot(example), snapshot(self.home / "libraries/research-acquire"))
+        self.assertEqual(snapshot(example), snapshot(self.home / "libraries/sample-reader"))
         expected = {"orchflows": "./.local/packages/orchflows", "custom-research": "./libraries/my-folder",
-                    "research-acquire": "./libraries/research-acquire"}
+                    "sample-reader": "./libraries/sample-reader"}
         for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "marketplace.json"):
             text = (self.home / relative).read_text(encoding="utf-8")
             catalog = json.loads(text)
@@ -521,22 +521,22 @@ class HomeSetupTests(unittest.TestCase):
             self.assertNotIn(str(self.home), text)
             if relative == "marketplace.json":
                 self.assertEqual({entry["name"]: entry["version"] for entry in catalog["plugins"]},
-                                 {"orchflows": "7.8.9", "custom-research": "0.1.0", "research-acquire": "0.1.0"})
+                                 {"orchflows": "7.8.9", "custom-research": "0.1.0", "sample-reader": "0.1.0"})
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
 
     def test_doctor_reports_stale_catalogs_and_setup_regenerates_them(self) -> None:
         self.install(example=True)
-        package(self.source / "example-workflows/research-acquire", "research-acquire")
+        package(self.source / "example-workflows/sample-reader", "sample-reader")
         for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "marketplace.json"):
             write(self.home / relative, '{"name":"orchflows-home","plugins":[{"name":"external","source":"./elsewhere"}]}\n')
         report = orchflows.doctor(self.home)
         self.assertEqual(report["status"], "incomplete")
         self.assertIn("rerun setup", " ".join(report["issues"]))
-        result = orchflows.setup(self.home, self.source, "research-acquire")
+        result = orchflows.setup(self.home, self.source, "sample-reader")
         self.assertEqual(result["status"], "ready", result)
         for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "marketplace.json"):
             names = [entry["name"] for entry in json.loads((self.home / relative).read_text())["plugins"]]
-            self.assertEqual(names, ["orchflows", "research-acquire", "social-search"])
+            self.assertEqual(names, ["orchflows", "sample-reader", "social-search"])
         self.assertEqual(orchflows.doctor(self.home)["status"], "ready")
 
     def test_resolution_does_not_require_runtime_or_unrelated_core_files(self) -> None:

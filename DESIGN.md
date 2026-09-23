@@ -47,7 +47,7 @@ There are **four built-ins: two primitives and two workflows**.
 
 All four support explicit selection. Codex uses native `allow_implicit_invocation` metadata; Claude-compatible hosts use `disable-model-invocation`. ZCode and Antigravity document no manual-only setting, so their entrypoints rely on descriptions.
 
-Hosts that enforce manual-only invocation treat a workflow loading a skill by name the same as the model choosing it, so a manual-only skill cannot be a named dependency. Skills that workflows name as dependencies (the primitives, Shared components, Research Acquire) therefore allow model invocation; their descriptions limit selection to workflows that name them and explicit user requests. Entrypoints stay manual, so costly workflows never start unasked. Steps within one package compose through relative links and can stay manual. A host rejection is not permission to bypass its controls.
+Hosts that enforce manual-only invocation treat a workflow loading a skill by name the same as the model choosing it, so a manual-only skill cannot be a named dependency. Skills that workflows name as dependencies (the primitives and Shared components) therefore allow model invocation; their descriptions limit selection to workflows that name them and explicit user requests. Entrypoints stay manual, so costly workflows never start unasked. Steps within one package compose through relative links and can stay manual. A host rejection is not permission to bypass its controls.
 
 ## How is a task routed?
 
@@ -183,7 +183,7 @@ Apply settings through actual host controls, including repairs. Direct work or r
 
 ## What else ships?
 
-Thirteen optional [example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows) provide 29 additional entrypoints, manual-only except the named dependencies in Shared and Research Acquire: social search, research acquisition, short video, browser games, candidate comparison and revision, software delivery, design loops, gauntlet loops, benchmark building, evolution, self-improvement, Orchflows review and standalone export. They consume core; they are not extra primitives. Each declares dependencies and validation status. Setup does not install transitive library dependencies.
+Twelve optional [example libraries](https://github.com/DanMcInerney/orchflows/tree/main/example-workflows) provide 26 additional entrypoints, manual-only except the named dependencies in Shared: social search, short video, browser games, candidate comparison and revision, software delivery, design loops, gauntlet loops, benchmark building, evolution, self-improvement, Orchflows review and standalone export. They consume core; they are not extra primitives. Each declares dependencies and validation status. Setup does not install transitive library dependencies.
 
 | Location | Owner and purpose |
 | --- | --- |

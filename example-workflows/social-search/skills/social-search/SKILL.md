@@ -1,19 +1,17 @@
 ---
 name: social-search
-description: Research bounded public source scopes, then return one independent ranked assessment.
+description: Collect what people say across public communities and the web in parallel, then return one independently written, cited brief.
 disable-model-invocation: true
 ---
 
-The coordinator applies this workflow; establish [library context](../../references/library-context.md).
+Establish [library context](../../references/library-context.md).
 
-Reuse supplied evidence under the [evidence contract](../../references/evidence.md). Collect only unmet scope, preserving requested sources/dates and prioritizing contribution to the question. Group overlapping investigations. Give shared original-source checks one owner; others collect distinct evidence, pass canonical leads to that owner and reuse its support.
+Split the caller's sources into a few collection assignments that can run at once. Keep sources that share discussions together, and give each original that several sources discuss one owner. Reuse supplied evidence that already covers part of the scope. Divide the caller's bounds, keeping time for the final review.
 
-Divide caller bounds across assignments. Total time includes evidence writing, gathering and final review; reserve these when setting read/handoff deadlines. Share question, output requirements, ownership and deadlines; assign separate evidence directories.
+Launch every assignment through `orchflows:orch-work` before gathering any. Give each collector the question, window, sources, bounds, its own directory for `results.md`, and the paths of the [evidence contract](../../references/evidence.md), [public access](../../references/access.md) and its collection guidance.
 
-Apply [search-site](../search-site/SKILL.md) once per assignment with deferred gathering. Launch independent assignments before gathering, within capacity and shared provider limits.
+At the handoff deadline, stop unfinished collectors. Record missing or failed assignments as gaps, and keep useful partial evidence.
 
-Gather every actual outcome by its handoff deadline; stop unfinished workers, retain partial artifacts and record missing/failed assignments as gaps.
+Use `orchflows:orch-review` once. The assessor collected nothing. Give it the question, the caller's output requirements, every handoff and gap, the evidence contract and the assessment guidance. It checks claims against the saved support and writes the cited brief from that evidence alone, to the caller's requirements. The brief is about the topic: its gaps name what it could not cover, not how the research ran.
 
-Apply [rank-evidence](../rank-evidence/SKILL.md) once with question, all supplied/returned evidence and gaps, remaining bounds and report location.
-
-Return the gathered assessment, actual coverage and gaps.
+Return the assessor's brief unchanged, with its coverage and gaps.

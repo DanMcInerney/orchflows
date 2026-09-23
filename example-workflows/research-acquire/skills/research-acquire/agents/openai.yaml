@@ -1,6 +1,0 @@
-interface:
-  display_name: "Research Acquire"
-  short_description: "Acquire bounded keyless public records"
-
-policy:
-  allow_implicit_invocation: true
