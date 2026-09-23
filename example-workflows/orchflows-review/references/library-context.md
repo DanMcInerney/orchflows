@@ -9,5 +9,3 @@ Select guidance:
 - Caller libraries, in the order supplied.
 
 E2E runs use the checkout's `tests/e2e` runner and its default models. They consume the caller's host usage; skip them when the caller says so and report the gap.
-
-The default output location is in the home, so the brief persists across workspaces. Keep the brief, runs, reports and transcripts there, outside packages.
