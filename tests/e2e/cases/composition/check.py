@@ -4,7 +4,7 @@ import re
 from common import children, digest
 
 # An interpreter running the verifier, and the verifier's own success line (not its source, which prints it).
-RUN = re.compile(r'(?i)\b(?:python[\d.]*|py)(?:\.exe)?["\']?\s[^\n;|&]*verify_invoice\.py')
+RUN = re.compile(r'(?i)\b(?:python[\d.]*|py|uv\s+run(?:\s+python[\d.]*)?)(?:\.exe)?["\']?\s[^\n;|&]*verify_invoice\.py')
 PASSED = re.compile(r'(?m)^\s*Invoice checks passed\s*$')
 
 
