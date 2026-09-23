@@ -48,7 +48,7 @@ Apply the list on a candidate branch in a writable, isolated worktree of each af
 
 Run the deterministic checks. On each host, the coordinator runs the E2E cases the changes affect on a fresh baseline alongside the candidate, from one harness (`--package-root`) at the same settings. Revert a change when the evidence shows it regresses, and report changes left untested. Trials used as evidence stay at baseline; changes to them are separate items.
 
-Apply `shared:review-revise-once` to the stable diffs. Repairs stay within the reviewed list, and the affected checks and E2E cases are required checks. Record each finding's fate in the brief.
+Apply `shared:review-revise-once` to the stable diffs. Repairs stay within the reviewed list. The deterministic checks are required checks, and the E2E cases the repairs affect rerun as in the previous step. Record each finding's fate in the brief.
 
 Return unmerged branches and a report:
 - revisions;
