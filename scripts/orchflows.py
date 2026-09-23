@@ -342,8 +342,9 @@ def resolve(home: Path, library: str, skill: str | None = None, resource: str | 
         if not resource or windows.drive or windows.root or not parts or ".." in parts or any(":" in part for part in parts):
             raise ValueError(f"Resource must be a safe relative package path: {resource!r}")
         path = _contained(root, root.joinpath(*parts))
-        if not path.exists():
-            raise ValueError(f"Resource does not exist: {path}")
+        # Devices such as NUL or CON "exist" inside any directory on Windows; only files and directories resolve.
+        if not (path.is_file() or path.is_dir()):
+            raise ValueError(f"Resource is not a file or directory in the package: {path}")
         result["resource_path"] = str(path)
     result["runtime_python"] = str(runtime_python(home))
     return result

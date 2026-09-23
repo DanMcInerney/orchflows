@@ -604,6 +604,18 @@ class HomeSetupTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Ambiguous library"):
             orchflows.resolve(self.home, "orchflows")
 
+    def test_resolve_returns_only_package_files_and_directories(self) -> None:
+        self.install()
+        self.assertEqual(Path(orchflows.resolve(self.home, "orchflows", resource="guidance")["resource_path"]),
+                         self.home / ".local/packages/orchflows/guidance")
+        # On Windows NUL and CON name devices that exist in every directory; elsewhere they are absent files.
+        for resource in ("NUL", "CON", "guidance/AUX", "COM1", "missing.md"):
+            with self.subTest(resource=resource), self.assertRaisesRegex(ValueError, "not a file or directory"):
+                orchflows.resolve(self.home, "orchflows", resource=resource)
+            errors = io.StringIO()
+            with patch.object(sys, "stderr", errors):
+                self.assertEqual(orchflows.main(["resolve", "--home", str(self.home), "orchflows", "--resource", resource]), 2)
+
     def test_links_are_never_copied_or_resolved_through(self) -> None:
         outside = self.root / "outside"
         outside.mkdir()
