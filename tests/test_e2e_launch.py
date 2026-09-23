@@ -38,6 +38,15 @@ class LaunchChecksTests(unittest.TestCase):
         verdict = aggregate({'completed': False, 'gaps': gaps}, {'checks': violations}, {})
         self.assertEqual(verdict['assessment'], 'material_failure')
 
+    def test_an_agent_launched_by_a_child_is_an_invariant_violation(self):
+        agents = [{'id': 'coordinator', 'parent_id': None}, {'id': 'maker', 'parent_id': 'coordinator'},
+                  {'id': 'helper', 'parent_id': 'maker'}]
+        violations, gaps = launch_checks('target', {'root_id': 'coordinator', 'agents': agents})
+        self.assertEqual(gaps, [])
+        self.assertEqual(violations, [{'passed': False, 'invariant': True, 'requirement': 'Only the coordinator launches agents',
+                                       'evidence': 'stages/target/evidence/index.json: agent helper (parent maker) was launched by a child'}])
+        self.assertEqual(launch_checks('target', {'root_id': 'coordinator', 'agents': agents[:2]}), ([], []))
+
 
 MISSING = "python : The term 'python' is not recognized as the name of a cmdlet, function, script file, or operable program."
 CODEX_FAILURE = {'kind': 'tool_result', 'call_id': 'call-2',
@@ -74,8 +83,8 @@ class FakeHost:
     """Local harness control: writes a synthetic native index and establishes no native/LLM behavior."""
     name, version, capabilities = 'fake', 'test', set()
 
-    def __init__(self, agents=AGENTS[:3], events=None):
-        self.agents, self.events = agents, events or {}
+    def __init__(self, agents=AGENTS[:3], events=None, seconds=0):
+        self.agents, self.events, self.seconds = agents, events or {}, seconds
 
     def invocation(self, entrypoint, request):
         return request
@@ -84,7 +93,7 @@ class FakeHost:
         return []
 
     def command(self, packages, profile='local', schema=None, allowed_root=None, directory=None):
-        return [sys.executable, '-c', 'print("control")']
+        return [sys.executable, '-c', f'import time; time.sleep({0 if profile == "audit" else self.seconds})']
 
     def result(self, directory):
         evidence = Path(directory) / 'evidence'
@@ -119,6 +128,23 @@ class LaunchJourneyTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn('### Agent reviewer; parent coordinator; launch inherited;', evidence_packet)
             self.assertIn('"forked_from_id": "coordinator"', evidence_packet)
             self.assertIn('Launch delegated children fresh', evidence_packet)
+
+    async def test_a_nested_launch_fails_a_timed_out_attempt(self):
+        with tempfile.TemporaryDirectory(prefix='orchflows-launch-') as folder:
+            root = Path(folder)
+            source = root / 'case'
+            source.mkdir()
+            write_json(source / 'case.json', {'packages': [], 'timeout_seconds': 1})
+            (source / 'request.md').write_text('make and review the answer', encoding='utf-8')
+            (source / 'expected-behavior.md').write_text('A reviewed answer.', encoding='utf-8')
+            case = Case('core/nested', source, {'packages': [], 'timeout_seconds': 1})
+            agents = [{'id': 'coordinator', 'parent_id': None}, {'id': 'maker', 'parent_id': 'coordinator'},
+                      {'id': 'helper', 'parent_id': 'maker'}]
+            result = await run_case(case, 1, root / 'run', FakeHost(agents, seconds=30), Scheduler(2, 60), {}, 5)
+            self.assertFalse(result['completed'])
+            self.assertEqual(result['assessment'], 'material_failure')
+            self.assertEqual([f['requirement'] for f in result['findings']], ['Only the coordinator launches agents'])
+            self.assertIn('Stage execution: timeout', result['gaps'])
 
     async def test_interpreter_condition_is_reported_without_changing_the_verdict(self):
         with tempfile.TemporaryDirectory(prefix='orchflows-launch-') as folder:

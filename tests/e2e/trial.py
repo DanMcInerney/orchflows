@@ -25,10 +25,15 @@ def observed(parts):
 
 def launch_checks(name, evidence):
     """Trials delegate through Orchflows primitives, which require fresh children: recorded inherited history
-    breaks that contract. Launches the records cannot settle are gaps, since independence is then unverified."""
+    breaks that contract. Only the top-level coordinator launches agents, so a recorded parent other than the
+    root breaks it too. Launches the records cannot settle are gaps, since independence is then unverified."""
     violations, gaps, source = [], [], f'stages/{name}/evidence/index.json'
+    root = evidence.get('root_id')
     for agent in evidence.get('agents', []):
         where = f"{source}: agent {agent['id']} (parent {agent.get('parent_id')})"
+        if root is not None and agent.get('parent_id') not in (None, root):
+            violations.append({'passed': False, 'invariant': True, 'requirement': 'Only the coordinator launches agents',
+                               'evidence': where + ' was launched by a child'})
         if agent.get('launch_context') == 'inherited':
             calls = [f"{e['tool']} line {e['line']} {json.dumps(e['arguments'])}"
                      for e in agent.get('launch_evidence', []) if e.get('source') == 'spawn_call']

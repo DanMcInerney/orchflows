@@ -85,13 +85,13 @@ class DelegationTests(CaseCheckTests):
         super().setUp()
         write_json(self.workspace / 'result.json', {'preferred_id': 'oak', 'annual_cost': 700, 'gaps': []})
 
-    def test_child_counts_and_nesting(self):
-        for parents, one, only_root in ((('root',), True, True), ((), False, True),
-                                        (('root', 'root'), False, True), (('root', 'agent-0'), True, False)):
+    def test_child_counts_leave_nesting_to_the_harness(self):
+        for parents, one in ((('root',), True), ((), False), (('root', 'root'), False), (('root', 'agent-0'), True)):
             with self.subTest(parents=parents):
                 self.agents(*parents)
                 results = self.results(self.HOOK)
-                self.assertEqual((results[self.ONE], results[self.ONLY_ROOT]), (one, only_root))
+                self.assertEqual(results[self.ONE], one)
+                self.assertNotIn(self.ONLY_ROOT, results)
 
     def test_incomplete_agent_discovery_is_a_gap(self):
         for gaps, remove in (([{'kind': 'missing_child_record', 'id': 'lost', 'parent_id': 'root'}], False), ([], True)):
