@@ -1,6 +1,0 @@
-* text=auto eol=lf
-# Captured upstream response bodies retain their original markup whitespace.
-skills/research-acquire/tests/fixtures/open_page/article.html whitespace=-blank-at-eol
-skills/research-acquire/tests/fixtures/reddit_shreddit/comments.html whitespace=-blank-at-eol
-skills/research-acquire/tests/fixtures/reddit_shreddit/listing.html whitespace=-blank-at-eol
-skills/research-acquire/tests/fixtures/reddit_shreddit/search.html whitespace=-blank-at-eol

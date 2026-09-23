@@ -1,6 +1,0 @@
-interface:
-  display_name: "Search Site"
-  short_description: "Collect bounded source evidence, ranked locally"
-
-policy:
-  allow_implicit_invocation: false

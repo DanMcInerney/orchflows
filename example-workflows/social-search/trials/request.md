@@ -8,8 +8,8 @@ Run a stable candidate from an unrelated project using installed libraries or su
 
 Replace the explicit publication window when testing another period. These trial bounds are caller requirements, not workflow defaults. They count native operations, not underlying network attempts, and do not promise cancellation of an already admitted read.
 
-Exercise the leaves separately:
+Exercise one source and supplied evidence:
 
-> [invoke `social-search:search-site`] Find what uv's maintainers say about adoption in public YouTube videos. Use the available transcript reader, inspect at most two videos and spend at most four search/read targets. Save a bounded evidence handoff in the supplied output directory.
+> [invoke `social-search:social-search`] Find what uv's maintainers say about adoption in public YouTube videos. Inspect at most two videos and spend at most four search/read targets. Save the brief in the supplied output directory.
 
-> [invoke `social-search:rank-evidence`] Assess reported uv adoption friction from the supplied saved handoffs. Make no new collection calls. Save a concise cited assessment in the supplied report directory.
+> [invoke `social-search:social-search`] Assess reported uv adoption friction from the supplied saved handoffs. Make no new collection calls. Save a concise cited brief in the supplied report directory.

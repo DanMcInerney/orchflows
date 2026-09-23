@@ -2,7 +2,7 @@
 
 ## Make
 
-Discover cheaply; read deeply when substance, provenance or disagreement could affect the answer. Topicality or engagement alone does not justify depth. Stop routes unlikely to change the answer; retain useful partial evidence.
+Discover cheaply and across the whole window. The most-engaged threads show where discussion concentrated; a topic's own forums and trackers often hold its best-informed voices. Read deeply when substance, provenance or disagreement could affect the answer; engagement alone does not justify depth. Stop routes unlikely to change the answer; retain useful partial evidence.
 
 ## Review
 

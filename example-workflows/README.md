@@ -12,15 +12,14 @@ Start a new agent session and invoke `social-search:social-search` explicitly (C
 
 > Investigate how developers handle flaky browser tests. Compare the evidence and give me a source-linked brief.
 
-Each library below explains its inputs, dependencies, bounds and current limits. Example entrypoints require explicit selection; installing one does not make it the default for ordinary requests. Shared components and Research Acquire allow model invocation because other workflows load them by name.
+Each library below explains its inputs, dependencies, bounds and current limits. Example entrypoints require explicit selection; installing one does not make it the default for ordinary requests. Shared components allow model invocation because other workflows load them by name.
 
 ## Pick a process
 
 | Library | Useful components and process |
 | --- | --- |
 | [Shared](shared/README.md) | Independently compare stable candidates; review with at most one repair pass |
-| [Social search](social-search/README.md) | Collect assigned source scopes; rank supplied evidence; coordinate adaptive collection |
-| [Research acquire](research-acquire/README.md) | Bounded public-source acquisition and inspectable evidence |
+| [Social search](social-search/README.md) | Collect what people say across communities and the web in parallel; one fresh assessor writes the cited brief |
 | [Short video](short-video/README.md) | Make a film; review exact exports; coordinate independent films |
 | [Browser game](3d-browser-game/README.md) | Make Blender assets; independently playtest; coordinate game production |
 | [Design loop](design-loop/README.md) | Brainstorm, research, design, implement, compare and analyze bounded cycles; uses shared comparison |
