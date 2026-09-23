@@ -1,5 +1,0 @@
-interface:
-  display_name: "Software factory"
-  short_description: "Build, review and release with bounded feedback loops"
-policy:
-  allow_implicit_invocation: false
