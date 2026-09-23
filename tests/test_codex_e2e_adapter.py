@@ -142,6 +142,15 @@ class CodexAdapterTests(unittest.TestCase):
                               {'type': 'turn.completed'}])
         self.assertIn('Read-only audit sandbox not established', ' '.join(native['gaps']))
 
+    def test_launch_records_the_windows_sandbox_mode(self):
+        self.host.settings = {**self.host.settings, 'windows': {'sandbox': 'elevated'}}
+        command = self.host.command({}, 'local', directory=self.stage)
+        self.assertEqual(self.options(command)['windows'], {'sandbox': 'elevated'})
+        self.assertEqual(read_json(self.stage / 'codex-launch.json')['windows_sandbox'], 'elevated')
+        native = self.result([{'type': 'thread.started', 'thread_id': 'native-thread'}, {'type': 'turn.completed'}])
+        self.assertIn('Requested windows.sandbox: elevated.', native['conditions'])
+        self.assertEqual(native['gaps'], [])
+
     def test_toml_nested_values_preserve_literal_paths_and_quotes(self):
         value = {'path': 'C:\\space dir\\a"b', 'enabled': False, 'nested': [1, {'a': 'b'}]}
         self.assertEqual(tomllib.loads('value=' + toml(value))['value'], value)

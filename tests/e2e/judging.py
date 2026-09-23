@@ -58,7 +58,7 @@ def packet(root):
     for stage in target.get('stages', []):
         directory = root / 'stages' / stage['name']
         pieces += ['## Stage ' + stage['name'], (directory / 'request.txt').read_text(encoding='utf-8'),
-                   json.dumps({'execution': stage['execution'], 'gaps': stage['gaps'],
+                   json.dumps({'execution': stage['execution'], 'gaps': stage['gaps'], 'conditions': stage.get('conditions', []),
                                'model': stage['native'].get('model'), 'tools': stage['native'].get('tools'),
                                'workspace': stage['workspace']}, ensure_ascii=False)]
         index = directory / 'evidence/index.json'

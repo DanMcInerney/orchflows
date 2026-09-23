@@ -53,7 +53,8 @@ async def run_case(case, number, root, host, scheduler, sources, audit_seconds):
     result = {'case': case.id, 'attempt': number, 'started': any(s['execution']['status'] != 'not_started' for s in stages),
               'completed': target['completed'], 'audited': audit.get('audit_complete', False),
               'covers': case.config.get('covers', []), 'audit_path': audit.get('audit_path'),
-              'observed': target.get('observed', {}), **aggregate(target, checks, audit)}
+              'observed': target.get('observed', {}), 'conditions': [c for s in stages for c in s.get('conditions', [])],
+              **aggregate(target, checks, audit)}
     write_json(path / 'report.json', result)
     print(json.dumps(result), flush=True)
     return result

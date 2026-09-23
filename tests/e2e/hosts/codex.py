@@ -155,7 +155,8 @@ class Codex:
         metadata = {'profile': profile, 'workspace_shell_network_access': profile == 'authoring',
                     **preparation, 'inventory': registered,
                     'configured_model': self.settings.get('model'),
-                    'configured_effort': self.settings.get('model_reasoning_effort'), 'gaps': gaps}
+                    'configured_effort': self.settings.get('model_reasoning_effort'),
+                    'windows_sandbox': self.settings.get('windows', {}).get('sandbox'), 'gaps': gaps}
         write_json(directory / 'codex-launch.json', metadata)
         command = [*self.launcher, 'exec', '--json', '--ignore-user-config', '--ignore-rules',
                    '--skip-git-repo-check', '--color', 'never', '--sandbox',
@@ -246,4 +247,5 @@ class Codex:
                     'Native history remains in the existing Codex home; exact thread IDs drive descendant collection. '
                     'Targets request workspace-write; audits request read-only with native delegation disabled. ' + network_condition +
                     'Audit shell reads remain enabled; arbitrary subprocess delegation is not independently tool-filtered. '
+                    f"Requested windows.sandbox: {launch.get('windows_sandbox') or 'host default'}. "
                     'Sandbox enforcement requires a host-specific probe. No claim of complete credential isolation.'}

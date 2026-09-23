@@ -6,6 +6,7 @@ import fnmatch
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 import time
@@ -39,6 +40,41 @@ def launch_checks(name, evidence):
         gaps += [f"Spawn requested inherited history but no recorded child is linked: {source}: agent {agent['id']} line {item['line']}"
                  for item in agent.get('unlinked_spawns', []) if item.get('indicates') == 'inherited']
     return violations, gaps
+
+
+# PowerShell, cmd.exe, POSIX shells and the Windows Store alias, when the command cannot start Python.
+MISSING_PYTHON = re.compile(r"The term '(?:python3?|py)(?:\.exe)?' is not recognized"
+                            r"|'(?:python3?|py)(?:\.exe)?' is not recognized as an internal or external command"
+                            r"|\b(?:python3?|py): (?:command )?not found|Python was not found")
+
+
+def strings(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from strings(item)
+
+
+def interpreter_conditions(name, evidence, directory):
+    """Recorded command results showing that an agent could not start Python. A condition, not a gap:
+    it describes the environment and leaves the verdict to checks and the audit."""
+    found = []
+    for agent in evidence.get('agents', []):
+        events = Path(directory) / 'evidence' / Path(agent.get('events_path', '')).name
+        if not events.is_file():
+            continue
+        for line, text in enumerate(events.read_text(encoding='utf-8').splitlines(), 1):
+            event = json.loads(text)
+            if event.get('kind') == 'tool_result' and any(
+                    MISSING_PYTHON.search(s) for s in strings([event.get('presented_output'), event.get('data')])):
+                found.append(f'stages/{name}/evidence/{events.name}:{line}')
+    if not found:
+        return []
+    return [f'Target could not run python: first failed command result at {found[0]} ({len(found)} in all)']
 
 
 class Trial:
@@ -128,7 +164,8 @@ class Trial:
         if execution['status'] != 'completed':
             gaps.append('Stage execution: ' + execution['status'])
         record = {'name': name, 'execution': execution, 'native': native, 'violations': violations,
-                  'gaps': gaps, 'observed': observed(evidence.get('agents', [])), 'after': after,
+                  'gaps': gaps, 'conditions': interpreter_conditions(name, evidence, directory),
+                  'observed': observed(evidence.get('agents', [])), 'after': after,
                   'workspace': str(workspace)}
         write_json(directory / 'stage.json', record)
         self.stages.append(record)
