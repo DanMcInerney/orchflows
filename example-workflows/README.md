@@ -28,7 +28,7 @@ Each library below explains its inputs, dependencies, bounds and current limits.
 | [Evolve](evolve/README.md) | Improve and retain artifacts with its own evaluation and confirmation policy |
 | [Software factory](software-factory/README.md) | Deliver software; observe production; investigate incidents |
 | [Benchmaker](benchmaker/README.md) | Construct and independently pilot benchmarks; review and repair using Shared |
-| [Export workflow](export-workflow/README.md) | Export a standalone native skill and trial its behavior |
+| [Export workflow](export-workflow/README.md) | Export a standalone native skill and trial its behavior; uses Shared review |
 | [Self-improve](self-improve/README.md) | Improve instructions from observed history and current evidence |
 | [Orchflows review](orchflows-review/README.md) | Review Orchflows' architecture, workflow design, wording and bugs against its purpose; apply reviewed findings on unmerged branches; uses Shared |
 
