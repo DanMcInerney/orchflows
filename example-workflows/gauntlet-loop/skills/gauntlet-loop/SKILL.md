@@ -22,7 +22,7 @@ A round is one build and its judgment for one piece. Record it before the build 
 
 1. **Build.** A builder makes or revises the piece from the goal, its slice of the bar, the latest gap and applicable guidance, and may study the bar. Continue a builder across rounds or replace it as useful.
 2. **Judge.** Freeze the piece and apply `shared:compare-candidates` to ours and its reference. Supply the goal, bar, caller constraints and the actual output to inspect: rendered, run, played or read. Never supply the builder's history, reasoning or summary. Blind the pair where possible, with anonymous labels and randomized order; for measurement bars the critic runs the measurement. Ask for the better side and the largest gap.
-3. **Close the gap or confirm.** When ours falls short, map the gap back to ours; the next round starts from it. When ours reaches the bar, confirm with another `shared:compare-candidates` call by a fresh critic, without the first verdict: reversed order for judged comparisons, a matched re-run for measurements. Disagreement is a loss.
+3. **Close the gap or confirm.** When ours falls short, map the gap back to ours; the next round starts from it. When ours reaches the bar, confirm the win where one verdict could reflect bias or noise, with another `shared:compare-candidates` call by a fresh critic, without the first verdict: reversed order for judged comparisons, a matched re-run for noisy measurements. Disagreement is a loss; any other win stands confirmed.
 
 There is no fixed number of rounds. A piece that stops improving changes approach and shows the stall on the progress page; stalling is not completion.
 
