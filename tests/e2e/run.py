@@ -10,7 +10,7 @@ import time
 sys.dont_write_bytecode = True
 from catalog import discover, overrides, packages_for, select
 from common import HERE, ROOT, read_json, write_json
-from hosts import JOBS, get_host, requested
+from hosts import EFFORT_HELP, JOBS, MODEL_HELP, get_host, requested
 from judging import aggregate, audit_run
 from scheduler import Scheduler
 from sealing import seal
@@ -185,8 +185,8 @@ def parser():
     p.add_argument('--package-root', type=Path, action='append', default=[])
     p.add_argument('--host', default='claude', choices=['claude', 'codex'])
     p.add_argument('--executable')
-    p.add_argument('--model', help='Model for every session; default: the user host configuration')
-    p.add_argument('--effort', help='Effort for every session; default: the user host configuration')
+    p.add_argument('--model', help=MODEL_HELP)
+    p.add_argument('--effort', help=EFFORT_HELP)
     p.add_argument('--jobs', type=int, default=JOBS, help=f'Concurrent harness sessions (default: {JOBS})')
     p.add_argument('--deadline', type=float, help='Suite seconds (default: derived so every attempt is admitted)')
     p.add_argument('--audit-seconds', type=float, default=600)

@@ -3,6 +3,10 @@
 
 # Trials default to cheaper models; --model/--effort override.
 DEFAULTS = {'claude': ('claude-sonnet-5', 'high'), 'codex': ('gpt-5.6-luna', 'medium')}
+# Help text for every runner that accepts --model and --effort.
+MODEL_HELP = 'Model for every session; default: ' + ', '.join(f'{m} ({h})' for h, (m, _) in DEFAULTS.items())
+EFFORT_HELP = ('Effort for every session; default: ' + ', '.join(f'{e} ({h})' for h, (_, e) in DEFAULTS.items())
+               + ', or the host configuration with another --model')
 
 # Concurrent harness sessions (--jobs). Hosts cap children per session (Claude runs up to 20
 # subagents; Codex agents.max_threads), not sessions per account, so the harness bounds the total.

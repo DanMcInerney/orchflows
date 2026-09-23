@@ -141,6 +141,15 @@ class SuitePlanTests(unittest.TestCase):
         self.assertIn('may not be admitted', explicit['deadline_note'])
         self.assertEqual((explicit['model'], explicit['effort']), ('claude-sonnet-5', 'high'))
 
+    def test_help_names_the_defaults_plan_applies(self):
+        from run import parser
+        text = ' '.join(parser().format_help().split())
+        for host in ('claude', 'codex'):
+            with self.subTest(host=host):
+                plan = self.plan('--host', host)
+                self.assertIn(f"{plan['model']} ({host})", text)
+                self.assertIn(f"{plan['effort']} ({host})", text)
+
 
 class AssessmentTests(unittest.TestCase):
     def setUp(self):
