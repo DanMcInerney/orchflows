@@ -30,7 +30,7 @@ The findings are reviewed once and revised at most once, and the brief records e
 - adding instructions whose only purpose is correcting weaker-model mistakes;
 - rewriting the standup style;
 - reading live sources;
-- editing trial expected behavior;
+- editing trial expected behavior in the same item as the change it evaluates;
 - bumping manifest versions;
 - merging or pushing;
 - including the uncommitted edit.

@@ -1,6 +1,6 @@
 # Library context
 
-Require core `orchflows` and apply its `docs/architecture.md`, plus `shared` with `compare-candidates` and native independent review.
+Require core `orchflows` and apply its `docs/architecture.md`, plus `shared:compare-candidates` and native independent review.
 
 Select this library's `gauntlet` guidance for builders and critics, with caller guidance and task domains such as `code`, `visual-design` or `writing`, preserving supplied order.
 

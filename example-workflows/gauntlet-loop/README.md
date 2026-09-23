@@ -22,7 +22,7 @@ flowchart TD
     M --> C["Fresh critic compares ours and the bar blind"]
     C -->|Falls short| X["Name the largest gap"]
     X --> M
-    C -->|Reaches the bar| R["Fresh critic confirms"]
+    C -->|Reaches the bar| R["Confirm where noise or bias could flip it"]
     R -->|Disagrees| X
     R -->|Agrees| W["Piece confirmed"]
     W --> O["Smooth clashing pieces; changed pieces re-enter"]
@@ -45,7 +45,7 @@ The [workflow](skills/gauntlet-loop/SKILL.md) keeps Shumer's rules:
 - **Watch without interrupting.** A live progress page in the output location shows each piece evolving.
 - **Optional smoothing.** When pieces clash, one fresh agent reconciles the whole; anything it changes is judged again.
 
-Two additions keep the loop honest. A win must survive a fresh confirmation, reversed order for judged comparisons and a matched re-run for measurements, because one judge's preference can be position bias and one timing can be noise. And a stalled piece changes approach and shows the stall on the progress page instead of counting as done. Threshold bars such as a test suite or "as good as" are reached by matching them.
+Two additions keep the loop honest. A win that one verdict could get wrong must survive a fresh confirmation, reversed order for judged comparisons and a matched re-run for noisy measurements, because one judge's preference can be position bias and one timing can be noise; a deterministic result, such as a passing test suite, stands. And a stalled piece changes approach and shows the stall on the progress page instead of counting as done. Threshold bars such as a test suite or "as good as" are reached by matching them.
 
 ## Bounds and settings
 

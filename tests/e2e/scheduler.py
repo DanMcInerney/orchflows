@@ -9,20 +9,26 @@ import time
 from common import write_json
 
 
+STOP_SECONDS = 15
+
+
 async def stop_tree(process):
+    """Kill the process tree and wait for its exit; TimeoutError when that takes over STOP_SECONDS."""
     if process.returncode is not None:
         return
-    if os.name == 'nt':
-        killer = await asyncio.create_subprocess_exec('taskkill', '/PID', str(process.pid), '/T', '/F',
-                                                     stdout=asyncio.subprocess.DEVNULL,
-                                                     stderr=asyncio.subprocess.DEVNULL)
-        await asyncio.wait_for(killer.wait(), 10)
-    else:
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-    await asyncio.wait_for(process.wait(), 5)
+    async def stop():
+        if os.name == 'nt':
+            killer = await asyncio.create_subprocess_exec('taskkill', '/PID', str(process.pid), '/T', '/F',
+                                                         stdout=asyncio.subprocess.DEVNULL,
+                                                         stderr=asyncio.subprocess.DEVNULL)
+            await killer.wait()
+        else:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        await process.wait()
+    await asyncio.wait_for(stop(), STOP_SECONDS)
 
 
 class Scheduler:
@@ -85,10 +91,17 @@ class Scheduler:
                     record['status'] = 'completed' if process.returncode == 0 else 'error'
                 except (asyncio.TimeoutError, asyncio.CancelledError) as error:
                     record['status'] = 'timeout' if isinstance(error, asyncio.TimeoutError) else 'canceled'
-                    await stop_tree(process)
-                    await communication
-                    if native:
-                        record['gaps'].append('Local process tree stopped; remote continuation is not independently verified.')
+                    try:
+                        await stop_tree(process)
+                    except asyncio.TimeoutError:
+                        # Not a slot-admission timeout: the outer handler must not see this one.
+                        communication.cancel()
+                        await asyncio.gather(communication, return_exceptions=True)
+                        record['gaps'].append(f'Process tree did not stop within {STOP_SECONDS} seconds.')
+                    else:
+                        await communication
+                        if native:
+                            record['gaps'].append('Local process tree stopped; remote continuation is not independently verified.')
                 finally:
                     record['seconds'] = round(time.monotonic() - started, 3)
                     record['exit_code'] = process.returncode

@@ -81,7 +81,8 @@ def _json_limit(text: str, value: int | str, section: str, key: str) -> str:
     if type(values.get(key)) is type(value) and values[key] == value:
         return text
     values[key] = value
-    return json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+    # allow_nan=False: an out-of-range number such as 1e400 would otherwise be written back as invalid Infinity.
+    return json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
 
 
 def _kimi(text: str, concurrency: int) -> str:
@@ -146,9 +147,12 @@ def prepare_host_configs(concurrency: int = 15, hosts: tuple[str, ...] = ("codex
         path = (Path(configured).expanduser() if configured else Path.home() / default).resolve() / filename
         original = _read(path)
         try:
-            updated = transform(original.decode("utf-8-sig") if original is not None else "", concurrency).encode("utf-8")
+            text = original.decode("utf-8-sig") if original is not None else ""
+            changed = transform(text, concurrency)
         except (UnicodeError, ValueError) as exc:
             raise ValueError(f"Host configuration preserved at {path}: {exc}") from exc
+        # Compare text, not bytes, so an already-correct file with a byte-order mark is left untouched.
+        updated = original if original is not None and changed == text else changed.encode("utf-8")
         plans.append({"host": host, "path": path, "setting": setting, "value": concurrency, "original": original, "updated": updated})
     return plans
 
@@ -162,8 +166,11 @@ def _replace(plan: dict) -> str | None:
     lock = path.with_name(path.name + ".orchflows.lock")
     if lock.is_symlink():
         raise ValueError(f"Lock is a link; preserved: {lock}")
-    with lock.open("x"):
-        pass
+    try:
+        with lock.open("x"):
+            pass
+    except FileExistsError as exc:
+        raise ValueError(f"Lock exists: {lock}; if no setup is running, remove it and rerun setup") from exc
     stage = backup = None
     try:
         if _read(path) != original:

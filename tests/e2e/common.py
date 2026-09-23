@@ -74,3 +74,14 @@ def files_under(root):
     """Copyable fixtures: reject links before shutil traverses them."""
     snapshot(root)
     return Path(root)
+
+
+def children(stage):
+    """A stage's native children (agents whose parent is the root) and a citation, from the harness evidence
+    index; raises while discovery is incomplete. The harness rejects agents launched by children itself."""
+    stage = Path(stage)
+    index = read_json(stage / 'evidence/index.json')
+    if index.get('gaps'):
+        raise RuntimeError('Native agent discovery incomplete: ' + str(index['gaps']))
+    found = [a for a in index['agents'] if a.get('parent_id') == index['root_id']]
+    return found, f'stages/{stage.name}/evidence/index.json: children {len(found)}'

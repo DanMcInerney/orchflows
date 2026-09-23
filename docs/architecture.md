@@ -5,7 +5,7 @@
 - [orch-work](../skills/orch-work/SKILL.md): a fresh native child makes a result under chosen guidance.
 - [orch-review](../skills/orch-review/SKILL.md): a fresh native child who did not make it reviews without fixing.
 
-A fresh child starts from its assignment alone, not the coordinator's conversation.
+A [fresh child](hosts.md#delegation) starts from its assignment alone, not the coordinator's conversation.
 
 The host executes agents. The coordinator applies workflows—saved procedures—to inputs and uses their results. Workflows compose to any depth; loading one does not launch an agent, add a review or reset a bound. Prompts supply tasks; workflows preserve processes; user-owned guidance supplies quality criteria, methods and taste.
 
@@ -53,11 +53,11 @@ Honor settings for every assignment, including repairs. Work directly or reuse a
 
 ## Guidance selection
 
-Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Role-only files remain valid. Select `orchflows` for process design and authoring; the domain being extended is source material for its author. A coordinator's planning guidance does not become task-worker guidance or add a review gate. Workflow/guidance authors and their reviewers use `orchflows`; task makers and reviewers receive the guidance for their actual results.
+Makers and reviewers apply common guidance criteria plus their optional `## Make` or `## Review` section. Role-only files remain valid. Select `orchflows` for process design and authoring; the domain being extended is source material for its author. A coordinator's planning guidance does not become task-worker guidance or add a review gate. Task makers and reviewers receive the guidance for their actual results.
 
 Brevity, style and approximate file size are preferences, not acceptance gates unless the user or output contract makes them strict. Correctness, allowed effects and explicit resource bounds remain binding.
 
-Pass an ordered list of applicable guidance paths, including caller-supplied files. Selection determines applicable preferences, not file access; reading another scope's guidance as evidence does not adopt it. Guidance must work without its original recipe. Techniques may be optional; tool and correctness contracts in references remain required. Extensions refine scoped preferences, not caller constraints, authority or workflow obligations. Resolve conflicts that precedence cannot settle.
+Pass an ordered list of applicable guidance paths, including caller-supplied files. Selection determines applicable preferences, not file access; reading another scope's guidance as evidence does not adopt it. Techniques may be optional; tool and correctness contracts in references remain required. Extensions refine scoped preferences, not caller constraints, authority or workflow obligations. Resolve conflicts that precedence cannot settle.
 
 For named domains, resolve paths with this convenience rule, including a leaf invoked alone:
 
@@ -65,7 +65,7 @@ For named domains, resolve paths with this convenience rule, including a leaf in
 2. Visit each name's dotted prefixes from general to specific; at each, read core then selected libraries in caller order. Example: `short-video` across packages, then `short-video.marketing` across packages.
 3. Keep each resolved file once, in first-use order. More specific guidance wins within its domain; independent domains compose.
 4. Implicit parents may be missing; library-only domains are valid. Explicit selections must exist in core or a selected library; otherwise report a gap and block dependent work. Use general guidance for unfamiliar sites or genres.
-5. Resolve dependencies through native skills, supplied roots or the [home CLI](home.md#resolve). Reuse absolute paths; extend selection for new work. Pass only applicable guidance and scoped request context. Explicit extensions follow their defaults; missing selected files block dependent work. Local extensions never alter siblings.
+5. Resolve dependencies through native skills, supplied roots or the [home CLI](home.md#resolve). Reuse absolute paths; extend selection for new work. Pass only applicable guidance and scoped request context.
 
 Selected libraries may supply removable model corrections under existing domain names. Normal specificity applies; model names are not domain specializations.
 

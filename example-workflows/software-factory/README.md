@@ -20,7 +20,7 @@ flowchart TD
     B["Acceptance, baseline and permissions"] --> C["Build candidate and run checks"]
     C -->|Checks pass| R["Independent specialist reviews"]
     R -->|Findings; passes remain| C
-    R -->|Required evidence complete| G["Risk and review gate"]
+    R -->|Required evidence complete| G["Risk and human-review gate"]
     G --> H["Validated change and release handoff"]
     H -->|Requested and authorized| D["Release worker observes rollout"]
     C -->|Bound or blocker| X["Checkpoint and unresolved work"]
@@ -39,7 +39,7 @@ flowchart TD
 
 The default is **P=3 candidate passes, including the first**. Each attempt consumes a pass before work. `orch-work` builds; after checks pass, fresh `orch-review` children review the frozen candidate once per applicable lens: correctness always, plus affected data, infrastructure, cloud and security. Gather every required judgment before repairs. Failed checks or findings feed a remaining pass; revised candidates repeat required checks and all applicable reviews. No extra final review or nested repair loop follows.
 
-Checks, required CI, reviews and approvals identify the candidate. The saved patch must reconstruct it from its baseline, including additions and deletions. Automatic low-risk review acceptance requires explicit project opt-in; otherwise prepare a human-review handoff. Failed checks or missing required evidence block readiness.
+Checks, required CI, reviews and approvals identify the candidate. The saved patch must reconstruct it from its baseline, including additions and deletions. Automatic low-risk acceptance without human review requires explicit project opt-in; otherwise prepare a human-review handoff. Failed checks or missing required evidence block readiness.
 
 Release authority is separate. One worker verifies validated inputs, baseline signals, rollback and stop criteria, then observes each rollout stage. Changed inputs need revalidation within remaining passes. Failures stop advancement; rollback requires existing authorization and recovery verification. Missing telemetry means incomplete observation.
 

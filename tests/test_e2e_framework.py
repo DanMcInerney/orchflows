@@ -141,6 +141,15 @@ class SuitePlanTests(unittest.TestCase):
         self.assertIn('may not be admitted', explicit['deadline_note'])
         self.assertEqual((explicit['model'], explicit['effort']), ('claude-sonnet-5', 'high'))
 
+    def test_help_names_the_defaults_plan_applies(self):
+        from run import parser
+        text = ' '.join(parser().format_help().split())
+        for host in ('claude', 'codex'):
+            with self.subTest(host=host):
+                plan = self.plan('--host', host)
+                self.assertIn(f"{plan['model']} ({host})", text)
+                self.assertIn(f"{plan['effort']} ({host})", text)
+
 
 class AssessmentTests(unittest.TestCase):
     def setUp(self):
@@ -205,6 +214,18 @@ class SchedulerTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('done', (self.root/'slow/events.jsonl').read_text())
         self.assertIsNotNone(result['exit_code'])
         self.assertEqual((await self.job(scheduler, 'next', .01))['status'], 'completed')
+
+    async def test_a_stop_that_times_out_is_not_reported_as_slot_admission(self):
+        import scheduler as module
+        from unittest.mock import patch
+        real = module.stop_tree
+        async def unconfirmed(process):
+            await real(process)  # still clean up, then report the stop as unconfirmed in time
+            raise asyncio.TimeoutError
+        with patch('scheduler.stop_tree', unconfirmed):
+            result = await self.job(Scheduler(1, 10), 'stuck', 30, .25)
+        self.assertEqual(result['status'], 'timeout')
+        self.assertEqual(result['gaps'], [f'Process tree did not stop within {module.STOP_SECONDS} seconds.'])
 
     async def test_queued_work_does_not_launch_after_deadline(self):
         scheduler = Scheduler(1, .25)

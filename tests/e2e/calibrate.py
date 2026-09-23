@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 
 from common import read_json, write_json
-from hosts import get_host
+from hosts import EFFORT_HELP, MODEL_HELP, get_host
 from judging import audit_run
 from scheduler import Scheduler
 from sealing import seal, verify
@@ -111,8 +111,8 @@ def parser():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--host', default='claude', choices=['claude', 'codex'])
     p.add_argument('--executable')
-    p.add_argument('--model', help='Model for every session; default: the user host configuration')
-    p.add_argument('--effort', help='Effort for every session; default: the user host configuration')
+    p.add_argument('--model', help=MODEL_HELP)
+    p.add_argument('--effort', help=EFFORT_HELP)
     p.add_argument('--jobs', type=int, default=2)
     p.add_argument('--deadline', type=float, default=150)
     p.add_argument('--audit-seconds', type=float, default=60)

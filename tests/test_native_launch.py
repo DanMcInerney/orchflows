@@ -117,6 +117,23 @@ class LaunchContextTests(unittest.TestCase):
         agents = self.launches("codex", "root")
         self.assertEqual([agents[f"child-{i}"]["launch_context"] for i in range(len(cases))], list(cases.values()))
 
+    def test_codex_v1_quoted_fork_context_keys_are_read(self):
+        # The children carry no fork marker, so the spawn call alone must show how each started.
+        cases = {
+            'tools.multi_agent_v1__spawn_agent({"message":"review","fork_context":true})': "inherited",
+            "tools.multi_agent_v1__spawn_agent({'message':'review', 'fork_context' : true})": "inherited",
+            'tools.multi_agent_v1__spawn_agent({"message":"review","fork_context":false})': "fresh",
+            "tools.multi_agent_v1__spawn_agent({'fork_context': false, 'message': 'a: b'})": "fresh",
+            'tools.multi_agent_v1__spawn_agent({"fork_context": forkIt})': "unknown",
+            'tools.multi_agent_v1__spawn_agent({"message":"fork_context", note: "x"})': "fresh",
+        }
+        records = [r for index, code in enumerate(cases) for r in v1(code, f"child-{index}")]
+        self.codex("root", records)
+        for index in range(len(cases)):
+            self.codex(f"child-{index}", [], parent="root", multi_agent_version="v1")
+        agents = self.launches("codex", "root")
+        self.assertEqual([agents[f"child-{i}"]["launch_context"] for i in range(len(cases))], list(cases.values()))
+
     def test_codex_v2_fork_turns_linked_by_task_path(self):
         def spawn(call, output, **arguments):
             return [response("function_call", name="spawn_agent", namespace="collaboration", call_id=call,

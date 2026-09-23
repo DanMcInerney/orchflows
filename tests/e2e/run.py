@@ -10,7 +10,7 @@ import time
 sys.dont_write_bytecode = True
 from catalog import discover, overrides, packages_for, select
 from common import HERE, ROOT, read_json, write_json
-from hosts import JOBS, get_host, requested
+from hosts import EFFORT_HELP, JOBS, MODEL_HELP, get_host, requested
 from judging import aggregate, audit_run
 from scheduler import Scheduler
 from sealing import seal
@@ -37,7 +37,7 @@ async def run_case(case, number, root, host, scheduler, sources, audit_seconds):
         hook = path / 'evaluation/check.py'
         if hook.exists():
             execution = await scheduler.process([sys.executable, '-B', str(HERE / 'checks.py'), str(path), str(hook)],
-                cwd=path, directory=path / 'checking', timeout=20, native=False, label='checks:' + case.id)
+                cwd=path, directory=path / 'checking', timeout=20, native=False, label=f'checks:{case.id}#{number}')
             if (path / 'checks.json').exists():
                 observed = read_json(path / 'checks.json')
                 checks['checks'] += observed['checks']
@@ -53,7 +53,8 @@ async def run_case(case, number, root, host, scheduler, sources, audit_seconds):
     result = {'case': case.id, 'attempt': number, 'started': any(s['execution']['status'] != 'not_started' for s in stages),
               'completed': target['completed'], 'audited': audit.get('audit_complete', False),
               'covers': case.config.get('covers', []), 'audit_path': audit.get('audit_path'),
-              'observed': target.get('observed', {}), **aggregate(target, checks, audit)}
+              'observed': target.get('observed', {}), 'conditions': [c for s in stages for c in s.get('conditions', [])],
+              **aggregate(target, checks, audit)}
     write_json(path / 'report.json', result)
     print(json.dumps(result), flush=True)
     return result
@@ -184,8 +185,8 @@ def parser():
     p.add_argument('--package-root', type=Path, action='append', default=[])
     p.add_argument('--host', default='claude', choices=['claude', 'codex'])
     p.add_argument('--executable')
-    p.add_argument('--model', help='Model for every session; default: the user host configuration')
-    p.add_argument('--effort', help='Effort for every session; default: the user host configuration')
+    p.add_argument('--model', help=MODEL_HELP)
+    p.add_argument('--effort', help=EFFORT_HELP)
     p.add_argument('--jobs', type=int, default=JOBS, help=f'Concurrent harness sessions (default: {JOBS})')
     p.add_argument('--deadline', type=float, help='Suite seconds (default: derived so every attempt is admitted)')
     p.add_argument('--audit-seconds', type=float, default=600)

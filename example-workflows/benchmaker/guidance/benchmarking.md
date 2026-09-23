@@ -22,7 +22,7 @@ For model judging retain rubric, prompt, model/version, order, raw judgment and 
 
 Inspect renders/playback in required modalities; extracted text cannot establish layout, image or audio quality. Supplied-corpus research measures that corpus; live research includes changing availability. Short episodes do not establish long-term persistence.
 
-Use the lightest faithful environment with required access controls. Separate solver, simulator, grader and reference roles; stage only public solver inputs. Directories/worktrees prevent accidents, not access by agents with wider filesystem permissions. Call these local development evaluations; protected evaluation requires an enforced boundary. Do not remove needed isolation to avoid Docker.
+Use the lightest faithful environment with required access controls. Separate solver, simulator, grader and reference roles; stage only public solver inputs. Directories/worktrees prevent accidents, not access by agents with wider filesystem permissions. Call these local development evaluations; protected evaluation requires an enforced boundary.
 
 Apply the benchmark contract's budgets, durability, statuses and aggregation. Budget exhaustion fails when timely completion is required. Ordinary provider/setup/grading failures and missing evidence stay unscored with visible coverage. Never silently exclude incomplete work or retry wrong answers to improve scores.
 

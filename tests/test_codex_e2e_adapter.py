@@ -142,6 +142,31 @@ class CodexAdapterTests(unittest.TestCase):
                               {'type': 'turn.completed'}])
         self.assertIn('Read-only audit sandbox not established', ' '.join(native['gaps']))
 
+    def test_launch_records_the_windows_sandbox_mode(self):
+        self.host.user_windows = {'sandbox': 'elevated'}
+        command = self.host.command({}, 'local', directory=self.stage)
+        self.assertEqual(self.options(command)['windows'], {'sandbox': 'unelevated'})
+        self.assertEqual(read_json(self.stage / 'codex-launch.json')['windows_sandbox'], 'unelevated')
+        native = self.result([{'type': 'thread.started', 'thread_id': 'native-thread'}, {'type': 'turn.completed'}])
+        self.assertIn('Requested windows.sandbox: unelevated.', native['conditions'])
+        self.assertEqual(native['gaps'], [])
+
+    def test_targets_request_unelevated_and_audits_keep_the_user_sandbox(self):
+        home = self.root / 'codex-home'
+        home.mkdir()
+        (home / 'config.toml').write_text('[windows]\nsandbox = "elevated"\nother = 1\n')
+        with patch('hosts.codex.launcher', return_value=['codex-native']), \
+                patch('hosts.codex.subprocess.check_output', return_value='codex 1.0'), \
+                patch('hosts.codex.native_logs.native_home', return_value=home):
+            host = Codex()
+        for profile, sandbox in (('local', 'unelevated'), ('audit', 'elevated')):
+            with self.subTest(profile=profile):
+                stage = self.root / profile
+                command = host.command({}, profile, {'type': 'object'} if profile == 'audit' else None, self.root, stage)
+                self.assertEqual(self.options(command)['windows'], {'sandbox': sandbox, 'other': 1})
+                self.assertEqual(read_json(stage / 'codex-launch.json')['windows_sandbox'], sandbox)
+        self.assertEqual(tomllib.loads((home / 'config.toml').read_text())['windows']['sandbox'], 'elevated')
+
     def test_toml_nested_values_preserve_literal_paths_and_quotes(self):
         value = {'path': 'C:\\space dir\\a"b', 'enabled': False, 'nested': [1, {'a': 'b'}]}
         self.assertEqual(tomllib.loads('value=' + toml(value))['value'], value)

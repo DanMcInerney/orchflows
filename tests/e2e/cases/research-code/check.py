@@ -1,7 +1,15 @@
+import json
+from pathlib import Path
+import re
 import subprocess
 import sys
 
-from common import read_json
+from common import children, read_json
+
+GUIDANCE = r'(?:code|research)(?:\.[a-z0-9-]+)?\.md'
+# A guidance-folder path names guidance; a bare name does unless it names a workspace file, such as the research.md deliverable.
+GUIDANCE_PATH = re.compile(r'(?i)guidance[\\/]+(' + GUIDANCE + r')\b')
+BARE_NAME = re.compile(r'(?i)(?<![\w.\\/-])(' + GUIDANCE + r')\b')
 
 PROGRAM = """
 from vendor_a import normalize as a
@@ -31,15 +39,50 @@ print('19 independent adapter cases passed')
 """
 
 
-def delegation(c):
-    """Target-stage agents from the harness evidence index: the root's children, and any deeper agents."""
-    index = read_json(c.stage().parent / 'evidence/index.json')
-    if index.get('gaps'):
-        raise RuntimeError('Native agent discovery incomplete: ' + str(index['gaps']))
-    root = index['root_id']
-    children = [a['id'] for a in index['agents'] if a.get('parent_id') == root]
-    nested = [a['id'] for a in index['agents'] if a['id'] != root and a.get('parent_id') != root]
-    return children, nested, f'stages/target/evidence/index.json: children {len(children)}, nested {nested}'
+def text(value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return '\n'.join(map(text, value))
+    return text(value.get('text', '')) if isinstance(value, dict) else ''
+
+
+def normal(value):
+    return ' '.join(value.split())
+
+
+def assignment(events):
+    """The user messages that open a child transcript, before its first response or tool call."""
+    opening = []
+    for line in events.read_text(encoding='utf-8').splitlines():
+        event = json.loads(line)
+        if event.get('kind') == 'message' and event.get('role') == 'user':
+            opening.append(text(event.get('data')))
+        elif event.get('kind') in {'message', 'tool_call'}:
+            break
+    return '\n'.join(opening)
+
+
+def carries_guidance(assigned, sentences, workspace_names):
+    """Names an applicable core guidance file as a path or file name, or quotes one of its sentences."""
+    if GUIDANCE_PATH.search(assigned):
+        return True
+    if any(name.lower() not in workspace_names for name in BARE_NAME.findall(assigned)):
+        return True
+    assigned = normal(assigned)
+    return any(sentence in assigned for sentence in sentences)
+
+
+def guidance_sentences(root):
+    """Sentences of at least 40 characters from the run's core code and research guidance."""
+    sentences = set()
+    for path in (root / 'packages/orchflows/guidance').glob('*.md'):
+        if re.fullmatch(GUIDANCE, path.name, re.I):
+            for part in re.split(r'(?<=[.!?])\s+|\n+', path.read_text(encoding='utf-8')):
+                part = normal(re.sub(r'^[\s#>*-]+', '', part))
+                if len(part) >= 40:
+                    sentences.add(part)
+    return sentences
 
 
 def check(c):
@@ -51,6 +94,15 @@ def check(c):
                      if path.is_file() and path.relative_to(c.stage()).as_posix() not in before)
     c.require(not created, 'Task does not create a reusable workflow',
               '; '.join(created) or 'stages/target/before.json: no new SKILL.md files')
-    children, nested, evidence = delegation(c)
-    c.require(1 <= len(children) <= 6, 'Launch the required reviewers within the six-child cap', evidence)
-    c.require(not nested, 'Only the coordinator launches agents', evidence)
+    agents, evidence = children(c.stage().parent)
+    c.require(1 <= len(agents) <= 6, 'Launch the required reviewers within the six-child cap', evidence)
+    sentences = guidance_sentences(c.root)
+    workspace_names = {path.name.lower() for path in c.stage().rglob('*.md')  # task files, not package copies
+                       if not any(part.startswith('.') for part in path.relative_to(c.stage()).parts)}
+    missing = []
+    for agent in agents:
+        events = c.stage().parent / 'evidence' / Path(agent['events_path']).name
+        if not carries_guidance(assignment(events), sentences, workspace_names):
+            missing.append('stages/target/evidence/' + events.name)
+    c.require(not missing, 'Applicable core guidance reaches children: each assignment names or quotes code or research guidance',
+              '; '.join(missing) + ': no guidance in the opening assignment' if missing else evidence)

@@ -45,9 +45,9 @@ class NativeHistoryTests(unittest.TestCase):
         db.execute("CREATE TABLE IF NOT EXISTS thread_spawn_edges (parent_thread_id TEXT, child_thread_id TEXT)")
         return db
 
-    def codex(self, identifier, records, parent=None, cwd="/tools/project", created="2026-08-01", updated="2026-09-12"):
+    def codex(self, identifier, records, parent=None, cwd="/tools/project", created="2026-08-01", updated="2026-09-12", **meta):
         path = self.home / "sessions/2026/09/11" / (identifier + ".jsonl")
-        transcript(path, [{"type": "session_meta", "payload": {"id": identifier}}] + records)
+        transcript(path, [{"type": "session_meta", "payload": {"id": identifier, **meta}}] + records)
         with closing(self.index()) as db:
             db.execute("INSERT INTO threads VALUES (?,?,?,?,?,?)", (identifier, str(path), cwd, identifier,
                        int(logs._timestamp(created).timestamp()), int(logs._timestamp(updated).timestamp())))
@@ -110,6 +110,22 @@ class NativeHistoryTests(unittest.TestCase):
         agents = logs.inspect("codex", "root", self.home)["agents"]
         self.assertEqual([(a["models"], a["efforts"]) for a in agents],
                          [({"gpt-root": 2}, {"xhigh": 1, "unknown": 1}), ({"gpt-child": 1}, {"low": 1})])
+
+    def test_forked_codex_child_tallies_only_its_own_turns(self):
+        # Layout of a real forked v1 rollout: own session_meta, then the parent's replayed history
+        # (subagent_history_start_ordinal records, counted from line 2), then the child's own turns.
+        def turn(model, turn_id):
+            return {"type": "turn_context", "payload": {"model": model, "effort": "medium", "turn_id": turn_id}}
+        parent_turn = turn("gpt-root", "parent-turn")
+        self.codex("root", [parent_turn, response("message", role="assistant", content=[])])
+        replay = [{"type": "session_meta", "payload": {"id": "root"}}, parent_turn,
+                  response("message", role="assistant", content=[])]
+        self.codex("forked", replay + [turn("gpt-child", "child-turn")], parent="root",
+                   forked_from_id="root", subagent_history_start_ordinal=len(replay), multi_agent_version="v1")
+        agents = {a["id"]: a for a in logs.inspect("codex", "root", self.home)["agents"]}
+        self.assertEqual(agents["forked"]["models"], {"gpt-child": 1})
+        self.assertEqual(agents["forked"]["launch_context"], "inherited")
+        self.assertEqual(agents["root"]["models"], {"gpt-root": 1})
 
     def test_claude_agent_without_metadata_is_a_visible_gap(self):
         _, child, _ = self.claude_tree()
@@ -197,6 +213,18 @@ class NativeHistoryTests(unittest.TestCase):
         gaps = [json.loads(e["data"]["text"])["_gap"] for e in page["events"] if e["kind"] == "gap"]
         self.assertEqual(gaps, ["malformed_record", "incomplete_tail"])
         self.assertEqual(logs.inspect("codex", "root", self.home)["agents"][0]["unmatched_count"], 1)
+
+    def test_cursor_survives_a_poll_that_ends_mid_write(self):
+        root = self.home / "projects/project/session.jsonl"
+        first = json.dumps(claude("assistant", {"type": "text", "text": "done"})) + "\n"
+        second = json.dumps(claude("assistant", {"type": "text", "text": "later"}))
+        for written in (second[:20], second):  # a torn line, then valid JSON still awaiting its newline
+            write(root, first + written)
+            page = logs.read("claude", "session", self.home)
+            self.assertEqual([e["kind"] for e in page["events"]], ["message", "gap" if written != second else "message"])
+            write(root, first + second + "\n")
+            resumed = logs.read("claude", "session", self.home, after=page["next_cursor"])
+            self.assertEqual([e["data"]["text"] for e in resumed["events"]], ["later"])
 
     def test_captured_output_is_separate_from_presented_output(self):
         full = "x" * 40000 + "TAIL EVIDENCE"

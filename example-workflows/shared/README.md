@@ -67,4 +67,4 @@ python scripts/orchflows.py setup --example shared
 
 Complete any reported [host installation steps](https://github.com/DanMcInerney/orchflows/blob/main/docs/hosts.md#register-and-refresh), then start a new session. Setup preserves existing user-owned library copies; update an existing copy from the source library before refreshing its host registration. Requires **core and native independent review**; see [library context](references/library-context.md). Both skills allow model invocation so other workflows can load them by name; their descriptions limit selection to workflows that name them and explicit user requests.
 
-[Trial scenarios](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/shared/trials/README.md) exercise comparison through real consumers. The automated comparison pilot timed out before delivery; it is inconclusive. Executing supplied files does not establish native registration.
+[Trial scenarios](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/shared/trials/README.md) exercise comparison through real consumers. Executing supplied files does not establish native registration.

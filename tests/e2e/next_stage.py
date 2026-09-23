@@ -15,10 +15,13 @@ from common import ROOT, copy_package, files_under, snapshot, write_json
 from run import execute
 
 DIRECT_CHECK = (
-    'Establish the result and checks. When a mistake would be cheap to undo and direct checks would catch it, '
-    "do the work and check it without independent review unless requested. Checks the maker writes share the maker's reading of the requirements, so they cannot stand in for review when a misreading would be costly. If consequential uncertainty emerges, "
-    'add review where useful; unavailable reviewers do not make work trivial.\n\nOtherwise briefly plan'
+    'Establish the result and checks. Before dependent work, gate each joined result with independent review '
+    'unless a mistake would be cheap to undo or your checks would catch any consequential one; '
+    'checks the maker writes share its reading of the requirements. Say why you skipped a gate. '
+    'Unavailable reviewers do not make work trivial.\n\nBriefly plan'
 )
+EVERY_UNIT = ('Establish the result and checks. Before dependent work, gate each joined result with independent review.'
+              '\n\nBriefly plan')
 
 
 def prepare(output, condition, selected):
@@ -38,7 +41,7 @@ def prepare(output, condition, selected):
     if condition == 'review-every-unit':
         if before.count(DIRECT_CHECK) != 1:
             raise ValueError('Current exception changed; review the experimental intervention')
-        after = before.replace(DIRECT_CHECK, 'Establish the result and checks. Briefly plan')
+        after = before.replace(DIRECT_CHECK, EVERY_UNIT)
         skill.write_text(after, encoding='utf-8')
     (output / 'policy.diff').write_text(''.join(difflib.unified_diff(
         before.splitlines(True), after.splitlines(True), fromfile='current', tofile=condition)), encoding='utf-8')
