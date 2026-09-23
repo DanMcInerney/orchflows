@@ -206,6 +206,18 @@ class SchedulerTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(result['exit_code'])
         self.assertEqual((await self.job(scheduler, 'next', .01))['status'], 'completed')
 
+    async def test_a_stop_that_times_out_is_not_reported_as_slot_admission(self):
+        import scheduler as module
+        from unittest.mock import patch
+        real = module.stop_tree
+        async def unconfirmed(process):
+            await real(process)  # still clean up, then report the stop as unconfirmed in time
+            raise asyncio.TimeoutError
+        with patch('scheduler.stop_tree', unconfirmed):
+            result = await self.job(Scheduler(1, 10), 'stuck', 30, .25)
+        self.assertEqual(result['status'], 'timeout')
+        self.assertEqual(result['gaps'], [f'Process tree did not stop within {module.STOP_SECONDS} seconds.'])
+
     async def test_queued_work_does_not_launch_after_deadline(self):
         scheduler = Scheduler(1, .25)
         results = await asyncio.gather(self.job(scheduler, 'slow', 30), self.job(scheduler, 'queued'))
