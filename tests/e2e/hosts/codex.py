@@ -105,6 +105,9 @@ class Codex:
             self.settings['model_reasoning_effort'] = effort
         if 'max_threads' in settings.get('agents', {}):
             self.settings['agents.max_threads'] = settings['agents']['max_threads']
+        # Probe 2026-09-22, Codex 0.156.0: the elevated Windows sandbox cannot start the per-user Python and the
+        # unelevated one can, so every invocation requests unelevated; the user's standing configuration is unchanged.
+        self.settings['windows'] = {**settings.get('windows', {}), 'sandbox': 'unelevated'}
         # Keep ambient skills out of the experiment; the selected package copies
         # are discovered natively as repo skills, with their invocation metadata.
         self.disabled_skills = [{'path': str(p), 'enabled': False}

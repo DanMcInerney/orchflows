@@ -151,6 +151,22 @@ class CodexAdapterTests(unittest.TestCase):
         self.assertIn('Requested windows.sandbox: elevated.', native['conditions'])
         self.assertEqual(native['gaps'], [])
 
+    def test_every_invocation_requests_the_unelevated_windows_sandbox(self):
+        home = self.root / 'codex-home'
+        home.mkdir()
+        (home / 'config.toml').write_text('[windows]\nsandbox = "elevated"\nother = 1\n')
+        with patch('hosts.codex.launcher', return_value=['codex-native']), \
+                patch('hosts.codex.subprocess.check_output', return_value='codex 1.0'), \
+                patch('hosts.codex.native_logs.native_home', return_value=home):
+            host = Codex()
+        for profile in ('local', 'audit'):
+            with self.subTest(profile=profile):
+                stage = self.root / profile
+                command = host.command({}, profile, {'type': 'object'} if profile == 'audit' else None, self.root, stage)
+                self.assertEqual(self.options(command)['windows'], {'sandbox': 'unelevated', 'other': 1})
+                self.assertEqual(read_json(stage / 'codex-launch.json')['windows_sandbox'], 'unelevated')
+        self.assertEqual(tomllib.loads((home / 'config.toml').read_text())['windows']['sandbox'], 'elevated')
+
     def test_toml_nested_values_preserve_literal_paths_and_quotes(self):
         value = {'path': 'C:\\space dir\\a"b', 'enabled': False, 'nested': [1, {'a': 'b'}]}
         self.assertEqual(tomllib.loads('value=' + toml(value))['value'], value)
