@@ -28,7 +28,7 @@ When the occasion calls for it, research what changed and what it means for the 
 
 ## Review
 
-The coordinator runs the deterministic checks, and a baseline E2E pass on each available host with the runner's default models. Meanwhile, through `orchflows:orch-work`, review in coherent assignments with the brief, any research and that evidence. Together they cover:
+The coordinator runs the deterministic checks, and a baseline E2E pass on each available host. Meanwhile, through `orchflows:orch-work`, review in coherent assignments with the brief, any research and that evidence. Together they cover:
 - **Architecture:** whether primitives, composition, contracts and ownership serve the purpose with the least mechanism, and what to simplify, merge or remove.
 - **Workflow design:** whether each workflow's stages, gates, handoffs, independence and bounds achieve its result at a cost it earns.
 - **Wording:** what could be shorter or clearer, what should be owned once, and what is stale.
