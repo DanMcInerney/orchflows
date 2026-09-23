@@ -31,4 +31,4 @@ python tests/e2e/run.py --case shared/compare-small --output ../e2e-shared
 
 For manual trials, use a fresh unrelated workspace, complete declared dependencies and only the request's inputs. Withhold authoring history and sibling `expected-behavior.md` files from the executing agent. Keep outputs outside packages; record revisions, native child identities, staffing, reviewed/delivered states, checks, interventions and gaps. Registration, native execution and resolved-file composition are separate claims.
 
-**Current automated evidence is incomplete.** The comparison pilot reached fresh reviewer dispatch but timed out at 120 seconds before delivery. These scenarios are test specifications, not behavioral passes; a full run of one does not validate all consumers or hosts.
+These scenarios are test specifications, not behavioral passes; a full run of one does not validate all consumers or hosts.
