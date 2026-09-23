@@ -122,6 +122,8 @@ Resolve links from their containing file, scripts from the loaded skill director
 
 Install complete packages on every host. Kimi exposes `${KIMI_SKILL_DIR}`, but shared instructions use package-relative links and require the package root.
 
+On Windows, Codex's elevated sandbox (`windows.sandbox = "elevated"`) could not run the user's per-user Python; `unelevated` could, and `-c windows.sandbox="unelevated"` sets it for one invocation (observed 2026-09-22 with gpt-5.6-luna on Codex 0.156.0 under `--sandbox workspace-write`).
+
 ## Delegation
 
 Use a fresh native child per primitive. On Claude Code the `fork` subagent type inherits the conversation and parent model, so it is not a fresh child (documentation-verified for 2.1.280); launch primitives with a non-fork type. On Codex, launch primitives without inherited history (`fork_context: false` on multi-agent v1, `fork_turns: "none"` on v2); full-history forks carry the maker's conversation, as observed 2026-09-22 with gpt-5.6-luna on Codex 0.156.0. Skill `context: fork` is separate. Kimi `Agent` supports fresh `coder` children; built-in children cannot delegate, while custom agents may declare subagents. ZCode `Agent` has independent context and cannot spawn grandchildren. Claude Code (three layers by default; documentation-verified for 2.1.280), Codex and Antigravity let children spawn children; there the assignment's no-delegation rule is the control. Compose and dispatch leaves in the top-level coordinator; report workflows requiring nested coordinators as a gap. [Kimi agents](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents), [ZCode subagents](https://zcode.z.ai/en/docs/subagents).
