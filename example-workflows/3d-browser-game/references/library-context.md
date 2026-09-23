@@ -9,8 +9,8 @@ Require core `orchflows` (`orchflows:orch-review`); apply its `docs/architecture
 | Art | `visual-design`, `browser-game.blender` |
 | QA/review | `browser-game.playtesting`; core review also gets Three.js, final review all three game specializations and relevant core domains |
 
-Standalone leaves select their specialization and relevant core domains. Give each assignment the brief, applicable amendments/constraints, workspace, guidance, core/library paths, phase, owned files, dependencies, build identity, commands and relevant records.
+Standalone leaves select their specialization and relevant core domains.
 
-Suggested new-project directories are `game/`, `assets/source/`, `notes/` and `evidence/`, not a required schema. Give asset production its own directory and game integration one code owner. Freeze review candidates or copy all inputs, including uncommitted files, to a separate server/port. Concurrent workers need separate tabs/capture locations; serialize interactive tools the host cannot isolate.
+Suggested new-project directories are `game/`, `assets/source/`, `notes/` and `evidence/`, not a required schema. Give asset production its own directory and game integration one code owner. Concurrent workers need separate tabs/capture locations; serialize interactive tools the host cannot isolate.
 
-Probe actual install/build, rendered input/captures, Blender source/export, image inspection and applicable audio; version commands alone are insufficient. Follow supported browser tools: test hooks do not authorize restricted page evaluation. When evaluation is unavailable, expose equivalent development-only DOM controls. Missing capabilities block affected checkpoints; continue independent work and record gaps. Required Blender assets and actual play cannot be replaced by mocks. Project-specific harnesses belong to the project.
+Required Blender assets and actual play cannot be replaced by mocks. Project-specific harnesses belong to the project.
