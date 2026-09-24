@@ -1,7 +1,8 @@
 # Expected behavior
 
-- **Order recovered.** Run by the evaluator, the delivered suite ranks stronger above subject, subject above weaker and the planted defect, and those above no-op. Adjacent pairs are separated beyond their uncertainty where the budget allows. Where they are not, the card's reported run-to-run noise and separability already made that outcome expected.
-- **Cheating earns nothing.** The cheater earns no full success. Any partial credit it earns reflects work it actually did.
+- **Research-grounded.** Tasks trace to real pipelines, bugs and data found by the research, recorded in the package's catalog with sources. Reconstructed or synthetic tasks are labeled and carry an independent realism review.
+- **Order recovered.** Run by the evaluator, the delivered suite ranks a confirmed stronger variant above subject, subject above weaker and the planted defect, and those above no-op. Adjacent pairs are separated beyond their uncertainty where the budget allows. Where they are not, the card's reported run-to-run noise and separability already made that outcome expected.
+- **Cheating earns nothing.** Where the pool has a confirmed cheater, it earns no full success and any partial credit reflects work it actually did. Otherwise the suite's own adversary evidence shows shortcuts failing.
 - **Defects caught for the right reason.** Symptom-only repairs lose on tasks whose verifiers exercise other inputs and downstream outputs. The weaker variant loses on tasks that require diagnosis across files or data-dependent reasoning.
 - **Hard at the right level.**
   - Tasks are hard for the claimed ability: diagnosis across files, data-dependent failures, and repairs that must keep correct behavior.

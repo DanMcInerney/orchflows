@@ -13,7 +13,7 @@ Public benchmarks show how easily this goes wrong. Terminal-Bench 2.0 kept 89 of
 | Evidence | Establishes |
 | --- | --- |
 | Harness checks | Execution, grading, budgets and recovery work on the exercised paths |
-| Benchmark validation | Each task is solvable, fully specified, fairly graded, shortcut-resistant and hard for the claimed ability |
+| Benchmark validation | Each task is realistic, solvable, fully specified, fairly graded, shortcut-resistant and hard for the claimed ability |
 | Agent measurement | The declared systems' observed performance under recorded conditions |
 
 A simulator can exercise machinery; capability claims require actual agent execution.
@@ -22,7 +22,8 @@ A simulator can exercise machinery; capability claims require actual agent execu
 
 ```mermaid
 flowchart LR
-    A[Claim and comparison set] --> B[Source more candidates than needed]
+    A[Claim and comparison set] --> Q[Fan-out research into real work]
+    Q --> B[Source more candidates than needed]
     B --> C[Build each task]
     C --> D[Admission: reference, trivial attempts, blind auditor, adversary, calibration]
     D -->|revise within limit| C
@@ -34,16 +35,20 @@ flowchart LR
     classDef make fill:#dbeafe,stroke:#2563eb,color:#172554
     classDef check fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef result fill:#fef3c7,stroke:#d97706,color:#78350f
-    class A,B,C make
+    class A,Q,B,C make
     class D,E,G check
     class F,H,R result
 ```
 
 The loop sits at the task, not the package. Each task passes the admission criteria or is revised within a declared limit or rejected. Only the admitted suite is measured and reviewed as a whole.
 
+Realism comes first. Benchmaker fans out web research guided by the solver's goal, gathers real scenarios, artifacts and hard cases into a catalog, and sources tasks from it. Too-easy tasks are replaced with harder real work before anyone edits them, and every reconstructed or synthetic task gets an independent realism review. Three early trials drew all their tasks from invented repositories with planted faults, and difficulty kept drifting toward artificial defects; research-first sourcing is the fix.
+
 Skills, workflows and harnesses default to an uplift claim: the same tasks with and without the component, at matched budget, beside a simple baseline. That is usually the question someone deciding whether to adopt them needs answered.
 
 Difficulty is set for the systems the user wants the benchmark to measure, usually state-of-the-art models, taken from the request, read from the target or asked for. It is not set by whichever strong model happens to be available. The first known-ordering trial, which was inconclusive, suggested why. Calibrating against Sonnet 5 drove three rounds of hardening that never slowed Sonnet but left the Haiku target at the floor, where the suite could no longer show improvements to it. Hardening also drifted into stacking fourteen statically visible defects behind a one-symptom ticket. A Haiku variant with no shell outscored the real agent nearly threefold; the trial's evaluator attributed this both to tasks that had become README audits rather than diagnosis and to the missing shell changing when the agent stopped. The known-order check, the target with its claimed ability removed, exists to catch that kind of drift before delivery.
+
+The second trial, calibrated for a Sonnet 5 target, reached the middle band the first never did and was judged acceptable: the suite separated every confirmed pair of hidden variants, and the builder honestly stopped at draft. The same drift persisted in milder form. Tickets ending "follow the rules in the README" put hidden defects in scope, most defects produced no visible symptom, and the known-order check, run only after freezing, could not tell execution-based diagnosis from exhaustive reading. Two repeats inside one run behaved like one sample, since per-task full success flipped between runs. Hardening had also targeted what the subject happened to miss, and a preservation dimension that no system ever lost still appeared in the claim. Graded faults now have to be reachable from what the task reports, the check runs before admission, repeats must be independent, hardening follows the ability rather than one system's misses, and no claim rests on an inert dimension.
 
 The quality card replaces paperwork maturity with measured properties: validity, headroom, discrimination, reliability, coverage, integrity, cost and yield. Stages are named by the evidence they hold. A draft is incomplete. A development suite has every task admitted and measured. An evaluation suite adds held-out tasks measured once. Smoke, quick and full are execution profiles, not maturity levels.
 

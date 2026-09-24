@@ -4,7 +4,7 @@ The card is the benchmark's measured account of itself: the claim, how each task
 
 ## Claim
 
-Record the decision the score informs, the claim, the population of work it covers, the complete system boundary, requested stage, budget and assumptions. Record the comparison set with each system's conditions and role.
+Record the solver's goal, the decision the score informs, the claim, the population of work it covers and where the research catalog shows that work, the complete system boundary, requested stage, budget and assumptions. Record the comparison set with each system's conditions and role.
 
 Record the systems the benchmark must measure, the difficulty target and the calibration systems that judge it during admission. Take the systems from the request; otherwise read them from the target, such as the models an agent or workflow runs on, and ask the user when neither settles it. Most often they are state-of-the-art models. Difficulty is relative to those systems. Unless the caller sets a target, leave room at both ends of their range: the weakest stays off the floor, the strongest does not saturate, and task difficulty spreads between them so changes anywhere in that range can show. Calibrate development tasks with systems from that range; for an uplift claim, calibrate both arms so filtering favors neither. That calibration carries selection bias: report it, and never count calibration attempts as measurement. Calibrate held-out tasks with stand-ins outside the comparison set that bracket the compared systems.
 
@@ -14,13 +14,14 @@ Choose at least one known-order check: a system whose order relative to the targ
 
 A candidate joins the suite only with evidence that it is:
 
-1. **Solvable.** The reference solution passes the verifier in the actual environment within the task's resources, computing rather than echoing its answer. Answer keys and expected states are verified in full.
-2. **Unearned by inaction.** Empty, do-nothing and indiscriminate attempts, such as dumping everything or enumerating answers, earn neither full success nor credit for work they skip.
-3. **Specified.** A fresh auditor solves from public material and saves its outcome before seeing evaluator material. Its later review of that material finds every requirement the verifier checks stated in the instruction or interface; where the host cannot continue the auditor, a fresh reviewer compares the saved outcome with the evaluator material, recorded as a condition. Reported ambiguities are resolved or the task is rejected.
-4. **Fairly graded.** The verifier accepts a materially different valid outcome and rejects plausible wrong ones, including deliberately broken copies of the reference.
-5. **Shortcut-resistant.** A fresh adversary told to earn credit without doing the work fails. It tries the exploit classes in [research](research.md) that the environment permits.
-6. **Calibrated.** Repeated attempts by the calibration systems place the task within the difficulty target. A task every calibration system always solves is hardened, rejected or kept as an anchor. A task none ever solves is admitted only when criteria 1 and 7 hold.
-7. **Hard for the right reason.** Its difficulty rationale names the claimed ability, and failure transcripts, the target's included, show that ability failing, not confusion about the instruction or its scope, environment faults or grader rejection. Once hardened, it is harder for the known-order check than for the target.
+1. **Realistic.** It traces to real work in the research catalog or the target's observed failures, or, when reconstructed or synthetic, a fresh reviewer holding the catalog judges that its scenario, inputs and faults could occur in practice. Difficulty never replaces realism.
+2. **Solvable.** The reference solution passes the verifier in the actual environment within the task's resources, computing rather than echoing its answer. Answer keys and expected states are verified in full.
+3. **Unearned by inaction.** Empty, do-nothing and indiscriminate attempts, such as dumping everything or enumerating answers, earn neither full success nor credit for work they skip.
+4. **Specified.** A fresh auditor solves from public material and saves its outcome before seeing evaluator material. Its later review of that material finds every requirement the verifier checks stated in the instruction or interface; where the host cannot continue the auditor, a fresh reviewer compares the saved outcome with the evaluator material, recorded as a condition. Reported ambiguities are resolved or the task is rejected.
+5. **Fairly graded.** The verifier accepts a materially different valid outcome and rejects plausible wrong ones, including deliberately broken copies of the reference.
+6. **Shortcut-resistant.** A fresh adversary told to earn credit without doing the work fails. It tries the exploit classes in [research](research.md) that the environment permits.
+7. **Calibrated.** Repeated attempts by the calibration systems place the task within the difficulty target. A task every calibration system always solves is hardened, rejected or kept as an anchor. A task none ever solves is admitted only when criteria 2 and 8 hold.
+8. **Hard for the right reason.** Its difficulty rationale names the claimed ability, and failure transcripts, the target's included, show that ability failing, not confusion about the instruction or its scope, faults unreachable from what the task reports, environment faults or grader rejection. It is harder for the known-order check than for the target, measured before admission.
 
 A task that fails a criterion is revised, and its revision reruns the checks the change affects, or it is rejected. Log every candidate's disposition and reason. A task with an unavailable check stays draft. Measurements on unadmitted tasks are labeled diagnostics and support no headroom or discrimination claim; with nothing admitted, the suite stays draft.
 
@@ -30,10 +31,11 @@ Anchors are admitted tasks deliberately kept easy or unsolved to check floor and
 
 | Property | Evidence |
 | --- | --- |
+| Realism | Shares of tasks taken from real work, reconstructed from it and synthetic; realism reviews; research coverage and gaps |
 | Validity | Reference pass rate; credit earned by trivial attempts; adversary successes; auditor disputes; verifier false accepts and rejects on labeled outcomes |
 | Headroom | Full-success and credit rates of the weakest and strongest compared systems; distribution of per-task success rates; shares of tasks at the floor and ceiling |
-| Discrimination | Paired differences between compared systems with uncertainty, overall and per scored dimension; share of pairs separated; the known-order check's result. A dimension no system loses is inert |
-| Reliability | Variation across repeats, `pass^k` where reliability is claimed, signal relative to noise, judge agreement |
+| Discrimination | Paired differences between compared systems with uncertainty, overall and per scored dimension; share of pairs separated; the known-order check's result. A dimension no system loses is inert, and no claim rests on it |
+| Reliability | Variation across independent runs, `pass^k` where reliability is claimed, signal relative to noise, judge agreement |
 | Coverage | Families, independent source groups and tasks against the claimed population; expert time estimates |
 | Integrity | Enforced access boundaries, public exposure and source dates relative to the compared systems, systems that filtered admission |
 | Cost | Setup, execution and grading time and spend per run |
