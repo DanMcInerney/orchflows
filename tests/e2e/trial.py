@@ -137,7 +137,8 @@ class Trial:
         write_json(directory / 'before.json', {'inputs': before, 'packages': package_before})
         selected_profile = profile or self.case.config.get('profile', 'local')
         command = self.host.command(chosen, selected_profile, directory=directory)
-        env = dict(os.environ, ORCHFLOWS_HOME=str(orch_home), PYTHONDONTWRITEBYTECODE='1')
+        env = {**os.environ, **getattr(self.host, 'environment', {}),
+               'ORCHFLOWS_HOME': str(orch_home), 'PYTHONDONTWRITEBYTECODE': '1'}
         execution = await self.scheduler.process(command, cwd=workspace, directory=directory,
             prompt=prompt, timeout=timeout or self.case.timeout, until=self.end, env=env,
             label=self.label + ':' + name)

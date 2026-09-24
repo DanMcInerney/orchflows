@@ -16,6 +16,9 @@ class Claude:
     capabilities = {'independent-review', 'local-exec', 'no-review', 'structured-audit'}
     model_settings = None
     model = effort = None
+    # Print mode ends background subagents still running 600 s after the main turn ends (observed 2.1.280);
+    # harness deadlines bound the wait instead.
+    environment = {'CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS': '0'}
 
     def __init__(self, executable=None, model=None, effort=None):
         self.executable = shutil.which(executable or 'claude')
@@ -117,5 +120,6 @@ class Claude:
                               'Host built-in skills may remain advertised in native inventory. '
                               'Local and authoring targets have the same tools; their shell/filesystem and network are not sandboxed by this harness. '
                               'Authoring permits nested host inference; trial requests still constrain task-facing effects to local fakes. '
+                              'Print mode waits for background subagents without its 600 s ceiling, bounded by harness deadlines; nested sessions launched from a stage inherit that setting. '
                               'Audits have read tools only, without shell or delegation. '
                               'Evaluator material withheld from context, not proven inaccessible to target shell.'}

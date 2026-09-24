@@ -6,7 +6,9 @@ The card is the benchmark's measured account of itself: the claim, how each task
 
 Record the decision the score informs, the claim, the population of work it covers, the complete system boundary, requested stage, budget and assumptions. Record the comparison set with each system's conditions and role.
 
-Record the calibration system that judges difficulty during admission, and the difficulty target it is held to. Unless the caller sets a target, leave headroom: the calibration system should succeed on well under all admitted tasks, typically a minority, so stronger systems and real improvements can show. Prefer a calibration system at least as capable as the target and outside the comparison set. When it is also compared, report the selection bias, and never count its calibration attempts as measurement.
+Record the difficulty target and the calibration systems that judge it during admission. Difficulty is relative to the systems the claim compares. Unless the caller sets a target, leave room at both ends: the weakest compared system stays off the floor, the strongest does not saturate, and task difficulty spreads between them so changes anywhere in that range can show. Calibrate development tasks with the target itself, plus a stronger system when the claim needs headroom above it; for an uplift claim, calibrate both arms so filtering favors neither. That calibration carries selection bias: report it, and never count calibration attempts as measurement. Calibrate held-out tasks with stand-ins outside the comparison set that bracket the compared systems.
+
+Choose at least one known-order check: a system whose order relative to the target follows from how it differs, most usefully the target with the claimed ability removed or degraded. It is measured beside the comparison set and does not set difficulty. Where its order is uncertain, confirm it on work outside the suite. A check that ranks against expectation beyond its uncertainty means the suite measures something other than the claim, and leaves the claim unsupported unless evidence from outside the suite shows the expected order was wrong.
 
 ## Task admission
 
@@ -14,13 +16,13 @@ A candidate joins the suite only with evidence that it is:
 
 1. **Solvable.** The reference solution passes the verifier in the actual environment within the task's resources, computing rather than echoing its answer. Answer keys and expected states are verified in full.
 2. **Unearned by inaction.** Empty, do-nothing and indiscriminate attempts, such as dumping everything or enumerating answers, earn neither full success nor credit for work they skip.
-3. **Specified.** A fresh auditor's outcome, saved before it saw evaluator material, and its later review find every requirement the verifier checks stated in the instruction or interface. Reported ambiguities are resolved or the task is rejected.
+3. **Specified.** A fresh auditor solves from public material and saves its outcome before seeing evaluator material. Its later review of that material finds every requirement the verifier checks stated in the instruction or interface; where the host cannot continue the auditor, a fresh reviewer compares the saved outcome with the evaluator material, recorded as a condition. Reported ambiguities are resolved or the task is rejected.
 4. **Fairly graded.** The verifier accepts a materially different valid outcome and rejects plausible wrong ones, including deliberately broken copies of the reference.
 5. **Shortcut-resistant.** A fresh adversary told to earn credit without doing the work fails. It tries the exploit classes in [research](research.md) that the environment permits.
-6. **Calibrated.** Repeated attempts by the calibration system meet the difficulty target. A task it always solves is hardened, rejected or kept as an anchor. A task it never solves is admitted only when criteria 1 and 7 hold.
-7. **Hard for the right reason.** Its difficulty rationale names the claimed ability, and failure transcripts show that ability failing, not confusion about the instruction, environment faults or grader rejection.
+6. **Calibrated.** Repeated attempts by the calibration systems place the task within the difficulty target. A task every calibration system always solves is hardened, rejected or kept as an anchor. A task none ever solves is admitted only when criteria 1 and 7 hold.
+7. **Hard for the right reason.** Its difficulty rationale names the claimed ability, and failure transcripts, the target's included, show that ability failing, not confusion about the instruction or its scope, environment faults or grader rejection. Once hardened, it is harder for the known-order check than for the target.
 
-A task that fails a criterion is revised, and its revision reruns the checks the change affects, or it is rejected. Log every candidate's disposition and reason. A task with an unavailable check stays draft.
+A task that fails a criterion is revised, and its revision reruns the checks the change affects, or it is rejected. Log every candidate's disposition and reason. A task with an unavailable check stays draft. Measurements on unadmitted tasks are labeled diagnostics and support no headroom or discrimination claim; with nothing admitted, the suite stays draft.
 
 Anchors are admitted tasks deliberately kept easy or unsolved to check floor and ceiling behavior. They are scored and reported as a small labeled share, and excluded from headroom and discrimination statistics.
 
@@ -29,22 +31,22 @@ Anchors are admitted tasks deliberately kept easy or unsolved to check floor and
 | Property | Evidence |
 | --- | --- |
 | Validity | Reference pass rate; credit earned by trivial attempts; adversary successes; auditor disputes; verifier false accepts and rejects on labeled outcomes |
-| Headroom | Calibration and strongest-comparison full-success rates; distribution of per-task success rates |
-| Discrimination | Paired differences between comparison systems with uncertainty; share of pairs separated; agreement with the expected ordering of weaker and stronger systems |
+| Headroom | Full-success and credit rates of the weakest and strongest compared systems; distribution of per-task success rates; shares of tasks at the floor and ceiling |
+| Discrimination | Paired differences between compared systems with uncertainty, overall and per scored dimension; share of pairs separated; the known-order check's result. A dimension no system loses is inert |
 | Reliability | Variation across repeats, `pass^k` where reliability is claimed, signal relative to noise, judge agreement |
 | Coverage | Families, independent source groups and tasks against the claimed population; expert time estimates |
 | Integrity | Enforced access boundaries, public exposure and source dates relative to the compared systems, systems that filtered admission |
 | Cost | Setup, execution and grading time and spend per run |
 | Yield | Candidates, admitted, anchors, revised and rejected by reason |
 
-The card states whether measured headroom and separation support the claim. That verdict is separate from the stage. Qualified practitioners give the strongest time estimates, answer-key verification and final audit. When none are available, record the gap and the substitute used.
+The card states whether measured headroom, separation and the known-order check support the claim. That verdict is separate from the stage. Qualified practitioners give the strongest time estimates, answer-key verification and final audit. When none are available, record the gap and the substitute used.
 
 ## Stages
 
 | Stage | Required evidence |
 | --- | --- |
 | Draft | Claim, candidates and built tasks; admission, measurement or review incomplete |
-| Development suite | Every task admitted; the comparison set measured with predeclared repeats; card computed; failures classified; independent review completed with no unresolved blocking finding. Tasks exposed during admission support development claims only |
+| Development suite | Every task admitted; the comparison set and known-order check measured with predeclared repeats; the check ranks as expected; card computed; failures classified; independent review completed with no unresolved blocking finding. Tasks exposed during admission support development claims only |
 | Evaluation suite | A development suite; a justified sampling plan; held-out tasks from source groups unused in development, calibrated only by systems outside the comparison set; one predeclared measurement with uncertainty; no unresolved validity defect |
 
 Report requested and achieved stages separately; partial completion does not reach the requested stage. `smoke`, `quick` and `full` select runs, not maturity. Task counts are planning defaults, not scientific minimums. Broad claims commonly need tens of independent source groups in development and hundreds of tasks for evaluation. Narrow claims need fewer, and say so.
