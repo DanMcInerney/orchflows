@@ -42,7 +42,7 @@ flowchart LR
 
 The loop sits at the task, not the package. Each task passes the admission criteria or is revised within a declared limit or rejected. Only the admitted suite is measured and reviewed as a whole.
 
-Realism comes first. Benchmaker fans out web research guided by the solver's goal, gathers real scenarios, artifacts and hard cases into a catalog, and sources tasks from it. Too-easy tasks are replaced with harder real work before anyone edits them, and every reconstructed or synthetic task gets an independent realism review. Three early trials drew all their tasks from invented repositories with planted faults, and difficulty kept drifting toward artificial defects; research-first sourcing is the fix.
+Realism comes first. Benchmaker fans out web research guided by the solver's goal, gathers real scenarios, artifacts and hard cases into a catalog, and sources tasks from it. Too-easy tasks are replaced with harder real work before anyone edits them, and every reconstructed or synthetic task gets an independent realism review. Three early trials drew all their tasks from invented repositories with planted faults, and difficulty kept drifting toward artificial defects; research-first sourcing is the fix. Difficulty is never pinned to today's models: as measured systems approach a suite's ceiling, fresh research extends it with more complex real work, not with harder tricks.
 
 Skills, workflows and harnesses default to an uplift claim: the same tasks with and without the component, at matched budget, beside a simple baseline. That is usually the question someone deciding whether to adopt them needs answered.
 
