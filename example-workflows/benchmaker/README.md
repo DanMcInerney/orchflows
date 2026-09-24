@@ -1,10 +1,10 @@
 # Benchmaker
 
-Most homemade agent benchmarks are unit tests in disguise: a handful of easy cases that every capable system passes, graded by checks an agent can game. Benchmaker builds the other kind. It sources hard, valuable tasks and admits only those that survive a blind audit, an agent told to cheat and repeated attempts by a capable calibration system. It then reports how well the finished suite actually separates the systems you care about.
+Most homemade agent benchmarks are unit tests in disguise: a handful of easy cases that every capable system passes, graded by checks an agent can game. Benchmaker builds the other kind. It sources hard, valuable tasks and admits only those that survive a blind audit, an agent told to cheat and repeated calibration runs. It then reports how well the finished suite actually separates the systems you care about.
 
 It works for agents, skills, workflows, harnesses and tool-calling models. For skills and workflows it asks by default whether they help at matched budget.
 
-**Experimental:** the redesigned process has not yet been exercised end to end. After [installation](#install), try this in Codex:
+**Experimental:** the current process has not yet been exercised end to end. After [installation](#install), try this in Codex:
 
 ```text
 $benchmaker:benchmaker Does the research workflow in this workspace beat
@@ -43,11 +43,11 @@ A task is admitted only when:
 - a fresh auditor, who solves it before seeing the answers, finds every graded requirement in the instructions;
 - the verifier accepts a different valid solution and rejects plausible wrong ones;
 - an agent told to earn credit without doing the work fails;
-- repeated attempts by the calibration system meet the declared difficulty target, and failures show the claimed ability failing.
+- repeated calibration runs place it within the difficulty target, and failures show the claimed ability failing.
 
 Real benchmarks work this way. Terminal-Bench 2.0 kept 89 of 229 submitted tasks, and SWE-bench Verified discarded two thirds of its sample.
 
-The [quality card](references/quality-card.md) reports measured validity, headroom, discrimination, reliability, coverage, integrity, cost and yield. Stages follow the evidence. A **draft** is incomplete. A **development suite** has every task admitted and measured. An **evaluation suite** adds held-out tasks measured once. Smoke, quick and full select runs, not maturity. Unless you set a difficulty target, the calibration system should succeed on well under all tasks, typically a minority, leaving room for stronger systems to show. The card also says whether measured headroom and separation actually support your claim.
+The [quality card](references/quality-card.md) reports measured validity, headroom, discrimination, reliability, coverage, integrity, cost and yield. Stages follow the evidence. A **draft** is incomplete. A **development suite** has every task admitted and measured. An **evaluation suite** adds held-out tasks measured once. Smoke, quick and full select runs, not maturity. Unless you set a difficulty target, tasks keep the weakest system you compare off the floor and the strongest below saturation, so changes anywhere in between can show. A known-order check, usually your agent with the claimed ability removed, must rank where expected; otherwise the suite is measuring something else and the claim stays unsupported. The card also says whether measured headroom and separation actually support your claim.
 
 ## What the package preserves
 
@@ -68,4 +68,4 @@ Complete any reported [host installation steps](https://github.com/DanMcInerney/
 
 Admission multiplies agent runs, so real suites cost more than their task count suggests. Show the plan's estimate before launching and budget for it.
 
-**Validation limit:** the [trial catalog](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/benchmaker/trials/README.md) specifies how to exercise Benchmaker, including benchmarking it against hidden subject variants with a known order. None of these trials has run against the redesigned process. No cross-domain readiness is claimed.
+**Validation limit:** the [trial catalog](https://github.com/DanMcInerney/orchflows/blob/main/example-workflows/benchmaker/trials/README.md) specifies how to exercise Benchmaker, including benchmarking it against hidden subject variants with a known order. Known ordering ran once, before the current difficulty and known-order rules, and was inconclusive; [DESIGN](DESIGN.md) records what it taught. No trial has run against the current process, and no cross-domain readiness is claimed.

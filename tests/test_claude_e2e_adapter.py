@@ -104,6 +104,10 @@ class ClaudeAdapterTests(unittest.TestCase):
                     self.assertIn(expected, mismatches[0])
                     self.assertIn("['high']", mismatches[0])
 
+    def test_print_mode_waits_for_background_subagents(self):
+        """Print mode otherwise ends background subagents 600 s after the main turn (observed 2.1.280)."""
+        self.assertEqual(Claude.environment, {'CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS': '0'})
+
     def test_default_command_line_per_profile(self):
         """The whole launch line: a change here changes every Claude trial."""
         import hosts

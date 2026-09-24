@@ -94,6 +94,18 @@ async def run(t):
         for stage in result['stages']:
             self.assertEqual((Path(stage['workspace'])/'answer.txt').read_text(), 'frozen request')
 
+    async def test_stage_process_receives_host_environment(self):
+        class EnvironmentHost(FakeHost):
+            environment = {'ORCHFLOWS_TEST_HOST_SETTING': 'from-host'}
+
+            def command(self, packages, profile='local', schema=None, allowed_root=None, directory=None):
+                return [sys.executable, '-c', 'import os; from pathlib import Path; '
+                        'Path("answer.txt").write_text(os.environ.get("ORCHFLOWS_TEST_HOST_SETTING", "missing"))']
+
+        trial = Trial(self.case, self.root/'environment', EnvironmentHost(), Scheduler(1, 15), self.sources)
+        workspace = await trial.invoke()
+        self.assertEqual((workspace/'answer.txt').read_text(), 'from-host')
+
     async def test_missing_output_vs_checker_bug(self):
         write_json(self.root/'target.json', {'completed': True})
         hook = self.root/'check.py'
