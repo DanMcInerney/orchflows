@@ -1,6 +1,6 @@
 # Request
 
-[invoke `benchmaker:benchmaker`] Build a development suite measuring how well the supplied agent repairs broken data-cleaning pipelines in small Python repositories: diagnosing why outputs are wrong, fixing the code and preserving correct behavior. We will use it to track improvements to this agent and to compare it with other agents of its class. Use the agent's native invocation from `./subject/`. Allow at most 90 agent launches in total, twenty minutes each, no retries, concurrency four. Use installed runtimes only and no paid judge. Save the suite, commands, quality card and rejection log in `./benchmark-run/`.
+[invoke `benchmaker:benchmaker`] Build a development suite measuring how well the supplied agent repairs broken data-cleaning pipelines in small Python repositories: diagnosing why outputs are wrong, fixing the code and preserving correct behavior. We will use it to track improvements to this agent and to compare it with other agents. Use the agent's native invocation from `./subject/`. Allow at most 90 agent launches in total, twenty minutes each, no retries, concurrency four. Use installed runtimes only and no paid judge. Save the suite, commands, quality card and rejection log in `./benchmark-run/`.
 
 Make the suite runnable against any agent with the same layout as `./subject/`: from `./benchmark-run/`, `python run.py full --agent <agent-dir> --output <dir>` must run every task with the suite's declared repeats and write `<dir>/summary.json` giving, per task and overall, the full-success rate and mean outcome credit.
 
