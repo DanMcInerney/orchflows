@@ -1,6 +1,6 @@
 # Benchmaker
 
-Most homemade agent benchmarks are unit tests in disguise: a handful of easy cases that every capable system passes, graded by checks an agent can game. Benchmaker builds the other kind. It sources hard, valuable tasks and admits only those that survive a blind audit, an agent told to cheat and repeated calibration runs. It then reports how well the finished suite actually separates the systems you care about.
+Most homemade agent benchmarks are unit tests in disguise: a handful of easy cases that every capable system passes, graded by checks an agent can game. Benchmaker builds the other kind. It starts with web research into how the work you care about is really done and where it really gets hard, sources tasks from that real work, and admits only those that survive a blind audit, an agent told to cheat and repeated calibration runs. It then reports how well the finished suite actually separates the systems you care about.
 
 It works for agents, skills, workflows, harnesses and tool-calling models. For skills and workflows it asks by default whether they help at matched budget.
 
@@ -20,7 +20,8 @@ In Claude Code, use `/benchmaker:benchmaker`; invocation is manual. Supply a tar
 
 ```mermaid
 flowchart TD
-    A["Claim, comparison set and budget"] --> B["Source more candidate tasks than needed"]
+    A["Claim, comparison set and budget"] --> R["Fan-out web research into real work"]
+    R --> B["Source more candidate tasks than needed"]
     B --> C["Build task: instruction, environment, reference, verifier"]
     C --> D{"Admission"}
     D -->|"fails, within revision limit"| C
@@ -32,13 +33,14 @@ flowchart TD
     classDef work fill:#115e59,stroke:#134e4a,color:#ffffff;
     classDef evidence fill:#1e3a8a,stroke:#172554,color:#ffffff;
     classDef review fill:#6b21a8,stroke:#581c87,color:#ffffff;
-    class A,B,C work;
+    class A,R,B,C work;
     class D,G review;
     class E,F,H,X evidence;
 ```
 
 A task is admitted only when:
 
+- it traces to real work found by the research, or an independent reviewer judges a reconstructed or synthetic task realistic;
 - its reference solution passes and doing nothing does not;
 - a fresh auditor, who solves it before seeing the answers, finds every graded requirement in the instructions;
 - the verifier accepts a different valid solution and rejects plausible wrong ones;

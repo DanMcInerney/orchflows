@@ -13,7 +13,7 @@ Public benchmarks show how easily this goes wrong. Terminal-Bench 2.0 kept 89 of
 | Evidence | Establishes |
 | --- | --- |
 | Harness checks | Execution, grading, budgets and recovery work on the exercised paths |
-| Benchmark validation | Each task is solvable, fully specified, fairly graded, shortcut-resistant and hard for the claimed ability |
+| Benchmark validation | Each task is realistic, solvable, fully specified, fairly graded, shortcut-resistant and hard for the claimed ability |
 | Agent measurement | The declared systems' observed performance under recorded conditions |
 
 A simulator can exercise machinery; capability claims require actual agent execution.
@@ -22,7 +22,8 @@ A simulator can exercise machinery; capability claims require actual agent execu
 
 ```mermaid
 flowchart LR
-    A[Claim and comparison set] --> B[Source more candidates than needed]
+    A[Claim and comparison set] --> Q[Fan-out research into real work]
+    Q --> B[Source more candidates than needed]
     B --> C[Build each task]
     C --> D[Admission: reference, trivial attempts, blind auditor, adversary, calibration]
     D -->|revise within limit| C
@@ -34,12 +35,14 @@ flowchart LR
     classDef make fill:#dbeafe,stroke:#2563eb,color:#172554
     classDef check fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef result fill:#fef3c7,stroke:#d97706,color:#78350f
-    class A,B,C make
+    class A,Q,B,C make
     class D,E,G check
     class F,H,R result
 ```
 
 The loop sits at the task, not the package. Each task passes the admission criteria or is revised within a declared limit or rejected. Only the admitted suite is measured and reviewed as a whole.
+
+Realism comes first. Benchmaker fans out web research guided by the solver's goal, gathers real scenarios, artifacts and hard cases into a catalog, and sources tasks from it. Too-easy tasks are replaced with harder real work before anyone edits them, and every reconstructed or synthetic task gets an independent realism review. Three early trials drew all their tasks from invented repositories with planted faults, and difficulty kept drifting toward artificial defects; research-first sourcing is the fix.
 
 Skills, workflows and harnesses default to an uplift claim: the same tasks with and without the component, at matched budget, beside a simple baseline. That is usually the question someone deciding whether to adopt them needs answered.
 

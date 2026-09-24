@@ -1,10 +1,10 @@
 # Request
 
-[invoke `benchmaker:benchmaker`] Build a development suite measuring how well the supplied agent repairs broken data-cleaning pipelines in small Python repositories: diagnosing why outputs are wrong, fixing the code and preserving correct behavior. We will use it to track improvements to this agent and to compare it with other agents. Use the agent's native invocation from `./subject/`. Allow at most 90 agent launches in total, twenty minutes each, no retries, concurrency four. Use installed runtimes only and no paid judge. Save the suite, commands, quality card and rejection log in `./benchmark-run/`.
+[invoke `benchmaker:benchmaker`] Build a development suite measuring how well the supplied agent repairs broken data pipelines in Python repositories: diagnosing why outputs are wrong, fixing the code and preserving correct behavior. We will use it to track improvements to this agent and to compare it with other agents. Use the agent's native invocation from `./subject/`. Allow at most 90 agent launches in total, twenty minutes each, no retries, concurrency four. Use no paid judge. Save the suite, commands, quality card and rejection log in `./benchmark-run/`.
 
 Make the suite runnable against any agent with the same layout as `./subject/`: from `./benchmark-run/`, `python run.py full --agent <agent-dir> --output <dir>` must run every task with the suite's declared repeats and write `<dir>/summary.json` giving, per task and overall, the full-success rate and mean outcome credit.
 
-Trial setup: supply `./subject/` with a real agent invocation (model, instructions and tools) and a few example repositories for inspiration. Keep a hidden variant pool outside the author's workspace and outside any directory the author would naturally list, such as its parent. Invoke each variant exactly like the subject:
+Trial setup: supply `./subject/` with a real agent invocation (model, instructions and tools). Give the session web search and fetch tools and network access for research and public sources. Keep a hidden variant pool outside the author's workspace and outside any directory the author would naturally list, such as its parent. Invoke each variant exactly like the subject:
 
 - **stronger:** a more capable model with the same instructions;
 - **subject:** the supplied agent;

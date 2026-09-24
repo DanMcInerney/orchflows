@@ -9,6 +9,7 @@ A package runs without its author. Prefer JSON/JSONL records and a Markdown repo
 ```text
 README.md            claim, commands, requirements, limits
 card.json            quality card, comparison set, conditions, metrics, splits
+research/            sources, captured material and the scenario catalog, with provenance and reuse constraints
 tasks/<id>/          public instruction, interface, inputs, environment or initial state
 evaluation/<id>/     verifier, reference solution, rubric, labeled outcomes, admission evidence
 rejections.jsonl     every candidate's disposition and reason
