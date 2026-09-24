@@ -20,7 +20,7 @@ A candidate joins the suite only with evidence that it is:
 4. **Fairly graded.** The verifier accepts a materially different valid outcome and rejects plausible wrong ones, including deliberately broken copies of the reference.
 5. **Shortcut-resistant.** A fresh adversary told to earn credit without doing the work fails. It tries the exploit classes in [research](research.md) that the environment permits.
 6. **Calibrated.** Repeated attempts by the calibration systems place the task within the difficulty target. A task every calibration system always solves is hardened, rejected or kept as an anchor. A task none ever solves is admitted only when criteria 1 and 7 hold.
-7. **Hard for the right reason.** Its difficulty rationale names the claimed ability, and failure transcripts, the target's included, show that ability failing, not confusion about the instruction or its scope, environment faults or grader rejection. Once hardened, it is harder for the known-order check than for the target.
+7. **Hard for the right reason.** Its difficulty rationale names the claimed ability, and failure transcripts, the target's included, show that ability failing, not confusion about the instruction or its scope, faults unreachable from what the task reports, environment faults or grader rejection. It is harder for the known-order check than for the target, measured before admission.
 
 A task that fails a criterion is revised, and its revision reruns the checks the change affects, or it is rejected. Log every candidate's disposition and reason. A task with an unavailable check stays draft. Measurements on unadmitted tasks are labeled diagnostics and support no headroom or discrimination claim; with nothing admitted, the suite stays draft.
 
@@ -32,8 +32,8 @@ Anchors are admitted tasks deliberately kept easy or unsolved to check floor and
 | --- | --- |
 | Validity | Reference pass rate; credit earned by trivial attempts; adversary successes; auditor disputes; verifier false accepts and rejects on labeled outcomes |
 | Headroom | Full-success and credit rates of the weakest and strongest compared systems; distribution of per-task success rates; shares of tasks at the floor and ceiling |
-| Discrimination | Paired differences between compared systems with uncertainty, overall and per scored dimension; share of pairs separated; the known-order check's result. A dimension no system loses is inert |
-| Reliability | Variation across repeats, `pass^k` where reliability is claimed, signal relative to noise, judge agreement |
+| Discrimination | Paired differences between compared systems with uncertainty, overall and per scored dimension; share of pairs separated; the known-order check's result. A dimension no system loses is inert, and no claim rests on it |
+| Reliability | Variation across independent runs, `pass^k` where reliability is claimed, signal relative to noise, judge agreement |
 | Coverage | Families, independent source groups and tasks against the claimed population; expert time estimates |
 | Integrity | Enforced access boundaries, public exposure and source dates relative to the compared systems, systems that filtered admission |
 | Cost | Setup, execution and grading time and spend per run |
