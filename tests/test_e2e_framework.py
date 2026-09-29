@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / 'tests/e2e'))
 from catalog import discover, overrides, packages_for, select
 from common import copy_package, read_json, snapshot, write_json
 from judging import aggregate, validate
-from scheduler import Scheduler
+from scheduler import LEFT_RUNNING, Scheduler
 
 
 class CatalogTests(unittest.TestCase):
@@ -200,7 +200,7 @@ class SchedulerTests(unittest.IsolatedAsyncioTestCase):
     async def test_parallel_overlap_and_cap(self):
         scheduler = Scheduler(2, 10, self.root / 'schedule.jsonl')
         results = await asyncio.gather(*(self.job(scheduler, str(n), .3) for n in range(3)))
-        self.assertTrue(all(r['status'] == 'completed' for r in results))
+        self.assertTrue(all(r['status'] == 'completed' and r['gaps'] == [] for r in results))
         events = [json.loads(line) for line in (self.root/'schedule.jsonl').read_text().splitlines()]
         self.assertEqual(scheduler.peak, 2)
         self.assertLessEqual(max(e['active'] for e in events), 2)
@@ -226,6 +226,17 @@ class SchedulerTests(unittest.IsolatedAsyncioTestCase):
             result = await self.job(Scheduler(1, 10), 'stuck', 30, .25)
         self.assertEqual(result['status'], 'timeout')
         self.assertEqual(result['gaps'], [f'Process tree did not stop within {module.STOP_SECONDS} seconds.'])
+
+    async def test_processes_left_running_after_exit_are_stopped_and_reported(self):
+        marker = self.root / 'late.txt'
+        orphan = f'import pathlib, time; time.sleep(1.5); pathlib.Path({str(marker)!r}).write_text("late")'
+        result = await Scheduler(1, 10).process([sys.executable, '-c',
+            f'import subprocess, sys; subprocess.Popen([sys.executable, "-c", {orphan!r}])'],
+            cwd=self.root, directory=self.root / 'leaver', label='leaver')
+        self.assertEqual(result['status'], 'completed')
+        self.assertEqual(result['gaps'], [LEFT_RUNNING])
+        await asyncio.sleep(2.5)
+        self.assertFalse(marker.exists())
 
     async def test_queued_work_does_not_launch_after_deadline(self):
         scheduler = Scheduler(1, .25)

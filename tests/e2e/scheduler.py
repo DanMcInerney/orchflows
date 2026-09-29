@@ -1,5 +1,6 @@
 """One bounded pool for harness-owned native sessions; monotonic deadlines."""
 import asyncio
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,58 @@ from common import write_json
 
 
 STOP_SECONDS = 15
+LEFT_RUNNING = 'Stopped processes the session left running after it exited.'
+
+if os.name == 'nt':
+    KERNEL = ctypes.WinDLL('kernel32', use_last_error=True)
+    KERNEL.CreateJobObjectW.restype = KERNEL.OpenProcess.restype = ctypes.c_void_p
+    KERNEL.AssignProcessToJobObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    KERNEL.QueryInformationJobObject.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p,
+                                                 ctypes.c_uint32, ctypes.c_void_p]
+    KERNEL.TerminateJobObject.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    KERNEL.CloseHandle.argtypes = [ctypes.c_void_p]
+
+
+class Accounting(ctypes.Structure):
+    """JOBOBJECT_BASIC_ACCOUNTING_INFORMATION."""
+    _fields_ = [('times', ctypes.c_int64 * 4), ('page_faults', ctypes.c_uint32), ('total', ctypes.c_uint32),
+                ('active', ctypes.c_uint32), ('terminated', ctypes.c_uint32)]
+
+
+class Descendants:
+    """What a process started, reapable after it exits: its POSIX session's process group, or a Windows
+    job it joins right after launch. Children inherit the job, so orphans stay reachable once their
+    parents are gone; claude -p leaves background shell trees running (observed 2.1.284, Windows)."""
+
+    def __init__(self, pid):
+        self.pid, self.job = pid, None
+        if os.name == 'nt':
+            job = KERNEL.CreateJobObjectW(None, None)
+            process = KERNEL.OpenProcess(0x0101, False, pid)  # PROCESS_TERMINATE | PROCESS_SET_QUOTA
+            if job and process and KERNEL.AssignProcessToJobObject(job, process):
+                self.job = job
+            elif job:
+                KERNEL.CloseHandle(job)
+            if process:
+                KERNEL.CloseHandle(process)
+
+    def reap(self):
+        """Kill every remaining descendant; True when any were still running."""
+        if os.name != 'nt':
+            try:
+                os.killpg(self.pid, signal.SIGKILL)
+                return True
+            except (ProcessLookupError, PermissionError):
+                return False
+        if not self.job:
+            return False
+        counts = Accounting()
+        running = bool(KERNEL.QueryInformationJobObject(self.job, 1, ctypes.byref(counts),
+                                                        ctypes.sizeof(counts), None)) and counts.active > 0
+        KERNEL.TerminateJobObject(self.job, 1)
+        KERNEL.CloseHandle(self.job)
+        self.job = None
+        return running
 
 
 async def stop_tree(process):
@@ -80,6 +133,7 @@ class Scheduler:
                     await stop_tree(process)
                     record['exit_code'] = process.returncode
                     raise
+                descendants = Descendants(process.pid)
                 record['pid'] = process.pid
                 if native:
                     self.active += 1
@@ -105,6 +159,8 @@ class Scheduler:
                 finally:
                     record['seconds'] = round(time.monotonic() - started, 3)
                     record['exit_code'] = process.returncode
+                    if descendants.reap():
+                        record['gaps'].append(LEFT_RUNNING)
                     if native:
                         self.active -= 1
                     self.emit(kind='finished', label=label, native=native, status=record['status'], active=self.active)
