@@ -1,5 +1,6 @@
 """One bounded pool for harness-owned native sessions; monotonic deadlines."""
 import asyncio
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,72 @@ from common import write_json
 
 
 STOP_SECONDS = 15
+LEFT_RUNNING = 'Harness stopped processes the session left running after it exited.'
+
+if os.name == 'nt':
+    KERNEL = ctypes.WinDLL('kernel32', use_last_error=True)
+    KERNEL.CreateJobObjectW.restype = KERNEL.OpenProcess.restype = ctypes.c_void_p
+    KERNEL.AssignProcessToJobObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    KERNEL.QueryInformationJobObject.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p,
+                                                 ctypes.c_uint32, ctypes.c_void_p]
+    KERNEL.QueryFullProcessImageNameW.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_wchar_p,
+                                                  ctypes.POINTER(ctypes.c_uint32)]
+    KERNEL.TerminateJobObject.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    KERNEL.CloseHandle.argtypes = [ctypes.c_void_p]
+
+
+class Members(ctypes.Structure):
+    """JOBOBJECT_BASIC_PROCESS_ID_LIST with room for 256 processes."""
+    _fields_ = [('assigned', ctypes.c_uint32), ('listed', ctypes.c_uint32), ('pids', ctypes.c_size_t * 256)]
+
+
+def left_running(pid):
+    """A live job member other than a console host, which briefly outlives its exited client when the
+    harness has no console of its own."""
+    handle = KERNEL.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED: alive but unreadable
+    name, size = ctypes.create_unicode_buffer(1024), ctypes.c_uint32(1024)
+    named = KERNEL.QueryFullProcessImageNameW(handle, 0, name, ctypes.byref(size))
+    KERNEL.CloseHandle(handle)
+    return not (named and name.value.lower().endswith('\\conhost.exe'))
+
+
+class Descendants:
+    """What a process started, reapable after it exits: its POSIX session's process group, or a Windows
+    job it joins right after launch. Children inherit the job, so orphans stay reachable once their
+    parents are gone; claude -p leaves background shell trees running (observed 2.1.284, Windows)."""
+
+    def __init__(self, pid):
+        self.pid, self.job = pid, None
+        if os.name == 'nt':
+            job = KERNEL.CreateJobObjectW(None, None)
+            process = KERNEL.OpenProcess(0x0101, False, pid)  # PROCESS_TERMINATE | PROCESS_SET_QUOTA
+            if job and process and KERNEL.AssignProcessToJobObject(job, process):
+                self.job = job
+            elif job:
+                KERNEL.CloseHandle(job)
+            if process:
+                KERNEL.CloseHandle(process)
+
+    def reap(self):
+        """Kill every remaining descendant; True when any were still running."""
+        if os.name != 'nt':
+            try:
+                os.killpg(self.pid, signal.SIGKILL)
+                return True
+            except (ProcessLookupError, PermissionError):
+                return False
+        if not self.job:
+            return False
+        members = Members()
+        listed = members.pids[:members.listed] if KERNEL.QueryInformationJobObject(
+            self.job, 3, ctypes.byref(members), ctypes.sizeof(members), None) else []
+        running = members.assigned > len(listed) or any(left_running(pid) for pid in listed)
+        KERNEL.TerminateJobObject(self.job, 1)
+        KERNEL.CloseHandle(self.job)
+        self.job = None
+        return running
 
 
 async def stop_tree(process):
@@ -56,7 +123,7 @@ class Scheduler:
         queued = time.monotonic()
         end = min(self.end, until if until is not None else self.end)
         record = {'command': list(map(str, command)), 'status': 'not_started', 'label': label,
-                  'queue_seconds': 0, 'seconds': 0, 'exit_code': None, 'gaps': []}
+                  'queue_seconds': 0, 'seconds': 0, 'exit_code': None, 'gaps': [], 'conditions': []}
         pool = self.slots if native else self.local_slots
         acquired = False
         process = communication = None
@@ -80,6 +147,7 @@ class Scheduler:
                     await stop_tree(process)
                     record['exit_code'] = process.returncode
                     raise
+                descendants = Descendants(process.pid)
                 record['pid'] = process.pid
                 if native:
                     self.active += 1
@@ -105,6 +173,9 @@ class Scheduler:
                 finally:
                     record['seconds'] = round(time.monotonic() - started, 3)
                     record['exit_code'] = process.returncode
+                    # After a timeout or cancel, stop_tree already reported stopping the tree.
+                    if descendants.reap() and record['status'] in {'completed', 'error'}:
+                        record['conditions'].append(LEFT_RUNNING)
                     if native:
                         self.active -= 1
                     self.emit(kind='finished', label=label, native=native, status=record['status'], active=self.active)
