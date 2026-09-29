@@ -15,7 +15,11 @@ Separate requirements from qualities to improve. Choose observable criteria and 
 
 Before search, calibrate on the seed and an obvious defect or contrast: detect violated requirements and explain differences. Scripts consume actual outputs, not self-reported scores. Unreliable or irrelevant metrics require direct judgment, not convenient proxies.
 
+Calibration also establishes what the search can detect. For measured or executed evaluation, repeat the seed under matched conditions and re-score identical outputs with the frozen evaluator. When that variation approaches the meaningful improvement margin, add repetitions or cases before search, or record the smallest gain the evaluation can show. When the seed nearly saturates the evaluation, add harder representative cases, or report the ceiling and ask whether cost or latency should become the goal.
+
 For repeatable tasks, separate public development from reserved confirmation inputs, withheld from makers. Record exposure: shared filesystems do not enforce secrecy. Confirmation feedback used in proposals becomes regression evidence; refresh representative cases during long runs. Independent viewing of one artwork confirms preference, not task generalization.
+
+For a workflow or skill, take representative requests first from its owning library's trials and, where history is available, its past invocations (core `docs/history.md`); synthesize only to fill gaps. History-derived cases use synthetic stand-ins for private content. Existing trials are exposed to anyone who can read the library. When the run ends, save new reusable cases in the owning library's trial layout (core `docs/libraries.md`), in its checkout or user library, never an installed copy, so later runs start from them.
 
 For authoring workflow or harness changes, apply core `docs/hosts.md#workflow-trials`: synthetic inputs, read-only supplied references and simulated external effects. Real independent judgments remain required; simulation establishes no live integration.
 
