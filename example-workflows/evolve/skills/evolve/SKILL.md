@@ -23,4 +23,4 @@ Record bounds, scoped settings and per-experiment limits. Default to three round
 
 ## Return or yield
 
-Persist at each decision and before interruption/context rollover. Return best artifact, improvements/evaluation revision, saved cases, active harness, evidence, observable resource use, actual stop reason and resume path. Separate measured, judge-preferred and untested claims. Missing execution/continuation capability requires a checkpoint and gap, not a background-execution claim. Reaching a finite bound completes the search without proving further improvement impossible.
+Persist at each decision and before interruption/context rollover. Save new reusable cases to the owning library's trials under the evaluation contract, then return best artifact, improvements/evaluation revision, saved case paths, active harness, evidence, observable resource use, actual stop reason and resume path. Separate measured, judge-preferred and untested claims. Missing execution/continuation capability requires a checkpoint and gap, not a background-execution claim. Reaching a finite bound completes the search without proving further improvement impossible.
