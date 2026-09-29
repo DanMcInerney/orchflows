@@ -200,7 +200,7 @@ class SchedulerTests(unittest.IsolatedAsyncioTestCase):
     async def test_parallel_overlap_and_cap(self):
         scheduler = Scheduler(2, 10, self.root / 'schedule.jsonl')
         results = await asyncio.gather(*(self.job(scheduler, str(n), .3) for n in range(3)))
-        self.assertTrue(all(r['status'] == 'completed' and r['gaps'] == [] for r in results))
+        self.assertTrue(all(r['status'] == 'completed' and r['gaps'] == r['conditions'] == [] for r in results))
         events = [json.loads(line) for line in (self.root/'schedule.jsonl').read_text().splitlines()]
         self.assertEqual(scheduler.peak, 2)
         self.assertLessEqual(max(e['active'] for e in events), 2)
@@ -234,9 +234,20 @@ class SchedulerTests(unittest.IsolatedAsyncioTestCase):
             f'import subprocess, sys; subprocess.Popen([sys.executable, "-c", {orphan!r}])'],
             cwd=self.root, directory=self.root / 'leaver', label='leaver')
         self.assertEqual(result['status'], 'completed')
-        self.assertEqual(result['gaps'], [LEFT_RUNNING])
+        self.assertEqual((result['gaps'], result['conditions']), ([], [LEFT_RUNNING]))
         await asyncio.sleep(2.5)
         self.assertFalse(marker.exists())
+
+    @unittest.skipUnless(sys.platform == 'win32', 'Windows console hosts')
+    async def test_a_harness_without_a_console_reports_nothing_left_by_a_clean_exit(self):
+        # Each child then gets its own console host, which briefly outlives it inside the job.
+        harness = ('import asyncio, json, sys; sys.path.insert(0, sys.argv[1]); from scheduler import Scheduler; '
+                   'print(json.dumps(asyncio.run(Scheduler(1, 10).process([sys.executable, "-c", "pass"], '
+                   'cwd=sys.argv[2], directory=sys.argv[2]))["conditions"]))')
+        run = await asyncio.create_subprocess_exec(sys.executable, '-c', harness, str(ROOT / 'tests/e2e'),
+            str(self.root), stdout=asyncio.subprocess.PIPE, creationflags=subprocess.DETACHED_PROCESS)
+        output, _ = await run.communicate()
+        self.assertEqual(json.loads(output), [])
 
     async def test_queued_work_does_not_launch_after_deadline(self):
         scheduler = Scheduler(1, .25)

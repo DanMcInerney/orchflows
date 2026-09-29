@@ -171,7 +171,8 @@ class Trial:
         if execution['status'] != 'completed':
             gaps.append('Stage execution: ' + execution['status'])
         record = {'name': name, 'execution': execution, 'native': native, 'violations': violations,
-                  'gaps': gaps, 'conditions': interpreter_conditions(name, evidence, directory),
+                  'gaps': gaps, 'conditions': [*execution.get('conditions', []),
+                                               *interpreter_conditions(name, evidence, directory)],
                   'observed': observed(evidence.get('agents', [])), 'after': after,
                   'workspace': str(workspace)}
         write_json(directory / 'stage.json', record)

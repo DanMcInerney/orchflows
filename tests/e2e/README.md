@@ -94,7 +94,7 @@ Claude loads frozen session-local plugins, disables user-configured plugin activ
 
 Targets receive only ordinary inputs, not acceptance/checks or reserved reuse data. This is context separation, not verified filesystem isolation. Targets with shell access and checks that execute generated programs are not security-sandboxed by this harness. Use synthetic inputs and local fake services; never attach live services or production data to these cases. Endpoint hashes alone cannot prove no temporary mutation occurred.
 
-Native child trees are copied using the existing history reader. Separate CLI trials launched by Build are not native descendants and need their own recorded session IDs; the evaluator must leave missing trial evidence as a gap. Timeout stops the owned local process tree, and anything a session leaves running when it exits (a Windows job or the POSIX process group) is stopped and reported as a gap; remote continuation cannot be independently guaranteed. Available model, token and cost records stay in each `native.json`; missing usage is not zero cost.
+Native child trees are copied using the existing history reader. Separate CLI trials launched by Build are not native descendants and need their own recorded session IDs; the evaluator must leave missing trial evidence as a gap. Timeout stops the owned local process tree, and anything a session leaves running in its Windows job or POSIX process group when it exits is stopped and recorded as a stage condition; remote continuation cannot be independently guaranteed. Available model, token and cost records stay in each `native.json`; missing usage is not zero cost.
 
 ## Current evidence and gaps
 
