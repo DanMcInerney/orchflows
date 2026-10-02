@@ -1,6 +1,9 @@
-"""The calendar reference package has no task that pays the content-blind floor (the earliest free slot, policy ignored)."""
+"""The calendar reference package has no task that pays the content-blind floor (the earliest free slot, policy ignored),
+and its admission labels hold where attendees have empty calendars."""
 import importlib.util
 import json
+import random
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -32,6 +35,37 @@ class BlindFloorTests(unittest.TestCase):
         docs["policy"]["rules"] = []
         docs["request"]["preference"] = "earliest"
         self.assertTrue(defects.pays_blind(SOLVE, docs))
+
+
+class EmptyCalendarTests(unittest.TestCase):
+    """Real material has attendees with empty calendars; held-out task np-438 broke admission on both counts."""
+
+    def setUp(self):
+        self.generate = load(BB / "reference-packages" / "calendar-skill" / "generate.py", "calendar_reference_generate")
+        self.doc = json.loads(INSTANCES[0].read_text(encoding="utf-8"))
+        self.ws = self.doc["workspace"]
+
+    def empty(self, paths):
+        for path in paths:
+            defects.doc_at(self.ws, path)["events"] = []
+
+    def test_every_label_agrees_with_the_verifier_when_attendees_have_empty_calendars(self):
+        self.empty(defects.attendee_paths(self.ws)[:-1])
+        self.assertEqual(defects.holders(self.ws), defects.attendee_paths(self.ws)[-1:])
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            self.generate.admit(out, self.doc, self.generate.write_task(out, self.doc, "development"))
+
+    def test_a_clobber_only_counts_where_it_destroys_an_entry(self):
+        self.empty(defects.attendee_paths(self.ws)[:-1])
+        for seed in range(8):
+            outcome = defects.clobber(SOLVE, self.ws, random.Random(seed))
+            self.assertEqual(defects.defect_label(SOLVE, self.ws, "clobber", outcome), "invalid")
+        self.empty(defects.attendee_paths(self.ws))
+        self.assertEqual(defects.defect_label(SOLVE, self.ws, "clobber", defects.clobber(SOLVE, self.ws, random.Random(0))), "valid")
+        kinds = {kind for kind, _, _ in defects.labeled(SOLVE, self.ws)}
+        self.assertNotIn("id-reuse", kinds)
+        self.assertIn("clobber:changed-work-hours", kinds)
 
 
 if __name__ == "__main__":
