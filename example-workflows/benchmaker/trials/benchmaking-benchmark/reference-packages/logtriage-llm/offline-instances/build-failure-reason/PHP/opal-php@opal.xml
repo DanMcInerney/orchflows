@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>PHP/opal-php@opal/failed/990000801.log</Log>
+    <Keywords>There was 1 failure, Failed asserting</Keywords>
+    <Category>0</Category>
+    <Chunk>1) Opal\Tests\Http\RouterTest::testResolvesNamedRouteWithParameters
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'/users/42/posts/7'
++'/users/42/posts/7?draft=1'
+
+/home/travis/build/opal-php/opal/tests/Http/RouterTest.php:118</Chunk>
+  </Example>
+  <Example>
+    <Log>PHP/opal-php@opal/failed/990000802.log</Log>
+    <Keywords>Fatal error, Uncaught Error, not found</Keywords>
+    <Category>0</Category>
+    <Chunk>PHP Fatal error:  Uncaught Error: Class 'Opal\Cache\RedisStore' not found in /home/travis/build/opal-php/opal/tests/bootstrap.php:23
+Stack trace:
+#0 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/Util/Configuration.php(412): require_once()
+#1 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(299): PHPUnit\Util\Configuration-&gt;handlePHPConfiguration()
+#2 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(212): PHPUnit\TextUI\Command-&gt;handleArguments(Array)
+#3 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(162): PHPUnit\TextUI\Command-&gt;run(Array, true)
+#4 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/phpunit(17): PHPUnit\TextUI\Command::main()
+#5 {main}
+  thrown in /home/travis/build/opal-php/opal/tests/bootstrap.php on line 23</Chunk>
+  </Example>
+</Examples>

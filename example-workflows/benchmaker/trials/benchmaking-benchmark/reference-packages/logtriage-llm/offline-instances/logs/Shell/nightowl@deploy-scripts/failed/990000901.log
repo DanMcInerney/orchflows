@@ -1,0 +1,12 @@
+Using worker: worker-linux-docker-5e6a2c1b.prod.travis-ci.org:travis-linux-4
+
+travis_fold:start:git.checkout[0K
+travis_time:start:0a1b2c3d[0K$ git clone --depth=50 --branch=master https://github.com/nightowl/deploy-scripts.git nightowl/deploy-scripts
+Cloning into 'nightowl/deploy-scripts'...
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+The command "git clone --depth=50 --branch=master https://github.com/nightowl/deploy-scripts.git nightowl/deploy-scripts" failed 3 times.
+travis_time:end:0a1b2c3d:start=1560000001000000000,finish=1560000012000000000,duration=11000000000[0Ktravis_fold:end:git.checkout[0K
+[31;1mThe command "git clone --depth=50 --branch=master https://github.com/nightowl/deploy-scripts.git nightowl/deploy-scripts" failed and exited with 128 during [0m.
+
+Your build has been stopped.

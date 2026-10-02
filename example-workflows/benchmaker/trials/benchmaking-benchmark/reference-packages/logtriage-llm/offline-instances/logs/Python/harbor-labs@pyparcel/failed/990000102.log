@@ -1,0 +1,120 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 52e477c4-927b-29d3-d0ba-bd7576031beb@1.production-2-worker-org-gce-21vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/ecffd95bc1283c7b8d0b64489dc7dae06f6f7a2c
+instance: travis-job-3511d6d1-8fdb-88f2-f292-cd1d7c2ffbcb travis-ci-sardonyx-bionic-1553530528-f909ac5 (via amqp)
+startup: 7.363281992s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: python
+Build group: stable
+Build dist: bionic
+Build id: 990000102
+Job id: 990000103
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Tue Dec  1 10:12:03 UTC 2020
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:bbdf6a7d[0K$ git clone --depth=50 --branch=master https://github.com/harbor-labs/pyparcel.git harbor-labs/pyparcel
+Cloning into 'harbor-labs/pyparcel'...
+remote: Enumerating objects: 3329, done.remote: Counting objects:  50% (1664/3329)remote: Counting objects: 100% (3329/3329), done.remote: Compressing objects: 100% (1109/1109), done.
+remote: Total 3329 (delta 832), reused 3239 (delta 832), pack-reused 0Receiving objects: 100% (3329/3329), 2.47 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (832/832), done.
+travis_time:end:bbdf6a7d:start=1606817523000000000,finish=1606817525100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd harbor-labs/pyparcel
+$ git checkout -qf 02a46c3a928d1e1aa633f3d55c87eb9d8f198d4a
+$ source ~/virtualenv/python3.8/bin/activate
+$ python --version
+Python 3.8.1
+$ pip --version
+pip 18.1 from /home/travis/virtualenv/python3.8.1/lib/python3.8/site-packages/pip (python 3.8)
+$ pip install -U pip
+Requirement already up-to-date: pip in /home/travis/virtualenv/python3.8.1/lib/python3.8/site-packages (20.3.1)
+travis_fold:start:install.1[0Ktravis_time:start:414947e9[0K$ pip install -r requirements.txt
+Collecting boto3==1.9.253
+  Downloading boto3-1.9.253-py2.py3-none-any.whl (128 kB)
+Collecting botocore==1.12.0
+  Downloading botocore-1.12.0-py2.py3-none-any.whl (4.9 MB)
+Collecting requests
+  Downloading requests-2.25.0-py2.py3-none-any.whl (61 kB)
+Collecting jsonschema
+  Downloading jsonschema-3.2.0-py2.py3-none-any.whl (56 kB)
+Collecting python-dateutil
+  Downloading python-dateutil-2.8.1-py2.py3-none-any.whl (227 kB)
+Collecting pydantic
+  Downloading pydantic-1.7.3-py2.py3-none-any.whl (2.5 MB)
+    |████████████████████████████████| 128 kB 6.1 MB/sCollecting jmespath<1.0.0,>=0.7.1
+  Using cached jmespath-0.10.0-py2.py3-none-any.whl (24 kB)
+Collecting s3transfer<0.3.0,>=0.2.0
+  Using cached s3transfer-0.2.1-py2.py3-none-any.whl (70 kB)
+Collecting docutils<0.16,>=0.10
+  Using cached docutils-0.15.2-py3-none-any.whl (547 kB)
+INFO: pip is looking at multiple versions of boto3 to determine which version is compatible with other requirements. This could take a while.
+INFO: pip is looking at multiple versions of s3transfer to determine which version is compatible with other requirements. This could take a while.
+INFO: This is taking longer than usual. You might need to provide the dependency resolver with stricter constraints to reduce runtime. If you want to abort this run, you can press Ctrl + C to do so. To improve how pip performs, tell us what happened here: https://pip.pypa.io/surveys/backtracking
+ERROR: Cannot install -r requirements.txt (line 1) and botocore==1.12.0 because these package versions have conflicting dependencies.
+
+The conflict is caused by:
+    The user requested botocore==1.12.0
+    boto3 1.9.253 depends on botocore<1.13.0 and >=1.12.253
+
+To fix this you could try to:
+1. loosen the range of package versions you've specified
+2. remove package versions to allow pip attempt to solve the dependency conflict
+
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/user_guide/#fixing-conflicting-dependencies
+travis_time:end:414947e9:start=1606817525100000000,finish=1606817837100000000,duration=312000000000[0Ktravis_fold:end:install.1[0K[0K[31;1mThe command "pip install -r requirements.txt" failed and exited with 1 during [0m.
+
+Your build has been stopped.

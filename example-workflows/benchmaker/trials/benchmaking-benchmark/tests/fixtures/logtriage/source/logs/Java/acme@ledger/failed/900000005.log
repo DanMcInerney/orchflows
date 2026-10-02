@@ -1,0 +1,37 @@
+Using worker: worker-linux-docker-1a2b3c4d.prod.travis-ci.org:travis-linux-7
+
+travis_fold:start:system_info
+[0K[33;1mBuild system information[0m
+Build language: java
+Build group: stable
+Build dist: xenial
+travis_fold:end:system_info
+
+[0Ktravis_fold:start:git.checkout
+[0K$ git clone --depth=50 https://github.com/acme/ledger.git acme/ledger
+Cloning into 'acme/ledger'...
+remote: Enumerating objects: 412, done.
+remote: Total 412 (delta 0), reused 0 (delta 0), pack-reused 412
+travis_fold:end:git.checkout
+
+[0K$ mvn -B test
+[INFO] Scanning for projects...
+[INFO] Building ledger-core 2.4.0-SNAPSHOT
+[INFO] --- maven-compiler-plugin:3.8.1:compile (default-compile) @ ledger-core ---
+[INFO] Changes detected - recompiling the module!
+[ERROR] /home/travis/build/acme/ledger/src/main/java/acme/ledger/Posting.java:[42,31] incompatible types: java.lang.String cannot be converted to java.math.BigDecimal
+[ERROR] /home/travis/build/acme/ledger/src/main/java/acme/ledger/Posting.java:[57,12] cannot find symbol
+[ERROR]   symbol:   method scaleTo(int)
+[ERROR]   location: class acme.ledger.Money
+[INFO] BUILD FAILURE
+[INFO] Total time:  8.201 s
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project ledger-core: Compilation failure:
+[ERROR] /home/travis/build/acme/ledger/src/main/java/acme/ledger/Posting.java:[42,31] incompatible types: java.lang.String cannot be converted to java.math.BigDecimal
+[ERROR] /home/travis/build/acme/ledger/src/main/java/acme/ledger/Posting.java:[57,12] cannot find symbol
+[ERROR]   symbol:   method scaleTo(int)
+[ERROR]   location: class acme.ledger.Money
+[ERROR] -> [Help 1]
+
+[31;1mThe command "mvn -B test" exited with 1.[0m
+
+Done. Your build exited with 1.

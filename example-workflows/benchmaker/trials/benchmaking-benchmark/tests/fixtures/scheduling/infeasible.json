@@ -1,0 +1,67 @@
+{
+ "note": "Ana is busy all morning and Bo all afternoon.",
+ "instance": {
+  "duration_minutes": 30,
+  "granularity_minutes": 15,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-05T17:00+00:00"
+  },
+  "participants": [
+   {
+    "id": "ana",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T09:00+00:00",
+      "end": "2026-10-05T13:00+00:00"
+     }
+    ]
+   },
+   {
+    "id": "bo",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T13:00+00:00",
+      "end": "2026-10-05T17:00+00:00"
+     }
+    ]
+   }
+  ],
+  "rooms": [],
+  "constraints": [],
+  "preference": "any"
+ },
+ "expect": {
+  "earliest": null,
+  "latest": null,
+  "count": 0
+ }
+}

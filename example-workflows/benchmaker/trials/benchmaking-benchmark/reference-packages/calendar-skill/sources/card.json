@@ -1,0 +1,20 @@
+{"claim": "Whether the booking-rules skill makes the calendar-operations agent (Claude Haiku 4.5, low effort, Read/Write/Edit/Bash/Glob/Grep) follow the team's booking policy more reliably when it books a meeting by editing calendar files, without damaging what is already there, at matched model, tools and budget.",
+ "decision": "Whether to keep, change or drop the skill, and where it helps, changes nothing or makes the agent worse.",
+ "stage": "draft",
+ "difficulty_target": "Left open: no model has been run. Valid slots are kept to about 1.5% of a request's grid so a guess almost never works. The tasks cover rules the skill's helper covers (buffer, busy time, work hours, room capacity) and rules it does not (room features, urgent requests over focus blocks) so the with-skill arm is not on the ceiling by construction.",
+ "comparison_set": "adapters/haiku-low-skill (the agent with the skill) against adapters/haiku-low (the same agent without it), the same model, tools, settings isolation and budget.",
+ "known_order": "The reference above everything; each realistic defect (ignored buffer, focus block, room feature or room calendar; a rewritten calendar; a booking only claimed) above the do-nothing floor. None has been run through this package yet.",
+ "conditions": {
+  "subject": {"agent": "adapters/haiku-low-skill", "model": "claude-haiku-4-5", "effort": "low", "tools": "Read,Write,Edit,Bash,Glob,Grep,Skill", "skill": "booking-rules"},
+  "without-skill": {"agent": "adapters/haiku-low", "model": "claude-haiku-4-5", "effort": "low", "tools": "Read,Write,Edit,Bash,Glob,Grep"},
+  "reference": {"agent": "@reference"},
+  "noop": {"agent": "@noop"}},
+ "claims": [
+  {"id": "c1", "type": "rate", "metric": "reference_pass_rate", "min": 1.0},
+  {"id": "c2", "type": "rate", "metric": "trivial_credit", "max": 0.05},
+  {"id": "c3", "type": "rate", "metric": "verifier_false_accept", "max": 0.0},
+  {"id": "c4", "type": "rate", "metric": "verifier_false_reject", "max": 0.0},
+  {"id": "c5", "type": "gap", "category": "missing-stage", "text": "No model-driven system has been run through this package: the skill's uplift, headroom, run-to-run noise and cost are unmeasured, and the difficulty target has not been checked against either arm. That the skill loads in print mode without safe mode is also unconfirmed here."},
+  {"id": "c6", "type": "gap", "category": "exposure", "text": "The workspaces and the subject's skill are synthetic and committed in a public repository, so a system may have seen them; they support development claims only."},
+  {"id": "c7", "type": "gap", "category": "inert-dimension", "text": "The optimal dimension equals the valid dimension on every request whose preference is any, so it separates systems only on earliest and latest requests and on the infeasible ones, where it carries the explanation."},
+  {"id": "c8", "type": "verdict", "supports_claim": false, "reason": "Draft: the verifier, reference and floors are validated, but neither arm of the uplift comparison has been measured."}]}

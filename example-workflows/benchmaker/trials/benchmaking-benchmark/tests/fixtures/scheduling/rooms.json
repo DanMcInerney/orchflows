@@ -1,0 +1,116 @@
+{
+ "note": "Three attendees need a room with video: r1 is too small, r2 has no video, r3 is busy 10:00-10:30.",
+ "instance": {
+  "duration_minutes": 60,
+  "granularity_minutes": 30,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-05T12:00+00:00"
+  },
+  "participants": [
+   {
+    "id": "ana",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   },
+   {
+    "id": "bo",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   },
+   {
+    "id": "cy",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   }
+  ],
+  "rooms": [
+   {
+    "id": "r1",
+    "capacity": 2,
+    "features": [
+     "video"
+    ],
+    "busy": []
+   },
+   {
+    "id": "r2",
+    "capacity": 4,
+    "features": [],
+    "busy": [
+     {
+      "start": "2026-10-05T09:00+00:00",
+      "end": "2026-10-05T10:00+00:00"
+     }
+    ]
+   },
+   {
+    "id": "r3",
+    "capacity": 6,
+    "features": [
+     "video"
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T10:00+00:00",
+      "end": "2026-10-05T10:30+00:00"
+     }
+    ]
+   }
+  ],
+  "constraints": [
+   {
+    "type": "room_feature",
+    "feature": "video"
+   }
+  ],
+  "preference": "earliest"
+ },
+ "expect": {
+  "earliest": "2026-10-05T09:00+00:00",
+  "latest": "2026-10-05T11:00+00:00",
+  "count": 3,
+  "rooms": [
+   "r3"
+  ]
+ }
+}

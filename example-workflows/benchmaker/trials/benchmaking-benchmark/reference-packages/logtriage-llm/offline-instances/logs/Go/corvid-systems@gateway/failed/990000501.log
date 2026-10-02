@@ -1,0 +1,139 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: d558f8fd-4718-a074-5ea5-c99cd57c3cf9@1.production-2-worker-org-gce-06vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/ec52d07b797ddea8ecd0abbef1204a41ce9be065
+instance: travis-job-38637e21-6dd1-1677-412e-dc40a0df0856 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 4.160736700s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: go
+Build group: stable
+Build dist: xenial
+Build id: 990000501
+Job id: 990000502
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Thu Apr 11 07:48:19 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:a071a36d[0K$ git clone --depth=50 --branch=master https://github.com/corvid-systems/gateway.git corvid-systems/gateway
+Cloning into 'corvid-systems/gateway'...
+remote: Enumerating objects: 5868, done.remote: Counting objects:  50% (2934/5868)remote: Counting objects: 100% (5868/5868), done.remote: Compressing objects: 100% (1956/1956), done.
+remote: Total 5868 (delta 1467), reused 5778 (delta 1467), pack-reused 0Receiving objects: 100% (5868/5868), 16.46 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1467/1467), done.
+travis_time:end:a071a36d:start=1554968899000000000,finish=1554968901100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd corvid-systems/gateway
+$ git checkout -qf d4cc549e52fe523fcb671af82ff00e0f6f21c4e7
+$ gimme 1.12
+go version go1.12.1 linux/amd64
+$ go version
+go version go1.12.1 linux/amd64
+$ export GO111MODULE=on
+$ go env GOPATH
+/home/travis/gopath
+travis_fold:start:install[0Ktravis_time:start:ae1eacd9[0K$ go mod download
+go: downloading github.com/pkg/errors v0.8.1
+go: downloading github.com/gorilla/mux v1.7.1
+go: downloading github.com/sirupsen/logrus v1.4.0
+go: downloading golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
+go: downloading github.com/prometheus/client_golang v0.9.2
+go: downloading github.com/stretchr/testify v1.3.0
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading gopkg.in/yaml.v2 v2.2.2
+go: downloading golang.org/x/sys v0.0.0-20190412213103-97732733099d
+go: downloading github.com/hashicorp/golang-lru v0.5.1
+go: downloading github.com/rs/cors v1.6.0
+go: downloading google.golang.org/grpc v1.19.1
+go: downloading github.com/golang/protobuf v1.3.1
+go: downloading github.com/cespare/xxhash v1.1.0
+go: downloading github.com/beorn7/perks v1.0.0
+go: downloading github.com/matttproud/golang_protobuf_extensions v1.0.1
+go: downloading github.com/prometheus/common v0.2.0
+go: downloading github.com/prometheus/procfs v0.0.0-20190117184657-bf6a532e95b1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading github.com/konsorten/go-windows-terminal-sequences v1.0.1
+go: downloading golang.org/x/text v0.3.0
+go: downloading golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+go: downloading github.com/fsnotify/fsnotify v1.4.7
+go: downloading github.com/spf13/cobra v0.0.3
+go: downloading github.com/spf13/pflag v1.0.3
+go: downloading github.com/inconshreveable/mousetrap v1.0.0
+go: downloading github.com/google/uuid v1.1.1
+go: downloading github.com/gorilla/handlers v1.4.0
+go: downloading github.com/felixge/httpsnoop v1.0.0
+go: downloading go.uber.org/atomic v1.3.2
+go: downloading go.uber.org/multierr v1.1.0
+go: downloading go.uber.org/zap v1.9.1
+go: downloading github.com/lib/pq v1.0.0
+go: downloading github.com/jmoiron/sqlx v1.2.0
+travis_time:end:ae1eacd9:start=1554968901100000000,finish=1554968924100000000,duration=23000000000[0Ktravis_fold:end:install[0K[0K[32;1mThe command "go mod download" exited with 0.[0m
+travis_time:start:c95675cf[0K$ go test -race ./...
+ok  	github.com/corvid-systems/gateway/cmd/gateway	1.592s
+ok  	github.com/corvid-systems/gateway/internal/admin	0.904s
+?   	github.com/corvid-systems/gateway/internal/auth	[no test files]
+ok  	github.com/corvid-systems/gateway/internal/cache	2.736s
+ok  	github.com/corvid-systems/gateway/internal/config	1.194s
+ok  	github.com/corvid-systems/gateway/internal/metrics	2.857s
+ok  	github.com/corvid-systems/gateway/internal/middleware	2.163s
+# github.com/corvid-systems/gateway/internal/router [github.com/corvid-systems/gateway/internal/router.test]
+internal/router/router_test.go:88:17: undefined: newLimiter
+internal/router/router_test.go:131:3: too many arguments in call to s.registerRoute
+	have (string, http.HandlerFunc, middleware.Chain)
+	want (string, http.HandlerFunc)
+FAIL	github.com/corvid-systems/gateway/internal/router [build failed]
+ok  	github.com/corvid-systems/gateway/internal/tls	0.426s
+ok  	github.com/corvid-systems/gateway/internal/upstream	0.126s
+ok  	github.com/corvid-systems/gateway/pkg/client	1.504s
+FAIL
+travis_time:end:c95675cf:start=1554968924100000000,finish=1554969020100000000,duration=96000000000[0K[0K[31;1mThe command "go test -race ./..." exited with 2.[0m

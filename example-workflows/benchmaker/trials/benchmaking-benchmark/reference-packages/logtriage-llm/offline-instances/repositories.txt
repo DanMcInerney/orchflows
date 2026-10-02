@@ -1,0 +1,9 @@
+C++ meridian/meridian-engine
+Go corvid-systems/gateway
+Java tidewater/ledger-core
+JavaScript kestrel-io/kestrel-ui
+PHP opal-php/opal
+Python harbor-labs/pyparcel
+Ruby fernwood/fernwood-api
+Rust quarry-dev/quarry
+Shell nightowl/deploy-scripts

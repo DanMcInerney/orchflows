@@ -1,0 +1,94 @@
+{
+ "description": "A 15-minute buffer pushes the earliest start from 11:30 to 11:45.",
+ "request": {
+  "title": "Sync",
+  "attendees": [
+   "ana",
+   "bo"
+  ],
+  "optional": [],
+  "duration_minutes": 60,
+  "granularity_minutes": 15,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-05T17:00+00:00"
+  },
+  "preference": "earliest",
+  "priority": "normal"
+ },
+ "policy": {
+  "rules": [
+   {
+    "type": "buffer_minutes",
+    "minutes": 15
+   }
+  ]
+ },
+ "calendars": {
+  "ana": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": [
+    {
+     "id": "ev-a1",
+     "title": "Standup",
+     "kind": "meeting",
+     "start": "2026-10-05T09:00+00:00",
+     "end": "2026-10-05T10:00+00:00"
+    },
+    {
+     "id": "ev-a2",
+     "title": "Review",
+     "kind": "meeting",
+     "start": "2026-10-05T13:00+00:00",
+     "end": "2026-10-05T14:00+00:00"
+    }
+   ]
+  },
+  "bo": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": [
+    {
+     "id": "ev-b1",
+     "title": "Interview",
+     "kind": "meeting",
+     "start": "2026-10-05T10:30+00:00",
+     "end": "2026-10-05T11:30+00:00"
+    }
+   ]
+  }
+ },
+ "expect": {
+  "first": "2026-10-05T11:45+00:00",
+  "last": "2026-10-05T16:00+00:00",
+  "count": 9,
+  "wrong": [
+   "policy_blind_buffer"
+  ]
+ }
+}

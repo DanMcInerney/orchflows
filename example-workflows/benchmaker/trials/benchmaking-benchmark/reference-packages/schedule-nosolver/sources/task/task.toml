@@ -1,0 +1,16 @@
+[metadata]
+family = <<FAMILY>>
+source_group = <<GROUP>>
+split = <<SPLIT>>
+anchor = false
+smoke = <<SMOKE>>
+quick = <<QUICK>>
+difficulty = <<DIFFICULTY>>
+expert_minutes = <<MINUTES>>
+time_estimate = "author"
+
+[agent]
+timeout_sec = 120
+
+[verifier]
+timeout_sec = 30

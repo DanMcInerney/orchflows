@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Python/harbor-labs@pyparcel/failed/990000101.log</Log>
+    <Keywords>FAILURES, test_manifest, AssertionError</Keywords>
+    <Category>0</Category>
+    <Chunk>[31m[1m_________________ test_manifest_totals_use_decimal_rounding ____________________[0m[0m
+
+make_manifest = function make_manifest.locals&gt;.build at 0x7f2c6a1d8950&gt;
+
+[1m    def test_manifest_totals_use_decimal_rounding(make_manifest):[0m
+[1m        manifest = make_manifest(items=[("0.10", 3), ("0.20", 3)])[0m
+[1m&gt;       assert manifest.total == Decimal("0.90")[0m
+[1m[31mE       AssertionError: assert Decimal('0.9000000000000000055511151231257827') == Decimal('0.90')[0m
+[1m[31mE        +  where Decimal('0.9000000000000000055511151231257827') = pyparcel.manifest.Manifest object at 0x7f2c6a1e1d68&gt;.total[0m
+[1m[31mE        +  and   Decimal('0.90') = Decimal('0.90')[0m
+
+[1m[31mtests/test_manifest.py[0m:57: AssertionError</Chunk>
+  </Example>
+  <Example>
+    <Log>Python/harbor-labs@pyparcel/failed/990000102.log</Log>
+    <Keywords>ERROR, ResolutionImpossible, conflict</Keywords>
+    <Category>0</Category>
+    <Chunk>ERROR: Cannot install -r requirements.txt (line 1) and botocore==1.12.0 because these package versions have conflicting dependencies.
+
+The conflict is caused by:
+    The user requested botocore==1.12.0
+    boto3 1.9.253 depends on botocore1.13.0 and &gt;=1.12.253
+
+To fix this you could try to:
+1. loosen the range of package versions you've specified
+2. remove package versions to allow pip attempt to solve the dependency conflict
+
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/user_guide/#fixing-conflicting-dependencies</Chunk>
+  </Example>
+  <Example>
+    <Log>Python/harbor-labs@pyparcel/failed/990000103.log</Log>
+    <Keywords>error, mypy, incompatible type</Keywords>
+    <Category>0</Category>
+    <Chunk>pyparcel/carrier/ups.py:214: error: Argument 1 to "quote" has incompatible type "str"; expected "int"</Chunk>
+  </Example>
+</Examples>

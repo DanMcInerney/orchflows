@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>C++/meridian@meridian-engine/failed/990000701.log</Log>
+    <Keywords>undefined reference, collect2, ld returned</Keywords>
+    <Category>0</Category>
+    <Chunk>CMakeFiles/meridian_tests.dir/spatial_index_test.cpp.o: In function `SpatialIndexTest_BulkLoadKeepsOrder_Test::TestBody()':
+/home/travis/build/meridian/meridian-engine/test/spatial_index_test.cpp:61: undefined reference to `meridian::spatial::Index::bulkLoad(std::vectormeridian::Entry, std::allocatormeridian::Entry&gt; &gt; const&amp;)'
+collect2: error: ld returned 1 exit status</Chunk>
+  </Example>
+  <Example>
+    <Log>C++/meridian@meridian-engine/failed/990000702.log</Log>
+    <Keywords>No output has been received, terminated</Keywords>
+    <Category>0</Category>
+    <Chunk>No output has been received in the last 10m0s, this potentially indicates a stalled build or something wrong with the build itself.
+Check the details on how to adjust your build configuration on: https://docs.travis-ci.com/user/common-build-problems/#build-times-out-because-no-output-was-received
+
+The build has been terminated</Chunk>
+  </Example>
+</Examples>

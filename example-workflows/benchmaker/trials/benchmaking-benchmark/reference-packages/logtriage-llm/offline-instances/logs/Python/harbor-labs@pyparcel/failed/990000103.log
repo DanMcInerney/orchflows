@@ -1,0 +1,111 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 58616d23-8059-8874-5c97-b1ae7f7dbe62@1.production-2-worker-org-gce-17vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/570f41fc93d36e93fd0ab8ba84de90d74c8523fc
+instance: travis-job-90364af8-02ac-ad95-29fd-da835f6002f0 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 4.433502691s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: python
+Build group: stable
+Build dist: xenial
+Build id: 990000103
+Job id: 990000104
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Thu Mar 28 09:14:50 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:f241628b[0K$ git clone --depth=50 --branch=master https://github.com/harbor-labs/pyparcel.git harbor-labs/pyparcel
+Cloning into 'harbor-labs/pyparcel'...
+remote: Enumerating objects: 6731, done.remote: Counting objects:  50% (3365/6731)remote: Counting objects: 100% (6731/6731), done.remote: Compressing objects: 100% (2243/2243), done.
+remote: Total 6731 (delta 1682), reused 6641 (delta 1682), pack-reused 0Receiving objects: 100% (6731/6731), 4.65 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1682/1682), done.
+travis_time:end:f241628b:start=1553764490000000000,finish=1553764492100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd harbor-labs/pyparcel
+$ git checkout -qf 6e5c6f259715b3b68c170c0b21a734520f5874d9
+$ source ~/virtualenv/python3.7/bin/activate
+$ python --version
+Python 3.7.1
+$ pip --version
+pip 18.1 from /home/travis/virtualenv/python3.7.1/lib/python3.7/site-packages/pip (python 3.7)
+travis_fold:start:install.1[0Ktravis_time:start:4c6bbf51[0K$ pip install -r requirements-dev.txt
+Collecting mypy==0.670
+  Using cached https://files.pythonhosted.org/packages/b4/f9/782bec00b81b9995e5b7b93a3dbd8c1dc61f8eac50a7642ddf1745f3c1d5/mypy-0.670-py2.py3-none-any.whl (203kB)
+Collecting mypy-extensions==0.4.1
+  Using cached https://files.pythonhosted.org/packages/89/8a/2f91d304245076ce2605bdeca12d3ab7c71b7f90fd0c9cad034f0b83a592/mypy-extensions-0.4.1-py2.py3-none-any.whl (678kB)
+Collecting typed-ast==1.3.4
+  Using cached https://files.pythonhosted.org/packages/19/46/eba8550587a4fdb1dea9bd7159696f2f165067f849567832c0b2e342860f/typed-ast-1.3.4-py2.py3-none-any.whl (185kB)
+Collecting requests==2.21.0
+  Using cached https://files.pythonhosted.org/packages/40/ad/4d487d148c3b05dccdd3469eaab01cb8c1488d9b7854f21e6ccecf92eb64/requests-2.21.0-py2.py3-none-any.whl (728kB)
+Collecting attrs==19.1.0
+  Using cached https://files.pythonhosted.org/packages/b9/16/9daa0dd7d4dc7fc175af4c08270a666e930d3fd4ab1746722c2bfa40fc0b/attrs-19.1.0-py2.py3-none-any.whl (358kB)
+Collecting six==1.12.0
+  Using cached https://files.pythonhosted.org/packages/d4/81/97dc743f9ae29e4a991f99af2a3222912938b12e9cae386e68dc0243489c/six-1.12.0-py2.py3-none-any.whl (545kB)
+Installing collected packages: mypy, mypy-extensions, typed-ast, requests, attrs, six
+Successfully installed mypy-0.670 mypy-extensions-0.4.1 typed-ast-1.3.4 requests-2.21.0 attrs-19.1.0 six-1.12.0
+travis_time:end:4c6bbf51:start=1553764492100000000,finish=1553764525100000000,duration=33000000000[0Ktravis_fold:end:install.1[0K[0K[32;1mThe command "pip install -r requirements-dev.txt" exited with 0.[0m
+travis_fold:start:install.2[0Ktravis_time:start:9499e15f[0K$ pip install -e .
+Obtaining file:///home/travis/build/harbor-labs/pyparcel
+Installing collected packages: pyparcel
+  Running setup.py develop for pyparcel
+Successfully installed pyparcel
+travis_time:end:9499e15f:start=1553764525100000000,finish=1553764530100000000,duration=5000000000[0Ktravis_fold:end:install.2[0K[0K[32;1mThe command "pip install -e ." exited with 0.[0m
+travis_time:start:52f6fbdb[0K$ mypy pyparcel
+pyparcel/carrier/ups.py:214: error: Argument 1 to "quote" has incompatible type "str"; expected "int"
+Found 1 error in 1 file (checked 41 source files)
+travis_time:end:52f6fbdb:start=1553764530100000000,finish=1553764536100000000,duration=6000000000[0K[0K[31;1mThe command "mypy pyparcel" exited with 1.[0m
+
+
+Done. Your build exited with 1.

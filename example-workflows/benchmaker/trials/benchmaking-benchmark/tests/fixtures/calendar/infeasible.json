@@ -1,0 +1,78 @@
+{
+ "description": "Without the 15-minute buffer 09:30 would fit; with it nothing does.",
+ "request": {
+  "title": "Sync",
+  "attendees": [
+   "ana",
+   "bo"
+  ],
+  "optional": [],
+  "duration_minutes": 60,
+  "granularity_minutes": 15,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-05T10:30+00:00"
+  },
+  "preference": "earliest",
+  "priority": "normal"
+ },
+ "policy": {
+  "rules": [
+   {
+    "type": "buffer_minutes",
+    "minutes": 15
+   }
+  ]
+ },
+ "calendars": {
+  "ana": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": [
+    {
+     "id": "ev-a1",
+     "title": "Standup",
+     "kind": "meeting",
+     "start": "2026-10-05T09:00+00:00",
+     "end": "2026-10-05T09:30+00:00"
+    }
+   ]
+  },
+  "bo": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": []
+  }
+ },
+ "expect": {
+  "infeasible": true,
+  "count": 0,
+  "wrong": [
+   "policy_blind_buffer"
+  ]
+ }
+}

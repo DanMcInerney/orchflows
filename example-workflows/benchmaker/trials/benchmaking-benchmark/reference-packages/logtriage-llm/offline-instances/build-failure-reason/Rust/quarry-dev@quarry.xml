@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Rust/quarry-dev@quarry/failed/990000601.log</Log>
+    <Keywords>error[E0382], borrow of moved value</Keywords>
+    <Category>0</Category>
+    <Chunk>error[E0382]: borrow of moved value: `config`
+  --&gt; src/loader.rs:57:20
+   |
+51 |     let config = Config::load(path)?;
+   |         ------ move occurs because `config` has type `Config`, which does not implement the `Copy` trait
+52 |     let handle = spawn_worker(config);
+   |                               ------ value moved here
+...
+57 |     println!("{}", config.name);
+   |                    ^^^^^^^^^^^ value borrowed here after move</Chunk>
+  </Example>
+  <Example>
+    <Log>Rust/quarry-dev@quarry/failed/990000602.log</Log>
+    <Keywords>failures, panicked, FAILED</Keywords>
+    <Category>0</Category>
+    <Chunk>---- parser::tests::rejects_unterminated_string stdout ----
+thread 'parser::tests::rejects_unterminated_string' panicked at 'assertion failed: `(left == right)`
+  left: `Err(UnexpectedEof)`,
+ right: `Err(Unterminated { line: 3 })`', src/parser/tests.rs:212:9
+note: Run with `RUST_BACKTRACE=1` environment variable to display a backtrace.
+
+---- store::tests::compacts_on_reopen stdout ----
+thread 'store::tests::compacts_on_reopen' panicked at 'called `Result::unwrap()` on an `Err` value: Io(Os { code: 2, kind: NotFound, message: "No such file or directory" })', src/libcore/result.rs:1084:5</Chunk>
+  </Example>
+</Examples>

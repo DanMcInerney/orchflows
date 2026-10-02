@@ -1,0 +1,98 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: dd2d2da5-ac7a-8183-4828-03be32273c66@1.production-2-worker-org-gce-07vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/f47c6068d83038eab64c02db1f749151ffa1d9e6
+instance: travis-job-85fd63de-afd1-7d6c-46d5-9b546a6ab04a travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 6.730658312s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: java
+Build group: stable
+Build dist: xenial
+Build id: 990000903
+Job id: 990000904
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Sun Jun 23 22:03:18 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:57e84d83[0K$ git clone --depth=50 --branch=master https://github.com/tidewater/ledger-core.git tidewater/ledger-core
+Cloning into 'tidewater/ledger-core'...
+remote: Enumerating objects: 7972, done.remote: Counting objects:  50% (3986/7972)remote: Counting objects: 100% (7972/7972), done.remote: Compressing objects: 100% (2657/2657), done.
+remote: Total 7972 (delta 1993), reused 7882 (delta 1993), pack-reused 0Receiving objects: 100% (7972/7972), 39.13 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1993/1993), done.
+travis_time:end:57e84d83:start=1561327398000000000,finish=1561327400100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd tidewater/ledger-core
+$ git checkout -qf 328e0c0f4db5f421ce01032b2362199fb51ea3f0
+travis_time:start:c1d7fb53[0K$ mvn test -B -V
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+Maven home: /usr/local/maven-3.6.0
+Java version: 1.8.0_201, vendor: Oracle Corporation, runtime: /usr/lib/jvm/java-8-oracle/jre
+Default locale: en_US, platform encoding: UTF-8
+OS name: "linux", version: "4.15.0-1028-gcp", arch: "amd64", family: "unix"
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< io.tidewater.ledger:ledger-core >-------------------
+[INFO] Building ledger-core 2.7.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] Running io.tidewater.ledger.tax.VatCalculatorTest
+[ERROR] Tests run: 4, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.091 s <<< FAILURE! - in io.tidewater.ledger.tax.VatCalculatorTest
+[ERROR] roundsHalfUp  Time elapsed: 0.012 s  <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <10.05> but was: <10.04>
+	at io.tidewater.ledger.tax.VatCalculatorTest.roundsHalfUp(VatCalculatorTest.java:44)
+[INFO] BUILD FAILURE
+travis_time:end:c1d7fb53:start=1561327400100000000,finish=1561327470100000000,duration=70000000000[0K[0K[31;1mThe command "mvn test -B -V" exited with 1.[0m
+
+
+Done. Your build exited with 1.

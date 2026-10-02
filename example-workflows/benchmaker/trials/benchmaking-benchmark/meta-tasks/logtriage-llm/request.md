@@ -1,0 +1,7 @@
+Our CI-failure triage prompt reads a failed build log and returns the lines that show why the build failed. Developers get those lines in the failure notification instead of a link to a log that is often thousands of lines long. It runs on Claude Haiku 4.5 at low effort, one model call per log, and the agent directory is `./subject/agent/`.
+
+Build a benchmark we can use to compare versions of this prompt and different models, starting with Claude Haiku 4.5 and Claude Sonnet 5.5, both at low effort. It has to be able to tell prompt versions apart now and keep doing so as models improve, so its difficulty must be able to grow. The suite will also be run against other agents with the same layout, including future versions of this one. Failed builds from real open-source projects are in `./material/`, and `./interface.md` describes the files the agent reads and writes.
+
+Allow at most {SUBJECT_RUNS} runs of the agent in all, {MINUTES} minutes each, concurrency {CONCURRENCY}, no retries, and no paid judge.
+
+Save the suite, commands, quality card, research catalog and rejection log in `./benchmark-run/`. From there, `python run.py full --agent <agent-dir> --output <dir>` must run every task with the suite's declared repeats, and `python run.py grade --input <dir> --output <file>` must grade stored final workspaces without running any agent. Both must follow `interface.md` and `interface/package.md`; `python conform.py ./benchmark-run` checks the shape.

@@ -1,0 +1,182 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 806ad4bd-5173-c3fb-8fba-37f8ec63a968@1.production-2-worker-org-gce-20vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/efa97eee899ccc8570a991b42552f8e3893206c4
+instance: travis-job-5f4bb7a6-5686-f2c6-9538-c169d44da859 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 9.335637123s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: php
+Build group: stable
+Build dist: xenial
+Build id: 990000802
+Job id: 990000803
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Wed May 22 17:09:44 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:6232676c[0K$ git clone --depth=50 --branch=master https://github.com/opal-php/opal.git opal-php/opal
+Cloning into 'opal-php/opal'...
+remote: Enumerating objects: 5432, done.remote: Counting objects:  50% (2716/5432)remote: Counting objects: 100% (5432/5432), done.remote: Compressing objects: 100% (1810/1810), done.
+remote: Total 5432 (delta 1358), reused 5342 (delta 1358), pack-reused 0Receiving objects: 100% (5432/5432), 35.92 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1358/1358), done.
+travis_time:end:6232676c:start=1558544984000000000,finish=1558544986100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd opal-php/opal
+$ git checkout -qf af592af380b5ab6c32c13234822b8c0c85c8f7ad
+$ phpenv global 7.2 2>/dev/null
+$ php --version
+PHP 7.2.4 (cli) (built: Apr  9 2019 08:10:21) ( NTS )
+$ composer --version
+Composer version 1.8.4 2019-02-11 10:52:10
+travis_fold:start:install[0Ktravis_time:start:c50feb49[0K$ composer install --prefer-dist --no-interaction
+Loading composer repositories with package information
+Installing dependencies (including require-dev) from lock file
+Package operations: 40 installs, 0 updates, 0 removals
+  - Installing psr/log (1.1.0): Loading from cache
+  - Installing symfony/polyfill-mbstring (v1.11.0): Loading from cache
+  - Installing symfony/console (v4.2.5): Loading from cache
+  - Installing psr/container (1.0.0): Loading from cache
+  - Installing symfony/debug (v4.2.5): Loading from cache
+  - Installing monolog/monolog (1.24.0): Loading from cache
+  - Installing guzzlehttp/psr7 (1.5.2): Loading from cache
+  - Installing guzzlehttp/guzzle (6.3.3): Loading from cache
+  - Installing guzzlehttp/promises (v1.3.1): Loading from cache
+  - Installing doctrine/inflector (v1.3.0): Loading from cache
+  - Installing doctrine/lexer (1.0.1): Loading from cache
+  - Installing nesbot/carbon (2.17.1): Loading from cache
+  - Installing phpunit/php-token-stream (3.0.1): Loading from cache
+  - Installing phpunit/php-text-template (1.2.1): Loading from cache
+  - Installing phpunit/php-file-iterator (2.0.2): Loading from cache
+  - Installing phpunit/php-code-coverage (6.1.4): Loading from cache
+  - Installing phpunit/phpunit-mock-objects (6.1.2): Loading from cache
+  - Installing phpunit/phpunit (7.5.8): Loading from cache
+  - Installing sebastian/diff (3.0.2): Loading from cache
+  - Installing sebastian/comparator (3.0.2): Loading from cache
+  - Installing sebastian/exporter (3.1.0): Loading from cache
+  - Installing sebastian/environment (4.2.1): Loading from cache
+  - Installing sebastian/recursion-context (3.0.0): Loading from cache
+  - Installing sebastian/global-state (2.0.0): Loading from cache
+  - Installing sebastian/object-enumerator (3.0.3): Loading from cache
+  - Installing sebastian/resource-operations (2.0.1): Loading from cache
+  - Installing sebastian/version (2.0.1): Loading from cache
+  - Installing myclabs/deep-copy (1.8.1): Loading from cache
+  - Installing phpspec/prophecy (1.8.0): Loading from cache
+  - Installing webmozart/assert (1.4.0): Loading from cache
+  - Installing phar-io/manifest (1.0.3): Loading from cache
+  - Installing phar-io/version (2.0.1): Loading from cache
+  - Installing theseer/tokenizer (1.1.2): Loading from cache
+  - Installing squizlabs/php_codesniffer (3.4.1): Loading from cache
+  - Installing symfony/yaml (v4.2.5): Loading from cache
+  - Installing symfony/finder (v4.2.5): Loading from cache
+  - Installing symfony/filesystem (v4.2.5): Loading from cache
+  - Installing symfony/translation (v4.2.5): Loading from cache
+  - Installing vlucas/phpdotenv (v3.3.3): Loading from cache
+  - Installing ramsey/uuid (3.8.0): Loading from cache
+Generating autoload files
+travis_time:end:c50feb49:start=1558544986100000000,finish=1558545017100000000,duration=31000000000[0Ktravis_fold:end:install[0K[0K[32;1mThe command "composer install --prefer-dist --no-interaction" exited with 0.[0m
+travis_time:start:77befdb5[0K$ vendor/bin/phpcs --standard=PSR2 src || true
+
+FILE: /home/travis/build/opal-php/opal/src/Cache/RedisStore.php
+----------------------------------------------------------------------
+FOUND 3 ERRORS AFFECTING 3 LINES
+----------------------------------------------------------------------
+  23 | ERROR | [x] Expected 1 space after closing brace; newline found
+  41 | ERROR | [x] Opening brace of a class must be on the line after the definition
+  87 | ERROR | [x] Line exceeds 120 characters; contains 134 characters
+----------------------------------------------------------------------
+
+FILE: /home/travis/build/opal-php/opal/src/Http/Router.php
+----------------------------------------------------------------------
+FOUND 2 ERRORS AFFECTING 2 LINES
+----------------------------------------------------------------------
+  12 | ERROR | [x] Each PHP statement must be on a line by itself
+ 209 | ERROR | [x] Visibility must be declared on method "match"
+----------------------------------------------------------------------
+
+FILE: /home/travis/build/opal-php/opal/src/Support/Arr.php
+----------------------------------------------------------------------
+FOUND 1 ERRORS AFFECTING 1 LINES
+----------------------------------------------------------------------
+   9 | ERROR | [x] Namespace declaration must be followed by a blank line
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+----------------------------------------------------------------------
+
+Time: 412ms; Memory: 8MB
+
+travis_time:end:77befdb5:start=1558545017100000000,finish=1558545020100000000,duration=3000000000[0K
+travis_time:start:704c9e4e[0K$ vendor/bin/phpunit
+PHP Fatal error:  Uncaught Error: Class 'Opal\Cache\RedisStore' not found in /home/travis/build/opal-php/opal/tests/bootstrap.php:23
+Stack trace:
+#0 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/Util/Configuration.php(412): require_once()
+#1 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(299): PHPUnit\Util\Configuration->handlePHPConfiguration()
+#2 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(212): PHPUnit\TextUI\Command->handleArguments(Array)
+#3 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(162): PHPUnit\TextUI\Command->run(Array, true)
+#4 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/phpunit(17): PHPUnit\TextUI\Command::main()
+#5 {main}
+  thrown in /home/travis/build/opal-php/opal/tests/bootstrap.php on line 23
+Fatal error: Uncaught Error: Class 'Opal\Cache\RedisStore' not found in /home/travis/build/opal-php/opal/tests/bootstrap.php:23
+Stack trace:
+#0 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/Util/Configuration.php(412): require_once()
+#1 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(299): PHPUnit\Util\Configuration->handlePHPConfiguration()
+#2 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(212): PHPUnit\TextUI\Command->handleArguments(Array)
+#3 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/src/TextUI/Command.php(162): PHPUnit\TextUI\Command->run(Array, true)
+#4 /home/travis/build/opal-php/opal/vendor/phpunit/phpunit/phpunit(17): PHPUnit\TextUI\Command::main()
+#5 {main}
+  thrown in /home/travis/build/opal-php/opal/tests/bootstrap.php on line 23
+travis_time:end:704c9e4e:start=1558545020100000000,finish=1558545021100000000,duration=1000000000[0K[0K[31;1mThe command "vendor/bin/phpunit" exited with 255.[0m
+
+
+Done. Your build exited with 255.

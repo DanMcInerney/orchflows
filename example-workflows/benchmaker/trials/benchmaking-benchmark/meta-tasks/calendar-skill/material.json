@@ -1,0 +1,54 @@
+{
+  "meta_task": "calendar-skill",
+  "source": {
+    "name": "Natural Plan, calendar scheduling",
+    "repository": "https://github.com/google-deepmind/natural-plan",
+    "data_url": "https://raw.githubusercontent.com/google-deepmind/natural-plan/main/data/calendar_scheduling.json",
+    "file": "calendar_scheduling.json",
+    "paper": "https://arxiv.org/abs/2406.04520",
+    "format": "one JSON object keyed by record id; each record has num_people, num_days, duration, prompt_5shot, prompt_0shot, golden_plan and pred_5shot_pro, all strings",
+    "records": 1000
+  },
+  "licence": {
+    "code": "Apache-2.0",
+    "data": "CC-BY-4.0",
+    "statement_url": "https://github.com/google-deepmind/natural-plan#license-and-disclaimer",
+    "code_url": "https://github.com/google-deepmind/natural-plan/blob/main/LICENSE",
+    "data_terms_url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+    "checked": "2026-10-01",
+    "note": "The repository README grants software under Apache 2.0 and all other materials, which include data/, under CC BY 4.0."
+  },
+  "attribution": "Natural Plan calendar scheduling records are (c) 2024 DeepMind Technologies Limited, from Zheng et al., \"NATURAL PLAN: Benchmarking LLMs on Natural Language Planning\" (https://arxiv.org/abs/2406.04520), https://github.com/google-deepmind/natural-plan, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: records reduced to the fields num_people, num_days, duration, prompt_0shot and golden_plan; the sample is a subset of the one for schedule-nosolver.",
+  "realism": "Natural Plan supplies realistic phrasing and verified answers for meeting requests: single meetings, one shared time zone and 30-minute increments. It has no rooms, buffers, focus blocks, urgent requests or calendar files. The workspace layout, the booking policy and its rules are the team's own and are written for this meta-task; tasks built on the material are reconstructions from it, not logged bookings.",
+  "policy": "The team's booking policy is part of every workspace as policy.json and policy.md; interface.md lists its rule types. There is no further policy material.",
+  "shared_with": "schedule-nosolver: the same download; the public sample here is every second record of that one.",
+  "public_fields": [
+    "num_people",
+    "num_days",
+    "duration",
+    "prompt_0shot",
+    "golden_plan"
+  ],
+  "public_records": [
+    "calendar_scheduling_example_530",
+    "calendar_scheduling_example_546",
+    "calendar_scheduling_example_650",
+    "calendar_scheduling_example_680",
+    "calendar_scheduling_example_715",
+    "calendar_scheduling_example_724",
+    "calendar_scheduling_example_809",
+    "calendar_scheduling_example_893",
+    "calendar_scheduling_example_904",
+    "calendar_scheduling_example_923",
+    "calendar_scheduling_example_24",
+    "calendar_scheduling_example_43",
+    "calendar_scheduling_example_132",
+    "calendar_scheduling_example_150",
+    "calendar_scheduling_example_203",
+    "calendar_scheduling_example_240",
+    "calendar_scheduling_example_329",
+    "calendar_scheduling_example_370",
+    "calendar_scheduling_example_423",
+    "calendar_scheduling_example_457"
+  ]
+}

@@ -1,0 +1,270 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 63464d7d-f370-a210-6dc9-f4d71f49c31c@1.production-2-worker-org-gce-24vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/59bd7575247842caa567fc3559394e116f337e9a
+instance: travis-job-67df0232-bb51-733a-2cec-3b9145dca6f7 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 4.368140386s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: go
+Build group: stable
+Build dist: xenial
+Build id: 990000502
+Job id: 990000503
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Tue Sep 10 18:21:43 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:203f498f[0K$ git clone --depth=50 --branch=master https://github.com/corvid-systems/gateway.git corvid-systems/gateway
+Cloning into 'corvid-systems/gateway'...
+remote: Enumerating objects: 3307, done.remote: Counting objects:  50% (1653/3307)remote: Counting objects: 100% (3307/3307), done.remote: Compressing objects: 100% (1102/1102), done.
+remote: Total 3307 (delta 826), reused 3217 (delta 826), pack-reused 0Receiving objects: 100% (3307/3307), 28.65 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (826/826), done.
+travis_time:end:203f498f:start=1568139703000000000,finish=1568139705100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd corvid-systems/gateway
+$ git checkout -qf 51229466f83debf3729c29d95238f85625c68f33
+$ gimme 1.13
+go version go1.13.1 linux/amd64
+$ go version
+go version go1.13.1 linux/amd64
+$ export GO111MODULE=on
+$ go env GOPATH
+/home/travis/gopath
+travis_fold:start:install[0Ktravis_time:start:56f740e3[0K$ go mod download
+go: downloading github.com/pkg/errors v0.8.1
+go: downloading github.com/gorilla/mux v1.7.1
+go: downloading github.com/sirupsen/logrus v1.4.0
+go: downloading golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
+go: downloading github.com/prometheus/client_golang v0.9.2
+go: downloading github.com/stretchr/testify v1.3.0
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading gopkg.in/yaml.v2 v2.2.2
+go: downloading golang.org/x/sys v0.0.0-20190412213103-97732733099d
+go: downloading github.com/hashicorp/golang-lru v0.5.1
+go: downloading github.com/rs/cors v1.6.0
+go: downloading google.golang.org/grpc v1.19.1
+go: downloading github.com/golang/protobuf v1.3.1
+go: downloading github.com/cespare/xxhash v1.1.0
+go: downloading github.com/beorn7/perks v1.0.0
+go: downloading github.com/matttproud/golang_protobuf_extensions v1.0.1
+go: downloading github.com/prometheus/common v0.2.0
+go: downloading github.com/prometheus/procfs v0.0.0-20190117184657-bf6a532e95b1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading github.com/konsorten/go-windows-terminal-sequences v1.0.1
+go: downloading golang.org/x/text v0.3.0
+go: downloading golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+go: downloading github.com/fsnotify/fsnotify v1.4.7
+go: downloading github.com/spf13/cobra v0.0.3
+go: downloading github.com/spf13/pflag v1.0.3
+go: downloading github.com/inconshreveable/mousetrap v1.0.0
+go: downloading github.com/google/uuid v1.1.1
+go: downloading github.com/gorilla/handlers v1.4.0
+travis_time:end:56f740e3:start=1568139705100000000,finish=1568139724100000000,duration=19000000000[0Ktravis_fold:end:install[0K[0K[32;1mThe command "go mod download" exited with 0.[0m
+travis_time:start:b004c912[0K$ go test -race -timeout 5m ./...
+ok  	github.com/corvid-systems/gateway/cmd/gateway	2.238s
+ok  	github.com/corvid-systems/gateway/internal/admin	2.926s
+ok  	github.com/corvid-systems/gateway/internal/auth	1.073s
+ok  	github.com/corvid-systems/gateway/internal/cache	0.467s
+?   	github.com/corvid-systems/gateway/internal/config	[no test files]
+ok  	github.com/corvid-systems/gateway/internal/metrics	2.901s
+?   	github.com/corvid-systems/gateway/internal/middleware	[no test files]
+ok  	github.com/corvid-systems/gateway/internal/router	1.609s
+ok  	github.com/corvid-systems/gateway/internal/tls	1.010s
+panic: test timed out after 5m0s
+running tests:
+	TestPoolDrainUnderLoad (5m0s)
+
+goroutine 71 [running]:
+testing.(*M).startAlarm.func1()
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:1377 +0xdf
+created by time.goFunc
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/time/sleep.go:169 +0x44
+
+goroutine 286 [chan receive, 4 minutes]:
+testing.(*T).Run(0xc000a4f19, 0x8e3c05, 0x15, 0x8fb2a8, 0x4a1dd6)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:961 +0x377
+testing.runTests.func1(0xc000a33b1)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:1202 +0x78
+
+goroutine 274 [select, 4 minutes]:
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).reaper(0xc000a4112)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:187 +0x11b
+created by github.com/corvid-systems/gateway/internal/upstream.NewPool
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:61 +0x1d9
+
+goroutine 316 [semacquire, 4 minutes]:
+sync.runtime_SemacquireMutex(0xc00043ed7, 0xc0006d21f, 0x1)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/sema.go:71 +0x3d
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).Acquire(0xc000ea301, 0x9a1d20, 0xc000116f1, 0x0, 0x0, 0x0)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:112 +0x1f7
+
+goroutine 454 [IO wait, 4 minutes]:
+internal/poll.runtime_pollWait(0xc000843ef, 0x72, 0xffffffffffffffff)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/netpoll.go:173 +0x66
+net.(*conn).Read(0xc000ee46a, 0xc00072a59, 0x1000, 0x1000, 0x0, 0x0, 0x0)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/net/net.go:177 +0x69
+
+goroutine 216 [chan receive, 4 minutes]:
+testing.(*T).Run(0xc000f0fe5, 0x8e3c05, 0x15, 0x8fb2a8, 0x4a1dd6)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:961 +0x377
+testing.runTests.func1(0xc000b64f5)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:1202 +0x78
+
+goroutine 464 [select, 4 minutes]:
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).reaper(0xc0006dd1b)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:187 +0x11b
+created by github.com/corvid-systems/gateway/internal/upstream.NewPool
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:61 +0x1d9
+
+goroutine 829 [semacquire, 4 minutes]:
+sync.runtime_SemacquireMutex(0xc000513b6, 0xc0009f6be, 0x1)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/sema.go:71 +0x3d
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).Acquire(0xc0008a9bb, 0x9a1d20, 0xc0009571b, 0x0, 0x0, 0x0)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:112 +0x1f7
+
+goroutine 190 [IO wait, 4 minutes]:
+internal/poll.runtime_pollWait(0xc000a2823, 0x72, 0xffffffffffffffff)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/netpoll.go:173 +0x66
+net.(*conn).Read(0xc000237d7, 0xc00096921, 0x1000, 0x1000, 0x0, 0x0, 0x0)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/net/net.go:177 +0x69
+
+goroutine 355 [chan receive, 4 minutes]:
+testing.(*T).Run(0xc000e4aa7, 0x8e3c05, 0x15, 0x8fb2a8, 0x4a1dd6)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:961 +0x377
+testing.runTests.func1(0xc00028221)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:1202 +0x78
+
+goroutine 791 [select, 4 minutes]:
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).reaper(0xc00045ddc)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:187 +0x11b
+created by github.com/corvid-systems/gateway/internal/upstream.NewPool
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:61 +0x1d9
+
+goroutine 316 [semacquire, 4 minutes]:
+sync.runtime_SemacquireMutex(0xc00041858, 0xc000e30d1, 0x1)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/sema.go:71 +0x3d
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).Acquire(0xc000b24b9, 0x9a1d20, 0xc00093a80, 0x0, 0x0, 0x0)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:112 +0x1f7
+
+goroutine 695 [IO wait, 4 minutes]:
+internal/poll.runtime_pollWait(0xc000b613f, 0x72, 0xffffffffffffffff)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/netpoll.go:173 +0x66
+net.(*conn).Read(0xc00091342, 0xc00079721, 0x1000, 0x1000, 0x0, 0x0, 0x0)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/net/net.go:177 +0x69
+
+goroutine 749 [chan receive, 4 minutes]:
+testing.(*T).Run(0xc0009ca58, 0x8e3c05, 0x15, 0x8fb2a8, 0x4a1dd6)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:961 +0x377
+testing.runTests.func1(0xc00039b76)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:1202 +0x78
+
+goroutine 778 [select, 4 minutes]:
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).reaper(0xc000271f3)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:187 +0x11b
+created by github.com/corvid-systems/gateway/internal/upstream.NewPool
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:61 +0x1d9
+
+goroutine 118 [semacquire, 4 minutes]:
+sync.runtime_SemacquireMutex(0xc000218c1, 0xc000d0822, 0x1)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/sema.go:71 +0x3d
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).Acquire(0xc000e9d86, 0x9a1d20, 0xc00066126, 0x0, 0x0, 0x0)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:112 +0x1f7
+
+goroutine 593 [IO wait, 4 minutes]:
+internal/poll.runtime_pollWait(0xc000773e1, 0x72, 0xffffffffffffffff)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/netpoll.go:173 +0x66
+net.(*conn).Read(0xc0003ee64, 0xc000b7a3f, 0x1000, 0x1000, 0x0, 0x0, 0x0)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/net/net.go:177 +0x69
+
+goroutine 255 [chan receive, 4 minutes]:
+testing.(*T).Run(0xc000ec1b7, 0x8e3c05, 0x15, 0x8fb2a8, 0x4a1dd6)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:961 +0x377
+testing.runTests.func1(0xc0007ee34)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:1202 +0x78
+
+goroutine 731 [select, 4 minutes]:
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).reaper(0xc00097172)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:187 +0x11b
+created by github.com/corvid-systems/gateway/internal/upstream.NewPool
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:61 +0x1d9
+
+goroutine 774 [semacquire, 4 minutes]:
+sync.runtime_SemacquireMutex(0xc00082b53, 0xc00023057, 0x1)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/sema.go:71 +0x3d
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).Acquire(0xc000252af, 0x9a1d20, 0xc0000d567, 0x0, 0x0, 0x0)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:112 +0x1f7
+
+goroutine 687 [IO wait, 4 minutes]:
+internal/poll.runtime_pollWait(0xc000e38d9, 0x72, 0xffffffffffffffff)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/runtime/netpoll.go:173 +0x66
+net.(*conn).Read(0xc000b4182, 0xc00003486, 0x1000, 0x1000, 0x0, 0x0, 0x0)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/net/net.go:177 +0x69
+
+goroutine 742 [chan receive, 4 minutes]:
+testing.(*T).Run(0xc0001a79e, 0x8e3c05, 0x15, 0x8fb2a8, 0x4a1dd6)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:961 +0x377
+testing.runTests.func1(0xc000015a2)
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:1202 +0x78
+
+goroutine 710 [select, 4 minutes]:
+github.com/corvid-systems/gateway/internal/upstream.(*Pool).reaper(0xc000861dc)
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:187 +0x11b
+created by github.com/corvid-systems/gateway/internal/upstream.NewPool
+	/home/travis/gopath/src/github.com/corvid-systems/gateway/internal/upstream/pool.go:61 +0x1d9
+
+FAIL	github.com/corvid-systems/gateway/internal/upstream	300.063s
+?   	github.com/corvid-systems/gateway/pkg/client	[no test files]
+FAIL
+travis_time:end:b004c912:start=1568139724100000000,finish=1568140042100000000,duration=318000000000[0K[0K[31;1mThe command "go test -race -timeout 5m ./..." exited with 1.[0m

@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Ruby/fernwood@fernwood-api/failed/990000401.log</Log>
+    <Keywords>Failures, Failure/Error, rspec</Keywords>
+    <Category>0</Category>
+    <Chunk>  1) Api::V2::WebhooksController POST /v2/webhooks/deliver signs the payload with the tenant secret
+     Failure/Error: expect(response.headers['X-Fernwood-Signature']).to eq(expected_signature)
+
+       expected: "sha256=3f1c9ab0d2c2"
+            got: "sha256=9a0e4477d1b7"
+
+       (compared using ==)
+     # ./spec/requests/api/v2/webhooks_spec.rb:48:in `block (4 levels) in top (required)&gt;'
+     # ./spec/support/tenant_context.rb:12:in `block (3 levels) in top (required)&gt;'
+     # /home/travis/.rvm/gems/ruby-2.5.3/gems/rspec-core-3.8.0/lib/rspec/core/example.rb:254:in `instance_exec'
+
+  2) Api::V2::WebhooksController POST /v2/webhooks/deliver records the delivery attempt
+     Failure/Error: expect(delivery.attempts.count).to eq(1)
+
+       expected: 1
+            got: 0
+
+       (compared using ==)
+     # ./spec/requests/api/v2/webhooks_spec.rb:61:in `block (4 levels) in top (required)&gt;'
+     # ./spec/support/tenant_context.rb:12:in `block (3 levels) in top (required)&gt;'</Chunk>
+  </Example>
+  <Example>
+    <Log>Ruby/fernwood@fernwood-api/failed/990000402.log</Log>
+    <Keywords>Bundler could not find compatible versions</Keywords>
+    <Category>0</Category>
+    <Chunk>Bundler could not find compatible versions for gem "activesupport":
+  In Gemfile:
+    rails (~&gt; 5.2.3) was resolved to 5.2.3, which depends on
+      activesupport (= 5.2.3)
+
+    fernwood-auth (~&gt; 0.9) was resolved to 0.9.1, which depends on
+      activesupport (&gt;= 6.0)</Chunk>
+  </Example>
+</Examples>

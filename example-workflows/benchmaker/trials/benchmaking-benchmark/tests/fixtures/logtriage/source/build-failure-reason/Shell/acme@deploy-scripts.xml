@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Shell/acme@deploy-scripts/failed/900000007.log</Log>
+    <Keywords>failed, not found</Keywords>
+    <Category>0</Category>
+    <Chunk>[31m not ok restarts service only when unit changed[0m
+   (in test file test/restart.bats, line 27)
+     `[ "$status" -eq 0 ]' failed
+   restart.sh: line 14: systemctl: command not found</Chunk>
+  </Example>
+  <Example>
+    <Log>Shell/acme@deploy-scripts/failed/900000008.log</Log>
+    <Keywords>shellcheck, error</Keywords>
+    <Category>0</Category>
+    <Chunk>shellcheck: deploy.sh:31:7: error: Double quote to prevent globbing and word splitting. [SC2086]
+shellcheck: deploy.sh:44:1: error: Use $(...) notation instead of legacy backticks. [SC2006]
+2 scripts have issues</Chunk>
+  </Example>
+</Examples>

@@ -1,0 +1,1113 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 04cff152-85c7-8c46-0136-0ab97956daa1@1.production-2-worker-org-gce-13vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/cd656a706aefc60b535d3c3441c0ca2457977068
+instance: travis-job-2f49ea63-d1b1-4b13-f7aa-e6af956a8202 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 5.263123153s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: python
+Build group: stable
+Build dist: xenial
+Build id: 990000101
+Job id: 990000102
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Mon Mar 25 16:43:24 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:3658a2fb[0K$ git clone --depth=50 --branch=master https://github.com/harbor-labs/pyparcel.git harbor-labs/pyparcel
+Cloning into 'harbor-labs/pyparcel'...
+remote: Enumerating objects: 2963, done.remote: Counting objects:  50% (1481/2963)remote: Counting objects: 100% (2963/2963), done.remote: Compressing objects: 100% (987/987), done.
+remote: Total 2963 (delta 740), reused 2873 (delta 740), pack-reused 0Receiving objects: 100% (2963/2963), 27.88 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (740/740), done.
+travis_time:end:3658a2fb:start=1553532204000000000,finish=1553532206100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd harbor-labs/pyparcel
+$ git checkout -qf 8074241bf04e03abc2afda1f6fa9dda3fc0611f7
+$ source ~/virtualenv/python3.7/bin/activate
+$ python --version
+Python 3.7.1
+$ pip --version
+pip 18.1 from /home/travis/virtualenv/python3.7.1/lib/python3.7/site-packages/pip (python 3.7)
+travis_fold:start:install.1[0Ktravis_time:start:36438636[0K$ pip install -r requirements-dev.txt
+Collecting requests==2.21.0
+  Using cached https://files.pythonhosted.org/packages/92/72/f9b0ec06da52bf67341f318a537ba9375c976754166967033eaad196afdf/requests-2.21.0-py2.py3-none-any.whl (232kB)
+Collecting pytest==4.4.0
+  Using cached https://files.pythonhosted.org/packages/0c/a2/4edfe539a039fb04770d3e1aec813935a005329be3ee5f47b30995af2a53/pytest-4.4.0-py2.py3-none-any.whl (894kB)
+Collecting pytest-cov==2.6.1
+  Using cached https://files.pythonhosted.org/packages/12/29/b88715341628b1a79edc6e42312006de588cdc36736a95d8cb7d587f1109/pytest-cov-2.6.1-py2.py3-none-any.whl (403kB)
+Collecting pytest-mock==1.10.4
+  Using cached https://files.pythonhosted.org/packages/32/c3/3ca499db0092ca83caa781022a883c73bf1c8208ba098fe0bf9bf8405fed/pytest-mock-1.10.4-py2.py3-none-any.whl (628kB)
+Collecting attrs==19.1.0
+  Using cached https://files.pythonhosted.org/packages/61/c4/58643ef04c4370ebb1e799682f7d9d7d95e86f84a6aa5fa202c1a844d296/attrs-19.1.0-py2.py3-none-any.whl (726kB)
+Collecting more-itertools==7.0.0
+  Using cached https://files.pythonhosted.org/packages/13/54/39a6b84c3cf3baa01f255a7e5763430fcfe3d3507db83fc4821cdf606e3a/more-itertools-7.0.0-py2.py3-none-any.whl (387kB)
+Collecting pluggy==0.9.0
+  Using cached https://files.pythonhosted.org/packages/c2/03/8feaf5b3954811e57367093fefb0d00da4fc69c6f940d7c9772335f1657d/pluggy-0.9.0-py2.py3-none-any.whl (229kB)
+Collecting py==1.8.0
+  Using cached https://files.pythonhosted.org/packages/14/39/bb130af1f6f20105b322e63916bec8aa549809ef4594b06b052129fa16f3/py-1.8.0-py2.py3-none-any.whl (707kB)
+Collecting coverage==4.5.3
+  Using cached https://files.pythonhosted.org/packages/b0/6a/5d053e6c1db40ea03e2874a07f445a90006c1d0f3e8fa00d40a8de0468f3/coverage-4.5.3-py2.py3-none-any.whl (442kB)
+Collecting six==1.12.0
+  Using cached https://files.pythonhosted.org/packages/82/58/50998075915f4f6eb33f911f3cd5742f9f2cd3f0bf2bb871865d8ece64bf/six-1.12.0-py2.py3-none-any.whl (840kB)
+Collecting responses==0.10.5
+  Using cached https://files.pythonhosted.org/packages/83/d7/834a4a4f45f3f8fbf16ae14960a1b22940a6536730428a961f4144d7e09d/responses-0.10.5-py2.py3-none-any.whl (197kB)
+Collecting freezegun==0.3.11
+  Using cached https://files.pythonhosted.org/packages/16/55/044a84530e698087a563227493c1d097a80bea594a0c189ca78002211ad8/freezegun-0.3.11-py2.py3-none-any.whl (140kB)
+Collecting python-dateutil==2.8.0
+  Using cached https://files.pythonhosted.org/packages/dc/d3/ef1def5ca58356039ff427ef93ef47d69cc0b21f8a279a4ca1f63b54d0ea/python-dateutil-2.8.0-py2.py3-none-any.whl (520kB)
+Collecting cookies==2.2.1
+  Using cached https://files.pythonhosted.org/packages/04/0f/ee5d3a979be55cbee582a11a96b285af552d38add648232e5979f9e51027/cookies-2.2.1-py2.py3-none-any.whl (468kB)
+Installing collected packages: requests, pytest, pytest-cov, pytest-mock, attrs, more-itertools, pluggy, py, coverage, six, responses, freezegun, python-dateutil, cookies
+Successfully installed requests-2.21.0 pytest-4.4.0 pytest-cov-2.6.1 pytest-mock-1.10.4 attrs-19.1.0 more-itertools-7.0.0 pluggy-0.9.0 py-1.8.0 coverage-4.5.3 six-1.12.0 responses-0.10.5 freezegun-0.3.11 python-dateutil-2.8.0 cookies-2.2.1
+travis_time:end:36438636:start=1553532206100000000,finish=1553532247100000000,duration=41000000000[0Ktravis_fold:end:install.1[0K[0K[32;1mThe command "pip install -r requirements-dev.txt" exited with 0.[0m
+travis_fold:start:install.2[0Ktravis_time:start:7f817395[0K$ pip install -e .
+Obtaining file:///home/travis/build/harbor-labs/pyparcel
+Installing collected packages: pyparcel
+  Running setup.py develop for pyparcel
+Successfully installed pyparcel
+travis_time:end:7f817395:start=1553532247100000000,finish=1553532253100000000,duration=6000000000[0Ktravis_fold:end:install.2[0K[0K[32;1mThe command "pip install -e ." exited with 0.[0m
+travis_time:start:c21beb6d[0K$ pytest -v --cov=pyparcel
+============================= test session starts ==============================
+platform linux -- Python 3.7.1, pytest-4.4.0, py-1.8.0, pluggy-0.9.0 -- /home/travis/virtualenv/python3.7.1/bin/python
+cachedir: .pytest_cache
+rootdir: /home/travis/build/harbor-labs/pyparcel, inifile: setup.cfg
+plugins: cov-2.6.1, mock-1.10.4
+collecting ... collected 884 items
+
+tests/test_address.py::test_parse_street_number [32mPASSED[0m[36m                  [  0%][0m
+tests/test_address.py::test_validate_postal_code [32mPASSED[0m[36m                 [  0%][0m
+tests/test_address.py::test_normalize_country_alias [32mPASSED[0m[36m              [  0%][0m
+tests/test_address.py::test_format_weight_units [32mPASSED[0m[36m                  [  0%][0m
+tests/test_address.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m          [  0%][0m
+tests/test_address.py::test_accept_service_level [32mPASSED[0m[36m                 [  0%][0m
+tests/test_address.py::test_round_insured_value [32mPASSED[0m[36m                  [  0%][0m
+tests/test_address.py::test_convert_customs_value [32mPASSED[0m[36m                [  0%][0m
+tests/test_address.py::test_merge_tracking_code [32mPASSED[0m[36m                  [  1%][0m
+tests/test_address.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m           [  1%][0m
+tests/test_address.py::test_filter_manifest_totals [32mPASSED[0m[36m               [  1%][0m
+tests/test_address.py::test_serialize_address_line [32mPASSED[0m[36m               [  1%][0m
+tests/test_address.py::test_invalid_zip_error_message [32mPASSED[0m[36m            [  1%][0m
+tests/test_address.py::test_validate_street_number [32mPASSED[0m[36m               [  1%][0m
+tests/test_address.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m        [  1%][0m
+tests/test_address.py::test_format_country_alias [32mPASSED[0m[36m                 [  1%][0m
+tests/test_address.py::test_reject_weight_units [32mPASSED[0m[36m                  [  1%][0m
+tests/test_address.py::test_accept_label_size [32mPASSED[0m[36m                    [  2%][0m
+tests/test_address.py::test_round_service_level [32mPASSED[0m[36m                  [  2%][0m
+tests/test_address.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m       [  2%][0m
+tests/test_address.py::test_merge_customs_value [32mPASSED[0m[36m                  [  2%][0m
+tests/test_address.py::test_sort_tracking_code [32mPASSED[0m[36m                   [  2%][0m
+tests/test_address.py::test_filter_pickup_window [32mPASSED[0m[36m                 [  2%][0m
+tests/test_address.py::test_serialize_manifest_totals [32mPASSED[0m[36m            [  2%][0m
+tests/test_address.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m           [  2%][0m
+tests/test_address.py::test_validate_dimension_units [32mPASSED[0m[36m             [  2%][0m
+tests/test_address.py::test_normalize_street_number [32mPASSED[0m[36m              [  3%][0m
+tests/test_address.py::test_format_postal_code [32mPASSED[0m[36m                   [  3%][0m
+tests/test_address.py::test_reject_country_alias [32mPASSED[0m[36m                 [  3%][0m
+tests/test_address.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m          [  3%][0m
+tests/test_address.py::test_round_label_size [32mPASSED[0m[36m                     [  3%][0m
+tests/test_address.py::test_convert_service_level [32mPASSED[0m[36m                [  3%][0m
+tests/test_address.py::test_merge_insured_value [32mPASSED[0m[36m                  [  3%][0m
+tests/test_address.py::test_sort_customs_value [32mPASSED[0m[36m                   [  3%][0m
+tests/test_address.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m         [  3%][0m
+tests/test_address.py::test_serialize_pickup_window [32mPASSED[0m[36m              [  4%][0m
+tests/test_address.py::test_parse_address_line [32mPASSED[0m[36m                   [  4%][0m
+tests/test_address.py::test_validate_rate_quote [32mPASSED[0m[36m                  [  4%][0m
+tests/test_address.py::test_normalize_dimension_units [32mPASSED[0m[36m            [  4%][0m
+tests/test_address.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m        [  4%][0m
+tests/test_address.py::test_reject_postal_code [32mPASSED[0m[36m                   [  4%][0m
+tests/test_address.py::test_accept_country_alias [32mPASSED[0m[36m                 [  4%][0m
+tests/test_address.py::test_round_weight_units [32mPASSED[0m[36m                   [  4%][0m
+tests/test_address.py::test_convert_label_size [32mPASSED[0m[36m                   [  4%][0m
+tests/test_address.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m        [  5%][0m
+tests/test_address.py::test_sort_insured_value [32mPASSED[0m[36m                   [  5%][0m
+tests/test_address.py::test_filter_customs_value [32mPASSED[0m[36m                 [  5%][0m
+tests/test_address.py::test_serialize_tracking_code [32mPASSED[0m[36m              [  5%][0m
+tests/test_address.py::test_parse_manifest_totals [32mPASSED[0m[36m                [  5%][0m
+tests/test_address.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m        [  5%][0m
+tests/test_address.py::test_normalize_rate_quote [32mPASSED[0m[36m                 [  5%][0m
+tests/test_address.py::test_format_dimension_units [32mPASSED[0m[36m               [  5%][0m
+tests/test_address.py::test_reject_street_number [32mPASSED[0m[36m                 [  5%][0m
+tests/test_address.py::test_accept_postal_code [32mPASSED[0m[36m                   [  6%][0m
+tests/test_address.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m          [  6%][0m
+tests/test_address.py::test_convert_weight_units [32mPASSED[0m[36m                 [  6%][0m
+tests/test_address.py::test_merge_label_size [32mPASSED[0m[36m                     [  6%][0m
+tests/test_address.py::test_sort_service_level [32mPASSED[0m[36m                   [  6%][0m
+tests/test_address.py::test_filter_insured_value [32mPASSED[0m[36m                 [  6%][0m
+tests/test_address.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m     [  6%][0m
+tests/test_address.py::test_parse_pickup_window [32mPASSED[0m[36m                  [  6%][0m
+tests/test_address.py::test_validate_manifest_totals [32mPASSED[0m[36m             [  7%][0m
+tests/test_address.py::test_normalize_address_line [32mPASSED[0m[36m               [  7%][0m
+tests/test_address.py::test_format_rate_quote [32mPASSED[0m[36m                    [  7%][0m
+tests/test_address.py::test_reject_dimension_units[fedex-us] [32mPASSED[0m[36m     [  7%][0m
+tests/test_address.py::test_accept_street_number [32mPASSED[0m[36m                 [  7%][0m
+tests/test_address.py::test_round_postal_code [32mPASSED[0m[36m                    [  7%][0m
+tests/test_address.py::test_convert_country_alias [32mPASSED[0m[36m                [  7%][0m
+tests/test_address.py::test_merge_weight_units [32mPASSED[0m[36m                   [  7%][0m
+tests/test_address.py::test_sort_label_size[ups-ca] [32mPASSED[0m[36m              [  7%][0m
+tests/test_address.py::test_filter_service_level [32mPASSED[0m[36m                 [  8%][0m
+tests/test_address.py::test_serialize_insured_value [32mPASSED[0m[36m              [  8%][0m
+tests/test_address.py::test_parse_tracking_code [32mPASSED[0m[36m                  [  8%][0m
+tests/test_address.py::test_validate_pickup_window [32mPASSED[0m[36m               [  8%][0m
+tests/test_address.py::test_normalize_manifest_totals[dhl-de] [32mPASSED[0m[36m    [  8%][0m
+tests/test_address.py::test_format_address_line [32mPASSED[0m[36m                  [  8%][0m
+tests/test_address.py::test_reject_rate_quote [32mPASSED[0m[36m                    [  8%][0m
+tests/test_address.py::test_accept_dimension_units [32mPASSED[0m[36m               [  8%][0m
+tests/test_address.py::test_round_street_number [32mPASSED[0m[36m                  [  8%][0m
+tests/test_address.py::test_convert_postal_code[usps-gb] [32mPASSED[0m[36m         [  9%][0m
+tests/test_address.py::test_merge_country_alias [32mPASSED[0m[36m                  [  9%][0m
+tests/test_address.py::test_sort_weight_units [32mPASSED[0m[36m                    [  9%][0m
+tests/test_address.py::test_filter_label_size [32mPASSED[0m[36m                    [  9%][0m
+tests/test_address.py::test_serialize_service_level [32mPASSED[0m[36m              [  9%][0m
+tests/test_address.py::test_parse_customs_value[fedex-ca] [32mPASSED[0m[36m        [  9%][0m
+tests/test_address.py::test_validate_tracking_code [32mPASSED[0m[36m               [  9%][0m
+tests/test_address.py::test_normalize_pickup_window [32mPASSED[0m[36m              [  9%][0m
+tests/test_address.py::test_format_manifest_totals [32mPASSED[0m[36m               [  9%][0m
+tests/test_address.py::test_reject_address_line [32mPASSED[0m[36m                  [ 10%][0m
+tests/test_address.py::test_accept_rate_quote[ups-de] [32mPASSED[0m[36m            [ 10%][0m
+tests/test_address.py::test_round_dimension_units [32mPASSED[0m[36m                [ 10%][0m
+tests/test_address.py::test_convert_street_number [32mPASSED[0m[36m                [ 10%][0m
+tests/test_address.py::test_merge_postal_code [32mPASSED[0m[36m                    [ 10%][0m
+tests/test_address.py::test_sort_country_alias [32mPASSED[0m[36m                   [ 10%][0m
+tests/test_address.py::test_filter_weight_units[dhl-gb] [32mPASSED[0m[36m          [ 10%][0m
+tests/test_address.py::test_serialize_label_size [32mPASSED[0m[36m                 [ 10%][0m
+tests/test_carrier.py::test_parse_street_number [32mPASSED[0m[36m                  [ 10%][0m
+tests/test_carrier.py::test_validate_postal_code [32mPASSED[0m[36m                 [ 11%][0m
+tests/test_carrier.py::test_normalize_country_alias [32mPASSED[0m[36m              [ 11%][0m
+tests/test_carrier.py::test_format_weight_units [32mPASSED[0m[36m                  [ 11%][0m
+tests/test_carrier.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m          [ 11%][0m
+tests/test_carrier.py::test_accept_service_level [32mPASSED[0m[36m                 [ 11%][0m
+tests/test_carrier.py::test_round_insured_value [32mPASSED[0m[36m                  [ 11%][0m
+tests/test_carrier.py::test_convert_customs_value [32mPASSED[0m[36m                [ 11%][0m
+tests/test_carrier.py::test_merge_tracking_code [32mPASSED[0m[36m                  [ 11%][0m
+tests/test_carrier.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m           [ 11%][0m
+tests/test_carrier.py::test_filter_manifest_totals [32mPASSED[0m[36m               [ 12%][0m
+tests/test_carrier.py::test_serialize_address_line [32mPASSED[0m[36m               [ 12%][0m
+tests/test_carrier.py::test_parse_dimension_units [32mPASSED[0m[36m                [ 12%][0m
+tests/test_carrier.py::test_validate_street_number [32mPASSED[0m[36m               [ 12%][0m
+tests/test_carrier.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m        [ 12%][0m
+tests/test_carrier.py::test_format_country_alias [32mPASSED[0m[36m                 [ 12%][0m
+tests/test_carrier.py::test_reject_weight_units [32mPASSED[0m[36m                  [ 12%][0m
+tests/test_carrier.py::test_accept_label_size [32mPASSED[0m[36m                    [ 12%][0m
+tests/test_carrier.py::test_round_service_level [32mPASSED[0m[36m                  [ 13%][0m
+tests/test_carrier.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m       [ 13%][0m
+tests/test_carrier.py::test_merge_customs_value [32mPASSED[0m[36m                  [ 13%][0m
+tests/test_carrier.py::test_sort_tracking_code [32mPASSED[0m[36m                   [ 13%][0m
+tests/test_carrier.py::test_filter_pickup_window [32mPASSED[0m[36m                 [ 13%][0m
+tests/test_carrier.py::test_serialize_manifest_totals [32mPASSED[0m[36m            [ 13%][0m
+tests/test_carrier.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m           [ 13%][0m
+tests/test_carrier.py::test_validate_dimension_units [32mPASSED[0m[36m             [ 13%][0m
+tests/test_carrier.py::test_normalize_street_number [32mPASSED[0m[36m              [ 13%][0m
+tests/test_carrier.py::test_format_postal_code [32mPASSED[0m[36m                   [ 14%][0m
+tests/test_carrier.py::test_reject_country_alias [32mPASSED[0m[36m                 [ 14%][0m
+tests/test_carrier.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m          [ 14%][0m
+tests/test_carrier.py::test_round_label_size [32mPASSED[0m[36m                     [ 14%][0m
+tests/test_carrier.py::test_delivery_failure_is_retried [32mPASSED[0m[36m          [ 14%][0m
+tests/test_carrier.py::test_merge_insured_value [32mPASSED[0m[36m                  [ 14%][0m
+tests/test_carrier.py::test_sort_customs_value [32mPASSED[0m[36m                   [ 14%][0m
+tests/test_carrier.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m         [ 14%][0m
+tests/test_carrier.py::test_serialize_pickup_window [32mPASSED[0m[36m              [ 14%][0m
+tests/test_carrier.py::test_parse_address_line [32mPASSED[0m[36m                   [ 15%][0m
+tests/test_carrier.py::test_validate_rate_quote [32mPASSED[0m[36m                  [ 15%][0m
+tests/test_carrier.py::test_normalize_dimension_units [32mPASSED[0m[36m            [ 15%][0m
+tests/test_carrier.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m        [ 15%][0m
+tests/test_carrier.py::test_reject_postal_code [32mPASSED[0m[36m                   [ 15%][0m
+tests/test_carrier.py::test_accept_country_alias [32mPASSED[0m[36m                 [ 15%][0m
+tests/test_carrier.py::test_round_weight_units [32mPASSED[0m[36m                   [ 15%][0m
+tests/test_carrier.py::test_convert_label_size [32mPASSED[0m[36m                   [ 15%][0m
+tests/test_carrier.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m        [ 15%][0m
+tests/test_carrier.py::test_sort_insured_value [32mPASSED[0m[36m                   [ 16%][0m
+tests/test_carrier.py::test_filter_customs_value [32mPASSED[0m[36m                 [ 16%][0m
+tests/test_carrier.py::test_serialize_tracking_code [32mPASSED[0m[36m              [ 16%][0m
+tests/test_carrier.py::test_parse_manifest_totals [32mPASSED[0m[36m                [ 16%][0m
+tests/test_carrier.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m        [ 16%][0m
+tests/test_carrier.py::test_normalize_rate_quote [32mPASSED[0m[36m                 [ 16%][0m
+tests/test_carrier.py::test_format_dimension_units [32mPASSED[0m[36m               [ 16%][0m
+tests/test_carrier.py::test_reject_street_number [32mPASSED[0m[36m                 [ 16%][0m
+tests/test_carrier.py::test_accept_postal_code [32mPASSED[0m[36m                   [ 16%][0m
+tests/test_carrier.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m          [ 17%][0m
+tests/test_carrier.py::test_convert_weight_units [32mPASSED[0m[36m                 [ 17%][0m
+tests/test_carrier.py::test_merge_label_size [32mPASSED[0m[36m                     [ 17%][0m
+tests/test_carrier.py::test_sort_service_level [32mPASSED[0m[36m                   [ 17%][0m
+tests/test_carrier.py::test_filter_insured_value [32mPASSED[0m[36m                 [ 17%][0m
+tests/test_carrier.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m     [ 17%][0m
+tests/test_carrier.py::test_parse_pickup_window [32mPASSED[0m[36m                  [ 17%][0m
+tests/test_carrier.py::test_validate_manifest_totals [32mPASSED[0m[36m             [ 17%][0m
+tests/test_carrier.py::test_normalize_address_line [32mPASSED[0m[36m               [ 17%][0m
+tests/test_carrier.py::test_format_rate_quote [32mPASSED[0m[36m                    [ 18%][0m
+tests/test_carrier.py::test_reject_dimension_units[fedex-us] [32mPASSED[0m[36m     [ 18%][0m
+tests/test_carrier.py::test_accept_street_number [32mPASSED[0m[36m                 [ 18%][0m
+tests/test_carrier.py::test_round_postal_code [32mPASSED[0m[36m                    [ 18%][0m
+tests/test_carrier.py::test_convert_country_alias [32mPASSED[0m[36m                [ 18%][0m
+tests/test_carrier.py::test_merge_weight_units [32mPASSED[0m[36m                   [ 18%][0m
+tests/test_carrier.py::test_sort_label_size[ups-ca] [32mPASSED[0m[36m              [ 18%][0m
+tests/test_carrier.py::test_filter_service_level [32mPASSED[0m[36m                 [ 18%][0m
+tests/test_carrier.py::test_serialize_insured_value [32mPASSED[0m[36m              [ 19%][0m
+tests/test_carrier.py::test_parse_tracking_code [32mPASSED[0m[36m                  [ 19%][0m
+tests/test_carrier.py::test_validate_pickup_window [32mPASSED[0m[36m               [ 19%][0m
+tests/test_carrier.py::test_normalize_manifest_totals[dhl-de] [32mPASSED[0m[36m    [ 19%][0m
+tests/test_carrier.py::test_format_address_line [32mPASSED[0m[36m                  [ 19%][0m
+tests/test_carrier.py::test_reject_rate_quote [32mPASSED[0m[36m                    [ 19%][0m
+tests/test_carrier.py::test_accept_dimension_units [32mPASSED[0m[36m               [ 19%][0m
+tests/test_carrier.py::test_round_street_number [32mPASSED[0m[36m                  [ 19%][0m
+tests/test_carrier.py::test_convert_postal_code[usps-gb] [32mPASSED[0m[36m         [ 19%][0m
+tests/test_carrier.py::test_merge_country_alias [32mPASSED[0m[36m                  [ 20%][0m
+tests/test_carrier.py::test_sort_weight_units [32mPASSED[0m[36m                    [ 20%][0m
+tests/test_carrier.py::test_filter_label_size [32mPASSED[0m[36m                    [ 20%][0m
+tests/test_carrier.py::test_serialize_service_level [32mPASSED[0m[36m              [ 20%][0m
+tests/test_carrier.py::test_parse_customs_value[fedex-ca] [32mPASSED[0m[36m        [ 20%][0m
+tests/test_carrier.py::test_validate_tracking_code [32mPASSED[0m[36m               [ 20%][0m
+tests/test_carrier.py::test_normalize_pickup_window [32mPASSED[0m[36m              [ 20%][0m
+tests/test_carrier.py::test_format_manifest_totals [32mPASSED[0m[36m               [ 20%][0m
+tests/test_carrier.py::test_reject_address_line [32mPASSED[0m[36m                  [ 20%][0m
+tests/test_carrier.py::test_accept_rate_quote[ups-de] [32mPASSED[0m[36m            [ 21%][0m
+tests/test_carrier.py::test_round_dimension_units [32mPASSED[0m[36m                [ 21%][0m
+tests/test_carrier.py::test_convert_street_number [32mPASSED[0m[36m                [ 21%][0m
+tests/test_carrier.py::test_merge_postal_code [32mPASSED[0m[36m                    [ 21%][0m
+tests/test_carrier.py::test_sort_country_alias [32mPASSED[0m[36m                   [ 21%][0m
+tests/test_carrier.py::test_filter_weight_units[dhl-gb] [32mPASSED[0m[36m          [ 21%][0m
+tests/test_carrier.py::test_serialize_label_size [32mPASSED[0m[36m                 [ 21%][0m
+tests/test_carrier.py::test_parse_insured_value [32mPASSED[0m[36m                  [ 21%][0m
+tests/test_carrier.py::test_validate_customs_value [32mPASSED[0m[36m               [ 21%][0m
+tests/test_carrier.py::test_normalize_tracking_code [32mPASSED[0m[36m              [ 22%][0m
+tests/test_carrier.py::test_format_pickup_window[usps-us] [32mPASSED[0m[36m        [ 22%][0m
+tests/test_carrier.py::test_reject_manifest_totals [32mPASSED[0m[36m               [ 22%][0m
+tests/test_carrier.py::test_accept_address_line [32mPASSED[0m[36m                  [ 22%][0m
+tests/test_carrier.py::test_round_rate_quote [32mPASSED[0m[36m                     [ 22%][0m
+tests/test_carrier.py::test_convert_dimension_units [32mPASSED[0m[36m              [ 22%][0m
+tests/test_carrier.py::test_merge_street_number[fedex-de] [32mPASSED[0m[36m        [ 22%][0m
+tests/test_carrier.py::test_sort_postal_code [32mPASSED[0m[36m                     [ 22%][0m
+tests/test_carrier.py::test_filter_country_alias [32mPASSED[0m[36m                 [ 22%][0m
+tests/test_carrier.py::test_serialize_weight_units [32mPASSED[0m[36m               [ 23%][0m
+tests/test_carrier.py::test_parse_service_level [32mPASSED[0m[36m                  [ 23%][0m
+tests/test_carrier.py::test_validate_insured_value[ups-gb] [32mPASSED[0m[36m       [ 23%][0m
+tests/test_customs.py::test_parse_street_number [32mPASSED[0m[36m                  [ 23%][0m
+tests/test_customs.py::test_validate_postal_code [32mPASSED[0m[36m                 [ 23%][0m
+tests/test_customs.py::test_normalize_country_alias [32mPASSED[0m[36m              [ 23%][0m
+tests/test_customs.py::test_format_weight_units [32mPASSED[0m[36m                  [ 23%][0m
+tests/test_customs.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m          [ 23%][0m
+tests/test_customs.py::test_accept_service_level [32mPASSED[0m[36m                 [ 23%][0m
+tests/test_customs.py::test_round_insured_value [32mPASSED[0m[36m                  [ 24%][0m
+tests/test_customs.py::test_convert_customs_value [32mPASSED[0m[36m                [ 24%][0m
+tests/test_customs.py::test_merge_tracking_code [32mPASSED[0m[36m                  [ 24%][0m
+tests/test_customs.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m           [ 24%][0m
+tests/test_customs.py::test_filter_manifest_totals [32mPASSED[0m[36m               [ 24%][0m
+tests/test_customs.py::test_serialize_address_line [32mPASSED[0m[36m               [ 24%][0m
+tests/test_customs.py::test_parse_dimension_units [32mPASSED[0m[36m                [ 24%][0m
+tests/test_customs.py::test_validate_street_number [32mPASSED[0m[36m               [ 24%][0m
+tests/test_customs.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m        [ 25%][0m
+tests/test_customs.py::test_format_country_alias [32mPASSED[0m[36m                 [ 25%][0m
+tests/test_customs.py::test_reject_weight_units [32mPASSED[0m[36m                  [ 25%][0m
+tests/test_customs.py::test_accept_label_size [32mPASSED[0m[36m                    [ 25%][0m
+tests/test_customs.py::test_round_service_level [32mPASSED[0m[36m                  [ 25%][0m
+tests/test_customs.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m       [ 25%][0m
+tests/test_customs.py::test_merge_customs_value [32mPASSED[0m[36m                  [ 25%][0m
+tests/test_customs.py::test_sort_tracking_code [32mPASSED[0m[36m                   [ 25%][0m
+tests/test_customs.py::test_filter_pickup_window [32mPASSED[0m[36m                 [ 25%][0m
+tests/test_customs.py::test_serialize_manifest_totals [32mPASSED[0m[36m            [ 26%][0m
+tests/test_customs.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m           [ 26%][0m
+tests/test_customs.py::test_validate_dimension_units [32mPASSED[0m[36m             [ 26%][0m
+tests/test_customs.py::test_normalize_street_number [32mPASSED[0m[36m              [ 26%][0m
+tests/test_customs.py::test_format_postal_code [32mPASSED[0m[36m                   [ 26%][0m
+tests/test_customs.py::test_reject_country_alias [32mPASSED[0m[36m                 [ 26%][0m
+tests/test_customs.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m          [ 26%][0m
+tests/test_customs.py::test_round_label_size [32mPASSED[0m[36m                     [ 26%][0m
+tests/test_customs.py::test_convert_service_level [32mPASSED[0m[36m                [ 26%][0m
+tests/test_customs.py::test_merge_insured_value [32mPASSED[0m[36m                  [ 27%][0m
+tests/test_customs.py::test_sort_customs_value [32mPASSED[0m[36m                   [ 27%][0m
+tests/test_customs.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m         [ 27%][0m
+tests/test_customs.py::test_serialize_pickup_window [32mPASSED[0m[36m              [ 27%][0m
+tests/test_customs.py::test_parse_address_line [32mPASSED[0m[36m                   [ 27%][0m
+tests/test_customs.py::test_validate_rate_quote [32mPASSED[0m[36m                  [ 27%][0m
+tests/test_customs.py::test_normalize_dimension_units [32mPASSED[0m[36m            [ 27%][0m
+tests/test_customs.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m        [ 27%][0m
+tests/test_customs.py::test_reject_postal_code [32mPASSED[0m[36m                   [ 27%][0m
+tests/test_customs.py::test_accept_country_alias [32mPASSED[0m[36m                 [ 28%][0m
+tests/test_customs.py::test_round_weight_units [32mPASSED[0m[36m                   [ 28%][0m
+tests/test_customs.py::test_convert_label_size [32mPASSED[0m[36m                   [ 28%][0m
+tests/test_customs.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m        [ 28%][0m
+tests/test_customs.py::test_sort_insured_value [32mPASSED[0m[36m                   [ 28%][0m
+tests/test_customs.py::test_filter_customs_value [32mPASSED[0m[36m                 [ 28%][0m
+tests/test_customs.py::test_serialize_tracking_code [32mPASSED[0m[36m              [ 28%][0m
+tests/test_customs.py::test_parse_manifest_totals [32mPASSED[0m[36m                [ 28%][0m
+tests/test_customs.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m        [ 28%][0m
+tests/test_customs.py::test_normalize_rate_quote [32mPASSED[0m[36m                 [ 29%][0m
+tests/test_customs.py::test_format_dimension_units [32mPASSED[0m[36m               [ 29%][0m
+tests/test_customs.py::test_reject_street_number [32mPASSED[0m[36m                 [ 29%][0m
+tests/test_customs.py::test_accept_postal_code [32mPASSED[0m[36m                   [ 29%][0m
+tests/test_customs.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m          [ 29%][0m
+tests/test_customs.py::test_convert_weight_units [32mPASSED[0m[36m                 [ 29%][0m
+tests/test_customs.py::test_merge_label_size [32mPASSED[0m[36m                     [ 29%][0m
+tests/test_customs.py::test_sort_service_level [32mPASSED[0m[36m                   [ 29%][0m
+tests/test_customs.py::test_filter_insured_value [32mPASSED[0m[36m                 [ 29%][0m
+tests/test_customs.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m     [ 30%][0m
+tests/test_customs.py::test_parse_pickup_window [32mPASSED[0m[36m                  [ 30%][0m
+tests/test_customs.py::test_validate_manifest_totals [32mPASSED[0m[36m             [ 30%][0m
+tests/test_customs.py::test_normalize_address_line [32mPASSED[0m[36m               [ 30%][0m
+tests/test_customs.py::test_format_rate_quote [32mPASSED[0m[36m                    [ 30%][0m
+tests/test_dimensions.py::test_parse_street_number [32mPASSED[0m[36m               [ 30%][0m
+tests/test_dimensions.py::test_validate_postal_code [32mPASSED[0m[36m              [ 30%][0m
+tests/test_dimensions.py::test_normalize_country_alias [32mPASSED[0m[36m           [ 30%][0m
+tests/test_dimensions.py::test_format_weight_units [32mPASSED[0m[36m               [ 30%][0m
+tests/test_dimensions.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m       [ 31%][0m
+tests/test_dimensions.py::test_accept_service_level [32mPASSED[0m[36m              [ 31%][0m
+tests/test_dimensions.py::test_round_insured_value [32mPASSED[0m[36m               [ 31%][0m
+tests/test_dimensions.py::test_convert_customs_value [32mPASSED[0m[36m             [ 31%][0m
+tests/test_dimensions.py::test_merge_tracking_code [32mPASSED[0m[36m               [ 31%][0m
+tests/test_dimensions.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m        [ 31%][0m
+tests/test_dimensions.py::test_filter_manifest_totals [32mPASSED[0m[36m            [ 31%][0m
+tests/test_dimensions.py::test_serialize_address_line [32mPASSED[0m[36m            [ 31%][0m
+tests/test_dimensions.py::test_parse_dimension_units [32mPASSED[0m[36m             [ 32%][0m
+tests/test_dimensions.py::test_validate_street_number [32mPASSED[0m[36m            [ 32%][0m
+tests/test_dimensions.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m     [ 32%][0m
+tests/test_dimensions.py::test_format_country_alias [32mPASSED[0m[36m              [ 32%][0m
+tests/test_dimensions.py::test_reject_weight_units [32mPASSED[0m[36m               [ 32%][0m
+tests/test_dimensions.py::test_accept_label_size [32mPASSED[0m[36m                 [ 32%][0m
+tests/test_dimensions.py::test_round_service_level [32mPASSED[0m[36m               [ 32%][0m
+tests/test_dimensions.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m    [ 32%][0m
+tests/test_dimensions.py::test_merge_customs_value [32mPASSED[0m[36m               [ 32%][0m
+tests/test_dimensions.py::test_sort_tracking_code [32mPASSED[0m[36m                [ 33%][0m
+tests/test_dimensions.py::test_filter_pickup_window [32mPASSED[0m[36m              [ 33%][0m
+tests/test_dimensions.py::test_serialize_manifest_totals [32mPASSED[0m[36m         [ 33%][0m
+tests/test_dimensions.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m        [ 33%][0m
+tests/test_dimensions.py::test_validate_dimension_units [32mPASSED[0m[36m          [ 33%][0m
+tests/test_dimensions.py::test_normalize_street_number [32mPASSED[0m[36m           [ 33%][0m
+tests/test_dimensions.py::test_format_postal_code [32mPASSED[0m[36m                [ 33%][0m
+tests/test_dimensions.py::test_reject_country_alias [32mPASSED[0m[36m              [ 33%][0m
+tests/test_dimensions.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m       [ 33%][0m
+tests/test_dimensions.py::test_round_label_size [32mPASSED[0m[36m                  [ 34%][0m
+tests/test_dimensions.py::test_convert_service_level [32mPASSED[0m[36m             [ 34%][0m
+tests/test_dimensions.py::test_merge_insured_value [32mPASSED[0m[36m               [ 34%][0m
+tests/test_dimensions.py::test_sort_customs_value [32mPASSED[0m[36m                [ 34%][0m
+tests/test_dimensions.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m      [ 34%][0m
+tests/test_dimensions.py::test_serialize_pickup_window [32mPASSED[0m[36m           [ 34%][0m
+tests/test_dimensions.py::test_parse_address_line [32mPASSED[0m[36m                [ 34%][0m
+tests/test_dimensions.py::test_validate_rate_quote [32mPASSED[0m[36m               [ 34%][0m
+tests/test_dimensions.py::test_normalize_dimension_units [32mPASSED[0m[36m         [ 34%][0m
+tests/test_dimensions.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m     [ 35%][0m
+tests/test_dimensions.py::test_reject_postal_code [32mPASSED[0m[36m                [ 35%][0m
+tests/test_dimensions.py::test_accept_country_alias [32mPASSED[0m[36m              [ 35%][0m
+tests/test_dimensions.py::test_round_weight_units [32mPASSED[0m[36m                [ 35%][0m
+tests/test_dimensions.py::test_convert_label_size [32mPASSED[0m[36m                [ 35%][0m
+tests/test_dimensions.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m     [ 35%][0m
+tests/test_dimensions.py::test_sort_insured_value [32mPASSED[0m[36m                [ 35%][0m
+tests/test_dimensions.py::test_filter_customs_value [32mPASSED[0m[36m              [ 35%][0m
+tests/test_dimensions.py::test_serialize_tracking_code [32mPASSED[0m[36m           [ 35%][0m
+tests/test_dimensions.py::test_parse_manifest_totals [32mPASSED[0m[36m             [ 36%][0m
+tests/test_dimensions.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m     [ 36%][0m
+tests/test_dimensions.py::test_normalize_rate_quote [32mPASSED[0m[36m              [ 36%][0m
+tests/test_dimensions.py::test_format_dimension_units [32mPASSED[0m[36m            [ 36%][0m
+tests/test_dimensions.py::test_reject_street_number [32mPASSED[0m[36m              [ 36%][0m
+tests/test_dimensions.py::test_accept_postal_code [32mPASSED[0m[36m                [ 36%][0m
+tests/test_dimensions.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m       [ 36%][0m
+tests/test_dimensions.py::test_convert_weight_units [32mPASSED[0m[36m              [ 36%][0m
+tests/test_dimensions.py::test_merge_label_size [32mPASSED[0m[36m                  [ 36%][0m
+tests/test_dimensions.py::test_sort_service_level [32mPASSED[0m[36m                [ 37%][0m
+tests/test_dimensions.py::test_filter_insured_value [32mPASSED[0m[36m              [ 37%][0m
+tests/test_dimensions.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m  [ 37%][0m
+tests/test_dimensions.py::test_parse_pickup_window [32mPASSED[0m[36m               [ 37%][0m
+tests/test_dimensions.py::test_validate_manifest_totals [32mPASSED[0m[36m          [ 37%][0m
+tests/test_dimensions.py::test_normalize_address_line [32mPASSED[0m[36m            [ 37%][0m
+tests/test_dimensions.py::test_format_rate_quote [32mPASSED[0m[36m                 [ 37%][0m
+tests/test_dimensions.py::test_reject_dimension_units[fedex-us] [32mPASSED[0m[36m  [ 37%][0m
+tests/test_dimensions.py::test_accept_street_number [32mPASSED[0m[36m              [ 38%][0m
+tests/test_dimensions.py::test_round_postal_code [32mPASSED[0m[36m                 [ 38%][0m
+tests/test_dimensions.py::test_convert_country_alias [32mPASSED[0m[36m             [ 38%][0m
+tests/test_dimensions.py::test_merge_weight_units [32mPASSED[0m[36m                [ 38%][0m
+tests/test_dimensions.py::test_sort_label_size[ups-ca] [32mPASSED[0m[36m           [ 38%][0m
+tests/test_dimensions.py::test_filter_service_level [32mPASSED[0m[36m              [ 38%][0m
+tests/test_dimensions.py::test_serialize_insured_value [32mPASSED[0m[36m           [ 38%][0m
+tests/test_label.py::test_parse_street_number [32mPASSED[0m[36m                    [ 38%][0m
+tests/test_label.py::test_validate_postal_code [32mPASSED[0m[36m                   [ 38%][0m
+tests/test_label.py::test_normalize_country_alias [32mPASSED[0m[36m                [ 39%][0m
+tests/test_label.py::test_format_weight_units [32mPASSED[0m[36m                    [ 39%][0m
+tests/test_label.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m            [ 39%][0m
+tests/test_label.py::test_accept_service_level [32mPASSED[0m[36m                   [ 39%][0m
+tests/test_label.py::test_round_insured_value [32mPASSED[0m[36m                    [ 39%][0m
+tests/test_label.py::test_convert_customs_value [32mPASSED[0m[36m                  [ 39%][0m
+tests/test_label.py::test_merge_tracking_code [32mPASSED[0m[36m                    [ 39%][0m
+tests/test_label.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m             [ 39%][0m
+tests/test_label.py::test_filter_manifest_totals [32mPASSED[0m[36m                 [ 39%][0m
+tests/test_label.py::test_serialize_address_line [32mPASSED[0m[36m                 [ 40%][0m
+tests/test_label.py::test_parse_dimension_units [32mPASSED[0m[36m                  [ 40%][0m
+tests/test_label.py::test_validate_street_number [32mPASSED[0m[36m                 [ 40%][0m
+tests/test_label.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m          [ 40%][0m
+tests/test_label.py::test_format_country_alias [32mPASSED[0m[36m                   [ 40%][0m
+tests/test_label.py::test_reject_weight_units [32mPASSED[0m[36m                    [ 40%][0m
+tests/test_label.py::test_accept_label_size [32mPASSED[0m[36m                      [ 40%][0m
+tests/test_label.py::test_round_service_level [32mPASSED[0m[36m                    [ 40%][0m
+tests/test_label.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m         [ 40%][0m
+tests/test_label.py::test_merge_customs_value [32mPASSED[0m[36m                    [ 41%][0m
+tests/test_label.py::test_sort_tracking_code [32mPASSED[0m[36m                     [ 41%][0m
+tests/test_label.py::test_filter_pickup_window [32mPASSED[0m[36m                   [ 41%][0m
+tests/test_label.py::test_serialize_manifest_totals [32mPASSED[0m[36m              [ 41%][0m
+tests/test_label.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m             [ 41%][0m
+tests/test_label.py::test_validate_dimension_units [32mPASSED[0m[36m               [ 41%][0m
+tests/test_label.py::test_normalize_street_number [32mPASSED[0m[36m                [ 41%][0m
+tests/test_label.py::test_format_postal_code [32mPASSED[0m[36m                     [ 41%][0m
+tests/test_label.py::test_reject_country_alias [32mPASSED[0m[36m                   [ 41%][0m
+tests/test_label.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m            [ 42%][0m
+tests/test_label.py::test_round_label_size [32mPASSED[0m[36m                       [ 42%][0m
+tests/test_label.py::test_convert_service_level [32mPASSED[0m[36m                  [ 42%][0m
+tests/test_label.py::test_merge_insured_value [32mPASSED[0m[36m                    [ 42%][0m
+tests/test_label.py::test_sort_customs_value [32mPASSED[0m[36m                     [ 42%][0m
+tests/test_label.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m           [ 42%][0m
+tests/test_label.py::test_serialize_pickup_window [32mPASSED[0m[36m                [ 42%][0m
+tests/test_label.py::test_parse_address_line [32mPASSED[0m[36m                     [ 42%][0m
+tests/test_label.py::test_validate_rate_quote [32mPASSED[0m[36m                    [ 42%][0m
+tests/test_label.py::test_normalize_dimension_units [32mPASSED[0m[36m              [ 43%][0m
+tests/test_label.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m          [ 43%][0m
+tests/test_label.py::test_reject_postal_code [32mPASSED[0m[36m                     [ 43%][0m
+tests/test_label.py::test_accept_country_alias [32mPASSED[0m[36m                   [ 43%][0m
+tests/test_label.py::test_round_weight_units [32mPASSED[0m[36m                     [ 43%][0m
+tests/test_label.py::test_convert_label_size [32mPASSED[0m[36m                     [ 43%][0m
+tests/test_label.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m          [ 43%][0m
+tests/test_label.py::test_sort_insured_value [32mPASSED[0m[36m                     [ 43%][0m
+tests/test_label.py::test_filter_customs_value [32mPASSED[0m[36m                   [ 44%][0m
+tests/test_label.py::test_serialize_tracking_code [32mPASSED[0m[36m                [ 44%][0m
+tests/test_label.py::test_parse_manifest_totals [32mPASSED[0m[36m                  [ 44%][0m
+tests/test_label.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m          [ 44%][0m
+tests/test_label.py::test_normalize_rate_quote [32mPASSED[0m[36m                   [ 44%][0m
+tests/test_label.py::test_format_dimension_units [32mPASSED[0m[36m                 [ 44%][0m
+tests/test_label.py::test_reject_street_number [32mPASSED[0m[36m                   [ 44%][0m
+tests/test_label.py::test_accept_postal_code [32mPASSED[0m[36m                     [ 44%][0m
+tests/test_label.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m            [ 44%][0m
+tests/test_label.py::test_convert_weight_units [32mPASSED[0m[36m                   [ 45%][0m
+tests/test_label.py::test_merge_label_size [32mPASSED[0m[36m                       [ 45%][0m
+tests/test_label.py::test_sort_service_level [32mPASSED[0m[36m                     [ 45%][0m
+tests/test_label.py::test_filter_insured_value [32mPASSED[0m[36m                   [ 45%][0m
+tests/test_label.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m       [ 45%][0m
+tests/test_label.py::test_parse_pickup_window [32mPASSED[0m[36m                    [ 45%][0m
+tests/test_label.py::test_validate_manifest_totals [32mPASSED[0m[36m               [ 45%][0m
+tests/test_label.py::test_normalize_address_line [32mPASSED[0m[36m                 [ 45%][0m
+tests/test_label.py::test_format_rate_quote [32mPASSED[0m[36m                      [ 45%][0m
+tests/test_label.py::test_reject_dimension_units[fedex-us] [32mPASSED[0m[36m       [ 46%][0m
+tests/test_label.py::test_accept_street_number [32mPASSED[0m[36m                   [ 46%][0m
+tests/test_label.py::test_round_postal_code [32mPASSED[0m[36m                      [ 46%][0m
+tests/test_label.py::test_convert_country_alias [32mPASSED[0m[36m                  [ 46%][0m
+tests/test_label.py::test_merge_weight_units [32mPASSED[0m[36m                     [ 46%][0m
+tests/test_label.py::test_sort_label_size[ups-ca] [32mPASSED[0m[36m                [ 46%][0m
+tests/test_label.py::test_filter_service_level [32mPASSED[0m[36m                   [ 46%][0m
+tests/test_label.py::test_serialize_insured_value [32mPASSED[0m[36m                [ 46%][0m
+tests/test_label.py::test_parse_tracking_code [32mPASSED[0m[36m                    [ 46%][0m
+tests/test_label.py::test_validate_pickup_window [32mPASSED[0m[36m                 [ 47%][0m
+tests/test_label.py::test_normalize_manifest_totals[dhl-de] [32mPASSED[0m[36m      [ 47%][0m
+tests/test_label.py::test_format_address_line [32mPASSED[0m[36m                    [ 47%][0m
+tests/test_label.py::test_reject_rate_quote [32mPASSED[0m[36m                      [ 47%][0m
+tests/test_label.py::test_accept_dimension_units [32mPASSED[0m[36m                 [ 47%][0m
+tests/test_label.py::test_round_street_number [32mPASSED[0m[36m                    [ 47%][0m
+tests/test_label.py::test_convert_postal_code[usps-gb] [32mPASSED[0m[36m           [ 47%][0m
+tests/test_label.py::test_merge_country_alias [32mPASSED[0m[36m                    [ 47%][0m
+tests/test_label.py::test_sort_weight_units [32mPASSED[0m[36m                      [ 47%][0m
+tests/test_label.py::test_filter_label_size [32mPASSED[0m[36m                      [ 48%][0m
+tests/test_label.py::test_serialize_service_level [32mPASSED[0m[36m                [ 48%][0m
+tests/test_label.py::test_parse_customs_value[fedex-ca] [32mPASSED[0m[36m          [ 48%][0m
+tests/test_label.py::test_validate_tracking_code [32mPASSED[0m[36m                 [ 48%][0m
+tests/test_label.py::test_normalize_pickup_window [32mPASSED[0m[36m                [ 48%][0m
+tests/test_label.py::test_format_manifest_totals [32mPASSED[0m[36m                 [ 48%][0m
+tests/test_label.py::test_reject_address_line [32mPASSED[0m[36m                    [ 48%][0m
+tests/test_label.py::test_accept_rate_quote[ups-de] [32mPASSED[0m[36m              [ 48%][0m
+tests/test_label.py::test_round_dimension_units [32mPASSED[0m[36m                  [ 48%][0m
+tests/test_label.py::test_convert_street_number [32mPASSED[0m[36m                  [ 49%][0m
+tests/test_label.py::test_merge_postal_code [32mPASSED[0m[36m                      [ 49%][0m
+tests/test_label.py::test_sort_country_alias [32mPASSED[0m[36m                     [ 49%][0m
+tests/test_label.py::test_filter_weight_units[dhl-gb] [32mPASSED[0m[36m            [ 49%][0m
+tests/test_label.py::test_serialize_label_size [32mPASSED[0m[36m                   [ 49%][0m
+tests/test_label.py::test_parse_insured_value [32mPASSED[0m[36m                    [ 49%][0m
+tests/test_label.py::test_validate_customs_value [32mPASSED[0m[36m                 [ 49%][0m
+tests/test_label.py::test_normalize_tracking_code [32mPASSED[0m[36m                [ 49%][0m
+tests/test_label.py::test_format_pickup_window[usps-us] [32mPASSED[0m[36m          [ 50%][0m
+tests/test_label.py::test_reject_manifest_totals [32mPASSED[0m[36m                 [ 50%][0m
+tests/test_label.py::test_accept_address_line [32mPASSED[0m[36m                    [ 50%][0m
+tests/test_label.py::test_round_rate_quote [32mPASSED[0m[36m                       [ 50%][0m
+tests/test_label.py::test_convert_dimension_units [32mPASSED[0m[36m                [ 50%][0m
+tests/test_label.py::test_merge_street_number[fedex-de] [32mPASSED[0m[36m          [ 50%][0m
+tests/test_label.py::test_sort_postal_code [32mPASSED[0m[36m                       [ 50%][0m
+tests/test_label.py::test_filter_country_alias [32mPASSED[0m[36m                   [ 50%][0m
+tests/test_label.py::test_serialize_weight_units [32mPASSED[0m[36m                 [ 50%][0m
+tests/test_label.py::test_parse_service_level [32mPASSED[0m[36m                    [ 51%][0m
+tests/test_label.py::test_validate_insured_value[ups-gb] [32mPASSED[0m[36m         [ 51%][0m
+tests/test_label.py::test_normalize_customs_value [32mPASSED[0m[36m                [ 51%][0m
+tests/test_label.py::test_format_tracking_code [32mPASSED[0m[36m                   [ 51%][0m
+tests/test_label.py::test_reject_pickup_window [32mPASSED[0m[36m                   [ 51%][0m
+tests/test_label.py::test_accept_manifest_totals [32mPASSED[0m[36m                 [ 51%][0m
+tests/test_label.py::test_round_address_line[dhl-us] [32mPASSED[0m[36m             [ 51%][0m
+tests/test_label.py::test_convert_rate_quote [32mPASSED[0m[36m                     [ 51%][0m
+tests/test_label.py::test_merge_dimension_units [32mPASSED[0m[36m                  [ 51%][0m
+tests/test_label.py::test_sort_street_number [32mPASSED[0m[36m                     [ 52%][0m
+tests/test_label.py::test_filter_postal_code [32mPASSED[0m[36m                     [ 52%][0m
+tests/test_label.py::test_serialize_country_alias[usps-ca] [32mPASSED[0m[36m       [ 52%][0m
+tests/test_manifest.py::test_parse_street_number [32mPASSED[0m[36m                 [ 52%][0m
+tests/test_manifest.py::test_validate_postal_code [32mPASSED[0m[36m                [ 52%][0m
+tests/test_manifest.py::test_normalize_country_alias [32mPASSED[0m[36m             [ 52%][0m
+tests/test_manifest.py::test_format_weight_units [32mPASSED[0m[36m                 [ 52%][0m
+tests/test_manifest.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m         [ 52%][0m
+tests/test_manifest.py::test_accept_service_level [32mPASSED[0m[36m                [ 52%][0m
+tests/test_manifest.py::test_round_insured_value [32mPASSED[0m[36m                 [ 53%][0m
+tests/test_manifest.py::test_convert_customs_value [32mPASSED[0m[36m               [ 53%][0m
+tests/test_manifest.py::test_merge_tracking_code [32mPASSED[0m[36m                 [ 53%][0m
+tests/test_manifest.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m          [ 53%][0m
+tests/test_manifest.py::test_filter_manifest_totals [32mPASSED[0m[36m              [ 53%][0m
+tests/test_manifest.py::test_serialize_address_line [32mPASSED[0m[36m              [ 53%][0m
+tests/test_manifest.py::test_parse_dimension_units [32mPASSED[0m[36m               [ 53%][0m
+tests/test_manifest.py::test_validate_street_number [32mPASSED[0m[36m              [ 53%][0m
+tests/test_manifest.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m       [ 53%][0m
+tests/test_manifest.py::test_format_country_alias [32mPASSED[0m[36m                [ 54%][0m
+tests/test_manifest.py::test_reject_weight_units [32mPASSED[0m[36m                 [ 54%][0m
+tests/test_manifest.py::test_accept_label_size [32mPASSED[0m[36m                   [ 54%][0m
+tests/test_manifest.py::test_round_service_level [32mPASSED[0m[36m                 [ 54%][0m
+tests/test_manifest.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m      [ 54%][0m
+tests/test_manifest.py::test_merge_customs_value [32mPASSED[0m[36m                 [ 54%][0m
+tests/test_manifest.py::test_sort_tracking_code [32mPASSED[0m[36m                  [ 54%][0m
+tests/test_manifest.py::test_filter_pickup_window [32mPASSED[0m[36m                [ 54%][0m
+tests/test_manifest.py::test_serialize_manifest_totals [32mPASSED[0m[36m           [ 54%][0m
+tests/test_manifest.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m          [ 55%][0m
+tests/test_manifest.py::test_validate_dimension_units [32mPASSED[0m[36m            [ 55%][0m
+tests/test_manifest.py::test_normalize_street_number [32mPASSED[0m[36m             [ 55%][0m
+tests/test_manifest.py::test_format_postal_code [32mPASSED[0m[36m                  [ 55%][0m
+tests/test_manifest.py::test_reject_country_alias [32mPASSED[0m[36m                [ 55%][0m
+tests/test_manifest.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m         [ 55%][0m
+tests/test_manifest.py::test_round_label_size [32mPASSED[0m[36m                    [ 55%][0m
+tests/test_manifest.py::test_convert_service_level [32mPASSED[0m[36m               [ 55%][0m
+tests/test_manifest.py::test_merge_insured_value [32mPASSED[0m[36m                 [ 55%][0m
+tests/test_manifest.py::test_sort_customs_value [32mPASSED[0m[36m                  [ 56%][0m
+tests/test_manifest.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m        [ 56%][0m
+tests/test_manifest.py::test_serialize_pickup_window [32mPASSED[0m[36m             [ 56%][0m
+tests/test_manifest.py::test_parse_address_line [32mPASSED[0m[36m                  [ 56%][0m
+tests/test_manifest.py::test_validate_rate_quote [32mPASSED[0m[36m                 [ 56%][0m
+tests/test_manifest.py::test_normalize_dimension_units [32mPASSED[0m[36m           [ 56%][0m
+tests/test_manifest.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m       [ 56%][0m
+tests/test_manifest.py::test_reject_postal_code [32mPASSED[0m[36m                  [ 56%][0m
+tests/test_manifest.py::test_accept_country_alias [32mPASSED[0m[36m                [ 57%][0m
+tests/test_manifest.py::test_round_weight_units [32mPASSED[0m[36m                  [ 57%][0m
+tests/test_manifest.py::test_convert_label_size [32mPASSED[0m[36m                  [ 57%][0m
+tests/test_manifest.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m       [ 57%][0m
+tests/test_manifest.py::test_sort_insured_value [32mPASSED[0m[36m                  [ 57%][0m
+tests/test_manifest.py::test_filter_customs_value [32mPASSED[0m[36m                [ 57%][0m
+tests/test_manifest.py::test_serialize_tracking_code [32mPASSED[0m[36m             [ 57%][0m
+tests/test_manifest.py::test_parse_manifest_totals [32mPASSED[0m[36m               [ 57%][0m
+tests/test_manifest.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m       [ 57%][0m
+tests/test_manifest.py::test_normalize_rate_quote [32mPASSED[0m[36m                [ 58%][0m
+tests/test_manifest.py::test_format_dimension_units [32mPASSED[0m[36m              [ 58%][0m
+tests/test_manifest.py::test_reject_street_number [32mPASSED[0m[36m                [ 58%][0m
+tests/test_manifest.py::test_accept_postal_code [32mPASSED[0m[36m                  [ 58%][0m
+tests/test_manifest.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m         [ 58%][0m
+tests/test_manifest.py::test_convert_weight_units [32mPASSED[0m[36m                [ 58%][0m
+tests/test_manifest.py::test_merge_label_size [32mPASSED[0m[36m                    [ 58%][0m
+tests/test_manifest.py::test_sort_service_level [32mPASSED[0m[36m                  [ 58%][0m
+tests/test_manifest.py::test_filter_insured_value [32mPASSED[0m[36m                [ 58%][0m
+tests/test_manifest.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m    [ 59%][0m
+tests/test_manifest.py::test_parse_pickup_window [32mPASSED[0m[36m                 [ 59%][0m
+tests/test_manifest.py::test_manifest_totals_use_decimal_rounding [31mFAILED[0m[36m [ 59%][0m
+tests/test_manifest.py::test_normalize_address_line [32mPASSED[0m[36m              [ 59%][0m
+tests/test_manifest.py::test_format_rate_quote [32mPASSED[0m[36m                   [ 59%][0m
+tests/test_manifest.py::test_reject_dimension_units[fedex-us] [32mPASSED[0m[36m    [ 59%][0m
+tests/test_manifest.py::test_accept_street_number [32mPASSED[0m[36m                [ 59%][0m
+tests/test_manifest.py::test_round_postal_code [32mPASSED[0m[36m                   [ 59%][0m
+tests/test_manifest.py::test_convert_country_alias [32mPASSED[0m[36m               [ 59%][0m
+tests/test_manifest.py::test_merge_weight_units [32mPASSED[0m[36m                  [ 60%][0m
+tests/test_manifest.py::test_sort_label_size[ups-ca] [32mPASSED[0m[36m             [ 60%][0m
+tests/test_manifest.py::test_filter_service_level [32mPASSED[0m[36m                [ 60%][0m
+tests/test_manifest.py::test_serialize_insured_value [32mPASSED[0m[36m             [ 60%][0m
+tests/test_manifest.py::test_parse_tracking_code [32mPASSED[0m[36m                 [ 60%][0m
+tests/test_manifest.py::test_validate_pickup_window [32mPASSED[0m[36m              [ 60%][0m
+tests/test_manifest.py::test_normalize_manifest_totals[dhl-de] [32mPASSED[0m[36m   [ 60%][0m
+tests/test_manifest.py::test_format_address_line [32mPASSED[0m[36m                 [ 60%][0m
+tests/test_manifest.py::test_reject_rate_quote [32mPASSED[0m[36m                   [ 60%][0m
+tests/test_manifest.py::test_accept_dimension_units [32mPASSED[0m[36m              [ 61%][0m
+tests/test_manifest.py::test_round_street_number [32mPASSED[0m[36m                 [ 61%][0m
+tests/test_manifest.py::test_convert_postal_code[usps-gb] [32mPASSED[0m[36m        [ 61%][0m
+tests/test_manifest.py::test_merge_country_alias [32mPASSED[0m[36m                 [ 61%][0m
+tests/test_manifest.py::test_sort_weight_units [32mPASSED[0m[36m                   [ 61%][0m
+tests/test_manifest.py::test_filter_label_size [32mPASSED[0m[36m                   [ 61%][0m
+tests/test_manifest.py::test_serialize_service_level [32mPASSED[0m[36m             [ 61%][0m
+tests/test_manifest.py::test_parse_customs_value[fedex-ca] [32mPASSED[0m[36m       [ 61%][0m
+tests/test_manifest.py::test_validate_tracking_code [32mPASSED[0m[36m              [ 61%][0m
+tests/test_manifest.py::test_normalize_pickup_window [32mPASSED[0m[36m             [ 62%][0m
+tests/test_manifest.py::test_format_manifest_totals [32mPASSED[0m[36m              [ 62%][0m
+tests/test_manifest.py::test_reject_address_line [32mPASSED[0m[36m                 [ 62%][0m
+tests/test_manifest.py::test_accept_rate_quote[ups-de] [32mPASSED[0m[36m           [ 62%][0m
+tests/test_manifest.py::test_round_dimension_units [32mPASSED[0m[36m               [ 62%][0m
+tests/test_manifest.py::test_convert_street_number [32mPASSED[0m[36m               [ 62%][0m
+tests/test_manifest.py::test_merge_postal_code [32mPASSED[0m[36m                   [ 62%][0m
+tests/test_manifest.py::test_sort_country_alias [32mPASSED[0m[36m                  [ 62%][0m
+tests/test_manifest.py::test_filter_weight_units[dhl-gb] [32mPASSED[0m[36m         [ 63%][0m
+tests/test_manifest.py::test_serialize_label_size [32mPASSED[0m[36m                [ 63%][0m
+tests/test_manifest.py::test_parse_insured_value [32mPASSED[0m[36m                 [ 63%][0m
+tests/test_manifest.py::test_validate_customs_value [32mPASSED[0m[36m              [ 63%][0m
+tests/test_rates.py::test_parse_street_number [32mPASSED[0m[36m                    [ 63%][0m
+tests/test_rates.py::test_validate_postal_code [32mPASSED[0m[36m                   [ 63%][0m
+tests/test_rates.py::test_normalize_country_alias [32mPASSED[0m[36m                [ 63%][0m
+tests/test_rates.py::test_format_weight_units [32mPASSED[0m[36m                    [ 63%][0m
+tests/test_rates.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m            [ 63%][0m
+tests/test_rates.py::test_accept_service_level [32mPASSED[0m[36m                   [ 64%][0m
+tests/test_rates.py::test_round_insured_value [32mPASSED[0m[36m                    [ 64%][0m
+tests/test_rates.py::test_convert_customs_value [32mPASSED[0m[36m                  [ 64%][0m
+tests/test_rates.py::test_merge_tracking_code [32mPASSED[0m[36m                    [ 64%][0m
+tests/test_rates.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m             [ 64%][0m
+tests/test_rates.py::test_filter_manifest_totals [32mPASSED[0m[36m                 [ 64%][0m
+tests/test_rates.py::test_serialize_address_line [32mPASSED[0m[36m                 [ 64%][0m
+tests/test_rates.py::test_parse_dimension_units [32mPASSED[0m[36m                  [ 64%][0m
+tests/test_rates.py::test_validate_street_number [32mPASSED[0m[36m                 [ 64%][0m
+tests/test_rates.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m          [ 65%][0m
+tests/test_rates.py::test_format_country_alias [32mPASSED[0m[36m                   [ 65%][0m
+tests/test_rates.py::test_reject_weight_units [32mPASSED[0m[36m                    [ 65%][0m
+tests/test_rates.py::test_accept_label_size [32mPASSED[0m[36m                      [ 65%][0m
+tests/test_rates.py::test_round_service_level [32mPASSED[0m[36m                    [ 65%][0m
+tests/test_rates.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m         [ 65%][0m
+tests/test_rates.py::test_merge_customs_value [32mPASSED[0m[36m                    [ 65%][0m
+tests/test_rates.py::test_sort_tracking_code [32mPASSED[0m[36m                     [ 65%][0m
+tests/test_rates.py::test_filter_pickup_window [32mPASSED[0m[36m                   [ 65%][0m
+tests/test_rates.py::test_serialize_manifest_totals [32mPASSED[0m[36m              [ 66%][0m
+tests/test_rates.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m             [ 66%][0m
+tests/test_rates.py::test_validate_dimension_units [32mPASSED[0m[36m               [ 66%][0m
+tests/test_rates.py::test_normalize_street_number [32mPASSED[0m[36m                [ 66%][0m
+tests/test_rates.py::test_format_postal_code [32mPASSED[0m[36m                     [ 66%][0m
+tests/test_rates.py::test_reject_country_alias [32mPASSED[0m[36m                   [ 66%][0m
+tests/test_rates.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m            [ 66%][0m
+tests/test_rates.py::test_round_label_size [32mPASSED[0m[36m                       [ 66%][0m
+tests/test_rates.py::test_convert_service_level [32mPASSED[0m[36m                  [ 66%][0m
+tests/test_rates.py::test_merge_insured_value [32mPASSED[0m[36m                    [ 67%][0m
+tests/test_rates.py::test_sort_customs_value [32mPASSED[0m[36m                     [ 67%][0m
+tests/test_rates.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m           [ 67%][0m
+tests/test_rates.py::test_serialize_pickup_window [32mPASSED[0m[36m                [ 67%][0m
+tests/test_rates.py::test_parse_address_line [32mPASSED[0m[36m                     [ 67%][0m
+tests/test_rates.py::test_validate_rate_quote [32mPASSED[0m[36m                    [ 67%][0m
+tests/test_rates.py::test_normalize_dimension_units [32mPASSED[0m[36m              [ 67%][0m
+tests/test_rates.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m          [ 67%][0m
+tests/test_rates.py::test_reject_postal_code [32mPASSED[0m[36m                     [ 67%][0m
+tests/test_rates.py::test_accept_country_alias [32mPASSED[0m[36m                   [ 68%][0m
+tests/test_rates.py::test_round_weight_units [32mPASSED[0m[36m                     [ 68%][0m
+tests/test_rates.py::test_convert_label_size [32mPASSED[0m[36m                     [ 68%][0m
+tests/test_rates.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m          [ 68%][0m
+tests/test_rates.py::test_sort_insured_value [32mPASSED[0m[36m                     [ 68%][0m
+tests/test_rates.py::test_filter_customs_value [32mPASSED[0m[36m                   [ 68%][0m
+tests/test_rates.py::test_serialize_tracking_code [32mPASSED[0m[36m                [ 68%][0m
+tests/test_rates.py::test_parse_manifest_totals [32mPASSED[0m[36m                  [ 68%][0m
+tests/test_rates.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m          [ 69%][0m
+tests/test_rates.py::test_normalize_rate_quote [32mPASSED[0m[36m                   [ 69%][0m
+tests/test_rates.py::test_format_dimension_units [32mPASSED[0m[36m                 [ 69%][0m
+tests/test_rates.py::test_reject_street_number [32mPASSED[0m[36m                   [ 69%][0m
+tests/test_rates.py::test_accept_postal_code [32mPASSED[0m[36m                     [ 69%][0m
+tests/test_rates.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m            [ 69%][0m
+tests/test_rates.py::test_convert_weight_units [32mPASSED[0m[36m                   [ 69%][0m
+tests/test_rates.py::test_merge_label_size [32mPASSED[0m[36m                       [ 69%][0m
+tests/test_rates.py::test_sort_service_level [32mPASSED[0m[36m                     [ 69%][0m
+tests/test_rates.py::test_filter_insured_value [32mPASSED[0m[36m                   [ 70%][0m
+tests/test_rates.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m       [ 70%][0m
+tests/test_rates.py::test_parse_pickup_window [32mPASSED[0m[36m                    [ 70%][0m
+tests/test_rates.py::test_validate_manifest_totals [32mPASSED[0m[36m               [ 70%][0m
+tests/test_rates.py::test_normalize_address_line [32mPASSED[0m[36m                 [ 70%][0m
+tests/test_rates.py::test_format_rate_quote [32mPASSED[0m[36m                      [ 70%][0m
+tests/test_rates.py::test_reject_dimension_units[fedex-us] [32mPASSED[0m[36m       [ 70%][0m
+tests/test_rates.py::test_accept_street_number [32mPASSED[0m[36m                   [ 70%][0m
+tests/test_rates.py::test_round_postal_code [32mPASSED[0m[36m                      [ 70%][0m
+tests/test_rates.py::test_convert_country_alias [32mPASSED[0m[36m                  [ 71%][0m
+tests/test_rates.py::test_merge_weight_units [32mPASSED[0m[36m                     [ 71%][0m
+tests/test_rates.py::test_sort_label_size[ups-ca] [32mPASSED[0m[36m                [ 71%][0m
+tests/test_rates.py::test_filter_service_level [32mPASSED[0m[36m                   [ 71%][0m
+tests/test_rates.py::test_serialize_insured_value [32mPASSED[0m[36m                [ 71%][0m
+tests/test_rates.py::test_parse_tracking_code [32mPASSED[0m[36m                    [ 71%][0m
+tests/test_rates.py::test_validate_pickup_window [32mPASSED[0m[36m                 [ 71%][0m
+tests/test_rates.py::test_normalize_manifest_totals[dhl-de] [32mPASSED[0m[36m      [ 71%][0m
+tests/test_rates.py::test_format_address_line [32mPASSED[0m[36m                    [ 71%][0m
+tests/test_rates.py::test_reject_rate_quote [32mPASSED[0m[36m                      [ 72%][0m
+tests/test_rates.py::test_accept_dimension_units [32mPASSED[0m[36m                 [ 72%][0m
+tests/test_rates.py::test_round_street_number [32mPASSED[0m[36m                    [ 72%][0m
+tests/test_rates.py::test_convert_postal_code[usps-gb] [32mPASSED[0m[36m           [ 72%][0m
+tests/test_rates.py::test_merge_country_alias [32mPASSED[0m[36m                    [ 72%][0m
+tests/test_rates.py::test_sort_weight_units [32mPASSED[0m[36m                      [ 72%][0m
+tests/test_rates.py::test_filter_label_size [32mPASSED[0m[36m                      [ 72%][0m
+tests/test_rates.py::test_serialize_service_level [32mPASSED[0m[36m                [ 72%][0m
+tests/test_rates.py::test_parse_customs_value[fedex-ca] [32mPASSED[0m[36m          [ 72%][0m
+tests/test_rates.py::test_validate_tracking_code [32mPASSED[0m[36m                 [ 73%][0m
+tests/test_rates.py::test_normalize_pickup_window [32mPASSED[0m[36m                [ 73%][0m
+tests/test_rates.py::test_format_manifest_totals [32mPASSED[0m[36m                 [ 73%][0m
+tests/test_rates.py::test_reject_address_line [32mPASSED[0m[36m                    [ 73%][0m
+tests/test_rates.py::test_accept_rate_quote[ups-de] [32mPASSED[0m[36m              [ 73%][0m
+tests/test_rates.py::test_round_dimension_units [32mPASSED[0m[36m                  [ 73%][0m
+tests/test_rates.py::test_convert_street_number [32mPASSED[0m[36m                  [ 73%][0m
+tests/test_rates.py::test_merge_postal_code [32mPASSED[0m[36m                      [ 73%][0m
+tests/test_rates.py::test_sort_country_alias [32mPASSED[0m[36m                     [ 73%][0m
+tests/test_rates.py::test_filter_weight_units[dhl-gb] [32mPASSED[0m[36m            [ 74%][0m
+tests/test_rates.py::test_serialize_label_size [32mPASSED[0m[36m                   [ 74%][0m
+tests/test_rates.py::test_parse_insured_value [32mPASSED[0m[36m                    [ 74%][0m
+tests/test_rates.py::test_validate_customs_value [32mPASSED[0m[36m                 [ 74%][0m
+tests/test_rates.py::test_normalize_tracking_code [32mPASSED[0m[36m                [ 74%][0m
+tests/test_rates.py::test_format_pickup_window[usps-us] [32mPASSED[0m[36m          [ 74%][0m
+tests/test_rates.py::test_reject_manifest_totals [32mPASSED[0m[36m                 [ 74%][0m
+tests/test_rates.py::test_accept_address_line [32mPASSED[0m[36m                    [ 74%][0m
+tests/test_rates.py::test_round_rate_quote [32mPASSED[0m[36m                       [ 75%][0m
+tests/test_rates.py::test_convert_dimension_units [32mPASSED[0m[36m                [ 75%][0m
+tests/test_rates.py::test_merge_street_number[fedex-de] [32mPASSED[0m[36m          [ 75%][0m
+tests/test_rates.py::test_sort_postal_code [32mPASSED[0m[36m                       [ 75%][0m
+tests/test_rates.py::test_filter_country_alias [32mPASSED[0m[36m                   [ 75%][0m
+tests/test_rates.py::test_serialize_weight_units [32mPASSED[0m[36m                 [ 75%][0m
+tests/test_rates.py::test_parse_service_level [32mPASSED[0m[36m                    [ 75%][0m
+tests/test_rates.py::test_validate_insured_value[ups-gb] [32mPASSED[0m[36m         [ 75%][0m
+tests/test_rates.py::test_normalize_customs_value [32mPASSED[0m[36m                [ 75%][0m
+tests/test_rates.py::test_format_tracking_code [32mPASSED[0m[36m                   [ 76%][0m
+tests/test_rates.py::test_reject_pickup_window [32mPASSED[0m[36m                   [ 76%][0m
+tests/test_rates.py::test_accept_manifest_totals [32mPASSED[0m[36m                 [ 76%][0m
+tests/test_rates.py::test_round_address_line[dhl-us] [32mPASSED[0m[36m             [ 76%][0m
+tests/test_rates.py::test_convert_rate_quote [32mPASSED[0m[36m                     [ 76%][0m
+tests/test_rates.py::test_merge_dimension_units [32mPASSED[0m[36m                  [ 76%][0m
+tests/test_rates.py::test_sort_street_number [32mPASSED[0m[36m                     [ 76%][0m
+tests/test_rates.py::test_filter_postal_code [32mPASSED[0m[36m                     [ 76%][0m
+tests/test_rates.py::test_serialize_country_alias[usps-ca] [32mPASSED[0m[36m       [ 76%][0m
+tests/test_rates.py::test_parse_label_size [32mPASSED[0m[36m                       [ 77%][0m
+tests/test_rates.py::test_validate_service_level [32mPASSED[0m[36m                 [ 77%][0m
+tests/test_rates.py::test_normalize_insured_value [32mPASSED[0m[36m                [ 77%][0m
+tests/test_rates.py::test_format_customs_value [32mPASSED[0m[36m                   [ 77%][0m
+tests/test_rates.py::test_reject_tracking_code[fedex-gb] [32mPASSED[0m[36m         [ 77%][0m
+tests/test_rates.py::test_accept_pickup_window [32mPASSED[0m[36m                   [ 77%][0m
+tests/test_rates.py::test_round_manifest_totals [32mPASSED[0m[36m                  [ 77%][0m
+tests/test_rates.py::test_convert_address_line [32mPASSED[0m[36m                   [ 77%][0m
+tests/test_rates.py::test_merge_rate_quote [32mPASSED[0m[36m                       [ 77%][0m
+tests/test_rates.py::test_sort_dimension_units[ups-us] [32mPASSED[0m[36m           [ 78%][0m
+tests/test_routing.py::test_parse_street_number [32mPASSED[0m[36m                  [ 78%][0m
+tests/test_routing.py::test_validate_postal_code [32mPASSED[0m[36m                 [ 78%][0m
+tests/test_routing.py::test_normalize_country_alias [32mPASSED[0m[36m              [ 78%][0m
+tests/test_routing.py::test_format_weight_units [32mPASSED[0m[36m                  [ 78%][0m
+tests/test_routing.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m          [ 78%][0m
+tests/test_routing.py::test_accept_service_level [32mPASSED[0m[36m                 [ 78%][0m
+tests/test_routing.py::test_round_insured_value [32mPASSED[0m[36m                  [ 78%][0m
+tests/test_routing.py::test_convert_customs_value [32mPASSED[0m[36m                [ 78%][0m
+tests/test_routing.py::test_merge_tracking_code [32mPASSED[0m[36m                  [ 79%][0m
+tests/test_routing.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m           [ 79%][0m
+tests/test_routing.py::test_filter_manifest_totals [32mPASSED[0m[36m               [ 79%][0m
+tests/test_routing.py::test_serialize_address_line [32mPASSED[0m[36m               [ 79%][0m
+tests/test_routing.py::test_parse_dimension_units [32mPASSED[0m[36m                [ 79%][0m
+tests/test_routing.py::test_validate_street_number [32mPASSED[0m[36m               [ 79%][0m
+tests/test_routing.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m        [ 79%][0m
+tests/test_routing.py::test_format_country_alias [32mPASSED[0m[36m                 [ 79%][0m
+tests/test_routing.py::test_reject_weight_units [32mPASSED[0m[36m                  [ 79%][0m
+tests/test_routing.py::test_accept_label_size [32mPASSED[0m[36m                    [ 80%][0m
+tests/test_routing.py::test_round_service_level [32mPASSED[0m[36m                  [ 80%][0m
+tests/test_routing.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m       [ 80%][0m
+tests/test_routing.py::test_merge_customs_value [32mPASSED[0m[36m                  [ 80%][0m
+tests/test_routing.py::test_sort_tracking_code [32mPASSED[0m[36m                   [ 80%][0m
+tests/test_routing.py::test_filter_pickup_window [32mPASSED[0m[36m                 [ 80%][0m
+tests/test_routing.py::test_serialize_manifest_totals [32mPASSED[0m[36m            [ 80%][0m
+tests/test_routing.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m           [ 80%][0m
+tests/test_routing.py::test_validate_dimension_units [32mPASSED[0m[36m             [ 80%][0m
+tests/test_routing.py::test_normalize_street_number [32mPASSED[0m[36m              [ 81%][0m
+tests/test_routing.py::test_format_postal_code [32mPASSED[0m[36m                   [ 81%][0m
+tests/test_routing.py::test_reject_country_alias [32mPASSED[0m[36m                 [ 81%][0m
+tests/test_routing.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m          [ 81%][0m
+tests/test_routing.py::test_round_label_size [32mPASSED[0m[36m                     [ 81%][0m
+tests/test_routing.py::test_convert_service_level [32mPASSED[0m[36m                [ 81%][0m
+tests/test_routing.py::test_merge_insured_value [32mPASSED[0m[36m                  [ 81%][0m
+tests/test_routing.py::test_sort_customs_value [32mPASSED[0m[36m                   [ 81%][0m
+tests/test_routing.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m         [ 82%][0m
+tests/test_routing.py::test_serialize_pickup_window [32mPASSED[0m[36m              [ 82%][0m
+tests/test_routing.py::test_parse_address_line [32mPASSED[0m[36m                   [ 82%][0m
+tests/test_routing.py::test_validate_rate_quote [32mPASSED[0m[36m                  [ 82%][0m
+tests/test_routing.py::test_normalize_dimension_units [32mPASSED[0m[36m            [ 82%][0m
+tests/test_routing.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m        [ 82%][0m
+tests/test_routing.py::test_reject_postal_code [32mPASSED[0m[36m                   [ 82%][0m
+tests/test_routing.py::test_accept_country_alias [32mPASSED[0m[36m                 [ 82%][0m
+tests/test_routing.py::test_round_weight_units [32mPASSED[0m[36m                   [ 82%][0m
+tests/test_routing.py::test_convert_label_size [32mPASSED[0m[36m                   [ 83%][0m
+tests/test_routing.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m        [ 83%][0m
+tests/test_routing.py::test_sort_insured_value [32mPASSED[0m[36m                   [ 83%][0m
+tests/test_routing.py::test_filter_customs_value [32mPASSED[0m[36m                 [ 83%][0m
+tests/test_routing.py::test_serialize_tracking_code [32mPASSED[0m[36m              [ 83%][0m
+tests/test_routing.py::test_parse_manifest_totals [32mPASSED[0m[36m                [ 83%][0m
+tests/test_routing.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m        [ 83%][0m
+tests/test_routing.py::test_normalize_rate_quote [32mPASSED[0m[36m                 [ 83%][0m
+tests/test_routing.py::test_format_dimension_units [32mPASSED[0m[36m               [ 83%][0m
+tests/test_routing.py::test_reject_street_number [32mPASSED[0m[36m                 [ 84%][0m
+tests/test_routing.py::test_accept_postal_code [32mPASSED[0m[36m                   [ 84%][0m
+tests/test_routing.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m          [ 84%][0m
+tests/test_routing.py::test_convert_weight_units [32mPASSED[0m[36m                 [ 84%][0m
+tests/test_routing.py::test_merge_label_size [32mPASSED[0m[36m                     [ 84%][0m
+tests/test_routing.py::test_sort_service_level [32mPASSED[0m[36m                   [ 84%][0m
+tests/test_routing.py::test_filter_insured_value [32mPASSED[0m[36m                 [ 84%][0m
+tests/test_routing.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m     [ 84%][0m
+tests/test_routing.py::test_parse_pickup_window [32mPASSED[0m[36m                  [ 84%][0m
+tests/test_routing.py::test_validate_manifest_totals [32mPASSED[0m[36m             [ 85%][0m
+tests/test_routing.py::test_normalize_address_line [32mPASSED[0m[36m               [ 85%][0m
+tests/test_routing.py::test_format_rate_quote [32mPASSED[0m[36m                    [ 85%][0m
+tests/test_routing.py::test_reject_dimension_units[fedex-us] [32mPASSED[0m[36m     [ 85%][0m
+tests/test_routing.py::test_accept_street_number [32mPASSED[0m[36m                 [ 85%][0m
+tests/test_routing.py::test_round_postal_code [32mPASSED[0m[36m                    [ 85%][0m
+tests/test_routing.py::test_convert_country_alias [32mPASSED[0m[36m                [ 85%][0m
+tests/test_routing.py::test_merge_weight_units [32mPASSED[0m[36m                   [ 85%][0m
+tests/test_routing.py::test_sort_label_size[ups-ca] [32mPASSED[0m[36m              [ 85%][0m
+tests/test_tracking.py::test_parse_street_number [32mPASSED[0m[36m                 [ 86%][0m
+tests/test_tracking.py::test_validate_postal_code [32mPASSED[0m[36m                [ 86%][0m
+tests/test_tracking.py::test_normalize_country_alias [32mPASSED[0m[36m             [ 86%][0m
+tests/test_tracking.py::test_format_weight_units [32mPASSED[0m[36m                 [ 86%][0m
+tests/test_tracking.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m         [ 86%][0m
+tests/test_tracking.py::test_accept_service_level [32mPASSED[0m[36m                [ 86%][0m
+tests/test_tracking.py::test_round_insured_value [32mPASSED[0m[36m                 [ 86%][0m
+tests/test_tracking.py::test_convert_customs_value [32mPASSED[0m[36m               [ 86%][0m
+tests/test_tracking.py::test_merge_tracking_code [32mPASSED[0m[36m                 [ 86%][0m
+tests/test_tracking.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m          [ 87%][0m
+tests/test_tracking.py::test_filter_manifest_totals [32mPASSED[0m[36m              [ 87%][0m
+tests/test_tracking.py::test_serialize_address_line [32mPASSED[0m[36m              [ 87%][0m
+tests/test_tracking.py::test_parse_dimension_units [32mPASSED[0m[36m               [ 87%][0m
+tests/test_tracking.py::test_validate_street_number [32mPASSED[0m[36m              [ 87%][0m
+tests/test_tracking.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m       [ 87%][0m
+tests/test_tracking.py::test_format_country_alias [32mPASSED[0m[36m                [ 87%][0m
+tests/test_tracking.py::test_reject_weight_units [32mPASSED[0m[36m                 [ 87%][0m
+tests/test_tracking.py::test_accept_label_size [32mPASSED[0m[36m                   [ 88%][0m
+tests/test_tracking.py::test_round_service_level [32mPASSED[0m[36m                 [ 88%][0m
+tests/test_tracking.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m      [ 88%][0m
+tests/test_tracking.py::test_merge_customs_value [32mPASSED[0m[36m                 [ 88%][0m
+tests/test_tracking.py::test_sort_tracking_code [32mPASSED[0m[36m                  [ 88%][0m
+tests/test_tracking.py::test_filter_pickup_window [32mPASSED[0m[36m                [ 88%][0m
+tests/test_tracking.py::test_serialize_manifest_totals [32mPASSED[0m[36m           [ 88%][0m
+tests/test_tracking.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m          [ 88%][0m
+tests/test_tracking.py::test_validate_dimension_units [32mPASSED[0m[36m            [ 88%][0m
+tests/test_tracking.py::test_normalize_street_number [32mPASSED[0m[36m             [ 89%][0m
+tests/test_tracking.py::test_format_postal_code [32mPASSED[0m[36m                  [ 89%][0m
+tests/test_tracking.py::test_reject_country_alias [32mPASSED[0m[36m                [ 89%][0m
+tests/test_tracking.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m         [ 89%][0m
+tests/test_tracking.py::test_round_label_size [32mPASSED[0m[36m                    [ 89%][0m
+tests/test_tracking.py::test_convert_service_level [32mPASSED[0m[36m               [ 89%][0m
+tests/test_tracking.py::test_merge_insured_value [32mPASSED[0m[36m                 [ 89%][0m
+tests/test_tracking.py::test_sort_customs_value [32mPASSED[0m[36m                  [ 89%][0m
+tests/test_tracking.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m        [ 89%][0m
+tests/test_tracking.py::test_serialize_pickup_window [32mPASSED[0m[36m             [ 90%][0m
+tests/test_tracking.py::test_parse_address_line [32mPASSED[0m[36m                  [ 90%][0m
+tests/test_tracking.py::test_validate_rate_quote [32mPASSED[0m[36m                 [ 90%][0m
+tests/test_tracking.py::test_normalize_dimension_units [32mPASSED[0m[36m           [ 90%][0m
+tests/test_tracking.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m       [ 90%][0m
+tests/test_tracking.py::test_reject_postal_code [32mPASSED[0m[36m                  [ 90%][0m
+tests/test_tracking.py::test_accept_country_alias [32mPASSED[0m[36m                [ 90%][0m
+tests/test_tracking.py::test_round_weight_units [32mPASSED[0m[36m                  [ 90%][0m
+tests/test_tracking.py::test_convert_label_size [32mPASSED[0m[36m                  [ 90%][0m
+tests/test_tracking.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m       [ 91%][0m
+tests/test_tracking.py::test_sort_insured_value [32mPASSED[0m[36m                  [ 91%][0m
+tests/test_tracking.py::test_filter_customs_value [32mPASSED[0m[36m                [ 91%][0m
+tests/test_tracking.py::test_serialize_tracking_code [32mPASSED[0m[36m             [ 91%][0m
+tests/test_tracking.py::test_parse_manifest_totals [32mPASSED[0m[36m               [ 91%][0m
+tests/test_tracking.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m       [ 91%][0m
+tests/test_tracking.py::test_normalize_rate_quote [32mPASSED[0m[36m                [ 91%][0m
+tests/test_tracking.py::test_format_dimension_units [32mPASSED[0m[36m              [ 91%][0m
+tests/test_tracking.py::test_reject_street_number [32mPASSED[0m[36m                [ 91%][0m
+tests/test_tracking.py::test_accept_postal_code [32mPASSED[0m[36m                  [ 92%][0m
+tests/test_tracking.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m         [ 92%][0m
+tests/test_tracking.py::test_convert_weight_units [32mPASSED[0m[36m                [ 92%][0m
+tests/test_tracking.py::test_merge_label_size [32mPASSED[0m[36m                    [ 92%][0m
+tests/test_tracking.py::test_sort_service_level [32mPASSED[0m[36m                  [ 92%][0m
+tests/test_tracking.py::test_filter_insured_value [32mPASSED[0m[36m                [ 92%][0m
+tests/test_tracking.py::test_serialize_customs_value[usps-de] [32mPASSED[0m[36m    [ 92%][0m
+tests/test_tracking.py::test_parse_pickup_window [32mPASSED[0m[36m                 [ 92%][0m
+tests/test_tracking.py::test_validate_manifest_totals [32mPASSED[0m[36m            [ 92%][0m
+tests/test_tracking.py::test_normalize_address_line [32mPASSED[0m[36m              [ 93%][0m
+tests/test_tracking.py::test_format_rate_quote [32mPASSED[0m[36m                   [ 93%][0m
+tests/test_tracking.py::test_reject_dimension_units[fedex-us] [32mPASSED[0m[36m    [ 93%][0m
+tests/test_tracking.py::test_accept_street_number [32mPASSED[0m[36m                [ 93%][0m
+tests/test_tracking.py::test_round_postal_code [32mPASSED[0m[36m                   [ 93%][0m
+tests/test_tracking.py::test_convert_country_alias [32mPASSED[0m[36m               [ 93%][0m
+tests/test_webhook.py::test_parse_street_number [32mPASSED[0m[36m                  [ 93%][0m
+tests/test_webhook.py::test_validate_postal_code [32mPASSED[0m[36m                 [ 93%][0m
+tests/test_webhook.py::test_normalize_country_alias [32mPASSED[0m[36m              [ 94%][0m
+tests/test_webhook.py::test_format_weight_units [32mPASSED[0m[36m                  [ 94%][0m
+tests/test_webhook.py::test_reject_label_size[fedex-ca] [32mPASSED[0m[36m          [ 94%][0m
+tests/test_webhook.py::test_accept_service_level [32mPASSED[0m[36m                 [ 94%][0m
+tests/test_webhook.py::test_round_insured_value [32mPASSED[0m[36m                  [ 94%][0m
+tests/test_webhook.py::test_convert_customs_value [32mPASSED[0m[36m                [ 94%][0m
+tests/test_webhook.py::test_merge_tracking_code [32mPASSED[0m[36m                  [ 94%][0m
+tests/test_webhook.py::test_sort_pickup_window[ups-de] [32mPASSED[0m[36m           [ 94%][0m
+tests/test_webhook.py::test_filter_manifest_totals [32mPASSED[0m[36m               [ 94%][0m
+tests/test_webhook.py::test_serialize_address_line [32mPASSED[0m[36m               [ 95%][0m
+tests/test_webhook.py::test_parse_dimension_units [32mPASSED[0m[36m                [ 95%][0m
+tests/test_webhook.py::test_validate_street_number [32mPASSED[0m[36m               [ 95%][0m
+tests/test_webhook.py::test_normalize_postal_code[dhl-gb] [32mPASSED[0m[36m        [ 95%][0m
+tests/test_webhook.py::test_format_country_alias [32mPASSED[0m[36m                 [ 95%][0m
+tests/test_webhook.py::test_reject_weight_units [32mPASSED[0m[36m                  [ 95%][0m
+tests/test_webhook.py::test_accept_label_size [32mPASSED[0m[36m                    [ 95%][0m
+tests/test_webhook.py::test_round_service_level [32mPASSED[0m[36m                  [ 95%][0m
+tests/test_webhook.py::test_convert_insured_value[usps-us] [32mPASSED[0m[36m       [ 95%][0m
+tests/test_webhook.py::test_merge_customs_value [32mPASSED[0m[36m                  [ 96%][0m
+tests/test_webhook.py::test_sort_tracking_code [32mPASSED[0m[36m                   [ 96%][0m
+tests/test_webhook.py::test_filter_pickup_window [32mPASSED[0m[36m                 [ 96%][0m
+tests/test_webhook.py::test_serialize_manifest_totals [32mPASSED[0m[36m            [ 96%][0m
+tests/test_webhook.py::test_parse_rate_quote[fedex-de] [32mPASSED[0m[36m           [ 96%][0m
+tests/test_webhook.py::test_validate_dimension_units [32mPASSED[0m[36m             [ 96%][0m
+tests/test_webhook.py::test_normalize_street_number [32mPASSED[0m[36m              [ 96%][0m
+tests/test_webhook.py::test_format_postal_code [32mPASSED[0m[36m                   [ 96%][0m
+tests/test_webhook.py::test_reject_country_alias [32mPASSED[0m[36m                 [ 96%][0m
+tests/test_webhook.py::test_accept_weight_units[ups-gb] [32mPASSED[0m[36m          [ 97%][0m
+tests/test_webhook.py::test_round_label_size [32mPASSED[0m[36m                     [ 97%][0m
+tests/test_webhook.py::test_convert_service_level [32mPASSED[0m[36m                [ 97%][0m
+tests/test_webhook.py::test_merge_insured_value [32mPASSED[0m[36m                  [ 97%][0m
+tests/test_webhook.py::test_sort_customs_value [32mPASSED[0m[36m                   [ 97%][0m
+tests/test_webhook.py::test_filter_tracking_code[dhl-us] [32mPASSED[0m[36m         [ 97%][0m
+tests/test_webhook.py::test_serialize_pickup_window [32mPASSED[0m[36m              [ 97%][0m
+tests/test_webhook.py::test_parse_address_line [32mPASSED[0m[36m                   [ 97%][0m
+tests/test_webhook.py::test_validate_rate_quote [32mPASSED[0m[36m                  [ 97%][0m
+tests/test_webhook.py::test_normalize_dimension_units [32mPASSED[0m[36m            [ 98%][0m
+tests/test_webhook.py::test_format_street_number[usps-ca] [32mPASSED[0m[36m        [ 98%][0m
+tests/test_webhook.py::test_reject_postal_code [32mPASSED[0m[36m                   [ 98%][0m
+tests/test_webhook.py::test_accept_country_alias [32mPASSED[0m[36m                 [ 98%][0m
+tests/test_webhook.py::test_round_weight_units [32mPASSED[0m[36m                   [ 98%][0m
+tests/test_webhook.py::test_convert_label_size [32mPASSED[0m[36m                   [ 98%][0m
+tests/test_webhook.py::test_merge_service_level[fedex-gb] [32mPASSED[0m[36m        [ 98%][0m
+tests/test_webhook.py::test_sort_insured_value [32mPASSED[0m[36m                   [ 98%][0m
+tests/test_webhook.py::test_filter_customs_value [32mPASSED[0m[36m                 [ 98%][0m
+tests/test_webhook.py::test_serialize_tracking_code [32mPASSED[0m[36m              [ 99%][0m
+tests/test_webhook.py::test_parse_manifest_totals [32mPASSED[0m[36m                [ 99%][0m
+tests/test_webhook.py::test_validate_address_line[ups-us] [32mPASSED[0m[36m        [ 99%][0m
+tests/test_webhook.py::test_normalize_rate_quote [32mPASSED[0m[36m                 [ 99%][0m
+tests/test_webhook.py::test_format_dimension_units [32mPASSED[0m[36m               [ 99%][0m
+tests/test_webhook.py::test_reject_street_number [32mPASSED[0m[36m                 [ 99%][0m
+tests/test_webhook.py::test_accept_postal_code [32mPASSED[0m[36m                   [ 99%][0m
+tests/test_webhook.py::test_round_country_alias[dhl-ca] [32mPASSED[0m[36m          [ 99%][0m
+tests/test_webhook.py::test_convert_weight_units [32mPASSED[0m[36m                 [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_________________ test_manifest_totals_use_decimal_rounding ____________________[0m[0m
+
+make_manifest = <function make_manifest.<locals>.build at 0x7f2c6a1d8950>
+
+[1m    def test_manifest_totals_use_decimal_rounding(make_manifest):[0m
+[1m        manifest = make_manifest(items=[("0.10", 3), ("0.20", 3)])[0m
+[1m>       assert manifest.total == Decimal("0.90")[0m
+[1m[31mE       AssertionError: assert Decimal('0.9000000000000000055511151231257827') == Decimal('0.90')[0m
+[1m[31mE        +  where Decimal('0.9000000000000000055511151231257827') = <pyparcel.manifest.Manifest object at 0x7f2c6a1e1d68>.total[0m
+[1m[31mE        +  and   Decimal('0.90') = Decimal('0.90')[0m
+
+[1m[31mtests/test_manifest.py[0m:57: AssertionError
+[33m=============================== warnings summary ===============================[0m
+tests/test_label.py::test_label_png_has_300_dpi
+  /home/travis/virtualenv/python3.7.1/lib/python3.7/site-packages/PIL/Image.py:2800: DeprecationWarning: 
+    'frombuffer' is deprecated
+
+-- Docs: https://docs.pytest.org/en/latest/warnings.html
+
+---------- coverage: platform linux, python 3.7.1-final-0 -----------
+Name                            Stmts   Miss  Cover
+---------------------------------------------------
+pyparcel/__init__.py               12      0   100%
+pyparcel/address.py               188      6    97%
+pyparcel/carrier/__init__.py       41      0   100%
+pyparcel/carrier/fedex.py         214     11    95%
+pyparcel/carrier/ups.py           207      9    96%
+pyparcel/carrier/usps.py          176     12    94%
+pyparcel/customs.py               133      5    97%
+pyparcel/dimensions.py             88      2    98%
+pyparcel/label.py                 241     14    95%
+pyparcel/manifest.py              152      3    99%
+pyparcel/rates.py                 266      7    98%
+pyparcel/routing.py               119      2    99%
+pyparcel/tracking.py               98      0   100%
+pyparcel/webhook.py                85      0   100%
+---------------------------------------------------
+TOTAL                            2020     71    96%
+[31m[1m======== 1 failed, 883 passed, 3 warnings in 91.20 seconds ========[0m[0m
+travis_time:end:c21beb6d:start=1553532253100000000,finish=1553532344100000000,duration=91000000000[0K[0K[31;1mThe command "pytest -v --cov=pyparcel" exited with 1.[0m
+travis_time:start:51907406[0K$ cat tests/output/last_run.log
+2019-03-25 17:12:00,671 DEBUG pyparcel.http: GET https://sandbox.carrier.test/v1/rates 200 (0.262s)
+2019-03-25 17:12:07,650 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.079s)
+2019-03-25 17:12:14,393 INFO pyparcel.manifest: closed manifest M-4586 with 3 items
+2019-03-25 17:12:21,778 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.3s
+2019-03-25 17:12:28,673 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.4s
+2019-03-25 17:12:35,817 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.394s)
+2019-03-25 17:13:42,354 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.2s
+2019-03-25 17:13:49,191 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.1s
+2019-03-25 17:13:56,625 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.159s)
+2019-03-25 17:13:03,578 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.378s)
+2019-03-25 17:13:10,460 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.1s
+2019-03-25 17:13:17,986 INFO pyparcel.manifest: closed manifest M-9440 with 3 items
+2019-03-25 17:14:24,838 INFO pyparcel.manifest: closed manifest M-7647 with 3 items
+2019-03-25 17:14:31,473 DEBUG pyparcel.http: GET https://sandbox.carrier.test/v1/rates 200 (0.182s)
+2019-03-25 17:14:38,707 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.3s
+2019-03-25 17:14:45,210 INFO pyparcel.manifest: closed manifest M-1027 with 3 items
+2019-03-25 17:14:52,354 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.4s
+2019-03-25 17:14:59,541 INFO pyparcel.manifest: closed manifest M-4351 with 3 items
+2019-03-25 17:15:06,762 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.368s)
+2019-03-25 17:15:13,993 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.265s)
+2019-03-25 17:15:20,882 DEBUG pyparcel.http: GET https://sandbox.carrier.test/v1/rates 200 (0.380s)
+2019-03-25 17:15:27,326 INFO pyparcel.manifest: closed manifest M-4447 with 3 items
+2019-03-25 17:15:34,222 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.192s)
+2019-03-25 17:15:41,351 INFO pyparcel.manifest: closed manifest M-2878 with 3 items
+2019-03-25 17:16:48,601 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.4s
+2019-03-25 17:16:55,368 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.231s)
+2019-03-25 17:16:02,447 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.1s
+2019-03-25 17:16:09,813 INFO pyparcel.manifest: closed manifest M-9083 with 3 items
+2019-03-25 17:16:16,844 INFO pyparcel.manifest: closed manifest M-4576 with 3 items
+2019-03-25 17:16:23,672 DEBUG pyparcel.http: GET https://sandbox.carrier.test/v1/rates 200 (0.102s)
+2019-03-25 17:17:30,817 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.2s
+2019-03-25 17:17:37,696 INFO pyparcel.manifest: closed manifest M-5521 with 3 items
+2019-03-25 17:17:44,965 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.3s
+2019-03-25 17:17:51,585 INFO pyparcel.manifest: closed manifest M-4425 with 3 items
+2019-03-25 17:17:58,297 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.4s
+2019-03-25 17:17:05,777 INFO pyparcel.manifest: closed manifest M-5591 with 3 items
+2019-03-25 17:18:12,997 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.208s)
+2019-03-25 17:18:19,654 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.136s)
+2019-03-25 17:18:26,867 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.2s
+2019-03-25 17:18:33,808 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.3s
+2019-03-25 17:18:40,249 WARNING pyparcel.http: retrying after connection error (attempt 2/3) in 0.2s
+2019-03-25 17:18:47,257 DEBUG pyparcel.http: GET https://sandbox.carrier.test/v1/rates 200 (0.151s)
+2019-03-25 17:19:54,563 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.256s)
+2019-03-25 17:19:01,966 INFO pyparcel.manifest: closed manifest M-2937 with 3 items
+2019-03-25 17:19:08,270 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.215s)
+2019-03-25 17:19:15,713 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.094s)
+2019-03-25 17:19:22,102 INFO pyparcel.manifest: closed manifest M-1784 with 3 items
+2019-03-25 17:19:29,721 DEBUG pyparcel.http: GET https://sandbox.carrier.test/v1/rates 200 (0.316s)
+2019-03-25 17:20:36,114 INFO pyparcel.manifest: closed manifest M-7899 with 3 items
+2019-03-25 17:20:43,969 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.090s)
+2019-03-25 17:20:50,818 INFO pyparcel.manifest: closed manifest M-1716 with 3 items
+2019-03-25 17:20:57,214 INFO pyparcel.manifest: closed manifest M-8351 with 3 items
+2019-03-25 17:20:04,591 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.170s)
+2019-03-25 17:20:11,775 DEBUG pyparcel.http: POST https://sandbox.carrier.test/v1/labels 201 (0.214s)
+travis_time:end:51907406:start=1553532344100000000,finish=1553532344200000000,duration=100000000[0K
+
+
+Done. Your build exited with 1.

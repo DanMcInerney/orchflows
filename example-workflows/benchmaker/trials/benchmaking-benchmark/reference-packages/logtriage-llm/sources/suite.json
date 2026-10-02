@@ -1,0 +1,4 @@
+{"name": "logtriage", "repeats": 3, "concurrency": 8, "deadline_seconds": 3600, "grace_seconds": 5,
+ "attempt_seconds_estimate": 25, "attempt_cost_estimate_usd": 0.03, "transient_retry_budget": 0, "launch_budget": 60,
+ "provision": [], "observe": [["python", "--version"]],
+ "metrics": {"primary": "full_success_rate"}}

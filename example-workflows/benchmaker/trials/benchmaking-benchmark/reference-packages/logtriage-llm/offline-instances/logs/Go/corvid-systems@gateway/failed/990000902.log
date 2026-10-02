@@ -1,0 +1,112 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 0bbbf7e9-dc2e-a5c3-b03e-fd4e52011017@1.production-2-worker-org-gce-21vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/68d6a42c787eee304618867b823dfc5ec2b63a96
+instance: travis-job-5fdbe648-9049-cd3d-a063-ae6c8ecea25d travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 5.672661541s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: go
+Build group: stable
+Build dist: xenial
+Build id: 990000902
+Job id: 990000903
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Mon Jun  3 03:12:05 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:4d74b978[0K$ git clone --depth=50 --branch=master https://github.com/corvid-systems/gateway.git corvid-systems/gateway
+Cloning into 'corvid-systems/gateway'...
+remote: Enumerating objects: 4884, done.remote: Counting objects:  50% (2442/4884)remote: Counting objects: 100% (4884/4884), done.remote: Compressing objects: 100% (1628/1628), done.
+remote: Total 4884 (delta 1221), reused 4794 (delta 1221), pack-reused 0Receiving objects: 100% (4884/4884), 19.28 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1221/1221), done.
+travis_time:end:4d74b978:start=1559531525000000000,finish=1559531527100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd corvid-systems/gateway
+$ git checkout -qf d4babe4a0f984bf9e62cb13056f17310caae5e49
+$ gimme 1.12
+go version go1.12.1 linux/amd64
+$ go version
+go version go1.12.1 linux/amd64
+$ export GO111MODULE=on
+$ go env GOPATH
+/home/travis/gopath
+travis_time:start:4215531f[0K$ docker pull registry.corvid.example/gateway-testbed:latest
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 1/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 2/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 3/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 4/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 5/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 6/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 7/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 8/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 9/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 10/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 11/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+Retrying pull of registry.corvid.example/gateway-testbed:latest (attempt 12/12)
+Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout
+travis_time:end:4215531f:start=1559531527100000000,finish=1559531717100000000,duration=190000000000[0K[0K[31;1mThe command "docker pull registry.corvid.example/gateway-testbed:latest" failed and exited with 1 during [0m.
+
+Your build has been stopped.

@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Java/acme@ledger/failed/900000005.log</Log>
+    <Keywords>ERROR, Compilation failure</Keywords>
+    <Category>0</Category>
+    <Chunk>[ERROR] /home/travis/build/acme/ledger/src/main/java/acme/ledger/Posting.java:[42,31] incompatible types: java.lang.String cannot be converted to java.math.BigDecimal
+[ERROR] /home/travis/build/acme/ledger/src/main/java/acme/ledger/Posting.java:[57,12] cannot find symbol
+[ERROR]   symbol:   method scaleTo(int)
+[ERROR]   location: class acme.ledger.Money</Chunk>
+  </Example>
+  <Example>
+    <Log>Java/acme@ledger/failed/900000006.log</Log>
+    <Keywords>FAILURE, AssertionError</Keywords>
+    <Category>0</Category>
+    <Chunk>[ERROR] Tests run: 5, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.114 s  FAILURE! - in acme.ledger.ReconcileTest
+[ERROR] reconcilesAcrossCurrencies  Time elapsed: 0.031 s   FAILURE!
+java.lang.AssertionError:
+Expected: is 100.00&gt;
+     but: was 99.99&gt;
+	at org.junit.Assert.assertThat(Assert.java:956)
+	at acme.ledger.ReconcileTest.reconcilesAcrossCurrencies(ReconcileTest.java:73)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+
+[INFO] Results:
+[ERROR] Failures: 
+[ERROR]   ReconcileTest.reconcilesAcrossCurrencies:73 Expected: is 100.00&gt; but: was 99.99&gt;</Chunk>
+  </Example>
+</Examples>

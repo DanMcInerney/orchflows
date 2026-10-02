@@ -1,0 +1,4 @@
+{"name": "schedule-dev", "repeats": 3, "concurrency": 8, "deadline_seconds": 3600, "grace_seconds": 5,
+ "attempt_seconds_estimate": 8, "attempt_cost_estimate_usd": 0.02, "transient_retry_budget": 0,
+ "provision": [], "observe": [["python", "--version"]],
+ "metrics": {"primary": "full_success_rate"}}

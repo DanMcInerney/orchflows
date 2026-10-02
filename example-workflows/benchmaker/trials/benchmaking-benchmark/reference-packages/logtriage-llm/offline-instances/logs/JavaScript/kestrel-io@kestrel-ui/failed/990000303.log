@@ -1,0 +1,117 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 4279f47b-a594-52dc-8520-ada9b3dbe2b0@1.production-2-worker-org-gce-06vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/13c1e796c3db1de01730fef66eb1f9da329e6e93
+instance: travis-job-58e254bb-2278-3514-5a65-d31d436f0657 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 7.956524279s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: node_js
+Build group: stable
+Build dist: xenial
+Build id: 990000303
+Job id: 990000304
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Tue Oct  8 13:26:40 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:85fb76d4[0K$ git clone --depth=50 --branch=master https://github.com/kestrel-io/kestrel-ui.git kestrel-io/kestrel-ui
+Cloning into 'kestrel-io/kestrel-ui'...
+remote: Enumerating objects: 4504, done.remote: Counting objects:  50% (2252/4504)remote: Counting objects: 100% (4504/4504), done.remote: Compressing objects: 100% (1501/1501), done.
+remote: Total 4504 (delta 1126), reused 4414 (delta 1126), pack-reused 0Receiving objects: 100% (4504/4504), 22.91 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1126/1126), done.
+travis_time:end:85fb76d4:start=1570541200000000000,finish=1570541202100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd kestrel-io/kestrel-ui
+$ git checkout -qf 36f353ca19cf964d69a927d290b71a6c12d8b257
+$ nvm install 10
+Downloading and installing node v10.16.3...
+Downloading https://nodejs.org/dist/v10.16.3/node-v10.16.3-linux-x64.tar.xz...
+########                                                            11.4%############################################                        62.0%######################################################################100.0%
+Computing checksum with sha256sum
+Checksums matched!
+Now using node v10.16.3 (npm v6.9.0)
+$ node --version
+v10.16.3
+$ npm --version
+6.9.0
+travis_fold:start:install[0Ktravis_time:start:1f2b4c74[0K$ npm ci
+npm WARN deprecated request@2.88.0: request has been deprecated, see https://github.com/request/request/issues/3142
+npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@1.2.9 (node_modules/fsevents)
+added 1428 packages in 40.118s
+travis_time:end:1f2b4c74:start=1570541202100000000,finish=1570541245100000000,duration=43000000000[0Ktravis_fold:end:install[0K[0K[32;1mThe command "npm ci" exited with 0.[0m
+travis_time:start:f6140cd7[0K$ npm run lint
+
+> kestrel-ui@3.4.0 lint /home/travis/build/kestrel-io/kestrel-ui
+> eslint src --max-warnings=0
+
+/home/travis/build/kestrel-io/kestrel-ui/src/utils/format.js
+  14:7  error  'unusedLocale' is assigned a value but never used  no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+
+npm ERR! code ELIFECYCLE
+npm ERR! errno 1
+npm ERR! kestrel-ui@3.4.0 lint: `eslint src --max-warnings=0`
+npm ERR! Exit status 1
+npm ERR! 
+npm ERR! Failed at the kestrel-ui@3.4.0 lint script.
+npm ERR! This is probably not a problem with npm. There is likely additional logging output above.
+
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /home/travis/.npm/_logs/2019-10-08T13_26_52_911Z-debug.log
+travis_time:end:f6140cd7:start=1570541245100000000,finish=1570541256100000000,duration=11000000000[0K[0K[31;1mThe command "npm run lint" exited with 1.[0m
+
+
+Done. Your build exited with 1.

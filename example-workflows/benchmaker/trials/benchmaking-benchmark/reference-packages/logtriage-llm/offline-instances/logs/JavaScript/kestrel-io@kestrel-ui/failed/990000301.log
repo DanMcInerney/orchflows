@@ -1,0 +1,469 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: df1184cd-4c58-de45-9014-2dfa1049b058@1.production-2-worker-org-gce-19vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/8a44a5602e2f2304f2fd5ca9e9be82235d964041
+instance: travis-job-be3aaccd-ca75-3b08-2ed5-4cd9357935f1 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 7.313846365s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: node_js
+Build group: stable
+Build dist: xenial
+Build id: 990000301
+Job id: 990000302
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Tue Oct  8 13:20:17 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:86feeb92[0K$ git clone --depth=50 --branch=master https://github.com/kestrel-io/kestrel-ui.git kestrel-io/kestrel-ui
+Cloning into 'kestrel-io/kestrel-ui'...
+remote: Enumerating objects: 4213, done.remote: Counting objects:  50% (2106/4213)remote: Counting objects: 100% (4213/4213), done.remote: Compressing objects: 100% (1404/1404), done.
+remote: Total 4213 (delta 1053), reused 4123 (delta 1053), pack-reused 0Receiving objects: 100% (4213/4213), 7.78 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1053/1053), done.
+travis_time:end:86feeb92:start=1570540817000000000,finish=1570540819100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd kestrel-io/kestrel-ui
+$ git checkout -qf 13dbd8b6a940819e396132dc4db24adb03166eab
+$ nvm install 10
+Downloading and installing node v10.16.3...
+Downloading https://nodejs.org/dist/v10.16.3/node-v10.16.3-linux-x64.tar.xz...
+########                                                            11.4%############################################                        62.0%######################################################################100.0%
+Computing checksum with sha256sum
+Checksums matched!
+Now using node v10.16.3 (npm v6.9.0)
+$ node --version
+v10.16.3
+$ npm --version
+6.9.0
+travis_fold:start:install[0Ktravis_time:start:f29ab987[0K$ npm ci
+npm WARN deprecated request@2.88.0: request has been deprecated, see https://github.com/request/request/issues/3142
+npm WARN deprecated core-js@2.6.9: core-js@<3 is no longer maintained and not recommended for usage due to the number of issues.
+npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@1.2.9 (node_modules/fsevents)
+npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@1.2.9: wanted {"os":"darwin","arch":"any"} (current: {"os":"linux","arch":"x64"})
+added 1428 packages in 41.213s
+travis_time:end:f29ab987:start=1570540819100000000,finish=1570540863100000000,duration=44000000000[0Ktravis_fold:end:install[0K[0K[32;1mThe command "npm ci" exited with 0.[0m
+travis_time:start:996c8d14[0K$ npm test
+
+> kestrel-ui@3.4.0 test /home/travis/build/kestrel-io/kestrel-ui
+> jest --ci --verbose
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/accordion/Accordion.test.js (4.095s)
+  [32m✓[39m [2mformats numbers with the locale (19ms)[22m
+  [32m✓[39m [2mforwards the ref (13ms)[22m
+  [32m✓[39m [2mrenders without crashing (36ms)[22m
+  [32m✓[39m [2mignores unknown props (27ms)[22m
+  [32m✓[39m [2msupports the disabled state (4ms)[22m
+  [32m✓[39m [2mcleans up listeners (44ms)[22m
+  [32m✓[39m [2mapplies the variant class (6ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/alert/Alert.test.js (6.095s)
+  [32m✓[39m [2mapplies the variant class (8ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (45ms)[22m
+  [32m✓[39m [2msupports the disabled state (15ms)[22m
+  [32m✓[39m [2mrenders without crashing (7ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (26ms)[22m
+  [32m✓[39m [2mforwards the ref (27ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (15ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/avatar/Avatar.test.js (1.216s)
+  [32m✓[39m [2mcalls onChange once (38ms)[22m
+  [32m✓[39m [2mcleans up listeners (32ms)[22m
+  [32m✓[39m [2mrenders without crashing (26ms)[22m
+  [32m✓[39m [2msupports the disabled state (14ms)[22m
+  [32m✓[39m [2mforwards the ref (21ms)[22m
+  [32m✓[39m [2mignores unknown props (5ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (21ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/badge/Badge.test.js (4.008s)
+  [32m✓[39m [2mformats numbers with the locale (32ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (6ms)[22m
+  [32m✓[39m [2mignores unknown props (41ms)[22m
+  [32m✓[39m [2mcalls onChange once (8ms)[22m
+  [32m✓[39m [2msupports the disabled state (15ms)[22m
+  [32m✓[39m [2mrenders without crashing (41ms)[22m
+  [32m✓[39m [2mcleans up listeners (12ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/breadcrumb/Breadcrumb.test.js (6.369s)
+  [32m✓[39m [2mignores unknown props (11ms)[22m
+  [32m✓[39m [2mapplies the variant class (46ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (17ms)[22m
+  [32m✓[39m [2mcalls onChange once (3ms)[22m
+  [32m✓[39m [2mcleans up listeners (32ms)[22m
+  [32m✓[39m [2mrenders without crashing (30ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (39ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/button/Button.test.js (1.806s)
+  [32m✓[39m [2mrenders without crashing (16ms)[22m
+  [32m✓[39m [2mforwards the ref (15ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (33ms)[22m
+  [32m✓[39m [2mcleans up listeners (15ms)[22m
+  [32m✓[39m [2msupports the disabled state (4ms)[22m
+  [32m✓[39m [2mapplies the variant class (41ms)[22m
+  [32m✓[39m [2mcalls onChange once (34ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/card/Card.test.js (6.480s)
+  [32m✓[39m [2mforwards the ref (13ms)[22m
+  [32m✓[39m [2msupports the disabled state (24ms)[22m
+  [32m✓[39m [2mcalls onChange once (29ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (36ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (25ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (14ms)[22m
+  [32m✓[39m [2mignores unknown props (17ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/checkbox/Checkbox.test.js (5.175s)
+  [32m✓[39m [2mrenders without crashing (16ms)[22m
+  [32m✓[39m [2mforwards the ref (1ms)[22m
+  [32m✓[39m [2mcalls onChange once (11ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (46ms)[22m
+  [32m✓[39m [2mcleans up listeners (14ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (16ms)[22m
+  [32m✓[39m [2msupports the disabled state (6ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/dropdown/Dropdown.test.js (5.354s)
+  [32m✓[39m [2mmemoizes derived rows (6ms)[22m
+  [32m✓[39m [2mrenders without crashing (22ms)[22m
+  [32m✓[39m [2mignores unknown props (44ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (8ms)[22m
+  [32m✓[39m [2mcleans up listeners (29ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (18ms)[22m
+  [32m✓[39m [2mapplies the variant class (36ms)[22m
+  console.error node_modules/react-dom/cjs/react-dom.development.js:530
+    Warning: Each child in a list should have a unique "key" prop.
+
+    Check the render method of `Menu`. See https://fb.me/react-warning-keys for more information.
+        in li (created by Menu)
+        in Menu (created by Select)
+        in Select
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/form/Form.test.js (4.365s)
+  [32m✓[39m [2mformats numbers with the locale (38ms)[22m
+  [32m✓[39m [2mrenders without crashing (8ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (20ms)[22m
+  [32m✓[39m [2mforwards the ref (15ms)[22m
+  [32m✓[39m [2mignores unknown props (43ms)[22m
+  [32m✓[39m [2mapplies the variant class (5ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (13ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/grid/Grid.test.js (1.742s)
+  [32m✓[39m [2mformats numbers with the locale (15ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (15ms)[22m
+  [32m✓[39m [2mforwards the ref (43ms)[22m
+  [32m✓[39m [2mcalls onChange once (32ms)[22m
+  [32m✓[39m [2mignores unknown props (24ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (14ms)[22m
+  [32m✓[39m [2mcleans up listeners (4ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/icon/Icon.test.js (4.295s)
+  [32m✓[39m [2mignores unknown props (39ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (4ms)[22m
+  [32m✓[39m [2mrenders without crashing (7ms)[22m
+  [32m✓[39m [2msupports the disabled state (36ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (39ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (39ms)[22m
+  [32m✓[39m [2mapplies the variant class (30ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/input/Input.test.js (4.379s)
+  [32m✓[39m [2mrenders without crashing (31ms)[22m
+  [32m✓[39m [2mcalls onChange once (4ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (16ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (30ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (5ms)[22m
+  [32m✓[39m [2mforwards the ref (1ms)[22m
+  [32m✓[39m [2msupports the disabled state (3ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/modal/Modal.test.js (5.874s)
+  [32m✓[39m [2mmemoizes derived rows (16ms)[22m
+  [32m✓[39m [2mforwards the ref (27ms)[22m
+  [32m✓[39m [2mcleans up listeners (33ms)[22m
+  [32m✓[39m [2msupports the disabled state (29ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (11ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (44ms)[22m
+  [32m✓[39m [2mrenders without crashing (30ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/pagination/Pagination.test.js (5.089s)
+  [32m✓[39m [2mhandles keyboard focus (33ms)[22m
+  [32m✓[39m [2mrenders without crashing (45ms)[22m
+  [32m✓[39m [2mcleans up listeners (25ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (22ms)[22m
+  [32m✓[39m [2mcalls onChange once (39ms)[22m
+  [32m✓[39m [2mapplies the variant class (47ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (27ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/popover/Popover.test.js (3.605s)
+  [32m✓[39m [2msupports the disabled state (5ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (26ms)[22m
+  [32m✓[39m [2mcleans up listeners (15ms)[22m
+  [32m✓[39m [2mforwards the ref (18ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (29ms)[22m
+  [32m✓[39m [2mapplies the variant class (8ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (7ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/radio/Radio.test.js (6.161s)
+  [32m✓[39m [2mmemoizes derived rows (44ms)[22m
+  [32m✓[39m [2mcleans up listeners (17ms)[22m
+  [32m✓[39m [2mcalls onChange once (15ms)[22m
+  [32m✓[39m [2msupports the disabled state (44ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (8ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (47ms)[22m
+  [32m✓[39m [2mignores unknown props (44ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/select/Select.test.js (4.772s)
+  [32m✓[39m [2mmemoizes derived rows (9ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (42ms)[22m
+  [32m✓[39m [2msupports the disabled state (20ms)[22m
+  [32m✓[39m [2mapplies the variant class (32ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (7ms)[22m
+  [32m✓[39m [2mrenders without crashing (35ms)[22m
+  [32m✓[39m [2mforwards the ref (40ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/slider/Slider.test.js (1.256s)
+  [32m✓[39m [2mhandles keyboard focus (45ms)[22m
+  [32m✓[39m [2msupports the disabled state (41ms)[22m
+  [32m✓[39m [2mrenders without crashing (17ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (33ms)[22m
+  [32m✓[39m [2mignores unknown props (38ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (34ms)[22m
+  [32m✓[39m [2mapplies the variant class (6ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/spinner/Spinner.test.js (3.606s)
+  [32m✓[39m [2mformats numbers with the locale (16ms)[22m
+  [32m✓[39m [2msupports the disabled state (4ms)[22m
+  [32m✓[39m [2mcalls onChange once (10ms)[22m
+  [32m✓[39m [2mignores unknown props (36ms)[22m
+  [32m✓[39m [2mcleans up listeners (43ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (14ms)[22m
+  [32m✓[39m [2mrenders without crashing (7ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/switch/Switch.test.js (3.549s)
+  [32m✓[39m [2msupports the disabled state (27ms)[22m
+  [32m✓[39m [2mapplies the variant class (39ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (38ms)[22m
+  [32m✓[39m [2mcalls onChange once (3ms)[22m
+  [32m✓[39m [2mrenders without crashing (10ms)[22m
+  [32m✓[39m [2mignores unknown props (6ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (19ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/tabs/Tabs.test.js (6.176s)
+  [32m✓[39m [2mformats numbers with the locale (43ms)[22m
+  [32m✓[39m [2mcleans up listeners (31ms)[22m
+  [32m✓[39m [2mapplies the variant class (4ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (8ms)[22m
+  [32m✓[39m [2mrenders without crashing (20ms)[22m
+  [32m✓[39m [2mcalls onChange once (19ms)[22m
+  [32m✓[39m [2mforwards the ref (25ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/tag/Tag.test.js (3.874s)
+  [32m✓[39m [2mcleans up listeners (34ms)[22m
+  [32m✓[39m [2mignores unknown props (14ms)[22m
+  [32m✓[39m [2mcalls onChange once (39ms)[22m
+  [32m✓[39m [2msupports the disabled state (37ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (20ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (18ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (8ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/toast/Toast.test.js (2.778s)
+  [32m✓[39m [2mcalls onChange once (11ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (36ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (10ms)[22m
+  [32m✓[39m [2mforwards the ref (32ms)[22m
+  [32m✓[39m [2mrenders without crashing (17ms)[22m
+  [32m✓[39m [2mcleans up listeners (38ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (27ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/tooltip/Tooltip.test.js (2.379s)
+  [32m✓[39m [2mformats numbers with the locale (40ms)[22m
+  [32m✓[39m [2msupports the disabled state (48ms)[22m
+  [32m✓[39m [2mcleans up listeners (42ms)[22m
+  [32m✓[39m [2mrenders without crashing (18ms)[22m
+  [32m✓[39m [2mforwards the ref (28ms)[22m
+  [32m✓[39m [2mapplies the variant class (43ms)[22m
+  [32m✓[39m [2mignores unknown props (42ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/tree/Tree.test.js (2.421s)
+  [32m✓[39m [2mcalls onChange once (20ms)[22m
+  [32m✓[39m [2mrenders without crashing (28ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (46ms)[22m
+  [32m✓[39m [2msupports the disabled state (38ms)[22m
+  [32m✓[39m [2mforwards the ref (22ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (44ms)[22m
+  [32m✓[39m [2mignores unknown props (32ms)[22m
+[0m[7m[1m[31m FAIL [39m[22m[27m[0m src/datatable/DataTable.test.js (3.912s)
+  DataTable
+    [32m✓[39m [2mrenders without crashing (21ms)[22m
+    [31m✕[39m [2mrenders sticky header when scrolled (38ms)[22m
+    [32m✓[39m [2msorts by the clicked column (17ms)[22m
+
+  ● DataTable › renders sticky header when scrolled
+
+    expect(received).toMatchSnapshot()
+
+    Snapshot name: `DataTable renders sticky header when scrolled 1`
+
+    [32m- Snapshot[39m
+    [31m+ Received[39m
+
+    @@ -1,9 +1,9 @@
+      <div
+        className="data-table"
+      >
+        <table>
+    -     <thead
+    -       className="sticky"
+    +     <thead
+    +       className="sticky sticky--scrolled"
+        >
+          <tr>
+
+      56 |     wrapper.find('.data-table').simulate('scroll', { target: { scrollTop: 120 } });
+      57 |     wrapper.update();
+    > 58 |     expect(wrapper.html()).toMatchSnapshot();
+         |                            ^
+      59 |   });
+      60 | });
+
+      at Object.<anonymous> (src/datatable/DataTable.test.js:58:28)
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/calendar/Calendar.test.js (1.996s)
+  [32m✓[39m [2mapplies the variant class (4ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (28ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (17ms)[22m
+  [32m✓[39m [2mforwards the ref (2ms)[22m
+  [32m✓[39m [2msupports the disabled state (8ms)[22m
+  [32m✓[39m [2mrenders without crashing (24ms)[22m
+  [32m✓[39m [2mignores unknown props (16ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/carousel/Carousel.test.js (3.755s)
+  [32m✓[39m [2mignores unknown props (23ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (29ms)[22m
+  [32m✓[39m [2mcalls onChange once (3ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (40ms)[22m
+  [32m✓[39m [2mapplies the variant class (16ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (27ms)[22m
+  [32m✓[39m [2mrenders without crashing (9ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/chip/Chip.test.js (1.699s)
+  [32m✓[39m [2mapplies the variant class (41ms)[22m
+  [32m✓[39m [2mforwards the ref (24ms)[22m
+  [32m✓[39m [2mcleans up listeners (35ms)[22m
+  [32m✓[39m [2msupports the disabled state (34ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (38ms)[22m
+  [32m✓[39m [2mrenders without crashing (12ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (25ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/divider/Divider.test.js (2.221s)
+  [32m✓[39m [2mmemoizes derived rows (31ms)[22m
+  [32m✓[39m [2mcalls onChange once (42ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (40ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (19ms)[22m
+  [32m✓[39m [2mforwards the ref (27ms)[22m
+  [32m✓[39m [2mrenders without crashing (44ms)[22m
+  [32m✓[39m [2msupports the disabled state (26ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/drawer/Drawer.test.js (3.559s)
+  [32m✓[39m [2mhandles keyboard focus (28ms)[22m
+  [32m✓[39m [2mcalls onChange once (37ms)[22m
+  [32m✓[39m [2mapplies the variant class (44ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (41ms)[22m
+  [32m✓[39m [2mcleans up listeners (27ms)[22m
+  [32m✓[39m [2mignores unknown props (48ms)[22m
+  [32m✓[39m [2msupports the disabled state (45ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/menu/Menu.test.js (4.952s)
+  [32m✓[39m [2msupports the disabled state (39ms)[22m
+  [32m✓[39m [2mforwards the ref (6ms)[22m
+  [32m✓[39m [2mcleans up listeners (10ms)[22m
+  [32m✓[39m [2mcalls onChange once (15ms)[22m
+  [32m✓[39m [2mignores unknown props (1ms)[22m
+  [32m✓[39m [2mrenders without crashing (45ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (3ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/rating/Rating.test.js (3.179s)
+  [32m✓[39m [2mrenders without crashing (48ms)[22m
+  [32m✓[39m [2msupports the disabled state (25ms)[22m
+  [32m✓[39m [2mcleans up listeners (1ms)[22m
+  [32m✓[39m [2mforwards the ref (18ms)[22m
+  [32m✓[39m [2mmemoizes derived rows (47ms)[22m
+  [32m✓[39m [2mignores unknown props (3ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (8ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/skeleton/Skeleton.test.js (5.633s)
+  [32m✓[39m [2mignores unknown props (26ms)[22m
+  [32m✓[39m [2msupports the disabled state (10ms)[22m
+  [32m✓[39m [2mforwards the ref (32ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (48ms)[22m
+  [32m✓[39m [2mrenders without crashing (34ms)[22m
+  [32m✓[39m [2mcleans up listeners (34ms)[22m
+  [32m✓[39m [2mhandles keyboard focus (41ms)[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m src/stepper/Stepper.test.js (2.374s)
+  [32m✓[39m [2mrenders without crashing (6ms)[22m
+  [32m✓[39m [2mapplies the variant class (30ms)[22m
+  [32m✓[39m [2mcalls onChange once (39ms)[22m
+  [32m✓[39m [2mforwards the ref (33ms)[22m
+  [32m✓[39m [2msupports the disabled state (38ms)[22m
+  [32m✓[39m [2mcleans up listeners (19ms)[22m
+  [32m✓[39m [2mformats numbers with the locale (4ms)[22m
+Summary of all failing tests
+[0m[7m[1m[31m FAIL [39m[22m[27m[0m src/datatable/DataTable.test.js (3.912s)
+  ● DataTable › renders sticky header when scrolled
+
+    expect(received).toMatchSnapshot()
+
+    Snapshot name: `DataTable renders sticky header when scrolled 1`
+
+    [32m- Snapshot[39m
+    [31m+ Received[39m
+
+    @@ -1,9 +1,9 @@
+      <div
+        className="data-table"
+      >
+        <table>
+    -     <thead
+    -       className="sticky"
+    +     <thead
+    +       className="sticky sticky--scrolled"
+        >
+          <tr>
+
+      56 |     wrapper.find('.data-table').simulate('scroll', { target: { scrollTop: 120 } });
+      57 |     wrapper.update();
+    > 58 |     expect(wrapper.html()).toMatchSnapshot();
+         |                            ^
+      59 |   });
+      60 | });
+
+      at Object.<anonymous> (src/datatable/DataTable.test.js:58:28)
+
+Snapshot Summary
+ › 1 snapshot failed from 1 test suite. Inspect your code changes or run `npm test -- -u` to update them.
+
+Test Suites: 1 failed, 35 passed, 36 total
+Tests:       1 failed, 247 passed, 248 total
+Snapshots:   1 failed, 41 passed, 42 total
+Time:        48.311s
+Ran all test suites.
+npm ERR! Test failed.  See above for more details.
+travis_time:end:996c8d14:start=1570540863100000000,finish=1570540911100000000,duration=48000000000[0K[0K[31;1mThe command "npm test" exited with 1.[0m
+
+
+Done. Your build exited with 1.

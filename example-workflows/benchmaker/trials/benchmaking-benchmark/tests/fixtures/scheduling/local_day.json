@@ -1,0 +1,63 @@
+{
+ "note": "Ana at +10:00 avoids her local Tuesday, which starts at Monday 14:00 UTC; a slot ending then is allowed.",
+ "instance": {
+  "duration_minutes": 60,
+  "granularity_minutes": 60,
+  "window": {
+   "start": "2026-10-05T12:00+00:00",
+   "end": "2026-10-06T12:00+00:00"
+  },
+  "participants": [
+   {
+    "id": "ana",
+    "utc_offset": "+10:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "00:00",
+      "end": "24:00"
+     }
+    ],
+    "busy": []
+   },
+   {
+    "id": "bo",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   }
+  ],
+  "rooms": [],
+  "constraints": [
+   {
+    "type": "avoid_day",
+    "participant": "ana",
+    "day": "2026-10-06"
+   }
+  ],
+  "preference": "earliest"
+ },
+ "expect": {
+  "earliest": "2026-10-05T12:00+00:00",
+  "latest": "2026-10-05T13:00+00:00",
+  "count": 2
+ }
+}

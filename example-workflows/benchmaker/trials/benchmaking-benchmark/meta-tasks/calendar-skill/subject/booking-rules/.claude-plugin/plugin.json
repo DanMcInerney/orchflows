@@ -1,0 +1,8 @@
+{
+  "name": "booking-rules",
+  "description": "How the calendar team books meetings into the team's calendar files under the booking policy.",
+  "skills": "./skills/",
+  "author": {
+    "name": "Calendar operations"
+  }
+}

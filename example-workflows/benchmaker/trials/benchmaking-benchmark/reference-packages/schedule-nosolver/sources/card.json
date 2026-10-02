@@ -1,0 +1,20 @@
+{"claim": "How well a stock single-call assistant on today's cheap models schedules one meeting across several people's calendars under real constraints: mixed UTC offsets, multi-day windows, personal limits, rooms, optional attendees and requests with no valid time.",
+ "decision": "Whether to build a meeting-scheduling assistant, and how it compares with Claude Haiku 4.5 and Claude Sonnet 5.5 at low effort used as they are.",
+ "stage": "draft",
+ "difficulty_target": "Left open: no model has been run, so no task has been placed in a target band. Valid starts are kept to about 1.5% of a request's grid so a guess at a start almost never works.",
+ "comparison_set": "adapters/haiku-low and adapters/sonnet-low, stock single-call assistants that stand in until a real assistant plugs in through the same agent directory interface.",
+ "known_order": "The reference solution above everything, then each realistic defect (ignored participant, ignored constraints, off-by-one boundary, ignored offsets, never or always infeasible, first slot) above the do-nothing floor; none of them has been run through this package yet.",
+ "conditions": {
+  "subject": {"agent": "adapters/haiku-low", "model": "claude-haiku-4-5", "effort": "low", "tools": ""},
+  "sonnet-low": {"agent": "adapters/sonnet-low", "model": "claude-sonnet-5-5", "effort": "low", "tools": ""},
+  "reference": {"agent": "@reference"},
+  "noop": {"agent": "@noop"}},
+ "claims": [
+  {"id": "c1", "type": "rate", "metric": "reference_pass_rate", "min": 1.0},
+  {"id": "c2", "type": "rate", "metric": "trivial_credit", "max": 0.05},
+  {"id": "c3", "type": "rate", "metric": "verifier_false_accept", "max": 0.0},
+  {"id": "c4", "type": "rate", "metric": "verifier_false_reject", "max": 0.0},
+  {"id": "c5", "type": "gap", "category": "missing-stage", "text": "No model-driven system has been run through this package: headroom, the order of haiku-low and sonnet-low, run-to-run noise and cost are unmeasured, and the difficulty target has not been checked against any system."},
+  {"id": "c6", "type": "gap", "category": "exposure", "text": "The tasks are synthetic and committed in a public repository, so a system may have seen them; they support development claims only."},
+  {"id": "c7", "type": "gap", "category": "inert-dimension", "text": "The optimal dimension equals the valid dimension on every request whose preference is any, so it separates systems only on earliest and latest requests and on the infeasible requests, where it carries the explanation."},
+  {"id": "c8", "type": "verdict", "supports_claim": false, "reason": "Draft: the verifier, reference and floors are validated, but no system the claim is about has been measured."}]}

@@ -1,0 +1,99 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 27461d33-4823-a650-4d46-7c0c16cde8d8@1.production-2-worker-org-gce-22vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/e37c26b27cd1f1809643fc90695232d38c745007
+instance: travis-job-297bd5b2-4f79-ea80-5b2a-719d44db79a7 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 4.119886372s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: ruby
+Build group: stable
+Build dist: xenial
+Build id: 990000402
+Job id: 990000403
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Mon May 13 09:31:08 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:e39c184b[0K$ git clone --depth=50 --branch=master https://github.com/fernwood/fernwood-api.git fernwood/fernwood-api
+Cloning into 'fernwood/fernwood-api'...
+remote: Enumerating objects: 6262, done.remote: Counting objects:  50% (3131/6262)remote: Counting objects: 100% (6262/6262), done.remote: Compressing objects: 100% (2087/2087), done.
+remote: Total 6262 (delta 1565), reused 6172 (delta 1565), pack-reused 0Receiving objects: 100% (6262/6262), 5.70 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1565/1565), done.
+travis_time:end:e39c184b:start=1557739868000000000,finish=1557739870100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd fernwood/fernwood-api
+$ git checkout -qf 41168383a489f06dce394b6c46ff537f5b4c86db
+$ rvm use 2.5.3 --install --binary --fuzzy
+Using /home/travis/.rvm/gems/ruby-2.5.3
+$ ruby --version
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+$ rvm --version
+rvm 1.29.7 (latest) by Michal Papis, Piotr Kuczynski, Wayne E. Seguin [https://rvm.io]
+$ bundle --version
+Bundler version 2.0.1
+travis_fold:start:install[0Ktravis_time:start:de025480[0K$ bundle install --jobs=3 --retry=3
+Fetching gem metadata from https://rubygems.org/............
+Fetching gem metadata from https://rubygems.org/.
+Resolving dependencies...
+Bundler could not find compatible versions for gem "activesupport":
+  In Gemfile:
+    rails (~> 5.2.3) was resolved to 5.2.3, which depends on
+      activesupport (= 5.2.3)
+
+    fernwood-auth (~> 0.9) was resolved to 0.9.1, which depends on
+      activesupport (>= 6.0)
+travis_time:end:de025480:start=1557739870100000000,finish=1557739877100000000,duration=7000000000[0Ktravis_fold:end:install[0K[0K[31;1mThe command "bundle install --jobs=3 --retry=3" failed and exited with 1 during [0m.
+
+Your build has been stopped.

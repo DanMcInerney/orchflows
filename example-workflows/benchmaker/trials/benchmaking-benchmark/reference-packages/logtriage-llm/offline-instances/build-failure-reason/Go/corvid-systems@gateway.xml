@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Go/corvid-systems@gateway/failed/990000501.log</Log>
+    <Keywords>build failed, undefined, FAIL</Keywords>
+    <Category>0</Category>
+    <Chunk># github.com/corvid-systems/gateway/internal/router [github.com/corvid-systems/gateway/internal/router.test]
+internal/router/router_test.go:88:17: undefined: newLimiter
+internal/router/router_test.go:131:3: too many arguments in call to s.registerRoute
+	have (string, http.HandlerFunc, middleware.Chain)
+	want (string, http.HandlerFunc)
+FAIL	github.com/corvid-systems/gateway/internal/router [build failed]</Chunk>
+  </Example>
+  <Example>
+    <Log>Go/corvid-systems@gateway/failed/990000502.log</Log>
+    <Keywords>panic, timed out, goroutine</Keywords>
+    <Category>0</Category>
+    <Chunk>panic: test timed out after 5m0s
+running tests:
+	TestPoolDrainUnderLoad (5m0s)
+
+goroutine 71 [running]:
+testing.(*M).startAlarm.func1()
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/testing/testing.go:1377 +0xdf
+created by time.goFunc
+	/home/travis/.gimme/versions/go1.13.linux.amd64/src/time/sleep.go:169 +0x44</Chunk>
+  </Example>
+  <Example>
+    <Log>Go/corvid-systems@gateway/failed/990000902.log</Log>
+    <Keywords>Error response from daemon, TLS handshake timeout</Keywords>
+    <Category>0</Category>
+    <Chunk>Error response from daemon: Get https://registry.corvid.example/v2/: net/http: TLS handshake timeout</Chunk>
+  </Example>
+</Examples>

@@ -1,0 +1,269 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 6b979424-8004-757e-9c63-69dfe556ef8c@1.production-2-worker-org-gce-16vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/4cb1cf599b26273ad3100b348f4e1c942ffa808e
+instance: travis-job-0de2d1c7-81bb-a34a-f59c-b658d799a03b travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 8.839590641s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: rust
+Build group: stable
+Build dist: xenial
+Build id: 990000601
+Job id: 990000602
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Thu Aug  8 12:30:09 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:97de6d99[0K$ git clone --depth=50 --branch=master https://github.com/quarry-dev/quarry.git quarry-dev/quarry
+Cloning into 'quarry-dev/quarry'...
+remote: Enumerating objects: 5406, done.remote: Counting objects:  50% (2703/5406)remote: Counting objects: 100% (5406/5406), done.remote: Compressing objects: 100% (1802/1802), done.
+remote: Total 5406 (delta 1351), reused 5316 (delta 1351), pack-reused 0Receiving objects: 100% (5406/5406), 35.77 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1351/1351), done.
+travis_time:end:97de6d99:start=1565267409000000000,finish=1565267411100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd quarry-dev/quarry
+$ git checkout -qf 096d60cd7157680f21cb7743b5c1927226e06b65
+$ rustup --version
+rustup 1.18.3 (435397f48 2019-05-22)
+$ rustc --version
+rustc 1.36.0 (a53f9df32 2019-07-03)
+$ cargo --version
+cargo 1.36.0 (c4fcfb725 2019-05-15)
+travis_time:start:258c7ad7[0K$ cargo build --all
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded libc v0.2.51
+  Downloaded serde v1.0.91
+  Downloaded syn v0.15.34
+  Downloaded regex v1.1.5
+  Downloaded failure v0.1.5
+  Downloaded error-chain v0.12.1
+   Compiling libc v0.0.0
+   Compiling cfg-if v0.3.7
+   Compiling memchr v0.6.2
+   Compiling lazy_static v0.9.9
+   Compiling serde v0.12.4
+   Compiling serde_derive v0.15.11
+   Compiling proc-macro2 v0.18.6
+   Compiling quote v0.1.1
+   Compiling syn v0.4.8
+   Compiling unicode-xid v0.7.3
+   Compiling byteorder v0.10.10
+   Compiling log v0.13.5
+   Compiling error-chain v0.16.0
+   Compiling failure v0.19.7
+   Compiling failure_derive v0.2.2
+   Compiling thiserror v0.5.9
+   Compiling regex v0.8.4
+   Compiling regex-syntax v0.11.11
+   Compiling aho-corasick v0.14.6
+   Compiling thread_local v0.17.1
+   Compiling rand v0.0.8
+   Compiling rand_core v0.3.3
+   Compiling bytes v0.6.10
+   Compiling tokio v0.9.5
+   Compiling mio v0.12.0
+   Compiling futures v0.15.7
+   Compiling num-traits v0.18.2
+   Compiling itoa v0.1.9
+   Compiling libc-core v0.4.4
+   Compiling cfg-if-core v0.7.11
+   Compiling memchr-core v0.10.6
+   Compiling lazy_static-core v0.13.1
+   Compiling serde-core v0.16.8
+   Compiling serde_derive-core v0.19.3
+   Compiling proc-macro2-core v0.2.10
+   Compiling quote-core v0.5.5
+   Compiling syn-core v0.8.0
+   Compiling unicode-xid-core v0.11.7
+   Compiling byteorder-core v0.14.2
+   Compiling log-core v0.17.9
+   Compiling error-chain-core v1.0.4
+   Compiling failure-core v1.3.11
+   Compiling failure_derive-core v1.6.6
+   Compiling thiserror-core v1.9.1
+   Compiling regex-core v1.12.8
+   Compiling regex-syntax-core v1.15.3
+   Compiling aho-corasick-core v1.18.10
+   Compiling thread_local-core v1.1.5
+   Compiling rand-core v1.4.0
+   Compiling rand_core-core v1.7.7
+   Compiling bytes-core v1.10.2
+   Compiling tokio-core v1.13.9
+   Compiling mio-core v1.16.4
+   Compiling futures-core v1.19.11
+   Compiling num-traits-core v1.2.6
+   Compiling itoa-core v1.5.1
+   Compiling libc-macros v1.8.8
+   Compiling cfg-if-macros v1.11.3
+   Compiling memchr-macros v1.14.10
+   Compiling lazy_static-macros v1.17.5
+   Compiling serde-macros v1.0.0
+   Compiling serde_derive-macros v1.3.7
+   Compiling proc-macro2-macros v1.6.2
+   Compiling quote-macros v1.9.9
+   Compiling syn-macros v1.12.4
+   Compiling unicode-xid-macros v1.15.11
+   Compiling byteorder-macros v1.18.6
+   Compiling log-macros v1.1.1
+   Compiling error-chain-macros v1.4.8
+   Compiling failure-macros v1.7.3
+   Compiling failure_derive-macros v1.10.10
+   Compiling thiserror-macros v1.13.5
+   Compiling regex-macros v1.16.0
+   Compiling regex-syntax-macros v1.19.7
+   Compiling aho-corasick-macros v1.2.2
+   Compiling thread_local-macros v1.5.9
+   Compiling rand-macros v1.8.4
+   Compiling rand_core-macros v1.11.11
+   Compiling bytes-macros v1.14.6
+   Compiling tokio-macros v1.17.1
+   Compiling mio-macros v2.0.8
+   Compiling futures-macros v2.3.3
+   Compiling num-traits-macros v2.6.10
+   Compiling itoa-macros v2.9.5
+   Compiling libc-sys v2.12.0
+   Compiling cfg-if-sys v2.15.7
+   Compiling memchr-sys v2.18.2
+   Compiling lazy_static-sys v2.1.9
+   Compiling serde-sys v2.4.4
+   Compiling serde_derive-sys v2.7.11
+   Compiling proc-macro2-sys v2.10.6
+   Compiling quote-sys v2.13.1
+   Compiling syn-sys v2.16.8
+   Compiling unicode-xid-sys v2.19.3
+   Compiling byteorder-sys v2.2.10
+   Compiling log-sys v2.5.5
+   Compiling error-chain-sys v2.8.0
+   Compiling failure-sys v2.11.7
+   Compiling failure_derive-sys v2.14.2
+   Compiling thiserror-sys v2.17.9
+   Compiling regex-sys v2.0.4
+   Compiling regex-syntax-sys v2.3.11
+   Compiling aho-corasick-sys v2.6.6
+   Compiling thread_local-sys v2.9.1
+   Compiling rand-sys v2.12.8
+   Compiling rand_core-sys v2.15.3
+   Compiling bytes-sys v2.18.10
+   Compiling tokio-sys v2.1.5
+   Compiling mio-sys v2.4.0
+   Compiling futures-sys v2.7.7
+   Compiling num-traits-sys v2.10.2
+   Compiling itoa-sys v2.13.9
+   Compiling libc-utils v2.16.4
+   Compiling cfg-if-utils v2.19.11
+   Compiling memchr-utils v2.2.6
+   Compiling lazy_static-utils v2.5.1
+   Compiling serde-utils v2.8.8
+   Compiling serde_derive-utils v2.11.3
+   Compiling proc-macro2-utils v2.14.10
+   Compiling quote-utils v2.17.5
+   Compiling syn-utils v3.0.0
+   Compiling unicode-xid-utils v3.3.7
+   Compiling byteorder-utils v3.6.2
+   Compiling log-utils v3.9.9
+   Compiling error-chain-utils v3.12.4
+   Compiling failure-utils v3.15.11
+   Compiling failure_derive-utils v3.18.6
+   Compiling thiserror-utils v3.1.1
+   Compiling regex-utils v3.4.8
+   Compiling regex-syntax-utils v3.7.3
+   Compiling aho-corasick-utils v3.10.10
+   Compiling thread_local-utils v3.13.5
+   Compiling rand-utils v3.16.0
+   Compiling rand_core-utils v3.19.7
+   Compiling bytes-utils v3.2.2
+   Compiling tokio-utils v3.5.9
+   Compiling mio-utils v3.8.4
+   Compiling futures-utils v3.11.11
+   Compiling num-traits-utils v3.14.6
+   Compiling itoa-utils v3.17.1
+   Compiling libc-types v3.0.8
+   Compiling cfg-if-types v3.3.3
+   Compiling memchr-types v3.6.10
+   Compiling lazy_static-types v3.9.5
+   Compiling serde-types v3.12.0
+   Compiling serde_derive-types v3.15.7
+   Compiling proc-macro2-types v3.18.2
+   Compiling quote-types v3.1.9
+   Compiling syn-types v3.4.4
+   Compiling unicode-xid-types v3.7.11
+   Compiling quarry v0.8.2 (/home/travis/build/quarry-dev/quarry)
+warning: unused import: `std::collections::HashMap`
+ --> src/loader.rs:3:5
+  |
+3 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: #[warn(unused_imports)] on by default
+
+error[E0382]: borrow of moved value: `config`
+  --> src/loader.rs:57:20
+   |
+51 |     let config = Config::load(path)?;
+   |         ------ move occurs because `config` has type `Config`, which does not implement the `Copy` trait
+52 |     let handle = spawn_worker(config);
+   |                               ------ value moved here
+...
+57 |     println!("{}", config.name);
+   |                    ^^^^^^^^^^^ value borrowed here after move
+
+error: aborting due to previous error
+
+For more information about this error, try `rustc --explain E0382`.
+error: Could not compile `quarry`.
+
+To learn more, run the command again with --verbose.
+travis_time:end:258c7ad7:start=1565267411100000000,finish=1565267532100000000,duration=121000000000[0K[0K[31;1mThe command "cargo build --all" exited with 101.[0m

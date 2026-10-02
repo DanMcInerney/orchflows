@@ -1,0 +1,58 @@
+Using worker: worker-linux-docker-1a2b3c4d.prod.travis-ci.org:travis-linux-7
+
+travis_fold:start:system_info
+[0K[33;1mBuild system information[0m
+Build language: shell
+Build group: stable
+Build dist: xenial
+travis_fold:end:system_info
+
+[0Ktravis_fold:start:git.checkout
+[0K$ git clone --depth=50 https://github.com/acme/deploy-scripts.git acme/deploy-scripts
+Cloning into 'acme/deploy-scripts'...
+remote: Enumerating objects: 412, done.
+remote: Total 412 (delta 0), reused 0 (delta 0), pack-reused 412
+travis_fold:end:git.checkout
+
+[0K$ sudo apt-get install -y bats
+Reading package lists...
+Building dependency tree...
+[0K$ bats test/
+[32m ok parses flags[0m
+[32m ok reads inventory[0m
+[32m ok renders unit file[0m
+[32m ok creates release dir[0m
+[32m ok rolls back on failure[0m
+[31m not ok restarts service only when unit changed[0m
+   (in test file test/restart.bats, line 27)
+     `[ "$status" -eq 0 ]' failed
+   restart.sh: line 14: systemctl: command not found
+[32m ok prints version[0m
+
+7 tests, 1 failure
+cleanup: removing /tmp/deploy-test-0
+cleanup: removing /tmp/deploy-test-1
+cleanup: removing /tmp/deploy-test-2
+cleanup: removing /tmp/deploy-test-3
+cleanup: removing /tmp/deploy-test-4
+cleanup: removing /tmp/deploy-test-5
+cleanup: removing /tmp/deploy-test-6
+cleanup: removing /tmp/deploy-test-7
+cleanup: removing /tmp/deploy-test-8
+cleanup: removing /tmp/deploy-test-9
+cleanup: removing /tmp/deploy-test-10
+cleanup: removing /tmp/deploy-test-11
+cleanup: removing /tmp/deploy-test-12
+cleanup: removing /tmp/deploy-test-13
+cleanup: removing /tmp/deploy-test-14
+cleanup: removing /tmp/deploy-test-15
+cleanup: removing /tmp/deploy-test-16
+cleanup: removing /tmp/deploy-test-17
+cleanup: removing /tmp/deploy-test-18
+cleanup: removing /tmp/deploy-test-19
+cleanup: removing /tmp/deploy-test-20
+cleanup: removing /tmp/deploy-test-21
+
+[31;1mThe command "bats test/" exited with 1.[0m
+
+Done. Your build exited with 1.

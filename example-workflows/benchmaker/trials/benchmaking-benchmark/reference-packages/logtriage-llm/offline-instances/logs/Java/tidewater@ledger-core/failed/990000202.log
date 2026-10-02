@@ -1,0 +1,537 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 75baddad-c11c-1fd5-39d5-de7f92deaab0@1.production-2-worker-org-gce-11vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/e9c7629d5f338b564c310e5df3abb79ea66b9846
+instance: travis-job-8164d6f2-d8a9-ad63-1689-cc9093366c98 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 4.819793391s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: java
+Build group: stable
+Build dist: xenial
+Build id: 990000202
+Job id: 990000203
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Fri Jun 14 09:36:41 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:d288e646[0K$ git clone --depth=50 --branch=master https://github.com/tidewater/ledger-core.git tidewater/ledger-core
+Cloning into 'tidewater/ledger-core'...
+remote: Enumerating objects: 7832, done.remote: Counting objects:  50% (3916/7832)remote: Counting objects: 100% (7832/7832), done.remote: Compressing objects: 100% (2610/2610), done.
+remote: Total 7832 (delta 1958), reused 7742 (delta 1958), pack-reused 0Receiving objects: 100% (7832/7832), 36.83 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1958/1958), done.
+travis_time:end:d288e646:start=1560505001000000000,finish=1560505003100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd tidewater/ledger-core
+$ git checkout -qf 2bc887ce70be43178c24e9b768f4c0c5449f77a4
+$ jdk_switcher use oraclejdk8
+Switching to Oracle JDK8 (java-8-oracle), JAVA_HOME will be set to /usr/lib/jvm/java-8-oracle
+travis_time:start:d989e6bc[0K$ mvn test -B -V
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+Maven home: /usr/local/maven-3.6.0
+Java version: 1.8.0_201, vendor: Oracle Corporation, runtime: /usr/lib/jvm/java-8-oracle/jre
+Default locale: en_US, platform encoding: UTF-8
+OS name: "linux", version: "4.15.0-1028-gcp", arch: "amd64", family: "unix"
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< io.tidewater.ledger:ledger-core >-------------------
+[INFO] Building ledger-core 2.7.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-resources-plugin/1.0.0/maven-resources-plugin-1.0.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-resources-plugin/1.0.0/maven-resources-plugin-1.0.0.jar (48 kB at 857 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/1.0.7/maven-compiler-plugin-1.0.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/1.0.7/maven-compiler-plugin-1.0.7.pom (3.2 MB at 401 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-surefire-plugin/1.0.4/maven-surefire-plugin-1.0.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-surefire-plugin/1.0.4/maven-surefire-plugin-1.0.4.jar (3.2 MB at 487 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-jar-plugin/1.0.1/maven-jar-plugin-1.0.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-jar-plugin/1.0.1/maven-jar-plugin-1.0.1.pom (92 kB at 114 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-install-plugin/1.0.8/maven-install-plugin-1.0.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-install-plugin/1.0.8/maven-install-plugin-1.0.8.jar (3.2 MB at 793 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-clean-plugin/1.0.5/maven-clean-plugin-1.0.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-clean-plugin/1.0.5/maven-clean-plugin-1.0.5.pom (230 kB at 167 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/1.0.2/surefire-junit-platform-1.0.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/1.0.2/surefire-junit-platform-1.0.2.jar (611 B at 244 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-api/1.0.9/surefire-api-1.0.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-api/1.0.9/surefire-api-1.0.9.pom (1.4 MB at 407 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/maven-surefire-common/1.0.6/maven-surefire-common-1.0.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/maven-surefire-common/1.0.6/maven-surefire-common-1.0.6.jar (92 kB at 273 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-booter/1.0.3/surefire-booter-1.0.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-booter/1.0.3/surefire-booter-1.0.3.pom (48 kB at 613 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/guava/guava/1.0.0/guava-1.0.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/guava/guava/1.0.0/guava-1.0.0.jar (48 kB at 112 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/1.0.7/error_prone_annotations-1.0.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/1.0.7/error_prone_annotations-1.0.7.pom (5.1 kB at 428 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/1.0.4/jsr305-1.0.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/1.0.4/jsr305-1.0.4.jar (48 kB at 90 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/1.0.1/checker-qual-1.0.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/1.0.1/checker-qual-1.0.1.pom (5.1 kB at 265 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.0.8/j2objc-annotations-1.0.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.0.8/j2objc-annotations-1.0.8.jar (48 kB at 685 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.0.5/slf4j-api-1.0.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.0.5/slf4j-api-1.0.5.pom (92 kB at 103 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/1.0.2/jul-to-slf4j-1.0.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/1.0.2/jul-to-slf4j-1.0.2.jar (92 kB at 257 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.0.9/logback-classic-1.0.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.0.9/logback-classic-1.0.9.pom (1.4 MB at 822 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.0.6/logback-core-1.0.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.0.6/logback-core-1.0.6.jar (48 kB at 896 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/1.0.3/jackson-databind-1.0.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/1.0.3/jackson-databind-1.0.3.pom (230 kB at 103 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/1.0.0/jackson-core-1.0.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/1.0.0/jackson-core-1.0.0.jar (5.1 kB at 222 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/1.0.7/jackson-annotations-1.0.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/1.0.7/jackson-annotations-1.0.7.pom (92 kB at 579 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/1.0.4/jackson-datatype-jsr310-1.0.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/1.0.4/jackson-datatype-jsr310-1.0.4.jar (48 kB at 652 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/1.0.1/commons-lang3-1.0.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/1.0.1/commons-lang3-1.0.1.pom (92 kB at 181 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/commons-io/commons-io/1.0.8/commons-io-1.0.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/commons-io/commons-io/1.0.8/commons-io-1.0.8.jar (230 kB at 596 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.0.5/commons-codec-1.0.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.0.5/commons-codec-1.0.5.pom (611 B at 774 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/1.0.2/commons-collections4-1.0.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/1.0.2/commons-collections4-1.0.2.jar (5.1 kB at 745 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-utils/1.0.9/plexus-utils-1.0.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-utils/1.0.9/plexus-utils-1.0.9.pom (1.4 MB at 351 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-interpolation/1.0.6/plexus-interpolation-1.0.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-interpolation/1.0.6/plexus-interpolation-1.0.6.jar (1.4 MB at 635 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-compiler-api/1.0.3/plexus-compiler-api-1.0.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-compiler-api/1.0.3/plexus-compiler-api-1.0.3.pom (48 kB at 773 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/junit/junit/1.0.0/junit-1.0.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/junit/junit/1.0.0/junit-1.0.0.jar (5.1 kB at 243 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-core/1.0.7/hamcrest-core-1.0.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-core/1.0.7/hamcrest-core-1.0.7.pom (611 B at 816 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/1.0.4/junit-jupiter-api-1.0.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/1.0.4/junit-jupiter-api-1.0.4.jar (5.1 kB at 824 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/1.0.1/junit-jupiter-engine-1.0.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/1.0.1/junit-jupiter-engine-1.0.1.pom (611 B at 323 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.0.8/junit-platform-engine-1.0.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.0.8/junit-platform-engine-1.0.8.jar (611 B at 771 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.0.5/opentest4j-1.0.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.0.5/opentest4j-1.0.5.pom (611 B at 453 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.0.2/apiguardian-api-1.0.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.0.2/apiguardian-api-1.0.2.jar (12 kB at 615 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/mockito/mockito-core/1.0.9/mockito-core-1.0.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/mockito/mockito-core/1.0.9/mockito-core-1.0.9.pom (48 kB at 323 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.0.6/byte-buddy-1.0.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.0.6/byte-buddy-1.0.6.jar (92 kB at 532 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/objenesis/objenesis/1.0.3/objenesis-1.0.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/objenesis/objenesis/1.0.3/objenesis-1.0.3.pom (48 kB at 367 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/hibernate/validator/hibernate-validator/1.0.0/hibernate-validator-1.0.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/hibernate/validator/hibernate-validator/1.0.0/hibernate-validator-1.0.0.jar (3.2 MB at 338 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/javax/validation/validation-api/1.0.7/validation-api-1.0.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/javax/validation/validation-api/1.0.7/validation-api-1.0.7.pom (1.4 MB at 207 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/zaxxer/HikariCP/1.0.4/HikariCP-1.0.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/zaxxer/HikariCP/1.0.4/HikariCP-1.0.4.jar (230 kB at 327 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/postgresql/postgresql/1.0.1/postgresql-1.0.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/postgresql/postgresql/1.0.1/postgresql-1.0.1.pom (230 kB at 205 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/flywaydb/flyway-core/1.0.8/flyway-core-1.0.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/flywaydb/flyway-core/1.0.8/flyway-core-1.0.8.jar (230 kB at 767 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/1.0.5/jboss-logging-1.0.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/1.0.5/jboss-logging-1.0.5.pom (611 B at 240 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/1.0.2/snakeyaml-1.0.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/1.0.2/snakeyaml-1.0.2.jar (611 B at 723 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-resources-plugin/1.1.9/maven-resources-plugin-1.1.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-resources-plugin/1.1.9/maven-resources-plugin-1.1.9.pom (12 kB at 638 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/1.1.6/maven-compiler-plugin-1.1.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/1.1.6/maven-compiler-plugin-1.1.6.jar (1.4 MB at 493 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-surefire-plugin/1.1.3/maven-surefire-plugin-1.1.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-surefire-plugin/1.1.3/maven-surefire-plugin-1.1.3.pom (230 kB at 438 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-jar-plugin/1.1.0/maven-jar-plugin-1.1.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-jar-plugin/1.1.0/maven-jar-plugin-1.1.0.jar (48 kB at 490 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-install-plugin/1.1.7/maven-install-plugin-1.1.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-install-plugin/1.1.7/maven-install-plugin-1.1.7.pom (92 kB at 658 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-clean-plugin/1.1.4/maven-clean-plugin-1.1.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-clean-plugin/1.1.4/maven-clean-plugin-1.1.4.jar (12 kB at 847 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/1.1.1/surefire-junit-platform-1.1.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/1.1.1/surefire-junit-platform-1.1.1.pom (611 B at 577 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-api/1.1.8/surefire-api-1.1.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-api/1.1.8/surefire-api-1.1.8.jar (1.4 MB at 574 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/maven-surefire-common/1.1.5/maven-surefire-common-1.1.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/maven-surefire-common/1.1.5/maven-surefire-common-1.1.5.pom (48 kB at 440 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-booter/1.1.2/surefire-booter-1.1.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-booter/1.1.2/surefire-booter-1.1.2.jar (92 kB at 834 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/guava/guava/1.1.9/guava-1.1.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/guava/guava/1.1.9/guava-1.1.9.pom (92 kB at 348 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/1.1.6/error_prone_annotations-1.1.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/1.1.6/error_prone_annotations-1.1.6.jar (611 B at 596 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/1.1.3/jsr305-1.1.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/1.1.3/jsr305-1.1.3.pom (3.2 MB at 552 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/1.1.0/checker-qual-1.1.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/1.1.0/checker-qual-1.1.0.jar (230 kB at 335 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.1.7/j2objc-annotations-1.1.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.1.7/j2objc-annotations-1.1.7.pom (12 kB at 506 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.1.4/slf4j-api-1.1.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.1.4/slf4j-api-1.1.4.jar (12 kB at 332 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/1.1.1/jul-to-slf4j-1.1.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/1.1.1/jul-to-slf4j-1.1.1.pom (1.4 MB at 121 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.1.8/logback-classic-1.1.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.1.8/logback-classic-1.1.8.jar (5.1 kB at 886 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.1.5/logback-core-1.1.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.1.5/logback-core-1.1.5.pom (230 kB at 190 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/1.1.2/jackson-databind-1.1.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/1.1.2/jackson-databind-1.1.2.jar (92 kB at 726 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/1.1.9/jackson-core-1.1.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/1.1.9/jackson-core-1.1.9.pom (92 kB at 120 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/1.1.6/jackson-annotations-1.1.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/1.1.6/jackson-annotations-1.1.6.jar (611 B at 827 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/1.1.3/jackson-datatype-jsr310-1.1.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/1.1.3/jackson-datatype-jsr310-1.1.3.pom (48 kB at 52 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/1.1.0/commons-lang3-1.1.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/1.1.0/commons-lang3-1.1.0.jar (92 kB at 825 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/commons-io/commons-io/1.1.7/commons-io-1.1.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/commons-io/commons-io/1.1.7/commons-io-1.1.7.pom (12 kB at 234 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.1.4/commons-codec-1.1.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.1.4/commons-codec-1.1.4.jar (5.1 kB at 679 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/1.1.1/commons-collections4-1.1.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/1.1.1/commons-collections4-1.1.1.pom (5.1 kB at 282 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-utils/1.1.8/plexus-utils-1.1.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-utils/1.1.8/plexus-utils-1.1.8.jar (3.2 MB at 283 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-interpolation/1.1.5/plexus-interpolation-1.1.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-interpolation/1.1.5/plexus-interpolation-1.1.5.pom (48 kB at 807 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-compiler-api/1.1.2/plexus-compiler-api-1.1.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-compiler-api/1.1.2/plexus-compiler-api-1.1.2.jar (611 B at 502 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/junit/junit/1.1.9/junit-1.1.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/junit/junit/1.1.9/junit-1.1.9.pom (12 kB at 425 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-core/1.1.6/hamcrest-core-1.1.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-core/1.1.6/hamcrest-core-1.1.6.jar (92 kB at 846 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/1.1.3/junit-jupiter-api-1.1.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/1.1.3/junit-jupiter-api-1.1.3.pom (12 kB at 222 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/1.1.0/junit-jupiter-engine-1.1.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/1.1.0/junit-jupiter-engine-1.1.0.jar (92 kB at 710 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.1.7/junit-platform-engine-1.1.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.1.7/junit-platform-engine-1.1.7.pom (611 B at 618 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.1.4/opentest4j-1.1.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.1.4/opentest4j-1.1.4.jar (230 kB at 691 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.pom (3.2 MB at 70 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/mockito/mockito-core/1.1.8/mockito-core-1.1.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/mockito/mockito-core/1.1.8/mockito-core-1.1.8.jar (611 B at 865 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.1.5/byte-buddy-1.1.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.1.5/byte-buddy-1.1.5.pom (5.1 kB at 897 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/objenesis/objenesis/1.1.2/objenesis-1.1.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/objenesis/objenesis/1.1.2/objenesis-1.1.2.jar (92 kB at 858 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/hibernate/validator/hibernate-validator/1.1.9/hibernate-validator-1.1.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/hibernate/validator/hibernate-validator/1.1.9/hibernate-validator-1.1.9.pom (92 kB at 122 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/javax/validation/validation-api/1.1.6/validation-api-1.1.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/javax/validation/validation-api/1.1.6/validation-api-1.1.6.jar (611 B at 763 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/zaxxer/HikariCP/1.1.3/HikariCP-1.1.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/zaxxer/HikariCP/1.1.3/HikariCP-1.1.3.pom (230 kB at 170 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/postgresql/postgresql/1.1.0/postgresql-1.1.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/postgresql/postgresql/1.1.0/postgresql-1.1.0.jar (48 kB at 310 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/flywaydb/flyway-core/1.1.7/flyway-core-1.1.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/flywaydb/flyway-core/1.1.7/flyway-core-1.1.7.pom (92 kB at 508 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/1.1.4/jboss-logging-1.1.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/1.1.4/jboss-logging-1.1.4.jar (48 kB at 110 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/1.1.1/snakeyaml-1.1.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/1.1.1/snakeyaml-1.1.1.pom (5.1 kB at 859 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-resources-plugin/1.2.8/maven-resources-plugin-1.2.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-resources-plugin/1.2.8/maven-resources-plugin-1.2.8.jar (5.1 kB at 204 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/1.2.5/maven-compiler-plugin-1.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/1.2.5/maven-compiler-plugin-1.2.5.pom (48 kB at 255 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-surefire-plugin/1.2.2/maven-surefire-plugin-1.2.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-surefire-plugin/1.2.2/maven-surefire-plugin-1.2.2.jar (48 kB at 482 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-jar-plugin/1.2.9/maven-jar-plugin-1.2.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-jar-plugin/1.2.9/maven-jar-plugin-1.2.9.pom (611 B at 746 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-install-plugin/1.2.6/maven-install-plugin-1.2.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-install-plugin/1.2.6/maven-install-plugin-1.2.6.jar (48 kB at 143 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-clean-plugin/1.2.3/maven-clean-plugin-1.2.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-clean-plugin/1.2.3/maven-clean-plugin-1.2.3.pom (5.1 kB at 284 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/1.2.0/surefire-junit-platform-1.2.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/1.2.0/surefire-junit-platform-1.2.0.jar (5.1 kB at 744 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-api/1.2.7/surefire-api-1.2.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-api/1.2.7/surefire-api-1.2.7.pom (92 kB at 589 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/maven-surefire-common/1.2.4/maven-surefire-common-1.2.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/maven-surefire-common/1.2.4/maven-surefire-common-1.2.4.jar (3.2 MB at 880 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-booter/1.2.1/surefire-booter-1.2.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-booter/1.2.1/surefire-booter-1.2.1.pom (611 B at 595 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/guava/guava/1.2.8/guava-1.2.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/guava/guava/1.2.8/guava-1.2.8.jar (3.2 MB at 781 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/1.2.5/error_prone_annotations-1.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/1.2.5/error_prone_annotations-1.2.5.pom (3.2 MB at 543 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/1.2.2/jsr305-1.2.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/1.2.2/jsr305-1.2.2.jar (1.4 MB at 307 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/1.2.9/checker-qual-1.2.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/1.2.9/checker-qual-1.2.9.pom (5.1 kB at 576 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.2.6/j2objc-annotations-1.2.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.2.6/j2objc-annotations-1.2.6.jar (12 kB at 723 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.2.3/slf4j-api-1.2.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.2.3/slf4j-api-1.2.3.pom (48 kB at 765 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/1.2.0/jul-to-slf4j-1.2.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/1.2.0/jul-to-slf4j-1.2.0.jar (92 kB at 350 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.2.7/logback-classic-1.2.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.2.7/logback-classic-1.2.7.pom (48 kB at 295 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.2.4/logback-core-1.2.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.2.4/logback-core-1.2.4.jar (1.4 MB at 329 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/1.2.1/jackson-databind-1.2.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/1.2.1/jackson-databind-1.2.1.pom (92 kB at 733 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/1.2.8/jackson-core-1.2.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/1.2.8/jackson-core-1.2.8.jar (5.1 kB at 745 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/1.2.5/jackson-annotations-1.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/1.2.5/jackson-annotations-1.2.5.pom (3.2 MB at 219 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/1.2.2/jackson-datatype-jsr310-1.2.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/1.2.2/jackson-datatype-jsr310-1.2.2.jar (230 kB at 52 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/1.2.9/commons-lang3-1.2.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/1.2.9/commons-lang3-1.2.9.pom (230 kB at 179 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/commons-io/commons-io/1.2.6/commons-io-1.2.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/commons-io/commons-io/1.2.6/commons-io-1.2.6.jar (611 B at 349 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.2.3/commons-codec-1.2.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.2.3/commons-codec-1.2.3.pom (5.1 kB at 718 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/1.2.0/commons-collections4-1.2.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/1.2.0/commons-collections4-1.2.0.jar (611 B at 399 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-utils/1.2.7/plexus-utils-1.2.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-utils/1.2.7/plexus-utils-1.2.7.pom (1.4 MB at 694 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-interpolation/1.2.4/plexus-interpolation-1.2.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-interpolation/1.2.4/plexus-interpolation-1.2.4.jar (230 kB at 88 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-compiler-api/1.2.1/plexus-compiler-api-1.2.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-compiler-api/1.2.1/plexus-compiler-api-1.2.1.pom (48 kB at 817 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/junit/junit/1.2.8/junit-1.2.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/junit/junit/1.2.8/junit-1.2.8.jar (230 kB at 407 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-core/1.2.5/hamcrest-core-1.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-core/1.2.5/hamcrest-core-1.2.5.pom (1.4 MB at 396 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/1.2.2/junit-jupiter-api-1.2.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/1.2.2/junit-jupiter-api-1.2.2.jar (3.2 MB at 285 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/1.2.9/junit-jupiter-engine-1.2.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/1.2.9/junit-jupiter-engine-1.2.9.pom (1.4 MB at 680 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.2.6/junit-platform-engine-1.2.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.2.6/junit-platform-engine-1.2.6.jar (5.1 kB at 58 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.3/opentest4j-1.2.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.3/opentest4j-1.2.3.pom (230 kB at 623 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.2.0/apiguardian-api-1.2.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.2.0/apiguardian-api-1.2.0.jar (5.1 kB at 117 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/mockito/mockito-core/1.2.7/mockito-core-1.2.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/mockito/mockito-core/1.2.7/mockito-core-1.2.7.pom (611 B at 275 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.2.4/byte-buddy-1.2.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.2.4/byte-buddy-1.2.4.jar (3.2 MB at 400 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/objenesis/objenesis/1.2.1/objenesis-1.2.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/objenesis/objenesis/1.2.1/objenesis-1.2.1.pom (3.2 MB at 601 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/hibernate/validator/hibernate-validator/1.2.8/hibernate-validator-1.2.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/hibernate/validator/hibernate-validator/1.2.8/hibernate-validator-1.2.8.jar (5.1 kB at 897 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/javax/validation/validation-api/1.2.5/validation-api-1.2.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/javax/validation/validation-api/1.2.5/validation-api-1.2.5.pom (1.4 MB at 684 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/zaxxer/HikariCP/1.2.2/HikariCP-1.2.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/zaxxer/HikariCP/1.2.2/HikariCP-1.2.2.jar (12 kB at 862 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/postgresql/postgresql/1.2.9/postgresql-1.2.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/postgresql/postgresql/1.2.9/postgresql-1.2.9.pom (48 kB at 148 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/flywaydb/flyway-core/1.2.6/flyway-core-1.2.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/flywaydb/flyway-core/1.2.6/flyway-core-1.2.6.jar (5.1 kB at 827 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/1.2.3/jboss-logging-1.2.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/1.2.3/jboss-logging-1.2.3.pom (5.1 kB at 195 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/1.2.0/snakeyaml-1.2.0.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/1.2.0/snakeyaml-1.2.0.jar (1.4 MB at 479 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-resources-plugin/1.3.7/maven-resources-plugin-1.3.7.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-resources-plugin/1.3.7/maven-resources-plugin-1.3.7.pom (1.4 MB at 150 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/1.3.4/maven-compiler-plugin-1.3.4.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/1.3.4/maven-compiler-plugin-1.3.4.jar (5.1 kB at 88 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-surefire-plugin/1.3.1/maven-surefire-plugin-1.3.1.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-surefire-plugin/1.3.1/maven-surefire-plugin-1.3.1.pom (3.2 MB at 279 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-jar-plugin/1.3.8/maven-jar-plugin-1.3.8.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-jar-plugin/1.3.8/maven-jar-plugin-1.3.8.jar (611 B at 128 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-install-plugin/1.3.5/maven-install-plugin-1.3.5.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-install-plugin/1.3.5/maven-install-plugin-1.3.5.pom (5.1 kB at 226 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-clean-plugin/1.3.2/maven-clean-plugin-1.3.2.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-clean-plugin/1.3.2/maven-clean-plugin-1.3.2.jar (611 B at 681 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/1.3.9/surefire-junit-platform-1.3.9.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/1.3.9/surefire-junit-platform-1.3.9.pom (611 B at 343 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-api/1.3.6/surefire-api-1.3.6.jar
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-api/1.3.6/surefire-api-1.3.6.jar (230 kB at 97 kB/s)
+[INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/maven-surefire-common/1.3.3/maven-surefire-common-1.3.3.pom
+[INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/maven-surefire-common/1.3.3/maven-surefire-common-1.3.3.pom (611 B at 65 kB/s)
+[INFO] 
+[INFO] --- maven-surefire-plugin:2.22.1:test (default-test) @ ledger-core ---
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.tidewater.ledger.account.AccountRepositoryTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.790 s - in io.tidewater.ledger.account.AccountRepositoryTest
+[INFO] Running io.tidewater.ledger.account.AccountBalanceTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.090 s - in io.tidewater.ledger.account.AccountBalanceTest
+[INFO] Running io.tidewater.ledger.account.AccountHierarchyTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.506 s - in io.tidewater.ledger.account.AccountHierarchyTest
+[INFO] Running io.tidewater.ledger.account.AccountLimitsTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.700 s - in io.tidewater.ledger.account.AccountLimitsTest
+[INFO] Running io.tidewater.ledger.account.AccountMergeTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.960 s - in io.tidewater.ledger.account.AccountMergeTest
+[INFO] Running io.tidewater.ledger.audit.AuditTrailTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.821 s - in io.tidewater.ledger.audit.AuditTrailTest
+[INFO] Running io.tidewater.ledger.audit.AuditExportTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.095 s - in io.tidewater.ledger.audit.AuditExportTest
+[INFO] Running io.tidewater.ledger.audit.AuditRedactionTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.619 s - in io.tidewater.ledger.audit.AuditRedactionTest
+[INFO] Running io.tidewater.ledger.audit.AuditRetentionTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.703 s - in io.tidewater.ledger.audit.AuditRetentionTest
+[INFO] Running io.tidewater.ledger.cache.EvictionCacheTest
+[ERROR] Tests run: 6, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 2.211 s <<< FAILURE! - in io.tidewater.ledger.cache.EvictionCacheTest
+[ERROR] evictsOldestWhenFull  Time elapsed: 0.054 s  <<< FAILURE!
+java.lang.AssertionError: expected:<a> but was:<b>
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.junit.Assert.failNotEquals(Assert.java:834)
+	at org.junit.Assert.assertEquals(Assert.java:118)
+	at io.tidewater.ledger.cache.EvictionCacheTest.evictsOldestWhenFull(EvictionCacheTest.java:71)
+
+[INFO] Running io.tidewater.ledger.cache.EvictionCacheTest
+[WARNING] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Flakes: 1, Time elapsed: 2.4 s - in io.tidewater.ledger.cache.EvictionCacheTest
+[INFO] Running io.tidewater.ledger.cache.LedgerCacheTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 2.536 s - in io.tidewater.ledger.cache.LedgerCacheTest
+[INFO] Running io.tidewater.ledger.export.CsvExporterTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.840 s - in io.tidewater.ledger.export.CsvExporterTest
+[INFO] Running io.tidewater.ledger.export.XmlExporterTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 2.912 s - in io.tidewater.ledger.export.XmlExporterTest
+[INFO] Running io.tidewater.ledger.export.PdfExporterTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.868 s - in io.tidewater.ledger.export.PdfExporterTest
+[INFO] Running io.tidewater.ledger.export.SwiftMessageWriterTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.220 s - in io.tidewater.ledger.export.SwiftMessageWriterTest
+[INFO] Running io.tidewater.ledger.fx.RateTableTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.909 s - in io.tidewater.ledger.fx.RateTableTest
+[INFO] Running io.tidewater.ledger.fx.CrossRateTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.909 s - in io.tidewater.ledger.fx.CrossRateTest
+[INFO] Running io.tidewater.ledger.fx.RoundingModeTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.132 s - in io.tidewater.ledger.fx.RoundingModeTest
+[INFO] Running io.tidewater.ledger.fx.CurrencyConversionTest
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.090 s - in io.tidewater.ledger.fx.CurrencyConversionTest
+[INFO] Running io.tidewater.ledger.ingest.BatchImporterTest
+[INFO] Tests run: 22, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.946 s - in io.tidewater.ledger.ingest.BatchImporterTest
+[INFO] Running io.tidewater.ledger.ingest.StatementParserTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.569 s - in io.tidewater.ledger.ingest.StatementParserTest
+[INFO] Running io.tidewater.ledger.ingest.DuplicateDetectorTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.708 s - in io.tidewater.ledger.ingest.DuplicateDetectorTest
+[INFO] Running io.tidewater.ledger.ingest.Mt940ReaderTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.630 s - in io.tidewater.ledger.ingest.Mt940ReaderTest
+[INFO] Running io.tidewater.ledger.jobs.JobSchedulerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 1.313 s - in io.tidewater.ledger.jobs.JobSchedulerTest
+[INFO] Running io.tidewater.ledger.jobs.NightlyCloseJobTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.652 s - in io.tidewater.ledger.jobs.NightlyCloseJobTest
+[INFO] Running io.tidewater.ledger.jobs.RetryPolicyTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.289 s - in io.tidewater.ledger.jobs.RetryPolicyTest
+[INFO] Running io.tidewater.ledger.posting.PostingEngineTest
+[ERROR] Tests run: 9, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.412 s <<< FAILURE! - in io.tidewater.ledger.posting.PostingEngineTest
+[ERROR] reversesCompoundEntries  Time elapsed: 0.031 s  <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <120.00> but was: <119.99>
+	at org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:55)
+	at org.junit.jupiter.api.AssertionUtils.failNotEqual(AssertionUtils.java:62)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:182)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:177)
+	at io.tidewater.ledger.posting.PostingEngineTest.reversesCompoundEntries(PostingEngineTest.java:203)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:566)
+
+[INFO] Running io.tidewater.ledger.posting.PostingValidatorTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 2.208 s - in io.tidewater.ledger.posting.PostingValidatorTest
+[INFO] Running io.tidewater.ledger.posting.EntryReversalTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.662 s - in io.tidewater.ledger.posting.EntryReversalTest
+[INFO] Running io.tidewater.ledger.posting.JournalBatchTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.791 s - in io.tidewater.ledger.posting.JournalBatchTest
+[INFO] Running io.tidewater.ledger.posting.IdempotencyTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 2.758 s - in io.tidewater.ledger.posting.IdempotencyTest
+[INFO] Running io.tidewater.ledger.reports.TrialBalanceTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.104 s - in io.tidewater.ledger.reports.TrialBalanceTest
+[INFO] Running io.tidewater.ledger.reports.AgedReceivablesTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.095 s - in io.tidewater.ledger.reports.AgedReceivablesTest
+[INFO] Running io.tidewater.ledger.reports.CashFlowStatementTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.641 s - in io.tidewater.ledger.reports.CashFlowStatementTest
+[INFO] Running io.tidewater.ledger.reports.TaxSummaryTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 1.103 s - in io.tidewater.ledger.reports.TaxSummaryTest
+[INFO] Running io.tidewater.ledger.rules.RuleCompilerTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.955 s - in io.tidewater.ledger.rules.RuleCompilerTest
+[INFO] Running io.tidewater.ledger.rules.RuleOrderingTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.117 s - in io.tidewater.ledger.rules.RuleOrderingTest
+[INFO] Running io.tidewater.ledger.rules.RuleSandboxTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 2.818 s - in io.tidewater.ledger.rules.RuleSandboxTest
+[INFO] Running io.tidewater.ledger.security.TokenVerifierTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.313 s - in io.tidewater.ledger.security.TokenVerifierTest
+[INFO] Running io.tidewater.ledger.security.RoleCheckTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 1.705 s - in io.tidewater.ledger.security.RoleCheckTest
+[INFO] Running io.tidewater.ledger.security.TenantIsolationTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.899 s - in io.tidewater.ledger.security.TenantIsolationTest
+[INFO] Running io.tidewater.ledger.tax.VatCalculatorTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.146 s - in io.tidewater.ledger.tax.VatCalculatorTest
+[INFO] Running io.tidewater.ledger.tax.ReverseChargeTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.109 s - in io.tidewater.ledger.tax.ReverseChargeTest
+[INFO] Running io.tidewater.ledger.tax.TaxPeriodTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.928 s - in io.tidewater.ledger.tax.TaxPeriodTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[WARNING] Flakes: 
+[WARNING] io.tidewater.ledger.cache.EvictionCacheTest.evictsOldestWhenFull
+[ERROR]   Run 1: EvictionCacheTest.evictsOldestWhenFull:71 expected:<a> but was:<b>
+[INFO]   Run 2: PASS
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   PostingEngineTest.reversesCompoundEntries:203 expected: <120.00> but was: <119.99>
+[INFO] 
+[ERROR] Tests run: 187, Failures: 1, Errors: 0, Skipped: 2, Flakes: 1
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  02:41 min
+[INFO] Finished at: 2019-06-14T09:42:18Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:2.22.1:test (default-test) on project ledger-core: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /home/travis/build/tidewater/ledger-core/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+travis_time:end:d989e6bc:start=1560505003100000000,finish=1560505164100000000,duration=161000000000[0K[0K[31;1mThe command "mvn test -B -V" exited with 1.[0m
+
+
+Done. Your build exited with 1.

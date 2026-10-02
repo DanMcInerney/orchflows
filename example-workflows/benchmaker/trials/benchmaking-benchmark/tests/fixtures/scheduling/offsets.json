@@ -1,0 +1,61 @@
+{
+ "note": "Ana at +02:00 and Bo at -05:00: work hours apply in local time and busy times are instants; this is the interface example.",
+ "instance": {
+  "duration_minutes": 30,
+  "granularity_minutes": 15,
+  "window": {
+   "start": "2026-10-05T07:00+00:00",
+   "end": "2026-10-05T17:00+00:00"
+  },
+  "participants": [
+   {
+    "id": "ana",
+    "utc_offset": "+02:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T09:00+02:00",
+      "end": "2026-10-05T10:00+02:00"
+     }
+    ],
+    "required": true
+   },
+   {
+    "id": "bo",
+    "utc_offset": "-05:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon"
+      ],
+      "start": "05:00",
+      "end": "13:00"
+     }
+    ],
+    "busy": []
+   }
+  ],
+  "rooms": [],
+  "constraints": [
+   {
+    "type": "not_before",
+    "participant": "bo",
+    "time": "06:30"
+   }
+  ],
+  "preference": "earliest"
+ },
+ "expect": {
+  "earliest": "2026-10-05T11:30+00:00",
+  "latest": "2026-10-05T14:30+00:00",
+  "count": 13
+ }
+}

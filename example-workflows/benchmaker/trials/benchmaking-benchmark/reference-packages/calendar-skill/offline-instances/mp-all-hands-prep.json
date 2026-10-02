@@ -1,0 +1,1163 @@
+{
+ "id": "mp-all-hands-prep",
+ "family": "mixed-policy",
+ "source_group": "exec-office",
+ "title": "All-hands preparation",
+ "difficulty": "An urgent request under all three rules: focus blocks may be booked over and then ignored by the buffer, the buffer still applies to meetings, and four attendees need video",
+ "expert_minutes": 18,
+ "smoke": false,
+ "quick": true,
+ "workspace": {
+  "request": {
+   "title": "All-hands preparation",
+   "attendees": [
+    "yan",
+    "zed",
+    "abe",
+    "bea"
+   ],
+   "optional": [
+    "dax"
+   ],
+   "duration_minutes": 60,
+   "granularity_minutes": 15,
+   "window": {
+    "start": "2026-10-05T00:00-04:00",
+    "end": "2026-10-10T00:00-04:00"
+   },
+   "preference": "earliest",
+   "priority": "urgent"
+  },
+  "policy": {
+   "rules": [
+    {
+     "type": "buffer_minutes",
+     "minutes": 15
+    },
+    {
+     "type": "focus_blocks",
+     "urgent_may_override": true
+    },
+    {
+     "type": "room_feature",
+     "min_attendees": 4,
+     "feature": "video"
+    }
+   ]
+  },
+  "calendars": {
+   "yan": {
+    "utc_offset": "-04:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "events": [
+     {
+      "id": "yan-001",
+      "title": "Focus: code review",
+      "kind": "focus",
+      "start": "2026-10-05T10:30-04:00",
+      "end": "2026-10-05T13:30-04:00"
+     },
+     {
+      "id": "yan-002",
+      "title": "Training",
+      "kind": "meeting",
+      "start": "2026-10-05T11:45-04:00",
+      "end": "2026-10-05T12:45-04:00"
+     },
+     {
+      "id": "yan-003",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-06T09:30-04:00",
+      "end": "2026-10-06T09:45-04:00"
+     },
+     {
+      "id": "yan-004",
+      "title": "Incident review",
+      "kind": "meeting",
+      "start": "2026-10-06T10:15-04:00",
+      "end": "2026-10-06T11:00-04:00"
+     },
+     {
+      "id": "yan-005",
+      "title": "Roadmap review",
+      "kind": "meeting",
+      "start": "2026-10-06T10:30-04:00",
+      "end": "2026-10-06T11:00-04:00"
+     },
+     {
+      "id": "yan-006",
+      "title": "Incident review",
+      "kind": "meeting",
+      "start": "2026-10-06T10:30-04:00",
+      "end": "2026-10-06T11:30-04:00"
+     },
+     {
+      "id": "yan-007",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-06T12:00-04:00",
+      "end": "2026-10-06T13:00-04:00"
+     },
+     {
+      "id": "yan-008",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-07T09:30-04:00",
+      "end": "2026-10-07T09:45-04:00"
+     },
+     {
+      "id": "yan-009",
+      "title": "Retro",
+      "kind": "meeting",
+      "start": "2026-10-07T09:30-04:00",
+      "end": "2026-10-07T11:00-04:00"
+     },
+     {
+      "id": "yan-010",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-07T12:00-04:00",
+      "end": "2026-10-07T13:00-04:00"
+     },
+     {
+      "id": "yan-011",
+      "title": "Vendor call",
+      "kind": "meeting",
+      "start": "2026-10-08T09:00-04:00",
+      "end": "2026-10-08T10:00-04:00"
+     },
+     {
+      "id": "yan-012",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-08T09:30-04:00",
+      "end": "2026-10-08T09:45-04:00"
+     },
+     {
+      "id": "yan-013",
+      "title": "Focus: design",
+      "kind": "focus",
+      "start": "2026-10-08T09:45-04:00",
+      "end": "2026-10-08T12:45-04:00"
+     },
+     {
+      "id": "yan-014",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-08T12:30-04:00",
+      "end": "2026-10-08T13:30-04:00"
+     },
+     {
+      "id": "yan-015",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-09T12:00-04:00",
+      "end": "2026-10-09T13:00-04:00"
+     },
+     {
+      "id": "yan-016",
+      "title": "Customer call",
+      "kind": "meeting",
+      "start": "2026-10-09T14:00-04:00",
+      "end": "2026-10-09T15:00-04:00"
+     },
+     {
+      "id": "yan-017",
+      "title": "Training",
+      "kind": "meeting",
+      "start": "2026-10-09T14:15-04:00",
+      "end": "2026-10-09T15:15-04:00"
+     },
+     {
+      "id": "yan-018",
+      "title": "Vendor call",
+      "kind": "meeting",
+      "start": "2026-10-09T15:15-04:00",
+      "end": "2026-10-09T16:00-04:00"
+     }
+    ]
+   },
+   "zed": {
+    "utc_offset": "-04:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "events": [
+     {
+      "id": "zed-001",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-05T12:00-04:00",
+      "end": "2026-10-05T13:00-04:00"
+     },
+     {
+      "id": "zed-002",
+      "title": "Interview",
+      "kind": "meeting",
+      "start": "2026-10-05T16:30-04:00",
+      "end": "2026-10-05T17:00-04:00"
+     },
+     {
+      "id": "zed-003",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-06T09:30-04:00",
+      "end": "2026-10-06T09:45-04:00"
+     },
+     {
+      "id": "zed-004",
+      "title": "Training",
+      "kind": "meeting",
+      "start": "2026-10-06T09:30-04:00",
+      "end": "2026-10-06T10:00-04:00"
+     },
+     {
+      "id": "zed-005",
+      "title": "Retro",
+      "kind": "meeting",
+      "start": "2026-10-06T10:00-04:00",
+      "end": "2026-10-06T10:30-04:00"
+     },
+     {
+      "id": "zed-006",
+      "title": "Training",
+      "kind": "meeting",
+      "start": "2026-10-06T10:30-04:00",
+      "end": "2026-10-06T11:00-04:00"
+     },
+     {
+      "id": "zed-007",
+      "title": "Focus: reports",
+      "kind": "focus",
+      "start": "2026-10-06T12:15-04:00",
+      "end": "2026-10-06T15:15-04:00"
+     },
+     {
+      "id": "zed-008",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-06T12:30-04:00",
+      "end": "2026-10-06T13:30-04:00"
+     },
+     {
+      "id": "zed-009",
+      "title": "Focus: writing",
+      "kind": "focus",
+      "start": "2026-10-07T10:45-04:00",
+      "end": "2026-10-07T13:15-04:00"
+     },
+     {
+      "id": "zed-010",
+      "title": "Focus: design",
+      "kind": "focus",
+      "start": "2026-10-07T11:15-04:00",
+      "end": "2026-10-07T14:15-04:00"
+     },
+     {
+      "id": "zed-011",
+      "title": "Dentist",
+      "kind": "meeting",
+      "start": "2026-10-07T14:15-04:00",
+      "end": "2026-10-07T15:15-04:00"
+     },
+     {
+      "id": "zed-012",
+      "title": "Roadmap review",
+      "kind": "meeting",
+      "start": "2026-10-07T15:15-04:00",
+      "end": "2026-10-07T16:00-04:00"
+     },
+     {
+      "id": "zed-013",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-08T09:30-04:00",
+      "end": "2026-10-08T09:45-04:00"
+     },
+     {
+      "id": "zed-014",
+      "title": "Sprint planning",
+      "kind": "meeting",
+      "start": "2026-10-08T10:45-04:00",
+      "end": "2026-10-08T11:15-04:00"
+     },
+     {
+      "id": "zed-015",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-08T12:00-04:00",
+      "end": "2026-10-08T13:00-04:00"
+     },
+     {
+      "id": "zed-016",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-09T09:30-04:00",
+      "end": "2026-10-09T09:45-04:00"
+     },
+     {
+      "id": "zed-017",
+      "title": "Dentist",
+      "kind": "meeting",
+      "start": "2026-10-09T10:30-04:00",
+      "end": "2026-10-09T11:30-04:00"
+     },
+     {
+      "id": "zed-018",
+      "title": "Design crit",
+      "kind": "meeting",
+      "start": "2026-10-09T11:00-04:00",
+      "end": "2026-10-09T11:30-04:00"
+     }
+    ]
+   },
+   "abe": {
+    "utc_offset": "+01:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "events": [
+     {
+      "id": "abe-001",
+      "title": "Incident review",
+      "kind": "meeting",
+      "start": "2026-10-05T10:45+01:00",
+      "end": "2026-10-05T12:15+01:00"
+     },
+     {
+      "id": "abe-002",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-05T12:00+01:00",
+      "end": "2026-10-05T13:00+01:00"
+     },
+     {
+      "id": "abe-003",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-06T12:00+01:00",
+      "end": "2026-10-06T13:00+01:00"
+     },
+     {
+      "id": "abe-004",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-06T12:00+01:00",
+      "end": "2026-10-06T13:00+01:00"
+     },
+     {
+      "id": "abe-005",
+      "title": "Retro",
+      "kind": "meeting",
+      "start": "2026-10-06T13:30+01:00",
+      "end": "2026-10-06T14:30+01:00"
+     },
+     {
+      "id": "abe-006",
+      "title": "Focus: design",
+      "kind": "focus",
+      "start": "2026-10-07T09:15+01:00",
+      "end": "2026-10-07T11:15+01:00"
+     },
+     {
+      "id": "abe-007",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-07T09:30+01:00",
+      "end": "2026-10-07T09:45+01:00"
+     },
+     {
+      "id": "abe-008",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-07T12:00+01:00",
+      "end": "2026-10-07T13:00+01:00"
+     },
+     {
+      "id": "abe-009",
+      "title": "1:1",
+      "kind": "meeting",
+      "start": "2026-10-07T15:00+01:00",
+      "end": "2026-10-07T15:45+01:00"
+     },
+     {
+      "id": "abe-010",
+      "title": "Roadmap review",
+      "kind": "meeting",
+      "start": "2026-10-08T09:00+01:00",
+      "end": "2026-10-08T09:30+01:00"
+     },
+     {
+      "id": "abe-011",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-08T09:30+01:00",
+      "end": "2026-10-08T09:45+01:00"
+     },
+     {
+      "id": "abe-012",
+      "title": "Focus: code review",
+      "kind": "focus",
+      "start": "2026-10-08T10:45+01:00",
+      "end": "2026-10-08T12:45+01:00"
+     },
+     {
+      "id": "abe-013",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-08T12:30+01:00",
+      "end": "2026-10-08T13:30+01:00"
+     },
+     {
+      "id": "abe-014",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-08T12:30+01:00",
+      "end": "2026-10-08T13:30+01:00"
+     },
+     {
+      "id": "abe-015",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-09T09:30+01:00",
+      "end": "2026-10-09T09:45+01:00"
+     },
+     {
+      "id": "abe-016",
+      "title": "Training",
+      "kind": "meeting",
+      "start": "2026-10-09T11:45+01:00",
+      "end": "2026-10-09T12:45+01:00"
+     },
+     {
+      "id": "abe-017",
+      "title": "Vendor call",
+      "kind": "meeting",
+      "start": "2026-10-09T11:45+01:00",
+      "end": "2026-10-09T12:15+01:00"
+     },
+     {
+      "id": "abe-018",
+      "title": "Focus: reports",
+      "kind": "focus",
+      "start": "2026-10-09T11:45+01:00",
+      "end": "2026-10-09T14:15+01:00"
+     },
+     {
+      "id": "abe-019",
+      "title": "Vendor call",
+      "kind": "meeting",
+      "start": "2026-10-09T12:00+01:00",
+      "end": "2026-10-09T13:30+01:00"
+     },
+     {
+      "id": "abe-020",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-09T12:30+01:00",
+      "end": "2026-10-09T13:30+01:00"
+     }
+    ]
+   },
+   "bea": {
+    "utc_offset": "+01:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "events": [
+     {
+      "id": "bea-001",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-05T09:30+01:00",
+      "end": "2026-10-05T09:45+01:00"
+     },
+     {
+      "id": "bea-002",
+      "title": "Retro",
+      "kind": "meeting",
+      "start": "2026-10-05T09:45+01:00",
+      "end": "2026-10-05T10:15+01:00"
+     },
+     {
+      "id": "bea-003",
+      "title": "Focus: reports",
+      "kind": "focus",
+      "start": "2026-10-05T10:30+01:00",
+      "end": "2026-10-05T13:30+01:00"
+     },
+     {
+      "id": "bea-004",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-05T12:00+01:00",
+      "end": "2026-10-05T13:00+01:00"
+     },
+     {
+      "id": "bea-005",
+      "title": "Retro",
+      "kind": "meeting",
+      "start": "2026-10-05T13:00+01:00",
+      "end": "2026-10-05T14:00+01:00"
+     },
+     {
+      "id": "bea-006",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-06T09:30+01:00",
+      "end": "2026-10-06T09:45+01:00"
+     },
+     {
+      "id": "bea-007",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-06T12:00+01:00",
+      "end": "2026-10-06T13:00+01:00"
+     },
+     {
+      "id": "bea-008",
+      "title": "Roadmap review",
+      "kind": "meeting",
+      "start": "2026-10-06T16:15+01:00",
+      "end": "2026-10-06T17:00+01:00"
+     },
+     {
+      "id": "bea-009",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-07T09:30+01:00",
+      "end": "2026-10-07T09:45+01:00"
+     },
+     {
+      "id": "bea-010",
+      "title": "Handover",
+      "kind": "meeting",
+      "start": "2026-10-07T09:30+01:00",
+      "end": "2026-10-07T10:00+01:00"
+     },
+     {
+      "id": "bea-011",
+      "title": "Focus: writing",
+      "kind": "focus",
+      "start": "2026-10-07T10:00+01:00",
+      "end": "2026-10-07T12:00+01:00"
+     },
+     {
+      "id": "bea-012",
+      "title": "Customer call",
+      "kind": "meeting",
+      "start": "2026-10-07T11:00+01:00",
+      "end": "2026-10-07T11:45+01:00"
+     },
+     {
+      "id": "bea-013",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-08T09:30+01:00",
+      "end": "2026-10-08T09:45+01:00"
+     },
+     {
+      "id": "bea-014",
+      "title": "Focus: reports",
+      "kind": "focus",
+      "start": "2026-10-08T09:30+01:00",
+      "end": "2026-10-08T12:00+01:00"
+     },
+     {
+      "id": "bea-015",
+      "title": "Budget check-in",
+      "kind": "meeting",
+      "start": "2026-10-08T11:00+01:00",
+      "end": "2026-10-08T11:30+01:00"
+     },
+     {
+      "id": "bea-016",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-08T12:30+01:00",
+      "end": "2026-10-08T13:30+01:00"
+     },
+     {
+      "id": "bea-017",
+      "title": "Incident review",
+      "kind": "meeting",
+      "start": "2026-10-08T12:30+01:00",
+      "end": "2026-10-08T13:00+01:00"
+     },
+     {
+      "id": "bea-018",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-09T09:30+01:00",
+      "end": "2026-10-09T09:45+01:00"
+     },
+     {
+      "id": "bea-019",
+      "title": "Roadmap review",
+      "kind": "meeting",
+      "start": "2026-10-09T10:30+01:00",
+      "end": "2026-10-09T11:15+01:00"
+     },
+     {
+      "id": "bea-020",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-09T12:30+01:00",
+      "end": "2026-10-09T13:30+01:00"
+     }
+    ]
+   },
+   "dax": {
+    "utc_offset": "-07:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "events": [
+     {
+      "id": "dax-001",
+      "title": "Pipeline sync",
+      "kind": "meeting",
+      "start": "2026-10-05T09:15-07:00",
+      "end": "2026-10-05T10:15-07:00"
+     },
+     {
+      "id": "dax-002",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-05T09:30-07:00",
+      "end": "2026-10-05T09:45-07:00"
+     },
+     {
+      "id": "dax-003",
+      "title": "Focus: design",
+      "kind": "focus",
+      "start": "2026-10-05T10:30-07:00",
+      "end": "2026-10-05T13:30-07:00"
+     },
+     {
+      "id": "dax-004",
+      "title": "Vendor call",
+      "kind": "meeting",
+      "start": "2026-10-05T12:15-07:00",
+      "end": "2026-10-05T13:00-07:00"
+     },
+     {
+      "id": "dax-005",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-05T12:30-07:00",
+      "end": "2026-10-05T13:30-07:00"
+     },
+     {
+      "id": "dax-006",
+      "title": "Budget check-in",
+      "kind": "meeting",
+      "start": "2026-10-05T13:30-07:00",
+      "end": "2026-10-05T15:00-07:00"
+     },
+     {
+      "id": "dax-007",
+      "title": "Focus: reports",
+      "kind": "focus",
+      "start": "2026-10-06T11:00-07:00",
+      "end": "2026-10-06T13:30-07:00"
+     },
+     {
+      "id": "dax-008",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-06T12:30-07:00",
+      "end": "2026-10-06T13:30-07:00"
+     },
+     {
+      "id": "dax-009",
+      "title": "Pipeline sync",
+      "kind": "meeting",
+      "start": "2026-10-06T14:00-07:00",
+      "end": "2026-10-06T15:30-07:00"
+     },
+     {
+      "id": "dax-010",
+      "title": "Training",
+      "kind": "meeting",
+      "start": "2026-10-06T14:30-07:00",
+      "end": "2026-10-06T16:00-07:00"
+     },
+     {
+      "id": "dax-011",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-07T09:30-07:00",
+      "end": "2026-10-07T09:45-07:00"
+     },
+     {
+      "id": "dax-012",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-07T12:00-07:00",
+      "end": "2026-10-07T13:00-07:00"
+     },
+     {
+      "id": "dax-013",
+      "title": "Focus: planning",
+      "kind": "focus",
+      "start": "2026-10-07T12:00-07:00",
+      "end": "2026-10-07T14:30-07:00"
+     },
+     {
+      "id": "dax-014",
+      "title": "Roadmap review",
+      "kind": "meeting",
+      "start": "2026-10-07T12:45-07:00",
+      "end": "2026-10-07T13:45-07:00"
+     },
+     {
+      "id": "dax-015",
+      "title": "Handover",
+      "kind": "meeting",
+      "start": "2026-10-07T12:45-07:00",
+      "end": "2026-10-07T13:15-07:00"
+     },
+     {
+      "id": "dax-016",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-08T09:30-07:00",
+      "end": "2026-10-08T09:45-07:00"
+     },
+     {
+      "id": "dax-017",
+      "title": "Customer call",
+      "kind": "meeting",
+      "start": "2026-10-08T10:45-07:00",
+      "end": "2026-10-08T11:45-07:00"
+     },
+     {
+      "id": "dax-018",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-08T12:30-07:00",
+      "end": "2026-10-08T13:30-07:00"
+     },
+     {
+      "id": "dax-019",
+      "title": "Design crit",
+      "kind": "meeting",
+      "start": "2026-10-09T09:00-07:00",
+      "end": "2026-10-09T10:00-07:00"
+     },
+     {
+      "id": "dax-020",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-09T09:30-07:00",
+      "end": "2026-10-09T09:45-07:00"
+     },
+     {
+      "id": "dax-021",
+      "title": "Retro",
+      "kind": "meeting",
+      "start": "2026-10-09T13:30-07:00",
+      "end": "2026-10-09T14:00-07:00"
+     },
+     {
+      "id": "dax-022",
+      "title": "Dentist",
+      "kind": "meeting",
+      "start": "2026-10-09T15:15-07:00",
+      "end": "2026-10-09T16:45-07:00"
+     }
+    ]
+   },
+   "cal": {
+    "utc_offset": "+08:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "events": [
+     {
+      "id": "cal-001",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-05T09:30+08:00",
+      "end": "2026-10-05T09:45+08:00"
+     },
+     {
+      "id": "cal-002",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-05T12:30+08:00",
+      "end": "2026-10-05T13:30+08:00"
+     },
+     {
+      "id": "cal-003",
+      "title": "Team sync",
+      "kind": "meeting",
+      "start": "2026-10-05T13:15+08:00",
+      "end": "2026-10-05T13:45+08:00"
+     },
+     {
+      "id": "cal-004",
+      "title": "Dentist",
+      "kind": "meeting",
+      "start": "2026-10-05T14:00+08:00",
+      "end": "2026-10-05T14:30+08:00"
+     },
+     {
+      "id": "cal-005",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-06T12:30+08:00",
+      "end": "2026-10-06T13:30+08:00"
+     },
+     {
+      "id": "cal-006",
+      "title": "Training",
+      "kind": "meeting",
+      "start": "2026-10-06T16:00+08:00",
+      "end": "2026-10-06T16:30+08:00"
+     },
+     {
+      "id": "cal-007",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-07T09:30+08:00",
+      "end": "2026-10-07T09:45+08:00"
+     },
+     {
+      "id": "cal-008",
+      "title": "Pipeline sync",
+      "kind": "meeting",
+      "start": "2026-10-07T09:45+08:00",
+      "end": "2026-10-07T10:30+08:00"
+     },
+     {
+      "id": "cal-009",
+      "title": "Retro",
+      "kind": "meeting",
+      "start": "2026-10-07T11:45+08:00",
+      "end": "2026-10-07T12:45+08:00"
+     },
+     {
+      "id": "cal-010",
+      "title": "Stand-up",
+      "kind": "meeting",
+      "start": "2026-10-08T09:30+08:00",
+      "end": "2026-10-08T09:45+08:00"
+     },
+     {
+      "id": "cal-011",
+      "title": "Focus: planning",
+      "kind": "focus",
+      "start": "2026-10-08T11:00+08:00",
+      "end": "2026-10-08T13:00+08:00"
+     },
+     {
+      "id": "cal-012",
+      "title": "Focus: design",
+      "kind": "focus",
+      "start": "2026-10-08T11:30+08:00",
+      "end": "2026-10-08T14:30+08:00"
+     },
+     {
+      "id": "cal-013",
+      "title": "Interview",
+      "kind": "meeting",
+      "start": "2026-10-08T14:00+08:00",
+      "end": "2026-10-08T15:00+08:00"
+     },
+     {
+      "id": "cal-014",
+      "title": "Lunch",
+      "kind": "meeting",
+      "start": "2026-10-09T12:00+08:00",
+      "end": "2026-10-09T13:00+08:00"
+     },
+     {
+      "id": "cal-015",
+      "title": "Roadmap review",
+      "kind": "meeting",
+      "start": "2026-10-09T12:45+08:00",
+      "end": "2026-10-09T14:15+08:00"
+     },
+     {
+      "id": "cal-016",
+      "title": "Vendor call",
+      "kind": "meeting",
+      "start": "2026-10-09T15:00+08:00",
+      "end": "2026-10-09T15:45+08:00"
+     }
+    ]
+   }
+  },
+  "rooms": {
+   "atrium": {
+    "capacity": 8,
+    "features": [],
+    "events": [
+     {
+      "id": "atrium-001",
+      "title": "Interview",
+      "kind": "meeting",
+      "start": "2026-10-05T08:15-04:00",
+      "end": "2026-10-05T09:15-04:00"
+     },
+     {
+      "id": "atrium-002",
+      "title": "Sprint planning",
+      "kind": "meeting",
+      "start": "2026-10-05T15:30-04:00",
+      "end": "2026-10-05T16:00-04:00"
+     },
+     {
+      "id": "atrium-003",
+      "title": "Sprint planning",
+      "kind": "meeting",
+      "start": "2026-10-06T10:15-04:00",
+      "end": "2026-10-06T12:15-04:00"
+     },
+     {
+      "id": "atrium-004",
+      "title": "Team sync",
+      "kind": "meeting",
+      "start": "2026-10-06T13:45-04:00",
+      "end": "2026-10-06T14:45-04:00"
+     },
+     {
+      "id": "atrium-005",
+      "title": "Customer call",
+      "kind": "meeting",
+      "start": "2026-10-06T16:30-04:00",
+      "end": "2026-10-06T18:30-04:00"
+     },
+     {
+      "id": "atrium-006",
+      "title": "Interview",
+      "kind": "meeting",
+      "start": "2026-10-07T11:30-04:00",
+      "end": "2026-10-07T13:30-04:00"
+     },
+     {
+      "id": "atrium-007",
+      "title": "Sprint planning",
+      "kind": "meeting",
+      "start": "2026-10-08T08:30-04:00",
+      "end": "2026-10-08T09:30-04:00"
+     },
+     {
+      "id": "atrium-008",
+      "title": "Vendor call",
+      "kind": "meeting",
+      "start": "2026-10-08T13:15-04:00",
+      "end": "2026-10-08T13:45-04:00"
+     },
+     {
+      "id": "atrium-009",
+      "title": "Team sync",
+      "kind": "meeting",
+      "start": "2026-10-09T13:30-04:00",
+      "end": "2026-10-09T15:30-04:00"
+     }
+    ]
+   },
+   "boardroom": {
+    "capacity": 8,
+    "features": [
+     "video"
+    ],
+    "events": [
+     {
+      "id": "boardroom-001",
+      "title": "Design crit",
+      "kind": "meeting",
+      "start": "2026-10-05T09:15-04:00",
+      "end": "2026-10-05T09:45-04:00"
+     },
+     {
+      "id": "boardroom-002",
+      "title": "1:1",
+      "kind": "meeting",
+      "start": "2026-10-06T15:15-04:00",
+      "end": "2026-10-06T16:45-04:00"
+     },
+     {
+      "id": "boardroom-003",
+      "title": "Customer call",
+      "kind": "meeting",
+      "start": "2026-10-07T09:15-04:00",
+      "end": "2026-10-07T10:45-04:00"
+     },
+     {
+      "id": "boardroom-004",
+      "title": "1:1",
+      "kind": "meeting",
+      "start": "2026-10-07T14:00-04:00",
+      "end": "2026-10-07T14:30-04:00"
+     },
+     {
+      "id": "boardroom-005",
+      "title": "Pipeline sync",
+      "kind": "meeting",
+      "start": "2026-10-08T11:30-04:00",
+      "end": "2026-10-08T12:30-04:00"
+     },
+     {
+      "id": "boardroom-006",
+      "title": "Sprint planning",
+      "kind": "meeting",
+      "start": "2026-10-08T14:30-04:00",
+      "end": "2026-10-08T15:30-04:00"
+     },
+     {
+      "id": "boardroom-007",
+      "title": "Vendor call",
+      "kind": "meeting",
+      "start": "2026-10-08T15:00-04:00",
+      "end": "2026-10-08T15:30-04:00"
+     },
+     {
+      "id": "boardroom-008",
+      "title": "Pipeline sync",
+      "kind": "meeting",
+      "start": "2026-10-09T11:00-04:00",
+      "end": "2026-10-09T12:30-04:00"
+     }
+    ]
+   },
+   "studio-b": {
+    "capacity": 6,
+    "features": [
+     "video"
+    ],
+    "events": [
+     {
+      "id": "studio-b-001",
+      "title": "Design crit",
+      "kind": "meeting",
+      "start": "2026-10-05T12:30-04:00",
+      "end": "2026-10-05T14:00-04:00"
+     },
+     {
+      "id": "studio-b-002",
+      "title": "1:1",
+      "kind": "meeting",
+      "start": "2026-10-05T15:15-04:00",
+      "end": "2026-10-05T15:45-04:00"
+     },
+     {
+      "id": "studio-b-003",
+      "title": "Design crit",
+      "kind": "meeting",
+      "start": "2026-10-05T15:30-04:00",
+      "end": "2026-10-05T16:30-04:00"
+     },
+     {
+      "id": "studio-b-004",
+      "title": "Pipeline sync",
+      "kind": "meeting",
+      "start": "2026-10-06T10:30-04:00",
+      "end": "2026-10-06T11:30-04:00"
+     },
+     {
+      "id": "studio-b-005",
+      "title": "1:1",
+      "kind": "meeting",
+      "start": "2026-10-07T15:15-04:00",
+      "end": "2026-10-07T16:45-04:00"
+     },
+     {
+      "id": "studio-b-006",
+      "title": "1:1",
+      "kind": "meeting",
+      "start": "2026-10-08T09:00-04:00",
+      "end": "2026-10-08T10:30-04:00"
+     },
+     {
+      "id": "studio-b-007",
+      "title": "1:1",
+      "kind": "meeting",
+      "start": "2026-10-08T14:15-04:00",
+      "end": "2026-10-08T15:15-04:00"
+     },
+     {
+      "id": "studio-b-008",
+      "title": "Customer call",
+      "kind": "meeting",
+      "start": "2026-10-08T14:45-04:00",
+      "end": "2026-10-08T15:15-04:00"
+     },
+     {
+      "id": "studio-b-009",
+      "title": "Roadmap review",
+      "kind": "meeting",
+      "start": "2026-10-09T09:00-04:00",
+      "end": "2026-10-09T10:30-04:00"
+     }
+    ]
+   }
+  }
+ }
+}
