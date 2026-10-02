@@ -274,7 +274,10 @@ def write_package(out, docs, evidence, notes, split, offline):
     write(out / "README.md", fill((SRC / "README.md").read_text(encoding="utf-8"), TASKS=tasks, FAMILIES=len(families), GROUPS=len(groups),
                                   SPLIT=split, RANDOM=f"{expected:.3f}"))
     shutil.copytree(SRC / "research", out / "research")
-    rows = (SRC / "rejections.jsonl").read_text(encoding="utf-8") if offline else ""
+    ids = {d["id"] for d in docs}
+    kept = [r for r in map(json.loads, (SRC / "rejections.jsonl").read_text(encoding="utf-8").splitlines())
+            if r["candidate"].split("#")[0] in ids or r["family"] == "-"] if offline else []
+    rows = "".join(json.dumps(r) + "\n" for r in kept)
     write(out / "rejections.jsonl", rows + "".join(json.dumps(n) + "\n" for n in notes))
     write_adapters(out)
 

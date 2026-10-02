@@ -203,7 +203,10 @@ def write_package(out, docs, evidence, notes, split, offline):
                   RANDOM=f"{expected:.3f}")
     write(out / "README.md", readme)
     shutil.copytree(SRC / "research", out / "research")
-    rows = (SRC / "rejections.jsonl").read_text(encoding="utf-8") if offline else ""
+    ids = {d["id"] for d in docs}
+    kept = [r for r in map(json.loads, (SRC / "rejections.jsonl").read_text(encoding="utf-8").splitlines())
+            if r["candidate"].split("#")[0] in ids or r["family"] == "-"] if offline else []
+    rows = "".join(json.dumps(r) + "\n" for r in kept)
     write(out / "rejections.jsonl", rows + "".join(json.dumps(n) + "\n" for n in notes))
     for name, config in ADAPTERS.items():
         write(out / "adapters" / name / "config.json", json.dumps(config, indent=1) + "\n")
