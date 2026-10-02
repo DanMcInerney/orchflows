@@ -13,10 +13,11 @@ Copy `scripts/benchkit/` to `<package>/benchkit/` and `scripts/run.py` to `<pack
 ## Solver protocol
 
 An agent is a directory holding `run_agent.py`, run as `python run_agent.py --workspace DIR --prompt-file FILE --transcript FILE --timeout SECONDS`, cwd the workspace.
-- The workspace holds the task's `environment/` files, staged in a temporary root outside the package and the output directory; the prompt file is `instruction.md`, outside the workspace. Deliverables are the workspace's final state, as the instruction names them. The agent may write the transcript file.
+- The workspace holds the task's `environment/` files. The workspace, the prompt file (`instruction.md`), the transcript path and the files the agent's stdout and stderr land in are all in a temporary root outside the package and the output directory (`<root>/workspace/` and `<root>/solver/`); no path the agent is handed, or can learn from its own open files, leads into the output directory. Deliverables are the workspace's final state, as the instruction names them. The agent may write the transcript file.
+- Enforced: those paths, the staging refusals below, and that the kit grades a copy of what it captured. Conventional: the agent is an ordinary process of the same user and the kit does not sandbox it; the adapter's own directory lives in the package, so an adapter that gives a model tools must confine them and not expose that directory's parents. Isolating a hostile solver is the host's job.
 - Its last stdout line is `{"status": "completed", "exit_code": 0, "seconds": 7.9, "model": "claude-haiku-4-5", "cost_usd": 0.018, "final": "text"}`. `status` is completed, refused, cut-off, timeout, usage-limit or error; `model` and `cost_usd` may be null; extra keys are allowed.
 - Exit codes: 0 completed, refused or cut-off; 2 timeout; 3 usage-limit; 1 other. A line that disagrees with the exit code is an infrastructure error.
-- The kit stops the whole process tree at `--timeout` plus `grace_seconds` (default 5), so an agent needs no timer of its own.
+- The kit stops the whole process tree at `--timeout` plus `grace_seconds` (default 5), so an agent needs no timer of its own. Windows: a kill-on-close job object holds every descendant. POSIX: the agent leads a process group and the group is killed; a descendant that starts its own session (`setsid`) escapes the group, survives, and is not reported as `left_running`. That is a known limit of the standard-library approach.
 - Built-ins: `@reference` runs `tasks/<id>/solution/solve.py --workspace DIR`; `@noop` does nothing.
 
 | Solver outcome | Execution status |
@@ -84,14 +85,14 @@ Staging refuses, and the run exits 2: an evaluator name (`solution`, `tests`, `l
 
 | Command | Effect |
 | --- | --- |
-| `preflight [--agent D] [--profile P] [--report F]` | Validates layout, `task.toml`, `suite.json`, card claims and staging; provisions; records `observe`; runs the selfcheck; prints planned attempts, caps, estimated and worst-case wall time and estimated spend. No model calls |
-| `smoke\|quick\|full --agent D --output O [--repeats K] [--jobs N] [--deadline S] [--tasks A,B] [--stop-band LOW HIGH [--level L]]` | Runs the profile into a new O. Smoke and quick use tasks flagged so, one repeat each; full uses all tasks and `repeats`. `--tasks` replaces the selection |
+| `preflight [--agent D] [--profile P] [--split S] [--report F]` | Validates layout, `task.toml`, `suite.json`, card claims and staging; provisions; records `observe`; runs the selfcheck; prints planned attempts, caps, estimated and worst-case wall time and estimated spend. No model calls |
+| `smoke\|quick\|full --agent D --output O [--repeats K] [--jobs N] [--deadline S] [--tasks A,B] [--split S] [--stop-band LOW HIGH [--level L]]` | Runs the profile into a new O. Smoke and quick use tasks flagged so, one repeat each; full uses all tasks and `repeats`. `--tasks` replaces the selection; `--split development\|held-out` keeps only that split's tasks. A selection that matches no task is refused |
 | `resume --output O [--jobs N] [--deadline S]` | Continues O from its ledger after comparing retained bytes and observed versions |
 | `rescore --output O` | Grades captured workspaces again with the current verifiers into `grades-<n>.jsonl` and refreshes the summary; nothing relaunches |
 | `grade --input I --output F [--jobs N]` | Grade-only: `I/<task-id>/<submission-id>/` are final workspaces; writes one JSONL row per submission with `task`, `submission`, the verifier fields, `reason`, `seconds` |
-| `compare --a O1 --b O2 [--metric full_success_rate\|mean_credit] [--output F]` | Paired per-task differences with cluster intervals (`benchkit.aggregate.paired`) |
+| `compare --a O1 --b O2 [--metric full_success_rate\|mean_credit] [--split S] [--output F]` | Paired per-task differences with cluster intervals (`benchkit.aggregate.paired`); tasks of several splits are paired together only with a warning, `--split` takes one |
 
-Exit codes: 0 every planned unit is terminal; 1 harness error, including a failed selfcheck; 2 refused (changed bytes or observed versions, a held `OWNER`, a staging leak, an invalid suite or card, a bad argument); 3 stopped by the deadline or launch budget with units not launched; 4 interrupted (usage limit or Ctrl-C), resumable. A stale `OWNER` after a hard kill is removed by hand.
+Exit codes: 0 every planned unit is terminal; 1 harness error, including a failed selfcheck; 2 refused (changed bytes or observed versions, a held `OWNER`, a staging leak, an invalid suite or card, a selection that matches no task, a bad argument); 3 stopped by the deadline or launch budget with units not launched; 4 interrupted (usage limit or Ctrl-C), resumable. A stale `OWNER` after a hard kill is removed by hand.
 
 ## Run directory
 
@@ -101,7 +102,9 @@ O/  run.json  identity/  OWNER  ledger.jsonl  attempts.jsonl  summary.json  atte
 
 - `identity/` is a read-only copy of `suite.json`, `tasks/`, `adapters/`, `run.py`, `benchkit/` and the agent directory; `resume` compares bytes.
 - `ledger.jsonl` is append-only: `planned`, `launched` (before dispatch), `graded`, `finished`, `note`. It is the only record of what ran; `attempts.jsonl` and `summary.json` are rebuilt from it.
-- An attempt folder holds `prompt.md`, `workspace/` (the captured final copy), `transcript.jsonl` if written, `solver.json` (command, live workspace path, outcome), `stdout.txt`, `stderr.txt`, `grade.json` and the verifier's own files.
+- An attempt folder holds `prompt.md` (copied from the task), `workspace/` (the captured final copy), `transcript.jsonl` if written, `solver.json` (command and live workspace path, which name the temporary root, `capture_skipped` and the outcome), `stdout.txt` and `stderr.txt` (all three moved in once the solver's tree is gone; a link the solver left in their place is dropped), `grade.json` and the verifier's own files.
+- Capture never drops an attempt: an entry the solver left that cannot be copied (a pipe or socket, an unreadable file or folder, a name the host refuses) is skipped and listed in `capture_skipped` (up to 50 `path: reason` lines, then a count), and the workspace is graded as captured, so a missing deliverable is a scored failure. Only a fault of the host (no destination, a full disk, exhausted handles) is an `infrastructure-error`. Links are never copied. Windows long paths are handled.
+- The workspace is copied twice per graded attempt (the capture, then a scratch copy for the verifier) and once more per `rescore`; a task with a heavy environment pays that in attempt time.
 - `rescore` keeps the replaced summary as `summary-<n-1>.json`; `summary-<n>.json` is the result of `grades-<n>.jsonl`; `rescore-<n>/` holds the new verifier files.
 - A unit is one task repeat; its final attempt (highest retry) decides it. A repeat the stop band skips is `not-launched` with a reason beginning `stopped early`, listed in `exclusions`.
 
@@ -109,10 +112,10 @@ O/  run.json  identity/  OWNER  ledger.jsonl  attempts.jsonl  summary.json  atte
 {"task": "t01", "repeat": 1, "retry": 0, "status": "completed", "reason": "", "started": "2026-10-02T10:00:00Z", "finished": "2026-10-02T10:00:08Z",
  "seconds": 7.9, "exit_code": 0, "model": "claude-haiku-4-5", "cost_usd": 0.018, "left_running": false,
  "grading_status": "scored", "full_success": false, "credit": 0.5, "dimensions": {}, "critical_failures": [], "grade_reason": "",
- "workspace": "attempts/t01/1-0/workspace", "transcript": "attempts/t01/1-0/transcript.jsonl"}
+ "workspace": "attempts/t01/1-0/workspace", "transcript": "attempts/t01/1-0/transcript.jsonl", "capture_skipped": []}
 ```
 
-`summary.json`: `overall` and each `families` entry exclude anchors and give `full_success_rate`, `mean_credit` (null when a required dimension is unjudged), `credit_bounds`, `critical_failures`, `scored_tasks`, `missing_repeats`, `anchors_excluded`. Execution time sums solver seconds and grading time sums verifier seconds over attempts; setup and total are wall time.
+`summary.json`: splits are never pooled. `splits` gives each split's rollup (`development`, `held-out`; a task without one is `unspecified`), and `overall` and `families` cover only the headline split, named in `overall.split`: held-out when the run has held-out tasks, else development. A run of one split reports that split, and the printed headline of a mixed run lists the splits apart. `overall`, each `splits` entry and each `families` entry exclude anchors and give `full_success_rate`, `mean_credit` (null when a required dimension is unjudged), `credit_bounds`, `critical_failures`, `scored_tasks`, `missing_repeats`, `anchors_excluded`. Execution time sums solver seconds and grading time sums verifier seconds over attempts; setup and total are wall time.
 
 ```json summary
 {"suite": {"name": "schedule-dev", "tasks": 1},
@@ -121,9 +124,10 @@ O/  run.json  identity/  OWNER  ledger.jsonl  attempts.jsonl  summary.json  atte
          "observed_versions": {"python --version": "Python 3.14.6"}},
  "counts": {"planned": 2, "launched": 2, "completed": 2, "scored": 2, "passed": 1, "failed": 1, "unscored": 0, "canceled": 0, "not_launched": 0, "retries": 0,
             "by_status": {"completed": 2, "refused": 0, "cut-off": 0, "agent-budget-exhausted": 0, "infrastructure-error": 0, "canceled": 0, "interrupted": 0, "not-launched": 0}},
- "overall": {"full_success_rate": 0.5, "mean_credit": 0.75, "credit_bounds": [0.75, 0.75], "critical_failures": 0, "scored_tasks": 1, "missing_repeats": 0, "anchors_excluded": 0},
+ "overall": {"full_success_rate": 0.5, "mean_credit": 0.75, "credit_bounds": [0.75, 0.75], "critical_failures": 0, "scored_tasks": 1, "missing_repeats": 0, "anchors_excluded": 0, "split": "development"},
  "families": {"scheduling": {"full_success_rate": 0.5, "mean_credit": 0.75, "credit_bounds": [0.75, 0.75], "critical_failures": 0, "scored_tasks": 1, "missing_repeats": 0, "anchors_excluded": 0}},
- "tasks": {"t01": {"family": "scheduling", "source_group": "g1", "anchor": false, "planned": 2, "scored": 2, "full_success_rate": 0.5, "mean_credit": 0.75,
+ "splits": {"development": {"full_success_rate": 0.5, "mean_credit": 0.75, "credit_bounds": [0.75, 0.75], "critical_failures": 0, "scored_tasks": 1, "missing_repeats": 0, "anchors_excluded": 0}},
+ "tasks": {"t01": {"family": "scheduling", "split": "development", "source_group": "g1", "anchor": false, "planned": 2, "scored": 2, "full_success_rate": 0.5, "mean_credit": 0.75,
                    "critical_failures": 0, "statuses": {"completed": 2}}},
  "cost": {"usd_known": 0.04, "attempts_with_unknown_cost": 0},
  "time": {"setup_seconds": 0.4, "execution_seconds": 14.0, "grading_seconds": 0.6, "total_seconds": 9.0}, "exclusions": []}
@@ -131,7 +135,7 @@ O/  run.json  identity/  OWNER  ledger.jsonl  attempts.jsonl  summary.json  atte
 
 ## Sequential stopping
 
-`from benchkit.stopping import decide` (stdlib, no run needed): `decide(successes, attempts, low=0.2, high=0.8, level=0.9, max_attempts=8)` returns `below` or `above` when the exact Clopper-Pearson interval at `level` lies wholly outside the target band, `inside` when wholly within it, `exhausted` at `max_attempts` otherwise, else `continue`. During calibration (`full --tasks <id> --repeats N --agent D --output O` runs one candidate), call it after each scored repeat of a task and stop that task on any result but `continue`; stopping on a decisive result is sequential, so use a higher `level` where a wrong stop is costly. `--stop-band LOW HIGH` does this per task inside a run on full success, between repeat rounds, and records the skipped repeats. Calibration attempts are never measurement.
+`from benchkit.stopping import decide` (stdlib, no run needed): `decide(successes, attempts, low=0.2, high=0.8, max_attempts=8)` (`low`, `high` and `max_attempts` are required keyword arguments; `level` defaults to 0.9) returns `below` or `above` when the exact Clopper-Pearson interval at `level` lies wholly outside the target band, `inside` when wholly within it, `exhausted` at `max_attempts` otherwise, else `continue`. During calibration (`full --tasks <id> --repeats N --agent D --output O` runs one candidate), call it after each scored repeat of a task and stop that task on any result but `continue`; stopping on a decisive result is sequential, so use a higher `level` where a wrong stop is costly. `--stop-band LOW HIGH` does this per task inside a run on full success, between repeat rounds, and records the skipped repeats. Calibration attempts are never measurement.
 
 ## Typed claims
 

@@ -142,16 +142,21 @@ def load(root: Path) -> Suite:
     return suite
 
 
-def select(suite: Suite, profile: str, only: list[str] | None = None) -> list[Task]:
-    """The profile's tasks in id order: those flagged smoke or quick, or all. `only` names tasks instead."""
+def select(suite: Suite, profile: str, only: list[str] | None = None, split: str | None = None) -> list[Task]:
+    """The profile's tasks in id order: those flagged smoke or quick, or all. `only` names tasks instead.
+    `split` keeps the tasks of that split (development or held-out) from either selection."""
     if profile not in shapes.PROFILES:
         raise SuiteError([f"unknown profile {profile!r}"])
+    if split is not None and split not in shapes.SPLITS:
+        raise SuiteError([f"unknown split {split!r}; the splits are {', '.join(shapes.SPLITS)}"])
     if only:
         unknown = [name for name in only if name not in suite.tasks]
         if unknown:
             raise SuiteError([f"unknown task {name!r}" for name in unknown])
-        return [suite.tasks[name] for name in sorted(set(only))]
-    return [task for task in suite.tasks.values() if profile == "full" or getattr(task, profile)]
+        chosen = [suite.tasks[name] for name in sorted(set(only))]
+    else:
+        chosen = [task for task in suite.tasks.values() if profile == "full" or getattr(task, profile)]
+    return [task for task in chosen if split is None or task.split == split]
 
 
 def repeats_for(suite: Suite, profile: str, override: int | None = None) -> int:
@@ -172,7 +177,7 @@ def task_meta(tasks: list[Task]) -> dict[str, dict]:
     the tasks a run selects, so a smoke or quick subset still averages as its tasks' weights say."""
     total = math.fsum(t.weight for t in tasks if t.weight is not None)
     weighted = total > 0 and all(t.weight is not None for t in tasks)
-    return {t.id: {"family": t.family, "source_group": t.source_group, "anchor": t.anchor,
+    return {t.id: {"family": t.family, "source_group": t.source_group, "split": t.split, "anchor": t.anchor,
                    **({"weight": t.weight / total} if weighted else {})} for t in tasks}
 
 

@@ -263,6 +263,17 @@ def _rollup(task_ids: list[str], metrics: dict[str, dict], tasks: dict[str, dict
             "anchors_excluded": len(task_ids) - len(members)}
 
 
+def _split(meta: dict) -> str:
+    return str(meta.get("split") or "unspecified")
+
+
+def headline_split(names) -> str | None:
+    """The split `overall` reports when a run holds several: held-out, the predeclared measurement, else development.
+    Development tasks are selected on, so their results never join a held-out headline."""
+    names = sorted(names)
+    return "held-out" if "held-out" in names else "development" if "development" in names else (names or [None])[0]
+
+
 def _moment(text) -> datetime | None:
     try:
         return datetime.fromisoformat(str(text).replace("Z", "+00:00"))
@@ -314,6 +325,11 @@ def summarize(attempts: list[dict], tasks: dict[str, dict], run: dict, *, weight
     (`anchors_excluded`), which stay in `tasks`; see `task_metrics` and
     `_rollup` for averaging and weights. `weights` (or each task's `weight`
     when all declare one) must be nonnegative and sum to 1.
+
+    Splits are never pooled: `splits` gives each split's rollup (a task without
+    a `split` is "unspecified"), and `overall` and `families` cover only the
+    headline split (`headline_split`), named in `overall["split"]`. A run with
+    one split reports exactly that split.
     """
     weights = _resolve_weights(tasks, weights)
     seen = [row["repeat"] for row in attempts if isinstance(row.get("repeat"), int)]
@@ -337,8 +353,12 @@ def summarize(attempts: list[dict], tasks: dict[str, dict], run: dict, *, weight
     if execution is None and None not in (wall, setup, grading):
         execution = round(wall - setup - grading, 3)
 
-    families: dict[str, list[str]] = {}
+    by_split: dict[str, list[str]] = {}
     for task in tasks:
+        by_split.setdefault(_split(tasks[task]), []).append(task)
+    headline = headline_split(by_split)
+    families: dict[str, list[str]] = {}
+    for task in by_split.get(headline, []):
         families.setdefault(str(tasks[task].get("family") or "unknown"), []).append(task)
     return {
         "suite": {"name": run.get("suite_name"), "tasks": len(tasks)},
@@ -354,9 +374,10 @@ def summarize(attempts: list[dict], tasks: dict[str, dict], run: dict, *, weight
                    "failed": sum(m["failed"] for m in metrics.values()), "unscored": len(tasks) * repeats - scored,
                    "canceled": by_status["canceled"], "not_launched": by_status["not-launched"],
                    "retries": sum(1 for row in ran if row.get("retry", 0) > 0), "by_status": by_status},
-        "overall": _rollup(list(tasks), metrics, tasks, weights),
+        "overall": {**_rollup(by_split.get(headline, []), metrics, tasks, weights), "split": headline},
         "families": {family: _rollup(ids, metrics, tasks, weights) for family, ids in families.items()},
-        "tasks": {t: {"family": str(tasks[t].get("family") or "unknown"),
+        "splits": {name: _rollup(ids, metrics, tasks, weights) for name, ids in sorted(by_split.items())},
+        "tasks": {t: {"family": str(tasks[t].get("family") or "unknown"), "split": _split(tasks[t]),
                       "source_group": tasks[t].get("source_group") or t, "anchor": bool(tasks[t].get("anchor")),
                       "planned": m["planned"], "scored": m["scored"], "full_success_rate": m["full_success_rate"],
                       "mean_credit": m["mean_credit"], "critical_failures": m["critical_failures"],

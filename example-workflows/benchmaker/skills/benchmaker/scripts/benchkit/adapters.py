@@ -105,6 +105,10 @@ def solve(agent: Agent, task: Task, workspace: Path, attempt_dir: Path, *, grace
           cancel: threading.Event | None = None) -> dict:
     """Run the solver in `workspace` with the staged prompt at attempt_dir/prompt.md.
 
+    The solver is handed paths in `attempt_dir` (prompt, transcript) and its stdout and stderr land there, so
+    `attempt_dir` must hold nothing the solver should not reach; the runner passes a folder in the attempt's
+    temporary root and moves the files into the attempt record afterwards.
+
     Returns {status, reason, transient, usage_limit, exit_code, seconds, started, finished, left_running,
     model, cost_usd, final, command, live_workspace}, with times as in launch.Outcome.
     """
@@ -181,7 +185,10 @@ def verify(task: Task, workspace: Path, log_dir: Path) -> dict:
 
 def grade_copy(task: Task, workspace: Path, log_dir: Path) -> dict:
     """`verify` on a scratch copy of the workspace, so a verifier that writes files never alters the evidence."""
-    with tempfile.TemporaryDirectory(prefix="benchkit-grade-") as scratch:
+    scratch = tempfile.mkdtemp(prefix="benchkit-grade-")
+    try:
         copy = Path(scratch) / "workspace"
         stage.capture(workspace, copy)
         return verify(task, copy, log_dir)
+    finally:
+        stage.discard(scratch)

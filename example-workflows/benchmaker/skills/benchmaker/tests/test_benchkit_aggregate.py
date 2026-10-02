@@ -37,6 +37,46 @@ RUN = {"profile": "full", "agent": "adapters/x", "repeats": 3, "jobs": 3, "start
        "observed_versions": {"python --version": "Python 3.14.6"}, "setup_seconds": 2.0, "grading_seconds": 3.0}
 
 
+class SplitTests(unittest.TestCase):
+    """Development and held-out results are never pooled."""
+
+    TASKS = {"d1": {"family": "alpha", "source_group": "g1", "split": "development"},
+             "d2": {"family": "beta", "source_group": "g2", "split": "development"},
+             "h1": {"family": "alpha", "source_group": "g3", "split": "held-out"}}
+    ATTEMPTS = [row("d1", 1, full=True, credit=1.0), row("d2", 1, full=True, credit=1.0), row("h1", 1, full=False, credit=0.25)]
+
+    def summary(self, tasks=None, attempts=None):
+        return aggregate.summarize(attempts or self.ATTEMPTS, tasks or self.TASKS, {**RUN, "repeats": 1})
+
+    def test_each_split_has_its_own_rollup_and_the_headline_is_held_out_alone(self):
+        s = self.summary()
+        self.assertEqual(list(s["splits"]), ["development", "held-out"])
+        self.assertEqual((s["splits"]["development"]["full_success_rate"], s["splits"]["development"]["scored_tasks"]), (1.0, 2))
+        self.assertEqual((s["splits"]["held-out"]["full_success_rate"], s["splits"]["held-out"]["mean_credit"]), (0.0, 0.25))
+        self.assertEqual((s["overall"]["split"], s["overall"]["full_success_rate"], s["overall"]["scored_tasks"]), ("held-out", 0.0, 1))
+        self.assertEqual(sorted(s["families"]), ["alpha"])
+        self.assertEqual(s["families"]["alpha"]["full_success_rate"], 0.0)
+        self.assertEqual({t: s["tasks"][t]["split"] for t in s["tasks"]}, {"d1": "development", "d2": "development", "h1": "held-out"})
+        self.assertEqual((s["counts"]["planned"], s["counts"]["scored"]), (3, 3))
+
+    def test_a_development_only_run_reports_development(self):
+        tasks = {name: meta for name, meta in self.TASKS.items() if meta["split"] == "development"}
+        s = self.summary(tasks, self.ATTEMPTS[:2])
+        self.assertEqual((s["overall"]["split"], s["overall"]["full_success_rate"], list(s["splits"])), ("development", 1.0, ["development"]))
+
+    def test_weights_renormalize_within_each_split(self):
+        tasks = {name: {**meta, "weight": 0.5 if name == "h1" else 0.25} for name, meta in self.TASKS.items()}
+        s = self.summary(tasks)
+        self.assertEqual(s["splits"]["development"]["full_success_rate"], 1.0)
+        self.assertEqual(s["splits"]["held-out"]["full_success_rate"], 0.0)
+
+    def test_the_headline_split_prefers_held_out_then_development(self):
+        self.assertEqual(aggregate.headline_split(["development", "held-out", "unspecified"]), "held-out")
+        self.assertEqual(aggregate.headline_split(["unspecified", "development"]), "development")
+        self.assertEqual(aggregate.headline_split(["unspecified"]), "unspecified")
+        self.assertIsNone(aggregate.headline_split([]))
+
+
 class ValidateGradeTests(unittest.TestCase):
     def raw(self, **fields):
         return {"grading_status": "scored", "full_success": True, "credit": 0.75, "dimensions": DIMENSIONS,
@@ -195,7 +235,7 @@ class SummarizeTests(unittest.TestCase):
 
     def test_task_entries(self):
         t = self.summary["tasks"]
-        self.assertEqual(sorted(t["t01"]), sorted(["family", "source_group", "anchor", "planned", "scored",
+        self.assertEqual(sorted(t["t01"]), sorted(["family", "source_group", "split", "anchor", "planned", "scored",
                                                    "full_success_rate", "mean_credit", "critical_failures", "statuses"]))
         self.assertAlmostEqual(t["t01"]["full_success_rate"], 1 / 3)
         self.assertEqual(t["t01"]["mean_credit"], 0.5)
@@ -218,14 +258,19 @@ class SummarizeTests(unittest.TestCase):
             {"task": "t03", "repeat": 3, "reason": "not-launched: deadline"}])
 
     def test_summary_has_the_published_keys(self):
-        self.assertEqual(list(self.summary), ["suite", "run", "counts", "overall", "families", "tasks", "cost", "time",
-                                              "exclusions"])
+        self.assertEqual(list(self.summary), ["suite", "run", "counts", "overall", "families", "splits", "tasks", "cost",
+                                              "time", "exclusions"])
         self.assertEqual(list(self.summary["run"]), ["profile", "agent", "repeats", "jobs", "started", "finished",
                                                      "wall_seconds", "attempt_seconds_sum", "achieved_overlap",
                                                      "peak_concurrency", "deadline_reached", "observed_versions"])
         self.assertEqual(list(self.summary["overall"]), ["full_success_rate", "mean_credit", "credit_bounds",
                                                          "critical_failures", "scored_tasks", "missing_repeats",
-                                                         "anchors_excluded"])
+                                                         "anchors_excluded", "split"])
+
+    def test_tasks_without_a_split_report_one_unspecified_split(self):
+        self.assertEqual(list(self.summary["splits"]), ["unspecified"])
+        self.assertEqual(self.summary["splits"]["unspecified"], {k: v for k, v in self.summary["overall"].items() if k != "split"})
+        self.assertEqual((self.summary["overall"]["split"], self.summary["tasks"]["t01"]["split"]), ("unspecified", "unspecified"))
 
     def test_declared_weights_apply_to_task_averages(self):
         weights = {"t01": 0.2, "t02": 0.2, "t03": 0.6}

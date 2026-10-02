@@ -1,11 +1,15 @@
 """stage_public and capture: solvers see environment/ and the prompt, nothing else."""
 from __future__ import annotations
 
+import errno
+import os
 import shutil
+import stat
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(SCRIPTS) not in sys.path:
@@ -167,6 +171,82 @@ class CaptureTests(unittest.TestCase):
         (self.tmp / "captured").mkdir()
         with self.assertRaises(FileExistsError):
             capture(self.live, self.tmp / "captured")
+
+    def test_a_clean_capture_skips_nothing(self):
+        self.assertEqual(capture(self.live, self.tmp / "captured"), [])
+
+    def test_a_pipe_is_skipped_and_named(self):
+        if not hasattr(os, "mkfifo"):
+            self.skipTest("named pipes are not available")
+        os.mkfifo(self.live / "out.fifo")
+        skipped = capture(self.live, self.tmp / "captured")
+        self.assertEqual(len(skipped), 1)
+        self.assertTrue(skipped[0].startswith("out.fifo: not a regular file"))
+        self.assertTrue((self.tmp / "captured" / "output.json").exists())
+        self.assertFalse((self.tmp / "captured" / "out.fifo").exists())
+
+    def test_an_unreadable_file_or_folder_is_skipped_and_the_rest_is_copied(self):
+        if os.name == "nt" or os.geteuid() == 0:
+            self.skipTest("permission bits do not stop this user")
+        locked, hidden = self.live / "locked.txt", self.live / "hidden"
+        locked.write_text("secret")
+        (hidden / "x").mkdir(parents=True)
+        locked.chmod(0)
+        hidden.chmod(0)
+        self.addCleanup(hidden.chmod, stat.S_IRWXU)
+        skipped = capture(self.live, self.tmp / "captured")
+        self.assertEqual(sorted(line.split(":")[0] for line in skipped), ["hidden", "locked.txt"])
+        self.assertTrue((self.tmp / "captured" / "output.json").exists())
+
+    def test_a_file_the_host_refuses_is_skipped_by_name_whatever_the_error(self):
+        real = shutil.copy2
+
+        def copy(source, target, *args, **kwargs):
+            if Path(source).name == "deep.txt":
+                raise PermissionError(errno.EACCES, "Permission denied")
+            return real(source, target, *args, **kwargs)
+        with mock.patch.object(stage.shutil, "copy2", copy):
+            skipped = capture(self.live, self.tmp / "captured")
+        self.assertEqual(skipped, ["sub/deep.txt: Permission denied"])
+        self.assertFalse((self.tmp / "captured" / "sub" / "deep.txt").exists())
+        self.assertTrue((self.tmp / "captured" / "output.json").exists())
+
+    def test_a_fault_of_the_host_is_not_swallowed(self):
+        for number in (errno.ENOSPC, errno.EIO):
+            with self.subTest(errno=number):
+                with mock.patch.object(stage.shutil, "copy2", side_effect=OSError(number, "host fault")):
+                    with self.assertRaises(OSError):
+                        capture(self.live, self.tmp / f"captured-{number}")
+
+    def test_only_the_first_skipped_entries_are_listed_and_the_rest_counted(self):
+        for number in range(stage.SKIP_LIMIT + 7):
+            (self.live / f"f{number:03}.txt").write_text("x")
+        with mock.patch.object(stage.shutil, "copy2", side_effect=PermissionError(errno.EACCES, "no")):
+            skipped = capture(self.live, self.tmp / "captured")
+        self.assertEqual(len(skipped), stage.SKIP_LIMIT + 1)
+        self.assertEqual(skipped[-1], "and 9 more not listed")   # 57 new files, output.json and sub/deep.txt, less the 50 listed
+
+    def test_a_path_longer_than_the_windows_limit_is_captured(self):
+        deep = self.live
+        for _ in range(30):
+            deep = deep / ("d" * 12)
+        self.assertGreater(len(str(deep)), 400)
+        os.makedirs(stage.long_path(deep))
+        Path(stage.long_path(deep / "late.txt")).write_text("kept")
+        self.assertEqual(capture(self.live, self.tmp / "captured"), [])
+        copied = Path(stage.long_path(self.tmp / "captured" / deep.relative_to(self.live) / "late.txt"))
+        self.assertEqual(copied.read_text(), "kept")
+
+    def test_discard_removes_read_only_files_and_long_paths(self):
+        deep = self.live
+        for _ in range(30):
+            deep = deep / ("d" * 12)
+        os.makedirs(stage.long_path(deep))
+        locked = Path(stage.long_path(deep / "locked.txt"))
+        locked.write_text("x")
+        locked.chmod(stat.S_IREAD)
+        stage.discard(self.live)
+        self.assertFalse(self.live.exists())
 
 
 if __name__ == "__main__":

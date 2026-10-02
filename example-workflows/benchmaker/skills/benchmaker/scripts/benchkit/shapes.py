@@ -168,6 +168,8 @@ def attempt_problems(row, where="attempt") -> list[str]:
     _check(p, where, row, "credit", unit, "a number in [0, 1] or null", optional=True, nullable=True)
     _check(p, where, row, "dimensions", lambda x: isinstance(x, dict), "an object", optional=True)
     _check(p, where, row, "critical_failures", lambda x: isinstance(x, list), "a list", optional=True)
+    _check(p, where, row, "capture_skipped", lambda x: isinstance(x, list) and all(isinstance(i, str) for i in x),
+           "a list of strings", optional=True)
     if not p and row["grading_status"] == "scored":
         if row["status"] not in aggregate.SCORED:
             p.append(f"{where}: a {row['status']} attempt cannot be scored")
@@ -216,6 +218,8 @@ def summary_problems(doc, where="summary.json") -> list[str]:
     _rates(p, f"{where} overall", doc["overall"])
     for family, body in doc["families"].items():
         _rates(p, f"{where} family {family}", body)
+    for split, body in (doc.get("splits") or {}).items():
+        _rates(p, f"{where} split {split}", body)
     for task, body in doc["tasks"].items():
         p += [f"{where} task {task}: missing {key!r}" for key in TASK_KEYS if not isinstance(body, dict) or key not in body]
         if isinstance(body, dict):

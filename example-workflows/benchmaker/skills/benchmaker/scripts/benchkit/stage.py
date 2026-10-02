@@ -1,16 +1,25 @@
 """Stage a task's public material for a solver and capture its final workspace for grading.
 
-A solver sees `environment/` and the prompt, nothing else. Staging refuses anything that could carry
-evaluator material into the workspace; it never repairs a task silently.
+A solver is handed `environment/` and the prompt, at paths in a temporary root, and nothing else. Staging
+refuses anything that could carry evaluator material into the workspace; it never repairs a task silently.
+The kit does not sandbox the solver process: it can read whatever its user can.
 """
 from __future__ import annotations
 
+import errno
 import filecmp
 import os
 import shutil
+import stat
+import sys
 from pathlib import Path
 
 EVALUATOR_NAMES = {"solution", "tests", "labeled", "admission", "evaluation", "identity"}
+EXTENDED = "\\\\?\\"   # the Windows extended-length path prefix, \\?\
+SKIP_LIMIT = 50   # skipped entries listed by name; the rest are counted
+# Capture errors that belong to the host rather than to the solver's files.
+HARNESS_ERRNOS = {getattr(errno, name) for name in ("ENOSPC", "EDQUOT", "EMFILE", "ENFILE", "ENOMEM", "EIO", "EROFS")
+                  if hasattr(errno, name)}
 
 
 class StagingError(Exception):
@@ -97,15 +106,84 @@ def stage_public(task_dir: Path, workspace: Path, prompt_path: Path) -> None:
     shutil.copyfile(instruction, prompt_path)
 
 
-def capture(workspace: Path, dest: Path) -> None:
-    """Copy the final workspace to `dest` for grading. Links are neither followed nor copied."""
+def long_path(path) -> str:
+    """The absolute path as a string that Windows opens past MAX_PATH (an extended-length path); unchanged elsewhere."""
+    text = os.path.abspath(path)
+    if os.name != "nt" or text.startswith(EXTENDED):
+        return text
+    return EXTENDED + "UNC" + text[1:] if text.startswith("\\\\") else EXTENDED + text
+
+
+def _clear_and_retry(function, path, _error) -> None:
+    try:
+        os.chmod(path, stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
+        function(path)
+    except OSError:
+        pass
+
+
+def discard(path) -> None:
+    """Delete a tree whatever it holds: long paths, read-only files; whatever cannot be removed is left."""
+    handler = {"onexc" if sys.version_info >= (3, 12) else "onerror": _clear_and_retry}
+    shutil.rmtree(long_path(path), **handler)
+
+
+class _Skipped:
+    def __init__(self):
+        self.lines, self.extra = [], 0
+
+    def add(self, relative: str, reason: str) -> None:
+        if len(self.lines) < SKIP_LIMIT:
+            self.lines.append(f"{relative}: {reason}")
+        else:
+            self.extra += 1
+
+    def report(self) -> list[str]:
+        return self.lines + ([f"and {self.extra} more not listed"] if self.extra else [])
+
+
+def _copy_dir(source: str, target: str, prefix: str, skipped: _Skipped) -> None:
+    try:
+        entries = sorted(os.scandir(source), key=lambda item: item.name)
+    except OSError as error:
+        if error.errno in HARNESS_ERRNOS:
+            raise
+        skipped.add(prefix.rstrip("/") or ".", f"unreadable directory: {error.strerror or type(error).__name__}")
+        return
+    for entry in entries:
+        relative, copy = prefix + entry.name, os.path.join(target, entry.name)
+        try:
+            if is_link(Path(entry.path)):
+                continue
+            if entry.is_dir(follow_symlinks=False):
+                os.mkdir(copy)
+                _copy_dir(entry.path, copy, relative + "/", skipped)
+            elif stat.S_ISREG(entry.stat(follow_symlinks=False).st_mode):
+                shutil.copy2(entry.path, copy)
+            else:
+                skipped.add(relative, "not a regular file (pipe, socket or device)")
+        except OSError as error:
+            if error.errno in HARNESS_ERRNOS:
+                raise
+            skipped.add(relative, error.strerror or type(error).__name__)
+            try:
+                os.unlink(copy)
+            except OSError:
+                pass
+
+
+def capture(workspace: Path, dest: Path) -> list[str]:
+    """Copy the final workspace to `dest` for grading; links are neither followed nor copied.
+
+    An entry the solver left that cannot be copied (a pipe or socket, an unreadable file or folder, a name the host
+    refuses) is skipped, not fatal: the workspace is graded as captured. Returns the skipped entries as
+    'path: reason' lines, at most SKIP_LIMIT of them and then a count. Only a fault of the host (no destination, a
+    full disk, exhausted handles) raises. Windows long paths are handled.
+    """
     workspace, dest = Path(workspace), Path(dest)
     if dest.exists():
         raise FileExistsError(f"{dest} already exists")
-    dest.mkdir(parents=True)
-    for path, kind in walk(workspace):
-        target = dest / path.relative_to(workspace)
-        if kind == "dir":
-            target.mkdir(parents=True, exist_ok=True)
-        elif kind == "file":
-            shutil.copy2(path, target)
+    os.makedirs(long_path(dest))
+    skipped = _Skipped()
+    _copy_dir(long_path(workspace), long_path(dest), "", skipped)
+    return skipped.report()

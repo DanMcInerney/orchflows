@@ -365,5 +365,64 @@ class RescoreAndCompareTests(Case):
         self.assertEqual(self.run_cli("compare", "--a", full, "--b", self.tmp / "none")[0], 2)
 
 
+class SplitTests(Case):
+    """Development and held-out tasks are selected, reported and compared apart."""
+
+    def setUp(self):
+        super().setUp()
+        self.edit("tasks/t02/task.toml", 'split = "development"', 'split = "held-out"')
+
+    def test_a_mixed_run_reports_each_split_and_never_a_pooled_headline(self):
+        code, out, err = self.run_cli("full", "--agent", agent("wrong"), "--output", self.out, "--repeats", 1)
+        self.assertEqual(code, 0, err)
+        summary = self.summary()
+        self.assertEqual(sorted(summary["splits"]), ["development", "held-out"])
+        self.assertEqual({name: task["split"] for name, task in summary["tasks"].items()}, {"t01": "development", "t02": "held-out"})
+        self.assertEqual((summary["overall"]["split"], summary["overall"]["scored_tasks"]), ("held-out", 1))
+        self.assertIn("  development: full_success_rate 0, mean_credit 0.5 over 1 tasks", out)
+        self.assertIn("  held-out: full_success_rate 0, mean_credit 0.5 over 1 tasks", out)
+        self.assertNotIn("units scored, 0 passed, 0 unscored; full_success_rate", out)
+        self.assertEqual(shapes.run_problems(self.out), [])
+
+    def test_split_runs_one_split_alone(self):
+        code, _, err = self.run_cli("full", "--agent", "@reference", "--output", self.out, "--split", "held-out", "--repeats", 1)
+        self.assertEqual(code, 0, err)
+        self.assertEqual(sorted(self.summary()["tasks"]), ["t02"])
+        self.assertEqual(json.loads((self.out / "run.json").read_text(encoding="utf-8"))["split"], "held-out")
+
+    def test_an_empty_selection_is_refused_not_run(self):
+        for argv in (("full", "--split", "development", "--tasks", "t02"), ("smoke", "--split", "held-out")):
+            code, _, err = self.run_cli(*argv, "--agent", "@noop", "--output", self.tmp / "none")
+            self.assertEqual(code, 2, err)
+            self.assertIn("no task is selected", err)
+            self.assertFalse((self.tmp / "none").exists())
+
+    @mock.patch.object(cli.selfcheck, "run", return_value={"checks": [], "platform": "test"})   # timing checks are not under test
+    def test_preflight_refuses_an_empty_selection_and_notes_a_mixed_one(self, _selfcheck):
+        self.edit("tasks/t02/task.toml", 'split = "held-out"', 'split = "development"')
+        code, out, err = self.run_cli("preflight", "--split", "held-out")
+        self.assertEqual((code, "traceback" in (out + err).lower()), (2, False))
+        self.assertIn("no task is selected", out)
+        self.edit("tasks/t02/task.toml", 'split = "development"', 'split = "held-out"')
+        code, out, err = self.run_cli("preflight")
+        self.assertEqual(code, 0, out + err)
+        self.assertIn("note: the selection spans the development and held-out splits", out)
+        code, out, err = self.run_cli("preflight", "--split", "held-out")
+        self.assertEqual(code, 0, out + err)
+        self.assertNotIn("spans", out)
+        self.assertIn("planned attempts: 2 (1 tasks x 2 repeats)", out)
+
+    def test_compare_warns_on_mixed_splits_and_can_take_one(self):
+        good, wrong = self.tmp / "good", self.tmp / "wrong"
+        self.run_cli("full", "--agent", agent("good"), "--output", good, "--repeats", 1)
+        self.run_cli("full", "--agent", agent("wrong"), "--output", wrong, "--repeats", 1)
+        mixed = json.loads(self.run_cli("compare", "--a", good, "--b", wrong)[1])
+        self.assertEqual((mixed["common"], mixed["warnings"]),
+                         (2, ["the tasks span the development and held-out splits and are paired together; --split compares one"]))
+        one = json.loads(self.run_cli("compare", "--a", good, "--b", wrong, "--split", "held-out")[1])
+        self.assertEqual((one["common"], one["per_task"], one["split"], one["warnings"]), (1, {"t02": 1.0}, "held-out", []))
+        self.assertEqual((one["a"]["overall"], one["b"]["overall"]), (1.0, 0.0))
+
+
 if __name__ == "__main__":
     unittest.main()

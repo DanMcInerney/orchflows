@@ -46,6 +46,22 @@ def _provision(commands: list, cwd: Path, problems: list) -> list[dict]:
     return done
 
 
+def _plan_notes(suite, plan, tasks, split) -> list[str]:
+    notes = []
+    if suite.launch_budget is not None and suite.launch_budget < plan["planned_attempts"]:
+        notes.append(f"launch_budget {suite.launch_budget} is below the {plan['planned_attempts']} planned attempts")
+    if suite.launch_budget is None:
+        notes.append("suite.json declares no launch_budget")
+    longest = max(plan["attempt_caps_seconds"].values())
+    if suite.deadline_seconds is not None and suite.deadline_seconds < longest:
+        notes.append(f"deadline_seconds {suite.deadline_seconds:g} is below the longest attempt cap {longest:g}: such attempts never start")
+    kinds = sorted({task.split for task in tasks})
+    if len(kinds) > 1:
+        notes.append(f"the selection spans the {' and '.join(kinds)} splits: results are reported per split, never pooled; "
+                     "--split runs one alone")
+    return notes
+
+
 def preflight(root: Path, args) -> int:
     """Validate the package, provision its environments once, run the selfchecks and show the plan. No model calls."""
     suite, problems = suites.read(root)
@@ -72,16 +88,14 @@ def preflight(root: Path, args) -> int:
             notes.append(f"adapters/{folder.name} has no run_agent.py")
     if suite is not None:
         problems += suites.staging_problems(list(suite.tasks.values()))
-        tasks = suites.select(suite, args.profile)
-        repeats = suites.repeats_for(suite, args.profile)
-        report["plan"] = suites.plan(suite, tasks, repeats, jobs=suite.concurrency, deadline=suite.deadline_seconds)
-        if suite.launch_budget is not None and suite.launch_budget < report["plan"]["planned_attempts"]:
-            notes.append(f"launch_budget {suite.launch_budget} is below the {report['plan']['planned_attempts']} planned attempts")
-        if suite.launch_budget is None:
-            notes.append("suite.json declares no launch_budget")
-        longest = max(report["plan"]["attempt_caps_seconds"].values())
-        if suite.deadline_seconds is not None and suite.deadline_seconds < longest:
-            notes.append(f"deadline_seconds {suite.deadline_seconds:g} is below the longest attempt cap {longest:g}: such attempts never start")
+        tasks = suites.select(suite, args.profile, split=args.split)
+        if not tasks:
+            problems.append(f"no task is selected: the {args.profile} profile" + (f" with the {args.split} split" if args.split else "")
+                            + " matches none")
+        else:
+            repeats = suites.repeats_for(suite, args.profile)
+            report["plan"] = suites.plan(suite, tasks, repeats, jobs=suite.concurrency, deadline=suite.deadline_seconds)
+            notes += _plan_notes(suite, report["plan"], tasks, args.split)
     if problems:
         print("preflight refused:\n  " + "\n  ".join(problems))
         return REFUSED
@@ -122,10 +136,16 @@ def _print_preflight(suite, report, agent, profile):
 
 def _finish(result: runner.Result, out: Path) -> int:
     summary = result.summary
-    counts, overall = summary["counts"], summary["overall"]
-    print(f"{summary['run']['profile']}: {counts['scored']}/{counts['planned']} units scored, {counts['passed']} passed, "
-          f"{counts['unscored']} unscored; full_success_rate {_rate(overall['full_success_rate'])}, "
-          f"mean_credit {_rate(overall['mean_credit'])}; wall {_seconds(summary['run']['wall_seconds'])}")
+    counts, overall, splits = summary["counts"], summary["overall"], summary["splits"]
+    head = f"{summary['run']['profile']}: {counts['scored']}/{counts['planned']} units scored, {counts['passed']} passed, {counts['unscored']} unscored"
+    if len(splits) > 1:
+        print(f"{head}; wall {_seconds(summary['run']['wall_seconds'])}")
+        for name, rollup in splits.items():
+            print(f"  {name}: full_success_rate {_rate(rollup['full_success_rate'])}, mean_credit {_rate(rollup['mean_credit'])} "
+                  f"over {rollup['scored_tasks']} tasks (reported apart, never pooled)")
+    else:
+        print(f"{head}; full_success_rate {_rate(overall['full_success_rate'])}, mean_credit {_rate(overall['mean_credit'])}; "
+              f"wall {_seconds(summary['run']['wall_seconds'])}")
     print(f"state: {result.state}; summary at {out / 'summary.json'}")
     if result.code in (STOPPED, INTERRUPTED):
         by = counts["by_status"]
@@ -144,7 +164,7 @@ def run_profile(root: Path, args) -> int:
         band = (low, high, args.level)
     only = [name for name in args.tasks.split(",") if name] if args.tasks else None
     return _finish(runner.start(suite, args.output, args.agent, profile=args.command, repeats=args.repeats, jobs=args.jobs,
-                                deadline=args.deadline, only=only, stop_band=band), Path(args.output).resolve())
+                                deadline=args.deadline, only=only, split=args.split, stop_band=band), Path(args.output).resolve())
 
 
 def resume(root: Path, args) -> int:
@@ -179,7 +199,7 @@ def grade(root: Path, args) -> int:
 
 def compare(root: Path, args) -> int:
     try:
-        result = records.compare(Path(args.a), Path(args.b), args.metric)
+        result = records.compare(Path(args.a), Path(args.b), args.metric, args.split)
     except ValueError as error:
         raise Refused(str(error)) from None
     text = json.dumps(result, indent=2)
@@ -196,6 +216,7 @@ def parser() -> argparse.ArgumentParser:
     pre = sub.add_parser("preflight", help="validate the package, provision it, run the selfchecks and show the plan; no model calls")
     pre.add_argument("--agent", help="an agent directory, @reference or @noop, to check")
     pre.add_argument("--profile", choices=shapes.PROFILES, default="full")
+    pre.add_argument("--split", choices=shapes.SPLITS, help="plan only the tasks of this split")
     pre.add_argument("--report", help="write the full preflight report here as JSON")
     pre.set_defaults(handler=preflight)
 
@@ -207,6 +228,7 @@ def parser() -> argparse.ArgumentParser:
         run.add_argument("--jobs", type=int)
         run.add_argument("--deadline", type=float, help="seconds; no attempt starts whose cap would pass it")
         run.add_argument("--tasks", help="comma-separated task ids to run instead of the profile's tasks")
+        run.add_argument("--split", choices=shapes.SPLITS, help="run only the tasks of this split")
         run.add_argument("--stop-band", type=float, nargs=2, metavar=("LOW", "HIGH"),
                          help="stop a task's remaining repeats once its full-success interval is settled against this band")
         run.add_argument("--level", type=float, default=0.9, help="confidence level for --stop-band")
@@ -233,6 +255,7 @@ def parser() -> argparse.ArgumentParser:
     pair.add_argument("--a", required=True)
     pair.add_argument("--b", required=True)
     pair.add_argument("--metric", choices=shapes.PRIMARY, default="full_success_rate")
+    pair.add_argument("--split", choices=shapes.SPLITS, help="compare only the tasks of this split")
     pair.add_argument("--output", help="also write the comparison here as JSON")
     pair.set_defaults(handler=compare)
     return top

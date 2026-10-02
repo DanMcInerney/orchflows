@@ -48,7 +48,8 @@ def blank_row(task: str, repeat: int, retry: int) -> dict:
     return {"task": task, "repeat": repeat, "retry": retry, "status": "not-launched", "reason": "", "started": None,
             "finished": None, "seconds": None, "exit_code": None, "model": None, "cost_usd": None, "left_running": False,
             "grading_status": "unscored", "full_success": None, "credit": None, "credit_bounds": None, "dimensions": {},
-            "critical_failures": [], "grade_reason": "", "grading_seconds": None, "workspace": None, "transcript": None}
+            "critical_failures": [], "grade_reason": "", "grading_seconds": None, "workspace": None, "transcript": None,
+            "capture_skipped": []}
 
 
 def attempt_rows(records: list[dict]) -> list[dict]:
@@ -189,14 +190,18 @@ def grade_tree(suite: Suite, source: Path, jobs: int = 4) -> list[dict]:
         return list(pool.map(one, found))
 
 
-def _describe(path: Path, summary: dict, metric: str) -> dict:
+def _describe(path: Path, summary: dict, metric: str, split: str | None) -> dict:
     run = summary["run"]
+    rollup = summary.get("splits", {}).get(split, {}) if split else summary["overall"]
     return {"output": str(path), "agent": run["agent"], "profile": run["profile"], "repeats": run["repeats"],
-            "overall": summary["overall"].get(metric)}
+            "overall": rollup.get(metric)}
 
 
-def compare(a: Path, b: Path, metric: str = "full_success_rate") -> dict:
-    """Paired per-task differences a - b between two runs, with the runs' identities and any mismatch."""
+def compare(a: Path, b: Path, metric: str = "full_success_rate", split: str | None = None) -> dict:
+    """Paired per-task differences a - b between two runs, with the runs' identities and any mismatch.
+
+    `split` keeps the tasks of that split; without it, tasks of several splits are paired together and a warning says so.
+    """
     summaries = []
     for path in (a, b):
         try:
@@ -204,8 +209,18 @@ def compare(a: Path, b: Path, metric: str = "full_success_rate") -> dict:
         except (OSError, ValueError) as error:
             raise ValueError(f"{path}: no readable summary.json ({error})") from None
     first, second = summaries
-    result = aggregate.paired(first, second, metric=metric, clusters={})
-    warnings = [f"{key} differs: {first[section][key]!r} vs {second[section][key]!r}"
-                for section, key in (("suite", "name"), ("run", "profile"), ("run", "repeats"))
-                if first[section][key] != second[section][key]]
-    return {"metric": metric, "a": _describe(a, first, metric), "b": _describe(b, second, metric), "warnings": warnings, **result}
+    warnings = []
+    if split is None:
+        spans = sorted({entry.get("split") or "unspecified" for summary in summaries for entry in summary["tasks"].values()})
+        if len(spans) > 1:
+            warnings.append(f"the tasks span the {' and '.join(spans)} splits and are paired together; --split compares one")
+        result = aggregate.paired(first, second, metric=metric, clusters={})
+    else:
+        def of(summary):
+            return {name: entry for name, entry in summary["tasks"].items() if entry.get("split") == split}
+        result = aggregate.paired(of(first), of(second), metric=metric, clusters={})
+    warnings += [f"{key} differs: {first[section][key]!r} vs {second[section][key]!r}"
+                 for section, key in (("suite", "name"), ("run", "profile"), ("run", "repeats"))
+                 if first[section][key] != second[section][key]]
+    return {"metric": metric, "split": split, "a": _describe(a, first, metric, split), "b": _describe(b, second, metric, split),
+            "warnings": warnings, **result}

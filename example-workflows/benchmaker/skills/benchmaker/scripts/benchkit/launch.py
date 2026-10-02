@@ -173,7 +173,11 @@ class _JobTree:
 
 
 class _GroupTree:
-    """POSIX: the root leads a session whose process group holds every descendant."""
+    """POSIX: the root leads a session whose process group holds every descendant that stays in it.
+
+    A descendant that starts its own session (setsid) leaves the group, survives the kill and is not reported;
+    the standard library offers no portable way to find it again (INTERFACE.md states the limit).
+    """
 
     def __init__(self, grace):
         self.grace, self.proc = grace, None
