@@ -1,0 +1,90 @@
+{
+ "description": "Latest start with a room that is busy from 11:30.",
+ "request": {
+  "title": "Sync",
+  "attendees": [
+   "ana",
+   "bo"
+  ],
+  "optional": [],
+  "duration_minutes": 30,
+  "granularity_minutes": 30,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-05T12:00+00:00"
+  },
+  "preference": "latest",
+  "priority": "normal"
+ },
+ "policy": {
+  "rules": []
+ },
+ "calendars": {
+  "ana": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": [
+    {
+     "id": "ev-a1",
+     "title": "Check-in",
+     "kind": "meeting",
+     "start": "2026-10-05T10:00+00:00",
+     "end": "2026-10-05T10:30+00:00"
+    }
+   ]
+  },
+  "bo": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": []
+  }
+ },
+ "rooms": {
+  "birch": {
+   "capacity": 2,
+   "features": [],
+   "events": [
+    {
+     "id": "ev-r1",
+     "title": "Hold",
+     "kind": "meeting",
+     "start": "2026-10-05T11:30+00:00",
+     "end": "2026-10-05T12:00+00:00"
+    }
+   ]
+  }
+ },
+ "expect": {
+  "first": "2026-10-05T09:00+00:00",
+  "last": "2026-10-05T11:00+00:00",
+  "count": 4,
+  "rooms_at_first": [
+   "birch"
+  ],
+  "wrong": []
+ }
+}

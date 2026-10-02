@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Python/acme@widgets/failed/900000001.log</Log>
+    <Keywords>FAILURES, test_render, AssertionError</Keywords>
+    <Category>0</Category>
+    <Chunk>[31m[1m_______________________ test_render_table_width _______________________[0m
+
+widths = [4, 12, 9]
+
+[1m    def test_render_table_width(widths):[0m
+[1m        table = render_table(ROWS, widths=widths)[0m
+[1m&gt;       assert max(len(r) for r in table.splitlines()) = sum(widths) + 4[0m
+[1m[31mE       assert 29 = 29 + 4 is False[0m
+[1m[31mE        +  where 29 = built-in function max&gt;(generator object test_render_table_width.locals&gt;.genexpr&gt; at 0x7f3c1c2d&gt;)[0m
+
+[1m[31mtests/test_render.py[0m:31: AssertionError</Chunk>
+  </Example>
+  <Example>
+    <Log>Python/acme@widgets/failed/900000002.log</Log>
+    <Keywords>E501, flake8</Keywords>
+    <Category>0</Category>
+    <Chunk>widgets/cli.py:14:80: E501 line too long (92 &gt; 79 characters)</Chunk>
+  </Example>
+</Examples>

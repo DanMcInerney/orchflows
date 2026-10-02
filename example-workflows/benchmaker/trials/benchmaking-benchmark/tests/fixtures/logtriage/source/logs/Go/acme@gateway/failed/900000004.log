@@ -1,0 +1,60 @@
+Using worker: worker-linux-docker-1a2b3c4d.prod.travis-ci.org:travis-linux-7
+
+travis_fold:start:system_info
+[0K[33;1mBuild system information[0m
+Build language: go
+Build group: stable
+Build dist: xenial
+travis_fold:end:system_info
+
+[0Ktravis_fold:start:git.checkout
+[0K$ git clone --depth=50 https://github.com/acme/gateway.git acme/gateway
+Cloning into 'acme/gateway'...
+remote: Enumerating objects: 412, done.
+remote: Total 412 (delta 0), reused 0 (delta 0), pack-reused 412
+travis_fold:end:git.checkout
+
+[0K$ go get -t ./...
+go: finding github.com/acme/errors v0.3.1
+go: downloading github.com/acme/errors v0.3.1
+[0K$ make build
+go build -ldflags "-X main.version=1.8.0" ./cmd/gateway
+# github.com/acme/gateway/internal/router
+internal/router/router.go:57:19: undefined: handlers.NewTimeoutHandler
+internal/router/router.go:61:3: cannot use cfg (type Config) as type *Config in argument to Mount
+make: *** [build] Error 2
+[0Ktravis_time:end:0001c1a0:start=1580000100,finish=1580000130,duration=30000
+[0Ktravis_time:end:0011c1a0:start=1580001100,finish=1580001130,duration=30001
+[0Ktravis_time:end:0021c1a0:start=1580002100,finish=1580002130,duration=30002
+[0Ktravis_time:end:0031c1a0:start=1580003100,finish=1580003130,duration=30003
+[0Ktravis_time:end:0041c1a0:start=1580004100,finish=1580004130,duration=30004
+[0Ktravis_time:end:0051c1a0:start=1580005100,finish=1580005130,duration=30005
+[0Ktravis_time:end:0061c1a0:start=1580006100,finish=1580006130,duration=30006
+[0Ktravis_time:end:0071c1a0:start=1580007100,finish=1580007130,duration=30007
+[0Ktravis_time:end:0081c1a0:start=1580008100,finish=1580008130,duration=30008
+[0Ktravis_time:end:0091c1a0:start=1580009100,finish=1580009130,duration=30009
+[0Ktravis_time:end:00a1c1a0:start=1580010100,finish=1580010130,duration=30010
+[0Ktravis_time:end:00b1c1a0:start=1580011100,finish=1580011130,duration=30011
+[0Ktravis_time:end:00c1c1a0:start=1580012100,finish=1580012130,duration=30012
+[0Ktravis_time:end:00d1c1a0:start=1580013100,finish=1580013130,duration=30013
+[0Ktravis_time:end:00e1c1a0:start=1580014100,finish=1580014130,duration=30014
+[0Ktravis_time:end:00f1c1a0:start=1580015100,finish=1580015130,duration=30015
+[0Ktravis_time:end:0101c1a0:start=1580016100,finish=1580016130,duration=30016
+[0Ktravis_time:end:0111c1a0:start=1580017100,finish=1580017130,duration=30017
+[0Ktravis_time:end:0121c1a0:start=1580018100,finish=1580018130,duration=30018
+[0Ktravis_time:end:0131c1a0:start=1580019100,finish=1580019130,duration=30019
+[0Ktravis_time:end:0141c1a0:start=1580020100,finish=1580020130,duration=30020
+[0Ktravis_time:end:0151c1a0:start=1580021100,finish=1580021130,duration=30021
+[0Ktravis_time:end:0161c1a0:start=1580022100,finish=1580022130,duration=30022
+[0Ktravis_time:end:0171c1a0:start=1580023100,finish=1580023130,duration=30023
+[0Ktravis_time:end:0181c1a0:start=1580024100,finish=1580024130,duration=30024
+[0Ktravis_time:end:0191c1a0:start=1580025100,finish=1580025130,duration=30025
+[0Ktravis_time:end:01a1c1a0:start=1580026100,finish=1580026130,duration=30026
+[0Ktravis_time:end:01b1c1a0:start=1580027100,finish=1580027130,duration=30027
+[0Ktravis_time:end:01c1c1a0:start=1580028100,finish=1580028130,duration=30028
+[0Ktravis_time:end:01d1c1a0:start=1580029100,finish=1580029130,duration=30029
+Checking for errors in output cache: 0 errors, 0 failures
+
+[31;1mThe command "make build" exited with 2.[0m
+
+Done. Your build exited with 2.

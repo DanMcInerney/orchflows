@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Java/tidewater@ledger-core/failed/990000201.log</Log>
+    <Keywords>COMPILATION ERROR, cannot find symbol</Keywords>
+    <Category>0</Category>
+    <Chunk>[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /home/travis/build/tidewater/ledger-core/src/main/java/io/tidewater/ledger/posting/PostingEngine.java:[88,37] cannot find symbol
+  symbol:   method withCurrency(java.util.Currency)
+  location: class io.tidewater.ledger.model.Money
+[ERROR] /home/travis/build/tidewater/ledger-core/src/main/java/io/tidewater/ledger/posting/PostingEngine.java:[104,21] incompatible types: java.lang.String cannot be converted to io.tidewater.ledger.model.AccountId
+[INFO] 2 errors 
+[INFO] -------------------------------------------------------------</Chunk>
+  </Example>
+  <Example>
+    <Log>Java/tidewater@ledger-core/failed/990000202.log</Log>
+    <Keywords>FAILURE, AssertionFailedError, PostingEngineTest</Keywords>
+    <Category>0</Category>
+    <Chunk>[ERROR] Tests run: 9, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.412 s  FAILURE! - in io.tidewater.ledger.posting.PostingEngineTest
+[ERROR] reversesCompoundEntries  Time elapsed: 0.031 s   FAILURE!
+org.opentest4j.AssertionFailedError: expected: 120.00&gt; but was: 119.99&gt;
+	at org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:55)
+	at org.junit.jupiter.api.AssertionUtils.failNotEqual(AssertionUtils.java:62)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:182)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:177)
+	at io.tidewater.ledger.posting.PostingEngineTest.reversesCompoundEntries(PostingEngineTest.java:203)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:566)
+</Chunk>
+  </Example>
+  <Example>
+    <Log>Java/tidewater@ledger-core/failed/990000903.log</Log>
+    <Keywords>FAILURE, Build failed, Gradle</Keywords>
+    <Category>0</Category>
+    <Chunk>FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugJavaWithJavac'.
+&gt; Compilation failed; see the compiler error output for details.</Chunk>
+  </Example>
+</Examples>

@@ -1,0 +1,51 @@
+Using worker: worker-linux-docker-1a2b3c4d.prod.travis-ci.org:travis-linux-7
+
+travis_fold:start:system_info
+[0K[33;1mBuild system information[0m
+Build language: python
+Build group: stable
+Build dist: xenial
+travis_fold:end:system_info
+
+[0Ktravis_fold:start:git.checkout
+[0K$ git clone --depth=50 https://github.com/acme/widgets.git acme/widgets
+Cloning into 'acme/widgets'...
+remote: Enumerating objects: 412, done.
+remote: Total 412 (delta 0), reused 0 (delta 0), pack-reused 412
+travis_fold:end:git.checkout
+
+[0K$ pip install -r requirements.txt
+Collecting requests==2.22.0
+  Downloading package_0-1.0.0-py2.py3-none-any.whl (100 kB)
+  Downloading package_1-1.1.0-py2.py3-none-any.whl (110 kB)
+  Downloading package_2-1.2.0-py2.py3-none-any.whl (120 kB)
+  Downloading package_3-1.3.0-py2.py3-none-any.whl (130 kB)
+  Downloading package_4-1.4.0-py2.py3-none-any.whl (140 kB)
+  Downloading package_5-1.5.0-py2.py3-none-any.whl (150 kB)
+Successfully installed requests-2.22.0 urllib3-1.25.8
+[32;1mThe command "pip install -r requirements.txt" exited with 0.[0m
+[0K$ pytest -q
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.7.1, pytest-5.3.2
+collected 41 items
+
+tests/test_cli.py [32m.....[0m[36m                                                   [ 12%][0m
+tests/test_config.py [32m......[0m[36m                                              [ 26%][0m
+tests/test_errors.py [32m...[0m[36m                                                 [ 34%][0m
+tests/test_render.py [32m...[0m[31mF[0m[36m                                              [ 41%][0m
+[31m[1m_______________________ test_render_table_width _______________________[0m
+
+widths = [4, 12, 9]
+
+[1m    def test_render_table_width(widths):[0m
+[1m        table = render_table(ROWS, widths=widths)[0m
+[1m>       assert max(len(r) for r in table.splitlines()) <= sum(widths) + 4[0m
+[1m[31mE       assert 29 <= 29 + 4 is False[0m
+[1m[31mE        +  where 29 = <built-in function max>(<generator object test_render_table_width.<locals>.<genexpr> at 0x7f3c1c2d>)[0m
+
+[1m[31mtests/test_render.py[0m:31: AssertionError
+[31m[1m========================= 1 failed, 40 passed in 3.18s =========================[0m
+
+[31;1mThe command "pytest -q" exited with 1.[0m
+
+Done. Your build exited with 1.

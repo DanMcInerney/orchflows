@@ -1,0 +1,2 @@
+# The repository ignores *.log; the synthetic offline instances are committed logs.
+!*.log

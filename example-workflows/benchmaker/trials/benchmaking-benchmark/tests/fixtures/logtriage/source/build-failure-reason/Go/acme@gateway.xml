@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Go/acme@gateway/failed/900000003.log</Log>
+    <Keywords>FAIL, --- FAIL</Keywords>
+    <Category>0</Category>
+    <Chunk>--- FAIL: TestRouteTimeout (0.31s)
+    router_test.go:88: expected 504, got 200
+    router_test.go:91: upstream was called 2 times, want 1
+FAIL
+FAIL	github.com/acme/gateway/internal/router	0.452s</Chunk>
+  </Example>
+  <Example>
+    <Log>Go/acme@gateway/failed/900000004.log</Log>
+    <Keywords>undefined, Error 2</Keywords>
+    <Category>0</Category>
+    <Chunk># github.com/acme/gateway/internal/router
+internal/router/router.go:57:19: undefined: handlers.NewTimeoutHandler
+internal/router/router.go:61:3: cannot use cfg (type Config) as type *Config in argument to Mount</Chunk>
+  </Example>
+</Examples>

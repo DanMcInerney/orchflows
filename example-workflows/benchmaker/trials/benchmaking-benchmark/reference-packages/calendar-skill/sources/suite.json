@@ -1,0 +1,4 @@
+{"name": "calendar-dev", "repeats": 3, "concurrency": 6, "deadline_seconds": 7200, "grace_seconds": 5,
+ "attempt_seconds_estimate": 60, "attempt_cost_estimate_usd": 0.1, "transient_retry_budget": 0,
+ "provision": [], "observe": [["python", "--version"]],
+ "metrics": {"primary": "full_success_rate"}}

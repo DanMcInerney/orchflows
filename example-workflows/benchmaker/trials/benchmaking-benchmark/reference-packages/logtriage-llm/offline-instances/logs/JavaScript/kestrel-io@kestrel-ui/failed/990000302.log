@@ -1,0 +1,116 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 77bbd2de-a5a1-7a50-7c3e-bc2eb7b92db4@1.production-2-worker-org-gce-24vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/8b514407bafe6860fd018673ab437129b076f8bd
+instance: travis-job-e03bdfa2-37bf-a75a-4e3e-4228bf7b4422 travis-ci-sardonyx-bionic-1553530528-f909ac5 (via amqp)
+startup: 5.502899857s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: node_js
+Build group: stable
+Build dist: bionic
+Build id: 990000302
+Job id: 990000303
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Thu Dec  3 11:12:31 UTC 2020
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:207d2e65[0K$ git clone --depth=50 --branch=master https://github.com/kestrel-io/kestrel-ui.git kestrel-io/kestrel-ui
+Cloning into 'kestrel-io/kestrel-ui'...
+remote: Enumerating objects: 6702, done.remote: Counting objects:  50% (3351/6702)remote: Counting objects: 100% (6702/6702), done.remote: Compressing objects: 100% (2234/2234), done.
+remote: Total 6702 (delta 1675), reused 6612 (delta 1675), pack-reused 0Receiving objects: 100% (6702/6702), 39.37 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1675/1675), done.
+travis_time:end:207d2e65:start=1607001151000000000,finish=1607001153100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd kestrel-io/kestrel-ui
+$ git checkout -qf 10f3c58eed1d3c206d8eff80e89e885ed34b2a7d
+$ nvm install 15
+Downloading and installing node v15.14.0...
+Downloading https://nodejs.org/dist/v15.14.0/node-v15.14.0-linux-x64.tar.xz...
+########                                                            11.4%############################################                        62.0%######################################################################100.0%
+Computing checksum with sha256sum
+Checksums matched!
+Now using node v15.14.0 (npm v7.7.6)
+$ node --version
+v15.14.0
+$ npm --version
+7.7.6
+travis_fold:start:install[0Ktravis_time:start:2c2f8e43[0K$ npm install
+npm ERR! code ERESOLVE
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! 
+npm ERR! While resolving: kestrel-ui@3.4.0
+npm ERR! Found: react@17.0.2
+npm ERR! node_modules/react
+npm ERR!   react@"^17.0.2" from the root project
+npm ERR!   peer react@">=16.8.0" from @kestrel-io/theme@2.1.0
+npm ERR!   node_modules/@kestrel-io/theme
+npm ERR!     @kestrel-io/theme@"^2.1.0" from the root project
+npm ERR! 
+npm ERR! Could not resolve dependency:
+npm ERR! peer react@"^18.0.0" from react-aria-hooks@4.0.1
+npm ERR! node_modules/react-aria-hooks
+npm ERR!   react-aria-hooks@"^4.0.1" from the root project
+npm ERR! 
+npm ERR! Fix the upstream dependency conflict, or retry
+npm ERR! this command with --force, or --legacy-peer-deps
+npm ERR! to accept an incorrect (and potentially broken) dependency resolution.
+npm ERR! 
+npm ERR! See /home/travis/.npm/eresolve-report.txt for a full report.
+
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /home/travis/.npm/_logs/2020-12-03T11_12_31_912Z-debug.log
+travis_time:end:2c2f8e43:start=1607001153100000000,finish=1607001162100000000,duration=9000000000[0Ktravis_fold:end:install[0K[0K[31;1mThe command "npm install" failed and exited with 1 during [0m.
+
+Your build has been stopped.

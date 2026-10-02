@@ -1,0 +1,64 @@
+{
+ "description": "Any valid start is accepted.",
+ "request": {
+  "title": "Sync",
+  "attendees": [
+   "ana",
+   "bo"
+  ],
+  "optional": [],
+  "duration_minutes": 60,
+  "granularity_minutes": 60,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-05T12:00+00:00"
+  },
+  "preference": "any",
+  "priority": "normal"
+ },
+ "policy": {
+  "rules": []
+ },
+ "calendars": {
+  "ana": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": []
+  },
+  "bo": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": []
+  }
+ },
+ "expect": {
+  "first": "2026-10-05T09:00+00:00",
+  "last": "2026-10-05T11:00+00:00",
+  "count": 3,
+  "wrong": []
+ }
+}

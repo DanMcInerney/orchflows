@@ -1,0 +1,21 @@
+Using worker: worker-linux-docker-5e6f7a8b.prod.travis-ci.org:travis-linux-3
+
+travis_fold:start:system_info
+Build language: shell
+travis_fold:end:system_info
+
+[0K$ git clone --depth=50 https://github.com/acme/deploy-scripts.git
+Cloning into 'acme/deploy-scripts'...
+Receiving objects:  50% (210/420)Receiving objects: 100% (420/420), done.
+
+[0K$ ./ci/lint.sh
+checking 14 scripts...
+ok build.sh
+ok deploy.sh
+shellcheck: deploy.sh:31:7: error: Double quote to prevent globbing and word splitting. [SC2086]
+shellcheck: deploy.sh:44:1: error: Use $(...) notation instead of legacy backticks. [SC2006]
+2 scripts have issues
+
+[31;1mThe command "./ci/lint.sh" exited with 1.[0m
+
+Done. Your build exited with 1.

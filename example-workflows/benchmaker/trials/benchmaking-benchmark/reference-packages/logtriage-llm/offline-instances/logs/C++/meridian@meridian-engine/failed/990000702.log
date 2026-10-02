@@ -1,0 +1,861 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 3e51c08d-1de3-d5f4-c2e0-b5d545ee3231@1.production-2-worker-org-gce-21vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/f6b3bf720e44225fa4532e316a400f0248d8d3bf
+instance: travis-job-bf882779-93bb-66ad-ff07-f85373add6c8 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 8.572368984s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: cpp
+Build group: stable
+Build dist: xenial
+Build id: 990000702
+Job id: 990000703
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Fri Nov 15 06:40:12 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:12cee2c6[0K$ git clone --depth=50 --branch=master https://github.com/meridian/meridian-engine.git meridian/meridian-engine
+Cloning into 'meridian/meridian-engine'...
+remote: Enumerating objects: 6011, done.remote: Counting objects:  50% (3005/6011)remote: Counting objects: 100% (6011/6011), done.remote: Compressing objects: 100% (2003/2003), done.
+remote: Total 6011 (delta 1502), reused 5921 (delta 1502), pack-reused 0Receiving objects: 100% (6011/6011), 39.33 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1502/1502), done.
+travis_time:end:12cee2c6:start=1573800012000000000,finish=1573800014100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd meridian/meridian-engine
+$ git checkout -qf 1a67d0fd54fff3c9c14f520f7e6d6995f231eb82
+$ g++ --version
+g++ (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+travis_fold:start:before_script[0Ktravis_time:start:cbd1830e[0K$ mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
+-- The C compiler identification is GNU 5.4.0
+-- The CXX compiler identification is GNU 5.4.0
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Found Boost: /usr/include (found version "1.58.0") found components:  system filesystem
+-- Found GTest: /usr/lib/libgtest.a
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/travis/build/meridian/meridian-engine/build
+travis_time:end:cbd1830e:start=1573800014100000000,finish=1573800018100000000,duration=4000000000[0Ktravis_fold:end:before_script[0K[0K[32;1mThe command "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .." exited with 0.[0m
+travis_time:start:42eb35f7[0K$ make
+[  0%] Building CXX object src/CMakeFiles/geo.dir/core/arena.cpp.o
+[  0%] Building CXX object src/CMakeFiles/engine.dir/geo/ring.cpp.o
+[  0%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree.cpp.o
+[  0%] Building CXX object src/CMakeFiles/io.dir/net/pool.cpp.o
+[  0%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve.cpp.o
+[  0%] Building CXX object src/CMakeFiles/geo.dir/util/strings.cpp.o
+[  0%] Building CXX object src/CMakeFiles/engine.dir/core/config.cpp.o
+[  1%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox.cpp.o
+[  1%] Building CXX object src/CMakeFiles/io.dir/spatial/index.cpp.o
+[  1%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader.cpp.o
+[  1%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex.cpp.o
+[  1%] Building CXX object src/CMakeFiles/engine.dir/util/logging.cpp.o
+[  1%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon.cpp.o
+[  1%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree.cpp.o
+[  1%] Building CXX object src/CMakeFiles/solver.dir/net/http.cpp.o
+[  2%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer.cpp.o
+[  2%] Building CXX object src/CMakeFiles/engine.dir/solver/branch.cpp.o
+[  2%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_1.cpp.o
+[  2%] Building CXX object src/CMakeFiles/io.dir/geo/ring_1.cpp.o
+[  2%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_1.cpp.o
+[  2%] Building CXX object src/CMakeFiles/geo.dir/net/pool_1.cpp.o
+[  2%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_1.cpp.o
+[  3%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_1.cpp.o
+[  3%] Building CXX object src/CMakeFiles/io.dir/core/config_1.cpp.o
+[  3%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_1.cpp.o
+[  3%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_1.cpp.o
+[  3%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_1.cpp.o
+[  3%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_1.cpp.o
+[  3%] Building CXX object src/CMakeFiles/io.dir/util/logging_1.cpp.o
+[  3%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_1.cpp.o
+[  4%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_1.cpp.o
+[  4%] Building CXX object src/CMakeFiles/engine.dir/net/http_1.cpp.o
+[  4%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_1.cpp.o
+[  4%] Building CXX object src/CMakeFiles/io.dir/solver/branch_1.cpp.o
+[  4%] Building CXX object src/CMakeFiles/solver.dir/core/arena_2.cpp.o
+[  4%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_2.cpp.o
+[  4%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_2.cpp.o
+[  4%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_2.cpp.o
+[  5%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_2.cpp.o
+[  5%] Building CXX object src/CMakeFiles/solver.dir/util/strings_2.cpp.o
+[  5%] Building CXX object src/CMakeFiles/geo.dir/core/config_2.cpp.o
+[  5%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_2.cpp.o
+[  5%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_2.cpp.o
+[  5%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_2.cpp.o
+[  5%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_2.cpp.o
+[  6%] Building CXX object src/CMakeFiles/geo.dir/util/logging_2.cpp.o
+[  6%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_2.cpp.o
+[  6%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_2.cpp.o
+[  6%] Building CXX object src/CMakeFiles/io.dir/net/http_2.cpp.o
+[  6%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_2.cpp.o
+[  6%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_2.cpp.o
+[  6%] Building CXX object src/CMakeFiles/engine.dir/core/arena_3.cpp.o
+[  6%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_3.cpp.o
+[  7%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_3.cpp.o
+[  7%] Building CXX object src/CMakeFiles/solver.dir/net/pool_3.cpp.o
+[  7%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_3.cpp.o
+[  7%] Building CXX object src/CMakeFiles/engine.dir/util/strings_3.cpp.o
+[  7%] Building CXX object src/CMakeFiles/spatial.dir/core/config_3.cpp.o
+[  7%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_3.cpp.o
+[  7%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_3.cpp.o
+[  8%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_3.cpp.o
+[  8%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_3.cpp.o
+[  8%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_3.cpp.o
+[  8%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_3.cpp.o
+[  8%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_3.cpp.o
+[  8%] Building CXX object src/CMakeFiles/geo.dir/net/http_3.cpp.o
+[  8%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_3.cpp.o
+[  8%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_3.cpp.o
+[  9%] Building CXX object src/CMakeFiles/io.dir/core/arena_4.cpp.o
+[  9%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_4.cpp.o
+[  9%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_4.cpp.o
+[  9%] Building CXX object src/CMakeFiles/engine.dir/net/pool_4.cpp.o
+[  9%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_4.cpp.o
+[  9%] Building CXX object src/CMakeFiles/io.dir/util/strings_4.cpp.o
+[  9%] Building CXX object src/CMakeFiles/solver.dir/core/config_4.cpp.o
+[  9%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_4.cpp.o
+[ 10%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_4.cpp.o
+[ 10%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_4.cpp.o
+[ 10%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_4.cpp.o
+[ 10%] Building CXX object src/CMakeFiles/solver.dir/util/logging_4.cpp.o
+[ 10%] Building CXX object src/CMakeFiles/geo.dir/geo/polygon_4.cpp.o
+[ 10%] Building CXX object src/CMakeFiles/engine.dir/spatial/rtree_4.cpp.o
+[ 10%] Building CXX object src/CMakeFiles/spatial.dir/net/http_4.cpp.o
+[ 11%] Building CXX object src/CMakeFiles/io.dir/io/tile_writer_4.cpp.o
+[ 11%] Building CXX object src/CMakeFiles/solver.dir/solver/branch_4.cpp.o
+[ 11%] Building CXX object src/CMakeFiles/geo.dir/core/arena_5.cpp.o
+[ 11%] Building CXX object src/CMakeFiles/engine.dir/geo/ring_5.cpp.o
+[ 11%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree_5.cpp.o
+[ 11%] Building CXX object src/CMakeFiles/io.dir/net/pool_5.cpp.o
+[ 11%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve_5.cpp.o
+[ 11%] Building CXX object src/CMakeFiles/geo.dir/util/strings_5.cpp.o
+[ 12%] Building CXX object src/CMakeFiles/engine.dir/core/config_5.cpp.o
+[ 12%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox_5.cpp.o
+[ 12%] Building CXX object src/CMakeFiles/io.dir/spatial/index_5.cpp.o
+[ 12%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader_5.cpp.o
+[ 12%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex_5.cpp.o
+[ 12%] Building CXX object src/CMakeFiles/engine.dir/util/logging_5.cpp.o
+[ 12%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon_5.cpp.o
+[ 13%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree_5.cpp.o
+[ 13%] Building CXX object src/CMakeFiles/solver.dir/net/http_5.cpp.o
+[ 13%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer_5.cpp.o
+[ 13%] Building CXX object src/CMakeFiles/engine.dir/solver/branch_5.cpp.o
+[ 13%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_6.cpp.o
+[ 13%] Building CXX object src/CMakeFiles/io.dir/geo/ring_6.cpp.o
+[ 13%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_6.cpp.o
+[ 13%] Building CXX object src/CMakeFiles/geo.dir/net/pool_6.cpp.o
+[ 14%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_6.cpp.o
+[ 14%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_6.cpp.o
+[ 14%] Building CXX object src/CMakeFiles/io.dir/core/config_6.cpp.o
+[ 14%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_6.cpp.o
+[ 14%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_6.cpp.o
+[ 14%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_6.cpp.o
+[ 14%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_6.cpp.o
+[ 14%] Building CXX object src/CMakeFiles/io.dir/util/logging_6.cpp.o
+[ 15%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_6.cpp.o
+[ 15%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_6.cpp.o
+[ 15%] Building CXX object src/CMakeFiles/engine.dir/net/http_6.cpp.o
+[ 15%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_6.cpp.o
+[ 15%] Building CXX object src/CMakeFiles/io.dir/solver/branch_6.cpp.o
+[ 15%] Building CXX object src/CMakeFiles/solver.dir/core/arena_7.cpp.o
+[ 15%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_7.cpp.o
+[ 16%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_7.cpp.o
+[ 16%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_7.cpp.o
+[ 16%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_7.cpp.o
+[ 16%] Building CXX object src/CMakeFiles/solver.dir/util/strings_7.cpp.o
+[ 16%] Building CXX object src/CMakeFiles/geo.dir/core/config_7.cpp.o
+[ 16%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_7.cpp.o
+[ 16%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_7.cpp.o
+[ 16%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_7.cpp.o
+[ 17%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_7.cpp.o
+[ 17%] Building CXX object src/CMakeFiles/geo.dir/util/logging_7.cpp.o
+[ 17%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_7.cpp.o
+[ 17%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_7.cpp.o
+[ 17%] Building CXX object src/CMakeFiles/io.dir/net/http_7.cpp.o
+[ 17%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_7.cpp.o
+[ 17%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_7.cpp.o
+[ 18%] Building CXX object src/CMakeFiles/engine.dir/core/arena_8.cpp.o
+[ 18%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_8.cpp.o
+[ 18%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_8.cpp.o
+[ 18%] Building CXX object src/CMakeFiles/solver.dir/net/pool_8.cpp.o
+[ 18%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_8.cpp.o
+[ 18%] Building CXX object src/CMakeFiles/engine.dir/util/strings_8.cpp.o
+[ 18%] Building CXX object src/CMakeFiles/spatial.dir/core/config_8.cpp.o
+[ 18%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_8.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_8.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_8.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_8.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_8.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_8.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_8.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/geo.dir/net/http_8.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_8.cpp.o
+[ 20%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_8.cpp.o
+[ 20%] Building CXX object src/CMakeFiles/io.dir/core/arena_9.cpp.o
+[ 20%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_9.cpp.o
+[ 20%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_9.cpp.o
+[ 20%] Building CXX object src/CMakeFiles/engine.dir/net/pool_9.cpp.o
+[ 20%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_9.cpp.o
+[ 20%] Building CXX object src/CMakeFiles/io.dir/util/strings_9.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/solver.dir/core/config_9.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_9.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_9.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_9.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_9.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/solver.dir/util/logging_9.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/geo.dir/geo/polygon_9.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/engine.dir/spatial/rtree_9.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/spatial.dir/net/http_9.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/io.dir/io/tile_writer_9.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/solver.dir/solver/branch_9.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/geo.dir/core/arena_10.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/engine.dir/geo/ring_10.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree_10.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/io.dir/net/pool_10.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve_10.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/geo.dir/util/strings_10.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/engine.dir/core/config_10.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox_10.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/io.dir/spatial/index_10.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader_10.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex_10.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/engine.dir/util/logging_10.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon_10.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree_10.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/solver.dir/net/http_10.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer_10.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/engine.dir/solver/branch_10.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_11.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/io.dir/geo/ring_11.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_11.cpp.o
+[ 25%] Building CXX object src/CMakeFiles/geo.dir/net/pool_11.cpp.o
+[ 25%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_11.cpp.o
+[ 25%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_11.cpp.o
+[ 25%] Building CXX object src/CMakeFiles/io.dir/core/config_11.cpp.o
+[ 25%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_11.cpp.o
+[ 25%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_11.cpp.o
+[ 25%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_11.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_11.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/io.dir/util/logging_11.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_11.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_11.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/engine.dir/net/http_11.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_11.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/io.dir/solver/branch_11.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/solver.dir/core/arena_12.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_12.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_12.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_12.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_12.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/solver.dir/util/strings_12.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/geo.dir/core/config_12.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_12.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_12.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_12.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_12.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/geo.dir/util/logging_12.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_12.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_12.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/io.dir/net/http_12.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_12.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_12.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/engine.dir/core/arena_13.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_13.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_13.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/solver.dir/net/pool_13.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_13.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/engine.dir/util/strings_13.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/spatial.dir/core/config_13.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_13.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_13.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_13.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_13.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_13.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_13.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_13.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/geo.dir/net/http_13.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_13.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_13.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/io.dir/core/arena_14.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_14.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_14.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/engine.dir/net/pool_14.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_14.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/io.dir/util/strings_14.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/solver.dir/core/config_14.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_14.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_14.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_14.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_14.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/solver.dir/util/logging_14.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/geo.dir/geo/polygon_14.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/engine.dir/spatial/rtree_14.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/spatial.dir/net/http_14.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/io.dir/io/tile_writer_14.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/solver.dir/solver/branch_14.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/geo.dir/core/arena_15.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/engine.dir/geo/ring_15.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree_15.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/io.dir/net/pool_15.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve_15.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/geo.dir/util/strings_15.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/engine.dir/core/config_15.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox_15.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/io.dir/spatial/index_15.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader_15.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex_15.cpp.o
+[ 35%] Building CXX object src/CMakeFiles/engine.dir/util/logging_15.cpp.o
+[ 35%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon_15.cpp.o
+[ 35%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree_15.cpp.o
+[ 35%] Building CXX object src/CMakeFiles/solver.dir/net/http_15.cpp.o
+[ 35%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer_15.cpp.o
+[ 35%] Building CXX object src/CMakeFiles/engine.dir/solver/branch_15.cpp.o
+[ 35%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_16.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/io.dir/geo/ring_16.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_16.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/geo.dir/net/pool_16.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_16.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_16.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/io.dir/core/config_16.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_16.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_16.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_16.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_16.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/io.dir/util/logging_16.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_16.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_16.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/engine.dir/net/http_16.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_16.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/io.dir/solver/branch_16.cpp.o
+[ 38%] Building CXX object src/CMakeFiles/solver.dir/core/arena_17.cpp.o
+[ 38%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_17.cpp.o
+[ 38%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_17.cpp.o
+[ 38%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_17.cpp.o
+[ 38%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_17.cpp.o
+[ 38%] Building CXX object src/CMakeFiles/solver.dir/util/strings_17.cpp.o
+[ 38%] Building CXX object src/CMakeFiles/geo.dir/core/config_17.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_17.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_17.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_17.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_17.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/geo.dir/util/logging_17.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_17.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_17.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/io.dir/net/http_17.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_17.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_17.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/engine.dir/core/arena_18.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_18.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_18.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/solver.dir/net/pool_18.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_18.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/engine.dir/util/strings_18.cpp.o
+[ 41%] Building CXX object src/CMakeFiles/spatial.dir/core/config_18.cpp.o
+[ 41%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_18.cpp.o
+[ 41%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_18.cpp.o
+[ 41%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_18.cpp.o
+[ 41%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_18.cpp.o
+[ 41%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_18.cpp.o
+[ 41%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_18.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_18.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/geo.dir/net/http_18.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_18.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_18.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/io.dir/core/arena_19.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_19.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_19.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/engine.dir/net/pool_19.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_19.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/io.dir/util/strings_19.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/solver.dir/core/config_19.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_19.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_19.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_19.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_19.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/solver.dir/util/logging_19.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/geo.dir/geo/polygon_19.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/engine.dir/spatial/rtree_19.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/spatial.dir/net/http_19.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/io.dir/io/tile_writer_19.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/solver.dir/solver/branch_19.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/geo.dir/core/arena_20.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/engine.dir/geo/ring_20.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree_20.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/io.dir/net/pool_20.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve_20.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/geo.dir/util/strings_20.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/engine.dir/core/config_20.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox_20.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/io.dir/spatial/index_20.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader_20.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex_20.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/engine.dir/util/logging_20.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon_20.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree_20.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/solver.dir/net/http_20.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer_20.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/engine.dir/solver/branch_20.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_21.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/io.dir/geo/ring_21.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_21.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/geo.dir/net/pool_21.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_21.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_21.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/io.dir/core/config_21.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_21.cpp.o
+[ 48%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_21.cpp.o
+[ 48%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_21.cpp.o
+[ 48%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_21.cpp.o
+[ 48%] Building CXX object src/CMakeFiles/io.dir/util/logging_21.cpp.o
+[ 48%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_21.cpp.o
+[ 48%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_21.cpp.o
+[ 48%] Building CXX object src/CMakeFiles/engine.dir/net/http_21.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_21.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/io.dir/solver/branch_21.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/solver.dir/core/arena_22.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_22.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_22.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_22.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_22.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/solver.dir/util/strings_22.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/geo.dir/core/config_22.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_22.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_22.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_22.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_22.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/geo.dir/util/logging_22.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_22.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_22.cpp.o
+[ 51%] Building CXX object src/CMakeFiles/io.dir/net/http_22.cpp.o
+[ 51%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_22.cpp.o
+[ 51%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_22.cpp.o
+[ 51%] Building CXX object src/CMakeFiles/engine.dir/core/arena_23.cpp.o
+[ 51%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_23.cpp.o
+[ 51%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_23.cpp.o
+[ 51%] Building CXX object src/CMakeFiles/solver.dir/net/pool_23.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_23.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/engine.dir/util/strings_23.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/spatial.dir/core/config_23.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_23.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_23.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_23.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_23.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_23.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_23.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_23.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/geo.dir/net/http_23.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_23.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_23.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/io.dir/core/arena_24.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_24.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_24.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/engine.dir/net/pool_24.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_24.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/io.dir/util/strings_24.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/solver.dir/core/config_24.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_24.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_24.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_24.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_24.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/solver.dir/util/logging_24.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/geo.dir/geo/polygon_24.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/engine.dir/spatial/rtree_24.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/spatial.dir/net/http_24.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/io.dir/io/tile_writer_24.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/solver.dir/solver/branch_24.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/geo.dir/core/arena_25.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/engine.dir/geo/ring_25.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree_25.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/io.dir/net/pool_25.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve_25.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/geo.dir/util/strings_25.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/engine.dir/core/config_25.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox_25.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/io.dir/spatial/index_25.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader_25.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex_25.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/engine.dir/util/logging_25.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon_25.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree_25.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/solver.dir/net/http_25.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer_25.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/engine.dir/solver/branch_25.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_26.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/io.dir/geo/ring_26.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_26.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/geo.dir/net/pool_26.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_26.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_26.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/io.dir/core/config_26.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_26.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_26.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_26.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_26.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/io.dir/util/logging_26.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_26.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_26.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/engine.dir/net/http_26.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_26.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/io.dir/solver/branch_26.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/solver.dir/core/arena_27.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_27.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_27.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_27.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_27.cpp.o
+[ 61%] Building CXX object src/CMakeFiles/solver.dir/util/strings_27.cpp.o
+[ 61%] Building CXX object src/CMakeFiles/geo.dir/core/config_27.cpp.o
+[ 61%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_27.cpp.o
+[ 61%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_27.cpp.o
+[ 61%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_27.cpp.o
+[ 61%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_27.cpp.o
+[ 61%] Building CXX object src/CMakeFiles/geo.dir/util/logging_27.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_27.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_27.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/io.dir/net/http_27.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_27.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_27.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/engine.dir/core/arena_28.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_28.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_28.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/solver.dir/net/pool_28.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_28.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/engine.dir/util/strings_28.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/spatial.dir/core/config_28.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_28.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_28.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_28.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_28.cpp.o
+[ 64%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_28.cpp.o
+[ 64%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_28.cpp.o
+[ 64%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_28.cpp.o
+[ 64%] Building CXX object src/CMakeFiles/geo.dir/net/http_28.cpp.o
+[ 64%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_28.cpp.o
+[ 64%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_28.cpp.o
+[ 64%] Building CXX object src/CMakeFiles/io.dir/core/arena_29.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_29.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_29.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/engine.dir/net/pool_29.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_29.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/io.dir/util/strings_29.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/solver.dir/core/config_29.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_29.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_29.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_29.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_29.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/solver.dir/util/logging_29.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/geo.dir/geo/polygon_29.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/engine.dir/spatial/rtree_29.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/spatial.dir/net/http_29.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/io.dir/io/tile_writer_29.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/solver.dir/solver/branch_29.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/geo.dir/core/arena_30.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/engine.dir/geo/ring_30.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree_30.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/io.dir/net/pool_30.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve_30.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/geo.dir/util/strings_30.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/engine.dir/core/config_30.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox_30.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/io.dir/spatial/index_30.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader_30.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex_30.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/engine.dir/util/logging_30.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon_30.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree_30.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/solver.dir/net/http_30.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer_30.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/engine.dir/solver/branch_30.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_31.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/io.dir/geo/ring_31.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_31.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/geo.dir/net/pool_31.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_31.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_31.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/io.dir/core/config_31.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_31.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_31.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_31.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_31.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/io.dir/util/logging_31.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_31.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_31.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/engine.dir/net/http_31.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_31.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/io.dir/solver/branch_31.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/solver.dir/core/arena_32.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_32.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_32.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_32.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_32.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/solver.dir/util/strings_32.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/geo.dir/core/config_32.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_32.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_32.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_32.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_32.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/geo.dir/util/logging_32.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_32.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_32.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/io.dir/net/http_32.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_32.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_32.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/engine.dir/core/arena_33.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_33.cpp.o
+[ 74%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_33.cpp.o
+[ 74%] Building CXX object src/CMakeFiles/solver.dir/net/pool_33.cpp.o
+[ 74%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_33.cpp.o
+[ 74%] Building CXX object src/CMakeFiles/engine.dir/util/strings_33.cpp.o
+[ 74%] Building CXX object src/CMakeFiles/spatial.dir/core/config_33.cpp.o
+[ 74%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_33.cpp.o
+[ 74%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_33.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_33.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_33.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_33.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_33.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_33.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/geo.dir/net/http_33.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_33.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_33.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/io.dir/core/arena_34.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_34.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_34.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/engine.dir/net/pool_34.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_34.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/io.dir/util/strings_34.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/solver.dir/core/config_34.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_34.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_34.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_34.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_34.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/solver.dir/util/logging_34.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/geo.dir/geo/polygon_34.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/engine.dir/spatial/rtree_34.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/spatial.dir/net/http_34.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/io.dir/io/tile_writer_34.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/solver.dir/solver/branch_34.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/geo.dir/core/arena_35.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/engine.dir/geo/ring_35.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree_35.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/io.dir/net/pool_35.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve_35.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/geo.dir/util/strings_35.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/engine.dir/core/config_35.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox_35.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/io.dir/spatial/index_35.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader_35.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex_35.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/engine.dir/util/logging_35.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon_35.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree_35.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/solver.dir/net/http_35.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer_35.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/engine.dir/solver/branch_35.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_36.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/io.dir/geo/ring_36.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_36.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/geo.dir/net/pool_36.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_36.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_36.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/io.dir/core/config_36.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_36.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_36.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_36.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_36.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/io.dir/util/logging_36.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_36.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_36.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/engine.dir/net/http_36.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_36.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/io.dir/solver/branch_36.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/solver.dir/core/arena_37.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_37.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_37.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_37.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_37.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/solver.dir/util/strings_37.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/geo.dir/core/config_37.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_37.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_37.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_37.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_37.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/geo.dir/util/logging_37.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_37.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_37.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/io.dir/net/http_37.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_37.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_37.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/engine.dir/core/arena_38.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_38.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_38.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/solver.dir/net/pool_38.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_38.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/engine.dir/util/strings_38.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/spatial.dir/core/config_38.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_38.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_38.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_38.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_38.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_38.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_38.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_38.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/geo.dir/net/http_38.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_38.cpp.o
+[ 87%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_38.cpp.o
+[ 87%] Building CXX object src/CMakeFiles/io.dir/core/arena_39.cpp.o
+[ 87%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_39.cpp.o
+[ 87%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_39.cpp.o
+[ 87%] Building CXX object src/CMakeFiles/engine.dir/net/pool_39.cpp.o
+[ 87%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_39.cpp.o
+[ 87%] Building CXX object src/CMakeFiles/io.dir/util/strings_39.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/solver.dir/core/config_39.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_39.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_39.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_39.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_39.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/solver.dir/util/logging_39.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/geo.dir/geo/polygon_39.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/engine.dir/spatial/rtree_39.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/spatial.dir/net/http_39.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/io.dir/io/tile_writer_39.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/solver.dir/solver/branch_39.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/geo.dir/core/arena_40.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/engine.dir/geo/ring_40.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/spatial.dir/spatial/quadtree_40.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/io.dir/net/pool_40.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/solver.dir/solver/lp_presolve_40.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/geo.dir/util/strings_40.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/engine.dir/core/config_40.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/spatial.dir/geo/bbox_40.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/io.dir/spatial/index_40.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/solver.dir/io/tile_reader_40.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/geo.dir/solver/simplex_40.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/engine.dir/util/logging_40.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/spatial.dir/geo/polygon_40.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/io.dir/spatial/rtree_40.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/solver.dir/net/http_40.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/geo.dir/io/tile_writer_40.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/engine.dir/solver/branch_40.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/spatial.dir/core/arena_41.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/io.dir/geo/ring_41.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/solver.dir/spatial/quadtree_41.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/geo.dir/net/pool_41.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/engine.dir/solver/lp_presolve_41.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/spatial.dir/util/strings_41.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/io.dir/core/config_41.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/solver.dir/geo/bbox_41.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/geo.dir/spatial/index_41.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/engine.dir/io/tile_reader_41.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/spatial.dir/solver/simplex_41.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/io.dir/util/logging_41.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/solver.dir/geo/polygon_41.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/geo.dir/spatial/rtree_41.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/engine.dir/net/http_41.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_writer_41.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/io.dir/solver/branch_41.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/solver.dir/core/arena_42.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/geo.dir/geo/ring_42.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/engine.dir/spatial/quadtree_42.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/spatial.dir/net/pool_42.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/io.dir/solver/lp_presolve_42.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/solver.dir/util/strings_42.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/geo.dir/core/config_42.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/engine.dir/geo/bbox_42.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/spatial.dir/spatial/index_42.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/io.dir/io/tile_reader_42.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/solver.dir/solver/simplex_42.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/geo.dir/util/logging_42.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/engine.dir/geo/polygon_42.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/spatial.dir/spatial/rtree_42.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/io.dir/net/http_42.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/solver.dir/io/tile_writer_42.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/geo.dir/solver/branch_42.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/engine.dir/core/arena_43.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/spatial.dir/geo/ring_43.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/io.dir/spatial/quadtree_43.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/solver.dir/net/pool_43.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/geo.dir/solver/lp_presolve_43.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/engine.dir/util/strings_43.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/spatial.dir/core/config_43.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/io.dir/geo/bbox_43.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/solver.dir/spatial/index_43.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/geo.dir/io/tile_reader_43.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/engine.dir/solver/simplex_43.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/spatial.dir/util/logging_43.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/io.dir/geo/polygon_43.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/solver.dir/spatial/rtree_43.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/geo.dir/net/http_43.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/engine.dir/io/tile_writer_43.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/spatial.dir/solver/branch_43.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/io.dir/core/arena_44.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/solver.dir/geo/ring_44.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/geo.dir/spatial/quadtree_44.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/engine.dir/net/pool_44.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/spatial.dir/solver/lp_presolve_44.cpp.o
+[ 99%] Building CXX object src/CMakeFiles/io.dir/util/strings_44.cpp.o
+[ 99%] Building CXX object src/CMakeFiles/solver.dir/core/config_44.cpp.o
+[ 99%] Building CXX object src/CMakeFiles/geo.dir/geo/bbox_44.cpp.o
+[ 99%] Building CXX object src/CMakeFiles/engine.dir/spatial/index_44.cpp.o
+[ 99%] Building CXX object src/CMakeFiles/spatial.dir/io/tile_reader_44.cpp.o
+[ 99%] Building CXX object src/CMakeFiles/io.dir/solver/simplex_44.cpp.o
+[ 99%] Building CXX object src/CMakeFiles/solver.dir/util/logging_44.cpp.o
+[ 91%] Building CXX object src/solver/CMakeFiles/solver.dir/lp_presolve_tables.cpp.o
+
+No output has been received in the last 10m0s, this potentially indicates a stalled build or something wrong with the build itself.
+Check the details on how to adjust your build configuration on: https://docs.travis-ci.com/user/common-build-problems/#build-times-out-because-no-output-was-received
+
+The build has been terminated
+travis_time:end:42eb35f7:start=1573800018100000000,finish=1573800618100000000,duration=600000000000[0K

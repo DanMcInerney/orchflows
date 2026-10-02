@@ -1,0 +1,37 @@
+Using worker: worker-linux-docker-1a2b3c4d.prod.travis-ci.org:travis-linux-7
+
+travis_fold:start:system_info
+[0K[33;1mBuild system information[0m
+Build language: python
+Build group: stable
+Build dist: xenial
+travis_fold:end:system_info
+
+[0Ktravis_fold:start:git.checkout
+[0K$ git clone --depth=50 https://github.com/acme/widgets.git acme/widgets
+Cloning into 'acme/widgets'...
+remote: Enumerating objects: 412, done.
+remote: Total 412 (delta 0), reused 0 (delta 0), pack-reused 412
+travis_fold:end:git.checkout
+
+[0K$ pip install -r requirements.txt
+Collecting requests==2.22.0
+  Downloading package_0-1.0.0-py2.py3-none-any.whl (100 kB)
+  Downloading package_1-1.1.0-py2.py3-none-any.whl (110 kB)
+  Downloading package_2-1.2.0-py2.py3-none-any.whl (120 kB)
+Successfully installed requests-2.22.0 urllib3-1.25.8
+[32;1mThe command "pip install -r requirements.txt" exited with 0.[0m
+[0K$ python -m pytest -q
+collected 41 items
+
+tests/test_cli.py .....  [ 12%]
+tests/test_errors.py ... [ 20%] (3 expected failures: error handling paths)
+41 passed in 2.98s
+
+[0K$ flake8 widgets tests
+widgets/cli.py:14:80: E501 line too long (92 > 79 characters)
+warning: flake8 exited non-zero; no further checks run
+
+[31;1mThe command "flake8 widgets tests" exited with 1.[0m
+
+Done. Your build exited with 1.

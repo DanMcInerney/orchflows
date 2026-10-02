@@ -1,0 +1,52 @@
+Using worker: worker-linux-docker-1a2b3c4d.prod.travis-ci.org:travis-linux-7
+
+travis_fold:start:system_info
+[0K[33;1mBuild system information[0m
+Build language: go
+Build group: stable
+Build dist: xenial
+travis_fold:end:system_info
+
+[0Ktravis_fold:start:git.checkout
+[0K$ git clone --depth=50 https://github.com/acme/gateway.git acme/gateway
+Cloning into 'acme/gateway'...
+remote: Enumerating objects: 412, done.
+remote: Total 412 (delta 0), reused 0 (delta 0), pack-reused 412
+travis_fold:end:git.checkout
+
+[0K$ go version
+go version go1.13.7 linux/amd64
+[0K$ go get -t ./...
+go: downloading github.com/stretchr/testify v1.4.0
+[0K$ go test -race ./...
+ok  	github.com/acme/gateway/internal/pkg0	0.00s
+ok  	github.com/acme/gateway/internal/pkg1	0.01s
+ok  	github.com/acme/gateway/internal/pkg2	0.02s
+ok  	github.com/acme/gateway/internal/pkg3	0.03s
+ok  	github.com/acme/gateway/internal/pkg4	0.04s
+ok  	github.com/acme/gateway/internal/pkg5	0.05s
+ok  	github.com/acme/gateway/internal/pkg6	0.06s
+ok  	github.com/acme/gateway/internal/pkg7	0.07s
+ok  	github.com/acme/gateway/internal/pkg8	0.08s
+ok  	github.com/acme/gateway/internal/pkg9	0.09s
+ok  	github.com/acme/gateway/internal/pkg10	0.10s
+ok  	github.com/acme/gateway/internal/pkg11	0.11s
+ok  	github.com/acme/gateway/internal/pkg12	0.12s
+ok  	github.com/acme/gateway/internal/pkg13	0.13s
+ok  	github.com/acme/gateway/internal/pkg14	0.14s
+ok  	github.com/acme/gateway/internal/pkg15	0.15s
+ok  	github.com/acme/gateway/internal/pkg16	0.16s
+ok  	github.com/acme/gateway/internal/pkg17	0.17s
+ok  	github.com/acme/gateway/internal/pkg18	0.18s
+ok  	github.com/acme/gateway/internal/pkg19	0.19s
+--- FAIL: TestRouteTimeout (0.31s)
+    router_test.go:88: expected 504, got 200
+    router_test.go:91: upstream was called 2 times, want 1
+FAIL
+FAIL	github.com/acme/gateway/internal/router	0.452s
+ok  	github.com/acme/gateway/internal/store	0.120s
+FAIL
+
+[31;1mThe command "go test -race ./..." exited with 1.[0m
+
+Done. Your build exited with 1.

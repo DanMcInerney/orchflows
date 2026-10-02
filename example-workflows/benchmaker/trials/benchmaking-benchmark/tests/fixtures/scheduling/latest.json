@@ -1,0 +1,62 @@
+{
+ "note": "Preference latest; Ana is busy 11:00-12:00.",
+ "instance": {
+  "duration_minutes": 30,
+  "granularity_minutes": 30,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-05T12:00+00:00"
+  },
+  "participants": [
+   {
+    "id": "ana",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T11:00+00:00",
+      "end": "2026-10-05T12:00+00:00"
+     }
+    ]
+   },
+   {
+    "id": "bo",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   }
+  ],
+  "rooms": [],
+  "constraints": [],
+  "preference": "latest"
+ },
+ "expect": {
+  "earliest": "2026-10-05T09:00+00:00",
+  "latest": "2026-10-05T10:30+00:00",
+  "count": 4
+ }
+}

@@ -1,0 +1,77 @@
+{
+ "description": "An urgent request may be booked over the focus block.",
+ "request": {
+  "title": "Sync",
+  "attendees": [
+   "ana",
+   "bo"
+  ],
+  "optional": [],
+  "duration_minutes": 30,
+  "granularity_minutes": 15,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-05T12:00+00:00"
+  },
+  "preference": "earliest",
+  "priority": "urgent"
+ },
+ "policy": {
+  "rules": [
+   {
+    "type": "focus_blocks",
+    "urgent_may_override": true
+   }
+  ]
+ },
+ "calendars": {
+  "ana": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": [
+    {
+     "id": "ev-f1",
+     "title": "Focus: design",
+     "kind": "focus",
+     "start": "2026-10-05T09:00+00:00",
+     "end": "2026-10-05T11:00+00:00"
+    }
+   ]
+  },
+  "bo": {
+   "utc_offset": "+00:00",
+   "work_hours": [
+    {
+     "days": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri"
+     ],
+     "start": "09:00",
+     "end": "17:00"
+    }
+   ],
+   "events": []
+  }
+ },
+ "expect": {
+  "first": "2026-10-05T09:00+00:00",
+  "last": "2026-10-05T11:30+00:00",
+  "count": 11,
+  "wrong": []
+ }
+}

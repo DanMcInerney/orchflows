@@ -1,0 +1,70 @@
+{
+ "note": "not_before applies only on Monday and not_after only on Tuesday.",
+ "instance": {
+  "duration_minutes": 60,
+  "granularity_minutes": 60,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-06T17:00+00:00"
+  },
+  "participants": [
+   {
+    "id": "ana",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   },
+   {
+    "id": "bo",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   }
+  ],
+  "rooms": [],
+  "constraints": [
+   {
+    "type": "not_before",
+    "participant": "ana",
+    "time": "14:00",
+    "day": "2026-10-05"
+   },
+   {
+    "type": "not_after",
+    "participant": "bo",
+    "time": "12:00",
+    "day": "2026-10-06"
+   }
+  ],
+  "preference": "earliest"
+ },
+ "expect": {
+  "earliest": "2026-10-05T14:00+00:00",
+  "latest": "2026-10-06T11:00+00:00",
+  "count": 6
+ }
+}

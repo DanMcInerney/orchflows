@@ -1,0 +1,101 @@
+{
+ "note": "not_before, not_after, avoid_day and buffer together over three days with an hourly grid.",
+ "instance": {
+  "duration_minutes": 60,
+  "granularity_minutes": 60,
+  "window": {
+   "start": "2026-10-05T09:00+00:00",
+   "end": "2026-10-07T17:00+00:00"
+  },
+  "participants": [
+   {
+    "id": "ana",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-06T10:00+00:00",
+      "end": "2026-10-06T11:00+00:00"
+     }
+    ]
+   },
+   {
+    "id": "bo",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   },
+   {
+    "id": "cy",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   }
+  ],
+  "rooms": [],
+  "constraints": [
+   {
+    "type": "not_before",
+    "participant": "ana",
+    "time": "10:00"
+   },
+   {
+    "type": "not_after",
+    "participant": "bo",
+    "time": "16:00"
+   },
+   {
+    "type": "avoid_day",
+    "participant": "cy",
+    "day": "2026-10-05"
+   },
+   {
+    "type": "buffer_minutes",
+    "participant": "ana",
+    "minutes": 30
+   }
+  ],
+  "preference": "earliest"
+ },
+ "expect": {
+  "earliest": "2026-10-06T12:00+00:00",
+  "latest": "2026-10-07T15:00+00:00",
+  "count": 10
+ }
+}

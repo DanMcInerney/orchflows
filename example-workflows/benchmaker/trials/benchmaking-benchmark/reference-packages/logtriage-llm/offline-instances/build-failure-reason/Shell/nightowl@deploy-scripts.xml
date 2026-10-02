@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>Shell/nightowl@deploy-scripts/failed/990000901.log</Log>
+    <Keywords>fatal, terminal prompts disabled</Keywords>
+    <Category>0</Category>
+    <Chunk>fatal: could not read Username for 'https://github.com': terminal prompts disabled
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+The command "git clone --depth=50 --branch=master https://github.com/nightowl/deploy-scripts.git nightowl/deploy-scripts" failed 3 times.</Chunk>
+  </Example>
+</Examples>

@@ -1,0 +1,2 @@
+# Log and label bytes (CRLF, lone CR, ESC) must survive core.autocrlf.
+offline-instances/** -text

@@ -1,0 +1,70 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Examples>
+  <Example>
+    <Log>JavaScript/kestrel-io@kestrel-ui/failed/990000301.log</Log>
+    <Keywords>FAIL, toMatchSnapshot, DataTable</Keywords>
+    <Category>0</Category>
+    <Chunk>  ● DataTable › renders sticky header when scrolled
+
+    expect(received).toMatchSnapshot()
+
+    Snapshot name: `DataTable renders sticky header when scrolled 1`
+
+    [32m- Snapshot[39m
+    [31m+ Received[39m
+
+    @@ -1,9 +1,9 @@
+      div
+        className="data-table"
+      &gt;
+        table&gt;
+    -     thead
+    -       className="sticky"
+    +     thead
+    +       className="sticky sticky--scrolled"
+        &gt;
+          tr&gt;
+
+      56 |     wrapper.find('.data-table').simulate('scroll', { target: { scrollTop: 120 } });
+      57 |     wrapper.update();
+    &gt; 58 |     expect(wrapper.html()).toMatchSnapshot();
+         |                            ^
+      59 |   });
+      60 | });
+
+      at Object.anonymous&gt; (src/datatable/DataTable.test.js:58:28)</Chunk>
+  </Example>
+  <Example>
+    <Log>JavaScript/kestrel-io@kestrel-ui/failed/990000302.log</Log>
+    <Keywords>ERESOLVE, peer, react</Keywords>
+    <Category>0</Category>
+    <Chunk>npm ERR! code ERESOLVE
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! 
+npm ERR! While resolving: kestrel-ui@3.4.0
+npm ERR! Found: react@17.0.2
+npm ERR! node_modules/react
+npm ERR!   react@"^17.0.2" from the root project
+npm ERR!   peer react@"&gt;=16.8.0" from @kestrel-io/theme@2.1.0
+npm ERR!   node_modules/@kestrel-io/theme
+npm ERR!     @kestrel-io/theme@"^2.1.0" from the root project
+npm ERR! 
+npm ERR! Could not resolve dependency:
+npm ERR! peer react@"^18.0.0" from react-aria-hooks@4.0.1
+npm ERR! node_modules/react-aria-hooks
+npm ERR!   react-aria-hooks@"^4.0.1" from the root project
+npm ERR! 
+npm ERR! Fix the upstream dependency conflict, or retry
+npm ERR! this command with --force, or --legacy-peer-deps
+npm ERR! to accept an incorrect (and potentially broken) dependency resolution.
+npm ERR! 
+npm ERR! See /home/travis/.npm/eresolve-report.txt for a full report.</Chunk>
+  </Example>
+  <Example>
+    <Log>JavaScript/kestrel-io@kestrel-ui/failed/990000303.log</Log>
+    <Keywords>error, eslint, no-unused-vars</Keywords>
+    <Category>0</Category>
+    <Chunk>/home/travis/build/kestrel-io/kestrel-ui/src/utils/format.js
+  14:7  error  'unusedLocale' is assigned a value but never used  no-unused-vars</Chunk>
+  </Example>
+</Examples>

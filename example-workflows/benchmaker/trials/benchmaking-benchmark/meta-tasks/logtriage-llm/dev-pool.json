@@ -1,0 +1,31 @@
+{
+ "meta_task": "logtriage-llm",
+ "label": "exposed",
+ "use": "Development claims only. This file and the member operators are public, so results from this pool say nothing about held-out behaviour.",
+ "members": {
+  "oracle": {"kind": "scripted", "behavior": "oracle", "origin": "-"},
+  "noop": {"kind": "scripted", "behavior": "floor", "name": "noop"},
+  "empty": {"kind": "scripted", "behavior": "floor", "name": "empty"},
+  "read-workspace": {"kind": "scripted", "behavior": "cheater", "name": "read_workspace"},
+  "shifted": {"kind": "scripted", "behavior": "defect", "defect": "shifted", "origin": "synthetic"},
+  "dump-all": {"kind": "scripted", "behavior": "heuristic", "name": "dump_all", "origin": "natural"},
+  "ladder-0.2": {"kind": "scripted", "behavior": "ladder", "q": 0.2, "origin": "synthetic"},
+    "ladder-0.2-b": {"kind": "scripted", "behavior": "ladder", "q": 0.2, "origin": "synthetic"},
+  "ladder-0.6": {"kind": "scripted", "behavior": "ladder", "q": 0.6, "origin": "synthetic"}
+ },
+ "known_pairs": [
+  {"higher": "oracle", "lower": "shifted", "basis": "construction"},
+  {"higher": "oracle", "lower": "dump-all", "basis": "construction"},
+  {"higher": "oracle", "lower": "ladder-0.2", "basis": "construction"},
+  {"higher": "ladder-0.2", "lower": "ladder-0.6", "basis": "construction"},
+  {"higher": "ladder-0.6", "lower": "noop", "basis": "construction"},
+  {"higher": "ladder-0.6", "lower": "empty", "basis": "construction"},
+  {"higher": "ladder-0.6", "lower": "read-workspace", "basis": "construction"}
+ ],
+ "contrasts": [
+  {"higher": "oracle", "lower": "noop", "must_resolve": true, "basis": "construction"},
+  {"higher": "oracle", "lower": "dump-all", "must_resolve": true, "basis": "construction"},
+  {"higher": "ladder-0.2", "lower": "ladder-0.6", "must_resolve": true, "basis": "construction"}
+ ],
+ "aa_pairs": [["ladder-0.2", "ladder-0.2-b"]]
+}

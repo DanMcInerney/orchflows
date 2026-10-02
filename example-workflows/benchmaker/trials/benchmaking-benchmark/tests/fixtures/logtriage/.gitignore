@@ -1,0 +1,2 @@
+# The repository ignores *.log; these are committed fixtures in the LogChunks layout.
+!*.log

@@ -1,0 +1,128 @@
+{
+ "id": "nf-window-short",
+ "family": "infeasible",
+ "source_group": "field-teams",
+ "title": "Regional close-out",
+ "difficulty": "A five-hour window and a two-hour meeting: every start in it is clipped by someone's meeting",
+ "expert_minutes": 10,
+ "smoke": false,
+ "quick": false,
+ "instance": {
+  "duration_minutes": 120,
+  "granularity_minutes": 15,
+  "window": {
+   "start": "2026-10-05T13:00+11:00",
+   "end": "2026-10-05T18:00+11:00"
+  },
+  "participants": [
+   {
+    "id": "fox",
+    "utc_offset": "+11:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T09:30+11:00",
+      "end": "2026-10-05T09:45+11:00"
+     },
+     {
+      "start": "2026-10-05T10:00+11:00",
+      "end": "2026-10-05T11:00+11:00"
+     },
+     {
+      "start": "2026-10-05T12:45+11:00",
+      "end": "2026-10-05T14:15+11:00"
+     },
+     {
+      "start": "2026-10-05T13:30+11:00",
+      "end": "2026-10-05T14:15+11:00"
+     }
+    ]
+   },
+   {
+    "id": "hux",
+    "utc_offset": "+10:30",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T09:30+10:30",
+      "end": "2026-10-05T09:45+10:30"
+     },
+     {
+      "start": "2026-10-05T10:15+10:30",
+      "end": "2026-10-05T11:00+10:30"
+     },
+     {
+      "start": "2026-10-05T10:45+10:30",
+      "end": "2026-10-05T11:15+10:30"
+     },
+     {
+      "start": "2026-10-05T12:00+10:30",
+      "end": "2026-10-05T13:00+10:30"
+     }
+    ]
+   },
+   {
+    "id": "ian",
+    "utc_offset": "+09:30",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T11:30+09:30",
+      "end": "2026-10-05T12:30+09:30"
+     },
+     {
+      "start": "2026-10-05T12:30+09:30",
+      "end": "2026-10-05T13:30+09:30"
+     },
+     {
+      "start": "2026-10-05T13:15+09:30",
+      "end": "2026-10-05T13:45+09:30"
+     },
+     {
+      "start": "2026-10-05T14:30+09:30",
+      "end": "2026-10-05T15:15+09:30"
+     }
+    ]
+   }
+  ],
+  "rooms": [],
+  "constraints": [],
+  "preference": "earliest"
+ }
+}

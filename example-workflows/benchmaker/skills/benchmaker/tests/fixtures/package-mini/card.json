@@ -1,0 +1,5 @@
+{"conditions": {"reference": {"agent": "@reference"}, "noop": {"agent": "@noop"}},
+ "claims": [
+  {"id": "c1", "type": "rate", "metric": "reference_pass_rate", "min": 1.0},
+  {"id": "c2", "type": "rate", "metric": "trivial_credit", "max": 0.0},
+  {"id": "c3", "type": "gap", "category": "missing-stage", "text": "no model-driven system was measured"}]}

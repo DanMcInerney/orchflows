@@ -1,0 +1,62 @@
+{
+ "note": "The grid is anchored at the window start 09:10, so starts are 09:10, 09:40, 10:10 and so on.",
+ "instance": {
+  "duration_minutes": 30,
+  "granularity_minutes": 30,
+  "window": {
+   "start": "2026-10-05T09:10+00:00",
+   "end": "2026-10-05T11:10+00:00"
+  },
+  "participants": [
+   {
+    "id": "ana",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": [
+     {
+      "start": "2026-10-05T09:40+00:00",
+      "end": "2026-10-05T10:10+00:00"
+     }
+    ]
+   },
+   {
+    "id": "bo",
+    "utc_offset": "+00:00",
+    "work_hours": [
+     {
+      "days": [
+       "Mon",
+       "Tue",
+       "Wed",
+       "Thu",
+       "Fri"
+      ],
+      "start": "09:00",
+      "end": "17:00"
+     }
+    ],
+    "busy": []
+   }
+  ],
+  "rooms": [],
+  "constraints": [],
+  "preference": "earliest"
+ },
+ "expect": {
+  "earliest": "2026-10-05T09:10+00:00",
+  "latest": "2026-10-05T10:40+00:00",
+  "count": 3
+ }
+}

@@ -1,0 +1,313 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: 86f7b9c1-9a81-df1b-239d-c8002bc8c879@1.production-2-worker-org-gce-19vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/76d61d859be7512e7b15a5712e4588d2e3eaccb0
+instance: travis-job-09f9b0d8-765d-8534-4231-8273257822b6 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 6.143826062s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: ruby
+Build group: stable
+Build dist: xenial
+Build id: 990000401
+Job id: 990000402
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Wed Apr 10 14:02:55 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:9d4e673a[0K$ git clone --depth=50 --branch=master https://github.com/fernwood/fernwood-api.git fernwood/fernwood-api
+Cloning into 'fernwood/fernwood-api'...
+remote: Enumerating objects: 2712, done.remote: Counting objects:  50% (1356/2712)remote: Counting objects: 100% (2712/2712), done.remote: Compressing objects: 100% (904/904), done.
+remote: Total 2712 (delta 678), reused 2622 (delta 678), pack-reused 0Receiving objects: 100% (2712/2712), 24.17 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (678/678), done.
+travis_time:end:9d4e673a:start=1554904975000000000,finish=1554904977100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd fernwood/fernwood-api
+$ git checkout -qf 064828a474b973fa793408b4a69261f94e07178b
+$ rvm use 2.5.3 --install --binary --fuzzy
+Using /home/travis/.rvm/gems/ruby-2.5.3
+$ ruby --version
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+$ rvm --version
+rvm 1.29.7 (latest) by Michal Papis, Piotr Kuczynski, Wayne E. Seguin [https://rvm.io]
+$ bundle --version
+Bundler version 2.0.1
+$ gem --version
+3.0.3
+travis_fold:start:install[0Ktravis_time:start:c46016a8[0K$ bundle install --jobs=3 --retry=3
+Fetching gem metadata from https://rubygems.org/..........
+Installing nokogiri 4.0.11
+Installing builder 6.4.11
+Using unicode-display_width 3.6.1
+Using nio4r 3.7.2
+Using railties 6.3.6
+Using activemodel 2.6.0
+Using loofah 6.5.11
+Using execjs 1.3.8
+Using rubocop 4.8.3
+Using websocket-driver 5.1.7
+Installing bootsnap 3.8.7
+Using pry 2.9.5
+Using rack-cors 4.3.10
+Installing jwt 3.4.4
+Using activerecord 3.2.9
+Using crass 3.0.5
+Using thread_safe 3.9.11
+Using msgpack 4.5.4
+Using rspec-expectations 4.7.5
+Installing rspec-rails 3.4.7
+Installing connection_pool 3.5.3
+Using actionpack 4.8.5
+Installing concurrent-ruby 4.3.1
+Installing pg 3.5.1
+Using i18n 1.2.5
+Using actionmailer 3.9.6
+Using rspec-mocks 4.5.1
+Using rack-test 5.4.7
+Using multi_json 4.0.11
+Using bcrypt 6.9.5
+Using ast 2.2.1
+Using parser 6.6.8
+Using mail 5.1.7
+Installing docile 4.7.2
+Using globalid 6.1.4
+Using faker 3.8.11
+Using factory_bot 2.5.1
+Using thor 2.5.3
+Using parallel 5.4.9
+Using public_suffix 5.5.2
+Using rails 4.9.9
+Using marcel 6.4.3
+Installing faraday 3.7.0
+Using mimemagic 2.7.6
+Installing rainbow 4.3.9
+Using capybara 6.7.3
+Installing rails-html-sanitizer 1.8.2
+Installing regexp_parser 5.3.11
+Using jaro_winkler 6.6.2
+Using minitest 4.2.1
+Installing mini_mime 5.8.2
+Using sidekiq 1.0.8
+Using json 2.7.2
+Using webmock 3.0.9
+Using byebug 6.0.3
+Using rspec-support 2.7.9
+Using activestorage 2.1.5
+Using rack 3.7.11
+Using powerpack 4.9.0
+Using database_cleaner 4.0.9
+Using mini_portile2 2.2.10
+Using puma 4.3.12
+Using rake 5.6.7
+Installing simplecov 2.0.6
+Using coderay 1.8.2
+Using addressable 4.9.8
+Installing rails-dom-testing 3.9.3
+Installing ruby-progressbar 1.9.4
+Using activesupport 5.0.6
+Installing erubi 3.9.5
+Installing actionview 4.0.4
+Using oj 2.8.3
+Using actioncable 5.2.0
+Using activejob 4.8.10
+Using websocket-extensions 4.6.5
+Using ffi 5.6.6
+Using sprockets 6.6.5
+Using diff-lcs 2.3.5
+Using redis 4.1.7
+Using kaminari 4.9.10
+Bundle complete! 26 Gemfile dependencies, 80 gems now installed.
+Use `bundle info [gemname]` to see where a bundled gem is installed.
+travis_time:end:c46016a8:start=1554904977100000000,finish=1554905095100000000,duration=118000000000[0Ktravis_fold:end:install[0K[0K[32;1mThe command "bundle install --jobs=3 --retry=3" exited with 0.[0m
+travis_time:start:b417bc00[0K$ psql -c 'create role fernwood superuser login;' -U postgres || true
+ERROR:  role "fernwood" already exists
+travis_time:end:b417bc00:start=1554905095100000000,finish=1554905095400000000,duration=300000000[0K
+travis_time:start:588332f2[0K$ bundle exec rake db:create db:schema:load
+Created database 'fernwood_test'
+-- enable_extension("plpgsql")
+   -> 0.0252s
+-- create_table("tenants", {:force=>:cascade})
+   -> 0.0218s
+-- create_table("users", {:force=>:cascade})
+   -> 0.0391s
+-- create_table("memberships", {:force=>:cascade})
+   -> 0.0314s
+-- create_table("api_keys", {:force=>:cascade})
+   -> 0.0394s
+-- create_table("webhooks", {:force=>:cascade})
+   -> 0.0146s
+-- create_table("webhook_deliveries", {:force=>:cascade})
+   -> 0.0068s
+-- create_table("delivery_attempts", {:force=>:cascade})
+   -> 0.0168s
+-- create_table("events", {:force=>:cascade})
+   -> 0.0349s
+-- create_table("event_payloads", {:force=>:cascade})
+   -> 0.0442s
+-- create_table("invoices", {:force=>:cascade})
+   -> 0.0159s
+-- create_table("invoice_lines", {:force=>:cascade})
+   -> 0.0287s
+-- create_table("plans", {:force=>:cascade})
+   -> 0.0382s
+-- create_table("subscriptions", {:force=>:cascade})
+   -> 0.0126s
+-- create_table("audit_entries", {:force=>:cascade})
+   -> 0.0203s
+-- create_table("feature_flags", {:force=>:cascade})
+   -> 0.0062s
+-- create_table("rate_limits", {:force=>:cascade})
+   -> 0.0044s
+-- create_table("sessions", {:force=>:cascade})
+   -> 0.0459s
+-- create_table("tokens", {:force=>:cascade})
+   -> 0.0182s
+-- create_table("audit_exports", {:force=>:cascade})
+   -> 0.0110s
+-- create_table("notification_preferences", {:force=>:cascade})
+   -> 0.0278s
+-- create_table("templates", {:force=>:cascade})
+   -> 0.0419s
+-- create_table("template_versions", {:force=>:cascade})
+   -> 0.0304s
+-- create_table("integrations", {:force=>:cascade})
+   -> 0.0499s
+-- create_table("integration_credentials", {:force=>:cascade})
+   -> 0.0047s
+-- create_table("jobs", {:force=>:cascade})
+   -> 0.0086s
+-- create_table("job_runs", {:force=>:cascade})
+   -> 0.0318s
+-- create_table("tags", {:force=>:cascade})
+   -> 0.0366s
+-- create_table("taggings", {:force=>:cascade})
+   -> 0.0377s
+-- create_table("attachments", {:force=>:cascade})
+   -> 0.0119s
+-- create_table("comments", {:force=>:cascade})
+   -> 0.0292s
+-- add_foreign_key("users", "tenants")
+   -> 0.0186s
+-- add_foreign_key("memberships", "tenants")
+   -> 0.0041s
+-- add_foreign_key("api_keys", "tenants")
+   -> 0.0169s
+-- add_foreign_key("webhooks", "tenants")
+   -> 0.0158s
+-- add_foreign_key("webhook_deliveries", "tenants")
+   -> 0.0182s
+-- add_foreign_key("delivery_attempts", "tenants")
+   -> 0.0062s
+-- add_foreign_key("events", "tenants")
+   -> 0.0142s
+-- add_foreign_key("event_payloads", "tenants")
+   -> 0.0021s
+-- add_foreign_key("invoices", "tenants")
+   -> 0.0103s
+-- add_foreign_key("invoice_lines", "tenants")
+   -> 0.0116s
+-- add_foreign_key("plans", "tenants")
+   -> 0.0163s
+travis_time:end:588332f2:start=1554905095400000000,finish=1554905109400000000,duration=14000000000[0K[0K[32;1mThe command "bundle exec rake db:create db:schema:load" exited with 0.[0m
+travis_time:start:6c273eff[0K$ bundle exec rspec
+Run options: exclude {:slow=>true}
+
+Randomized with seed 41807
+..................*..........................................*..................................................*..........................*........................................................
+........*...................................................................*.............*.........*.........**.......*...........*...........................*.........*..........................
+W, [2019-04-10T14:09:11.482 #2891]  WARN -- : retrying webhook delivery after connection error (attempt 1/3)
+.*........................*.....................................................F.....*........................................................*...................**.........*.....................
+..........................................................................*..............................................................................*.........................*.*..............
+W, [2019-04-10T14:09:11.482 #2891]  WARN -- : retrying webhook delivery after connection error (attempt 1/3)
+..........**......................*...........*...................................................*.....................F....**........................................*............................
+........*...................................................................*..................................*......*.......................*..............*...*................*.................
+W, [2019-04-10T14:09:11.482 #2891]  WARN -- : retrying webhook delivery after connection error (attempt 1/3)
+
+Failures:
+
+  1) Api::V2::WebhooksController POST /v2/webhooks/deliver signs the payload with the tenant secret
+     Failure/Error: expect(response.headers['X-Fernwood-Signature']).to eq(expected_signature)
+
+       expected: "sha256=3f1c9ab0d2c2"
+            got: "sha256=9a0e4477d1b7"
+
+       (compared using ==)
+     # ./spec/requests/api/v2/webhooks_spec.rb:48:in `block (4 levels) in <top (required)>'
+     # ./spec/support/tenant_context.rb:12:in `block (3 levels) in <top (required)>'
+     # /home/travis/.rvm/gems/ruby-2.5.3/gems/rspec-core-3.8.0/lib/rspec/core/example.rb:254:in `instance_exec'
+
+  2) Api::V2::WebhooksController POST /v2/webhooks/deliver records the delivery attempt
+     Failure/Error: expect(delivery.attempts.count).to eq(1)
+
+       expected: 1
+            got: 0
+
+       (compared using ==)
+     # ./spec/requests/api/v2/webhooks_spec.rb:61:in `block (4 levels) in <top (required)>'
+     # ./spec/support/tenant_context.rb:12:in `block (3 levels) in <top (required)>'
+
+Finished in 2 minutes 14.5 seconds (files took 7.31 seconds to load)
+1204 examples, 2 failures, 1 pending
+
+Failed examples:
+
+rspec ./spec/requests/api/v2/webhooks_spec.rb:44 # Api::V2::WebhooksController POST /v2/webhooks/deliver signs the payload with the tenant secret
+rspec ./spec/requests/api/v2/webhooks_spec.rb:59 # Api::V2::WebhooksController POST /v2/webhooks/deliver records the delivery attempt
+
+Randomized with seed 41807
+
+travis_time:end:6c273eff:start=1554905109400000000,finish=1554905243400000000,duration=134000000000[0K[0K[31;1mThe command "bundle exec rspec" exited with 1.[0m
+
+
+Done. Your build exited with 1.

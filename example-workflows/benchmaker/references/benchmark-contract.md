@@ -1,24 +1,25 @@
 # Benchmark contract
 
-Generated benchmarks meet these responsibilities through the selected harness's records or report gaps; no universal schema or runtime is required. Benchmarking guidance owns validity and interpretation, the [quality card](quality-card.md) owns admission and stages, and this contract owns data and execution.
+Generated benchmarks meet these responsibilities with the [kit](../skills/benchmaker/scripts/benchkit/INTERFACE.md), which each package copies so it runs without this library, or with an existing harness whose execution and scoring meaning fits; otherwise they report gaps. Tasks, environments, verifiers, references, judges and adapters belong to each benchmark. Benchmarking guidance owns validity and interpretation, the [quality card](quality-card.md) owns admission and stages, this contract owns data and execution, and the kit owns its formats and mechanics.
 
 ## Package
 
-A package runs without its author. Prefer JSON/JSONL records and a Markdown report, commonly:
+A package runs without its author. It documents its solver interface: what a solver receives, its workspace, allowed effects and budget, and what it delivers. At least one adapter implements that interface, and a grade-only entry point scores supplied outcomes without running a solver. Prefer JSON/JSONL records and a Markdown report, commonly:
 
 ```text
-README.md            claim, commands, requirements, limits
-card.json            quality card, comparison set, conditions, metrics, splits
+README.md            claim, commands, solver interface, requirements, limits
+card.json            quality card with typed claims, comparison set, conditions, metrics, splits
+suite.json           profiles, repeats, weights, dependencies and budgets
 research/            sources, captured material and the scenario catalog, with provenance and reuse constraints
-tasks/<id>/          public instruction, interface, inputs, environment or initial state
-evaluation/<id>/     verifier, reference solution, rubric, labeled outcomes, admission evidence
+tasks/<id>/          instruction and environment for the solver; solution and tests for the evaluator
+admission/<id>/      labeled outcomes and admission evidence
 rejections.jsonl     every candidate's disposition and reason
-adapters/            actual target invocation, if needed
+adapters/            solver adapters implementing the interface
 run.py               runner or documented upstream entrypoint
-runs/<run-id>/       attempts, artifacts, scores, summary
+runs/<run-id>/       ledger, attempts, artifacts, grades, summary
 ```
 
-Where targets work in a directory or container, a task layout that an existing harness already runs lets the suite travel; Harbor's instruction, environment, solution and tests is one such layout. Provide preflight, smoke, quick, full and resume commands or host-driven steps. Preflight checks inputs, tools, access, output paths and adapter and verifier availability without billable target work, then shows planned tasks, repeats, concurrency, deadlines and estimated spend. Missing target or judge access may permit the checks that do not need it, never fabricated measurement.
+The kit's task layout follows Harbor's instruction, environment, solution and tests, so suites can travel to harnesses that run it. Provide preflight, smoke, quick, full, resume, rescore and grade-only commands or host-driven steps. Preflight provisions declared environments, checks inputs, tools, access, output paths and adapter and verifier availability without billable target work, then shows planned tasks, repeats, concurrency, caps, estimated wall time and estimated spend. Missing target or judge access may permit the checks that do not need it, never fabricated measurement.
 
 | Profile | Purpose |
 | --- | --- |
@@ -34,13 +35,13 @@ Where targets work in a directory or container, a task layout that an existing h
 | Public task | Stable ID; instruction; interface and inputs; allowed environment and tools; visible deliverable requirements |
 | Evaluator task | Task ID; family; source group and provenance; split; difficulty rationale and time estimate; verifier and reference bindings; labeled outcomes |
 | Admission | Task ID; each criterion's evidence, outcome and date; revisions; disposition and reason |
-| Condition | Target content identity; the model that actually answered when observable, otherwise unknown; instructions; tool and network access; memory and reset policy; adapter and environment; budgets |
+| Condition | Target content identity; the model that actually answered when observable, otherwise unknown; instructions; tool and network access; memory and reset policy; adapter and environment, with the dependency versions preflight observed; budgets |
 | Attempt | Task, condition, repetition and retry IDs; timings; execution status and reason; delivered artifacts or final state; transcript; observed usage and cost, unknowns explicit |
 | Score | Verifier identity; grading status per metric; dimension outcomes with evidence and weights; outcome credit or its unavailable reason; separate full success and critical failures; indeterminate results |
 
 ## Identity and access
 
-Bind results to the exact tasks, inputs, references, verifiers, adapters and runner by comparing bytes with a retained read-only copy, or a clean revision plus local changes; exclude runs and caches. Bind conditions separately. A resumed run rejects changed task, verifier, condition or repetition definitions and any missing, extra, foreign or inconsistent record. Re-scoring saved outputs records a new verifier result, not a fresh attempt. Redact credentials.
+Bind results to the exact tasks, inputs, references, verifiers, adapters and runner by comparing bytes with a retained read-only copy, or a clean revision plus local changes; exclude runs and caches. Bind conditions separately; a resumed run compares the dependency versions it observes with those recorded, and a change is a changed condition. A resumed run rejects changed task, verifier, condition or repetition definitions and any missing, extra, foreign or inconsistent record. Re-scoring saved outputs records a new verifier result, not a fresh attempt. Redact credentials.
 
 Stage only public task material in the solver's workspace. Never put evaluator answers, hidden checks or rubrics in a solver prompt. State which access boundaries are enforced and which are conventions.
 
@@ -52,13 +53,14 @@ An adapter runs the real candidate on one public task in an isolated workspace w
 
 - Bound concurrency, each attempt, the whole run, total launches including retries and repeats, and spend. Admit no work past a bound; label estimated spend limits honestly.
 - Isolate writable state, outputs and ports per attempt; share only immutable fixtures. Reset memory between episodes unless carryover is the claim. Record concurrency and hardware with timings.
+- Provision environments once and share them read-only across attempts; overlap attempts up to the declared concurrency and report the overlap achieved. Verifiers take a small fraction of attempt time.
 - Persist planned attempts and each launch before dispatch, and completed records as they finish. Preserve artifacts on failure. Resume completed work without relaunch. One owner per run directory.
 - Retry only declared transient infrastructure errors within a small budget. Retries keep their own records and consume budgets. Wrong answers and agent budget exhaustion are never retried.
 - On deadline or interruption, stop admitting work, cancel and reap owned processes, and record uncertain remote completion or billing. Exercise the failure paths a run depends on before trusting it; name untested paths and platforms.
 
 ## Status and aggregation
 
-Keep execution status (completed, agent-budget-exhausted, infrastructure-error, canceled, interrupted or not-launched), grading status (scored, unscored or indeterminate) and task success separate. A completed wrong answer, malformed delivered work and established non-delivery are scored failures. Agent budget exhaustion fails when completion within budget is required. Infrastructure failure, broken setup, verifier crash and unavailable capture stay unscored with reasons. Recover grading from retained evidence without relaunching the target.
+Keep execution status (completed, refused, cut-off, agent-budget-exhausted, infrastructure-error, canceled, interrupted or not-launched), grading status (scored, unscored or indeterminate) and task success separate. A completed wrong answer, malformed delivered work and established non-delivery are scored failures. Refusals and cut-offs at the solver's own output, turn or context limits are graded like other delivered work and counted separately, so tasks that provoke them can be reviewed. Agent budget exhaustion fails when completion within budget is required; an account usage limit interrupts without scoring. Infrastructure failure, broken setup, verifier crash and unavailable capture stay unscored with reasons. Recover grading from retained evidence without relaunching the target.
 
 Report planned, launched, completed, scored, passed, failed, unscored and canceled counts, with exclusion identities and reasons. Launch counts include retries; quality counts use planned task and repetition units. Unknown cost stays unknown; show available components.
 

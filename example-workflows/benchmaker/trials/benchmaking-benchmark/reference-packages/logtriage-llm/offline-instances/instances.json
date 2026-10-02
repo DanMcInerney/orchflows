@@ -1,0 +1,122 @@
+{
+ "Python/harbor-labs@pyparcel/failed/990000101.log": {
+  "family": "test-failure",
+  "difficulty": "One failing pytest test in a verbose run of 884; the FAILURES section sits above a coverage table and a dumped debug log, and earlier passing test names contain 'error' and 'failure'.",
+  "expert_minutes": 3,
+  "realism": "synthetic"
+ },
+ "Python/harbor-labs@pyparcel/failed/990000102.log": {
+  "family": "dependency-resolution",
+  "difficulty": "A pip resolver conflict report buried after backtracking INFO text; the conflict names the cause, and the closing Travis lines only say the command failed.",
+  "expert_minutes": 2,
+  "realism": "synthetic"
+ },
+ "Python/harbor-labs@pyparcel/failed/990000103.log": {
+  "family": "static-analysis",
+  "difficulty": "An easy case kept for scale: a single mypy error line, the only line with error-like words before mypy's own count line, so keyword search and a careful reader both land on it.",
+  "expert_minutes": 1,
+  "realism": "synthetic"
+ },
+ "Java/tidewater@ledger-core/failed/990000201.log": {
+  "family": "compile-error",
+  "difficulty": "A javac error block in Maven output with about 1,400 lines of downloads before it (artifact names such as error_prone_annotations) and the same errors repeated in the build summary.",
+  "expert_minutes": 3,
+  "realism": "synthetic"
+ },
+ "Java/tidewater@ledger-core/failed/990000202.log": {
+  "family": "decoy-errors",
+  "difficulty": "A flaky test that failed once and passed on rerun prints a FAILURE trace long before the real assertion failure; the real failure is 40 lines of results and a build summary away from the end.",
+  "expert_minutes": 4,
+  "realism": "synthetic"
+ },
+ "JavaScript/kestrel-io@kestrel-ui/failed/990000301.log": {
+  "family": "test-failure",
+  "difficulty": "A snapshot failure among 290 verbose jest results; console.error output from a passing suite comes first, and jest prints the failure twice, inline and in its summary.",
+  "expert_minutes": 3,
+  "realism": "synthetic"
+ },
+ "JavaScript/kestrel-io@kestrel-ui/failed/990000302.log": {
+  "family": "dependency-resolution",
+  "difficulty": "An npm 7 ERESOLVE report where every line is prefixed 'npm ERR!'; the cause is the peer dependency chain inside it, not the closing lines about the debug log.",
+  "expert_minutes": 2,
+  "realism": "synthetic"
+ },
+ "JavaScript/kestrel-io@kestrel-ui/failed/990000303.log": {
+  "family": "static-analysis",
+  "difficulty": "An easy case kept for scale: one eslint violation with its file path; the first error-like line is the violation, but the closing npm ERR! lines also say the lint script failed.",
+  "expert_minutes": 1,
+  "realism": "synthetic"
+ },
+ "Ruby/fernwood@fernwood-api/failed/990000401.log": {
+  "family": "decoy-errors",
+  "difficulty": "A harmless 'ERROR: role already exists' from a before_script command precedes two rspec failures printed in one Failures section, with the failed-examples list after it.",
+  "expert_minutes": 4,
+  "realism": "synthetic"
+ },
+ "Ruby/fernwood@fernwood-api/failed/990000402.log": {
+  "family": "dependency-resolution",
+  "difficulty": "Bundler's conflict report has no error marker word, so a keyword search skips it; the log ends a few lines after it with only Travis's own failure lines.",
+  "expert_minutes": 2,
+  "realism": "synthetic"
+ },
+ "Go/corvid-systems@gateway/failed/990000501.log": {
+  "family": "compile-error",
+  "difficulty": "A go test compile error between passing packages; 'github.com/pkg/errors' in the download lines matches an error search first, and the final FAIL line is far from the cause.",
+  "expert_minutes": 2,
+  "realism": "synthetic"
+ },
+ "Go/corvid-systems@gateway/failed/990000502.log": {
+  "family": "timeout",
+  "difficulty": "A go test timeout panic followed by a 190-line goroutine dump; the header and running-tests line name the stuck test, and everything after them is evidence for it, not the failure.",
+  "expert_minutes": 4,
+  "realism": "synthetic"
+ },
+ "Rust/quarry-dev@quarry/failed/990000601.log": {
+  "family": "compile-error",
+  "difficulty": "A borrow-checker error after a long compile listing that names the crates failure and error-chain, with a warning block just before it and a summary after.",
+  "expert_minutes": 3,
+  "realism": "synthetic"
+ },
+ "Rust/quarry-dev@quarry/failed/990000602.log": {
+  "family": "test-failure",
+  "difficulty": "Two failing unit tests among about 1,900 test lines in two test binaries; the failures section is followed by 1,500 passing integration tests, so it is far from the end.",
+  "expert_minutes": 4,
+  "realism": "synthetic"
+ },
+ "C++/meridian@meridian-engine/failed/990000701.log": {
+  "family": "compile-error",
+  "difficulty": "A three-line linker error at the end of a long CMake build; compiler warnings mention errors earlier, and make's recipe-failed lines come after the cause.",
+  "expert_minutes": 3,
+  "realism": "synthetic"
+ },
+ "C++/meridian@meridian-engine/failed/990000702.log": {
+  "family": "timeout",
+  "difficulty": "Travis ends a silent build after ten minutes; the cause is the platform's message at the end of 760 progress lines, with no compiler or test output to point at.",
+  "expert_minutes": 2,
+  "realism": "synthetic"
+ },
+ "PHP/opal-php@opal/failed/990000801.log": {
+  "family": "test-failure",
+  "difficulty": "One PHPUnit assertion failure; composer's 'Failed to download ... from dist' warning matches an error search long before it.",
+  "expert_minutes": 3,
+  "realism": "synthetic"
+ },
+ "PHP/opal-php@opal/failed/990000802.log": {
+  "family": "decoy-errors",
+  "difficulty": "phpcs prints a page of 'ERROR' style violations that do not fail the build (|| true); the cause is a later fatal error that PHP prints twice.",
+  "expert_minutes": 4,
+  "realism": "synthetic"
+ },
+ "Shell/nightowl@deploy-scripts/failed/990000901.log": {
+  "family": "other-failure",
+  "realism": "synthetic"
+ },
+ "Go/corvid-systems@gateway/failed/990000902.log": {
+  "family": "other-failure",
+  "realism": "synthetic"
+ },
+ "Java/tidewater@ledger-core/failed/990000903.log": {
+  "family": "test-failure",
+  "realism": "synthetic"
+ }
+}

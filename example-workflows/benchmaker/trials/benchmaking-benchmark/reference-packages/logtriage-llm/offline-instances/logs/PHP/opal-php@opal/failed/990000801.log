@@ -1,0 +1,164 @@
+travis_fold:start:worker_info[0K[33;1mWorker information[0m
+hostname: fc255227-d417-c29c-8797-a8892ffcf483@1.production-2-worker-org-gce-10vf
+version: v6.2.0 https://github.com/travis-ci/worker/tree/a402492335674e84f4210d8b648304afc0a9e684
+instance: travis-job-6a062dcc-f568-96e6-73d6-10d2f5dc6c86 travis-ci-sardonyx-xenial-1553530528-f909ac5 (via amqp)
+startup: 8.758532763s
+travis_fold:end:worker_info[0Ktravis_fold:start:system_info[0K[33;1mBuild system information[0m
+Build language: php
+Build group: stable
+Build dist: xenial
+Build id: 990000801
+Job id: 990000802
+Runtime kernel version: 4.15.0-1028-gcp
+travis-build version: 544249267
+[34m[1mBuild image provisioning date and time[0m
+Thu Apr 18 10:25:30 UTC 2019
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.6 LTS
+Release:	16.04
+Codename:	xenial
+[34m[1mCookbooks Version[0m
+42e42e4 https://github.com/travis-ci/travis-cookbooks/tree/42e42e4
+[34m[1mgit version[0m
+git version 2.21.0
+[34m[1mbash version[0m
+GNU bash, version 4.3.48(1)-release (x86_64-pc-linux-gnu)
+[34m[1mgcc version[0m
+gcc (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+[34m[1mdocker version[0m
+Client:
+ Version:           18.06.0-ce
+ API version:       1.38
+ Go version:        go1.10.3
+
+Server:
+ Engine:
+  Version:          18.06.0-ce
+[34m[1mclang version[0m
+clang version 7.0.0 (tags/RELEASE_700/final)
+[34m[1mcmake version[0m
+cmake version 3.12.4
+[34m[1mmysql version[0m
+mysql  Ver 14.14 Distrib 5.7.25, for Linux (x86_64) using  EditLine wrapper
+[34m[1mopenssl version[0m
+OpenSSL 1.0.2g  1 Mar 2016
+[34m[1mpostgresql client version[0m
+psql (PostgreSQL) 10.7 (Ubuntu 10.7-1.pgdg16.04+1)
+[34m[1mdefault ruby version[0m
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+[34m[1mPre-installed PostgreSQL versions[0m
+9.4.21
+9.5.16
+9.6.12
+[34m[1mPre-installed Go versions[0m
+1.11.1
+[34m[1mmvn version[0m
+Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T18:41:47Z)
+[34m[1mPre-installed Node.js versions[0m
+v10.15.3
+v11.0.0
+v6.17.0
+v8.12.0
+v8.15.1
+[34m[1mcomposer --version[0m
+Composer version 1.8.4 2019-02-11 10:52:10
+[34m[1mPre-installed Ruby versions[0m
+ruby-2.3.8
+ruby-2.4.5
+ruby-2.5.3
+travis_fold:end:system_info[0K
+travis_fold:start:git.checkout[0Ktravis_time:start:d794dd7a[0K$ git clone --depth=50 --branch=master https://github.com/opal-php/opal.git opal-php/opal
+Cloning into 'opal-php/opal'...
+remote: Enumerating objects: 6831, done.remote: Counting objects:  50% (3415/6831)remote: Counting objects: 100% (6831/6831), done.remote: Compressing objects: 100% (2277/2277), done.
+remote: Total 6831 (delta 1707), reused 6741 (delta 1707), pack-reused 0Receiving objects: 100% (6831/6831), 37.69 MiB | 18.31 MiB/s, done.Resolving deltas: 100% (1707/1707), done.
+travis_time:end:d794dd7a:start=1555583130000000000,finish=1555583132100000000,duration=2100000000[0Ktravis_fold:end:git.checkout[0K
+$ cd opal-php/opal
+$ git checkout -qf 3e6d3f9b94f57469874ddda4e13d900fed01f84c
+$ phpenv global 7.3 2>/dev/null
+$ php --version
+PHP 7.3.4 (cli) (built: Apr  9 2019 08:10:21) ( NTS )
+$ composer --version
+Composer version 1.8.4 2019-02-11 10:52:10
+travis_fold:start:install[0Ktravis_time:start:4a86a05d[0K$ composer install --prefer-dist --no-interaction
+Loading composer repositories with package information
+Installing dependencies (including require-dev) from lock file
+Package operations: 40 installs, 0 updates, 0 removals
+  - Installing psr/log (1.1.0): Failed to download psr/log from dist: The zip extension and unzip command are both missing, skipping.
+The php.ini used by the CLI is indicating that the zip extension is not installed.
+    Now trying to download from source
+  - Installing psr/log (1.1.0): Cloning 6c001f1daa
+  - Installing symfony/polyfill-mbstring (v1.11.0): Loading from cache
+  - Installing symfony/console (v4.2.5): Loading from cache
+  - Installing psr/container (1.0.0): Loading from cache
+  - Installing symfony/debug (v4.2.5): Loading from cache
+  - Installing monolog/monolog (1.24.0): Loading from cache
+  - Installing guzzlehttp/psr7 (1.5.2): Loading from cache
+  - Installing guzzlehttp/guzzle (6.3.3): Loading from cache
+  - Installing guzzlehttp/promises (v1.3.1): Loading from cache
+  - Installing doctrine/inflector (v1.3.0): Loading from cache
+  - Installing doctrine/lexer (1.0.1): Loading from cache
+  - Installing nesbot/carbon (2.17.1): Loading from cache
+  - Installing phpunit/php-token-stream (3.0.1): Loading from cache
+  - Installing phpunit/php-text-template (1.2.1): Loading from cache
+  - Installing phpunit/php-file-iterator (2.0.2): Loading from cache
+  - Installing phpunit/php-code-coverage (6.1.4): Loading from cache
+  - Installing phpunit/phpunit-mock-objects (6.1.2): Loading from cache
+  - Installing phpunit/phpunit (7.5.8): Loading from cache
+  - Installing sebastian/diff (3.0.2): Loading from cache
+  - Installing sebastian/comparator (3.0.2): Loading from cache
+  - Installing sebastian/exporter (3.1.0): Loading from cache
+  - Installing sebastian/environment (4.2.1): Loading from cache
+  - Installing sebastian/recursion-context (3.0.0): Loading from cache
+  - Installing sebastian/global-state (2.0.0): Loading from cache
+  - Installing sebastian/object-enumerator (3.0.3): Loading from cache
+  - Installing sebastian/resource-operations (2.0.1): Loading from cache
+  - Installing sebastian/version (2.0.1): Loading from cache
+  - Installing myclabs/deep-copy (1.8.1): Loading from cache
+  - Installing phpspec/prophecy (1.8.0): Loading from cache
+  - Installing webmozart/assert (1.4.0): Loading from cache
+  - Installing phar-io/manifest (1.0.3): Loading from cache
+  - Installing phar-io/version (2.0.1): Loading from cache
+  - Installing theseer/tokenizer (1.1.2): Loading from cache
+  - Installing squizlabs/php_codesniffer (3.4.1): Loading from cache
+  - Installing symfony/yaml (v4.2.5): Loading from cache
+  - Installing symfony/finder (v4.2.5): Loading from cache
+  - Installing symfony/filesystem (v4.2.5): Loading from cache
+  - Installing symfony/translation (v4.2.5): Loading from cache
+  - Installing vlucas/phpdotenv (v3.3.3): Loading from cache
+  - Installing ramsey/uuid (3.8.0): Loading from cache
+symfony/console suggests installing symfony/lock
+Generating autoload files
+travis_time:end:4a86a05d:start=1555583132100000000,finish=1555583170100000000,duration=38000000000[0Ktravis_fold:end:install[0K[0K[32;1mThe command "composer install --prefer-dist --no-interaction" exited with 0.[0m
+travis_time:start:7b66b213[0K$ vendor/bin/phpunit
+PHPUnit 7.5.8 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 7.3.4 with Xdebug 2.7.1
+Configuration: /home/travis/build/opal-php/opal/phpunit.xml.dist
+
+............................................................   60 / 312 ( 19%)
+............................................................  120 / 312 ( 38%)
+...........................F................................  180 / 312 ( 57%)
+............................................................  240 / 312 ( 76%)
+....................................................     312 / 312 (100%)
+
+Time: 11.4 seconds, Memory: 38.00 MB
+
+There was 1 failure:
+
+1) Opal\Tests\Http\RouterTest::testResolvesNamedRouteWithParameters
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'/users/42/posts/7'
++'/users/42/posts/7?draft=1'
+
+/home/travis/build/opal-php/opal/tests/Http/RouterTest.php:118
+
+FAILURES!
+Tests: 312, Assertions: 1145, Failures: 1.
+travis_time:end:7b66b213:start=1555583170100000000,finish=1555583184100000000,duration=14000000000[0K[0K[31;1mThe command "vendor/bin/phpunit" exited with 1.[0m
+
+
+Done. Your build exited with 1.

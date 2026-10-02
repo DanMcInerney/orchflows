@@ -1,0 +1,47 @@
+{
+ "claim": {
+  "solver_goal": "Given a failed CI build log, name the contiguous lines that show why the build failed, so developers read those lines in the failure notification instead of the whole log.",
+  "decision": "Which version of a CI-failure triage prompt, or which model behind it, localizes build failures better.",
+  "statement": "The suite scores how well a solver localizes the cause of a failed build in a log, against failure chunks marked by a person, with overlap credit that gives nothing for dumping the log. It does not score summaries, other languages' build systems that are absent from the tasks, or logs longer than the largest task.",
+  "population": "Failed Travis CI job logs of open-source repositories in several languages and build tools: test failures, compile errors, dependency resolution, timeouts, and logs where an earlier benign error precedes the cause.",
+  "system_boundary": "One model call per log with no tools, through the agent directory interface (`adapters/`); the workspace holds only build.log.",
+  "budget": "At most 3 repeats per task; one subject run of the full suite is 3 x tasks single calls at about 25 s and 0.03 USD each (estimates, not measurements)."
+ },
+ "stage": {
+  "requested": "development suite",
+  "achieved": "draft",
+  "reason": "Admission is incomplete: references, trivial attempts and labeled outcomes were run through the verifier, but no fresh auditor, adversary, realism reviewer, calibration system or known-order check has attempted the tasks, and no model was measured."
+ },
+ "comparison_set": [
+  {"system": "subject", "role": "the supplied triage prompt on Claude Haiku 4.5, low effort", "measured": false},
+  {"system": "sonnet-low", "role": "the same prompt on Claude Sonnet 5.5, low effort", "measured": false},
+  {"system": "reference", "role": "computes the marked range from the task's evaluator data; ceiling of the scale", "measured": "by run.py full --agent @reference"},
+  {"system": "noop", "role": "delivers nothing; floor of the scale", "measured": "by run.py full --agent @noop"}
+ ],
+ "known_order_check": "Declared, not measured: the subject with the line numbers removed from its prompt must rank below the subject (it can only guess line numbers). Until it runs, the suite has no check against measuring something other than localization.",
+ "difficulty_target": "Not set by calibration. Tasks are chosen for what makes real triage hard (a failure far from the end, benign earlier errors, long noisy logs, repeated reports) so the scale has room above a prompt that matches error keywords.",
+ "metrics": {"primary": "full_success_rate", "also": ["mean_credit per dimension (coverage, focus)", "critical_failures (none are defined)"], "repeats": 3, "weights": "none: tasks count equally, repeats average within a task, tasks cluster by source_group"},
+ "integrity": {
+  "enforced": "The solver sees only environment/ and the prompt, staged outside the package and the output directory; the kit refuses leaks at staging. Grading runs on a captured copy after the solver's process tree is stopped; the verifier takes the line count from the task, not from the workspace.",
+  "conventions": "The solver runs as the same operating-system user, so reading the package by absolute path is not prevented.",
+  "exposure": "See the exposure gap."
+ },
+ "conditions": {
+  "subject": {"agent": "adapters/haiku-low", "model": "claude-haiku-4-5", "effort": "low", "tools": ""},
+  "sonnet-low": {"agent": "adapters/sonnet-low", "model": "claude-sonnet-5-5", "effort": "low", "tools": ""},
+  "reference": {"agent": "@reference"},
+  "noop": {"agent": "@noop"}
+ },
+ "claims": [
+  {"id": "c1", "type": "rate", "metric": "reference_pass_rate", "min": 1.0},
+  {"id": "c2", "type": "rate", "metric": "trivial_credit", "max": 0.1},
+  {"id": "c3", "type": "rate", "metric": "verifier_false_accept", "max": 0.0},
+  {"id": "c4", "type": "rate", "metric": "verifier_false_reject", "max": 0.0},
+  {"id": "c5", "type": "rate", "metric": "hackable_task_ratio", "max": 0.0},
+  {"id": "c6", "type": "interval", "metric": "full_success_rate", "system": "reference", "low": 0.95, "high": 1.0, "level": 0.9},
+  {"id": "c7", "type": "interval", "metric": "mean_credit", "system": "noop", "low": 0.0, "high": 0.02, "level": 0.9},
+  {"id": "c8", "type": "cost", "system": "reference", "profile": "full", "wall_seconds_max": 300},
+  {"id": "g1", "type": "gap", "category": "missing-stage", "text": "No model was run: Claude Haiku 4.5 and Claude Sonnet 5.5 at low effort have no measured full-success or credit rates, so headroom, separation between them, run-to-run noise and the verdict on the claim are unmeasured."},
+  {"id": "g2", "type": "gap", "category": "missing-stage", "text": "Admission criteria 4, 6, 7 and 8 have no evidence: no fresh auditor solved from public material, no adversary tried to earn credit, no calibration system attempted the tasks and the known-order check has not run."}
+ ]
+}

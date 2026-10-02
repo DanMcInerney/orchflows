@@ -1,0 +1,16 @@
+[metadata]
+family = "arithmetic"
+source_group = "g1"
+split = "development"
+anchor = false
+smoke = true
+quick = true
+difficulty = "fixture task: one addition"
+expert_minutes = 1
+time_estimate = "author"
+
+[agent]
+timeout_sec = 5
+
+[verifier]
+timeout_sec = 10
