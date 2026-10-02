@@ -1,6 +1,6 @@
 # Research lessons
 
-Use these precedents as evidence when choosing an approach, then inspect primary sources relevant to the target. Research agents checked them on September 23, 2026, from papers, official posts and repositories, without reproducing results. Figures are as reported by each source.
+Use these precedents as evidence when choosing an approach, then inspect primary sources relevant to the target. Research agents checked them on September 23 and October 1, 2026, from papers, official posts and repositories, without reproducing results. Figures are as reported by each source.
 
 ## Building and admitting tasks
 
@@ -17,6 +17,8 @@ Use these precedents as evidence when choosing an approach, then inspect primary
 | Tool necessity and difficulty | [MCP-Universe](https://arxiv.org/abs/2508.14704) rejects tasks solvable without the tools or solved consistently within five tries, and grades by execution against live ground truth. [MCPMark](https://arxiv.org/abs/2509.24002): single-attempt success of 52.6% fell to 33.9% under `pass^4` |
 | Skills | [SkillsBench](https://arxiv.org/abs/2602.12670) runs identical tasks with and without skills, accepted 22% of submissions, and forbids skills that leak task details. Curated skills added 16.6 points on average but made 16 of 84 tasks worse; self-written skills added nothing on average. Anthropic's [skill-creator](https://github.com/anthropics/skills) compares with-skill runs to a baseline and tests activation with should-trigger and near-miss queries |
 | Simulated users | [τ²-bench](https://arxiv.org/abs/2506.07982): simulated users erred in 16–47% of conversations by domain. Constraining them with tools and observable state improved reliability. Measure simulator error and report `pass^k` |
+| Benign side effects | [Epoch's DeepSWE review](https://epoch.ai/benchmarks/deepswe/review): at least 23 of 113 tasks had false negatives, 18 of them because agents' own test edits collided with the verifier's restore step |
+| Refusals and resources | [Terminal-Bench 4.0](https://www.tbench.ai/news/terminal-bench-4-0) removed 8 of 74 tasks, including two for refusals and two with public solutions. [Infrastructure noise](https://www.anthropic.com/engineering/infrastructure-noise): resource configurations moved Terminal-Bench 2.0 scores by 6 points, and infrastructure errors fell from 5.8% at strict limits to 0.5% uncapped |
 
 ## Grader integrity
 
@@ -27,6 +29,9 @@ Use these precedents as evidence when choosing an approach, then inspect primary
 | Exploit classes | Seen in real evaluations: objects whose equality always holds, exiting before tests, patching the test framework's reports ([Anthropic](https://arxiv.org/abs/2511.18397)); skipping tests, decompiling references, shadowing libraries ([OpenAI](https://arxiv.org/abs/2503.11926)); editing tests and special-casing inputs ([ImpossibleBench](https://arxiv.org/abs/2510.20270)); reading future fixes from version history ([SWE-bench issue 465](https://github.com/SWE-bench/SWE-bench/issues/465)); retrieving answers from the web ([Cursor](https://cursor.com/blog/reward-hacking-coding-benchmarks)); overwriting timing functions and introspecting evaluator state ([METR](https://metr.org/evaluations/openai-o3-report/)) |
 | How often agents cheat | ImpossibleBench: frontier models passed about half of deliberately impossible tasks by cheating; read-only tests and an explicit abort option reduced it. [METR](https://metr.org/blog/2025-06-05-recent-reward-hacking/): 30% of runs hacked where the scorer was visible versus under 1% elsewhere, and instructions not to hack left most hacking. Cursor: 63% of one frontier model's successful SWE-bench Pro runs retrieved the fix, and a sealed harness cut scores by up to 20 points |
 | Tests versus usefulness | [METR](https://metr.org/notes/2026-03-10-many-swe-bench-passing-prs-would-not-be-merged-into-main/): automated grading ran 24 points above maintainers' merge decisions. Calibrate automated verifiers against holistic expert review on a sample |
+| Iterated attack and repair | [BenchJack](https://arxiv.org/abs/2605.12673): 219 flaws across 10 benchmarks, near-perfect scores on 9 without solving tasks. Single-round patches often failed; repeated attack-and-patch rounds cut the hackable share from near 100% to under 10% on four benchmarks. Where agent and evaluator share a process, code patches cannot restore the boundary |
+| Grading in the used sandbox | [SWE-Bench Pro V2](https://labs.scale.com/blog/swe-bench-pro-v2): two frontier models forged module checksums, passed in place and failed on a pristine image; grade captured changes on a clean environment. [SWE-Bench Pro Verified](https://arxiv.org/abs/2609.08149): residual git objects and metadata exposed answers; removing them moved one model from 78.80% to 57.32% |
+| Eval awareness | [Anthropic](https://www.anthropic.com/engineering/eval-awareness-browsecomp): a model identified BrowseComp, found a dataset mirror and decrypted the key; leaks came from published papers, appendices and trajectories, and blocking search results naming the benchmark worked better than URL blocklists |
 
 ## Measuring and comparing
 
@@ -39,6 +44,8 @@ Use these precedents as evidence when choosing an approach, then inspect primary
 | Model judging | [Judging LLM-as-a-Judge](https://arxiv.org/abs/2306.05685): position, verbosity and self-enhancement bias |
 | Contamination and saturation | [LiveCodeBench](https://arxiv.org/abs/2403.07974): dating tasks against training cutoffs exposes contamination. Canary strings leak into training data, so pair them with private tasks. [Benchmarks saturate](https://arxiv.org/abs/2602.16763), often within a few years; a spread of difficulty extends usefulness |
 | Coverage and dimensions | [HELM](https://crfm.stanford.edu/helm/): use scenarios and multiple metrics rather than one score mixing unrelated abilities |
+| Run-to-run noise | [On Randomness in Agentic Evals](https://arxiv.org/abs/2602.07150): single-run SWE-bench Verified pass rates moved 2.2–6.0 points between runs, with standard deviation above 1.5 points even at temperature 0 |
+| Sequential stopping | [optstop](https://arxiv.org/abs/2608.14425): stopping an item's repeats once its interval is narrow enough eliminated 57–97% of planned trials with mean absolute deviation 0.006 |
 
 ## Generating benchmarks and measuring them
 

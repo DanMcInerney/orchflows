@@ -1,0 +1,5 @@
+{"name": "package-mini", "repeats": 2, "concurrency": 2, "deadline_seconds": 120,
+ "attempt_seconds_estimate": 1, "attempt_cost_estimate_usd": 0.01,
+ "transient_retry_budget": 0, "launch_budget": 20, "grace_seconds": 1,
+ "provision": [], "observe": [["python", "--version"]],
+ "metrics": {"primary": "full_success_rate"}}

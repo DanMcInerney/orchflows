@@ -33,7 +33,7 @@ Give each instruction and mechanism one owner; reference shared facts. README an
 
 Reserve `orch-` for built-ins. Create custom workflows in `~/.orchflows/libraries/personal/skills/<workflow>/` unless the caller selects another library or repository. Edit checkouts or user libraries, never managed core or host caches.
 
-`CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped files. Tests and examples stay in the checkout; core Markdown links must resolve within shipped core. After editing core, run `python -m unittest discover -s tests`, then [load for development](hosts.md#register-and-refresh) or [update a home](home.md#setup).
+`CORE_ENTRIES` in `scripts/orchflows.py` owns the shipped files. Tests and examples stay in the checkout; core Markdown links must resolve within shipped core. After editing core or an example library, run `python -m unittest discover -s tests`, which also discovers example libraries' skill and trial tests, then [load for development](hosts.md#register-and-refresh) or [update a home](home.md#setup).
 
 ## A library
 
