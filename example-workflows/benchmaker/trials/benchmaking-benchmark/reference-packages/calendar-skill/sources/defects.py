@@ -163,6 +163,17 @@ def defect_label(solve, docs, name, outcome):
     return label_outcome(solve, docs, outcome)
 
 
+def busy_only(solve, docs, rng):
+    """A content-blind assistant: the earliest slot free of every entry, the policy and the preference ignored."""
+    return distorted(solve, docs, lambda m: (m["policy"].update(rules=[]), m["request"].update(preference="earliest")))
+
+
+def pays_blind(solve, docs):
+    """Does the content-blind assistant earn credit here (a valid or merely suboptimal booking)? A task where it does
+    would reward ignoring the policy."""
+    return label_outcome(solve, docs, busy_only(solve, docs, random.Random(0))) != "invalid"
+
+
 def exercised(solve, docs, name, seeds=range(3)):
     """Share of the defect's draws whose outcome is not full success on this workspace."""
     wrong = 0

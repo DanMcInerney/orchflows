@@ -62,10 +62,15 @@ def fill_request(text, sizes):
     return PLACEHOLDER.sub(lambda match: str(values[match.group(1)]), text)
 
 
+PLAIN_NOTE = ("interface/package.md describes a runner kit that is not in your workspace: its layout and record formats "
+              "still apply, and the package's own run.py and records are yours to write.")
+
+
 def prompt(arm, request):
-    """The same request for both arms; only the Benchmaker arm starts with the explicit skill invocation."""
+    """The same request for both arms; the Benchmaker arm starts with the explicit skill invocation and has the kit, the
+    plain arm is told the kit the interface page describes is not there."""
     request = INVOKE.sub('', request).lstrip()
-    return f'/{ENTRYPOINT}\n\n{request}' if arm == 'benchmaker' else request
+    return f'/{ENTRYPOINT}\n\n{request}' if arm == 'benchmaker' else f'{request}\n\n{PLAIN_NOTE}'
 
 
 def claude_config_dir(env=None):

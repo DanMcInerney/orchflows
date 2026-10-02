@@ -115,5 +115,6 @@ def confirm(meta_task: str, root: Path, *, pool_id: str | None = None, slice_id:
     result = {"meta_task": meta_task, "pool": pool_id, "slice": slice_id, "run": run_id, "llm": llm,
               "at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "members_run": len(members), **evidence}
     store.write_json(pool_dir / "confirmations.json", result)
-    shutil.rmtree(run.tmp, ignore_errors=True)
+    shutil.rmtree(run.runtime, ignore_errors=True)
+    shutil.rmtree(run.arenas, ignore_errors=True)
     return result

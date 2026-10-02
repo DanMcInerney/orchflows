@@ -95,7 +95,7 @@ class RenderTests(unittest.TestCase):
         text = report.render(make(gates))
         self.assertIn("| G1_executability | FAIL |", text)
         self.assertIn("Failed: m3: killed at the cap", text)
-        self.assertIn("| staging | FAIL | 1 cheater findings |", text)
+        self.assertIn("| staging | FAIL | 1 cheater findings; 0 name-only warnings |", text)
         self.assertIn("A failed gate is reported", text)
         self.assertLess(text.index("A failed gate"), text.index("## Metrics"))
 

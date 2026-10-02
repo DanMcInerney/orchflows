@@ -100,9 +100,9 @@ class ScriptedMemberTests(ShimCase):
         (row,) = rows
         self.assertEqual((row["status"], row["recognized"], row["behavior_draw"], row["findings"]), ("completed", True, "oracle", []))
         self.assertEqual(Path(row["workspace"]), ws.resolve())
-        captured = self.run_.root / row["final_capture"]
+        captured = self.run_.ledger / row["final_capture"]
         self.assertEqual(json.loads((captured / "output.json").read_text(encoding="utf-8")), {"sum": 6})
-        self.assertEqual((self.run_.root / row["prompt_capture"]).read_text(encoding="utf-8"), PROMPT)
+        self.assertEqual((self.run_.ledger / row["prompt_capture"]).read_text(encoding="utf-8"), PROMPT)
         self.assertEqual((self.root / f"t-ws.jsonl").read_text(encoding="utf-8").strip(), '{"event": "done"}')
         for text in (done.stdout, (self.root / "t-ws.jsonl").read_text(encoding="utf-8")):
             self.assertNotIn("oracle", text)
@@ -171,7 +171,7 @@ class ScriptedMemberTests(ShimCase):
         self.assertEqual(done.returncode, 1)
         self.assertEqual(json.loads(done.stdout.strip().splitlines()[-1])["status"], "error")
         self.assertEqual(rows[0]["status"], "error")
-        self.assertTrue((self.run_.root / rows[0]["final_capture"]).is_dir())
+        self.assertTrue((self.run_.ledger / rows[0]["final_capture"]).is_dir())
 
     def test_private_operators_run_from_the_store(self):
         self.store.private_members().mkdir(parents=True)
@@ -370,9 +370,9 @@ class CheaterMemberTests(ShimCase):
         self.assertFalse((outside / "reward.txt").exists())
         self.assertTrue((outside / "work" / "reward.txt").is_file())
 
-    def test_the_default_scope_is_the_runs_folder_in_the_store(self):
+    def test_the_default_scope_is_the_runs_work_area(self):
         agent = execute.prepare_agent(self.run_, self.pool_dir, self.ids["tamper"])
-        self.assertEqual(Path(json.loads((agent / "member.json").read_text(encoding="utf-8"))["scope"]), self.run_.root)
+        self.assertEqual(Path(json.loads((agent / "member.json").read_text(encoding="utf-8"))["scope"]), self.run_.work)
 
     def test_exit_early_claims_success_and_writes_nothing(self):
         ws = self.workspace()

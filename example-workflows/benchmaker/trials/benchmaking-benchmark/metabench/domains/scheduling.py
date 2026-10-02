@@ -155,6 +155,7 @@ def _random_valid_format(workspace, prompt):
 
 
 HEURISTICS = {"greedy_first": _greedy_first, "random_valid_format": _random_valid_format}
+FLOORS = ("random_valid_format",)
 
 
 # ---- labelled outputs ----------------------------------------------------------------------------

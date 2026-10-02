@@ -20,6 +20,7 @@ apply = scheduling.apply
 labeled = calendar_outputs.labeled
 DEFECTS = calendar_outputs.DEFECTS
 HEURISTICS = calendar_outputs.HEURISTICS
+FLOORS = ("busy_only",)    # the policy-blind earliest free slot
 
 load = calendar_state.load
 collect = calendar_state.collect

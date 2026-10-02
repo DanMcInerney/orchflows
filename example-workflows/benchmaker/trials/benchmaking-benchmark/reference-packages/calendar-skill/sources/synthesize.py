@@ -3,7 +3,8 @@
 Each slot in slots.py describes one task of the offline package. For every slot the script tries seeds until a
 candidate passes the admission filters, and logs every try: the request must be feasible (or deliberately infeasible),
 only a handful of the grid's starts may be valid so a guess at a slot almost never works, and the defects the slot
-targets must actually go wrong on it. The reference solution, not the verifier, is the oracle. Deterministic: seeds
+targets must actually go wrong on it, and an assistant that ignores the policy (the earliest free slot) must earn nothing.
+The reference solution, not the verifier, is the oracle. Deterministic: seeds
 are slot ids plus a counter.
 """
 import copy
@@ -102,7 +103,7 @@ def exercise(docs):
     return {name: defects.exercised(solve, docs, name, range(3)) for name in defects.DEFECTS}
 
 
-def run(write=True, limit=150):
+def run(write=True, limit=600):
     out = HERE.parent / "offline-instances"
     out.mkdir(exist_ok=True)
     log, chosen = [], {}
@@ -116,6 +117,8 @@ def run(write=True, limit=150):
                 seen = exercise(docs)
                 problems = [f"the {d} defect is not exercised (wrong on {seen[d]:.0%} of draws), so the task would not detect it"
                             for d in spec.get("must", ()) if seen[d] < EXERCISED]
+                if not problems and defects.pays_blind(solve, docs):
+                    problems = ["the earliest slot free of every entry, with the policy ignored, already earns credit, so a content-blind assistant would pass"]
             if problems:
                 log.append({**row, "disposition": "rejected", "reason": "; ".join(problems)})
                 continue

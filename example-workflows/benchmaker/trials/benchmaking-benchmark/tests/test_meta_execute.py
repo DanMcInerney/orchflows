@@ -94,7 +94,7 @@ class ExecutorTests(unittest.TestCase):
             (package / "run.py").write_text("import time\ntime.sleep(60)\n", encoding="utf-8")
             run = Run("r", tmp / "run", tmp / "out")
             execute.intake(run, package, None)
-            for folder in (run.packages, run.agents, run.tmp, run.invocations, run.captures):
+            for folder in (run.agents, run.invocations, run.captures):
                 folder.mkdir(parents=True)
             member_dir = tmp / "pool" / "members" / "m000001"
             member_dir.mkdir(parents=True)
@@ -123,6 +123,7 @@ class VerifyEndToEndTests(unittest.TestCase):
         cls.report = verify.verify("toy-sum", cls.package, cls.store.root, pool_id=cls.pool_id, jobs=8, out_root=cls.root / "out",
                                    run_id="r-test")
         cls.run_dir = cls.store.run("r-test")
+        cls.ledger = cls.root / "out" / "r-test.work" / "ledger"
 
     @classmethod
     def tearDownClass(cls):
@@ -145,25 +146,24 @@ class VerifyEndToEndTests(unittest.TestCase):
         self.assertEqual(self.report["gates"]["G1_executability"]["member_runs"], len(scripted_ids) + 2)
         for member in scripted_ids:
             self.assertTrue((self.root / "out" / "r-test" / member / "summary.json").is_file(), member)
-            self.assertTrue((self.run_dir / "invocations" / f"{member}.jsonl").is_file(), member)
+            self.assertTrue((self.ledger / "invocations" / f"{member}.jsonl").is_file(), member)
         for member in llm_ids:
             self.assertFalse((self.root / "out" / "r-test" / member).exists())
-            self.assertFalse((self.run_dir / "invocations" / f"{member}.jsonl").exists())
+            self.assertFalse((self.ledger / "invocations" / f"{member}.jsonl").exists())
         for name in ("reference", "noop"):
             self.assertTrue((self.root / "out" / "r-test" / name / "summary.json").is_file())
 
-    def test_each_member_ran_on_its_own_copy_and_outputs_stay_out_of_the_store_packages(self):
-        packages = {p.name for p in (self.run_dir / "packages").iterdir()}
-        scripted_ids = {m for m, s in self.order["members"].items() if s["kind"] != "llm"}
-        self.assertTrue(scripted_ids | {"reference", "noop"} <= packages)
-        self.assertFalse(list((self.run_dir / "packages").rglob("attempts.jsonl")))
+    def test_delivered_code_ran_outside_the_store_and_left_nothing_there(self):
+        self.assertFalse((self.run_dir / "packages").exists())
+        self.assertFalse(list(self.run_dir.rglob("attempts.jsonl")))
+        self.assertFalse((self.root / "out" / "r-test.work" / "arenas").exists())
         self.assertTrue((self.run_dir / "intake" / "run.py").is_file())
         self.assertEqual(list(self.root.rglob("ORDER.json")), [self.pool_dir / "ORDER.json"])
 
-    def test_the_crosscheck_regraded_every_captured_attempt(self):
+    def test_the_crosscheck_regraded_every_captured_attempt_and_both_builtins(self):
         cross = self.report["gates"]["crosscheck"]
         self.assertTrue(cross["pass"])
-        self.assertEqual(cross["regraded"], 4 * len([m for m, s in self.order["members"].items() if s["kind"] != "llm"]))
+        self.assertEqual(cross["regraded"], 4 * (2 + len([m for m, s in self.order["members"].items() if s["kind"] != "llm"])))
 
     def test_the_verifier_check_and_ordering_are_measured(self):
         m = self.report["metrics"]

@@ -47,14 +47,15 @@ def _cell(text) -> str:
 def _gate_detail(name: str, gate: dict) -> str:
     if name == "G1_executability":
         text = (f"preflight exit {gate.get('preflight_exit')}; {gate.get('member_runs')} member runs; schema-valid share "
-                f"{_f(gate.get('schema_valid_share'))}; infrastructure error share {_f(gate.get('infrastructure_error_share'), 3)}")
+                f"{_f(gate.get('schema_valid_share'))}; infrastructure error share {_f(gate.get('infrastructure_error_share'), 3)}"
+                + (f"; interrupted by the usage limit: {', '.join(gate['interrupted_runs'])}" if gate.get("interrupted_runs") else ""))
     elif name == "G2_reference_and_floor":
         text = (f"reference pass rate {_f(gate.get('reference_pass_rate'))}; no-op full success on "
                 f"{_count(gate.get('noop_full_success_tasks'))} tasks; no-op mean credit {_f(gate.get('noop_mean_credit'))}")
     elif name == "crosscheck":
         text = f"{_count(gate.get('count_mismatches'))} count mismatches; {_count(gate.get('grade_mismatches'))} grade mismatches"
     else:
-        text = f"{_count(gate.get('cheater_findings'))} cheater findings"
+        text = f"{_count(gate.get('cheater_findings'))} cheater findings; {_count(gate.get('warnings'))} name-only warnings"
     reasons = gate.get("reasons") or []
     return text + (f". Failed: {'; '.join(map(str, reasons))}" if reasons else "")
 

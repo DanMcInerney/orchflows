@@ -30,10 +30,8 @@ GENERATE_SECONDS = 600
 # The scripted pool: member names as `pool.compose` writes them; quick runs the first group, full adds the rest.
 CORE = ("oracle", "floor:noop", "floor:empty", "cheater:read_workspace", "cheater:tamper", "ladder:0.15", "ladder:0.7")
 MORE = ("ladder:0.4", "ladder:0.4-b", "cheater:read_ancestors")
-# Content-blind attempts the full pool adds as floors (a benchmark that rewards them has no headroom); schedule's
-# random_valid_format is already a floor in `pool.compose`.
-FLOORS = {"logtriage-llm": ("dump_all",), "calendar-skill": ("busy_only",)}
-DEFECTS = {"schedule-nosolver": ("defect:ignore_offsets", "defect:always_infeasible", "floor:random_valid_format"),
+# Every pool also holds the domain's own content-blind floor (`domain.FLOORS`), which a benchmark that rewards has no headroom.
+DEFECTS = {"schedule-nosolver": ("defect:ignore_offsets", "defect:always_infeasible"),
            "logtriage-llm": ("defect:shifted", "heuristic:grep_first_error"),
            "calendar-skill": ("defect:clobber", "defect:claims_done")}
 # generate.py arguments for the quick and full package sizes (task ids differ by package; every group is covered).
@@ -45,8 +43,9 @@ GENERATE = {
     "logtriage-llm": {True: ["--tasks", "6", "--per-repo", "1"], False: ["--tasks", "12", "--per-repo", "2"]},
     "calendar-skill": {
         True: ["--only", "bo-eng-sync,fu-sales-escalation,mp-studio-offsite,mp-all-hands-prep,mp-clinic-review,pd-eng-crunch"],
-        False: ["--only", "bo-eng-sync,bo-sales-call,rf-eng-demo,fu-eng-incident,mp-studio-offsite,mp-all-hands-prep,"
-                          "mp-clinic-review,pd-eng-crunch,rf-clinic-training,rf-studio-workshop,nf-room-features,bo-studio-review"]},
+        False: ["--only", "bo-eng-sync,bo-sales-call,rf-eng-demo,fu-eng-incident,fu-sales-escalation,fu-exec-normal,mp-studio-offsite,"
+                          "mp-all-hands-prep,mp-clinic-review,pd-eng-crunch,pd-sales-quarter-end,rf-clinic-training,"
+                          "rf-studio-workshop,nf-room-features,bo-studio-review"]},
 }
 SINGLE_FILE = {"scheduling", "logtriage"}   # the deliverable is one file, so a reachable answer pays out credit
 
@@ -188,17 +187,17 @@ def scripted_pool(meta: registry.MetaTask, st: stores.Store, quick: bool) -> str
     registry.configure(domain, st.root)
     document = pool.compose(meta, domain, st)
     defects = DEFECTS[meta.name]
-    wanted = (*CORE, defects[0]) if quick else (*CORE, *MORE, *defects)
+    floors = tuple(f"floor:{name}" for name in getattr(domain, "FLOORS", ()))
+    wanted = (*CORE, defects[0], *floors) if quick else (*CORE, *MORE, *defects, *floors)
     wanted = [name for name in wanted if name in document["members"]]
     keep = set(wanted)
     document["members"] = {name: spec for name, spec in document["members"].items() if name in keep}
     for key in ("known_pairs", "contrasts", "unconfirmed"):
         document[key] = [p for p in document[key] if p["higher"] in keep and p["lower"] in keep]
     document["aa_pairs"] = [p for p in document["aa_pairs"] if all(name in keep for name in p)]
-    for name in () if quick else FLOORS.get(meta.name, ()):
-        key = f"floor:{name}"
-        document["members"][key] = {"kind": "scripted", "behavior": "floor", "name": name}
-        document["known_pairs"] += [{"higher": who, "lower": key, "basis": "construction"} for who in ("oracle", "ladder:0.7")]
+    if quick:   # six tasks and one repeat: the worst rung can score nothing by chance, so only the oracle must beat the trivial members
+        document["known_pairs"] = [p for p in document["known_pairs"]
+                                   if not (p["higher"].startswith("ladder") and p["lower"].split(":")[0] in ("floor", "cheater"))]
     if defects[0] in keep and not any(c["lower"] == defects[0] for c in document["contrasts"]):
         document["contrasts"].append({"higher": "oracle", "lower": defects[0], "must_resolve": True, "basis": "construction"})
     pool_id, _ = pool.assemble(meta, pool.normalize(document, meta.name), st)

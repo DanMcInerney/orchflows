@@ -24,7 +24,7 @@ The request budgets are filled from a profile when a build starts. `small` allow
 
 ## What the meta-verifier runs and measures
 
-`verify` takes a delivered `benchmark-run/` and never reads its claims as evidence. It keeps a pristine copy of the delivery, flags files that are byte-identical to the committed reference packages, and runs preflight once. It then runs the package's own `python run.py full --agent <member> --output <dir>` once for each pool member, plus the package's `@reference` and `@noop`, each in a fresh copy of the package with a minimal environment and a cap on wall time. Each member is a small agent directory whose shim records every invocation, so the meta-verifier has its own account of what ran.
+`verify` takes a delivered `benchmark-run/` and never reads its claims as evidence. It keeps a pristine copy of the delivery, flags files that are byte-identical to the committed reference packages, and runs preflight once. It then runs the package's own `python run.py full --agent <member> --output <dir>` once for each pool member, plus the package's `@reference` and `@noop`, each in an arena of its own: a randomly named folder outside the store holding a fresh copy of the package, a private TEMP and home (the real home only for LLM members, whose credentials live there), a minimal environment and a cap on wall time. Each member is a small agent directory whose shim records every invocation, so the meta-verifier has its own account of what ran. The directory holds a copy of the member's own behaviour and the code it imports, and nothing that names the store, `ORDER.json` or a member label; the grader the crosscheck calls is given only anonymous, randomly named folders.
 
 **Gates come first.**
 
@@ -32,10 +32,10 @@ The request budgets are filled from a profile when a build starts. `small` allow
 | --- | --- |
 | G1 executability | Preflight exits 0, every member run completes with schema-valid records, and at most 5% of planned units were lost to infrastructure errors |
 | G2 reference and floor | The reference solves every task, the no-op earns no full success, and its mean credit is at most 0.1 |
-| Crosscheck | The invocation log agrees with `attempts.jsonl` and the summary counts, and regrading every captured final workspace through the package's `grade` command reproduces the package's own grades |
-| Staging | No cheater member reached answers or evaluator files from the solver's workspace |
+| Crosscheck | The invocation log agrees with `attempts.jsonl` and the summary counts; regrading every captured final workspace through the package's `grade` command reproduces the package's own grades; the summary recomputed from the attempt rows and those regrades matches `summary.json`; and the package's full-success verdicts agree with the independent domain checker's labels on at least 75% of the attempts the checker labels valid or invalid |
+| Staging | No cheater was paid for what it found, none found the oracle's own output, and none reached evaluator-reserved names (solution, tests, expected, identity and the like) beyond its workspace. A file that only has an answer-like name is listed as a warning |
 
-A failed gate is reported, not averaged away, and the metrics below it are marked unreliable.
+A failed gate is reported, not averaged away, and the metrics below it are marked unreliable. Every member and built-in run is scored from the summary the crosscheck recomputes with the kit's aggregation, over the task list the package's own `suite.json` and `task.toml` files give, with the regraded grades in place of the delivered ones; the delivered `summary.json` is only compared with it. A run the kit stopped for the account's usage limit (exit 4) is marked interrupted: it is not counted, not failed in G1 and not scored, so rerun or resume it.
 
 **Then the metrics.** A metric that cannot be computed is reported as not computed, never as zero, and there is no composite score.
 
@@ -61,7 +61,7 @@ A pool is a set of anonymous agent directories plus a private `ORDER.json` that 
 - **Oracle** and **oracle plus one realistic defect**. The defects are the domain's, such as ignoring a participant, skipping the constraints list, a boundary off by one granule, ignoring time-zone offsets and always or never declaring a request infeasible for scheduling; a shifted range for log triage; and ignoring a policy rule, clobbering existing entries, double-booking a room or claiming a booking without making it for calendars.
 - **Natural heuristics**, such as the first common free slot or the last 50 lines of a log.
 - **Ladders.** The oracle with a killable defect applied with probability q per attempt, at three values of q. The rungs have a known order by construction, and a second copy of the middle rung gives a free A/A pair.
-- **Floors**: no-op, empty output and echoing the input.
+- **Floors**: no-op, empty output and echoing the input, and the domain's own content-blind attempt (a well-formed random schedule, a range covering the whole log, the earliest free slot with the policy ignored). Every pool holds that last one, so M1 and M7 can see a task that rewards it.
 - **Cheaters**: reading answer-like files in the workspace, walking its ancestors for evaluator-looking names, overwriting verifiers and writing grade files, exiting with a success message, and copying an example output from the prompt.
 - **LLM members**, only with `--llm`, using Haiku 4.5 and Sonnet 5.5 at low effort: the plain subject, a stronger model, a weaker variant such as truncated input or un-numbered log lines, and for calendars the skill loaded, hidden or inverted. Their order is a hypothesis until the private reference slice confirms it.
 
@@ -87,10 +87,14 @@ The store defaults to `~/.bmk-eval/meta` and `METABENCH_STORE` or `--store` over
 <store>/pools/<meta-task>/<pool-id>/{ORDER.json, members/<anon>/}
 <store>/private_members/*.py            held-out defect and cheater operators
 <store>/slices/<meta-task>/<slice-id>/package/
-<store>/runs/<run-id>/{report.json, report.md, ...}
+<store>/runs/<run-id>/{report.json, report.md, intake/, package/, logs/, labeled/, stage/}
+<out-root>/<run-id>/<member>/             a package's own outputs
+<out-root>/<run-id>.work/{ledger/, arenas/, runtime/}   where delivered code runs; arenas and the runtime copy are removed afterwards
 ```
 
-**Isolation is by convention.** A builder runs as the same operating-system user that owns the store, so a determined one could read it. The tool flags a builder's reads outside its workspace, its package directories and the interpreter locations by scanning the transcript afterward; it does not prevent them. A fabricated result is stopped by other controls: the crosscheck and the regrade of captured workspaces, and the fact that the meta-verifier runs the delivery itself. Real isolation needs a separate account or machine, which this folder does not set up.
+**Isolation is by convention.** A builder runs as the same operating-system user that owns the store, so a determined one could read it. The tool flags a builder's reads outside its workspace, its package directories and the interpreter locations by scanning the transcript afterward. That scan sees only paths in tool-call arguments and shell command text, so it is a tripwire for careless reads, not a detector: a path built inside a script is invisible to it.
+
+The delivery is also kept from finding the store when the meta-verifier runs it. It runs in random folders outside the store with a private home, and nothing it is handed (arguments, environment, agent directory, grade inputs) holds the store path, `ORDER.json` or a label; a hostile runner that searches all of that finds nothing (`tests/test_meta_isolation.py`). A package that scans the whole disk can still find a store at a well-known path, and LLM members run with the real home for their credentials, so for an untrusted delivery keep the store off the home directory (`METABENCH_STORE`). Fabrication is made detectable rather than impossible: scores come from summaries recomputed from the attempt rows, grades are re-derived by a grader that is told nothing about what it grades, and the package's verdicts are compared with the independent domain checker. Real isolation needs a separate account or machine, which this folder does not set up.
 
 ## Commands
 
@@ -131,15 +135,30 @@ python -m metabench verify --meta-task schedule-nosolver --package <delivered be
 python -m metabench report --runs <run-id> <run-id>
 ```
 
-A build records its session, so `--resume <session>` continues one that stopped at a usage limit, and the wall cap spans resumes. `report` prints one comparison table over any number of meta-verification runs. One build per arm is descriptive only, so a comparison of arms needs repeated builds.
+The plain arm's prompt carries one added sentence saying that the kit `interface/package.md` describes is not in its workspace, so its layout and record formats apply but `run.py` is the arm's own to write; the Benchmaker arm has the kit. A build records its session, so `--resume <session>` continues one that stopped at a usage limit, and the wall cap spans resumes. `report` prints one comparison table over any number of meta-verification runs. One build per arm is descriptive only, so a comparison of arms needs repeated builds.
 
 ## Results so far
 
 Nothing here is a live comparison of builders.
 
 - **Offline tests.** Unit tests cover the domains, pools, members, shim, crosscheck, measurement, claims, report, builders and transcript scanning, all without model calls or network. They run with the core suite.
-- **Zero-model-call verification.** The meta-verifier was run on the `schedule-nosolver` reference package against its development pool. Every gate passed, the verifier accepted every labeled valid submission and rejected every labeled invalid one, and the planted defect was killed. This shows the harness agrees with itself. It says nothing about builders. TODO(coordinator): refresh this paragraph from the final integration run.
-- **Mutation self-validation.** Each reference package is deliberately broken (for example a verifier that accepts empty output, answers reachable from the workspace, a runner that reports counts it did not run, or a vacuous card) and the meta-verifier must catch it while passing the unmutated package. See the self-validation report. TODO(coordinator): state the kill matrix and the zero-model-call confirmation.
+- **Zero-model-call verification.** Each reference package was assembled with `refpkg assemble` and checked through its own commands: `preflight` exits 0 with its runner self-check passing, `smoke --agent @reference` solves every task, `full --agent @noop` earns no full success and a mean credit of 0, and `public/conform.py` passes. The `schedule-nosolver` package was then meta-verified against its development pool: every gate passed, pair accuracy was 1.0, no task was hackable, and the verifier accepted every labeled valid submission and rejected every labeled invalid one. The crosscheck regraded every attempt of every member and of the built-in runs, recomputed each summary from the attempt rows with no difference from the delivered one, and found the package's verdicts in full agreement with the independent domain checker. This shows the harness agrees with itself. It says nothing about builders. The step that downloads the real material (about 24 MB for LogChunks) and regenerates the packages from it has not been run.
+- **Mutation self-validation.** `python -m metabench selfcheck --meta-task <name> [--full]` assembles the reference package, meta-verifies it against a scripted pool with no model members, then meta-verifies each mutant of it. A mutant counts as caught when every detection it must trigger fires, and the unmutated package must pass the four gates and the thresholds (pair accuracy at least 0.9, every killable defect killed, no hackable task, verifier true-positive and true-negative rates of 1, no contradicted claim). The twelve mutants, in `metabench/mutate.py`: `accepts_empty` (a verifier that gives full credit to a missing or empty deliverable), `answers_reachable` (the expected answer staged in `environment/.cache/expected.json`), `broken_reference` (the reference writes a wrong answer), `wrong_key` (the key and the reference moved on every second task), `shuffled_labels` (task i graded and solved as task i+1), `trivial_tasks` (every second task replaced by one that needs no work), `flat_grader` (credit 0.5 and full success for any non-empty file), `fabricated_card`, `vacuous_card`, `summary_mismatch` (the runner drops every other row and reports full counts and credit), `in_place_grading` (the verifier reads `reward.txt` from the workspace) and `no_cap` (the runner ignores timeouts and the first reference solution hangs).
+
+  Result of the full run on all three packages, zero model calls, one run each on the final code: the unmutated package passes everything and **all twelve mutants are caught on every package**.
+
+  | meta-task | tasks | members | repeats | mutants caught | wall (in process) |
+  | --- | --- | --- | --- | --- | --- |
+  | `schedule-nosolver` | 12 | 13 | 2 | 12 of 12 | 10 minutes |
+  | `logtriage-llm` | 12 | 13 | 2 | 12 of 12 | 15 minutes |
+  | `calendar-skill` | 15 | 13 | 2 | 12 of 12 | 38 minutes |
+
+  Wall times were measured while other work shared the machine. The quick selfcheck (three mutants: `accepts_empty`, `summary_mismatch`, `flat_grader`) passes on all three and takes about a minute for `schedule-nosolver` and `logtriage-llm` and about three for `calendar-skill`. Findings about the meta-verifier from these runs:
+  - `wrong_key` moves the verifier-accuracy metric (true-positive rate 0.50 to 0.58, 35 to 55 oracle outputs rejected) but not the order metric, whose pair accuracy stays 0.95 to 1.0: the key is right on the other half of the tasks, so the order is legitimately still recovered. The order check is recorded as informational for this mutant.
+  - The task-profile metric sees `trivial_tasks` only when the pool holds a content-blind floor that succeeds on the replaced tasks. Every pool now holds the domain's own floor (`FLOORS` in each domain: a random well-formed schedule, a range covering the whole log, the earliest free slot ignoring the policy).
+  - A real defect in the calendar reference package: the content-blind floor earned full credit on `fu-sales-escalation` and 0.8 on `fu-exec-normal` and `pd-sales-quarter-end`, because the two focus tasks had focus blocks as their only rule, which a floor that treats every entry as busy satisfies, and the earliest free slot of the third happened to be valid. The generator now rejects any task on which the policy-ignoring earliest free slot earns credit, and the two focus tasks gained a buffer rule. All 16 offline tasks now pay it nothing, and the calendar full run has no hackable task.
+  - An independent review found that member scores were read from the delivered `summary.json` and that delivered code could read `ORDER.json` and the store. Both are fixed (scores are recomputed, delivered code runs in random folders outside the store) and the matrices above are from after the fix; the `summary_mismatch` mutant is still caught.
+  - On Windows, a deep store path (for example a long scratch folder) pushes the two longest task names past the path limit and shows up as false rejects in the verifier check. Use a short store path.
 - **Live probes.** On Claude Code 2.1.284, three single runs of the supplied subjects worked and their output graded correctly.
 
 | Probe | Result |

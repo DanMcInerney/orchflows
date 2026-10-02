@@ -298,6 +298,7 @@ HEURISTICS = {
     "grep_last_error": lambda ws, prompt="": _match(_read_lines(ws), last=True),
     "dump_all": lambda ws, prompt="": _out((1, max(1, len(_read_lines(ws)))), "The whole log."),
 }
+FLOORS = ("dump_all",)     # a range that covers every line locates nothing
 
 
 def _shifted(inst, rng):

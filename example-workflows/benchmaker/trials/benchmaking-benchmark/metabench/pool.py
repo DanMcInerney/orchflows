@@ -3,8 +3,9 @@
 A pool is written from a document that names its members (`{"members": {name: spec}, "known_pairs": [...], ...}`):
 the committed `meta-tasks/<mt>/dev-pool.json` (exposed, development claims only) or one composed from the
 domain's hooks, the generic floors, cheaters and ladders, any private operators in `<store>/private_members/` and,
-with `include_llm`, the paid members. Names exist only in the document and in ORDER.json `label`; nothing on disk
-under `members/` carries one.
+with `include_llm`, the paid members. A domain's `FLOORS` names the content-blind attempts of its own (heuristics that
+know nothing of the task); each is in every pool as a floor, so M1 and M7 can see a task that rewards it. Names exist
+only in the document and in ORDER.json `label`; nothing on disk under `members/` carries one.
 
 ORDER.json shape: B.5 of the plan, plus `domain` (module name), `io` (deliverable names), `exposure` and
 `generated`. Pairs involving LLM members stay in `unconfirmed` until `confirm` settles them on the slice.
@@ -109,6 +110,8 @@ def compose(task: registry.MetaTask, domain, store: Store) -> dict:
     members[f"{middle}-b"] = dict(members[middle])
     for name in floors.GENERIC:
         members[f"floor:{name}"] = {"kind": "scripted", "behavior": "floor", "name": name}
+    for name in getattr(domain, "FLOORS", ()):       # the domain's own content-blind attempt, always in the pool
+        members.setdefault(f"floor:{name}", {"kind": "scripted", "behavior": "floor", "name": name})
     trivial = [key for key, spec in members.items() if spec.get("behavior") == "floor"]
     for name in cheaters.NAMES:
         members[f"cheater:{name}"] = {"kind": "scripted", "behavior": "cheater", "name": name}

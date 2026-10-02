@@ -16,7 +16,7 @@ from metabench import mutate, registry, selfvalidate  # noqa: E402
 
 META = registry.get("schedule-nosolver")
 TASKS = "ev-exec-pair,xz-arch-sync"
-QUICK_SECONDS = 60
+QUICK_SECONDS = 240
 
 
 def run_python(*args, cwd=None):
@@ -263,7 +263,7 @@ class PoolTests(unittest.TestCase):
     def test_scripted_pools_are_filtered_from_the_composed_pool_and_carry_no_model_members(self):
         for name in ("schedule-nosolver", "logtriage-llm", "calendar-skill"):
             meta = registry.get(name)
-            for quick, expected in ((True, 8), (False, 13)):
+            for quick, expected in ((True, 9), (False, 13)):
                 root = Path(tempfile.mkdtemp(prefix="msv-pool-"))
                 self.addCleanup(shutil.rmtree, root, True)
                 st = selfvalidate.stores.Store(root)
@@ -274,7 +274,8 @@ class PoolTests(unittest.TestCase):
                 self.assertEqual(len(labels), expected, (name, quick, labels))
                 self.assertTrue(all(spec["kind"] == "scripted" for spec in order["members"].values()))
                 self.assertIn("cheater:tamper", labels)
-                self.assertEqual("floor:dump_all" in labels, name == "logtriage-llm" and not quick)
+                self.assertEqual("floor:dump_all" in labels, name == "logtriage-llm")
+                self.assertTrue(any(label.startswith("floor:") and label.split(":")[1] in registry.load_domain(meta).FLOORS for label in labels))
                 self.assertTrue(order["known_pairs"])
                 self.assertEqual(bool(order["aa_pairs"]), not quick)
 

@@ -167,7 +167,9 @@ class Pool:
 def _g1(execs: dict | None) -> dict:
     execs = execs or {}
     preflight = (execs.get("preflight") or {}).get("exit_code")
-    members = execs.get("members") or {}
+    everyone = execs.get("members") or {}
+    members = {m: e for m, e in everyone.items() if not e.get("interrupted")}
+    stopped = sorted(m for m in everyone if m not in members)     # an account usage limit is resumable, not a package fault
     failed, planned_total, infra_total = [], 0, 0
     for member, entry in sorted(members.items()):
         counts = (entry.get("summary") or {}).get("counts") or {}
@@ -184,14 +186,15 @@ def _g1(execs: dict | None) -> dict:
         planned_total += planned
         infra_total += infra
     share = infra_total / planned_total if planned_total else None
-    reasons = ([f"preflight exit {preflight}"] if preflight != 0 else []) + ([] if members else ["no member runs"])
+    reasons = ([f"preflight exit {preflight}"] if preflight != 0 else []) + ([] if members else [
+        "every run was interrupted by the account usage limit: resume or rerun" if stopped else "no member runs"])
     reasons += [f"{f['member']}: {f['reason']}" for f in failed]
     if share is not None and share > INFRASTRUCTURE_SHARE_MAX:
         reasons.append(f"infrastructure error share {share:.3f} above {INFRASTRUCTURE_SHARE_MAX}")
     valid = sum(entry.get("schema_valid") is True for entry in members.values())
     return {"pass": not reasons, "preflight_exit": preflight, "member_runs": len(members),
             "schema_valid_share": valid / len(members) if members else None,
-            "infrastructure_error_share": share, "failed_runs": failed, "reasons": reasons}
+            "infrastructure_error_share": share, "failed_runs": failed, "interrupted_runs": stopped, "reasons": reasons}
 
 
 def _g2(reference_run: dict | None, noop_run: dict | None) -> dict:
@@ -232,7 +235,9 @@ def gates(execs: dict | None, reference_run: dict | None, noop_run: dict | None,
     "infrastructure_errors", "summary"}}}`; planned and infrastructure_errors default from `summary`. A
     run the meta-verifier killed or that crashed counts all its planned units as infrastructure errors.
     `crosscheck` is `{"count_mismatches": [...], "grade_mismatches": [...]}` and `staging` the findings
-    cheaters logged (a list, or a dict holding `cheater_findings`). A check not run fails.
+    cheaters logged: a list, or a dict holding `cheater_findings` (the ones that fail the gate) and `warnings` (name-only
+    findings, reported and not failed). A check not run fails. A run marked `interrupted` (the account's usage limit)
+    is neither counted nor failed.
     """
     if crosscheck is None:
         cross = {"pass": False, "count_mismatches": [], "grade_mismatches": [], "reasons": ["crosscheck not run"]}
@@ -243,7 +248,8 @@ def gates(execs: dict | None, reference_run: dict | None, noop_run: dict | None,
         stage = {"pass": False, "cheater_findings": [], "reasons": ["staging check not run"]}
     else:
         found = list(staging.get("cheater_findings") or []) if isinstance(staging, dict) else list(staging)
-        stage = {"pass": not found, "cheater_findings": found}
+        stage = {"pass": not found, "cheater_findings": found,
+                 "warnings": list(staging.get("warnings") or []) if isinstance(staging, dict) else []}
     return {"G1_executability": _g1(execs), "G2_reference_and_floor": _g2(reference_run, noop_run),
             "crosscheck": cross, "staging": stage}
 

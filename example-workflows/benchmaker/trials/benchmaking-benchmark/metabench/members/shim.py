@@ -1,13 +1,15 @@
 """The entry point every pool member runs, as an agent directory (INTERFACE.md solver protocol).
 
-A member directory holds `run_agent.py`, which imports this module from the pool's private runtime copy, and
-`member.json` ({id, order, runtime, store, capture_dir, invocations, scope}). The shim reads its behaviour from ORDER.json,
-solves, copies the prompt and the final workspace into `capture_dir/<invocation>/`, logs the invocation and prints
-the protocol line. It writes nothing identifying into the workspace, the transcript or its stdout.
+A member directory holds `run_agent.py`, which imports this module from the run's private runtime copy, and
+`member.json` ({id, spec, io, domain, runtime, domain_root, capture_dir, invocations, scope}): the member's own
+behaviour, a copy of what it needs, and this run's paths, all in the work area. It names no store, ORDER.json or
+label. The shim solves, copies the prompt and the final workspace into `capture_dir/<invocation>/`, logs the
+invocation and prints the protocol line. It writes nothing identifying into the workspace, the transcript or its
+stdout.
 
 Behaviours (ORDER.json `kind`, `behavior`):
   scripted oracle | defect | heuristic | ladder | floor | cheater   from the domain hooks and members/*
-  private                                                          an operator in <store>/private_members/*.py
+  private                                                          an operator in private_members/*.py (copied into domain_root)
   llm                                                              members.llm (paid; only run with --llm)
 """
 from __future__ import annotations
@@ -76,7 +78,7 @@ def load_domain(name: str):
 
 
 def private_operator(store: Path, spec: dict):
-    """The operator function a private spec names, from <store>/private_members/."""
+    """The operator function a private spec names, from private_members/ under the domain root."""
     path = Path(store) / spec["module"]
     module_spec = importlib.util.spec_from_file_location(f"private_{path.stem}", path)
     module = importlib.util.module_from_spec(module_spec)
@@ -92,6 +94,15 @@ def apply(domain, workspace: Path, files: dict) -> None:
         target = Path(workspace) / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
+
+
+def expected_files(domain, workspace: Path, prompt: str) -> dict:
+    """The files the domain's oracle writes for this task, or {} when the task is not recognized."""
+    try:
+        instance = domain.recognize(workspace, prompt)
+        return domain.solve(instance)[0] if instance is not None else {}
+    except Exception:  # noqa: BLE001 - a cheater without the answer key still runs
+        return {}
 
 
 def result(draw: str, **fields) -> dict:
@@ -112,7 +123,8 @@ def behave(spec: dict, domain, workspace: Path, prompt: str, io: dict, rng: rand
     if behavior == "floor":
         return result(f"floor:{spec['name']}", files=floors.run(spec["name"], workspace, prompt, io, domain))
     if behavior == "cheater":
-        done = cheaters.run(spec["name"], workspace, prompt, io, scope)
+        expected = expected_files(domain, workspace, prompt) if spec["name"] == "read_workspace" else None
+        done = cheaters.run(spec["name"], workspace, prompt, io, scope, expected)
         return result(f"cheater:{spec['name']}", findings=done["findings"], final=done["final"])
     if behavior == "heuristic" or (kind == "private" and spec.get("source") == "HEURISTICS"):
         operator = domain.HEURISTICS[spec["name"]] if kind == "scripted" else private_operator(store, spec)
@@ -143,11 +155,10 @@ def parse(argv):
 def main(member_dir, argv=None) -> int:
     args = parse(argv)
     config = json.loads((Path(member_dir) / "member.json").read_text(encoding="utf-8"))
-    order = json.loads(Path(config["order"]).read_text(encoding="utf-8"))
-    spec, io = order["members"][config["id"]], order.get("io") or {}
-    domain = load_domain(order["domain"])
+    spec, io = config["spec"], config.get("io") or {}
+    domain = load_domain(config["domain"])
     if hasattr(domain, "configure"):
-        domain.configure(config.get("store"))
+        domain.configure(config.get("domain_root"))
     workspace, invocation = Path(args.workspace).resolve(), uuid.uuid4().hex
     prompt = Path(args.prompt_file).read_text(encoding="utf-8", errors="replace")
     captures = Path(config["capture_dir"]) / invocation
@@ -163,7 +174,7 @@ def main(member_dir, argv=None) -> int:
     began, done = time.monotonic(), None
     try:
         done = behave(spec, domain, workspace, prompt, io, random.Random(spec.get("seed")),
-                      Path(config.get("store") or "."), args.timeout, Path(config["scope"]) if config.get("scope") else None)
+                      Path(config.get("domain_root") or "."), args.timeout, Path(config["scope"]) if config.get("scope") else None)
         if done["files"]:
             apply(domain, workspace, done["files"])
     except Exception:  # noqa: BLE001 - reported as the member's error; the run goes on

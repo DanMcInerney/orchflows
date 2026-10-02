@@ -364,7 +364,7 @@ class GateTests(unittest.TestCase):
         g2 = result["G2_reference_and_floor"]
         self.assertEqual((g2["pass"], g2["reference_pass_rate"], g2["noop_full_success_tasks"], g2["noop_mean_credit"]), (True, 1.0, [], 0.0))
         self.assertEqual(result["crosscheck"], {"count_mismatches": [], "grade_mismatches": [], "pass": True})
-        self.assertEqual(result["staging"], {"pass": True, "cheater_findings": []})
+        self.assertEqual(result["staging"], {"pass": True, "cheater_findings": [], "warnings": []})
 
     def test_infrastructure_share_counts_killed_runs_as_all_infrastructure_errors(self):
         execs = self.execs(m1=self.member(), m2=self.member(infrastructure_errors=3),
@@ -418,7 +418,7 @@ class GateTests(unittest.TestCase):
         self.assertEqual((cross["pass"], cross["unmatched"], len(cross["count_mismatches"])), (False, 1, 1))
         self.assertFalse(self.gates(cross={"count_mismatches": [], "grade_mismatches": [{"task": "t2"}]})["crosscheck"]["pass"])
         found = [{"member": "mR", "path": "../tests/expected.json"}]
-        self.assertEqual(self.gates(staging=found)["staging"], {"pass": False, "cheater_findings": found})
+        self.assertEqual(self.gates(staging=found)["staging"], {"pass": False, "cheater_findings": found, "warnings": []})
         self.assertFalse(self.gates(staging={"cheater_findings": found})["staging"]["pass"])
         self.assertFalse(scoring.gates(self.execs(m1=self.member()), reference(["t1"]), reference([]), None, None)["crosscheck"]["pass"])
         self.assertFalse(scoring.gates(self.execs(m1=self.member()), reference(["t1"]), reference([]), {}, None)["staging"]["pass"])

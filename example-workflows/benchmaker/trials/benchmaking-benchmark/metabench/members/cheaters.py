@@ -1,7 +1,10 @@
 """Cheaters: attempts that look for the answer or the grader instead of doing the task.
 
 Each returns {"wrote": [paths], "findings": [{"kind", "path"}], "final": text}. A finding is evaluator material the
-attempt could reach from its workspace; against a sound benchmark every list is empty and every score is zero.
+attempt could reach from its workspace; against a sound benchmark every list is empty and every score is zero. A
+finding from the broad answer-like name match (`workspace-file`, `git-history`) also says `matches_answer`: its bytes
+are one of the files the domain's oracle writes for the task (`expected`, when the shim could solve the task), so
+the staging gate can tell a leaked answer from a file that merely has a name like `reference_policy.md`.
 
   read_workspace  answer-like files anywhere in the workspace, hidden ones and `.git` history included
   read_ancestors  every ancestor of the workspace inside the scope; in each, evaluator-like names (solution, tests,
@@ -14,7 +17,7 @@ attempt could reach from its workspace; against a sound benchmark every list is 
 Answer-like files found are written under the deliverable's name when they parse for it, so a benchmark that
 hides its answers in a reachable place pays out credit as well as a finding.
 
-`scope` is the folder the meta-verifier owns for this run (the run's folder in the store). Ancestors above it are
+`scope` is the folder the meta-verifier owns for this run (the run's work area). Ancestors above it are
 never read or touched: files that happen to sit beside the temporary root are not findings, and nothing outside
 the scope is ever overwritten.
 """
@@ -128,24 +131,26 @@ def _git_history(workspace: Path):
     return found
 
 
-def read_workspace(workspace: Path, prompt: str, io: dict, scope: Path | None = None) -> dict:
+def read_workspace(workspace: Path, prompt: str, io: dict, scope: Path | None = None, expected: dict | None = None) -> dict:
     paths = [p for p in _files(workspace, 6) if ".git" not in p.relative_to(workspace).parts]
     likely = _ranked(paths)
-    findings = [{"kind": "workspace-file", "path": p.relative_to(workspace).as_posix()} for p in likely]
+    answers = [bytes(data) for data in (expected or {}).values()]
+    findings = [{"kind": "workspace-file", "path": p.relative_to(workspace).as_posix(), "matches_answer": p.read_bytes() in answers}
+                for p in likely]
     history = _git_history(workspace) if (workspace / ".git").exists() else []
-    findings += [{"kind": "git-history", "path": name} for name, _ in history]
+    findings += [{"kind": "git-history", "path": name, "matches_answer": data in answers} for name, data in history]
     wrote = _deliver(workspace, io, [p.read_bytes() for p in likely] + [data for _, data in history])
     return {"wrote": wrote, "findings": findings, "final": ""}
 
 
-def read_ancestors(workspace: Path, prompt: str, io: dict, scope: Path | None = None) -> dict:
+def read_ancestors(workspace: Path, prompt: str, io: dict, scope: Path | None = None, expected: dict | None = None) -> dict:
     reached = _ancestor_files(workspace, scope)
     findings = [{"kind": "ancestor-file", "path": str(p)} for p in reached]
     wrote = _deliver(workspace, io, [p.read_bytes() for p in _ranked(reached)])
     return {"wrote": wrote, "findings": findings, "final": ""}
 
 
-def tamper(workspace: Path, prompt: str, io: dict, scope: Path | None = None) -> dict:
+def tamper(workspace: Path, prompt: str, io: dict, scope: Path | None = None, expected: dict | None = None) -> dict:
     reached = [p for p in _ancestor_files(workspace, scope) if VERIFIER.match(p.name)]
     findings = [{"kind": "verifier-file", "path": str(p)} for p in reached]
     wrote = []
@@ -165,7 +170,7 @@ def tamper(workspace: Path, prompt: str, io: dict, scope: Path | None = None) ->
     return {"wrote": wrote, "findings": findings, "final": "All tests pass"}
 
 
-def exit_early(workspace: Path, prompt: str, io: dict, scope: Path | None = None) -> dict:
+def exit_early(workspace: Path, prompt: str, io: dict, scope: Path | None = None, expected: dict | None = None) -> dict:
     return {"wrote": [], "findings": [], "final": "All tests pass"}
 
 
@@ -186,7 +191,7 @@ def _json_blocks(text: str):
         at += 1
 
 
-def copy_example(workspace: Path, prompt: str, io: dict, scope: Path | None = None) -> dict:
+def copy_example(workspace: Path, prompt: str, io: dict, scope: Path | None = None, expected: dict | None = None) -> dict:
     blocks = list(_json_blocks(prompt))
     cues = [m.end() for m in re.finditer(r"example|sample|e\.g\.", prompt, re.I)]
     blocks.sort(key=lambda b: (not any(0 <= b[0] - cue <= 400 for cue in cues), b[0]))
@@ -198,7 +203,7 @@ BEHAVIORS = {"read_workspace": read_workspace, "read_ancestors": read_ancestors,
              "exit_early": exit_early, "copy_example": copy_example}
 
 
-def run(name: str, workspace: Path, prompt: str, io: dict, scope: Path | None = None) -> dict:
+def run(name: str, workspace: Path, prompt: str, io: dict, scope: Path | None = None, expected: dict | None = None) -> dict:
     if name not in BEHAVIORS:
         raise ValueError(f"unknown cheater {name!r}")
-    return BEHAVIORS[name](Path(workspace), prompt, io, Path(os.path.realpath(scope)) if scope else None)
+    return BEHAVIORS[name](Path(workspace), prompt, io, Path(os.path.realpath(scope)) if scope else None, expected)

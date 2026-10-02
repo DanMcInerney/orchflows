@@ -77,7 +77,8 @@ class CrosscheckCase(unittest.TestCase):
         """The member's crosscheck; `regrade=False` skips the `run.py grade` pass when a test is about counts only."""
         if regrade:
             return crosscheck.check_member(self.rec, member, out, self.tasks, grade_cap=60.0)
-        with mock.patch.object(crosscheck, "_regrade", return_value=0):
+        with mock.patch.object(crosscheck, "regrade", return_value=({}, 0)), \
+                mock.patch.object(crosscheck, "recompute", return_value=(None, [])):
             return crosscheck.check_member(self.rec, member, out, self.tasks, grade_cap=60.0)
 
     def kinds(self, found, key="count_mismatches"):
@@ -167,9 +168,10 @@ class CrosscheckCase(unittest.TestCase):
         self.assertEqual(found["members"][member]["grade_mismatches"], 1)
         self.assertEqual(found["members"][self.ids["oracle"]]["grade_mismatches"], 0)
 
-    def test_builtin_runs_are_not_crosschecked(self):
+    def test_a_builtin_run_is_recomputed_without_an_invocation_log(self):
         found = crosscheck.crosscheck(self.rec, {"@reference": {"out": self.root}}, self.tasks, grade_cap=1.0)
-        self.assertEqual((found["pass"], found["members"], found["regraded"]), (True, {}, 0))
+        self.assertEqual(sorted(found["members"]), ["@reference"])
+        self.assertEqual((found["pass"], found["regraded"]), (False, 0))     # no summary.json: nothing to agree with
 
 
 class JoinTests(unittest.TestCase):
