@@ -151,6 +151,13 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(value('--allowedTools'), value('--tools'))
         self.assertIn('--strict-mcp-config', arguments)
 
+    def test_both_arms_are_denied_killing_processes_by_name(self):
+        for arm in builders.ARMS:
+            arguments = self.build(arm)
+            start = arguments.index('--disallowedTools') + 1
+            self.assertEqual(arguments[start:start + 3], ['Bash(taskkill:*)', 'Bash(pkill:*)', 'Bash(killall:*)'])
+            self.assertTrue(arguments[start + 3].startswith('--'))  # the variadic flag must not swallow a value
+
     def test_settings_disable_ambient_state_without_carrying_model_or_effort(self):
         settings = json.loads(self.build('plain')[self.build('plain').index('--settings') + 1])
         self.assertEqual(settings, {'disableAllHooks': True, 'syncClaudeAiSkills': False, 'syncClaudeAiPlugins': False,
