@@ -4,7 +4,7 @@ Benchmaker delivers benchmarks, and a benchmark is executable, so it can be meas
 
 It is code, not a scenario to run by hand. It has no `case.json` and the automated E2E runner does not discover it; its offline unit tests run with the core suite (`python -m unittest discover -s tests` from the repository root). It sits under `trials/`, so installation does not copy it into a home. Run it from this folder.
 
-**Status.** Built and exercised offline, with three live probe calls. No live builder comparison has run: Benchmaker against a plain agent is the next step, and until it runs this folder supports no claim about whether Benchmaker builds better benchmarks. [Results so far](#results-so-far) lists exactly what was run.
+**Status.** Built, exercised offline and run live on `schedule-nosolver`: six delivered builds, four with Benchmaker across three library versions and two plain, all meta-verified with paid model members. One or two builds per arm and version is descriptive only, and these support no ranking of the arms. [Results so far](#results-so-far) lists exactly what was run.
 
 ## The three meta-tasks
 
@@ -139,7 +139,7 @@ The plain arm's prompt carries one added sentence saying that the kit `interface
 
 ## Results so far
 
-Nothing here is a live comparison of builders.
+The offline results come first; the [live comparison](#live-comparison) follows them.
 
 - **Offline tests.** Unit tests cover the domains, pools, members, shim, crosscheck, measurement, claims, report, builders and transcript scanning, all without model calls or network. They run with the core suite.
 - **Zero-model-call verification.** Each reference package was assembled with `refpkg assemble` and checked through its own commands: `preflight` exits 0 with its runner self-check passing, `smoke --agent @reference` solves every task, `full --agent @noop` earns no full success and a mean credit of 0, and `public/conform.py` passes. The `schedule-nosolver` package was then meta-verified against its development pool: every gate passed, pair accuracy was 1.0, no task was hackable, and the verifier accepted every labeled valid submission and rejected every labeled invalid one. The crosscheck regraded every attempt of every member and of the built-in runs, recomputed each summary from the attempt rows with no difference from the delivered one, and found the package's verdicts in full agreement with the independent domain checker. This shows the harness agrees with itself. It says nothing about builders. The step that downloads the real material (about 24 MB for LogChunks) and regenerates the packages from it has not been run.
@@ -167,9 +167,41 @@ Nothing here is a live comparison of builders.
 | Triage subject, Sonnet 5.5 low, one call | Completed in 4.3 s for $0.017; same chunk |
 | Calendar subject, Haiku 4.5 low with the skill loaded | Completed in 216 s over 18 turns for $0.114; the skill was invoked once. It booked a valid but suboptimal slot (14:15 against the oracle's 11:45), which the domain checker graded correctly. Haiku agent runs are slow, so calendar pools are the expensive ones |
 
+### Live comparison
+
+On 2 and 3 October 2026, on Claude Code 2.1.284, builders ran the `schedule-nosolver` request at budget `small` (60 solver runs of 2 minutes, a 60-minute session cap) with Sonnet 5.5 at low effort. Each delivery was meta-verified against one held-out pool of 21 scripted and 4 LLM members. First, the pool ran on a 24-task private slice of raw Natural Plan records. Haiku 4.5 low and Sonnet 5.5 low scored 1.00 and 0.99 there, so separating them needs harder tasks than the source holds. Haiku with truncated input scored 0.58, which confirmed it below Haiku.
+
+| Build | Arm and library | Session | Scored tasks | Haiku low, two copies | Sonnet low | Haiku, truncated input | Defects killed | Pair accuracy | Hackable tasks | Gap recall |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| b-aa99f3 | Benchmaker, original | Stopped at the cap during its final review | 7 | 0.07, 0.14 | 1.00 | 0.14 | 4 of 6 | 0.97 | 0 | 0.50 |
+| b-1e4441 | Benchmaker, first fix | 52 min, $11.53 | 5 | 0.20, 0.35 | 1.00 | 0.40 | 0 of 7 | 0.92 | 1, disclosed | 0.80 |
+| b-104924 | Benchmaker, second fix | 51 min, $9.17 | 9 | 0.33, 0.33 | 1.00 | 0.11 | 4 of 7 | 0.98 | 2, disclosed | 1.00 |
+| b-5f3561 | Benchmaker, second fix | 39 min, $6.88 | 6 | 0.50, 0.58 | 1.00 | 0.58 | 0 of 6 | 0.95 | 0 | 0.67 |
+| b-de0bbc | Plain | 49 min, $11.72 | 12 | 0.58, 0.58 | 1.00 | 0.40 | 4 of 7 | 0.98 | 2, not disclosed | 0.80 |
+| b-9a3ab1 | Plain | 48 min, $2.84 | 7 | 0.21, 0.43 | 1.00 | 0.36 | 3 of 7 | 0.97 | 1, not disclosed | 0.60 |
+
+Session costs are the builder session's own; the solver runs a builder launches are billed separately and are not included. Every delivery passed all four gates and had no contradicted claim. The same plain package verified twice moved Haiku's two copies from 0.58 and 0.58 to 0.50 and 0.62, and pair accuracy from 0.98 to 1.00, so LLM member scores carry about ±0.1 of run-to-run noise.
+
+- **Time.** The original library's build ran out its cap during the final review. It had spent about 20 minutes on three rounds of admission checks and then searched 4000 times for a dense task design that had no feasible instance. The library now plans the wall clock for the whole build and reduces scope so later steps still run. Every later Benchmaker build finished in 39 to 52 minutes with its review done.
+- **Difficulty.** The original build hardened every task after Sonnet saturated the first batch, and Haiku then failed by cut-off rather than by error: 11 of its 12 failures were time-outs at the two-minute cap. A later build's transcripts show Haiku spending 12 to 17 thousand thinking tokens before the cap, and its time to answer varies widely: one build saw a three-person, one-day task cut off. The library now keeps a task the strongest system always solves while it separates the others, and counts no cut-off as the claimed ability failing unless speed is part of the claim. Builds on the second fix placed Haiku at 0.33 to 0.58. No delivery from either arm showed headroom above Sonnet 5.5 low.
+- **Power.** At this budget a builder that calibrates spends a third to a half of its 60 solver runs on pilots, calibration and the known-order check, leaving 5 to 9 scored tasks. That is too few to show most planted defects significantly below the oracle: the two smallest suites killed none. The first plain build skipped calibration and measured 12 tasks; the second calibrated and measured 7.
+- **Honesty.** Benchmaker's cards disclosed every hackable task they shipped; neither plain card did. Benchmaker's hackable tasks were infeasible requests that copying the instruction's example answer passes; the plain suites' were tasks a random well-formed booking sometimes passes.
+- **Spread.** Two builds of one arm differed about as much as the arms did.
+
+Lost builds, none counted above:
+- Two builders, one from each arm, stopped a hung script of their own with `taskkill //F //IM python.exe`. That killed every Python process on the machine and five builder sessions with it. Builder sessions are now denied `taskkill`, `pkill` and `killall`.
+- One Benchmaker build had a single compound command refused by the permission check. It concluded that Bash was unavailable, stopped to ask, did the same again when resumed, and delivered nothing. The check refused some commands in both arms but allowed the same command shapes in isolation.
+- Two builds failed at once on an expired login.
+
+The live runs also found two faults in the tool:
+- **Calendar slice.** The calendar reference package could not build its private slice from real records with an attendee whose calendar is empty. The `id-reuse` variant read a missing entry, and `clobber` could pick an attendee with nothing to destroy and label a correct booking invalid.
+- **Speed metric.** The speed metric compared the package's overlap with the agent time the shim recorded, which reads near zero for scripted members whose agent runs for milliseconds. It now compares the two only where the agent is most of each attempt.
+
+The full calendar self-check still catches all twelve mutants after the fix.
+
 **Not covered yet.**
 
-- The live comparison of Benchmaker against a plain agent, and the paid LLM members' confirmation on the reference slice.
+- Live comparisons on `logtriage-llm` and `calendar-skill`, a builder budget above `small`, and enough builds per arm to rank the arms. The LLM pool for `logtriage-llm` has been confirmed on its slice; Haiku and Sonnet are tied there at about 0.65 to 0.70, and Haiku with un-numbered lines is confirmed below Haiku. The calendar slice and its scripted confirmation are built, but its paid confirmation (about 240 agent runs) has not run.
 - Workflow against a single agent: native multi-agent sessions per attempt cost too much at current usage to include in the first version.
 - An environment-heavy domain. Trial 4 showed pandas work rewritten without pandas, and these meta-tasks test that only indirectly. The candidate is repairing code from DS-1000 (CC BY-SA 4.0) in a `uv` environment.
 - A Codex builder arm, and the SQL and extraction domains, whose licences need checking.
