@@ -11,7 +11,7 @@ from benchkit import stats  # noqa: E402
 from metabench import metrics as scoring  # noqa: E402
 
 
-def run(values, *, credit=None, anchors=(), wall=None, overlap=None, jobs=None, planned=1, **record):
+def run(values, *, credit=None, anchors=(), wall=None, overlap=None, jobs=None, attempts=None, planned=1, **record):
     """A member run record from per-task full-success rates (credit defaults to the same values).
 
     Each task is its own source group. Overall metrics are plain means over the non-anchor tasks.
@@ -24,7 +24,7 @@ def run(values, *, credit=None, anchors=(), wall=None, overlap=None, jobs=None, 
                "mean_credit": sum(credit[t] for t in scored) / len(scored)}
     summary = {"suite": {"name": "s", "tasks": len(tasks)}, "tasks": tasks, "overall": overall,
                "counts": {"planned": planned, "by_status": {"infrastructure-error": 0}},
-               "run": {"wall_seconds": wall, "achieved_overlap": overlap, "jobs": jobs}}
+               "run": {"wall_seconds": wall, "achieved_overlap": overlap, "jobs": jobs, "attempt_seconds_sum": attempts}}
     return {"summary": summary, **record}
 
 
@@ -312,16 +312,33 @@ class RangeReliabilityAndSpeedTests(unittest.TestCase):
         self.assertAlmostEqual(swapped["decision_accuracy"], 1 / 3)
 
     def test_speed_prefers_the_meta_verifiers_own_measurements(self):
-        runs = {"A": run(same(1.0), wall=100.0, overlap=7.0, jobs=8, wall_seconds=140.0,
+        runs = {"A": run(same(1.0), wall=100.0, overlap=7.0, jobs=8, attempts=1000.0, wall_seconds=140.0,
                          invocations=[{"seconds": 300.0}, {"seconds": 400.0}]),
-                "B": run(same(1.0), wall=50.0, overlap=4.0, jobs=8, invocations=[{"seconds": 150.0}, {"seconds": 50.0}]),
+                "B": run(same(1.0), wall=50.0, overlap=4.0, jobs=8, attempts=250.0,
+                         invocations=[{"seconds": 150.0}, {"seconds": 50.0}]),
                 "@reference": run(same(1.0), wall=10.0, jobs=2)}
         speed = scoring.metrics(runs, {"members": {}}, None, None)["speed"]
         self.assertEqual(speed["full_wall_seconds"], {"A": 140.0, "B": 50.0, "@reference": 10.0})
         self.assertAlmostEqual(speed["achieved_overlap_reported"], 5.5)
         self.assertAlmostEqual(speed["achieved_overlap_measured"], 4.5)
+        self.assertEqual((speed["compared_members"], speed["not_compared_members"]), (2, 1))
         self.assertEqual(speed["declared_concurrency"], 8)
-        self.assertEqual(speed["overlap_by_member"]["A"], {"reported": 7.0, "measured": 5.0})
+        self.assertEqual(speed["overlap_by_member"]["A"], {"reported": 7.0, "measured": 5.0, "agent_share": 0.7})
+
+    def test_speed_compares_overlap_only_where_the_agent_is_most_of_each_attempt(self):
+        runs = {"llm": run(same(1.0), wall=100.0, overlap=6.0, jobs=8, attempts=600.0,
+                           invocations=[{"seconds": 290.0}, {"seconds": 290.0}]),
+                "scripted": run(same(1.0), wall=100.0, overlap=3.0, jobs=8, attempts=300.0,
+                                invocations=[{"seconds": 0.5}, {"seconds": 0.5}])}
+        speed = scoring.metrics(runs, {"members": {}}, None, None)["speed"]
+        self.assertAlmostEqual(speed["achieved_overlap_reported"], 6.0)
+        self.assertAlmostEqual(speed["achieved_overlap_measured"], 5.8)
+        self.assertEqual((speed["compared_members"], speed["not_compared_members"]), (1, 1))
+        self.assertAlmostEqual(speed["overlap_by_member"]["scripted"]["measured"], 0.01)
+        del runs["llm"]
+        alone = scoring.metrics(runs, {"members": {}}, None, None)["speed"]
+        self.assertEqual((alone["achieved_overlap_reported"], alone["achieved_overlap_measured"],
+                          alone["compared_members"]), (None, None, 0))
 
     def test_verifier_metric_is_passed_through(self):
         runs, order = pool()

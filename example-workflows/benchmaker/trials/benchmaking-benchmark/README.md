@@ -50,7 +50,7 @@ A failed gate is reported, not averaged away, and the metrics below it are marke
 | M7 task profile | Tasks the reference fails, tasks that give a floor credit, flat tasks where every attempting member ties, and inverted tasks where a known-stronger member scores lower |
 | M8 range | Which LLM members score strictly between 0 and 1, so neither floor nor ceiling hides a difference |
 | M9 claim calibration | Do the typed claims in the package's `card.json` match what was measured? Which are contradicted, which understate, and did the card disclose the gaps measured? |
-| Speed | Wall time per member, and the overlap achieved against the overlap declared |
+| Speed | Wall time per member, and the overlap the package reports against the overlap the meta-verifier measures from the agent invocations it recorded. The two compare only for members whose agent is most of each attempt, such as LLM members: a scripted agent runs for milliseconds of an attempt that also stages and grades |
 
 `report.md` lists the gates first, then one row per metric, then contradicted claims and measured gaps. `report.json` has the same content. The scoring constants are echoed into the report's conditions.
 
