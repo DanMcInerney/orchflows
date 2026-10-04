@@ -40,6 +40,7 @@ HACKABLE_FRACTION = 0.5
 NOOP_CREDIT_MAX = 0.1
 INFRASTRUCTURE_SHARE_MAX = 0.05
 VACUOUS_WIDTH = 0.9
+AGENT_SHARE_MIN = 0.5
 SCORE_METRIC = "mean_credit"
 SEED = 0
 GOOD_LABELS = ("valid", "correct-infeasible")
@@ -54,7 +55,7 @@ def conditions() -> list[dict]:
         ("alpha", ALPHA), ("interval_level", INTERVAL_LEVEL), ("bootstrap_draws", BOOTSTRAP_DRAWS),
         ("hackable_fraction", HACKABLE_FRACTION), ("noop_credit_max", NOOP_CREDIT_MAX),
         ("infrastructure_share_max", INFRASTRUCTURE_SHARE_MAX), ("vacuous_width", VACUOUS_WIDTH),
-        ("score_metric", SCORE_METRIC), ("seed", SEED),
+        ("agent_share_min", AGENT_SHARE_MIN), ("score_metric", SCORE_METRIC), ("seed", SEED),
         ("kill", "one-sided sign-flip p < alpha, oracle above defect"),
         ("resolved", "paired 95% interval excludes 0 in the right direction"))]
 
@@ -500,7 +501,10 @@ def _m8(pool: Pool) -> dict:
 
 
 def _speed(pool: Pool) -> dict:
-    walls, reported, measured, jobs = {}, {}, {}, []
+    """The package reports overlap from whole attempts, which also stage and grade; the meta-verifier measures it from
+    the agent invocations it recorded. The two compare only where the agent is most of each attempt: a scripted agent
+    that runs for milliseconds says nothing about how attempts overlapped."""
+    walls, reported, measured, shares, jobs = {}, {}, {}, {}, []
     for member, run in {**pool.runs, **pool.builtin}.items():
         info = (summary_of(run) or {}).get("run") or {}
         wall = run.get("wall_seconds") if _num(run.get("wall_seconds")) else info.get("wall_seconds")
@@ -510,11 +514,15 @@ def _speed(pool: Pool) -> dict:
         seconds = [r["seconds"] for r in run.get("invocations") or [] if _num(r.get("seconds"))]
         if seconds and _num(wall) and wall > 0:
             measured[member] = math.fsum(seconds) / wall
+        if seconds and _num(info.get("attempt_seconds_sum")) and info["attempt_seconds_sum"] > 0:
+            shares[member] = math.fsum(seconds) / info["attempt_seconds_sum"]
         jobs += [info["jobs"]] if _num(info.get("jobs")) else []
-    return {"full_wall_seconds": walls, "achieved_overlap_reported": mean(reported.values()),
-            "achieved_overlap_measured": mean(measured.values()), "declared_concurrency": max(jobs, default=None),
-            "overlap_by_member": {m: {"reported": reported.get(m), "measured": measured.get(m)} for m in walls
-                                  if m in reported or m in measured}}
+    compared = [m for m in reported if m in measured and shares.get(m, 0) >= AGENT_SHARE_MIN]
+    return {"full_wall_seconds": walls, "achieved_overlap_reported": mean(reported[m] for m in compared),
+            "achieved_overlap_measured": mean(measured[m] for m in compared), "compared_members": len(compared),
+            "not_compared_members": len(walls) - len(compared), "declared_concurrency": max(jobs, default=None),
+            "overlap_by_member": {m: {"reported": reported.get(m), "measured": measured.get(m),
+                                      "agent_share": shares.get(m)} for m in walls if m in reported or m in measured}}
 
 
 def metrics(member_runs: dict[str, dict], order: dict, labels_m6: dict | None, captures_checked: dict | None, *,

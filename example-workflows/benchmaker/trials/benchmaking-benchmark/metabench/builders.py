@@ -26,6 +26,10 @@ ARMS = ('benchmaker', 'plain')
 PACKAGES = ('orchflows', 'shared', 'benchmaker')
 ENTRYPOINT = 'benchmaker:benchmaker'
 TOOLS = 'Read,Write,Edit,Bash,Agent,Skill,Glob,Grep,WebSearch,WebFetch'
+# A builder runs as the operator's user, so killing processes by name reaches every session on the machine, this
+# harness included: two builds ran `taskkill //F //IM python.exe` to stop one hung script of their own. Stopping a
+# process by its id, with `kill` or from Python, stays available.
+KILL_BY_NAME = ('Bash(taskkill:*)', 'Bash(pkill:*)', 'Bash(killall:*)')
 RESUME_PROMPT = ('Continue the build from the current state on disk. Launches already made, including interrupted '
                  'ones, still count toward the limits in the request.')
 # Sessions inherit nothing else from the caller. The last five name where Claude finds its credentials.
@@ -102,8 +106,9 @@ def command(arm, packages, model, effort, *, session_id=None, resume=None, execu
     session = ['--resume', resume] if resume else ['--session-id', session_id or str(uuid.uuid4())]
     result = [executable or shutil.which('claude') or 'claude', '-p', '--verbose', '--output-format', 'stream-json',
               '--forward-subagent-text', *session, '--permission-mode', 'dontAsk', '--tools', TOOLS,
-              '--allowedTools', TOOLS, '--strict-mcp-config', '--setting-sources', 'user',
-              '--settings', json.dumps(claude_settings(config_dir)), '--model', model, '--effort', effort]
+              '--allowedTools', TOOLS, '--disallowedTools', *KILL_BY_NAME, '--strict-mcp-config',
+              '--setting-sources', 'user', '--settings', json.dumps(claude_settings(config_dir)), '--model', model,
+              '--effort', effort]
     for path in packages.values() if arm == 'benchmaker' else ():
         result += ['--plugin-dir', str(path)]
     return result

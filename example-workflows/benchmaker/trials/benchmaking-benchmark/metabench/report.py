@@ -112,8 +112,11 @@ def _m9(m: dict) -> str:
 
 
 def _speed(m: dict) -> str:
-    return (f"overlap reported {_f(m.get('achieved_overlap_reported'), 1)}, measured {_f(m.get('achieved_overlap_measured'), 1)}, "
-            f"declared concurrency {m.get('declared_concurrency')}")
+    compared = m.get('compared_members')
+    scope = (f" over {compared} members whose agent is most of each attempt ({m.get('not_compared_members')} not "
+             f"compared)" if compared is not None else "")
+    return (f"overlap reported {_f(m.get('achieved_overlap_reported'), 1)}, measured "
+            f"{_f(m.get('achieved_overlap_measured'), 1)}{scope}, declared concurrency {m.get('declared_concurrency')}")
 
 
 def _builder(m: dict) -> str:

@@ -133,14 +133,21 @@ def double_book(solve, docs, rng):
     return distorted(solve, docs, edit)
 
 
+def holders(docs):
+    """Attendees whose calendars already hold entries a booking must preserve."""
+    return [p for p in attendee_paths(docs) if doc_at(docs, p)["events"]]
+
+
 def clobber(solve, docs, rng):
-    """The right booking, but one attendee's calendar is rewritten from scratch and keeps only the new entry."""
+    """The right booking, but one attendee's calendar is rewritten from scratch and keeps only the new entry.
+    Only an attendee with existing entries has anything to lose."""
     chosen = solve.plan(docs)
     if chosen is None:
         return refusal(docs)
     out, result = booking(solve, docs, *chosen)
-    victim = doc_at(out, rng.choice(attendee_paths(docs)))
-    victim["events"] = victim["events"][-1:]
+    if holders(docs):
+        victim = doc_at(out, rng.choice(holders(docs)))
+        victim["events"] = victim["events"][-1:]
     return out, result
 
 
@@ -158,7 +165,9 @@ DEFECTS = {"policy_blind_buffer": policy_blind_buffer, "policy_blind_focus": pol
 
 
 def defect_label(solve, docs, name, outcome):
-    if name in ("clobber", "claims_done"):
+    if name == "clobber":
+        return "invalid" if solve.plan(docs) and holders(docs) else "valid"
+    if name == "claims_done":
         return "invalid" if solve.plan(docs) else "valid"
     return label_outcome(solve, docs, outcome)
 
@@ -271,20 +280,22 @@ def labeled(solve, docs):
     twice = copy.deepcopy(base[0])
     doc_at(twice, attendee)["events"].append({**doc_at(twice, attendee)["events"][-1], "id": "bk-again"})
     add("duplicate-entry", "invalid", (twice, base[1]))
-    reuse = copy.deepcopy(base[0])
-    taken = doc_at(docs, attendee)["events"][0]["id"]
-    doc_at(reuse, attendee)["events"][-1]["id"] = taken
-    add("id-reuse", "invalid", (reuse, {"booked": {**base[1]["booked"], "event_id": taken}}))
+    owners = holders(docs)
+    holder = owners[0] if owners else attendee
+    if owners:
+        reuse = copy.deepcopy(base[0])
+        taken = doc_at(docs, holder)["events"][0]["id"]
+        doc_at(reuse, holder)["events"][-1]["id"] = taken
+        add("id-reuse", "invalid", (reuse, {"booked": {**base[1]["booked"], "event_id": taken}}))
     strangers = [p for p in docs["calendars"] if f"calendars/{p}.json" not in attendee_paths(docs) + invited]
     if strangers:
         stray = copy.deepcopy(base[0])
         stray["calendars"][strangers[0]]["events"].append(copy.deepcopy(doc_at(base[0], attendee)["events"][-1]))
         add("entry-for-bystander", "invalid", (stray, base[1]))
-    holder = next(p for p in attendee_paths(docs) if doc_at(docs, p)["events"])
-    for kind, edit in (("clobber:removed-entry", lambda d: d["events"].pop(0)),
-                       ("clobber:edited-entry", lambda d: d["events"][0].update(title=d["events"][0].get("title", "") + " (edited)")),
-                       ("clobber:moved-entry", lambda d: d["events"][0].update(start=stamp(datetime.fromisoformat(d["events"][0]["start"]) + timedelta(minutes=15), tz))),
-                       ("clobber:changed-work-hours", lambda d: d.update(work_hours=[]))):
+    entry_edits = (("clobber:removed-entry", lambda d: d["events"].pop(0)),
+                   ("clobber:edited-entry", lambda d: d["events"][0].update(title=d["events"][0].get("title", "") + " (edited)")),
+                   ("clobber:moved-entry", lambda d: d["events"][0].update(start=stamp(datetime.fromisoformat(d["events"][0]["start"]) + timedelta(minutes=15), tz))))
+    for kind, edit in (*(entry_edits if owners else ()), ("clobber:changed-work-hours", lambda d: d.update(work_hours=[]))):
         broken = copy.deepcopy(base[0])
         edit(doc_at(broken, holder))
         add(kind, "invalid", (broken, base[1]))

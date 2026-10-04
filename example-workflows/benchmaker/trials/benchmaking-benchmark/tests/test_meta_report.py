@@ -29,7 +29,8 @@ METRICS = {
     "M7_task_profile": {"reference_fail": [], "floor_credit": [{"task": "t3"}], "flat": {"computed": False, "reason": "x"}, "inverted": [],
                         "informative_share": 0.83, "tasks": 6},
     "M8_range": {"computed": False, "reason": "no LLM members"},
-    "speed": {"achieved_overlap_reported": 7.1, "achieved_overlap_measured": 6.8, "declared_concurrency": 8}}
+    "speed": {"achieved_overlap_reported": 7.1, "achieved_overlap_measured": 6.8, "compared_members": 4,
+              "not_compared_members": 21, "declared_concurrency": 8}}
 
 M9 = {"claims": 10, "checkable": 6, "contradicted": [{"id": "c1", "type": "interval", "direction": "measured-above", "claimed": [0.2, 0.45],
                                                        "measured": [0.48, 0.62], "reason": None},
@@ -113,7 +114,8 @@ class RenderTests(unittest.TestCase):
         self.assertIn("not computed: no LLM members", rows["M8_range"])
         self.assertIn("flagged: reference_fail 0, floor_credit 1, flat n/a, inverted 0", rows["M7_task_profile"])
         self.assertIn("6 of 10 claims checkable; contradicted 2", rows["M9_claims"])
-        self.assertIn("overlap reported 7.1, measured 6.8, declared concurrency 8", rows["speed"])
+        self.assertIn("overlap reported 7.1, measured 6.8 over 4 members whose agent is most of each attempt "
+                      "(21 not compared), declared concurrency 8", rows["speed"])
 
     def test_contradicted_claims_and_gaps_are_listed(self):
         self.assertIn("- c1 (interval): measured-above; claimed [0.2, 0.45], measured [0.48, 0.62]", self.text)
