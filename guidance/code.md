@@ -1,8 +1,8 @@
 # Code
 
-Prefer code files below roughly 500 lines; split longer changed files at coherent responsibility boundaries when this improves the design. Give each behavior one owner. Use a maintained dependency when it simplifies the implementation.
+Prefer code files below roughly 500 lines; split longer changed files at coherent responsibility boundaries when this improves the design. Apply the Single Ownership Principle to code and architecture design. Use a maintained dependency when it simplifies the implementation.
 
-Design tests to run independently and in parallel, with isolated state and fixtures. Test observable behavior rather than implementation structure.
+Unit tests matter much less than end-to-end tests. Make every test run as fast as possible, and in parallel where possible.
 
 ## Review
 
