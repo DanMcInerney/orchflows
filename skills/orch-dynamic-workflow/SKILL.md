@@ -12,7 +12,7 @@ Establish the result and checks. Before dependent work, gate each joined result 
 
 Briefly plan coherent units, dependencies, guidance, gates, bounds and stopping conditions. Preserve component contracts; an existing review counts only when candidate, criteria and scope match. Planning grants no new resource allowance.
 
-Run independent assignments concurrently through [orch-work](../orch-work/SKILL.md), with clear ownership. Do clear work directly when settings permit. Join required outcomes before review and dependent work; adapt within declared gates and bounds.
+Run independent assignments concurrently through [orch-work](../orch-work/SKILL.md), with clear ownership. Do clear work directly when settings permit. Join required outcomes and run the established checks on the joined result before review and dependent work; adapt within declared gates and bounds.
 
 At each gate, use [orch-review](../orch-review/SKILL.md) once on the stable joined candidate with requirements, sources and all applicable task guidance. After its completed report, make at most one necessary repair pass, honoring settings and scope. Apply architecture's review, checks and handoff rules; add no second review or automatic approval pause.
 
