@@ -119,17 +119,16 @@ The child can reconstruct the problem without the parent's conversation. A revie
 
 Named workflows and explicitly selected primitives can use an ordered list of guidance files. Named domains provide a convenience: visit dotted prefixes from general to specific, reading core then selected libraries in caller order at each prefix. Dynamic restricts this selection to core files.
 
-For `code.api` with one personal library:
+For `code.api` with one personal library that supplies `code.api`, which core lacks:
 
 ```mermaid
 flowchart LR
     A[Core: code] --> B[Personal: code]
-    B --> C[Core: code.api]
-    C --> D[Personal: code.api]
+    B --> C[Personal: code.api]
     classDef core fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
     classDef personal fill:#fefce8,stroke:#a16207,color:#713f12;
-    class A,C core;
-    class B,D personal;
+    class A core;
+    class B,C personal;
 ```
 
 Keep each file once. More-specific preferences win within a domain; independent domains combine. Missing implicit parents are allowed, but explicitly selected domains/files must exist. Unresolved requirement conflicts block dependent work.
