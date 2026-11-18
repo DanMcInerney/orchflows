@@ -8,6 +8,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tests/e2e'))
 from catalog import Case
 from common import read_json, write_json
+from hosts.claude import Claude
 from judging import aggregate, packet
 from run import run_case
 from scheduler import Scheduler
@@ -163,6 +164,28 @@ class LaunchJourneyTests(unittest.IsolatedAsyncioTestCase):
                        if json.loads(line)['kind'] == 'started']
             self.assertEqual(started, ['core/labels#2:target', 'collect:core/labels#2:target',
                                        'checks:core/labels#2', 'audit:core/labels#2'])
+
+    async def test_a_child_on_another_model_leaves_the_attempt_inconclusive(self):
+        class RequestedModelHost(FakeHost):
+            model, model_gaps = 'model-a', Claude.model_gaps
+
+        with tempfile.TemporaryDirectory(prefix='orchflows-launch-') as folder:
+            root = Path(folder)
+            source = root / 'case'
+            source.mkdir()
+            write_json(source / 'case.json', {'packages': []})
+            (source / 'request.md').write_text('have the answer reviewed', encoding='utf-8')
+            (source / 'expected-behavior.md').write_text('An independent review.', encoding='utf-8')
+            case = Case('core/models', source, {'packages': []})
+            for attempt, reviewer_model, expected in ((1, 'model-a', ('acceptable', [])), (2, 'model-b', (
+                    'inconclusive', ["Native model mismatch: requested model-a, observed ['model-b']"]))):
+                with self.subTest(reviewer_model=reviewer_model):
+                    agents = [{'id': 'coordinator', 'parent_id': None, 'models': {'model-a': 3}},
+                              {'id': 'reviewer', 'parent_id': 'coordinator', 'launch_context': 'fresh',
+                               'launch_evidence': [], 'models': {reviewer_model: 2}}]
+                    result = await run_case(case, attempt, root / 'run', RequestedModelHost(agents), Scheduler(1, 15), {}, 5)
+                    self.assertEqual((result['assessment'], result['gaps']), expected)
+                    self.assertEqual(sorted(result['observed']['models']), sorted({'model-a', reviewer_model}))
 
     async def test_interpreter_condition_is_reported_without_changing_the_verdict(self):
         with tempfile.TemporaryDirectory(prefix='orchflows-launch-') as folder:

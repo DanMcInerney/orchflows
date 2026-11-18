@@ -117,6 +117,8 @@ class ClaudeAdapterTests(unittest.TestCase):
         write_json(home / 'settings.json', {'enabledPlugins': {'orchflows@local': True, 'other@market': True},
                                             'model': 'opus', 'effortLevel': 'xhigh', 'hooks': {'Stop': []},
                                             'modelSettings': {'opus': {'effort': 'high'}}})
+        (home / 'agents').mkdir()
+        (home / 'agents/opus-planner.md').write_text('---\nname: opus-planner\nmodel: opus\n---\nPlan.\n', encoding='utf-8')
         with patch('hosts.claude.shutil.which', return_value='claude-native'), \
                 patch('hosts.claude.subprocess.check_output', return_value='2.1.280 (Claude Code)\n'), \
                 patch('hosts.claude.native_logs.native_home', return_value=home):
@@ -124,6 +126,7 @@ class ClaudeAdapterTests(unittest.TestCase):
         self.assertEqual((host.version, host.model, host.effort), ('2.1.280 (Claude Code)', 'claude-sonnet-5', 'high'))
         settings = {'disableAllHooks': True, 'syncClaudeAiSkills': False, 'syncClaudeAiPlugins': False,
                     'autoMemoryEnabled': False, 'enabledPlugins': {'orchflows@local': False, 'other@market': False},
+                    'permissions': {'deny': ['Agent(opus-planner)']},
                     'model': 'opus', 'effortLevel': 'xhigh'}
         packages = {'orchflows': self.root / 'packages/orchflows', 'shared': self.root / 'packages/shared'}
         schema = {'type': 'object'}
@@ -148,7 +151,22 @@ class ClaudeAdapterTests(unittest.TestCase):
                 self.assertEqual(command, expected)
                 self.assertEqual(read_json(self.stage / profile / 'claude-launch.json'),
                                  {'profile': profile, 'requested_effort': {'effortLevel': 'xhigh', '--effort': 'high',
-                                                                           'modelSettings': {'opus': {'effort': 'high'}}}})
+                                                                           'modelSettings': {'opus': {'effort': 'high'}}},
+                                  'excluded_agent_types': ['opus-planner']})
+
+    def test_a_model_other_than_the_requested_one_is_a_gap(self):
+        """Transcripts record full model names; <synthetic> marks records the host wrote itself."""
+        cases = [('claude-sonnet-5-5', {'claude-sonnet-5-5': 9}, []),
+                 ('claude-sonnet-5-5', {'claude-sonnet-5-5': 9, 'claude-opus-5-5': 4, 'claude-haiku-5-5': 1},
+                  ["Native model mismatch: requested claude-sonnet-5-5, observed ['claude-haiku-5-5', 'claude-opus-5-5']"]),
+                 ('claude-sonnet-5-5', {'claude-sonnet-5-5': 9, '<synthetic>': 1, 'unknown': 2}, []),
+                 ('claude-opus-5-5[1m]', {'claude-opus-5-5': 3}, []),
+                 ('sonnet', {'claude-sonnet-5-5': 3}, ["Native model mismatch: requested sonnet, observed ['claude-sonnet-5-5']"]),
+                 (None, {'claude-opus-5-5': 3}, [])]
+        for requested, models, expected in cases:
+            with self.subTest(requested=requested, models=models):
+                self.host.model = requested
+                self.assertEqual(self.host.model_gaps(models), expected)
 
     def test_command_records_requested_effort_without_changing_settings(self):
         self.host.settings = {'disableAllHooks': True, 'effortLevel': 'xhigh'}

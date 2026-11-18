@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import uuid
@@ -11,11 +12,24 @@ from evidence import stream
 import native_logs
 
 
+def user_agent_types(home):
+    """Agent types the user defines: Markdown files anywhere under agents/, each named by its frontmatter."""
+    names = set()
+    for path in (home / 'agents').rglob('*.md'):
+        frontmatter = re.match(r'---\r?\n(.*?)\r?\n---', path.read_text(encoding='utf-8-sig'), re.S)
+        for line in frontmatter.group(1).splitlines() if frontmatter else ():
+            key, _, value = line.partition(':')
+            if key == 'name' and value.strip():
+                names.add(value.strip().strip('"\''))
+    return sorted(names)
+
+
 class Claude:
     name = 'claude'
     capabilities = {'independent-review', 'local-exec', 'no-review', 'structured-audit'}
     model_settings = None
     model = effort = None
+    excluded_agent_types = ()
     # Print mode ends background subagents still running 600 s after the main turn ends (observed 2.1.280);
     # harness deadlines bound the wait instead.
     environment = {'CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS': '0'}
@@ -30,9 +44,14 @@ class Claude:
         # Disable ambient plugin activation, hooks and auto-memory for this invocation only.
         # Account-synced claude.ai skills and plugins would join the frozen packages (probe 2026-09-22).
         # Auto-memory is keyed to the enclosing git root, which can be the owner's real project memory.
+        # A user-defined agent type can pin its own model and effort and brings a persona (2026-11-18: a Sonnet
+        # coordinator launched its reviewer as an Opus xhigh type). A deny rule removes the type from the Agent
+        # tool's offer and refuses a call that names it; the init record still lists it (probe, 2.1.302).
+        self.excluded_agent_types = user_agent_types(self.home)
         self.settings = {'disableAllHooks': True, 'syncClaudeAiSkills': False, 'syncClaudeAiPlugins': False,
                          'autoMemoryEnabled': False, 'enabledPlugins':
-                         {name: False for name in settings.get('enabledPlugins', {})}}
+                         {name: False for name in settings.get('enabledPlugins', {})},
+                         'permissions': {'deny': [f'Agent({name})' for name in self.excluded_agent_types]}}
         self.settings.update({key: settings[key] for key in ('model', 'effortLevel') if key in settings})
         self.model_settings = settings.get('modelSettings')
         self.model, self.effort = model, effort
@@ -47,6 +66,15 @@ class Claude:
         if os.environ.get('CLAUDE_CODE_EFFORT_LEVEL'):
             found['CLAUDE_CODE_EFFORT_LEVEL'] = os.environ['CLAUDE_CODE_EFFORT_LEVEL']
         return found
+
+    def model_gaps(self, models):
+        """Models a stage's agents ran other than the requested one: a spawn call can name its own.
+        Transcripts record full model names, so a request by alias is reported too."""
+        if not self.model:
+            return []
+        # A bracketed context variant is not part of the recorded name; <synthetic> marks records the host wrote.
+        others = sorted(set(models) - {self.model.split('[')[0], 'unknown', '<synthetic>'})
+        return [f'Native model mismatch: requested {self.model}, observed {others}'] if others else []
 
     def registration_gaps(self, native, packages):
         loaded = {p.get('name'): p.get('path') for p in native.get('plugins', [])}
@@ -73,7 +101,8 @@ class Claude:
         if schema:
             command += ['--json-schema', json.dumps(schema)]
         if directory is not None:
-            write_json(Path(directory) / 'claude-launch.json', {'profile': profile, 'requested_effort': self.requested_effort()})
+            write_json(Path(directory) / 'claude-launch.json', {'profile': profile, 'requested_effort': self.requested_effort(),
+                                                                'excluded_agent_types': self.excluded_agent_types})
         return command
 
     def invocation(self, entrypoint, request):
@@ -116,7 +145,7 @@ class Claude:
                 'cost_usd': final.get('total_cost_usd'), 'gaps': gaps, 'launch_profile': launch.get('profile'),
                 'conditions': 'Session-local packages; user model and effort settings passed through, which the host may not apply; '
                               'observed model/effort are tallied from native transcript records. '
-                              'User-configured plugin activations, hooks and auto-memory disabled. '
+                              'User-configured plugin activations, hooks and auto-memory disabled; user-defined agent types denied. '
                               'Host built-in skills may remain advertised in native inventory. '
                               'Local and authoring targets have the same tools; their shell/filesystem and network are not sandboxed by this harness. '
                               'Authoring permits nested host inference; trial requests still constrain task-facing effects to local fakes. '
