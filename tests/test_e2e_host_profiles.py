@@ -77,6 +77,28 @@ class HostProfileTests(unittest.TestCase):
         self.assertEqual(toolsets['audit'], {'Read', 'Glob', 'Grep'})
         self.assertFalse({'Agent', 'Bash'} & toolsets['no-review'])
 
+    def test_claude_denies_user_defined_agent_types_in_every_profile(self):
+        """The host names an agent type by its frontmatter, wherever the file sits under agents/."""
+        definitions = {'opus-planner.md': b'---\nname: opus-planner\ndescription: Plans.\nmodel: opus\n---\nPlan.\n',
+                       'review/deep.md': b'---\r\ndescription: Reviews.\r\nname: "deep-reviewer"\r\n---\r\nReview.\r\n',
+                       'notes.md': b'name: not-an-agent\n\nNotes about these agents.\n'}
+        for relative, content in definitions.items():
+            path = self.root / 'claude-home/agents' / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+        for home, names in (('claude-home', ['deep-reviewer', 'opus-planner']), ('claude-home-without-agents', [])):
+            with mock.patch('hosts.claude.shutil.which', return_value='claude-native'), \
+                    mock.patch('hosts.claude.subprocess.check_output', return_value='2.1.302 (Claude Code)'), \
+                    mock.patch('hosts.claude.native_logs.native_home', return_value=self.root / home):
+                host = Claude()
+            for profile in ('local', 'authoring', 'no-review', 'audit'):
+                with self.subTest(home=home, profile=profile):
+                    stage = self.root / home / profile
+                    command = host.command({}, profile, allowed_root=self.root, directory=stage)
+                    self.assertEqual(json.loads(command[command.index('--settings') + 1])['permissions'],
+                                     {'deny': [f'Agent({name})' for name in names]})
+                    self.assertEqual(read_json(stage / 'claude-launch.json')['excluded_agent_types'], names)
+
     def test_requested_model_and_effort_replace_user_configuration(self):
         home = self.root / 'codex-home'
         home.mkdir()

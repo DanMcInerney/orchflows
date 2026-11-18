@@ -165,7 +165,10 @@ class Trial:
         launch_violations, launch_gaps = launch_checks(name, evidence)
         violations += launch_violations
         registration = self.host.registration_gaps(native, chosen)
+        ran = observed(evidence.get('agents', []))
         gaps = [*execution['gaps'], *native['gaps'], *evidence.get('gaps', []), *launch_gaps]
+        if hasattr(self.host, 'model_gaps'):
+            gaps += self.host.model_gaps(ran['models'])
         if registration:
             gaps.append('Native package registration not established: ' + ', '.join(registration))
         if execution['status'] != 'completed':
@@ -173,7 +176,7 @@ class Trial:
         record = {'name': name, 'execution': execution, 'native': native, 'violations': violations,
                   'gaps': gaps, 'conditions': [*execution.get('conditions', []),
                                                *interpreter_conditions(name, evidence, directory)],
-                  'observed': observed(evidence.get('agents', [])), 'after': after,
+                  'observed': ran, 'after': after,
                   'workspace': str(workspace)}
         write_json(directory / 'stage.json', record)
         self.stages.append(record)
