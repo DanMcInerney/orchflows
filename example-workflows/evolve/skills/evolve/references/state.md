@@ -5,7 +5,7 @@ Use files in the run directory; the coordinator alone writes journal/checkpoint.
 | Record | Contents |
 | --- | --- |
 | `brief.md` | Target, caller constraints, inferred preferences, resolved dependencies, bounds, per-experiment limits and stop conditions |
-| `evaluation/<revision>/` | Complete evaluator, development/reserved inputs, baseline calibration and environment |
+| `evaluation/<revision>/` | Complete evaluator, development/reserved inputs, baseline calibration with measured variation and margin, and environment |
 | `harness/<revision>/` | Applied instructions/tools/search policy and parent revision |
 | `experiments/<id>/` | Kind (artifact, harness or evaluation repair), hypothesis, parent identities, snapshots, native handles when used, outputs, raw measurement/judge evidence and decision |
 | `journal.jsonl` | Append-only events: experiment ID, applicable attempt start, phase, artifact/harness/evaluation identities, evidence paths, outcome and observed cost |
