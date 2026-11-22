@@ -79,9 +79,9 @@ class NextStageControls(unittest.TestCase):
             changed = [name for name in first if first[name] != second.get(name)]
             self.assertEqual(changed, [relative])
             self.assertEqual(set(first), set(second))
-            self.assertIn('Say why you skipped a gate', (current / relative).read_text(encoding='utf-8'))
-            self.assertNotIn('Say why you skipped a gate', (variant / relative).read_text(encoding='utf-8'))
-            self.assertIn('At each gate', (variant / relative).read_text(encoding='utf-8'))
+            self.assertIn('Say why you skipped it', (current / relative).read_text(encoding='utf-8'))
+            self.assertNotIn('Say why you skipped it', (variant / relative).read_text(encoding='utf-8'))
+            self.assertIn('Give the finished whole one independent review. Dependent work starts on', (variant / relative).read_text(encoding='utf-8'))
             metadata = json.loads((output / 'preparation.json').read_text(encoding='utf-8'))
             self.assertEqual(metadata['native_executions_at_preparation'], 0)
             self.assertEqual(metadata['record_type'], 'immutable_preparation_receipt')

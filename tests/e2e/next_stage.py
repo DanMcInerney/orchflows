@@ -15,13 +15,12 @@ from common import ROOT, copy_package, files_under, snapshot, write_json
 from run import execute
 
 DIRECT_CHECK = (
-    'Establish the result and checks. Before dependent work, gate each joined result with independent review '
+    'Establish the result and checks. Give the finished whole one independent review '
     'unless a mistake would be cheap to undo or your checks would catch any consequential one; '
-    'checks the maker writes share its reading of the requirements. Say why you skipped a gate. '
-    'Unavailable reviewers do not make work trivial.\n\nBriefly plan'
+    'checks the maker writes share its reading of the requirements. Say why you skipped it. '
+    'Unavailable reviewers do not make work trivial. Dependent work starts'
 )
-EVERY_UNIT = ('Establish the result and checks. Before dependent work, gate each joined result with independent review.'
-              '\n\nBriefly plan')
+EVERY_UNIT = 'Establish the result and checks. Give the finished whole one independent review. Dependent work starts'
 
 
 def prepare(output, condition, selected):
