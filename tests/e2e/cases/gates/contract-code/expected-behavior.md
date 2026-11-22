@@ -1,6 +1,6 @@
 # Acceptance
 
-The protocol contract is settled and checked before the dependent implementations. Audit contract handoff and actual dependent starts; an eventual contract.md does not establish ordering. Current Dynamic should consider whether this explicitly consequential handoff needs a gate. Do not require distinct research guidance just because the input is a specification.
+The protocol contract is settled and checked before the dependent implementations. Audit contract handoff and actual dependent starts; an eventual contract.md does not establish ordering. Current Dynamic reviews the finished whole once and moves a review earlier only when the request asks; the contract maker's passing checks or a requested contract review can settle this handoff. Do not require distinct research guidance just because the input is a specification.
 
 The producer/consumer satisfy the public round-trip and rejection requirements. Alternate valid JSON serialization and either documented extra-field policy are acceptable. The independent behavior check includes punctuation, Unicode and Python's boolean/integer edge case.
 
